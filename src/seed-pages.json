@@ -1,0 +1,720 @@
+[
+  {
+    "slug": "services",
+    "title": "Services",
+    "background": "stone-summit",
+    "seo": {
+      "title": "Services · Greatstone International",
+      "description": "We don't advise, we become your foundation. One team, three moves: find the drains, build the systems, embed and scale. Full-spectrum digital excellence, problem first.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "kicker": "What we do",
+          "headline": "We don't advise. We become your",
+          "highlight": "foundation.",
+          "body": "Most partners hand you a deck and leave. We embed in how you already work, find the hours your business is quietly losing, and build the systems that buy them back. One team, three moves, no stone unturned.",
+          "align": "left",
+          "size": "full",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#"
+        }
+      },
+      {
+        "type": "Steps",
+        "props": {
+          "index": "01",
+          "eyebrow": "The offer",
+          "headline": "Three moves. One",
+          "highlight": "foundation.",
+          "body": "Three moves take you from diagnosis to lasting capability. Embedded, not advisory.",
+          "items": [
+            {
+              "title": "Find the drains",
+              "text": "Discovery and DXP. Before we build anything, we find where the week actually goes. Our 8-pillar Digital Excellence assessment maps the silent leaks (the rework, the swivel-chair, the waiting) and scores you on every pillar, so the plan is evidence, not opinion."
+            },
+            {
+              "title": "Build the systems",
+              "text": "AI, automation and integration. We build the fix into how you already work, not bolted on beside it. AI where it earns its keep, automation for the repetitive, integration so your tools finally talk. Shipped in weeks, owned by your team, measured against the hours it returns."
+            },
+            {
+              "title": "Embed and scale",
+              "text": "Adoption and ongoing. A system nobody uses saves nobody time. We train your people, drive real adoption, and stay on as your foundation: tuning, extending and scaling what works. We don't disappear when the invoice clears."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Chapter",
+        "props": {
+          "index": "02",
+          "eyebrow": "Full-spectrum DX",
+          "headline": "Start with the problem. Then pick the",
+          "highlight": "tool.",
+          "body": "When all you sell is a hammer, everything looks like a nail. That's why most AI spend never pays back: the tool came first, the problem second. We work the other way round. We diagnose what's actually costing you hours, then choose from the full spectrum (AI, automation, integration, or simply a better process) and use only what fits.",
+          "coda": "Sometimes the right answer isn't AI at all. We'll tell you. We leave no stone unturned, and we don't sell you stone you don't need.",
+          "align": "left"
+        }
+      },
+      {
+        "type": "StatStrip",
+        "props": {
+          "index": "03",
+          "eyebrow": "The payback",
+          "headline": "Hours back, three",
+          "highlight": "ways.",
+          "body": "Illustrative targets. Your numbers are set by the DXP assessment.",
+          "stats": [
+            {
+              "value": 40,
+              "prefix": "+",
+              "suffix": "%",
+              "dec": 0,
+              "label": "More efficiency: the hours your business was quietly losing, handed back to the work that matters."
+            },
+            {
+              "value": 2,
+              "prefix": "",
+              "suffix": "×",
+              "dec": 0,
+              "label": "More value to customers: faster response, fewer errors, a better experience, reinvested where clients feel it."
+            },
+            {
+              "value": 60,
+              "prefix": "−",
+              "suffix": "%",
+              "dec": 0,
+              "label": "Less risk: manual gaps closed, systems that hold up, the quiet failures designed out."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "Start here",
+          "headline": "Let's find the hours you're",
+          "highlight": "losing.",
+          "body": "A Deep Dive is where it begins: a focused look at where your week goes and what it's costing. No deck, no pitch. Just the first stone, turned over.",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#",
+          "email": "dx@greatstonesoftware.co.uk"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "industries",
+    "title": "Industries",
+    "background": "stone-summit",
+    "seo": {
+      "title": "Industries · Greatstone International",
+      "description": "Pick your world and the rest adjusts: your drains, your numbers. The same foundation, shaped to the way your sector actually works.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "kicker": "Industries",
+          "headline": "Start with your",
+          "highlight": "industry.",
+          "body": "Pick your world and the rest adjusts: your drains, your numbers. The same foundation, shaped to the way your sector actually works.",
+          "prompt": "Choose your sector",
+          "align": "left",
+          "size": "full"
+        }
+      },
+      {
+        "type": "Pillars",
+        "props": {
+          "index": "01",
+          "eyebrow": "The universal drains",
+          "headline": "Everyone leaks",
+          "highlight": "here.",
+          "body": "The same quiet tax every business pays, whatever the sector. We close these for all of them.",
+          "items": [
+            {
+              "title": "Meeting triage",
+              "text": "Triage and the scheduling ping-pong that eats the start of every day."
+            },
+            {
+              "title": "Re-keying data",
+              "text": "Moving the same figures by hand between systems that don't talk."
+            },
+            {
+              "title": "Weekly reports",
+              "text": "Rebuilding the same reports from scratch, week after week."
+            },
+            {
+              "title": "Chasing approvals",
+              "text": "Hunting down approvals and signatures to keep work moving."
+            },
+            {
+              "title": "Finding documents",
+              "text": "Searching for the document, then the latest version of it."
+            },
+            {
+              "title": "Manual reconciliation",
+              "text": "Reconciling numbers by hand because nothing adds up automatically."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Pillars",
+        "props": {
+          "index": "02",
+          "eyebrow": "Specific to your world",
+          "headline": "Where your sector quietly",
+          "highlight": "bleeds hours.",
+          "body": "Every industry loses time in its own way. These are the leaks unique to each sector, and we leave no stone unturned. Seven worlds we know well:",
+          "items": [
+            {
+              "title": "Real estate",
+              "text": "Less time on portals, more time closing. Comps and area research by hand, re-listing the same property across every portal, chasing solicitors and surveyors, matching new stock to buyers manually."
+            },
+            {
+              "title": "Healthcare",
+              "text": "Less time on admin, more time on patients. Re-typing patient details across disconnected systems, chasing no-shows, coding claims by hand, compiling compliance reports from scratch."
+            },
+            {
+              "title": "Education",
+              "text": "Less time on paperwork, more time teaching. Re-keying enrolment data across SIS, LMS and finance, building timetables by hand, chasing consent forms, collating attendance and progress."
+            },
+            {
+              "title": "Financial services",
+              "text": "Less time reconciling, more time advising. Manual KYC and onboarding checks, re-keying figures between spreadsheets and core systems, assembling client statements, pulling together regulatory packs."
+            },
+            {
+              "title": "Manufacturing",
+              "text": "Less time on the clipboard, more time on the line. Re-entering orders between ERP, shop floor and accounts, tracking stock on spreadsheets, logging quality checks by hand, rebuilding downtime reports."
+            },
+            {
+              "title": "Professional services",
+              "text": "Less time on the timesheet, more time on the work. Reconstructing billable hours from memory, drafting near-identical proposals, chasing late payments, copying client data between CRM and delivery tools."
+            },
+            {
+              "title": "Retail and hospitality",
+              "text": "Less time behind the scenes, more time with guests. Reconciling sales across POS, online and marketplaces, re-keying stock counts, building rotas by hand, stitching together weekly footfall reports."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Steps",
+        "props": {
+          "index": "03",
+          "eyebrow": "Same foundation, your shape",
+          "headline": "How we",
+          "highlight": "tailor it.",
+          "body": "The method never changes. What we point it at does: your tools, your workflows, your numbers.",
+          "items": [
+            {
+              "title": "We learn your world",
+              "text": "Before we build anything, we sit inside the work: your systems, your handoffs, the steps no one wrote down. That's where the hours hide."
+            },
+            {
+              "title": "We map the leaks",
+              "text": "Universal drains and the ones unique to your sector, scored against our eight pillars, so you see exactly where the time goes."
+            },
+            {
+              "title": "We become the fix",
+              "text": "We don't advise and leave. We embed as your foundation and rebuild the flow until those hours come back to you."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "Your sector, your deep dive",
+          "headline": "Let's start with",
+          "highlight": "your world.",
+          "body": "Book a deep dive and we'll show you the hours your industry is quietly losing, and how we buy them back.",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#",
+          "email": "dx@greatstonesoftware.co.uk"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "proof",
+    "title": "Proof",
+    "background": "stone-summit",
+    "seo": {
+      "title": "Proof · Greatstone International",
+      "description": "Real results from real engagements: hours given back, first-year ROI, payback inside a quarter. Anonymised case studies in real estate, healthcare and logistics.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "kicker": "Proof, not promises",
+          "headline": "We could show you someone else's ROI.",
+          "highlight": "Yours is the one that matters.",
+          "body": "Every number below came from a real engagement, anonymised but earned. They are the floor, not the ceiling. The only result that counts is the one we build inside your business. We don't advise from the sidelines: we become your foundation, and we leave no stone unturned.",
+          "align": "left",
+          "size": "full",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#"
+        }
+      },
+      {
+        "type": "StatStrip",
+        "props": {
+          "index": "01",
+          "eyebrow": "Headline results",
+          "headline": "The floor, not the ceiling.",
+          "highlight": "Measured, not theoretical.",
+          "body": "Drawn from real engagements across the book of work.",
+          "stats": [
+            {
+              "value": 12,
+              "suffix": "hrs",
+              "dec": 0,
+              "label": "given back per knowledge worker, every week"
+            },
+            {
+              "value": 3.4,
+              "suffix": "×",
+              "dec": 1,
+              "label": "first-year ROI on the average engagement"
+            },
+            {
+              "value": 6,
+              "suffix": "wks",
+              "dec": 0,
+              "label": "to first value, measurable, not theoretical"
+            },
+            {
+              "value": 90,
+              "suffix": "%",
+              "dec": 0,
+              "label": "adoption of what we build, ninety days in"
+            }
+          ]
+        }
+      },
+      {
+        "type": "Pillars",
+        "props": {
+          "index": "02",
+          "eyebrow": "Selected engagements",
+          "headline": "The drain we found.",
+          "highlight": "The foundation we left.",
+          "body": "Names withheld, outcomes intact. Three businesses, three quiet leaks of time, closed.",
+          "items": [
+            {
+              "title": "National real-estate group: listings that took days now take minutes.",
+              "text": "The drain: agents re-keyed every listing across four disconnected systems, hours lost per property, errors compounding. We built a single source of truth with automated syndication and an internal portal their teams actually wanted to use. Result: 9 hrs saved per agent each week."
+            },
+            {
+              "title": "Regional healthcare provider: less time on the form, more time on the patient.",
+              "text": "The drain: clinical admin swallowed a third of every shift, paper handoffs, duplicate data entry, manual scheduling. We built a compliant intake-to-record workflow with automated triage routing and a staff-facing dashboard. Result: 31% drop in admin time per clinician."
+            },
+            {
+              "title": "Multi-site logistics operator: one screen replaced a wall of spreadsheets.",
+              "text": "The drain: dispatch ran on spreadsheets and phone calls, no live view, costly idle trucks, firefighting daily. We built a real-time operations layer with predictive routing and exception alerts wired to their existing fleet. Result: 3.4× return inside the first year."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Chapter",
+        "props": {
+          "index": "03",
+          "eyebrow": "Return on investment",
+          "headline": "Paid back before",
+          "highlight": "the quarter's out.",
+          "body": "On a typical engagement, the investment is recovered in the first few months (roughly 3.5 months to break even). Everything after that line is time and money handed back to the business, every week, compounding. The first stretch recovers the investment; the rest of the year is pure return.",
+          "coda": "Day one to year one: the line moves in your favour.",
+          "align": "left"
+        }
+      },
+      {
+        "type": "Chapter",
+        "props": {
+          "index": "04",
+          "eyebrow": "In their words",
+          "headline": "They didn't hand us a deck",
+          "highlight": "and leave.",
+          "body": "\"They moved in, found the hours we were losing, and gave them back.\"",
+          "coda": "Operations Director, national real-estate group",
+          "align": "center"
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "Your number is waiting",
+          "headline": "The next case study on this page",
+          "highlight": "could be yours.",
+          "body": "Book a Deep Dive and we'll find the hours your business is quietly losing, then show you exactly what reclaiming them is worth.",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#",
+          "email": "dx@greatstonesoftware.co.uk"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "about",
+    "title": "About",
+    "background": "stone-summit",
+    "seo": {
+      "title": "About · Greatstone International",
+      "description": "Twenty years embedded, not advisory. Greatstone finds the hours a business is quietly losing and wins them back, becoming the foundation you build the next twenty years on.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "kicker": "Our Story",
+          "headline": "Twenty years deep.",
+          "highlight": "Embedded, not advisory.",
+          "body": "We have spent two decades learning where businesses quietly lose their hours, and how to win them back. We do not hand you a deck and leave. We become the foundation you build the next twenty years on.",
+          "align": "left",
+          "size": "full",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#"
+        }
+      },
+      {
+        "type": "StatStrip",
+        "props": {
+          "index": "01",
+          "eyebrow": "Our Story",
+          "headline": "Two decades, eight pillars,",
+          "highlight": "no stone unturned.",
+          "body": "The shape of the work, in three numbers.",
+          "stats": [
+            {
+              "value": 20,
+              "suffix": "",
+              "dec": 0,
+              "label": "Years building the foundations others stand on"
+            },
+            {
+              "value": 8,
+              "suffix": "",
+              "dec": 0,
+              "label": "Pillars we assess every business against"
+            },
+            {
+              "value": 0,
+              "suffix": "",
+              "dec": 0,
+              "label": "Stones left unturned, by design"
+            }
+          ]
+        }
+      },
+      {
+        "type": "Chapter",
+        "props": {
+          "index": "02",
+          "eyebrow": "The Long Road",
+          "headline": "From a single fix",
+          "highlight": "to a foundation.",
+          "body": "The short version of a twenty-year story. We started where most good things start: a single client, a process bleeding time, and a refusal to accept that this is just how it works here. We will sharpen the dates and detail with you.",
+          "coda": "The relationships outlived the briefs, which is exactly the point.",
+          "align": "left"
+        }
+      },
+      {
+        "type": "Steps",
+        "props": {
+          "index": "03",
+          "eyebrow": "The Long Road",
+          "headline": "How the method",
+          "highlight": "took shape.",
+          "body": "Twenty years, told as five milestones. Real direction, dates we will firm up with you.",
+          "items": [
+            {
+              "title": "2005 · One business, one problem worth solving",
+              "text": "A single client, a process bleeding time, and a refusal to accept that this is just how it works here was the answer."
+            },
+            {
+              "title": "2011 · Advice was not enough",
+              "text": "We kept watching good recommendations die on the shelf. So we stopped advising and started building, sitting inside the business until the change actually shipped. The embedded model was born."
+            },
+            {
+              "title": "2016 · The eight pillars took shape",
+              "text": "Years of deep dives became a method. Eight pillars we could assess any business against, so the work stopped being guesswork and started being a map."
+            },
+            {
+              "title": "2021 · From projects to partnerships",
+              "text": "Clients stopped hiring us for one thing and started keeping us as their foundation. The relationships outlived the briefs, which is exactly the point."
+            },
+            {
+              "title": "Today · Buying back the hours, at scale",
+              "text": "Same belief, broader reach. We find the time a business is quietly losing, we win it back, and we leave no stone unturned getting there."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Pillars",
+        "props": {
+          "index": "04",
+          "eyebrow": "What We Stand On",
+          "headline": "Four values.",
+          "highlight": "No slideware.",
+          "body": "What the work rests on, when the deck is closed.",
+          "items": [
+            {
+              "title": "We leave no stone unturned",
+              "text": "The answer is usually hiding in the part everyone agreed to ignore. We look there first."
+            },
+            {
+              "title": "We become the foundation",
+              "text": "Not a vendor you manage. A layer you build on. We sit inside the work until it holds without us."
+            },
+            {
+              "title": "Plain over clever",
+              "text": "If we cannot explain it to the person who has to live with it, we have not finished the job."
+            },
+            {
+              "title": "Outcomes, not slideware",
+              "text": "We measure ourselves in hours returned and decisions made, never in decks delivered."
+            }
+          ]
+        }
+      },
+      {
+        "type": "FeatureGrid",
+        "props": {
+          "kicker": "The People",
+          "heading": "Senior hands, on the floor with you.",
+          "items": [
+            {
+              "title": "Ben Mensah",
+              "text": "Founder and CEO"
+            },
+            {
+              "title": "John Prempeh",
+              "text": "Senior DX Executive"
+            },
+            {
+              "title": "Naa Ayokor Harding",
+              "text": "Product Manager"
+            },
+            {
+              "title": "Principal Engineer",
+              "text": "Named once we confirm who is on your engagement."
+            },
+            {
+              "title": "Delivery Lead",
+              "text": "Named once we confirm who is on your engagement."
+            },
+            {
+              "title": "Design Director",
+              "text": "Named once we confirm who is on your engagement."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "Start Here",
+          "headline": "Let us find the hours you are",
+          "highlight": "quietly losing.",
+          "body": "A deep dive is two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#",
+          "email": "dx@greatstonesoftware.co.uk"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "insights",
+    "title": "Insights",
+    "background": "stone",
+    "seo": {
+      "title": "Insights · Greatstone International",
+      "description": "Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "kicker": "Insights",
+          "headline": "Field notes from",
+          "highlight": "the foundation.",
+          "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No theory for theory's sake. We leave no stone unturned.",
+          "align": "left",
+          "size": "full"
+        }
+      },
+      {
+        "type": "Chapter",
+        "props": {
+          "index": "01",
+          "eyebrow": "Featured · AI & Automation",
+          "headline": "The hours your business is quietly losing,",
+          "highlight": "and how to get them back.",
+          "body": "A field-level look at where time actually leaks: the manual handoffs, the duplicated tools, the approvals that wait on a single inbox. We map a week of real work and show what a foundation gives back when it embeds rather than advises.",
+          "coda": "8 min read.",
+          "align": "left"
+        }
+      },
+      {
+        "type": "Pillars",
+        "props": {
+          "index": "02",
+          "eyebrow": "The notes",
+          "headline": "Written from inside the work,",
+          "highlight": "not the sidelines.",
+          "body": "Filtered across AI and automation, digital maturity, industry and adoption. Each piece comes from time spent embedded, not observing.",
+          "items": [
+            {
+              "title": "Why your AI spend isn't paying back yet.",
+              "text": "Most AI budgets buy tools, not outcomes. Here's the gap between a licence and a habit, and how we close it inside the team. 6 min read."
+            },
+            {
+              "title": "The week your team never gets back.",
+              "text": "We tracked one ordinary week across an operations team. The hours lost to copy-paste, context-switching and waiting were not small. 5 min read."
+            },
+            {
+              "title": "Pebble, plateau, peak: a maturity map.",
+              "text": "A plain-language way to place where you really are across the eight pillars, and what the next honest step looks like from here. 9 min read."
+            },
+            {
+              "title": "What 'digital-first' means when the work is physical.",
+              "text": "Field, trade and operations businesses don't need an app for everything. They need the right few. We sort the signal from the demos. 7 min read."
+            },
+            {
+              "title": "Automate the boring before the brilliant.",
+              "text": "The highest-return automations are rarely the flashy ones. We start where the friction is quiet, daily and unloved, then build up. 4 min read."
+            },
+            {
+              "title": "Tools don't transform teams. Habits do.",
+              "text": "Rollout isn't go-live. We stay embedded past launch because the value lives in week six, not week one, when the new way becomes the only way. 6 min read."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "The Foundation Brief",
+          "headline": "Field notes, in your inbox.",
+          "highlight": "No noise.",
+          "body": "One considered read a month on time, maturity and adoption, written from inside the work, not the sidelines.",
+          "ctaLabel": "Subscribe",
+          "ctaHref": "#",
+          "email": "dx@greatstonesoftware.co.uk"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "climb",
+    "title": "The Climb",
+    "background": "summit",
+    "seo": {
+      "title": "The Climb · Greatstone International",
+      "description": "Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up across all eight pillars of the method.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "kicker": "The Climb",
+          "headline": "Pebble. Plateau.",
+          "highlight": "Peak.",
+          "body": "Every business sits somewhere on the mountain. We meet you where you are, and we climb. No vanity scores, no theatre. Just a clear read of where you stand and the shortest honest route up.",
+          "prompt": "Scroll to climb",
+          "align": "left",
+          "size": "full"
+        }
+      },
+      {
+        "type": "Pillars",
+        "props": {
+          "index": "01",
+          "eyebrow": "The maturity map",
+          "headline": "Three tiers, base to",
+          "highlight": "summit.",
+          "body": "Altitude is read in three bands. Pebble at the base, plateau on the shelf, peak at the summit. The trail climbs from one to the next.",
+          "items": [
+            {
+              "title": "Pebble · 1 to 4 · Surviving",
+              "text": "Manual, reactive, held together by heroics. The work gets done, but it costs hours nobody is counting. Manual, reactive, siloed."
+            },
+            {
+              "title": "Plateau · 5 to 7 · Organised",
+              "text": "Process exists, some automation has landed, things are improving. But momentum stalls without a clear next move. Structured, automating, improving."
+            },
+            {
+              "title": "Peak · 8 to 10 · Compounding",
+              "text": "Intelligent, integrated, ahead of the curve. Every system feeds the next and the gains stack on themselves. Intelligent, compounding, ahead."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Steps",
+        "props": {
+          "index": "02",
+          "eyebrow": "Where your organisation sits",
+          "headline": "Lagger to",
+          "highlight": "Pioneer.",
+          "body": "Altitude isn't a verdict, it's a starting line. Here's the same climb read as a posture, dim to lime.",
+          "items": [
+            {
+              "title": "Lagger · Score under 3",
+              "text": "Behind the field and feeling it. The basics aren't in place, so every day leaks time to work that should run itself."
+            },
+            {
+              "title": "Follower · Score 3 to 5",
+              "text": "Keeping pace by watching others. Capable, but reactive: reacting to the market instead of shaping your own move."
+            },
+            {
+              "title": "Leader · Score 6 to 8",
+              "text": "Out in front in your category. Systems compound, decisions move fast, and the hours you bought back fund the next gain."
+            },
+            {
+              "title": "Pioneer · Score 9 to 10",
+              "text": "Setting the standard others chase. Intelligent by default: the foundation is so deep that growth feels inevitable."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Chapter",
+        "props": {
+          "index": "03",
+          "eyebrow": "The climb meets the method",
+          "headline": "We score all eight. Then climb the",
+          "highlight": "lowest first.",
+          "body": "Your altitude isn't one number, it's eight. We assess you across all eight pillars of the method (data, process, people, systems, security, experience, insight, growth), find the one holding the whole climb back, and start there.",
+          "coda": "We leave no stone unturned.",
+          "align": "left"
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "Find your altitude",
+          "headline": "Let's find out where you",
+          "highlight": "stand.",
+          "body": "A deep dive scores you across all eight pillars and hands you the route up: pebble, plateau, or peak. The climb starts with one honest read.",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#",
+          "email": "dx@greatstonesoftware.co.uk"
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "name": "greatstone-puck-proof",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Proof: the Greatstone front-end native in React, with Puck as the in-app visual editor and the bespoke three.js as a React component.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@measured/puck": "^0.20.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.0"
+  }
+}

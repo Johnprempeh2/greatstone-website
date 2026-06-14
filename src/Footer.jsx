@@ -1,0 +1,28 @@
+const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+
+// The real site footer (uses site.css .site-footer classes verbatim), so the studio closes
+// the page exactly like the live site. Global chrome, shown in view mode only.
+export default function Footer({ order, pages, onNavigate }) {
+  const year = new Date().getFullYear();
+  return (
+    <footer className="site-footer">
+      <svg className="foot-wave" viewBox="0 0 500 500" fill="none" aria-hidden="true">
+        <g stroke="var(--gs-accent)" strokeWidth="0.8" fill="none" opacity="0.5">
+          <path d="M500 40 Q392 72 344 154 Q296 236 318 338 Q340 440 424 486" />
+          <path d="M468 64 Q372 96 328 170 Q284 244 304 334 Q324 424 396 466" />
+          <path d="M436 88 Q352 120 312 186 Q272 252 290 330 Q308 408 368 446" />
+          <path d="M404 112 Q332 144 296 202 Q260 260 276 326 Q292 392 340 426" />
+        </g>
+      </svg>
+      <div className="logo"><img src={LOGO} alt="Greatstone International" /></div>
+      <div className="tagline">The Foundation of Digital Excellence</div>
+      <nav className="foot-links">
+        {order.map((slug) => (
+          <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title}</a>
+        ))}
+      </nav>
+      <a className="mail" href="mailto:dx@greatstonesoftware.co.uk">dx@greatstonesoftware.co.uk</a>
+      <div className="legal">© {year} Greatstone International Ltd. All rights reserved.</div>
+    </footer>
+  );
+}

@@ -1,0 +1,141 @@
+/* Studio chrome: the view-mode site header, the edit-mode toolbar injected into Puck, and the
+   dark overlays (command palette, slide-over panels, toast). The 3D stage + public layer live
+   in index.css. */
+
+/* ---------- view-mode site header ---------- */
+.gs-header{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:18px;
+  padding:14px clamp(16px,3vw,30px);background:linear-gradient(to bottom,rgba(16,18,16,.86),rgba(16,18,16,0));backdrop-filter:blur(2px)}
+.gs-logo img{width:138px;display:block}
+.gs-nav{display:flex;align-items:center;gap:4px;flex:1;flex-wrap:wrap}
+.gs-navlink{background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;
+  letter-spacing:.02em;color:var(--gs-muted);padding:8px 12px;border-radius:8px;transition:color .2s,background .2s}
+.gs-navlink:hover{color:var(--gs-text);background:rgba(255,255,255,.04)}
+.gs-navlink.is-active{color:var(--gs-accent)}
+.gs-nomatch{font-size:.78rem;color:var(--gs-faint)}
+
+.gs-tools{display:flex;align-items:center;gap:10px}
+.gs-cmdbtn{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
+  border-radius:100px;padding:7px 12px;color:var(--gs-faint);cursor:pointer;transition:color .2s,border-color .2s}
+.gs-cmdbtn:hover{color:var(--gs-text);border-color:var(--gs-border)}
+.gs-cmdbtn kbd{font-family:'Montserrat',sans-serif;font-size:.62rem;font-weight:800;letter-spacing:.04em;color:inherit}
+.gs-search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
+  border-radius:100px;padding:7px 14px;color:var(--gs-faint)}
+.gs-search input{background:none;border:0;outline:0;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.8rem;width:120px}
+.gs-search input::placeholder{color:var(--gs-faint)}
+.gs-bg{display:flex;align-items:center;gap:7px;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-faint)}
+.gs-bg select{background:rgba(255,255,255,.05);color:var(--gs-text);border:1px solid var(--gs-border-soft);border-radius:8px;
+  padding:7px 9px;font-family:'Montserrat',sans-serif;font-size:.78rem;cursor:pointer}
+.gs-bg.dark{color:#5a5f59} .gs-bg.dark select{background:#fff;color:#111;border-color:#ddd}
+
+.gs-btn{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;border-radius:100px;padding:9px 16px;cursor:pointer;
+  border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s}
+.gs-btn:hover{transform:translateY(-1px)}
+.gs-btn.sm{padding:7px 12px;font-size:.74rem}
+.gs-btn.primary{background:var(--gs-accent);color:#0e1611}
+.gs-btn.ghost{background:rgba(255,255,255,.05);border-color:var(--gs-border-soft);color:var(--gs-text)}
+.gs-signout{background:none;border:0;color:var(--gs-faint);font-family:'Montserrat',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;padding:6px 4px;transition:color .2s}
+.gs-signout:hover{color:var(--gs-text)}
+
+@media(max-width:760px){
+  .gs-header{flex-wrap:wrap;gap:10px}
+  .gs-search{display:none}
+  .gs-nav{order:3;flex-basis:100%}
+}
+
+/* ---------- edit-mode toolbar (injected into Puck's light header) ---------- */
+.gs-edit-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gs-edit-actions .gs-btn.ghost{background:#f1f1f1;border-color:#e2e2e2;color:#111}
+.gs-edit-name{font-weight:800;font-size:.82rem;color:#111}
+.gs-statusctl{display:inline-flex;align-items:center;gap:7px;background:#f5f5f5;border:1px solid #e2e2e2;border-radius:100px;padding:5px 10px}
+.gs-statusctl .gs-dot{width:8px;height:8px;border-radius:50%;background:#9aa0a6}
+.gs-statusctl[data-status="draft"] .gs-dot{background:#9aa0a6}
+.gs-statusctl[data-status="review"] .gs-dot{background:#f5a623}
+.gs-statusctl[data-status="approved"] .gs-dot{background:#4ecdc4}
+.gs-statusctl[data-status="published"] .gs-dot{background:#39b34a}
+.gs-statusctl select{border:0;background:none;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.74rem;color:#111;cursor:pointer;outline:0}
+.gs-saved{font-size:.72rem;font-weight:700;color:#39b34a;display:inline-flex;align-items:center;gap:6px}
+.gs-saved.is-draft{color:#b8860b}
+.gs-saved .gs-link{background:none;border:0;color:#b8860b;font-weight:800;text-decoration:underline;cursor:pointer;font-size:.72rem}
+
+/* dark editor canvas: make Puck's canvas transparent so the real dark site + live 3D show through */
+.is-edit [class*="PuckCanvas_"]{background:transparent !important}
+.is-edit [class*="PuckCanvas-root"]{background:transparent !important}
+.is-edit{min-height:100vh;background:
+  radial-gradient(1100px 760px at 80% -8%,rgba(27,80,57,.28),transparent 60%),
+  radial-gradient(900px 700px at 2% 110%,rgba(14,49,34,.36),transparent 58%),var(--gs-bg)}
+.is-edit [class*="DropZone"]{outline-color:rgba(200,255,0,.3) !important}
+/* in the editor, never leave a block hidden by its scroll-reveal — show everything flat */
+.is-edit [data-reveal]{opacity:1 !important;transform:none !important}
+.is-view{min-height:100vh}
+
+/* ---------- command palette ---------- */
+.gs-cmd-backdrop{position:fixed;inset:0;z-index:2000;background:rgba(8,10,8,.55);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-start;justify-content:center;padding-top:14vh;animation:gsFade .14s var(--gs-ease)}
+.gs-cmd{width:min(620px,92vw);background:#1a1c1a;border:1px solid var(--gs-border);border-radius:16px;overflow:hidden;
+  box-shadow:0 40px 120px -30px rgba(0,0,0,.8);animation:gsPop .16s var(--gs-ease)}
+.gs-cmd-search{display:flex;align-items:center;gap:11px;padding:16px 18px;border-bottom:1px solid var(--gs-border-soft);color:var(--gs-faint)}
+.gs-cmd-search input{flex:1;background:none;border:0;outline:0;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:1rem}
+.gs-cmd-search kbd{font-size:.64rem;font-weight:800;color:var(--gs-faint);border:1px solid var(--gs-border-soft);border-radius:6px;padding:2px 6px}
+.gs-cmd-list{list-style:none;max-height:48vh;overflow-y:auto;padding:8px}
+.gs-cmd-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer}
+.gs-cmd-item.is-sel{background:rgba(200,255,0,.1)}
+.gs-cmd-item.is-disabled{opacity:.4;cursor:default}
+.gs-cmd-group{font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-faint);
+  min-width:74px}
+.gs-cmd-label{flex:1;font-size:.9rem;font-weight:600;color:var(--gs-text)}
+.gs-cmd-item.is-sel .gs-cmd-label{color:#fff}
+.gs-cmd-hint{font-size:.72rem;color:var(--gs-accent);font-weight:700}
+.gs-cmd-empty{padding:22px 14px;text-align:center;color:var(--gs-faint);font-size:.86rem}
+
+/* ---------- slide-over panels (SEO, history) ---------- */
+.gs-panel{position:fixed;top:0;right:0;bottom:0;z-index:1500;width:min(420px,94vw);background:#161816;
+  border-left:1px solid var(--gs-border);box-shadow:-30px 0 80px -30px rgba(0,0,0,.7);display:flex;flex-direction:column;
+  animation:gsSlide .22s var(--gs-ease)}
+.gs-panel-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--gs-border-soft)}
+.gs-panel-head h3{font-size:1rem;font-weight:800;color:var(--gs-text)}
+.gs-x{background:none;border:0;color:var(--gs-faint);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px}
+.gs-x:hover{color:var(--gs-text)}
+.gs-panel-body{padding:20px;overflow-y:auto}
+.gs-field{display:block;margin-bottom:18px}
+.gs-field-label{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:800;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--gs-faint);margin-bottom:8px}
+.gs-meter{font-style:normal;font-size:.66rem;font-weight:700;text-transform:none;letter-spacing:0}
+.gs-meter.is-ok{color:#39b34a} .gs-meter.is-warn{color:#f5a623} .gs-meter.is-empty{color:var(--gs-faint)}
+.gs-field input,.gs-field textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:10px;
+  padding:11px 13px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.88rem;outline:0;resize:vertical}
+.gs-field input:focus,.gs-field textarea:focus{border-color:var(--gs-border)}
+.gs-preview-label{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-faint);margin:20px 0 10px}
+.gs-serp{background:#fff;border-radius:10px;padding:14px 16px}
+.gs-serp-url{font-size:.74rem;color:#202124}
+.gs-serp-title{font-size:1.04rem;color:#1a0dab;font-weight:500;margin-top:3px;line-height:1.3}
+.gs-serp-desc{font-size:.8rem;color:#4d5156;margin-top:4px;line-height:1.5}
+.gs-social{margin-top:6px;border:1px solid var(--gs-border-soft);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.02)}
+.gs-social-img{aspect-ratio:1.91/1;background:linear-gradient(135deg,#16432f,#0e3122);background-size:cover;background-position:center;
+  display:flex;align-items:center;justify-content:center}
+.gs-social-img span{font-size:.72rem;color:var(--gs-faint);text-transform:uppercase;letter-spacing:.1em}
+.gs-social-meta{padding:12px 14px}
+.gs-social-domain{font-size:.7rem;color:var(--gs-faint);text-transform:uppercase;letter-spacing:.05em}
+.gs-social-title{font-size:.92rem;font-weight:700;color:var(--gs-text);margin-top:4px;line-height:1.3}
+.gs-social-desc{font-size:.78rem;color:var(--gs-muted);margin-top:3px;line-height:1.5}
+.gs-empty{font-size:.86rem;color:var(--gs-faint);line-height:1.6}
+
+.gs-versions{list-style:none;position:relative}
+.gs-versions::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--gs-border-soft)}
+.gs-version{display:flex;align-items:center;gap:14px;padding:12px 0;position:relative}
+.gs-version-dot{width:11px;height:11px;border-radius:50%;background:var(--gs-accent);flex:none;z-index:1;box-shadow:0 0 0 4px #161816}
+.gs-version-main{flex:1}
+.gs-version-top{display:flex;align-items:center;gap:8px}
+.gs-version-label{font-size:.86rem;font-weight:700;color:var(--gs-text)}
+.gs-version-tag{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0e1611;background:var(--gs-accent);
+  border-radius:100px;padding:2px 7px}
+.gs-version-when{font-size:.74rem;color:var(--gs-faint);margin-top:2px}
+
+/* ---------- toast ---------- */
+.gs-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2500;background:#1a1c1a;border:1px solid var(--gs-border);
+  color:var(--gs-text);font-size:.84rem;font-weight:600;padding:12px 20px;border-radius:100px;box-shadow:0 20px 60px -20px rgba(0,0,0,.7);
+  animation:gsToastIn .2s var(--gs-ease)}
+
+@keyframes gsFade{from{opacity:0}to{opacity:1}}
+@keyframes gsPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes gsSlide{from{transform:translateX(20px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes gsToastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}

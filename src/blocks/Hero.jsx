@@ -1,0 +1,77 @@
+import { useReveal } from './reveal.js';
+import { Arrow } from './icons.jsx';
+
+// THE BLOCK CONTRACT (every block file follows this):
+//   export function X(props)      — the React component; renders public + editor canvas.
+//   export const css              — the block's own scoped styles (aggregated into one <style>).
+//   export const puck             — Puck config fragment { label, fields, defaultProps, permissions?, render }.
+// Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
+// swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
+// and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
+export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#' }) {
+  const ref = useReveal();
+  return (
+    <section ref={ref} className={`b-hero size-${size} align-${align}`}>
+      <div className="wrap b-hero-inner">
+        {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
+        <h1 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h1>
+        {body ? <p className="lede" data-reveal>{body}</p> : null}
+        {ctaLabel ? <a className="b-cta" href={ctaHref} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {prompt ? <span className="b-hero-prompt" data-reveal>{prompt}</span> : null}
+      </div>
+    </section>
+  );
+}
+
+export const css = `
+.b-hero{position:relative;display:flex;align-items:center}
+.b-hero.size-full{min-height:100vh}
+.b-hero.size-standard{min-height:72vh;padding:clamp(80px,14vh,160px) 0}
+.b-hero.align-center{text-align:center}
+.b-hero.align-center.size-full{padding-top:72px}
+.b-hero-inner{max-width:660px;position:relative;z-index:2}
+.b-hero.align-center .b-hero-inner{max-width:1040px;margin-inline:auto}
+/* matches the live homepage .hero-title scale exactly */
+.b-hero h1{font-weight:900;line-height:1.02;letter-spacing:-2.5px;font-size:clamp(40px,6.2vw,84px);
+  text-shadow:0 2px 60px rgba(0,0,0,.6);margin-top:20px}
+.b-hero .lede{margin-top:24px;color:var(--gs-text-muted);font-size:clamp(15px,1.4vw,18px);line-height:1.8;max-width:560px;
+  text-shadow:0 2px 30px rgba(0,0,0,.7)}
+.b-hero.align-center .lede{margin-inline:auto}
+.b-hero .b-cta{margin-top:30px}
+/* matches the live homepage .hero-cue */
+.b-hero-prompt{display:inline-flex;align-items:center;gap:.6em;margin-top:30px;font-size:10px;font-weight:700;
+  letter-spacing:2.5px;text-transform:uppercase;color:var(--gs-text-faint)}
+.b-hero-prompt::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--gs-accent))}
+.b-hero.align-center .b-hero-prompt{justify-content:center}
+`;
+
+export const puck = {
+  label: 'Hero',
+  permissions: { delete: false }, // the page hero is structural; protected in code, not trust
+  fields: {
+    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
+    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
+    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    prompt: { type: 'text', label: 'Cursor prompt (optional)', contentEditable: true },
+    align: { type: 'radio', label: 'Alignment', options: [
+      { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
+    ]},
+    size: { type: 'radio', label: 'Height', options: [
+      { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' },
+    ]},
+    ctaLabel: { type: 'text', label: 'Button label (optional)' },
+    ctaHref: { type: 'text', label: 'Button link' },
+  },
+  defaultProps: {
+    kicker: 'The Foundation of Digital Excellence',
+    headline: 'We don’t decorate businesses with technology.',
+    highlight: 'We build what holds everything up.',
+    body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
+    prompt: 'Move your cursor. The stone responds',
+    align: 'left', size: 'full', ctaLabel: '', ctaHref: '#',
+  },
+  render: (props) => <Hero {...props} />,
+};
+
+export default Hero;

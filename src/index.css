@@ -1,0 +1,29 @@
+/* Studio-only additions on top of the real site.css. Tokens, body atmosphere, type scale and
+   primitives (.wrap/.kicker/.accent/.lead/.card/.btn/.section/footer) all come from site.css so
+   the studio renders with the live site's exact design system. Here we add only what the static
+   site doesn't need: aliases the blocks use, the JS-driven scroll-reveal, and the 3D stage. */
+
+/* aliases so block CSS can use the short token names */
+:root{ --gs-muted:var(--gs-text-muted); --gs-faint:var(--gs-text-faint); }
+
+/* shared CTA (matches site.css .btn--primary) used by Hero + Invite */
+.b-cta{display:inline-flex;align-items:center;gap:.6em;background:var(--gs-accent);color:#0e1611;font-weight:700;font-size:.95rem;
+  padding:.9em 1.7em;border-radius:100px;transition:transform var(--gs-dur) var(--gs-ease),box-shadow var(--gs-dur) var(--gs-ease)}
+.b-cta:hover{transform:translateY(-2px);box-shadow:0 12px 44px -12px var(--gs-accent-glow)}
+@keyframes gsDrift{0%{transform:translate3d(-3%,-2%,0) scale(1.02)}100%{transform:translate3d(4%,3%,0) scale(1.08)}}
+
+/* confident, restrained entrance, set once and never re-hidden (JS adds .is-in) */
+[data-reveal]{opacity:0;transform:translateY(22px);transition:opacity .7s var(--gs-ease),transform .7s var(--gs-ease)}
+[data-reveal].is-in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none;transition:none}}
+
+/* the persistent 3D stage: one fixed layer behind the page, with cross-fading scenes */
+.gs-stage{position:fixed;inset:0;z-index:0;pointer-events:none}
+.gs-stage .gs-layer{position:absolute;inset:0}
+.gs-stage .gs-layer canvas{width:100%;height:100%;display:block}
+.gs-scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(60% 50% at 50% 50%,transparent,rgba(18,18,18,.35) 80%)}
+
+/* the public render layer + footer sit over the stage */
+.gs-public{position:relative;z-index:2}
+.site-footer{position:relative;z-index:2;background:linear-gradient(to top,rgba(12,14,12,.6),transparent)}
