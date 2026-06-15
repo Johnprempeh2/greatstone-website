@@ -12,7 +12,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 12;
+const SCHEMA = 13;
 
 let _seq = 0;
 // one canonical id generator (block/scene/asset ids must be unique within a page — they key both
@@ -35,6 +35,58 @@ function seedPage(title, background, content, seo, status = 'published') {
 // the `publish` capability (admins); editors propose by requesting review.
 export const TRANSITIONS = { draft: ['review'], review: ['approved', 'draft'], approved: ['published', 'draft'], published: ['draft'] };
 export const canTransition = (from, to) => !!(TRANSITIONS[from] && TRANSITIONS[from].includes(to));
+
+// ---- product catalogue (north-star: Products + e-commerce) ----
+// A CMS-native catalogue: products organised by category, managed from inside the studio. This is
+// the prototype data model that maps 1:1 onto the dev team's Laravel Products/Categories tables.
+// Prices/licences are display-only here; real checkout + licence issuance is a backend handoff.
+const SEED_CATEGORIES = [
+  { id: 'cat-platform', name: 'Platforms', slug: 'platforms', blurb: 'The foundations everything else is built on.' },
+  { id: 'cat-automation', name: 'Automation & Workflow', slug: 'automation', blurb: 'Take the manual, repetitive work off your team’s plate.' },
+  { id: 'cat-data', name: 'Data & Integration', slug: 'data', blurb: 'Make your systems talk, and your numbers tell the truth.' },
+];
+const SEED_PRODUCTS = [
+  { id: 'prod-bedrock', name: 'Bedrock Platform', category: 'cat-platform', price: 'From £12,000', period: '/year', licence: 'Site licence', badge: 'Core', status: 'active',
+    summary: 'The Greatstone delivery platform: workspaces, roles and audited workflows on one foundation your whole organisation builds on.',
+    features: ['Unlimited workspaces', 'Role-based access + audit log', 'Bedrock API + webhooks', 'SSO-ready'] },
+  { id: 'prod-slate', name: 'Slate Workflow', category: 'cat-automation', price: 'From £180', period: '/seat/year', licence: 'Per-seat', badge: 'Popular', status: 'active',
+    summary: 'Turn the processes living in inboxes and spreadsheets into governed, automated workflows, without writing code.',
+    features: ['Visual workflow builder', 'Approvals + SLAs', 'Bedrock-native', '120+ connectors'] },
+  { id: 'prod-quarry', name: 'Quarry Analytics', category: 'cat-data', price: 'From £6,000', period: '/year', licence: 'Site licence', badge: '', status: 'active',
+    summary: 'Operational analytics that read from the work itself, so the dashboard matches what actually happened.',
+    features: ['Live operational metrics', 'Self-serve exploration', 'Scheduled briefings', 'Warehouse export'] },
+  { id: 'prod-keystone', name: 'Keystone Integrations', category: 'cat-data', price: 'From £4,500', period: '/year', licence: 'Per-connection', badge: '', status: 'active',
+    summary: 'The integration layer that keeps your finance, CRM and operational systems in step, one source of truth, no copy-paste.',
+    features: ['Pre-built connectors', 'Two-way sync', 'Field-level mapping', 'Failure alerting'] },
+  { id: 'prod-mortar', name: 'Mortar Connect', category: 'cat-automation', price: 'From £95', period: '/seat/year', licence: 'Per-seat', badge: 'Legacy', status: 'legacy',
+    summary: 'Our original point-to-point connector suite. Still supported and sold for teams that depend on it; new builds use Keystone.',
+    features: ['Legacy connector library', 'Long-term support', 'Migration path to Keystone'] },
+];
+
+export function listCategories(state) { return (state && state.categories) || []; }
+export function listProducts(state, categoryId) {
+  const all = (state && state.products) || [];
+  return categoryId ? all.filter((p) => p.category === categoryId) : all;
+}
+export function addProduct(state, product) {
+  const id = rid('prod');
+  const p = { id, name: 'New product', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], ...product, id };
+  return { ...state, products: [...(state.products || []), p] };
+}
+export function updateProduct(state, id, patch) {
+  return { ...state, products: (state.products || []).map((p) => (p.id === id ? { ...p, ...patch, id } : p)) };
+}
+export function removeProduct(state, id) {
+  return { ...state, products: (state.products || []).filter((p) => p.id !== id) };
+}
+export function addCategory(state, category) {
+  const id = rid('cat');
+  return { ...state, categories: [...(state.categories || []), { id, name: 'New category', slug: id, blurb: '', ...category, id }] };
+}
+export function removeCategory(state, id) {
+  // products in a removed category fall back to uncategorised (empty category)
+  return { ...state, categories: (state.categories || []).filter((c) => c.id !== id), products: (state.products || []).map((p) => (p.category === id ? { ...p, category: '' } : p)) };
+}
 
 export function seedState() {
   const pages = {
@@ -174,8 +226,17 @@ export function seedState() {
   seedPages.forEach((p) => {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
-  const order = ['home', 'method', 'services', 'industries', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
-  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {} };
+  pages.products = productsPage();
+  const order = ['home', 'method', 'services', 'industries', 'products', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
+  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, categories: SEED_CATEGORIES, products: SEED_PRODUCTS };
+}
+
+// the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
+function productsPage() {
+  return seedPage('Products', 'stone', [
+    blk('Hero', { kicker: 'Greatstone Software', headline: 'Software built on the same foundation.', highlight: 'Licensed, supported, yours.', body: 'The products our delivery teams build on, available to license directly. One platform, the tools around it, and the integrations that keep them honest.', align: 'center', size: 'standard', ctaLabel: 'Talk to us about licensing', ctaHref: '#book' }),
+    blk('Storefront', { heading: 'The catalogue', body: 'Every licence includes onboarding and support. Prices are a guide; talk to us for volume and multi-year terms.' }),
+  ], { title: 'Products — Greatstone International', description: 'Greatstone software products and licences: the Bedrock platform, Slate workflow automation, Quarry analytics and Keystone integrations.', ogImage: '' });
 }
 
 export function load() {
@@ -203,6 +264,16 @@ function migrate(state) {
   });
   if (!state.settings) state.settings = { background: 'stone-summit', siteName: 'Greatstone International' };
   if (!state.assets) state.assets = {};
+  // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
+  if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
+  if (!Array.isArray(state.products)) state.products = SEED_PRODUCTS;
+  if (!state.pages.products) {
+    state.pages.products = productsPage();
+    if (!state.order.includes('products')) {
+      const at = state.order.indexOf('industries');
+      state.order.splice(at >= 0 ? at + 1 : state.order.length, 0, 'products');
+    }
+  }
   state.schema = SCHEMA;
   return state;
 }

@@ -32,6 +32,7 @@ import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from '.
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
+import { CatalogContext } from './cms/CatalogContext.js';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -153,6 +154,7 @@ export default function App() {
 
   const page = state.pages[current] || state.pages[state.order[0]];
   const bg = page.background || state.settings.background || 'stone';
+  const catalog = { products: state.products || [], categories: state.categories || [] }; // for the Storefront block
   const hasUnpublished = useMemo(() => !eq(page.data, page.published), [page.data, page.published]);
 
   function flash(msg) {
@@ -367,6 +369,7 @@ export default function App() {
 
   if (mode === 'edit' && canEdit) {
     return (
+      <CatalogContext.Provider value={catalog}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
       <div className="is-edit">
         {overlays}
@@ -436,10 +439,12 @@ export default function App() {
         </EditorBoundary>
       </div>
       </MediaContext.Provider>
+      </CatalogContext.Provider>
     );
   }
 
   return (
+    <CatalogContext.Provider value={catalog}>
     <div className="is-view">
       {overlays}
       <a className="gs-skip" href="#gs-main">Skip to content</a>
@@ -457,5 +462,6 @@ export default function App() {
       </main>
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
     </div>
+    </CatalogContext.Provider>
   );
 }

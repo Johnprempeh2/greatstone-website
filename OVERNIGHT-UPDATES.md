@@ -340,3 +340,31 @@ north star is the repeated strategic headline and is large, the next several tur
 (content model + Catalog taxonomy + Products/Storefront block + management UX + prototype cart UI +
 backend handoff spec) then #20 Team/roles + invitations prototype. The remaining v3/v4 items (#13,
 #15, #17, #18) get done after, or roll into Round 2. Deploys still 500 server-side; dist staged.
+
+## Round 1 build cycles (cont.) — NORTH STAR
+
+**[02:00 BST] Item R1-#19 (part 1 of N) — Products catalogue foundation — BUILT, VERIFIED, COMMITTED.**
+- The first slice of the Products/e-commerce north star: a CMS-native product catalogue + a storefront
+  front-end. Designed to map 1:1 onto the dev team's Laravel Products/Categories tables.
+- Store: added a `products` + `categories` slice with CRUD (`listProducts`, `addProduct`,
+  `updateProduct`, `removeProduct`, `listCategories`, `addCategory`, `removeCategory`) and a seed
+  catalogue — 5 on-brand Greatstone software products (Bedrock Platform, Slate Workflow, Quarry
+  Analytics, Keystone Integrations, Mortar Connect [legacy]) across 3 categories (Platforms,
+  Automation & Workflow, Data & Integration). Schema 12→13; migration is ADDITIVE (backfills the
+  catalogue + a Products page on existing stores, never overwrites). `CatalogContext` provides the
+  catalogue to blocks (mirrors MediaContext), wrapped around both the public + editor render paths.
+- New `Storefront` block: renders the catalogue grouped by category with on-brand product cards
+  (badge, category tag, summary, features, price/period, licence, "Request a licence" → #book). NO
+  fake checkout — licence purchase is a backend handoff. Registered under a new "Commerce" drawer
+  group. Seeded a Products page (Hero + Storefront), added to nav after Industries.
+- Files: `src/store.js`, `src/cms/CatalogContext.js` (new), `src/blocks/Storefront.jsx` (new),
+  `src/puck.config.jsx`, `src/App.jsx`.
+- Verify: build PASS (145 modules). Preview: store migrated to schema 13 (5 products, 3 categories,
+  Products page added to order + nav); Products page renders the storefront — 5 cards in 3 category
+  groups, badges/CTAs correct; screenshot confirms on-brand design over the 3D stone. App mounts
+  clean on a hard reload (the only console errors are 16 frozen "[vite] Failed to reload" HMR
+  artifacts from the multi-edit sequence, not growing; production build is clean). PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+- NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
+  cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
+  licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
