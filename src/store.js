@@ -4,6 +4,7 @@
 // data-source change, not a rewrite.
 import seedPages from './seed-pages.json';
 import { config } from './puck.config.jsx';
+import { STAGE_OPTIONS } from './stage-presets.js';
 
 const KEY = 'gs-studio-v11';
 
@@ -209,6 +210,20 @@ export function removeAsset(state, id) {
 }
 export function listAssets(state) {
   return Object.values(state.assets || {}).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+}
+
+// ---- 3D background model ----
+// A page's background is either a preset id (string, what the seed + presets write) or the
+// granular { v, scenes, transitions } object the editor authors. normalizeBackground expands
+// the string form into the object so Stage + the editor only ever deal with one shape. The
+// string→object expansion of 'stone-summit' reproduces today's smoothstep(0.40,0.70) exactly
+// (at 0.55, fade 0.30). Idempotent: passing an object returns it unchanged.
+export function normalizeBackground(bg) {
+  if (bg && typeof bg === 'object' && Array.isArray(bg.scenes)) return bg;
+  const opt = STAGE_OPTIONS.find((o) => o.id === bg) || STAGE_OPTIONS[0];
+  const scenes = opt.scenes.map((kind) => ({ id: rid('sc'), kind }));
+  const transitions = scenes.slice(1).map(() => ({ id: rid('tr'), at: 0.55, fade: 0.30, anchor: { type: 'scroll' } }));
+  return { v: 1, scenes, transitions };
 }
 
 export function persist(state) {

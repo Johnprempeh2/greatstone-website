@@ -9,6 +9,7 @@ import CommandPalette from './cms/CommandPalette.jsx';
 import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
+import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets } from './store.js';
@@ -34,6 +35,7 @@ export default function App() {
   const [savedAt, setSavedAt] = useState(null);
   const [toast, setToast] = useState(null);
   const [puckKey, setPuckKey] = useState(0);        // bump to force Puck to re-read data
+  const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const toastTimer = useRef(null);
@@ -89,6 +91,7 @@ export default function App() {
   }
   function saveDraft(data) { patchPage(current, { data }); setSavedAt(Date.now()); }
   function setBg(kind) { patchPage(current, { background: kind }); }
+  function setBgModel(v) { patchPage(current, { background: v }); } // granular scene-track or preset id
   // enforced status machine + audit trail; approving needs publish rights
   function setStatus(to) {
     const from = page.status;
@@ -193,6 +196,7 @@ export default function App() {
         cmds.push({ id: 'preview', group: 'Editor', label: 'Preview (back to site)', run: () => setMode('view') });
         if (canPublish) cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
         cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
+        cmds.push({ id: 'bgpanel', group: 'Editor', label: 'Open 3D background editor', run: () => setPanel('background') });
         cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
         cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
         Object.entries(config.components).forEach(([type, def]) => cmds.push({ id: 'add-' + type, group: 'Add block', label: def.label, run: () => addBlock(type) }));
@@ -233,8 +237,9 @@ export default function App() {
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
       <div className="is-edit">
         {overlays}
-        <Stage background={bg} />
+        <Stage background={bg} previewP={previewP} />
         {panel === 'pages' && <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} />}
+        {panel === 'background' && <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => { setPreviewP(null); setPanel(null); }} />}
         {panel === 'seo' && <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onClose={() => setPanel(null)} />}
         {panel === 'history' && <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} />}
         <EditorBoundary key={'eb:' + current + ':' + puckKey} label="editor" onReset={discardDraft} resetLabel="Discard draft & recover">
@@ -255,7 +260,7 @@ export default function App() {
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
                   </select>
                 </label>
-                <button className="gs-btn ghost sm" onClick={() => setPanel('pages')}>Pages</button>
+                <button className={'gs-btn ghost sm' + (panel === 'pages' ? ' is-on' : '')} onClick={() => setPanel(panel === 'pages' ? null : 'pages')}>Pages</button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* state */}
                 <label className="gs-statusctl" data-status={page.status} title="Page status">
@@ -270,14 +275,9 @@ export default function App() {
                 </span>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* tools */}
-                <label className="gs-bg" title="3D background">
-                  <span>3D</span>
-                  <select value={bg} onChange={(e) => setBg(e.target.value)} aria-label="Background">
-                    {STAGE_OPTIONS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
-                  </select>
-                </label>
-                <button className="gs-btn ghost sm" onClick={() => setPanel('seo')}>SEO</button>
-                <button className="gs-btn ghost sm" onClick={() => setPanel('history')}>History</button>
+                <button className={'gs-btn ghost sm' + (panel === 'background' ? ' is-on' : '')} onClick={() => setPanel(panel === 'background' ? null : 'background')}>3D background</button>
+                <button className={'gs-btn ghost sm' + (panel === 'seo' ? ' is-on' : '')} onClick={() => setPanel(panel === 'seo' ? null : 'seo')}>SEO</button>
+                <button className={'gs-btn ghost sm' + (panel === 'history' ? ' is-on' : '')} onClick={() => setPanel(panel === 'history' ? null : 'history')}>History</button>
                 <button className="gs-btn ghost sm" onClick={() => setCmdOpen(true)} aria-label="Command palette" title="Command palette (⌘K)">⌘K</button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* account + publish */}
