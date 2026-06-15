@@ -46,7 +46,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
         <img src={LOGO} alt="Greatstone International" />
       </a>
 
-      <div className="gs-navwrap" ref={wrapRef}>
+      <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>
         {collapsed ? (
           <div className="gs-navmenu">
             <button className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="true">

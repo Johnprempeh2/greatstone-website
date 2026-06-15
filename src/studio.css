@@ -9,6 +9,8 @@
 .gs-logo{flex:none}
 /* the nav lives in a flexible wrap that we measure for overflow */
 .gs-navwrap{flex:1;min-width:0;display:flex;overflow:hidden}
+/* once collapsed we no longer measure inline overflow, so let the dropdown escape the clip */
+.gs-navwrap.is-collapsed{overflow:visible}
 .gs-nav{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}
 .gs-navlink{background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;
   letter-spacing:.02em;color:var(--gs-muted);padding:8px 12px;border-radius:8px;transition:color .2s,background .2s;white-space:nowrap}
@@ -22,7 +24,7 @@
   border-radius:100px;padding:8px 14px;color:var(--gs-text);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;max-width:48vw}
 .gs-navmenu-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gs-navmenu-btn:hover{border-color:var(--gs-border)}
-.gs-navmenu-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:50;min-width:220px;max-height:70vh;overflow-y:auto;
+.gs-navmenu-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:50;min-width:220px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;
   background:#1a1c1a;border:1px solid var(--gs-border);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:2px;
   box-shadow:0 30px 80px -30px rgba(0,0,0,.8);animation:gsPop .14s var(--gs-ease)}
 .gs-navmenu-item{text-align:left;background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:600;
