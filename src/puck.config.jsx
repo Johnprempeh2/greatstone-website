@@ -17,11 +17,12 @@ import * as MaturityMap from './blocks/MaturityMap.jsx';
 import * as Ladder from './blocks/Ladder.jsx';
 import * as BookDeepDive from './blocks/BookDeepDive.jsx';
 import * as ContactBand from './blocks/ContactBand.jsx';
+import * as TimeCounter from './blocks/TimeCounter.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Chapter, Pillars, PillarExplorer, MaturityMap, Steps, Spectrum, Timeline, Ladder, StatStrip, CaseStudy, RoiBar, Quote, Team, FeaturedArticle, BookDeepDive, ContactBand, Invite, FeatureGrid };
+const MODULES = { Hero, Chapter, Pillars, PillarExplorer, MaturityMap, Steps, Spectrum, Timeline, Ladder, StatStrip, CaseStudy, RoiBar, Quote, Team, FeaturedArticle, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid };
 
 export const config = {
   components: Object.fromEntries(Object.entries(MODULES).map(([name, m]) => [name, m.puck])),
@@ -31,7 +32,7 @@ export const config = {
     story: { title: 'Story', components: ['Chapter', 'Pillars', 'PillarExplorer', 'MaturityMap', 'Steps', 'Spectrum', 'Timeline', 'Ladder'] },
     proof: { title: 'Proof', components: ['StatStrip', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'FeatureGrid'] },
     editorial: { title: 'Editorial', components: ['FeaturedArticle'] },
-    contact: { title: 'Contact', components: ['BookDeepDive', 'ContactBand'] },
+    contact: { title: 'Contact', components: ['TimeCounter', 'BookDeepDive', 'ContactBand'] },
   },
 };
 

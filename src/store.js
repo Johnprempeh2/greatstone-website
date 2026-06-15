@@ -5,7 +5,7 @@
 import seedPages from './seed-pages.json';
 import { config } from './puck.config.jsx';
 
-const KEY = 'gs-studio-v10';
+const KEY = 'gs-studio-v11';
 
 let _seq = 0;
 const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);
@@ -119,7 +119,12 @@ export function seedState() {
       ], { title: 'Method — Greatstone International', description: 'Pebble, plateau, peak. Where you stand on the climb decides the route up.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
-        blk('Hero', { kicker: 'Find your altitude', headline: 'You still can’t buy time.', highlight: 'Let’s save yours.', body: 'A Deep Dive scores you across all eight pillars and hands you the route up. The first step costs nothing.', prompt: '', align: 'left', size: 'standard', ctaLabel: 'Book a Deep Dive', ctaHref: '#book' }),
+        blk('TimeCounter', {
+          kicker: 'The one thing you can’t make more of',
+          headline: 'You can’t buy time.', highlight: 'We’re the exception.',
+          body: 'It moves in one direction and never comes back. The whole of business is a fight to spend less of it on the wrong things. That fight is what we win for you.',
+          clockLabel: 'Slipping past since you arrived', coda: '', ctaLabel: '', ctaHref: '#book',
+        }),
         blk('BookDeepDive', {
           eyebrow: 'Tell us where the week goes', headline: 'Book a', highlight: 'Deep Dive.',
           body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
