@@ -364,7 +364,11 @@ backend handoff spec) then #20 Team/roles + invitations prototype. The remaining
   groups, badges/CTAs correct; screenshot confirms on-brand design over the 3D stone. App mounts
   clean on a hard reload (the only console errors are 16 frozen "[vite] Failed to reload" HMR
   artifacts from the multi-edit sequence, not growing; production build is clean). PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `4fbce97`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:02 BST] Turn 9 done — yielding.** Shipped R1-#19 part 1: the Products catalogue foundation
+(`4fbce97`) — a real content model + on-brand Storefront, the first north-star slice. Next turn
+continues #19 with the in-studio Products management panel.
 - NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
