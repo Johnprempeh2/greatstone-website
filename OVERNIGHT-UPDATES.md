@@ -384,7 +384,12 @@ continues #19 with the in-studio Products management panel.
   store on blur; removed it via the confirm modal ("Remove 'Cornerstone Governance' from the
   catalogue?") → back to 5. Test product cleaned up. Build clean; only the 16 frozen "[vite] Failed
   to reload" HMR messages from the multi-edit sequence (not runtime errors). PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `b88cebb`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:20 BST] Turn 10 done — yielding.** Shipped R1-#19 part 2: in-studio Products management
+(`b88cebb`). The Products north star now has the catalogue model + storefront + full management UX.
+Next turn finishes #19 with a clearly-labelled prototype cart/checkout UI + a backend handoff spec,
+then R1-#20 (Team/roles/invitations prototype).
 - NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
