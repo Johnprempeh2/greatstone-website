@@ -35,12 +35,15 @@ export default function CommandPalette({ open, onClose, commands }) {
       <div className="gs-cmd" role="dialog" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKey}>
         <div className="gs-cmd-search">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.6"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-          <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a command or search pages…" aria-label="Command" />
+          <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a command or search pages…"
+            aria-label="Command" role="combobox" aria-expanded="true" aria-controls="gs-cmd-list" aria-autocomplete="list"
+            aria-activedescendant={filtered[sel] ? 'gs-cmd-' + filtered[sel].id : undefined} />
           <kbd>esc</kbd>
         </div>
-        <ul className="gs-cmd-list" ref={listRef}>
+        <ul className="gs-cmd-list" id="gs-cmd-list" role="listbox" ref={listRef}>
           {filtered.map((c, i) => (
-            <li key={c.id} className={'gs-cmd-item' + (i === sel ? ' is-sel' : '') + (c.disabled ? ' is-disabled' : '')}
+            <li key={c.id} id={'gs-cmd-' + c.id} role="option" aria-selected={i === sel} aria-disabled={c.disabled || undefined}
+              className={'gs-cmd-item' + (i === sel ? ' is-sel' : '') + (c.disabled ? ' is-disabled' : '')}
               onMouseEnter={() => setSel(i)} onMouseDown={(e) => { e.preventDefault(); run(c); }}>
               {c.group ? <span className="gs-cmd-group">{c.group}</span> : null}
               <span className="gs-cmd-label">{c.label}</span>

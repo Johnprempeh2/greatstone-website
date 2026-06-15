@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { STAGE_OPTIONS, SCENE_KINDS, scrollContext } from '../stage-presets.js';
+import { STAGE_OPTIONS, SCENE_KINDS, scrollContext, resolveTransitionAt } from '../stage-presets.js';
 import { normalizeBackground } from '../store.js';
 
 // Granular 3D background editor ("scene track"). The page's background is a list of scenes that
@@ -8,8 +8,10 @@ import { normalizeBackground } from '../store.js';
 // live scroll-map + scrubber drives the real Stage so the user sees exactly where a handoff
 // happens. All edits flow up via onChange(model) → autosave.
 const uid = (p) => p + '-' + Math.random().toString(36).slice(2, 8);
+const KIND = Object.fromEntries(SCENE_KINDS.map((k) => [k.id, k]));
 const KIND_LABEL = Object.fromEntries(SCENE_KINDS.map((k) => [k.id, k.label]));
-const KIND_COLOR = { stone: '#1b5039', summit: '#2a6e8f', tide: '#c8ff00', tideRadial: '#9bd64a', tideCalm: '#4ecdc4' };
+const kindColor = (id) => (KIND[id] && KIND[id].color) || '#333';        // swatch / band fill
+const kindInk = (id) => (KIND[id] && KIND[id].ink) || 'rgba(255,255,255,.85)'; // legible label on that fill
 const fadeWord = (f) => (f <= 0.08 ? 'Hard cut' : f <= 0.16 ? 'Crisp' : f <= 0.26 ? 'Smooth' : 'Very soft');
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const blockLabel = (b) => {
@@ -29,28 +31,15 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
   const transitions = model.transitions || [];
   const commit = (next) => onChange(next);
 
-  // resolve a transition's effective scroll fraction (block-pinned ones measure the live element in
-  // whichever element is actually scrolling — the Puck canvas in the editor, the window live)
-  const resolveAt = (tr) => {
-    if (tr.anchor && tr.anchor.type === 'block') {
-      const sc = scrollContext();
-      const el = document.getElementById('gs-blk-' + tr.anchor.blockId);
-      if (el && sc.max > 0) {
-        const h = el.getBoundingClientRect().height;
-        const edgeOff = tr.anchor.edge === 'center' ? h / 2 : tr.anchor.edge === 'bottom' ? h : 0;
-        return clamp((sc.blockTop(el) + edgeOff - sc.view / 2) / sc.max, 0, 1);
-      }
-      return tr.anchor.fallbackAt != null ? tr.anchor.fallbackAt : tr.at;
-    }
-    return tr.at;
-  };
+  // effective scroll fraction — shared with Stage so the track + readouts can't drift from the live handoff
+  const resolveAt = (tr) => resolveTransitionAt(tr, scrollContext());
 
   const setKind = (i, kind) => commit({ ...model, scenes: scenes.map((s, k) => (k === i ? { ...s, kind } : s)) });
   const applyPreset = (id) => { if (STAGE_OPTIONS.find((o) => o.id === id)) onChange(id); };
 
   const addScene = () => {
     if (scenes.length >= 3) return;
-    const prevAt = transitions.length ? transitions[transitions.length - 1].at : 0;
+    const prevAt = transitions.length ? resolveAt(transitions[transitions.length - 1]) : 0;
     const at = clamp(prevAt + (1 - prevAt) * 0.5, 0.05, 0.95);
     commit({ ...model, scenes: [...scenes, { id: uid('sc'), kind: 'tide' }], transitions: [...transitions, { id: uid('tr'), at, fade: 0.2, anchor: { type: 'scroll' } }] });
   };
@@ -64,8 +53,8 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
   };
   const patchTrans = (i, fn) => commit({ ...model, transitions: transitions.map((tr, k) => (k === i ? fn(tr) : tr)) });
   const setAt = (i, v) => {
-    const lo = i > 0 ? transitions[i - 1].at + 0.02 : 0.02;
-    const hi = i < transitions.length - 1 ? transitions[i + 1].at - 0.02 : 0.98;
+    const lo = i > 0 ? resolveAt(transitions[i - 1]) + 0.02 : 0.02;
+    const hi = i < transitions.length - 1 ? resolveAt(transitions[i + 1]) - 0.02 : 0.98;
     patchTrans(i, (tr) => ({ ...tr, at: clamp(v, lo, hi) }));
   };
   const setFade = (i, v) => patchTrans(i, (tr) => ({ ...tr, fade: clamp(v, 0.04, 0.4) }));
@@ -87,7 +76,7 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
         <div className="gs-track" aria-hidden="true">
           <div className="gs-track-bands">
             {scenes.map((s, k) => (
-              <span key={s.id} className="gs-track-band" style={{ width: ((bandEnd(k) - bandStart(k)) * 100) + '%', background: KIND_COLOR[s.kind] || '#333' }}>{KIND_LABEL[s.kind] || s.kind}</span>
+              <span key={s.id} className="gs-track-band" style={{ width: ((bandEnd(k) - bandStart(k)) * 100) + '%', background: kindColor(s.kind), color: kindInk(s.kind) }}>{KIND_LABEL[s.kind] || s.kind}</span>
             ))}
           </div>
           {transitions.map((tr, k) => <span key={tr.id} className="gs-track-tick" style={{ left: (atOf(k) * 100) + '%' }} />)}
@@ -106,7 +95,7 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
         {scenes.map((s, k) => (
           <div key={s.id}>
             <div className="gs-scene">
-              <span className="gs-scene-dot" style={{ background: KIND_COLOR[s.kind] || '#333' }} />
+              <span className="gs-scene-dot" style={{ background: kindColor(s.kind) }} />
               <select value={s.kind} onChange={(e) => setKind(k, e.target.value)} aria-label={'Scene ' + (k + 1)}>
                 {SCENE_KINDS.map((kd) => <option key={kd.id} value={kd.id}>{kd.label}</option>)}
               </select>
@@ -140,12 +129,14 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
                     </>
                   ) : (
                     <label className="gs-trans-row"><span>Transition at</span>
-                      <input type="range" min="0.05" max="0.95" step="0.01" value={tr.at} onChange={(e) => setAt(k, Number(e.target.value))} />
+                      <input type="range" min="0.05" max="0.95" step="0.01" value={tr.at} onChange={(e) => setAt(k, Number(e.target.value))}
+                        aria-label="Transition point" aria-valuetext={Math.round(tr.at * 100) + '%'} />
                       <b>{Math.round(tr.at * 100)}%</b>
                     </label>
                   )}
                   <label className="gs-trans-row"><span>Fade</span>
-                    <input type="range" min="0.04" max="0.4" step="0.01" value={tr.fade} onChange={(e) => setFade(k, Number(e.target.value))} />
+                    <input type="range" min="0.04" max="0.4" step="0.01" value={tr.fade} onChange={(e) => setFade(k, Number(e.target.value))}
+                      aria-label="Fade softness" aria-valuetext={fadeWord(tr.fade)} />
                     <em>{fadeWord(tr.fade)}</em>
                   </label>
                 </div>

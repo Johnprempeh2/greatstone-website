@@ -2,11 +2,8 @@ import { useEffect, useRef, useMemo } from 'react';
 import { mountGreatstoneLogo } from './lib/greatstone-logo.mjs';
 import { mountSummit } from './lib/summit-bg.mjs';
 import { mountTide } from './lib/tideMount.js';
-import { smoothstep, scrollContext } from './stage-presets.js';
+import { smoothstep, scrollContext, resolveTransitionAt } from './stage-presets.js';
 import { normalizeBackground } from './store.js';
-
-// re-exported so existing importers keep working
-export { STAGE_OPTIONS } from './stage-presets.js';
 
 // kind → 3D module. Each scene mounts into its own fixed full-screen layer; array order is z-index.
 const MOUNTERS = {
@@ -40,36 +37,23 @@ export default function Stage({ background = 'stone', previewP = null }) {
       const host = document.createElement('div'); host.className = 'gs-layer'; root.appendChild(host);
       return { kind: s.kind, host, handle: MOUNTERS[s.kind] ? MOUNTERS[s.kind](host) : null };
     });
-    // a block-pinned transition resolves its scroll point live from the block's position, measured
-    // in whichever element is actually scrolling (the window live, the Puck canvas in the editor)
-    const resolveAt = (tr, sc) => {
-      if (tr.anchor && tr.anchor.type === 'block') {
-        const el = document.getElementById('gs-blk-' + tr.anchor.blockId);
-        if (el && sc.max > 0) {
-          const h = el.getBoundingClientRect().height;
-          const edgeOff = tr.anchor.edge === 'center' ? h / 2 : tr.anchor.edge === 'bottom' ? h : 0;
-          return Math.min(Math.max((sc.blockTop(el) + edgeOff - sc.view / 2) / sc.max, 0), 1);
-        }
-        if (tr.anchor.fallbackAt != null) return tr.anchor.fallbackAt; // block deleted → fall back
-      }
-      return tr.at;
-    };
     const apply = () => {
       const c = cfgRef.current; const n = layers.length;
       const sc = scrollContext();
       const inj = previewRef.current;
       const p = inj != null ? inj : (sc.max > 0 ? Math.min(Math.max(sc.top / sc.max, 0), 1) : 0);
-      const ats = (c.transitions || []).map((tr) => resolveAt(tr, sc));
+      const ats = (c.transitions || []).map((tr) => resolveTransitionAt(tr, sc));
       let prev = 0;
       const t = ats.map((at, i) => {
-        const half = Math.max(c.transitions[i].fade, 1e-4) / 2;
+        const half = Math.max((c.transitions[i] && c.transitions[i].fade) || 0.2, 1e-4) / 2;
         let ti = smoothstep(at - half, at + half, p);
         ti = Math.max(ti, prev); prev = ti; // monotonic: a later transition can't un-fade an earlier one
         return ti;
       });
       layers.forEach((l, k) => {
-        const incoming = k > 0 ? t[k - 1] : 1;
-        const outgoing = k < n - 1 ? 1 - t[k] : 1;
+        // ?? guards a malformed track (scenes without a matching transition) → never write opacity "NaN"
+        const incoming = k > 0 ? (t[k - 1] ?? 1) : 1;
+        const outgoing = k < n - 1 ? 1 - (t[k] ?? 0) : 1;
         l.host.style.opacity = String(incoming * outgoing);
         l.host.style.zIndex = String(k);
         const bandStart = k > 0 ? ats[k - 1] : 0;
@@ -79,13 +63,16 @@ export default function Stage({ background = 'stone', previewP = null }) {
       });
     };
     applyRef.current = apply;
+    // rAF-batch so layout reads/opacity writes run at most once per frame, not per scroll event
+    let ticking = false;
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; apply(); }); } };
     // capture:true so this window-level listener also receives scroll from the Puck canvas (scroll
     // events don't bubble, but capturing listeners on ancestors still fire for descendant scrollers)
-    addEventListener('scroll', apply, { passive: true, capture: true });
-    addEventListener('resize', apply, { passive: true });
+    addEventListener('scroll', onScroll, { passive: true, capture: true });
+    addEventListener('resize', onScroll, { passive: true });
     apply();
     return () => {
-      removeEventListener('scroll', apply, { capture: true }); removeEventListener('resize', apply);
+      removeEventListener('scroll', onScroll, { capture: true }); removeEventListener('resize', onScroll);
       applyRef.current = null;
       layers.forEach((l) => { if (l.handle && l.handle.destroy) l.handle.destroy(); if (l.host.parentNode) l.host.parentNode.removeChild(l.host); });
     };

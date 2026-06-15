@@ -21,7 +21,7 @@ export default function VersionHistory({ versions = [], onRestore, onClose }) {
         {versions.length === 0 && <p className="gs-empty">No snapshots yet. Publishing the page saves one here.</p>}
         <ol className="gs-versions">
           {versions.map((v, i) => (
-            <li className="gs-version" key={v.ts}>
+            <li className="gs-version" key={v.id || v.ts}>
               <div className="gs-version-dot" aria-hidden="true" />
               <div className="gs-version-main">
                 <div className="gs-version-top">

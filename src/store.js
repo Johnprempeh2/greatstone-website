@@ -6,10 +6,18 @@ import seedPages from './seed-pages.json';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 
-const KEY = 'gs-studio-v11';
+// Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
+// migrates the existing row forward instead of orphaning it under a new key (which silently wiped
+// drafts/history/media). This is the contract the Laravel backend will use: one row, versioned,
+// migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
+const KEY = 'gs-studio';
+const OLD_KEYS = ['gs-studio-v11'];
+const SCHEMA = 12;
 
 let _seq = 0;
-const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);
+// one canonical id generator (block/scene/asset ids must be unique within a page — they key both
+// the gs-blk-<id> background anchors and the duplicate-page remap). Exported so App + panels share it.
+export const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
 // undefined in the editor — Puck's inline fields expect strings, and a missing one throws.
 const blk = (type, props) => {
@@ -167,18 +175,22 @@ export function seedState() {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
   const order = ['home', 'method', 'services', 'industries', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
-  return { settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {} };
+  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {} };
 }
 
 export function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    let raw = localStorage.getItem(KEY);
+    if (!raw) { // first run on the stable key: carry over any prior versioned-key data, then drop it
+      for (const k of OLD_KEYS) { const old = localStorage.getItem(k); if (old) { raw = old; try { localStorage.removeItem(k); } catch (e) { /* ignore */ } break; } }
+    }
     if (raw) return migrate(JSON.parse(raw));
   } catch (e) { /* ignore */ }
   return seedState();
 }
 
-// tolerate older/partial shapes so a saved draft never crashes the editor
+// tolerate older/partial shapes so a saved draft never crashes the editor; branch on the in-payload
+// schema version so future shape changes have a real forward-migration path (and never re-wipe data)
 function migrate(state) {
   if (!state || !state.pages) return seedState();
   Object.values(state.pages).forEach((p) => {
@@ -187,9 +199,11 @@ function migrate(state) {
     if (!Array.isArray(p.versions)) p.versions = [];
     if (!Array.isArray(p.statusHistory)) p.statusHistory = [];
     if (p.approvedBy === undefined) p.approvedBy = null;
+    if (p.published == null) p.published = p.data; // never strand a page with no renderable live content
   });
   if (!state.settings) state.settings = { background: 'stone-summit', siteName: 'Greatstone International' };
   if (!state.assets) state.assets = {};
+  state.schema = SCHEMA;
   return state;
 }
 
@@ -227,7 +241,27 @@ export function normalizeBackground(bg) {
 }
 
 export function persist(state) {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { /* quota — try to recover */ }
+  // shed the heaviest, most-expendable data (oldest version snapshots) and retry a few times before
+  // giving up, so a full store degrades gracefully instead of dropping the user's live edits.
+  try {
+    let working = state;
+    for (let i = 0; i < 6; i++) {
+      const trimmed = trimVersions(working);
+      if (trimmed === working) break; // nothing left to shed
+      working = trimmed;
+      try { localStorage.setItem(KEY, JSON.stringify(working)); return true; } catch (e) { /* keep trimming */ }
+    }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+// drop the oldest version snapshot from whichever page holds the most — one step of graceful eviction
+function trimVersions(state) {
+  let target = null, max = 0;
+  Object.entries(state.pages || {}).forEach(([slug, p]) => { const n = (p.versions || []).length; if (n > max) { max = n; target = slug; } });
+  if (!target) return state;
+  const p = state.pages[target];
+  return { ...state, pages: { ...state.pages, [target]: { ...p, versions: p.versions.slice(0, -1) } } };
 }
 
 export function slugify(title) {
@@ -237,16 +271,25 @@ export function slugify(title) {
 export function addPageTo(state, title) {
   let slug = slugify(title); let n = 2;
   while (state.pages[slug]) slug = slugify(title) + '-' + n++;
-  const page = seedPage(title, state.settings.background || 'stone', [
+  // match the live default ('stone-summit', not 'stone') and deep-clone object backgrounds so two
+  // pages never share one mutable {scenes,transitions} object
+  const dflt = state.settings.background || 'stone-summit';
+  const bg = typeof dflt === 'object' ? JSON.parse(JSON.stringify(dflt)) : dflt;
+  const page = seedPage(title, bg, [
     blk('Hero', { kicker: 'New page', headline: title, highlight: '', body: 'Start composing. Drag blocks in the editor, set the background, publish.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book' }),
   ], null, 'draft');
   return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
 }
 
-// keep at most the last 20 snapshots; newest first. snap = { label, data, by?, status? }
+// keep at most the last 20 snapshots; newest first. snap = { label, data, by?, status? }. Each gets a
+// unique id (ts alone collides when two snapshots land in the same millisecond — breaks React keys).
 export function pushVersion(versions, snap) {
-  return [{ ts: Date.now(), ...snap }, ...(versions || [])].slice(0, 20);
+  return [{ id: rid('v'), ts: Date.now(), ...snap }, ...(versions || [])].slice(0, 20);
 }
+
+// slugs the site wires structurally (the #book CTA resolves the contact page, the home path is '').
+// Renaming them would silently misroute, so they're held fixed in this prototype.
+export const RESERVED_SLUGS = ['home', 'contact'];
 
 // ---- page management (the ops a real content team needs) ----
 export function removePage(state, slug) {
@@ -292,9 +335,14 @@ export function movePage(state, slug, dir) {
 export function setSlug(state, oldSlug, nextRaw) {
   let next = slugify(nextRaw); let n = 2;
   if (next === oldSlug || !state.pages[oldSlug]) return state;
+  if (RESERVED_SLUGS.includes(oldSlug)) return { ...state, _slugError: oldSlug }; // structural page, can't re-key
   while (state.pages[next]) next = slugify(nextRaw) + '-' + n++;
   const pages = {}; Object.keys(state.pages).forEach((k) => { pages[k === oldSlug ? next : k] = state.pages[k]; });
   const order = state.order.map((s) => (s === oldSlug ? next : s));
-  const redirects = [...(state.redirects || []), { from: oldSlug, to: next, ts: Date.now() }];
+  // collapse chains (a→b then b→c must leave a→c, not a→dead-b) and dedupe by `from`, so the redirect
+  // table stays a flat from→final map the backend can apply in one hop
+  const redirects = (state.redirects || []).map((r) => (r.to === oldSlug ? { ...r, to: next } : r))
+    .filter((r) => r.from !== oldSlug && r.from !== next);
+  redirects.push({ from: oldSlug, to: next, ts: Date.now() });
   return { ...state, order, pages, redirects, _goto: next };
 }

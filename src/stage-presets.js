@@ -14,13 +14,15 @@ export const STAGE_OPTIONS = [
   { id: 'none', label: 'None', scenes: [] },
 ];
 
-// the mountable scene kinds (the editor's per-scene dropdown)
+// the mountable scene kinds (the editor's per-scene dropdown). `color` is the swatch/band fill and
+// `ink` the legible label colour on that fill (light fills get dark ink, matching the brand's
+// lime-CTA rule) — one registry drives the dropdown, the swatches and the scene-track bands.
 export const SCENE_KINDS = [
-  { id: 'stone', label: 'Stone' },
-  { id: 'summit', label: 'Summit' },
-  { id: 'tide', label: 'Tide — waves' },
-  { id: 'tideRadial', label: 'Tide — radial' },
-  { id: 'tideCalm', label: 'Tide — calm' },
+  { id: 'stone', label: 'Stone', color: '#1b5039', ink: '#ffffff' },
+  { id: 'summit', label: 'Summit', color: '#2a6e8f', ink: '#ffffff' },
+  { id: 'tide', label: 'Tide — waves', color: '#c8ff00', ink: '#0e1611' },
+  { id: 'tideRadial', label: 'Tide — radial', color: '#9bd64a', ink: '#0e1611' },
+  { id: 'tideCalm', label: 'Tide — calm', color: '#4ecdc4', ink: '#0e1611' },
 ];
 
 export const smoothstep = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a || 1e-4), 0), 1); return t * t * (3 - 2 * t); };
@@ -41,10 +43,30 @@ export function scrollContext() {
       blockTop: (el) => (el.getBoundingClientRect().top - cr.top) + canvas.scrollTop,
     };
   }
+  // documentElement.scrollHeight is the true scrollable height (body's can be shorter with fixed/
+  // collapsed-margin descendants), so the final transition doesn't complete early near the bottom
+  const docH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
   return {
     top: window.scrollY,
-    max: document.body.scrollHeight - innerHeight,
+    max: docH - innerHeight,
     view: innerHeight,
     blockTop: (el) => el.getBoundingClientRect().top + window.scrollY,
   };
+}
+
+// Resolve a transition's effective scroll fraction (0..1). Block-pinned transitions measure the live
+// `gs-blk-<id>` element in whichever element is scrolling; scroll-anchored ones use their stored `at`.
+// Single source of truth shared by Stage (live cross-fade) and BackgroundPanel (track + readouts) so
+// the editor preview can never drift from the published handoff point.
+export function resolveTransitionAt(tr, sc) {
+  if (tr.anchor && tr.anchor.type === 'block') {
+    const el = typeof document !== 'undefined' && document.getElementById('gs-blk-' + tr.anchor.blockId);
+    if (el && sc.max > 0) {
+      const h = el.getBoundingClientRect().height;
+      const edgeOff = tr.anchor.edge === 'center' ? h / 2 : tr.anchor.edge === 'bottom' ? h : 0;
+      return Math.min(Math.max((sc.blockTop(el) + edgeOff - sc.view / 2) / sc.max, 0), 1);
+    }
+    if (tr.anchor.fallbackAt != null) return tr.anchor.fallbackAt; // block deleted → fall back
+  }
+  return tr.at;
 }

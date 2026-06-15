@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
+import { safeHref } from '../lib/safe-url.js';
 
 // The one thing you can't make more of. A live clock counts the time slipping past since the
 // visitor arrived, under the "you can't buy time, we're the exception" line. The number is
@@ -37,7 +38,7 @@ export function TimeCounter({ kicker, headline, highlight, body, clockLabel, cod
           <span className="b-time-num" ref={clockRef}>0.0s</span>
         </div>
         {coda ? <p className="b-time-coda" data-reveal>{coda}</p> : null}
-        {ctaLabel ? <a className="b-cta" href={ctaHref} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
   );

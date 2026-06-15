@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Puck, Render } from '@measured/puck';
 import '@measured/puck/puck.css';
 import { config, blockCss } from './puck.config.jsx';
-import Stage, { STAGE_OPTIONS } from './Stage.jsx';
+import Stage from './Stage.jsx';
+import { STAGE_OPTIONS } from './stage-presets.js';
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -13,7 +14,7 @@ import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 
@@ -24,11 +25,10 @@ const STATUSES = [
   { id: 'published', label: 'Published' },
 ];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const newId = (type) => type.toLowerCase() + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
 export default function App() {
   const [state, setState] = useState(load);
-  const [current, setCurrent] = useState(() => load().order[0]);
+  const [current, setCurrent] = useState(() => state.order[0]); // derive from the one load() above, not a 2nd
   const [mode, setMode] = useState('view');
   const [query, setQuery] = useState('');
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -39,13 +39,16 @@ export default function App() {
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
+  const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const toastTimer = useRef(null);
 
   const authed = !!user;
   const canEdit = can(user, 'edit');
   const canPublish = can(user, 'publish');
 
-  useEffect(() => { if (!persist(state)) flash('Storage is full. Recent changes may not be saved; trim version history or publish.'); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  // persist() now trims old version snapshots and retries before failing; a failure here means the
+  // store is genuinely full, so raise a STICKY banner (not a 2.6s toast) — those edits won't survive a reload
+  useEffect(() => { setStorageError(!persist(state)); }, [state]);
   useEffect(() => {
     const onHash = () => setAdminRoute(isAdminRoute());
     addEventListener('hashchange', onHash);
@@ -135,8 +138,10 @@ export default function App() {
   function reorderPage(slug, dir) { setState((s) => movePage(s, slug, dir)); }
   function registerAsset(asset) { setState((s) => addAsset(s, asset)); } // add a picked/uploaded image to the library
   function renameSlug(slug, next) {
-    if (!next || !next.trim()) return;
-    setState((s) => { const r = setSlug(s, slug, next.trim()); if (current === slug && r._goto) setCurrent(r._goto); return r; });
+    const n = (next || '').trim();
+    if (!n || n === slug) return;
+    if (RESERVED_SLUGS.includes(slug)) return flash('The “' + slug + '” page URL is fixed — other parts of the site link to it.');
+    setState((s) => { const r = setSlug(s, slug, n); if (current === slug && r._goto) setCurrent(r._goto); return r; });
     flash('URL updated. The old path will redirect.');
   }
   function navigate(slug) { setCurrent(slug); setMode('view'); setQuery(''); setPanel(null); }
@@ -156,7 +161,7 @@ export default function App() {
   }
   function addBlock(type) {
     const def = config.components[type];
-    const block = { type, props: { id: newId(type), ...(def && def.defaultProps ? def.defaultProps : {}) } };
+    const block = { type, props: { id: rid(type), ...(def && def.defaultProps ? def.defaultProps : {}) } };
     const data = { ...page.data, content: [...(page.data.content || []), block] };
     patchPage(current, { data }); setSavedAt(Date.now());
     if (mode !== 'edit') setMode('edit');
@@ -181,6 +186,7 @@ export default function App() {
   }, [panel, cmdOpen, mode, page, canPublish]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commands = useMemo(() => {
+    if (!cmdOpen) return []; // the palette is the only consumer; don't rebuild this list on every edit keystroke
     const cmds = [];
     state.order.forEach((slug) => cmds.push({ id: 'go-' + slug, group: mode === 'edit' ? 'Edit page' : 'Go to', label: state.pages[slug].title, hint: slug === current ? 'current' : '', run: () => (mode === 'edit' ? switchPage(slug) : navigate(slug)) }));
     // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
@@ -209,13 +215,18 @@ export default function App() {
     }
     cmds.push({ id: 'signout', group: 'Admin', label: 'Sign out (' + user.name + ')', run: doSignOut });
     return cmds;
-  }, [state, current, mode, page, user, canEdit, canPublish]);
+  }, [cmdOpen, state, current, mode, page, user, canEdit, canPublish]);
 
   const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss }} />;
   const overlays = (
     <>
       {styleTag}
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={commands} />
+      {storageError && (
+        <div className="gs-banner gs-banner-warn" role="alert">
+          Storage is full. Recent changes won’t survive a reload — trim version history or publish to free space.
+        </div>
+      )}
       {toast && <div className="gs-toast" role="status">{toast}</div>}
     </>
   );
@@ -243,7 +254,7 @@ export default function App() {
           <StudioPanel tab={panel} onTab={setPanel} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
-            seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onClose={() => setPanel(null)} embedded />,
+            seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
           }} />
         )}

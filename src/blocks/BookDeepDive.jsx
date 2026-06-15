@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
+import { safeMailto } from '../lib/safe-url.js';
 
 const SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
@@ -26,7 +27,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
               <div className="book-sent">
                 <h3>Thanks. One more step.</h3>
                 <p>This prototype doesn’t send anything yet. To book your Deep Dive now, email us and we’ll reply with times.</p>
-                <a className="b-cta" href={`mailto:${email}`}>{email}</a>
+                <a className="b-cta" href={safeMailto(email)}>{email}</a>
               </div>
             ) : (
               <form onSubmit={(e) => { e.preventDefault(); setSent(true); }} noValidate>
@@ -52,7 +53,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
             <ul className="b-book-points">
               {asidePoints.map((p, i) => <li key={i}><b>{p.title}</b>{p.text ? <> {p.text}</> : null}</li>)}
             </ul>
-            <a className="b-book-mail" href={`mailto:${email}`}>{email}</a>
+            <a className="b-book-mail" href={safeMailto(email)}>{email}</a>
           </aside>
         </div>
       </div>

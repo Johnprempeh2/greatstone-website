@@ -1,4 +1,5 @@
 import { useReveal } from './reveal.js';
+import { safeMailto } from '../lib/safe-url.js';
 
 // The direct-contact close: a big mailto on one side, a "before you book" prompt card on the
 // other. No gatekeeping.
@@ -12,7 +13,7 @@ export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftw
             {kicker ? <p className="kicker">{kicker}</p> : null}
             <h2 className="h2 b-cb-head">{heading}</h2>
             {body ? <p className="muted b-cb-body">{body}</p> : null}
-            <a className="big-mail" href={`mailto:${email}`}>{email}</a>
+            <a className="big-mail" href={safeMailto(email)}>{email}</a>
           </div>
           <div className="card calc-card" data-reveal>
             {cardKicker ? <p className="kicker">{cardKicker}</p> : null}

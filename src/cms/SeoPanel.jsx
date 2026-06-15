@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { MediaField } from './MediaField.jsx';
 
 // In-context SEO: edit the meta title/description and watch a live Google result and social
@@ -8,7 +9,7 @@ function meter(len, lo, hi) {
   return { cls: len === 0 ? 'is-empty' : ok ? 'is-ok' : 'is-warn', note: len === 0 ? 'empty' : ok ? 'good length' : len < lo ? 'a little short' : 'too long, will truncate' };
 }
 
-export default function SeoPanel({ seo, pageTitle, slug, onChange, onClose }) {
+export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugLocked, onClose }) {
   const title = seo.title || '';
   const desc = seo.description || '';
   const shownTitle = title || (pageTitle + ' — Greatstone International');
@@ -18,6 +19,11 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onClose }) {
   const dm = meter(desc.length, 110, 158);
   const set = (k, v) => onChange({ ...seo, [k]: v });
 
+  // editable URL slug (commits on blur / Enter; reserved pages are read-only)
+  const [slugDraft, setSlugDraft] = useState(slug);
+  useEffect(() => setSlugDraft(slug), [slug]);
+  const commitSlug = () => { const v = (slugDraft || '').trim(); if (v && v !== slug && onSlug) onSlug(v); };
+
   return (
     <aside className="gs-panel" role="dialog" aria-label="SEO">
       <div className="gs-panel-head">
@@ -25,6 +31,13 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onClose }) {
         <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
       </div>
       <div className="gs-panel-body">
+        <label className="gs-field">
+          <span className="gs-field-label">Page URL {slugLocked && <em className="gs-meter is-empty">fixed</em>}</span>
+          <input value={slugDraft} disabled={slugLocked} aria-label="Page URL slug"
+            onChange={(e) => setSlugDraft(e.target.value)} onBlur={commitSlug}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} />
+          <span className="gs-field-hint">{slugLocked ? 'Other pages link to this URL, so it’s fixed.' : 'The old path will 301-redirect after a change.'}</span>
+        </label>
         <label className="gs-field">
           <span className="gs-field-label">Meta title <em className={'gs-meter ' + tm.cls}>{title.length} · {tm.note}</em></span>
           <input value={title} onChange={(e) => set('title', e.target.value)} placeholder={pageTitle + ' — Greatstone International'} />

@@ -1,5 +1,6 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
+import { safeHref, safeMailto } from '../lib/safe-url.js';
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
@@ -13,8 +14,8 @@ export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref =
         <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
         <div className="b-invite-actions" data-reveal>
-          {ctaLabel ? <a className="b-cta" href={ctaHref}>{ctaLabel}<Arrow /></a> : null}
-          {email ? <a className="b-invite-email" href={`mailto:${email}`}>{email}</a> : null}
+          {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+          {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
         </div>
       </div>
     </section>

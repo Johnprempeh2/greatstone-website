@@ -42,12 +42,14 @@ export default function SignIn({ onAuthed, onCancel }) {
         <p style={S.sub}>Editing is restricted to the Greatstone team. Sign in to open the studio.</p>
 
         <label style={S.label} htmlFor="gs-user">Email</label>
-        <input id="gs-user" ref={ref} style={S.input} value={user} onChange={(e) => { setUser(e.target.value); setErr(''); }} autoComplete="username" placeholder="you@greatstone" />
+        <input id="gs-user" ref={ref} style={S.input} value={user} onChange={(e) => { setUser(e.target.value); setErr(''); }} autoComplete="username" placeholder="you@greatstone"
+          aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'gs-signin-err' : undefined} />
 
         <label style={S.label} htmlFor="gs-pass">Password</label>
-        <input id="gs-pass" style={S.input} type="password" value={pass} onChange={(e) => { setPass(e.target.value); setErr(''); }} autoComplete="current-password" placeholder="••••••••" />
+        <input id="gs-pass" style={S.input} type="password" value={pass} onChange={(e) => { setPass(e.target.value); setErr(''); }} autoComplete="current-password" placeholder="••••••••"
+          aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'gs-signin-err' : undefined} />
 
-        {err && <div style={S.err} role="alert">{err}</div>}
+        {err && <div id="gs-signin-err" style={S.err} role="alert">{err}</div>}
         <button type="submit" style={S.btn}>Sign in</button>
         <button type="button" style={S.back} onClick={onCancel}>← Back to site</button>
 

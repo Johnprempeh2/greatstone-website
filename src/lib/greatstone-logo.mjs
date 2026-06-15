@@ -111,7 +111,8 @@ export function mountGreatstoneLogo(container, opts = {}) {
   /* pointer — measured RELATIVE TO THE CONTAINER so the proximity aligns with the mark */
   const mouseT=new THREE.Vector2(0,0), mouseS=new THREE.Vector2(0,0), cursorN=new THREE.Vector2(0,0);
   let inside=false;
-  const _onPointerMove = e=>{ const r=container.getBoundingClientRect();
+  const _onPointerMove = e=>{ if(!visible || document.hidden) return; /* skip layout reads when faded out/offscreen */
+    const r=container.getBoundingClientRect();
     mouseT.set((e.clientX-r.left)/r.width*2-1, (e.clientY-r.top)/r.height*2-1); cursorN.set(mouseT.x,-mouseT.y); inside=true; };
   const _onPointerLeave = ()=>{ inside=false; };
   /* listen on WINDOW so the stone responds to the cursor even as a pointer-events:none background */

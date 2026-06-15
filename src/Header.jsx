@@ -1,9 +1,17 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
-import { STAGE_OPTIONS } from './Stage.jsx';
+import { STAGE_OPTIONS } from './stage-presets.js';
 import { Search } from './blocks/icons.jsx';
 import { ROLES } from './cms/auth.js';
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+// the view-mode 3D switcher flips to its light-surface variant when a light scene (tide family) sits
+// behind the header, so the control stays legible over a bright background
+const LIGHT_KINDS = new Set(['tide', 'tideRadial', 'tideCalm']);
+const firstSceneKind = (bg) => {
+  if (bg && typeof bg === 'object' && Array.isArray(bg.scenes)) return bg.scenes[0] && bg.scenes[0].kind;
+  const opt = STAGE_OPTIONS.find((o) => o.id === bg);
+  return opt && opt.scenes && opt.scenes[0];
+};
 const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...p}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>);
 
 // Site chrome (view mode). The page links sit inline while they fit; when they don't, they
@@ -87,7 +95,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
           <>
             {canEdit && (
               <>
-                <label className="gs-bg">
+                <label className={'gs-bg' + (LIGHT_KINDS.has(firstSceneKind(bg)) ? ' dark' : '')}>
                   <span>3D</span>
                   <select value={bg} onChange={(e) => onSetBg(e.target.value)}>
                     {STAGE_OPTIONS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}

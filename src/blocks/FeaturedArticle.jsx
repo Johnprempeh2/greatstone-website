@@ -3,7 +3,7 @@ import { MediaField } from '../cms/MediaField.jsx';
 
 // The insights hero post: a two-up card. A real hero image if one is set, otherwise the
 // stone-echo media panel (giant glyph + ridges + corner wave). Editable meta + read time.
-export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime, image }) {
+export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime, image, alt }) {
   const ref = useReveal();
   return (
     <section ref={ref} className="b-featured-sec">
@@ -13,8 +13,8 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
             <path d="M170 30 A140 140 0 0 0 30 170" /><path d="M170 62 A108 108 0 0 0 62 170" />
             <path d="M170 94 A76 76 0 0 0 94 170" /><path d="M170 126 A44 44 0 0 0 126 170" />
           </svg>
-          <div className="featured__media" aria-hidden="true">
-            {image ? <img className="featured__img" src={image} alt="" loading="lazy" /> : <span className="featured__glyph">{glyph}</span>}
+          <div className="featured__media" aria-hidden={image ? undefined : 'true'}>
+            {image ? <img className="featured__img" src={image} alt={alt || ''} loading="lazy" /> : <span className="featured__glyph">{glyph}</span>}
           </div>
           <div className="featured__body">
             {label ? <span className="pill">{label}</span> : null}
@@ -62,10 +62,11 @@ export const puck = {
     meta: { type: 'text', label: 'Meta (category etc.)', contentEditable: true },
     readTime: { type: 'text', label: 'Read time' },
     image: { type: 'custom', label: 'Hero image', render: (props) => <MediaField {...props} /> },
+    alt: { type: 'text', label: 'Image alt text (accessibility)' },
     glyph: { type: 'text', label: 'Media glyph (fallback)' },
   },
   defaultProps: {
-    label: 'Featured', glyph: 'G', image: '',
+    label: 'Featured', glyph: 'G', image: '', alt: '',
     title: 'The hours your business is quietly losing, and how to get them back.',
     excerpt: 'A field-level look at where time actually leaks: the manual handoffs, the duplicated tools, the approvals that wait on a single inbox.',
     meta: 'AI & Automation', readTime: '8 min read',

@@ -94,6 +94,21 @@
 .is-edit [class*="Button--primary"]{background:var(--gs-accent) !important;border-color:var(--gs-accent) !important;color:#0e1611 !important;font-weight:800}
 .is-edit [class*="Button--primary"] svg{color:#0e1611 !important}
 .is-edit [class*="Button--primary"]:hover{box-shadow:0 8px 26px -10px var(--gs-accent-glow,rgba(200,255,0,.5))}
+/* Puck's field controls default to dark text — force legible light text on the dark fields sidebar
+   (this is the reported right-side dark-on-dark: inputs/textareas were pure black on #17191a) */
+.is-edit [class*="Input-input"],
+.is-edit [class*="Input_"] input,
+.is-edit [class*="Input_"] textarea,
+.is-edit [class*="Input_"] select{color:var(--gs-text) !important}
+.is-edit [class*="Input-input"]::placeholder{color:var(--gs-faint) !important}
+/* the breadcrumb to a parent block (shown when a nested block is selected) was dark emerald on dark */
+.is-edit [class*="SidebarSection-breadcrumbLabel"]{color:var(--gs-accent) !important}
+.is-edit [class*="SidebarSection-breadcrumbLabel"]:hover{color:#e6ffa0 !important}
+/* the per-block hover/select toolbar (drag/duplicate/delete) defaulted to a near-white pill — re-theme
+   it to the dark surface used by the toast/command palette so it stays on-brand over the canvas */
+.is-edit [class*="ActionBar_"]{background:#1a1c1a !important;color:var(--gs-text) !important;border:1px solid var(--gs-border-soft)}
+.is-edit [class*="ActionBar-action"],.is-edit [class*="ActionBar-label"]{color:var(--gs-muted) !important}
+.is-edit [class*="ActionBar-action"]:hover{color:var(--gs-accent) !important}
 .is-view{min-height:100vh}
 
 /* ---------- edit-mode toolbar (injected into Puck's header) ---------- */
@@ -294,6 +309,12 @@
 .gs-trans-row b{min-width:38px;text-align:right;color:var(--gs-text);font-variant-numeric:tabular-nums}
 .gs-trans-row em{min-width:64px;font-style:normal;color:var(--gs-faint);font-size:.72rem}
 .gs-scene-add{width:100%;justify-content:center;display:flex;margin-top:6px}
+
+/* ---------- sticky warning banner (storage full, etc.) — persists until the condition clears ---------- */
+.gs-banner{position:fixed;top:0;left:0;right:0;z-index:2600;padding:10px 18px;text-align:center;font-size:.82rem;font-weight:700;line-height:1.4}
+.gs-banner-warn{background:#3a2e10;color:#ffd479;border-bottom:1px solid rgba(255,200,0,.32);box-shadow:0 10px 30px -16px rgba(0,0,0,.6)}
+/* small helper line under a panel field */
+.gs-field-hint{display:block;margin-top:6px;font-size:.7rem;color:var(--gs-faint);line-height:1.5}
 
 /* ---------- toast ---------- */
 .gs-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2500;background:#1a1c1a;border:1px solid var(--gs-border);

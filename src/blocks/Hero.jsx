@@ -1,5 +1,6 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
+import { safeHref } from '../lib/safe-url.js';
 
 // THE BLOCK CONTRACT (every block file follows this):
 //   export function X(props)      — the React component; renders public + editor canvas.
@@ -16,7 +17,7 @@ export function Hero({ kicker, headline, highlight, body, prompt, align = 'left'
         {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
         <h1 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h1>
         {body ? <p className="lede" data-reveal>{body}</p> : null}
-        {ctaLabel ? <a className="b-cta" href={ctaHref} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
         {prompt ? <span className="b-hero-prompt" data-reveal>{prompt}</span> : null}
       </div>
     </section>

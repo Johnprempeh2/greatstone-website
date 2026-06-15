@@ -22,11 +22,14 @@ npm run build    # production build to dist/ (base path /puck-proof/)
 | Path | What it is |
 | --- | --- |
 | `src/blocks/*.jsx` | The block library. One self-contained file per block: component + `css` + Puck fragment. |
-| `src/puck.config.jsx` | Registers the blocks and groups them in the editor drawer. |
-| `src/Stage.jsx` | The 3D backdrop. Cross-fades up to two scenes (stone, summit) across the scroll. |
-| `src/lib/*.mjs` | The bespoke three.js modules (the real ones from the live site). |
-| `src/cms/*` | Editor surfaces: command palette, SEO panel, version history, the prototype sign-in gate. |
-| `src/store.js` | Page store. localStorage today; the same shape Laravel will serve. |
+| `src/puck.config.jsx` | Registers the blocks (`MODULES`) and groups them in the editor drawer (`categories`). |
+| `src/Stage.jsx` | The 3D backdrop. Renders a *scene track*: ordered scenes that cross-fade at editable scroll points. |
+| `src/stage-presets.js` | three.js-free scene registry, presets, `scrollContext` + `resolveTransitionAt` (shared by Stage + editor). |
+| `src/lib/*.mjs` | The bespoke three.js scene modules (the real ones from the live site). |
+| `src/cms/StudioPanel.jsx` | The tabbed studio shell: Pages, 3D Background, SEO, History in one panel. |
+| `src/cms/BackgroundPanel.jsx` | The 3D background editor: scene track, per-transition scroll point / fade, and section-pinning. |
+| `src/cms/*` | Other editor surfaces: pages, command palette, SEO, version history, media field, prototype sign-in. |
+| `src/store.js` | Page store + page/asset CRUD. localStorage today; the same shape Laravel will serve. |
 | `src/site.css` | The real shared stylesheet, copied from the live site (tokens, type, footer). |
 
 ## Editing
@@ -38,5 +41,11 @@ rights on the server (see HANDOVER.md → Security).
 ## Adding a block
 
 The short version (full version in HANDOVER.md): copy an existing file in `src/blocks/`, follow
-the contract at the top of `Hero.jsx`, then register it in `src/puck.config.jsx`. It then
-appears in the editor's Add-block drawer, fully editable and brand-locked.
+the contract at the top of `Hero.jsx`, then register it in `src/puck.config.jsx` in **two** places:
+
+1. Import it and add it to the `MODULES` object.
+2. Add its name to a group in `categories`.
+
+Both steps are required — a block that's in `MODULES` but not in any `categories` group compiles
+and renders but **never appears** in the Add-block drawer. Once registered it's fully editable and
+brand-locked. If it renders a user-supplied link, route it through `src/lib/safe-url.js`.
