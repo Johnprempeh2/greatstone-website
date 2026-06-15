@@ -50,7 +50,7 @@ export const puck = {
     eyebrow: 'Start the Conversation',
     headline: 'The first step', highlight: 'costs nothing.',
     body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-    ctaLabel: 'Book a Deep Dive', ctaHref: '#', email: 'dx@greatstonesoftware.co.uk',
+    ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk',
   },
   render: (props) => <Invite {...props} />,
 };

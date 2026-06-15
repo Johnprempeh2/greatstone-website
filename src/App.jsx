@@ -44,6 +44,17 @@ export default function App() {
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
+  // route any "Book a Deep Dive" CTA (href="#book") to the contact page
+  useEffect(() => {
+    const onClick = (e) => {
+      const a = e.target.closest && e.target.closest('a[href="#book"]');
+      if (!a) return;
+      e.preventDefault();
+      navigate(state.pages.contact ? 'contact' : state.order[0]);
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [state.order]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const page = state.pages[current] || state.pages[state.order[0]];
   const bg = page.background || state.settings.background || 'stone';

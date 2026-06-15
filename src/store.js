@@ -5,7 +5,7 @@
 import seedPages from './seed-pages.json';
 import { config } from './puck.config.jsx';
 
-const KEY = 'gs-studio-v8';
+const KEY = 'gs-studio-v10';
 
 let _seq = 0;
 const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);
@@ -82,12 +82,12 @@ export function seedState() {
         blk('Invite', {
           eyebrow: 'Start the Conversation', headline: 'The first step', highlight: 'costs nothing.',
           body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-          ctaLabel: 'Book a Deep Dive', ctaHref: '#', email: 'dx@greatstonesoftware.co.uk',
+          ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk',
         }),
       ], { title: 'Greatstone International — The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
 
       method: seedPage('Method', 'summit', [
-        blk('Hero', { kicker: 'The Climb', headline: 'Pebble. Plateau.', highlight: 'Peak.', body: 'Where you stand on the climb decides the route up. This page rides the summit terrain as it grows beneath you.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#' }),
+        blk('Hero', { kicker: 'The Climb', headline: 'Pebble. Plateau.', highlight: 'Peak.', body: 'Where you stand on the climb decides the route up. This page rides the summit terrain as it grows beneath you.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book' }),
         blk('FeatureGrid', { kicker: 'Where you stand', heading: 'Three tiers, one route up.', items: [
           { title: 'Pebble', text: 'Surviving. Manual, reactive, held together by heroics.' },
           { title: 'Plateau', text: 'Organised. Process exists, some automation has landed.' },
@@ -118,14 +118,37 @@ export function seedState() {
         }),
       ], { title: 'Method — Greatstone International', description: 'Pebble, plateau, peak. Where you stand on the climb decides the route up.', ogImage: '' }),
 
-      contact: seedPage('Contact', 'none', [
-        blk('Hero', { kicker: 'Find your altitude', headline: 'Let us find out where you', highlight: 'stand.', body: 'A clean canvas: this page carries no 3D background. The background is a per-page setting you control.', prompt: '', align: 'left', size: 'standard', ctaLabel: '', ctaHref: '#' }),
-        blk('Invite', {
-          eyebrow: 'Start the Conversation', headline: 'You still cannot buy time.', highlight: 'Let us save yours.',
-          body: 'A Deep Dive scores you across all eight pillars and hands you the route up. The first step costs nothing.',
-          ctaLabel: 'Book a Deep Dive', ctaHref: '#', email: 'dx@greatstonesoftware.co.uk',
+      contact: seedPage('Contact', 'tide', [
+        blk('Hero', { kicker: 'Find your altitude', headline: 'You still can’t buy time.', highlight: 'Let’s save yours.', body: 'A Deep Dive scores you across all eight pillars and hands you the route up. The first step costs nothing.', prompt: '', align: 'left', size: 'standard', ctaLabel: 'Book a Deep Dive', ctaHref: '#book' }),
+        blk('BookDeepDive', {
+          eyebrow: 'Tell us where the week goes', headline: 'Book a', highlight: 'Deep Dive.',
+          body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
+          submitLabel: 'Book a Deep Dive', asideHeading: 'What you walk away with',
+          asidePoints: [
+            { title: 'A scored read', text: 'across all eight pillars of the method.' },
+            { title: 'The Periscope Report', text: 'where you stand and the fastest gains.' },
+            { title: 'A phased roadmap', text: 'the route up, embedded in how you already work.' },
+          ],
+          email: 'dx@greatstonesoftware.co.uk',
         }),
-      ], { title: 'Contact — Greatstone International', description: 'Book a Deep Dive. The first step costs nothing.', ogImage: '' }),
+        blk('Steps', {
+          index: '01', eyebrow: 'How a Deep Dive Works', headline: 'Three steps.', highlight: 'No theatre.',
+          body: 'We diagnose, we report, we build. Each layer settles before the next one lands.',
+          items: [
+            { title: 'Diagnostic', text: 'We map where the week goes, across all eight pillars.' },
+            { title: 'Periscope Report', text: 'A clear read of where you stand and the fastest gains.' },
+            { title: 'Phased Roadmap', text: 'The build, embedded into how you already work, not bolted on.' },
+          ],
+        }),
+        blk('ContactBand', {
+          kicker: 'Rather just talk?', heading: 'Reach us direct.',
+          body: 'No forms, no gatekeeping. Write a line about where your week goes and we’ll write back with where it could go instead.',
+          email: 'dx@greatstonesoftware.co.uk',
+          cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
+          cardHeading: 'See the hours, in your own numbers',
+          cardBody: 'A short read of what a Deep Dive surfaces, before you spend a minute on the call.',
+        }),
+      ], { title: 'Book a Deep Dive — Greatstone International', description: 'You still can’t buy time. Let’s save yours. Book a Deep Dive: the first step costs nothing.', ogImage: '' }),
   };
   // fold in the rest of the site, converted from the live pages into editable blocks
   seedPages.forEach((p) => {
@@ -167,7 +190,7 @@ export function addPageTo(state, title) {
   let slug = slugify(title); let n = 2;
   while (state.pages[slug]) slug = slugify(title) + '-' + n++;
   const page = seedPage(title, state.settings.background || 'stone', [
-    blk('Hero', { kicker: 'New page', headline: title, highlight: '', body: 'Start composing. Drag blocks in the editor, set the background, publish.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#' }),
+    blk('Hero', { kicker: 'New page', headline: title, highlight: '', body: 'Start composing. Drag blocks in the editor, set the background, publish.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book' }),
   ], null, 'draft');
   return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
 }
