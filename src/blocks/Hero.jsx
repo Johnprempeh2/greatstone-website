@@ -70,7 +70,7 @@ export const puck = {
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
-    align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book',
+    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book',
   },
   render: (props) => <Hero {...props} />,
 };

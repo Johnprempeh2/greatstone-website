@@ -187,3 +187,21 @@ will scope to new-Hero defaults only), #8 mobile nav drawer, #9 undo/redo, #10 a
 review notes, #17 resolveFields, #18 site settings, #19 Products (NORTH STAR), #20 Team panel
 (NORTH STAR). Deploys still down server-side; everything committed locally.
 
+**[00:10 BST] Item R1-#5 — Default Hero CTA — BUILT, VERIFIED, COMMITTED.**
+- Hero `defaultProps.ctaLabel` was `''`, so a newly-added Hero rendered with no button. Set the
+  default to `'Book a Deep Dive'` (`ctaHref` already `#book`). Checked the seed: EVERY seeded hero
+  already carries an explicit `ctaLabel` ("Book a Deep Dive" / "Subscribe"), so this changes nothing
+  on existing pages — it only gives blocks an editor adds a sensible starting CTA (clearable).
+- Files: `src/blocks/Hero.jsx`. Verify: build PASS (140 modules); home/services heroes unchanged
+  (their CTAs are seeded). PASS. Commit: pending below.
+
+**[00:12 BST] Item R1-#8 — Mobile nav drawer — VERIFIED ALREADY WORKING; no build (audit false positive).**
+- Tested the public header at 375px: it does NOT overflow, the page nav collapses into an on-brand
+  "Pages" dropdown (measured, not breakpoint-guessed), and the search field auto-hides. Opened the
+  dropdown on mobile — all 9 pages listed, fits the viewport, large tap targets, 3D + CTA render
+  behind. Screenshot confirms a clean mobile nav.
+- The audit's "unused drawer CSS" is the LIVE SITE's `site.css` `.nav.open .nav-links` drawer —
+  genuinely unused by the studio, but `site.css` is the real shared stylesheet kept verbatim for
+  parity, so it's intentionally left as-is. The studio has its own working responsive nav
+  (`Header.jsx` collapse). Building a second mobile drawer would be redundant. Skipped with rationale.
+
