@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { STAGE_OPTIONS, SCENE_KINDS } from '../stage-presets.js';
+import { STAGE_OPTIONS, SCENE_KINDS, scrollContext } from '../stage-presets.js';
 import { normalizeBackground } from '../store.js';
 
 // Granular 3D background editor ("scene track"). The page's background is a list of scenes that
@@ -29,15 +29,16 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
   const transitions = model.transitions || [];
   const commit = (next) => onChange(next);
 
-  // resolve a transition's effective scroll fraction (block-pinned ones measure the live element)
+  // resolve a transition's effective scroll fraction (block-pinned ones measure the live element in
+  // whichever element is actually scrolling — the Puck canvas in the editor, the window live)
   const resolveAt = (tr) => {
     if (tr.anchor && tr.anchor.type === 'block') {
-      const max = document.body.scrollHeight - innerHeight;
+      const sc = scrollContext();
       const el = document.getElementById('gs-blk-' + tr.anchor.blockId);
-      if (el && max > 0) {
-        const r = el.getBoundingClientRect(); const docTop = r.top + window.scrollY;
-        const edgeOff = tr.anchor.edge === 'center' ? r.height / 2 : tr.anchor.edge === 'bottom' ? r.height : 0;
-        return clamp((docTop + edgeOff - innerHeight / 2) / max, 0, 1);
+      if (el && sc.max > 0) {
+        const h = el.getBoundingClientRect().height;
+        const edgeOff = tr.anchor.edge === 'center' ? h / 2 : tr.anchor.edge === 'bottom' ? h : 0;
+        return clamp((sc.blockTop(el) + edgeOff - sc.view / 2) / sc.max, 0, 1);
       }
       return tr.anchor.fallbackAt != null ? tr.anchor.fallbackAt : tr.at;
     }

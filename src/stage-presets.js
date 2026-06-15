@@ -24,3 +24,27 @@ export const SCENE_KINDS = [
 ];
 
 export const smoothstep = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a || 1e-4), 0), 1); return t * t * (3 - 2 * t); };
+
+// Which element is actually scrolling? On the live site it's the window. Inside the Puck editor
+// the page content scrolls a fixed inner canvas (PuckCanvas-root), not the window, so a Stage that
+// only watches window.scrollY sits frozen on scene 1. This resolves the live scroll source so
+// scroll-driven transitions behave identically in the editor and on the published page. `blockTop`
+// returns an element's position in the scroll content's own coordinate space (scroll-invariant).
+export function scrollContext() {
+  const canvas = typeof document !== 'undefined' && document.querySelector('[class*="PuckCanvas-root"]');
+  if (canvas && canvas.scrollHeight > canvas.clientHeight + 4) {
+    const cr = canvas.getBoundingClientRect();
+    return {
+      top: canvas.scrollTop,
+      max: canvas.scrollHeight - canvas.clientHeight,
+      view: canvas.clientHeight,
+      blockTop: (el) => (el.getBoundingClientRect().top - cr.top) + canvas.scrollTop,
+    };
+  }
+  return {
+    top: window.scrollY,
+    max: document.body.scrollHeight - innerHeight,
+    view: innerHeight,
+    blockTop: (el) => el.getBoundingClientRect().top + window.scrollY,
+  };
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import { mountGreatstoneLogo } from './lib/greatstone-logo.mjs';
 import { mountSummit } from './lib/summit-bg.mjs';
 import { mountTide } from './lib/tideMount.js';
-import { smoothstep } from './stage-presets.js';
+import { smoothstep, scrollContext } from './stage-presets.js';
 import { normalizeBackground } from './store.js';
 
 // re-exported so existing importers keep working
@@ -40,14 +40,15 @@ export default function Stage({ background = 'stone', previewP = null }) {
       const host = document.createElement('div'); host.className = 'gs-layer'; root.appendChild(host);
       return { kind: s.kind, host, handle: MOUNTERS[s.kind] ? MOUNTERS[s.kind](host) : null };
     });
-    // a block-pinned transition resolves its scroll point live from the block's position
-    const resolveAt = (tr, max) => {
+    // a block-pinned transition resolves its scroll point live from the block's position, measured
+    // in whichever element is actually scrolling (the window live, the Puck canvas in the editor)
+    const resolveAt = (tr, sc) => {
       if (tr.anchor && tr.anchor.type === 'block') {
         const el = document.getElementById('gs-blk-' + tr.anchor.blockId);
-        if (el && max > 0) {
-          const r = el.getBoundingClientRect(); const docTop = r.top + scrollY;
-          const edgeOff = tr.anchor.edge === 'center' ? r.height / 2 : tr.anchor.edge === 'bottom' ? r.height : 0;
-          return Math.min(Math.max((docTop + edgeOff - innerHeight / 2) / max, 0), 1);
+        if (el && sc.max > 0) {
+          const h = el.getBoundingClientRect().height;
+          const edgeOff = tr.anchor.edge === 'center' ? h / 2 : tr.anchor.edge === 'bottom' ? h : 0;
+          return Math.min(Math.max((sc.blockTop(el) + edgeOff - sc.view / 2) / sc.max, 0), 1);
         }
         if (tr.anchor.fallbackAt != null) return tr.anchor.fallbackAt; // block deleted → fall back
       }
@@ -55,10 +56,10 @@ export default function Stage({ background = 'stone', previewP = null }) {
     };
     const apply = () => {
       const c = cfgRef.current; const n = layers.length;
-      const max = document.body.scrollHeight - innerHeight;
+      const sc = scrollContext();
       const inj = previewRef.current;
-      const p = inj != null ? inj : (max > 0 ? Math.min(Math.max(scrollY / max, 0), 1) : 0);
-      const ats = (c.transitions || []).map((tr) => resolveAt(tr, max));
+      const p = inj != null ? inj : (sc.max > 0 ? Math.min(Math.max(sc.top / sc.max, 0), 1) : 0);
+      const ats = (c.transitions || []).map((tr) => resolveAt(tr, sc));
       let prev = 0;
       const t = ats.map((at, i) => {
         const half = Math.max(c.transitions[i].fade, 1e-4) / 2;
@@ -78,11 +79,13 @@ export default function Stage({ background = 'stone', previewP = null }) {
       });
     };
     applyRef.current = apply;
-    addEventListener('scroll', apply, { passive: true });
+    // capture:true so this window-level listener also receives scroll from the Puck canvas (scroll
+    // events don't bubble, but capturing listeners on ancestors still fire for descendant scrollers)
+    addEventListener('scroll', apply, { passive: true, capture: true });
     addEventListener('resize', apply, { passive: true });
     apply();
     return () => {
-      removeEventListener('scroll', apply); removeEventListener('resize', apply);
+      removeEventListener('scroll', apply, { capture: true }); removeEventListener('resize', apply);
       applyRef.current = null;
       layers.forEach((l) => { if (l.handle && l.handle.destroy) l.handle.destroy(); if (l.host.parentNode) l.host.parentNode.removeChild(l.host); });
     };
