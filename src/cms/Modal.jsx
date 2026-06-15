@@ -53,7 +53,7 @@ export default function Modal({ modal, onResolve }) {
         )}
         <div className="gs-modal-actions">
           <button ref={cancelRef} className="gs-btn ghost" onClick={cancel}>{modal.cancelLabel || 'Cancel'}</button>
-          <button className={'gs-btn ' + (modal.danger ? 'danger' : 'primary')} onClick={confirm} disabled={isPrompt && !val.trim()}>
+          <button className={'gs-btn ' + (modal.danger ? 'danger' : 'primary')} onClick={confirm} disabled={isPrompt && !modal.allowEmpty && !val.trim()}>
             {modal.confirmLabel || (isPrompt ? 'Save' : 'Confirm')}
           </button>
         </div>

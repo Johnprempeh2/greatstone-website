@@ -213,6 +213,8 @@
 .gs-activity-dot[data-status="review"]{background:#f5a623}
 .gs-activity-dot[data-status="approved"]{background:#4ecdc4}
 .gs-activity-dot[data-status="published"]{background:#39b34a}
+.gs-activity-note{margin-top:6px;padding:7px 10px;background:rgba(255,255,255,.03);border-left:2px solid var(--gs-accent);
+  border-radius:4px;font-size:.82rem;color:var(--gs-text-muted);line-height:1.5}
 
 /* release board: site-wide publish-state overview */
 .gs-rel-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}

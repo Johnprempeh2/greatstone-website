@@ -45,6 +45,7 @@ export default function ActivityPanel({ statusHistory = [], status, approvedBy, 
                   {i === 0 && <span className="gs-version-tag">latest</span>}
                 </div>
                 <div className="gs-version-when">{when(e.ts)}{e.by ? ' · ' + e.by : ''}</div>
+                {e.note ? <div className="gs-activity-note">“{e.note}”</div> : null}
               </div>
             </li>
           ))}

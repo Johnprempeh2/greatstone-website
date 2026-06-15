@@ -193,21 +193,33 @@ export default function App() {
   function saveDraft(data) { patchPage(current, { data }); setSavedAt(Date.now()); }
   function setBg(kind) { patchPage(current, { background: kind }); }
   function setBgModel(v) { patchPage(current, { background: v }); } // granular scene-track or preset id
-  // enforced status machine + audit trail; approving needs publish rights
-  function setStatus(to) {
+  // enforced status machine + audit trail; approving needs publish rights. Each collaboration
+  // transition can carry an optional handoff note (e.g. "fix the hero copy") recorded in the trail.
+  const TRANSITION_PROMPTS = {
+    review: { title: 'Submit for review', label: 'Note for the reviewer (optional)', confirmLabel: 'Submit' },
+    approved: { title: 'Approve page', label: 'Approval note (optional)', confirmLabel: 'Approve' },
+    draft: { title: 'Send back to draft', label: 'What needs changing? (optional)', confirmLabel: 'Send back' },
+  };
+  async function setStatus(to) {
     const from = page.status;
     if (from === to) return;
     if (to === 'published') return publish(page.data);   // publishing has its own gated path
     if (!canTransition(from, to)) return flash('Can’t move from ' + from + ' to ' + to + ' directly.');
     if (to === 'approved' && !canPublish) return flash('Only an admin can approve a page.');
+    let note = '';
+    if (TRANSITION_PROMPTS[to]) {
+      const input = await ask({ kind: 'prompt', allowEmpty: true, ...TRANSITION_PROMPTS[to] });
+      if (input === null) return; // cancelled the transition
+      note = (input || '').trim();
+    }
     setState((s) => {
       const p = s.pages[current];
-      const statusHistory = [...(p.statusHistory || []), { from, to, by: user ? user.email : null, ts: Date.now() }];
+      const statusHistory = [...(p.statusHistory || []), { from, to, by: user ? user.email : null, ts: Date.now(), note: note || undefined }];
       const patch = { status: to, statusHistory };
       if (to === 'approved') patch.approvedBy = user ? user.email : null;
       return { ...s, pages: { ...s.pages, [current]: { ...p, ...patch } } };
     });
-    flash('Status: ' + (STATUSES.find((x) => x.id === to) || {}).label);
+    flash('Status: ' + (STATUSES.find((x) => x.id === to) || {}).label + (note ? ' · note added' : ''));
   }
   function setSeo(seo) { patchPage(current, { seo }); }
   async function newPage() {
