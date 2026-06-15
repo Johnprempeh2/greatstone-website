@@ -217,5 +217,11 @@ review notes, #17 resolveFields, #18 site settings, #19 Products (NORTH STAR), #
 - Verify: build PASS (141 modules; `UndoRedo-*.js` 0.66KB async). Preview: signed in, entered edit;
   both buttons present and correctly DISABLED with no history; made an inline edit → Undo enabled;
   clicked Undo → reverted, Undo disabled + Redo enabled. Zero new console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `def533e`. Deploy: deferred (Netlify 500).
+
+**[00:24 BST] Turn 4 done — yielding.** Shipped R1-#5 (Hero CTA default `782c896`), verified+skipped
+R1-#8 (mobile nav already works), R1-#9 (undo/redo `def533e`). Round 1 done so far: #1,#2,#3,#4,#5,#6,#7,#9
+built (+ #8 verified). dist re-synced. Remaining: #10 activity timeline, #11 alt-text preflight, #12
+skip-link, #13 footer columns, #14 release board, #15 block diff, #16 review notes, #17 resolveFields,
+#18 site settings, #19 Products (NORTH STAR), #20 Team panel (NORTH STAR). Deploys still 500 server-side.
 
