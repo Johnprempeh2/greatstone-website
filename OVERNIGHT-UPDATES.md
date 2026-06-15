@@ -307,4 +307,10 @@ governance items (#14, #16) then the two north-star builds. Deploys still 500 se
   artifact left by my earlier R1-#9 inline-edit test — identical content) and sorted it to the top
   with the "unpublished" badge. Discarded that draft → board flipped to "Every page is up to date",
   0 drift badges (also tidies John's store). Zero console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `6d2fd52`. Deploy: deferred (Netlify 500).
+
+**[01:26 BST] Turn 7 done — yielding.** Shipped R1-#14 Release board (`6d2fd52`) + tidied a
+test-induced draft drift on Services. dist re-synced. Round 1 built: #1–#7, #9, #10, #11, #12, #14
+(+ #8 verified). Remaining: #16 review notes (v5), #13 footer columns (v3), #15 block diff (v4), #17
+resolveFields (v3), #18 site settings (v4), #19 Products NORTH STAR (v5/high), #20 Team panel NORTH
+STAR (v5). Next: #16 review notes, then start the north-star builds. Deploys still 500 server-side.
