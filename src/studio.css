@@ -60,6 +60,8 @@
 .gs-btn.sm{padding:7px 12px;font-size:.74rem}
 .gs-btn.primary{background:var(--gs-accent);color:#0e1611}
 .gs-btn.ghost{background:rgba(255,255,255,.05);border-color:var(--gs-border-soft);color:var(--gs-text)}
+.gs-btn.danger{background:#ff6b6b;color:#1a0c0c}
+.gs-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .gs-signout{background:none;border:0;color:var(--gs-faint);font-family:'Montserrat',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;padding:6px 4px;transition:color .2s}
 .gs-signout:hover{color:var(--gs-text)}
 
@@ -330,3 +332,16 @@
 .gs-editor-loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
   background:rgba(14,22,17,.62);backdrop-filter:blur(8px);color:var(--gs-text-muted);
   font:700 .82rem/1.5 Montserrat,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+
+/* ---------- modal (on-brand prompt/confirm) ---------- */
+.gs-modal-scrim{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:rgba(8,12,9,.6);backdrop-filter:blur(6px);animation:gsFade .16s var(--gs-ease)}
+.gs-modal{width:min(440px,94vw);background:#1a1c1a;border:1px solid var(--gs-border);border-radius:18px;
+  padding:26px 26px 22px;box-shadow:0 40px 120px -40px rgba(0,0,0,.8);animation:gsPop .2s var(--gs-ease)}
+.gs-modal-title{font-size:1.05rem;font-weight:800;letter-spacing:-.01em;color:var(--gs-text)}
+.gs-modal-msg{margin-top:10px;color:var(--gs-text-muted);font-size:.88rem;line-height:1.6}
+.gs-modal-field{margin-top:16px}
+.gs-modal-field input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:10px;
+  padding:11px 13px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.9rem;outline:none}
+.gs-modal-field input:focus{border-color:var(--gs-accent)}
+.gs-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}

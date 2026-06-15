@@ -22,6 +22,7 @@ import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
+import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -86,6 +87,7 @@ export default function App() {
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
+  const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
 
   const authed = !!user;
@@ -126,6 +128,10 @@ export default function App() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }
+  // on-brand prompt/confirm: ask() opens the modal and resolves with the input string (prompt) or
+  // true/false (confirm); resolveModal closes it and settles the promise. Replaces window.* dialogs.
+  function ask(opts) { return new Promise((resolve) => setModal({ ...opts, resolve })); }
+  function resolveModal(value) { if (modal && modal.resolve) modal.resolve(value); setModal(null); }
   function patchPage(slug, patch) {
     setState((s) => ({ ...s, pages: { ...s.pages, [slug]: { ...s.pages[slug], ...patch } } }));
   }
@@ -164,14 +170,15 @@ export default function App() {
     flash('Status: ' + (STATUSES.find((x) => x.id === to) || {}).label);
   }
   function setSeo(seo) { patchPage(current, { seo }); }
-  function newPage() {
-    const title = window.prompt('New page title', 'New page');
+  async function newPage() {
+    const title = await ask({ kind: 'prompt', title: 'New page', label: 'Page title', defaultValue: 'New page', confirmLabel: 'Create page' });
     if (!title || !title.trim()) return;
     setState((s) => { const next = addPageTo(s, title.trim()); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
   }
-  function deletePage(slug) {
+  async function deletePage(slug) {
     if (state.order.length <= 1) return flash('You can’t delete the only page.');
-    if (!window.confirm('Delete “' + state.pages[slug].title + '”? This removes the page and its history.')) return;
+    const ok = await ask({ kind: 'confirm', title: 'Delete page', message: 'Delete “' + state.pages[slug].title + '”? This removes the page and all of its version history.', confirmLabel: 'Delete page', danger: true });
+    if (!ok) return;
     setState((s) => { const next = removePage(s, slug); if (current === slug && next._goto) { setCurrent(next._goto); setPuckKey((k) => k + 1); } return next; });
     flash('Page deleted.');
   }
@@ -179,9 +186,9 @@ export default function App() {
     setState((s) => { const next = duplicatePage(s, slug); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
     flash('Duplicated as a new draft.');
   }
-  function retitlePage(slug) {
+  async function retitlePage(slug) {
     const cur = state.pages[slug];
-    const title = window.prompt('Rename page', cur.title);
+    const title = await ask({ kind: 'prompt', title: 'Rename page', label: 'Page title', defaultValue: cur.title, confirmLabel: 'Rename' });
     if (!title || !title.trim() || title.trim() === cur.title) return;
     setState((s) => renamePage(s, slug, title.trim())); setPuckKey((k) => k + 1);
     flash('Page renamed.');
@@ -200,13 +207,15 @@ export default function App() {
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
   // restore/discard snapshot the current draft first, so neither is unrecoverable
-  function restoreVersion(v) {
-    if (!window.confirm('Restore this snapshot into the draft? Your current draft is snapshotted first.')) return;
+  async function restoreVersion(v) {
+    const ok = await ask({ kind: 'confirm', title: 'Restore snapshot', message: 'Restore this snapshot into the draft? Your current draft is snapshotted first, so nothing is lost.', confirmLabel: 'Restore' });
+    if (!ok) return;
     setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before restore', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: v.data, versions } } }; });
     setPuckKey((k) => k + 1); setPanel(null); flash('Restored into the draft. Request review to publish it.');
   }
-  function discardDraft() {
-    if (!window.confirm('Discard unpublished changes and revert to the live version?')) return;
+  async function discardDraft() {
+    const ok = await ask({ kind: 'confirm', title: 'Discard changes', message: 'Discard unpublished changes and revert to the live version? The current draft is snapshotted to history first.', confirmLabel: 'Discard changes', danger: true });
+    if (!ok) return;
     setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: p.published, versions } } }; });
     setPuckKey((k) => k + 1); flash('Reverted to the published version.');
   }
@@ -279,6 +288,7 @@ export default function App() {
         </div>
       )}
       {toast && <div className="gs-toast" role="status">{toast}</div>}
+      <Modal modal={modal} onResolve={resolveModal} />
     </>
   );
 

@@ -140,3 +140,21 @@ public first-load JS ~1.2MB→243KB, CSS 82KB→36.5KB; editor lazy-loads on dem
 on-brand modal replacing `window.prompt/confirm` (newPage/retitle/delete/restore/discard), then the
 low-effort UX/a11y batch (#5–#7, #12). Deploys remain blocked server-side; all work committed locally.
 
+**[23:52 BST] Item R1-#4 — On-brand modal replacing window.prompt/confirm — BUILT, VERIFIED, COMMITTED.**
+- Editor used raw OS `window.prompt`/`window.confirm` for new page, rename, delete, restore, and
+  discard — unstyled, off-brand, unvalidatable, and inconsistent across browsers.
+- Built `src/cms/Modal.jsx`: a Promise-driven modal with two kinds — `prompt` (labelled input,
+  Enter-to-confirm, confirm disabled while empty) and `confirm` (message + optional danger styling).
+  Focus moves in on open, Escape + backdrop-click cancel, simple Tab focus-trap. App.jsx gets a
+  `modal` state + `ask()` (opens the modal, resolves with the input string or true/false) and a
+  branded `.gs-modal` / `.gs-btn.danger` style. Converted all five flows (newPage, retitlePage,
+  deletePage, restoreVersion, discardDraft) to `await ask(...)`.
+- Files: `src/cms/Modal.jsx` (new), `src/App.jsx`, `src/studio.css`.
+- Verify: `npm run build` PASS (140 modules). Preview: created a test page through the prompt
+  modal (default value pre-selected, auto-focused, "Create page" → page made, entered edit mode);
+  deleted it through the confirm modal (correct message, red danger button, no input → "Page
+  deleted.", back to 9 pages). Test page cleaned up. Zero new console errors (still the 40 frozen
+  dead-version entries). PASS.
+- Commit: pending below.
+- Deploy: deferred (Netlify still 500ing). dist will be synced for the morning deploy.
+
