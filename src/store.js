@@ -5,7 +5,7 @@
 import seedPages from './seed-pages.json';
 import { config } from './puck.config.jsx';
 
-const KEY = 'gs-studio-v6';
+const KEY = 'gs-studio-v7';
 
 let _seq = 0;
 const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);

@@ -6,19 +6,27 @@ import * as Steps from './blocks/Steps.jsx';
 import * as StatStrip from './blocks/StatStrip.jsx';
 import * as Invite from './blocks/Invite.jsx';
 import * as FeatureGrid from './blocks/FeatureGrid.jsx';
+import * as Timeline from './blocks/Timeline.jsx';
+import * as Team from './blocks/Team.jsx';
+import * as Quote from './blocks/Quote.jsx';
+import * as CaseStudy from './blocks/CaseStudy.jsx';
+import * as RoiBar from './blocks/RoiBar.jsx';
+import * as FeaturedArticle from './blocks/FeaturedArticle.jsx';
+import * as Spectrum from './blocks/Spectrum.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Chapter, Pillars, PillarExplorer, Steps, StatStrip, Invite, FeatureGrid };
+const MODULES = { Hero, Chapter, Pillars, PillarExplorer, Steps, Spectrum, Timeline, StatStrip, CaseStudy, RoiBar, Quote, Team, FeaturedArticle, Invite, FeatureGrid };
 
 export const config = {
   components: Object.fromEntries(Object.entries(MODULES).map(([name, m]) => [name, m.puck])),
   // group the block drawer so the section types read as a deliberate kit, not a junk drawer
   categories: {
     page: { title: 'Page', components: ['Hero', 'Invite'] },
-    story: { title: 'Story', components: ['Chapter', 'Pillars', 'PillarExplorer', 'Steps'] },
-    proof: { title: 'Proof', components: ['StatStrip', 'FeatureGrid'] },
+    story: { title: 'Story', components: ['Chapter', 'Pillars', 'PillarExplorer', 'Steps', 'Spectrum', 'Timeline'] },
+    proof: { title: 'Proof', components: ['StatStrip', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'FeatureGrid'] },
+    editorial: { title: 'Editorial', components: ['FeaturedArticle'] },
   },
 };
 
