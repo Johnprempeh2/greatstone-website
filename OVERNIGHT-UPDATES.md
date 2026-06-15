@@ -178,3 +178,12 @@ low-effort UX/a11y batch (#5–#7, #12). Deploys remain blocked server-side; all
 - Commit: `pending (committed below)`.
 - Deploy: both deferred (Netlify 500); dist synced for the morning deploy.
 
+**[00:01 BST] Turn 3 done — yielding.** Shipped 3 items: R1-#4 on-brand modals (`8f0ee16`),
+R1-#6 aurora reduced-motion guard (`74f741b`), R1-#7 scroll-to-top + page fade (`d299084`). Dist
+re-synced to `puck-proof/` — now carries R1 #1,#2,#3,#4,#6,#7. Round 1 remaining: #5 default Hero
+CTA (needs a judgment call — the homepage hero deliberately uses the scroll cue, not a button;
+will scope to new-Hero defaults only), #8 mobile nav drawer, #9 undo/redo, #10 activity timeline,
+#11 alt-text preflight, #12 skip-link, #13 footer columns, #14 release board, #15 block diff, #16
+review notes, #17 resolveFields, #18 site settings, #19 Products (NORTH STAR), #20 Team panel
+(NORTH STAR). Deploys still down server-side; everything committed locally.
+
