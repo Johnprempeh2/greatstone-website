@@ -113,3 +113,22 @@ item #1 closed (Hero inline editing verified), R1-#1 SEO→head (`70b61d2`), R1-
 custom public renderer so `@measured/puck`'s `Render` (and the 432KB puck chunk) leaves the public
 path while the editor stays lazy. Then R1-#4 (modals) and the low-effort UX/a11y batch (#5–#7, #12).
 
+**[23:38 BST] Item R1-#2 — Lazy-load Puck off the public bundle — BUILT, VERIFIED, COMMITTED.**
+- Confirmed `@measured/puck`, its `Render`, and `puck.css` were used ONLY in App.jsx, and every
+  block is flat (no Puck zones/slots; none read the `puck` render prop). So a public visitor was
+  downloading the entire 432KB editor + 45KB editor CSS just to view static pages.
+- Built `src/PublicRender.jsx`: a tiny renderer that maps `data.content` → each block's registered
+  `render(props)` (stable `props.id` key, gs-blk anchors preserved). Built `src/EditorMount.jsx`:
+  a lazy entry that imports Puck + `puck.css`, loaded via `React.lazy` only when an admin opens
+  edit mode (wrapped in `Suspense` with an on-brand `.gs-editor-loading` fallback). App.jsx now
+  renders the public site through PublicRender and the editor through the lazy PuckEditor.
+- Files: `src/PublicRender.jsx` (new), `src/EditorMount.jsx` (new), `src/App.jsx`, `src/studio.css`.
+- Verify: `npm run build` PASS (139 modules). **Public first-load: CSS 81.7KB→36.5KB, and the
+  432KB puck JS + 45KB puck CSS are now async/editor-only** (alongside three.js 520KB deferred from
+  R1-#3). Preview: public home renders all 8 blocks via PublicRender (16 sections, gs-blk anchors
+  intact, header/footer/SEO correct); signed in + entered edit mode → lazy Puck chunk loads, canvas
+  + toolbar work, fallback resolves; zero new console errors on either path (the 40 console entries
+  are frozen from two dead mid-edit HMR versions, not growing across hard reloads). PASS.
+- Commit: pending below.
+- Deploy: deferred (Netlify still 500ing tonight; dist synced after the commit, ready to publish).
+

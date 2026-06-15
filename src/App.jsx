@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
-import { Puck, Render } from '@measured/puck';
-import '@measured/puck/puck.css';
 import { config, blockCss } from './puck.config.jsx';
+import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
@@ -9,6 +8,11 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // immediately and the 3D fades in once its chunk arrives. Same <Stage .../> call sites as before.
 const LazyStage = lazy(() => import('./Stage.jsx'));
 function Stage(props) { return <Suspense fallback={null}><LazyStage {...props} /></Suspense>; }
+
+// The Puck EDITOR (~432KB) + its CSS are admin-only. Lazy-load them so a public visitor never
+// downloads the editor; the chunk arrives only when a signed-in admin opens edit mode. Public
+// pages render through the tiny PublicRender above instead of Puck's heavyweight <Render>.
+const PuckEditor = lazy(() => import('./EditorMount.jsx'));
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -306,7 +310,8 @@ export default function App() {
           }} />
         )}
         <EditorBoundary key={'eb:' + current + ':' + puckKey} label="editor" onReset={discardDraft} resetLabel="Discard draft & recover">
-        <Puck
+        <Suspense fallback={<div className="gs-editor-loading" role="status">Opening the studio…</div>}>
+        <PuckEditor
           key={current + ':' + puckKey}
           config={config}
           data={page.data}
@@ -354,6 +359,7 @@ export default function App() {
             ),
           }}
         />
+        </Suspense>
         </EditorBoundary>
       </div>
       </MediaContext.Provider>
@@ -372,7 +378,7 @@ export default function App() {
       />
       <main className="gs-public" key={current}>
         <EditorBoundary key={'vb:' + current} label="page">
-          <Render config={config} data={page.published || page.data} />
+          <PublicRender config={config} data={page.published || page.data} />
         </EditorBoundary>
       </main>
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
