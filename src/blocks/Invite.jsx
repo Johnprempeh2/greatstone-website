@@ -27,6 +27,7 @@ export const css = `
 .b-invite-aurora{position:absolute;inset:-30%;z-index:0;pointer-events:none;
   background:radial-gradient(40% 50% at 50% 40%,rgba(27,80,57,.5),transparent 70%),radial-gradient(30% 40% at 50% 60%,rgba(200,255,0,.1),transparent 70%);
   filter:blur(10px);animation:gsDrift 26s var(--gs-ease) infinite alternate}
+@media(prefers-reduced-motion:reduce){.b-invite-aurora{animation:none}}
 .b-invite-inner{position:relative;z-index:1;max-width:820px;margin-inline:auto}
 .b-invite h2{margin-top:14px;font-size:clamp(2.2rem,6vw,4rem);font-weight:900;line-height:1.0;letter-spacing:-.035em;color:#fff}
 .b-invite-body{margin:22px auto 0;max-width:54ch;color:var(--gs-muted);font-size:clamp(1.02rem,1.6vw,1.22rem);line-height:1.7}

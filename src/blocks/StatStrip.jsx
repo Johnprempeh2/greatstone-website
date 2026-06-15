@@ -61,6 +61,7 @@ export const css = `
 .b-proof-aurora{position:absolute;inset:-30%;z-index:0;pointer-events:none;
   background:radial-gradient(38% 50% at 28% 28%,rgba(27,80,57,.42),transparent 70%),radial-gradient(34% 46% at 76% 70%,rgba(200,255,0,.08),transparent 70%);
   filter:blur(8px);animation:gsDrift 24s var(--gs-ease) infinite alternate}
+@media(prefers-reduced-motion:reduce){.b-proof-aurora{animation:none}}
 .b-proof .wrap{position:relative;z-index:1}
 .b-proof-head{font-size:clamp(1.9rem,4.8vw,3.3rem);font-weight:900;line-height:1.02;letter-spacing:-.03em}
 .b-proof-body{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
