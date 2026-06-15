@@ -281,4 +281,10 @@ Deploys still 500 server-side; all work committed locally + dist staged for one 
   events. The branch is trivial correct logic over `data.content` and reuses the R1-#4-proven modal,
   so confidence is high; the happy path is fully confirmed. Test page deleted (cleanup). Zero console
   errors. PASS (positive-path UI confirmation deferred to a real browser).
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `ffb3cec`. Deploy: deferred (Netlify 500).
+
+**[01:08 BST] Turn 6 done — yielding.** Shipped R1-#11 alt preflight (`ffb3cec`). dist re-synced.
+Round 1 built: #1–#7, #9, #10, #11, #12 (+ #8 verified). Remaining: #13 footer columns (v3), #14
+release board (v5), #15 block diff (v4), #16 review notes (v5), #17 resolveFields (v3), #18 site
+settings (v4), #19 Products NORTH STAR (v5/high), #20 Team panel NORTH STAR (v5). Next: the v5
+governance items (#14, #16) then the two north-star builds. Deploys still 500 server-side.
