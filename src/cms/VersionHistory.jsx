@@ -28,7 +28,7 @@ export default function VersionHistory({ versions = [], onRestore, onClose }) {
                   <span className="gs-version-label">{v.label || 'Published'}</span>
                   {i === 0 && <span className="gs-version-tag">latest</span>}
                 </div>
-                <div className="gs-version-when">{when(v.ts)}</div>
+                <div className="gs-version-when">{when(v.ts)}{v.by ? ' · ' + v.by : ''}</div>
               </div>
               <button className="gs-btn ghost sm" onClick={() => onRestore(v)}>Restore</button>
             </li>

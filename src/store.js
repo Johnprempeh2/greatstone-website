@@ -18,8 +18,14 @@ const blk = (type, props) => {
 
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
-  return { title, background, status, seo: seo || { title: title + ' — Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [] };
+  return { title, background, status, seo: seo || { title: title + ' — Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
 }
+
+// the editorial state machine: who can move where (the future Laravel backend enforces this
+// server-side; here it makes the status real instead of a label). Approving + publishing need
+// the `publish` capability (admins); editors propose by requesting review.
+export const TRANSITIONS = { draft: ['review'], review: ['approved', 'draft'], approved: ['published', 'draft'], published: ['draft'] };
+export const canTransition = (from, to) => !!(TRANSITIONS[from] && TRANSITIONS[from].includes(to));
 
 export function seedState() {
   const pages = {
@@ -178,13 +184,15 @@ function migrate(state) {
     if (!p.status) p.status = 'published';
     if (!p.seo) p.seo = { title: (p.title || 'Page') + ' — Greatstone International', description: '', ogImage: '' };
     if (!Array.isArray(p.versions)) p.versions = [];
+    if (!Array.isArray(p.statusHistory)) p.statusHistory = [];
+    if (p.approvedBy === undefined) p.approvedBy = null;
   });
   if (!state.settings) state.settings = { background: 'stone-summit', siteName: 'Greatstone International' };
   return state;
 }
 
 export function persist(state) {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
 }
 
 export function slugify(title) {
@@ -200,8 +208,54 @@ export function addPageTo(state, title) {
   return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
 }
 
-// keep at most the last 20 snapshots; newest first
-export function pushVersion(versions, label, data) {
-  const snap = { ts: Date.now(), label, data };
-  return [snap, ...(versions || [])].slice(0, 20);
+// keep at most the last 20 snapshots; newest first. snap = { label, data, by?, status? }
+export function pushVersion(versions, snap) {
+  return [{ ts: Date.now(), ...snap }, ...(versions || [])].slice(0, 20);
+}
+
+// ---- page management (the ops a real content team needs) ----
+export function removePage(state, slug) {
+  if (!state.pages[slug] || state.order.length <= 1) return state;
+  const pages = { ...state.pages }; delete pages[slug];
+  return { ...state, order: state.order.filter((s) => s !== slug), pages, _goto: state.order.find((s) => s !== slug) };
+}
+
+export function duplicatePage(state, slug) {
+  const src = state.pages[slug]; if (!src) return state;
+  let dup = slugify(src.title + ' copy'); let n = 2;
+  while (state.pages[dup]) dup = slugify(src.title + ' copy') + '-' + n++;
+  const title = src.title + ' copy';
+  const clone = JSON.parse(JSON.stringify({ ...src, title, status: 'draft', versions: [], statusHistory: [], approvedBy: null }));
+  // fresh block ids so the clone is independent
+  if (clone.data && clone.data.content) clone.data.content.forEach((b) => { b.props = { ...b.props, id: rid(b.type) }; });
+  clone.data.root = { props: { title } };
+  clone.published = clone.data;
+  const i = state.order.indexOf(slug);
+  const order = [...state.order]; order.splice(i + 1, 0, dup);
+  return { ...state, order, pages: { ...state.pages, [dup]: clone }, _goto: dup };
+}
+
+export function renamePage(state, slug, title) {
+  const p = state.pages[slug]; if (!p || !title) return state;
+  const data = { ...p.data, root: { ...(p.data.root || {}), props: { ...((p.data.root || {}).props || {}), title } } };
+  return { ...state, pages: { ...state.pages, [slug]: { ...p, title, data } } };
+}
+
+export function movePage(state, slug, dir) {
+  const order = [...state.order]; const i = order.indexOf(slug); const j = i + dir;
+  if (i < 0 || j < 0 || j >= order.length) return state;
+  [order[i], order[j]] = [order[j], order[i]];
+  return { ...state, order };
+}
+
+// re-key a page's slug (the slug IS the map key + an entry in order). Records a redirect
+// intent so the future backend can 301 the old path.
+export function setSlug(state, oldSlug, nextRaw) {
+  let next = slugify(nextRaw); let n = 2;
+  if (next === oldSlug || !state.pages[oldSlug]) return state;
+  while (state.pages[next]) next = slugify(nextRaw) + '-' + n++;
+  const pages = {}; Object.keys(state.pages).forEach((k) => { pages[k === oldSlug ? next : k] = state.pages[k]; });
+  const order = state.order.map((s) => (s === oldSlug ? next : s));
+  const redirects = [...(state.redirects || []), { from: oldSlug, to: next, ts: Date.now() }];
+  return { ...state, order, pages, redirects, _goto: next };
 }

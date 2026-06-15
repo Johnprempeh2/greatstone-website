@@ -7,6 +7,7 @@ export default function CommandPalette({ open, onClose, commands }) {
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const inputRef = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => { if (open) { setQ(''); setSel(0); const t = setTimeout(() => inputRef.current && inputRef.current.focus(), 20); return () => clearTimeout(t); } }, [open]);
 
@@ -17,6 +18,8 @@ export default function CommandPalette({ open, onClose, commands }) {
   }, [q, commands]);
 
   useEffect(() => { setSel(0); }, [q]);
+  // keep the highlighted row in view during keyboard navigation
+  useEffect(() => { if (open && listRef.current) { const el = listRef.current.querySelector('.is-sel'); if (el) el.scrollIntoView({ block: 'nearest' }); } }, [sel, q, open]);
   if (!open) return null;
 
   const run = (c) => { if (!c || c.disabled) return; onClose(); c.run(); };
@@ -35,7 +38,7 @@ export default function CommandPalette({ open, onClose, commands }) {
           <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a command or search pages…" aria-label="Command" />
           <kbd>esc</kbd>
         </div>
-        <ul className="gs-cmd-list">
+        <ul className="gs-cmd-list" ref={listRef}>
           {filtered.map((c, i) => (
             <li key={c.id} className={'gs-cmd-item' + (i === sel ? ' is-sel' : '') + (c.disabled ? ' is-disabled' : '')}
               onMouseEnter={() => setSel(i)} onMouseDown={(e) => { e.preventDefault(); run(c); }}>

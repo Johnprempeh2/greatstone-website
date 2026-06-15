@@ -8,7 +8,7 @@
 // roles → what each can do (the capability map the UI reads; mirrors the planned RBAC)
 export const ROLES = {
   admin:  { label: 'Administrator', can: { edit: true,  publish: true,  manageUsers: true } },
-  editor: { label: 'Editor',        can: { edit: true,  publish: true,  manageUsers: false } },
+  editor: { label: 'Editor',        can: { edit: true,  publish: false, manageUsers: false } }, // proposes; can't self-publish
   viewer: { label: 'Reviewer',      can: { edit: false, publish: false, manageUsers: false } },
 };
 

@@ -11,7 +11,8 @@ import VersionHistory from './cms/VersionHistory.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug } from './store.js';
+import EditorBoundary from './cms/EditorBoundary.jsx';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -38,8 +39,9 @@ export default function App() {
 
   const authed = !!user;
   const canEdit = can(user, 'edit');
+  const canPublish = can(user, 'publish');
 
-  useEffect(() => { persist(state); }, [state]);
+  useEffect(() => { if (!persist(state)) flash('Storage is full. Recent changes may not be saved; trim version history or publish.'); }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const onHash = () => setAdminRoute(isAdminRoute());
     addEventListener('hashchange', onHash);
@@ -70,30 +72,81 @@ export default function App() {
     setState((s) => ({ ...s, pages: { ...s.pages, [slug]: { ...s.pages[slug], ...patch } } }));
   }
 
+  // publishing is gated: only a publisher (admin) can do it, and only once the page is approved
   function publish(data) {
+    if (!canPublish) return flash('Editors can’t publish directly. Request review, then an admin approves and publishes.');
+    if (page.status !== 'approved') return flash('This page needs approval before it can go live.');
     setState((s) => {
       const p = s.pages[current];
-      const versions = pushVersion(p.versions, 'Published', p.published);
-      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, status: 'published', versions } } };
+      const versions = pushVersion(p.versions, { label: 'Published', data, by: user.email, status: 'published' });
+      const statusHistory = [...(p.statusHistory || []), { from: p.status, to: 'published', by: user.email, ts: Date.now() }];
+      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, status: 'published', versions, statusHistory } } };
     });
     setMode('view'); setPanel(null);
     flash('Published. Snapshot saved to history.');
   }
   function saveDraft(data) { patchPage(current, { data }); setSavedAt(Date.now()); }
   function setBg(kind) { patchPage(current, { background: kind }); }
-  function setStatus(st) { patchPage(current, { status: st }); flash('Status: ' + (STATUSES.find((x) => x.id === st) || {}).label); }
+  // enforced status machine + audit trail; approving needs publish rights
+  function setStatus(to) {
+    const from = page.status;
+    if (from === to) return;
+    if (to === 'published') return publish(page.data);   // publishing has its own gated path
+    if (!canTransition(from, to)) return flash('Can’t move from ' + from + ' to ' + to + ' directly.');
+    if (to === 'approved' && !canPublish) return flash('Only an admin can approve a page.');
+    setState((s) => {
+      const p = s.pages[current];
+      const statusHistory = [...(p.statusHistory || []), { from, to, by: user ? user.email : null, ts: Date.now() }];
+      const patch = { status: to, statusHistory };
+      if (to === 'approved') patch.approvedBy = user ? user.email : null;
+      return { ...s, pages: { ...s.pages, [current]: { ...p, ...patch } } };
+    });
+    flash('Status: ' + (STATUSES.find((x) => x.id === to) || {}).label);
+  }
   function setSeo(seo) { patchPage(current, { seo }); }
   function newPage() {
     const title = window.prompt('New page title', 'New page');
-    if (!title) return;
-    setState((s) => { const next = addPageTo(s, title); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
+    if (!title || !title.trim()) return;
+    setState((s) => { const next = addPageTo(s, title.trim()); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
+  }
+  function deletePage(slug) {
+    if (state.order.length <= 1) return flash('You can’t delete the only page.');
+    if (!window.confirm('Delete “' + state.pages[slug].title + '”? This removes the page and its history.')) return;
+    setState((s) => { const next = removePage(s, slug); if (current === slug && next._goto) { setCurrent(next._goto); setPuckKey((k) => k + 1); } return next; });
+    flash('Page deleted.');
+  }
+  function clonePage(slug) {
+    setState((s) => { const next = duplicatePage(s, slug); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
+    flash('Duplicated as a new draft.');
+  }
+  function retitlePage(slug) {
+    const cur = state.pages[slug];
+    const title = window.prompt('Rename page', cur.title);
+    if (!title || !title.trim() || title.trim() === cur.title) return;
+    setState((s) => renamePage(s, slug, title.trim())); setPuckKey((k) => k + 1);
+    flash('Page renamed.');
+  }
+  function reorderPage(slug, dir) { setState((s) => movePage(s, slug, dir)); }
+  function renameSlug(slug, next) {
+    if (!next || !next.trim()) return;
+    setState((s) => { const r = setSlug(s, slug, next.trim()); if (current === slug && r._goto) setCurrent(r._goto); return r; });
+    flash('URL updated. The old path will redirect.');
   }
   function navigate(slug) { setCurrent(slug); setMode('view'); setQuery(''); setPanel(null); }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
-  function restoreVersion(v) { patchPage(current, { data: v.data }); setPuckKey((k) => k + 1); setPanel(null); flash('Restored a snapshot into the draft. Publish to make it live.'); }
-  function discardDraft() { patchPage(current, { data: page.published }); setPuckKey((k) => k + 1); flash('Reverted to the published version.'); }
+  // restore/discard snapshot the current draft first, so neither is unrecoverable
+  function restoreVersion(v) {
+    if (!window.confirm('Restore this snapshot into the draft? Your current draft is snapshotted first.')) return;
+    setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before restore', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: v.data, versions } } }; });
+    setPuckKey((k) => k + 1); setPanel(null); flash('Restored into the draft. Request review to publish it.');
+  }
+  function discardDraft() {
+    if (!window.confirm('Discard unpublished changes and revert to the live version?')) return;
+    setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: p.published, versions } } }; });
+    setPuckKey((k) => k + 1); flash('Reverted to the published version.');
+  }
   function addBlock(type) {
     const def = config.components[type];
     const block = { type, props: { id: newId(type), ...(def && def.defaultProps ? def.defaultProps : {}) } };
@@ -104,15 +157,21 @@ export default function App() {
     flash('Added ' + (def ? def.label : type));
   }
 
-  // Cmd/Ctrl-K toggles the palette; Escape closes whichever slide-over panel is open
+  // Cmd/Ctrl-K palette, Cmd/Ctrl-S publish (intercepts the browser save), Escape closes overlays
   useEffect(() => {
     const onKey = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen((o) => !o); }
-      else if (e.key === 'Escape' && panel) { setPanel(null); }
+      const k = e.key.toLowerCase();
+      if ((e.metaKey || e.ctrlKey) && k === 'k') { e.preventDefault(); setCmdOpen((o) => !o); }
+      else if ((e.metaKey || e.ctrlKey) && k === 's') {
+        e.preventDefault();
+        if (mode !== 'edit') return;
+        if (canPublish && page.status === 'approved') publish(page.data);
+        else flash(canPublish ? 'Changes autosave. Approve the page, then publish.' : 'Changes autosave. Request review to get it published.');
+      } else if (k === 'escape') { if (cmdOpen) setCmdOpen(false); else if (panel) setPanel(null); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [panel]);
+  }, [panel, cmdOpen, mode, page, canPublish]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commands = useMemo(() => {
     const cmds = [];
@@ -123,21 +182,26 @@ export default function App() {
     if (!authed) return cmds;
     if (canEdit) {
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
+      cmds.push({ id: 'dup', group: 'Pages', label: 'Duplicate this page', run: () => clonePage(current) });
+      cmds.push({ id: 'rename', group: 'Pages', label: 'Rename this page', run: () => retitlePage(current) });
+      if (state.order.length > 1) cmds.push({ id: 'del', group: 'Pages', label: 'Delete this page…', run: () => deletePage(current) });
       if (mode === 'view') cmds.push({ id: 'edit', group: 'Editor', label: 'Edit this page', hint: '↵', run: () => setMode('edit') });
       if (mode === 'edit') {
         cmds.push({ id: 'preview', group: 'Editor', label: 'Preview (back to site)', run: () => setMode('view') });
-        cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
+        if (canPublish) cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
         cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
         cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
         cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
         Object.entries(config.components).forEach(([type, def]) => cmds.push({ id: 'add-' + type, group: 'Add block', label: def.label, run: () => addBlock(type) }));
-        STATUSES.forEach((s) => cmds.push({ id: 'status-' + s.id, group: 'Set status', label: s.label, run: () => setStatus(s.id) }));
+        // only legal, capability-allowed transitions appear
+        [...(TRANSITIONS[page.status] || []).filter((t) => ((t === 'approved' || t === 'published') ? canPublish : true))]
+          .forEach((id) => cmds.push({ id: 'status-' + id, group: 'Set status', label: (STATUSES.find((s) => s.id === id) || {}).label, run: () => setStatus(id) }));
       }
       STAGE_OPTIONS.forEach((o) => cmds.push({ id: 'bg-' + o.id, group: 'Background', label: o.label, run: () => setBg(o.id) }));
     }
     cmds.push({ id: 'signout', group: 'Admin', label: 'Sign out (' + user.name + ')', run: doSignOut });
     return cmds;
-  }, [state, current, mode, page, user, canEdit]);
+  }, [state, current, mode, page, user, canEdit, canPublish]);
 
   const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss }} />;
   const overlays = (
@@ -166,9 +230,10 @@ export default function App() {
       <div className="is-edit">
         {overlays}
         <Stage background={bg} />
-        {panel === 'pages' && <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onClose={() => setPanel(null)} />}
+        {panel === 'pages' && <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} />}
         {panel === 'seo' && <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onClose={() => setPanel(null)} />}
         {panel === 'history' && <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} />}
+        <EditorBoundary key={'eb:' + current + ':' + puckKey} label="editor" onReset={discardDraft} resetLabel="Discard draft & recover">
         <Puck
           key={current + ':' + puckKey}
           config={config}
@@ -192,7 +257,8 @@ export default function App() {
                 <label className="gs-statusctl" data-status={page.status} title="Page status">
                   <span className="gs-dot" />
                   <select value={page.status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
-                    {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    {[page.status, ...(TRANSITIONS[page.status] || []).filter((t) => ((t === 'approved' || t === 'published') ? canPublish : true))]
+                      .map((id) => <option key={id} value={id}>{(STATUSES.find((s) => s.id === id) || {}).label}</option>)}
                   </select>
                 </label>
                 <span className={'gs-saved' + (hasUnpublished ? ' is-draft' : '')} title={savedAt ? 'Draft autosaved locally' : ''}>
@@ -213,11 +279,15 @@ export default function App() {
                 {/* account + publish */}
                 <span className="gs-userchip" title={user.email + ' · ' + ROLES[user.role].label}>{user.name}</span>
                 <button className="gs-signout" onClick={doSignOut} title="Sign out">Sign out</button>
-                {children}
+                {canPublish ? children : (
+                  <button className="gs-btn primary" onClick={() => setStatus('review')} disabled={page.status !== 'draft'}
+                    title={page.status !== 'draft' ? 'Already submitted for review' : 'Send to an admin for review'}>Request review</button>
+                )}
               </div>
             ),
           }}
         />
+        </EditorBoundary>
       </div>
     );
   }
@@ -233,7 +303,9 @@ export default function App() {
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
       <main className="gs-public" key={current}>
-        <Render config={config} data={page.published || page.data} />
+        <EditorBoundary key={'vb:' + current} label="page">
+          <Render config={config} data={page.published || page.data} />
+        </EditorBoundary>
       </main>
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
     </div>
