@@ -24,7 +24,9 @@
 .gs-scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(60% 50% at 50% 50%,transparent,rgba(18,18,18,.35) 80%)}
 
-/* the public render layer + footer sit over the stage */
-.gs-public{position:relative;z-index:2}
+/* the public render layer + footer sit over the stage. The key={current} remount on navigation
+   plays a brief page fade-in (opacity only — reduced-motion-safe). */
+.gs-public{position:relative;z-index:2;animation:gsPageIn .4s var(--gs-ease)}
+@keyframes gsPageIn{from{opacity:0}to{opacity:1}}
 .site-footer{position:relative;z-index:2;background:linear-gradient(to top,rgba(12,14,12,.6),transparent)}
 .site-footer .foot-wave{opacity:.62;width:min(480px,64vw)}

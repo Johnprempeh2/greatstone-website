@@ -202,7 +202,13 @@ export default function App() {
     setState((s) => { const r = setSlug(s, slug, n); if (current === slug && r._goto) setCurrent(r._goto); return r; });
     flash('URL updated. The old path will redirect.');
   }
-  function navigate(slug) { setCurrent(slug); setMode('view'); setQuery(''); setPanel(null); }
+  // public navigation: switch page, leave any editor mode, and reset scroll to the top (a new page
+  // should start at its hero, not wherever the last one was scrolled to). The .gs-public remount
+  // (key={current}) gives the brief fade — see gsPageIn in index.css.
+  function navigate(slug) {
+    setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }

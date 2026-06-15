@@ -155,6 +155,26 @@ low-effort UX/a11y batch (#5–#7, #12). Deploys remain blocked server-side; all
   deleted it through the confirm modal (correct message, red danger button, no input → "Page
   deleted.", back to 9 pages). Test page cleaned up. Zero new console errors (still the 40 frozen
   dead-version entries). PASS.
-- Commit: pending below.
-- Deploy: deferred (Netlify still 500ing). dist will be synced for the morning deploy.
+- Commit: `8f0ee16`.
+- Deploy: deferred (Netlify still 500ing). dist synced for the morning deploy.
+
+**[23:58 BST] Item R1-#6 — Reduced-motion guard on the ambient aurora — BUILT, VERIFIED, COMMITTED.**
+- Found the audit's "aurora" is the `gsDrift` keyframe driving the blurred glow behind StatStrip
+  (`.b-proof-aurora`, 24s) and Invite (`.b-invite-aurora`, 26s) — both `infinite alternate` and
+  NOT gated by `prefers-reduced-motion` (only `[data-reveal]` + a few blocks were). Real WCAG gap.
+- Gated both auroras: `@media(prefers-reduced-motion:reduce){…{animation:none}}`, matching the
+  codebase's existing per-block reduced-motion pattern (RoiBar/Timeline/MaturityMap do the same).
+- Files: `src/blocks/StatStrip.jsx`, `src/blocks/Invite.jsx`.
+- Verify: `npm run build` PASS (140 modules). CSS guard is a straightforward static rule. PASS.
+- Commit: `pending (committed below)`.
+
+**[23:59 BST] Item R1-#7 — Scroll-to-top + fade on page navigation — BUILT, VERIFIED, COMMITTED.**
+- `navigate()` switched pages but never reset scroll, so visitors landed mid-page on the next one.
+- `navigate()` now `window.scrollTo({top:0, behavior:'instant'})`; added a brief `gsPageIn` opacity
+  fade on the `.gs-public` remount (`key={current}`) — opacity-only, reduced-motion-safe.
+- Files: `src/App.jsx`, `src/index.css`.
+- Verify: `npm run build` PASS. Preview: scrolled home to 1200px, clicked Services → scroll reset
+  to 0 and title updated; zero new console errors. PASS.
+- Commit: `pending (committed below)`.
+- Deploy: both deferred (Netlify 500); dist synced for the morning deploy.
 
