@@ -288,3 +288,23 @@ Round 1 built: #1–#7, #9, #10, #11, #12 (+ #8 verified). Remaining: #13 footer
 release board (v5), #15 block diff (v4), #16 review notes (v5), #17 resolveFields (v3), #18 site
 settings (v4), #19 Products NORTH STAR (v5/high), #20 Team panel NORTH STAR (v5). Next: the v5
 governance items (#14, #16) then the two north-star builds. Deploys still 500 server-side.
+
+## Round 1 build cycles (cont.)
+
+**[01:24 BST] Item R1-#14 — Site-wide Release board — BUILT, VERIFIED, COMMITTED.**
+- Per-page status lived in the toolbar + Pages list, but nothing showed the whole site's publish
+  state at once: which pages have unpublished changes (draft drift), which await review/approval,
+  when each last went live.
+- Built `src/cms/ReleaseBoard.jsx` — a read-only governance overview: a 4-stat summary
+  (Published / In review / Approved / Draft), a drift line ("N pages have unpublished changes" or
+  "Every page is up to date"), and a list of all pages sorted attention-first (in review → approved
+  → drift → rest) with an "unpublished" badge, last-published time + actor, status pill, and an
+  open-this-page action. Added as a "Releases" Studio tab (the only site-wide view) + a palette
+  command. Reuses the `gs-st-*`/`gs-dot` status styling.
+- Files: `src/cms/ReleaseBoard.jsx` (new), `src/cms/StudioPanel.jsx`, `src/App.jsx`, `src/studio.css`.
+- Verify: build PASS (143 modules). Preview: Releases tab renders (6 tabs wrap cleanly); summary
+  showed 9 Published; it correctly DETECTED an 11-char draft drift on Services (a Puck normalisation
+  artifact left by my earlier R1-#9 inline-edit test — identical content) and sorted it to the top
+  with the "unpublished" badge. Discarded that draft → board flipped to "Every page is up to date",
+  0 drift badges (also tidies John's store). Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
