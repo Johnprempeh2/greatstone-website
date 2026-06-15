@@ -231,6 +231,29 @@
 .gs-rel-drift{font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#1a0c0c;background:var(--gs-warning);border-radius:5px;padding:2px 6px;font-style:normal}
 .gs-rel-meta{font-size:.74rem;color:var(--gs-faint)}
 
+/* products management panel */
+.gs-prods{list-style:none;display:flex;flex-direction:column;gap:6px;margin:14px 0}
+.gs-prod{border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02);overflow:hidden}
+.gs-prod-top{display:flex;align-items:center}
+.gs-prod-name{flex:1;display:flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;text-align:left;
+  padding:11px 12px;font-family:'Montserrat',sans-serif;font-size:.9rem;font-weight:700;color:var(--gs-text)}
+.gs-prod-caret{display:inline-block;transition:transform .15s var(--gs-ease);color:var(--gs-faint);font-size:.7rem}
+.gs-prod-caret.is-open{transform:rotate(90deg)}
+.gs-prod-flag{font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-faint);font-style:normal;
+  border:1px solid var(--gs-border-soft);border-radius:5px;padding:1px 6px}
+.gs-prod-del{background:none;border:0;color:var(--gs-faint);font-size:1.1rem;cursor:pointer;padding:8px 12px;line-height:1}
+.gs-prod-del:hover{color:var(--gs-danger)}
+.gs-prod-body{padding:4px 12px 14px;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--gs-border-soft)}
+.gs-prod-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gs-prods-add{width:100%}
+.gs-prods-cats-toggle{margin-top:18px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--gs-border-soft);
+  padding:14px 2px 0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:800;color:var(--gs-text)}
+.gs-cats{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.gs-cat{display:flex;align-items:center;gap:6px}
+.gs-cat-name{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:8px;
+  padding:8px 10px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.86rem;outline:none}
+.gs-cat-name:focus{border-color:var(--gs-accent)}
+
 .gs-versions{list-style:none;position:relative}
 .gs-versions::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--gs-border-soft)}
 .gs-version{display:flex;align-items:center;gap:14px;padding:12px 0;position:relative}

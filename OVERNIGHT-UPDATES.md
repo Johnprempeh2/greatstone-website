@@ -369,6 +369,22 @@ backend handoff spec) then #20 Team/roles + invitations prototype. The remaining
 **[02:02 BST] Turn 9 done — yielding.** Shipped R1-#19 part 1: the Products catalogue foundation
 (`4fbce97`) — a real content model + on-brand Storefront, the first north-star slice. Next turn
 continues #19 with the in-studio Products management panel.
+
+**[02:18 BST] Item R1-#19 (part 2) — In-studio Products management panel — BUILT, VERIFIED, COMMITTED.**
+- Built `src/cms/ProductsPanel.jsx` — a "Products" Studio tab to manage the catalogue: list all
+  products (expandable editors), add a product, edit every field (name, category, status, price,
+  period, licence, badge, summary, features-one-per-line) committing to the store on blur, remove a
+  product (confirm modal), plus a collapsible Categories manager (add/edit/remove). App got the
+  CRUD wiring (createProduct/editProduct/deleteProduct + category equivalents) over the store
+  helpers, a palette command, and the 7th Studio tab. The Storefront reads the same catalogue, so
+  edits show on the public Products page live.
+- Files: `src/App.jsx`, `src/cms/ProductsPanel.jsx` (new), `src/cms/StudioPanel.jsx`, `src/studio.css`.
+- Verify: build PASS (146 modules). Preview: opened Products tab → 5 products listed; "+ Add product"
+  → 6 (store + panel); expanded the new one, renamed it "Cornerstone Governance" → committed to the
+  store on blur; removed it via the confirm modal ("Remove 'Cornerstone Governance' from the
+  catalogue?") → back to 5. Test product cleaned up. Build clean; only the 16 frozen "[vite] Failed
+  to reload" HMR messages from the multi-edit sequence (not runtime errors). PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
 - NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.

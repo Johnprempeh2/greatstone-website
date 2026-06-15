@@ -23,13 +23,14 @@ import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
 import ActivityPanel from './cms/ActivityPanel.jsx';
 import ReleaseBoard from './cms/ReleaseBoard.jsx';
+import ProductsPanel from './cms/ProductsPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
@@ -249,6 +250,22 @@ export default function App() {
   }
   function reorderPage(slug, dir) { setState((s) => movePage(s, slug, dir)); }
   function registerAsset(asset) { setState((s) => addAsset(s, asset)); } // add a picked/uploaded image to the library
+  // product catalogue management (admin): add/edit/remove products + categories. Mutates the store
+  // through the same CRUD the future Laravel API will mirror; the Storefront reads the result live.
+  function createProduct() { setState((s) => addProduct(s, {})); flash('Product added. Edit its details below.'); }
+  function editProduct(id, patch) { setState((s) => updateProduct(s, id, patch)); }
+  async function deleteProduct(id, name) {
+    const ok = await ask({ kind: 'confirm', title: 'Remove product', message: 'Remove “' + (name || 'this product') + '” from the catalogue?', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
+    setState((s) => removeProduct(s, id)); flash('Product removed.');
+  }
+  function createCategory() { setState((s) => addCategory(s, {})); }
+  async function deleteCategory(id, name) {
+    const ok = await ask({ kind: 'confirm', title: 'Remove category', message: 'Remove “' + (name || 'this category') + '”? Products in it become uncategorised.', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
+    setState((s) => removeCategory(s, id)); flash('Category removed.');
+  }
+  function editCategory(id, patch) { setState((s) => ({ ...s, categories: (s.categories || []).map((c) => (c.id === id ? { ...c, ...patch, id } : c)) })); }
   function renameSlug(slug, next) {
     const n = (next || '').trim();
     if (!n || n === slug) return;
@@ -324,6 +341,7 @@ export default function App() {
         if (canPublish) cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
         cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
         cmds.push({ id: 'releases', group: 'Editor', label: 'Open release board', run: () => setPanel('releases') });
+        cmds.push({ id: 'products', group: 'Editor', label: 'Open products catalogue', run: () => setPanel('products') });
         cmds.push({ id: 'bgpanel', group: 'Editor', label: 'Open 3D background editor', run: () => setPanel('background') });
         cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
         cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
@@ -378,6 +396,7 @@ export default function App() {
           <StudioPanel tab={panel} onTab={setPanel} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
+            products: <ProductsPanel products={state.products} categories={state.categories} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
