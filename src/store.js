@@ -166,7 +166,7 @@ export function seedState() {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
   const order = ['home', 'method', 'services', 'industries', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
-  return { settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages };
+  return { settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {} };
 }
 
 export function load() {
@@ -188,7 +188,27 @@ function migrate(state) {
     if (p.approvedBy === undefined) p.approvedBy = null;
   });
   if (!state.settings) state.settings = { background: 'stone-summit', siteName: 'Greatstone International' };
+  if (!state.assets) state.assets = {};
   return state;
+}
+
+// ---- media library (stand-in for the future Laravel media / S3 endpoint) ----
+// Assets are a registry of image URLs (+ alt) the team has used, so they can be re-picked
+// across blocks. Blocks store the URL itself as the prop value (kept serialisable + decoupled),
+// not an id — the library is for reuse, not resolution.
+export function addAsset(state, asset) {
+  if (!asset || !asset.url) return state;
+  const assets = state.assets || {};
+  if (Object.values(assets).some((a) => a.url === asset.url)) return state; // dedupe by url
+  const id = rid('asset');
+  return { ...state, assets: { ...assets, [id]: { id, url: asset.url, alt: asset.alt || '', ts: Date.now() } } };
+}
+export function removeAsset(state, id) {
+  const assets = { ...(state.assets || {}) }; delete assets[id];
+  return { ...state, assets };
+}
+export function listAssets(state) {
+  return Object.values(state.assets || {}).sort((a, b) => (b.ts || 0) - (a.ts || 0));
 }
 
 export function persist(state) {

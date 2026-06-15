@@ -1,9 +1,10 @@
 import { useReveal } from './reveal.js';
+import { MediaField } from '../cms/MediaField.jsx';
 
 const initials = (name) => (name || '').trim().split(/\s+/).map((w) => w[0] || '').slice(0, 2).join('').toUpperCase();
 
-// The people strip: senior hands, named. Avatar initials are derived from the name, so editing
-// a name updates the badge automatically.
+// The people strip: senior hands, named. A real photo if one is set, otherwise an initials
+// badge derived from the name (so it always reads, even before headshots are added).
 export function Team({ kicker, heading, items = [] }) {
   const ref = useReveal([items.length]);
   return (
@@ -14,7 +15,9 @@ export function Team({ kicker, heading, items = [] }) {
         <div className="team-grid">
           {items.map((m, i) => (
             <div className="card team-card" data-reveal style={{ transitionDelay: `${i * 55}ms` }} key={i}>
-              <span className="avatar" aria-hidden="true">{initials(m.name)}</span>
+              {m.photo
+                ? <img className="avatar avatar-img" src={m.photo} alt={m.name || ''} loading="lazy" />
+                : <span className="avatar" aria-hidden="true">{initials(m.name)}</span>}
               <div><div className="t-name">{m.name}</div><div className="t-role">{m.role}</div></div>
             </div>
           ))}
@@ -33,6 +36,7 @@ export const css = `
 .team-card{display:flex;align-items:center;gap:16px}
 .team-card .avatar{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.95rem;
   color:var(--gs-accent);background:radial-gradient(circle at 32% 28%,rgba(27,80,57,.9),rgba(14,49,34,.9));border:1px solid var(--gs-border);letter-spacing:.02em}
+.team-card .avatar-img{object-fit:cover}
 .team-card .t-name{font-weight:700;font-size:1rem;line-height:1.2}
 .team-card .t-role{font-size:.82rem;color:var(--gs-faint);margin-top:2px}
 `;
@@ -46,8 +50,8 @@ export const puck = {
     heading: { type: 'text', label: 'Heading', contentEditable: true },
     items: {
       type: 'array', label: 'People',
-      arrayFields: { name: { type: 'text', label: 'Name' }, role: { type: 'text', label: 'Role' } },
-      defaultItemProps: { name: 'New person', role: 'Role' },
+      arrayFields: { name: { type: 'text', label: 'Name' }, role: { type: 'text', label: 'Role' }, photo: { type: 'custom', label: 'Photo', render: (props) => <MediaField {...props} /> } },
+      defaultItemProps: { name: 'New person', role: 'Role', photo: '' },
       getItemSummary: (item) => item.name || 'Person',
     },
   },

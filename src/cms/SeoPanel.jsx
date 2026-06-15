@@ -1,3 +1,5 @@
+import { MediaField } from './MediaField.jsx';
+
 // In-context SEO: edit the meta title/description and watch a live Google result and social
 // card update, with length guidance (green in range, amber out). Catches the silent SEO
 // mistakes (missing/over-long meta) before publish, where marketing can actually see them.
@@ -31,10 +33,10 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onClose }) {
           <span className="gs-field-label">Meta description <em className={'gs-meter ' + dm.cls}>{desc.length} · {dm.note}</em></span>
           <textarea rows={3} value={desc} onChange={(e) => set('description', e.target.value)} placeholder="One honest line about this page." />
         </label>
-        <label className="gs-field">
-          <span className="gs-field-label">Social image URL</span>
-          <input value={seo.ogImage || ''} onChange={(e) => set('ogImage', e.target.value)} placeholder="https://… (optional)" />
-        </label>
+        <div className="gs-field">
+          <span className="gs-field-label">Social image</span>
+          <MediaField value={seo.ogImage || ''} onChange={(v) => set('ogImage', v)} />
+        </div>
 
         <div className="gs-preview-label">Search result</div>
         <div className="gs-serp">

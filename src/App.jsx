@@ -11,8 +11,9 @@ import VersionHistory from './cms/VersionHistory.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
+import { MediaContext } from './cms/MediaField.jsx';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -128,6 +129,7 @@ export default function App() {
     flash('Page renamed.');
   }
   function reorderPage(slug, dir) { setState((s) => movePage(s, slug, dir)); }
+  function registerAsset(asset) { setState((s) => addAsset(s, asset)); } // add a picked/uploaded image to the library
   function renameSlug(slug, next) {
     if (!next || !next.trim()) return;
     setState((s) => { const r = setSlug(s, slug, next.trim()); if (current === slug && r._goto) setCurrent(r._goto); return r; });
@@ -228,6 +230,7 @@ export default function App() {
 
   if (mode === 'edit' && canEdit) {
     return (
+      <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
       <div className="is-edit">
         {overlays}
         <Stage background={bg} />
@@ -290,6 +293,7 @@ export default function App() {
         />
         </EditorBoundary>
       </div>
+      </MediaContext.Provider>
     );
   }
 

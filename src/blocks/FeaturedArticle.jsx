@@ -1,8 +1,9 @@
 import { useReveal } from './reveal.js';
+import { MediaField } from '../cms/MediaField.jsx';
 
-// The insights hero post: a two-up card with a stone-echo media panel (giant glyph + terraced
-// ridges + corner wave) and the article meta. Editable label, title, excerpt and read time.
-export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime }) {
+// The insights hero post: a two-up card. A real hero image if one is set, otherwise the
+// stone-echo media panel (giant glyph + ridges + corner wave). Editable meta + read time.
+export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime, image }) {
   const ref = useReveal();
   return (
     <section ref={ref} className="b-featured-sec">
@@ -12,7 +13,9 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
             <path d="M170 30 A140 140 0 0 0 30 170" /><path d="M170 62 A108 108 0 0 0 62 170" />
             <path d="M170 94 A76 76 0 0 0 94 170" /><path d="M170 126 A44 44 0 0 0 126 170" />
           </svg>
-          <div className="featured__media" aria-hidden="true"><span className="featured__glyph">{glyph}</span></div>
+          <div className="featured__media" aria-hidden="true">
+            {image ? <img className="featured__img" src={image} alt="" loading="lazy" /> : <span className="featured__glyph">{glyph}</span>}
+          </div>
           <div className="featured__body">
             {label ? <span className="pill">{label}</span> : null}
             <h2 className="h3">{title}</h2>
@@ -40,6 +43,7 @@ export const css = `
 .featured__media::after{content:"";position:absolute;inset:0;
   background:repeating-linear-gradient(125deg,rgba(255,255,255,.06) 0 2px,transparent 2px 18px);transition:transform .6s var(--gs-ease)}
 .featured:hover .featured__media::after{transform:scale(1.12) rotate(1deg)}
+.featured__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .featured__glyph{position:absolute;left:6%;top:50%;translate:0 -50%;font-weight:900;font-size:clamp(7rem,16vw,15rem);line-height:.8;
   color:rgba(255,255,255,.08);transition:transform .6s var(--gs-ease)}
 .featured:hover .featured__glyph{transform:scale(1.06) translateX(6px)}
@@ -57,10 +61,11 @@ export const puck = {
     excerpt: { type: 'textarea', label: 'Excerpt', contentEditable: true },
     meta: { type: 'text', label: 'Meta (category etc.)', contentEditable: true },
     readTime: { type: 'text', label: 'Read time' },
-    glyph: { type: 'text', label: 'Media glyph' },
+    image: { type: 'custom', label: 'Hero image', render: (props) => <MediaField {...props} /> },
+    glyph: { type: 'text', label: 'Media glyph (fallback)' },
   },
   defaultProps: {
-    label: 'Featured', glyph: 'G',
+    label: 'Featured', glyph: 'G', image: '',
     title: 'The hours your business is quietly losing, and how to get them back.',
     excerpt: 'A field-level look at where time actually leaks: the manual handoffs, the duplicated tools, the approvals that wait on a single inbox.',
     meta: 'AI & Automation', readTime: '8 min read',
