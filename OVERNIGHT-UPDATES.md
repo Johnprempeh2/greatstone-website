@@ -240,5 +240,19 @@ skip-link, #13 footer columns, #14 release board, #15 block diff, #16 review not
   Published" + empty state; created a throwaway page, set it to review → Activity showed "Submitted
   for review · just now · admin@greatstone" and "Currently In review"; deleted the test page
   (cleanup, back to 9). Zero console errors. PASS.
+- Commit: `56a5e26`. Deploy: deferred (Netlify 500).
+
+**[00:50 BST] Item R1-#12 — Skip-to-content link + focus on nav — BUILT, VERIFIED, COMMITTED.**
+- No skip link and no focus management on SPA navigation (keyboard/screen-reader users had to tab
+  through the whole header on every page, and route changes weren't announced).
+- Added a `.gs-skip` "Skip to content" link (off-screen until focused, then slides in) targeting
+  `#gs-main`; gave the public `<main>` `id="gs-main"` + `tabIndex={-1}`; on public page change, move
+  focus to `#gs-main` (skipping the initial mount, `preventScroll`). Pairs with R1-#7's scroll reset.
+- Files: `src/App.jsx`, `src/studio.css`.
+- Verify: build PASS (142 modules). Preview: skip link present (text + `href="#gs-main"`), main
+  target exists (`tabIndex=-1`); navigating to Method moved focus to `#gs-main` (confirmed via
+  activeElement). The `:focus` visual reveal can't trigger headlessly (`document.hasFocus()` is
+  false in the preview tab) but both CSS rules are present + correct — standard pattern. Zero console
+  errors. PASS.
 - Commit: pending below. Deploy: deferred (Netlify 500).
 

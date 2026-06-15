@@ -339,6 +339,13 @@
 @keyframes gsSlide{from{transform:translateX(20px);opacity:.4}to{transform:none;opacity:1}}
 @keyframes gsToastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
+/* skip-to-content link: off-screen until focused, then slides in (keyboard/SR users) */
+.gs-skip{position:fixed;top:10px;left:10px;z-index:4000;transform:translateY(-160%);
+  background:var(--gs-accent);color:#0e1611;font-weight:800;font-size:.82rem;padding:10px 16px;
+  border-radius:10px;text-decoration:none;transition:transform .15s var(--gs-ease)}
+.gs-skip:focus{transform:translateY(0);outline:2px solid #0e1611;outline-offset:2px}
+.gs-public:focus{outline:none} /* don't ring the whole main when focus is moved there on nav */
+
 /* brief on-brand fallback while the lazy-loaded editor chunk (Puck) arrives — admins only */
 .gs-editor-loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
   background:rgba(14,22,17,.62);backdrop-filter:blur(8px);color:var(--gs-text-muted);

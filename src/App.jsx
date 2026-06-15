@@ -93,6 +93,7 @@ export default function App() {
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
+  const didNavMount = useRef(false); // skip the initial mount when moving focus on navigation
 
   const authed = !!user;
   const canEdit = can(user, 'edit');
@@ -111,6 +112,14 @@ export default function App() {
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
   }, [current, state.pages]);
+  // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
+  // mount so we don't steal focus on load). Pairs with the skip link + scroll-to-top in navigate().
+  useEffect(() => {
+    if (!didNavMount.current) { didNavMount.current = true; return; }
+    if (mode !== 'view') return;
+    const m = document.getElementById('gs-main');
+    if (m && typeof m.focus === 'function') m.focus({ preventScroll: true });
+  }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
   // route any "Book a Deep Dive" CTA (href="#book") to the contact page
   useEffect(() => {
     const onClick = (e) => {
@@ -392,6 +401,7 @@ export default function App() {
   return (
     <div className="is-view">
       {overlays}
+      <a className="gs-skip" href="#gs-main">Skip to content</a>
       <Stage background={bg} />
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
@@ -399,7 +409,7 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" key={current}>
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={current}>
         <EditorBoundary key={'vb:' + current} label="page">
           <PublicRender config={config} data={page.published || page.data} />
         </EditorBoundary>
