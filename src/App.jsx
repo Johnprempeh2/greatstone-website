@@ -136,7 +136,7 @@ export default function App() {
       <div className="is-view">
         {styleTag}
         <Stage background={bg} />
-        <SignIn onAuthed={() => { setAuthed(true); location.hash = ''; flash('Signed in. Editing unlocked.'); }} onCancel={() => { location.hash = ''; }} />
+        <SignIn onAuthed={() => { setAuthed(true); location.hash = ''; flash('Signed in. Editing is on.'); }} onCancel={() => { location.hash = ''; }} />
       </div>
     );
   }

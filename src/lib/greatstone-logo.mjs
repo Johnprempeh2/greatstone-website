@@ -125,40 +125,51 @@ export function mountGreatstoneLogo(container, opts = {}) {
   const ro=new ResizeObserver(resize); ro.observe(container); resize();
 
   const clock=new THREE.Clock(); const tmpV=new THREE.Vector3(); let raf=0, visible=true;
+  let scrollT=0, scrollS=0;   /* scroll progress 0..1 (target + smoothed) drives the fracture */
   const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting;},{threshold:0}); io.observe(container);
 
   function frame(){
     const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
     mouseS.x += (mouseT.x-mouseS.x)*(1-Math.exp(-3*dt)); mouseS.y += (mouseT.y-mouseS.y)*(1-Math.exp(-3*dt));
+    scrollS += (scrollT-scrollS)*(1-Math.exp(-4*dt));
+    let ry=0, rx=0, py=0;
     if (o.idle && !reduceMotion){
-      stone.rotation.y = Math.sin(t*0.1)*0.05 + (o.autoTurn ? t*0.12 : 0);
-      stone.rotation.x = Math.sin(t*0.13)*0.02;
-      stone.position.y = Math.sin(t*0.24)*0.06;
-    } else if (o.autoTurn && !reduceMotion){ stone.rotation.y = t*0.12; }
+      ry = Math.sin(t*0.1)*0.05 + (o.autoTurn ? t*0.12 : 0);
+      rx = Math.sin(t*0.13)*0.02;
+      py = Math.sin(t*0.24)*0.06;
+    } else if (o.autoTurn && !reduceMotion){ ry = t*0.12; }
+    stone.rotation.y = ry + scrollS*1.5;   /* scroll turns the stone */
+    stone.rotation.x = rx + scrollS*0.18;
+    stone.position.y = py;
     stone.updateMatrixWorld(true);
     const aspect = (container.clientWidth||1)/(container.clientHeight||1);
     let hoverAny=0;
-    slabs.forEach(g=>{ const u=g.userData;
-      const ex=u.base.x, ey=u.base.y, ez=u.base.z;                       /* fused mark (no scroll-explode) */
+    slabs.forEach((g,i)=>{ const u=g.userData;
+      const ex=u.base.x, ey=u.base.y, ez=u.base.z;
       tmpV.set(ex,ey,ez).applyMatrix4(stone.matrixWorld).project(camera); /* slab → screen */
       const dx=(tmpV.x-cursorN.x)*aspect, dy=(tmpV.y-cursorN.y);
       let tp = inside ? clamp(1-Math.hypot(dx,dy)/o.proxRadius,0,1) : 0; tp=tp*tp*(3-2*tp);
       u.prox += (tp-u.prox)*(1-Math.exp(-(u.lambda+1.5)*dt));
       hoverAny=Math.max(hoverAny,u.prox);
       const hs=u.prox*o.spreadLocal;
-      g.position.set(ex+u.dir.x*hs, ey+u.dir.y*hs, ez+u.dir.z*hs);
+      const ss=scrollS*(0.8+0.24*i);                                      /* scroll fractures the stack apart, staggered */
+      g.position.set(ex+u.dir.x*(hs+ss), ey+u.dir.y*(hs+ss), ez+u.dir.z*(hs+ss));
       if (!reduceMotion) g.position.y += Math.sin(t*0.5+u.phase)*0.025*(0.4+u.prox);
       const k=1-Math.exp(-u.lambda*dt);
       u.tilt.x += (mouseS.y-u.tilt.x)*k; u.tilt.y += (mouseS.x-u.tilt.y)*k;
-      g.rotation.set(u.tilt.x*0.06*u.amp*u.prox, u.tilt.y*0.06*u.amp*u.prox, 0);
+      g.rotation.set(u.tilt.x*0.06*u.amp*u.prox, u.tilt.y*0.06*u.amp*u.prox, scrollS*(i-2)*0.22);
     });
+    bloom.strength = o.bloom + scrollS*0.5; renderer.toneMappingExposure = o.exposure + scrollS*0.22;
     cursorLight.intensity = hoverAny*1.3; cursorLight.position.set(mouseS.x*5.5, -mouseS.y*4.2, 4.5);
     if (sceneRT){ renderer.setRenderTarget(sceneRT); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null); }
     composer.render();
   }
   function loop(){ if(visible && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
   loop();
-  return { destroy(){ cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
-    removeEventListener('pointermove', _onPointerMove); removeEventListener('blur', _onPointerLeave);
-    renderer.forceContextLoss(); renderer.dispose(); pmrem.dispose(); canvas.remove(); } };
+  return {
+    setClimb(p){ scrollT = clamp(p,0,1); },   /* Stage drives this from scroll position */
+    setScroll(p){ scrollT = clamp(p,0,1); },
+    destroy(){ cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
+      removeEventListener('pointermove', _onPointerMove); removeEventListener('blur', _onPointerLeave);
+      renderer.forceContextLoss(); renderer.dispose(); pmrem.dispose(); canvas.remove(); } };
 }

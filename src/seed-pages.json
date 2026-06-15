@@ -17,7 +17,7 @@
           "highlight": "foundation.",
           "body": "Most partners hand you a deck and leave. We embed in how you already work, find the hours your business is quietly losing, and build the systems that buy them back. One team, three moves, no stone unturned.",
           "align": "left",
-          "size": "full",
+          "size": "standard",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#"
         }
@@ -72,23 +72,27 @@
               "prefix": "+",
               "suffix": "%",
               "dec": 0,
-              "label": "More efficiency: the hours your business was quietly losing, handed back to the work that matters."
+              "label": "More efficiency",
+              "note": "The hours your business was quietly losing, handed back to the work that matters."
             },
             {
               "value": 2,
               "prefix": "",
               "suffix": "×",
               "dec": 0,
-              "label": "More value to customers: faster response, fewer errors, a better experience, reinvested where clients feel it."
+              "label": "More value to customers",
+              "note": "Faster response, fewer errors, reinvested where clients feel it."
             },
             {
               "value": 60,
               "prefix": "−",
               "suffix": "%",
               "dec": 0,
-              "label": "Less risk: manual gaps closed, systems that hold up, the quiet failures designed out."
+              "label": "Less risk",
+              "note": "Manual gaps closed, the quiet failures designed out."
             }
-          ]
+          ],
+          "columns": 3
         }
       },
       {
@@ -259,7 +263,7 @@
           "highlight": "Yours is the one that matters.",
           "body": "Every number below came from a real engagement, anonymised but earned. They are the floor, not the ceiling. The only result that counts is the one we build inside your business. We don't advise from the sidelines: we become your foundation, and we leave no stone unturned.",
           "align": "left",
-          "size": "full",
+          "size": "standard",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#"
         }
@@ -380,7 +384,7 @@
           "highlight": "Embedded, not advisory.",
           "body": "We have spent two decades learning where businesses quietly lose their hours, and how to win them back. We do not hand you a deck and leave. We become the foundation you build the next twenty years on.",
           "align": "left",
-          "size": "full",
+          "size": "standard",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#"
         }
@@ -552,7 +556,7 @@
           "highlight": "the foundation.",
           "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No theory for theory's sake. We leave no stone unturned.",
           "align": "left",
-          "size": "full"
+          "size": "standard"
         }
       },
       {
@@ -568,13 +572,10 @@
         }
       },
       {
-        "type": "Pillars",
+        "type": "FeatureGrid",
         "props": {
-          "index": "02",
-          "eyebrow": "The notes",
-          "headline": "Written from inside the work,",
-          "highlight": "not the sidelines.",
-          "body": "Filtered across AI and automation, digital maturity, industry and adoption. Each piece comes from time spent embedded, not observing.",
+          "kicker": "The notes",
+          "heading": "Written from inside the work, not the sidelines.",
           "items": [
             {
               "title": "Why your AI spend isn't paying back yet.",

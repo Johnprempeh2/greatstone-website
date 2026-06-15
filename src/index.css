@@ -27,3 +27,4 @@
 /* the public render layer + footer sit over the stage */
 .gs-public{position:relative;z-index:2}
 .site-footer{position:relative;z-index:2;background:linear-gradient(to top,rgba(12,14,12,.6),transparent)}
+.site-footer .foot-wave{opacity:.62;width:min(480px,64vw)}
