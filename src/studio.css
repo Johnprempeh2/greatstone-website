@@ -205,6 +205,15 @@
 .gs-social-desc{font-size:.78rem;color:var(--gs-muted);margin-top:3px;line-height:1.5}
 .gs-empty{font-size:.86rem;color:var(--gs-faint);line-height:1.6}
 
+/* activity log: current-status header + reuses .gs-versions timeline below */
+.gs-activity-now{display:flex;align-items:center;gap:9px;margin-bottom:16px;padding-bottom:14px;
+  border-bottom:1px solid var(--gs-border-soft);font-size:.86rem;color:var(--gs-muted)}
+.gs-activity-now strong{color:var(--gs-text);font-weight:700}
+.gs-activity-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#9aa0a6}
+.gs-activity-dot[data-status="review"]{background:#f5a623}
+.gs-activity-dot[data-status="approved"]{background:#4ecdc4}
+.gs-activity-dot[data-status="published"]{background:#39b34a}
+
 .gs-versions{list-style:none;position:relative}
 .gs-versions::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--gs-border-soft)}
 .gs-version{display:flex;align-items:center;gap:14px;padding:12px 0;position:relative}

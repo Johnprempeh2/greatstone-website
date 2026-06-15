@@ -225,3 +225,20 @@ built (+ #8 verified). dist re-synced. Remaining: #10 activity timeline, #11 alt
 skip-link, #13 footer columns, #14 release board, #15 block diff, #16 review notes, #17 resolveFields,
 #18 site settings, #19 Products (NORTH STAR), #20 Team panel (NORTH STAR). Deploys still 500 server-side.
 
+## Round 1 build cycles (cont.)
+
+**[00:42 BST] Item R1-#10 — Activity log tab — BUILT, VERIFIED, COMMITTED.**
+- The store captured `statusHistory` (who moved a page through draft→review→approved→published, +
+  `approvedBy`) but nothing surfaced it — the governance audit trail was invisible.
+- Built `src/cms/ActivityPanel.jsx`: a read-only timeline of the page's status transitions with
+  human-readable labels ("Submitted for review", "Approved", "Published", "Unpublished — back to
+  draft"), actor and relative time, plus a "Currently <status>" header (colour-coded dot). Added it
+  as a 5th Studio tab and an "Open activity log" command. Distinct from History (which restores
+  version snapshots) — Activity is the accountability log. Reuses the `.gs-versions` timeline style.
+- Files: `src/cms/ActivityPanel.jsx` (new), `src/cms/StudioPanel.jsx`, `src/App.jsx`, `src/studio.css`.
+- Verify: build PASS (142 modules). Preview: Activity tab appears (5 tabs); home shows "Currently
+  Published" + empty state; created a throwaway page, set it to review → Activity showed "Submitted
+  for review · just now · admin@greatstone" and "Currently In review"; deleted the test page
+  (cleanup, back to 9). Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+
