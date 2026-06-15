@@ -94,6 +94,22 @@ order doesn't matter tonight while deploys are 500ing.)
   260→242KB, `three-*.js` (520KB) now loads on demand, not on first paint. Preview: 16 sections
   render immediately, Stage canvas still mounts after the deferred load, SEO title correct, zero
   new console errors (still the same 16 frozen dead-version entries, not growing). PASS.
-- Commit: pending below.
-- Deploy: dist re-synced; one combined deploy attempt for #1+#3 follows.
+- Commit: `897f86e`.
+- Deploy: dist re-synced (SEO + Stage split both in `puck-proof/`); combined deploy for #1+#3
+  attempted → **same 500 Internal Server Error**.
+
+**[23:27 BST] DEPLOY STATUS — Netlify deploys are DOWN tonight (server-side 500).** Two attempts,
+both failed identically: `Failed to deploy site: 500 Internal Server Error` from `@netlify/mcp`'s
+`zipAndBuild` (the proxy-token path that worked earlier today). This is server-side and not
+fixable from here, so per the run rules I've STOPPED attempting deploys (no retry-loop) and am
+continuing to build. **All work is committed locally and `greatstone-homepage-deploy/puck-proof/`
+holds the latest built dist, ready to publish.** John: one manual/working deploy of
+`greatstone-homepage-deploy` in the morning publishes the entire night's work at once. I'll make a
+single fresh deploy attempt every few items in case the backend recovers, but won't loop on it.
+
+**[23:28 BST] Yielding turn 1.** Shipped this cycle: fresh 20-item backlog (deep-dive `weuflbfv9`),
+item #1 closed (Hero inline editing verified), R1-#1 SEO→head (`70b61d2`), R1-#3 three.js defer
+(`897f86e`). Next turn (fresh context): R1-#2 lazy-load Puck off the public bundle — needs a small
+custom public renderer so `@measured/puck`'s `Render` (and the 432KB puck chunk) leaves the public
+path while the editor stays lazy. Then R1-#4 (modals) and the low-effort UX/a11y batch (#5–#7, #12).
 
