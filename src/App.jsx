@@ -179,21 +179,28 @@ export default function App() {
           overrides={{
             headerActions: ({ children }) => (
               <div className="gs-edit-actions">
-                <button className="gs-btn ghost" onClick={() => setMode('view')}>← Back to site</button>
+                {/* page context */}
+                <button className="gs-btn ghost sm" onClick={() => setMode('view')} title="Back to the live site">← Site</button>
                 <label className="gs-pagesel" title="Switch page">
                   <select value={current} onChange={(e) => switchPage(e.target.value)} aria-label="Switch page">
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
                   </select>
                 </label>
                 <button className="gs-btn ghost sm" onClick={() => setPanel('pages')}>Pages</button>
-                <span className="gs-userchip" title={user.email}>{user.name} · {ROLES[user.role].label}</span>
-                <label className="gs-statusctl" data-status={page.status}>
+                <span className="gs-edit-sep" aria-hidden="true" />
+                {/* state */}
+                <label className="gs-statusctl" data-status={page.status} title="Page status">
                   <span className="gs-dot" />
                   <select value={page.status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
                     {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
                 </label>
-                <label className="gs-bg dark">
+                <span className={'gs-saved' + (hasUnpublished ? ' is-draft' : '')} title={savedAt ? 'Draft autosaved locally' : ''}>
+                  {hasUnpublished ? <>Unpublished · <button className="gs-link" onClick={discardDraft}>discard</button></> : 'Saved'}
+                </span>
+                <span className="gs-edit-sep" aria-hidden="true" />
+                {/* tools */}
+                <label className="gs-bg" title="3D background">
                   <span>3D</span>
                   <select value={bg} onChange={(e) => setBg(e.target.value)} aria-label="Background">
                     {STAGE_OPTIONS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
@@ -201,11 +208,11 @@ export default function App() {
                 </label>
                 <button className="gs-btn ghost sm" onClick={() => setPanel('seo')}>SEO</button>
                 <button className="gs-btn ghost sm" onClick={() => setPanel('history')}>History</button>
-                <span className={'gs-saved' + (hasUnpublished ? ' is-draft' : '')} title={savedAt ? 'Draft autosaved' : ''}>
-                  {hasUnpublished ? <>Unpublished draft · <button className="gs-link" onClick={discardDraft}>discard</button></> : 'All changes saved'}
-                </span>
                 <button className="gs-btn ghost sm" onClick={() => setCmdOpen(true)} aria-label="Command palette" title="Command palette (⌘K)">⌘K</button>
-                <button className="gs-btn ghost sm" onClick={doSignOut}>Sign out</button>
+                <span className="gs-edit-sep" aria-hidden="true" />
+                {/* account + publish */}
+                <span className="gs-userchip" title={user.email + ' · ' + ROLES[user.role].label}>{user.name}</span>
+                <button className="gs-signout" onClick={doSignOut} title="Sign out">Sign out</button>
                 {children}
               </div>
             ),

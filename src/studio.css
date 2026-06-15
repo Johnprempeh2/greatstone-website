@@ -51,9 +51,9 @@
   border:1px solid var(--gs-border-soft);border-radius:100px;padding:6px 12px;white-space:nowrap}
 .gs-signout{background:none;border:0;color:var(--gs-faint);font-family:'Montserrat',sans-serif;font-weight:700;font-size:.74rem;cursor:pointer;padding:6px 4px}
 .gs-signout:hover{color:var(--gs-accent)}
-.gs-edit-actions .gs-userchip{color:#444;border-color:#e2e2e2;background:#f8f8f8}
-.gs-edit-actions .gs-signout{color:#666}
-.gs-edit-actions .gs-signout:hover{color:#111}
+.gs-edit-actions .gs-userchip{color:var(--gs-muted);border-color:var(--gs-border-soft);background:rgba(255,255,255,.04)}
+.gs-edit-actions .gs-signout{color:var(--gs-faint)}
+.gs-edit-actions .gs-signout:hover{color:var(--gs-accent)}
 .gs-btn{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;border-radius:100px;padding:9px 16px;cursor:pointer;
   border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s}
 .gs-btn:hover{transform:translateY(-1px)}
@@ -68,37 +68,56 @@
   .gs-search{display:none}
 }
 
-/* ---------- edit-mode toolbar (injected into Puck's light header) ---------- */
-.gs-edit-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.gs-edit-actions .gs-btn.ghost{background:#f1f1f1;border-color:#e2e2e2;color:#111}
-.gs-edit-name{font-weight:800;font-size:.82rem;color:#111}
-/* page switcher dropdown in the (light) edit toolbar */
+/* ---------- editor: dark, brand-themed chrome ---------- */
+.is-edit{min-height:100vh;background:
+  radial-gradient(1100px 760px at 80% -8%,rgba(27,80,57,.22),transparent 60%),
+  radial-gradient(900px 700px at 2% 110%,rgba(14,49,34,.30),transparent 58%),var(--gs-bg);
+  /* re-theme Puck dark to match the canvas + brand (Puck reads these CSS vars) */
+  --puck-font-family:'Montserrat',-apple-system,system-ui,sans-serif;
+  --puck-color-white:#17191a; --puck-color-black:#f3f5f3;
+  --puck-color-grey-01:#f3f5f3; --puck-color-grey-02:#e3e7e3; --puck-color-grey-03:#c4cac4;
+  --puck-color-grey-04:#a4aaa4; --puck-color-grey-05:#878d87; --puck-color-grey-06:#5c625c;
+  --puck-color-grey-07:#41463f; --puck-color-grey-08:#343834; --puck-color-grey-09:#2a2e2a;
+  --puck-color-grey-10:#202320; --puck-color-grey-11:#1b1e1b; --puck-color-grey-12:#141614;
+  --puck-color-azure-01:#07140d; --puck-color-azure-02:#0c2117; --puck-color-azure-03:#123a28;
+  --puck-color-azure-04:#16432f; --puck-color-azure-05:#1d5a3e; --puck-color-azure-06:#277a52;
+  --puck-color-azure-07:#3f9a5f; --puck-color-azure-08:#5fb53f; --puck-color-azure-09:#84d12a;
+  --puck-color-azure-10:#a6e022; --puck-color-azure-11:#c2f53a; --puck-color-azure-12:#e6ffa0}
+/* Puck canvas transparent so the real dark site + live 3D show through */
+.is-edit [class*="PuckCanvas_"]{background:transparent !important}
+.is-edit [class*="PuckCanvas-root"]{background:transparent !important}
+.is-edit [class*="DropZone"]{outline-color:rgba(200,255,0,.3) !important}
+.is-edit [data-reveal]{opacity:1 !important;transform:none !important}
+/* hide Puck's default page title (redundant with our page switcher) to free the toolbar row */
+.is-edit [class*="PuckHeader-title"]{display:none}
+/* the primary action (Publish) is the brand lime CTA */
+.is-edit [class*="Button--primary"]{background:var(--gs-accent) !important;border-color:var(--gs-accent) !important;color:#0e1611 !important;font-weight:800}
+.is-edit [class*="Button--primary"] svg{color:#0e1611 !important}
+.is-edit [class*="Button--primary"]:hover{box-shadow:0 8px 26px -10px var(--gs-accent-glow,rgba(200,255,0,.5))}
+.is-view{min-height:100vh}
+
+/* ---------- edit-mode toolbar (injected into Puck's header) ---------- */
+.gs-edit-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gs-edit-sep{width:1px;height:22px;background:var(--gs-border-soft);margin:0 3px}
+.gs-edit-actions .gs-btn.ghost{background:rgba(255,255,255,.05);border-color:var(--gs-border-soft);color:var(--gs-text)}
+.gs-edit-actions .gs-btn.ghost:hover{border-color:var(--gs-border);background:rgba(255,255,255,.09)}
+.gs-edit-name{font-weight:800;font-size:.82rem;color:var(--gs-text)}
 .gs-pagesel{display:inline-flex;align-items:center}
-.gs-pagesel select{background:#fff;color:#111;border:1px solid #e2e2e2;border-radius:8px;padding:7px 26px 7px 11px;
-  font-family:'Montserrat',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;max-width:200px;
+.gs-pagesel select{background:rgba(255,255,255,.05);color:var(--gs-text);border:1px solid var(--gs-border-soft);border-radius:100px;
+  padding:8px 28px 8px 14px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;max-width:200px;
   appearance:none;-webkit-appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%23111' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
-.gs-statusctl{display:inline-flex;align-items:center;gap:7px;background:#f5f5f5;border:1px solid #e2e2e2;border-radius:100px;padding:5px 10px}
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%23c8ff00' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+.gs-pagesel select:hover{border-color:var(--gs-border)}
+.gs-statusctl{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:100px;padding:6px 12px}
 .gs-statusctl .gs-dot{width:8px;height:8px;border-radius:50%;background:#9aa0a6}
 .gs-statusctl[data-status="draft"] .gs-dot{background:#9aa0a6}
 .gs-statusctl[data-status="review"] .gs-dot{background:#f5a623}
 .gs-statusctl[data-status="approved"] .gs-dot{background:#4ecdc4}
 .gs-statusctl[data-status="published"] .gs-dot{background:#39b34a}
-.gs-statusctl select{border:0;background:none;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.74rem;color:#111;cursor:pointer;outline:0}
-.gs-saved{font-size:.72rem;font-weight:700;color:#39b34a;display:inline-flex;align-items:center;gap:6px}
-.gs-saved.is-draft{color:#b8860b}
-.gs-saved .gs-link{background:none;border:0;color:#b8860b;font-weight:800;text-decoration:underline;cursor:pointer;font-size:.72rem}
-
-/* dark editor canvas: make Puck's canvas transparent so the real dark site + live 3D show through */
-.is-edit [class*="PuckCanvas_"]{background:transparent !important}
-.is-edit [class*="PuckCanvas-root"]{background:transparent !important}
-.is-edit{min-height:100vh;background:
-  radial-gradient(1100px 760px at 80% -8%,rgba(27,80,57,.28),transparent 60%),
-  radial-gradient(900px 700px at 2% 110%,rgba(14,49,34,.36),transparent 58%),var(--gs-bg)}
-.is-edit [class*="DropZone"]{outline-color:rgba(200,255,0,.3) !important}
-/* in the editor, never leave a block hidden by its scroll-reveal — show everything flat */
-.is-edit [data-reveal]{opacity:1 !important;transform:none !important}
-.is-view{min-height:100vh}
+.gs-statusctl select{border:0;background:none;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.74rem;color:var(--gs-text);cursor:pointer;outline:0}
+.gs-saved{font-size:.72rem;font-weight:700;color:#46c95a;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.gs-saved.is-draft{color:#d8a93a}
+.gs-saved .gs-link{background:none;border:0;color:#d8a93a;font-weight:800;text-decoration:underline;cursor:pointer;font-size:.72rem}
 
 /* ---------- command palette ---------- */
 .gs-cmd-backdrop{position:fixed;inset:0;z-index:2000;background:rgba(8,10,8,.55);backdrop-filter:blur(4px);
