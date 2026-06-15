@@ -330,4 +330,13 @@ STAR (v5). Next: #16 review notes, then start the north-star builds. Deploys sti
   works); entered "Please tighten the hero subhead before publishing." → status went to In review
   and the Activity log showed "Submitted for review" with the note quoted. Test page deleted. Zero
   console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `1fef7ab`. Deploy: deferred (Netlify 500).
+
+**[01:42 BST] Turn 8 done — yielding. STRATEGIC PIVOT to the north-star builds next.** Shipped R1-#16
+review notes (`1fef7ab`). Round 1 built: #1–#7, #9, #10, #11, #12, #14, #16 (13 items) + #8 verified.
+Remaining: #13 footer (v3), #15 block diff (v4), #17 resolveFields (v3), #18 site settings (v4) — all
+lower-value — plus #19 Products NORTH STAR (v5/high) and #20 Team panel NORTH STAR (v5). Since the
+north star is the repeated strategic headline and is large, the next several turns go to #19 Products
+(content model + Catalog taxonomy + Products/Storefront block + management UX + prototype cart UI +
+backend handoff spec) then #20 Team/roles + invitations prototype. The remaining v3/v4 items (#13,
+#15, #17, #18) get done after, or roll into Round 2. Deploys still 500 server-side; dist staged.
