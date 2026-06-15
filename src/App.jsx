@@ -34,6 +34,8 @@ import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, remo
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
+import { CartContext } from './cms/CartContext.js';
+import CartDrawer from './cms/CartDrawer.jsx';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -113,6 +115,7 @@ export default function App() {
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
+  const [cart, setCart] = useState({});     // licence basket: { [productId]: qty } — in-memory, never persisted
   const toastTimer = useRef(null);
   const didNavMount = useRef(false); // skip the initial mount when moving focus on navigation
 
@@ -156,6 +159,15 @@ export default function App() {
   const page = state.pages[current] || state.pages[state.order[0]];
   const bg = page.background || state.settings.background || 'stone';
   const catalog = { products: state.products || [], categories: state.categories || [] }; // for the Storefront block
+  // licence basket (prototype, in-memory): add/adjust/remove products, never takes payment
+  const cartApi = useMemo(() => ({
+    cart,
+    add: (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 })),
+    setQty: (id, q) => setCart((c) => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; }),
+    remove: (id) => setCart((c) => { const n = { ...c }; delete n[id]; return n; }),
+    clear: () => setCart({}),
+    count: Object.values(cart).reduce((a, b) => a + b, 0),
+  }), [cart]);
   const hasUnpublished = useMemo(() => !eq(page.data, page.published), [page.data, page.published]);
 
   function flash(msg) {
@@ -388,6 +400,7 @@ export default function App() {
   if (mode === 'edit' && canEdit) {
     return (
       <CatalogContext.Provider value={catalog}>
+      <CartContext.Provider value={cartApi}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
       <div className="is-edit">
         {overlays}
@@ -458,12 +471,14 @@ export default function App() {
         </EditorBoundary>
       </div>
       </MediaContext.Provider>
+      </CartContext.Provider>
       </CatalogContext.Provider>
     );
   }
 
   return (
     <CatalogContext.Provider value={catalog}>
+    <CartContext.Provider value={cartApi}>
     <div className="is-view">
       {overlays}
       <a className="gs-skip" href="#gs-main">Skip to content</a>
@@ -480,7 +495,9 @@ export default function App() {
         </EditorBoundary>
       </main>
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
+      <CartDrawer />
     </div>
+    </CartContext.Provider>
     </CatalogContext.Provider>
   );
 }

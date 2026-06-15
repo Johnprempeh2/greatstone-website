@@ -1,6 +1,7 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { useCatalog } from '../cms/CatalogContext.js';
+import { useCart } from '../cms/CartContext.js';
 
 // Storefront: renders the product catalogue from the store (via CatalogContext), grouped by category.
 // Products are managed in the studio's Products tab, not in this block's fields — so the same
@@ -8,6 +9,8 @@ import { useCatalog } from '../cms/CatalogContext.js';
 // contact flow (#book); a real licence-purchase checkout is a backend handoff (see HANDOVER), never
 // a fake payment here. Editable: the section heading + intro only (brand-locked cards).
 function Card({ p, catName }) {
+  const { add, cart } = useCart();
+  const inCart = cart[p.id] || 0;
   return (
     <article className="b-sf-card" data-reveal>
       {p.badge ? <span className={'b-sf-badge' + (p.status === 'legacy' ? ' is-legacy' : '')}>{p.badge}</span> : null}
@@ -22,7 +25,9 @@ function Card({ p, catName }) {
           <span className="b-sf-amount">{p.price || 'Contact us'}</span>
           {p.period ? <span className="b-sf-period">{p.period}</span> : null}
         </div>
-        <a className="b-cta sm" href="#book">Request a licence<Arrow /></a>
+        <button type="button" className={'b-cta sm' + (inCart ? ' is-added' : '')} onClick={() => add(p.id)}>
+          {inCart ? 'Added · ' + inCart : 'Add to licence'}<Arrow />
+        </button>
       </div>
       {p.licence ? <div className="b-sf-lic">{p.licence}</div> : null}
     </article>

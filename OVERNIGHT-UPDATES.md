@@ -390,6 +390,29 @@ continues #19 with the in-studio Products management panel.
 (`b88cebb`). The Products north star now has the catalogue model + storefront + full management UX.
 Next turn finishes #19 with a clearly-labelled prototype cart/checkout UI + a backend handoff spec,
 then R1-#20 (Team/roles/invitations prototype).
+
+**[02:38 BST] Item R1-#19 (part 3 — COMPLETE) — Licence basket + checkout prototype + handoff spec — BUILT, VERIFIED, COMMITTED.**
+- Finished the Products north star with an honest licence-request e-commerce flow (Greatstone sells
+  enterprise licences, so it's request-a-quote, not a card checkout — it takes NO payment and
+  transmits nothing).
+- Built `CartContext` (in-memory basket `{productId: qty}`, never persisted) + `CartDrawer` (floating
+  basket button with count → slide-over: line items with seat quantity +/- and remove, a "prices are
+  a guide" note, then a request form (name/company/email) with a prominent prototype disclaimer →
+  on-screen confirmation → clears). Storefront cards got an "Add to licence" button (shows "Added · N").
+  Wrapped both render paths with CartContext; the drawer renders on the public site. Added a
+  "Products, licensing and checkout" section to HANDOVER.md specifying the Laravel/Stripe backend for
+  real checkout, payment (PCI provider, browser never sees card data) and licence issuance.
+- Files: `src/cms/CartContext.js` (new), `src/cms/CartDrawer.jsx` (new), `src/App.jsx`,
+  `src/blocks/Storefront.jsx`, `src/studio.css`, `HANDOVER.md`.
+- Verify: build PASS (148 modules). Preview: on the Products page, "Add to licence" added items
+  (FAB count 3, card showed "Added · 2"); drawer listed "Bedrock Platform x2 / Slate Workflow x1";
+  qty +/- and remove worked; "Request these licences" → form (with prototype note) → filled + sent →
+  "Thanks, Jane — we'd prepare a licence agreement for 2 products and send it to jane@northwind.co";
+  "Done" cleared the basket + closed. Build clean; the 24 "[vite] Failed to reload" entries are
+  mid-edit HMR artifacts (final code builds + runs). PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+- R1-#19 DONE across 3 parts: catalogue model + management UX + storefront + basket/checkout +
+  handoff spec. NEXT: R1-#20 — Team/roles/invitations prototype (the DX-dashboard north star).
 - NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.

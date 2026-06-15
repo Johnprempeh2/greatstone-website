@@ -77,6 +77,29 @@ Editing must be admin-only, and the only enforcement that counts is server-side.
   the content database, auth, or secrets. Human review sits between any Claude change and a
   merge. Content stays with marketing in the gated UI.
 
+## Products, licensing and checkout
+
+The studio ships a working product catalogue and storefront, plus a prototype licence-request flow.
+What's real today and what Laravel owns:
+
+- **Built here (prototype, complete).** A catalogue lives in the store as `products` and `categories`
+  with full CRUD (`store.js`), managed from the studio's **Products** tab (add/edit/remove products
+  and categories). The **Storefront** block renders the catalogue grouped by category on the public
+  Products page, reading it through `CatalogContext`. A licence basket (`CartContext` + `CartDrawer`)
+  lets a visitor add products, set seats, and submit a licence **request** (name/company/email),
+  ending in an on-screen confirmation. The data model maps 1:1 onto Laravel `products` /
+  `product_categories` tables; the cart shape (`{productId: qty}`) maps onto an order/quote.
+- **The basket takes no payment and sends nothing.** Greatstone licences are sales-led ("from £X",
+  volume and multi-year terms), so the prototype is a request-a-quote flow, not a card checkout. It
+  is deliberately not wired to anything: no payment fields, no network calls. Do not "finish" it by
+  bolting a fake payment on the front end.
+- **Laravel owns the real thing.** Checkout, payment and licence issuance are server-side:
+  authenticate the buyer, price the order (seats × term, volume rules), take payment through a PCI
+  provider (Stripe Checkout / Payment Intents — the browser never sees card data), then issue the
+  licence (key/entitlement) and the agreement, and record the order with an audit trail. The
+  studio's Products CRUD becomes Filament resources; `dx@greatstonesoftware.co.uk` receives quote
+  requests until the store is live. Prices shown in the catalogue stay display-only guidance.
+
 ## The repository, staging, and using Claude going forward
 
 Yes, put this in a Git repository the team can clone, branch and test against. This repo is
