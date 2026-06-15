@@ -663,52 +663,63 @@
         }
       },
       {
-        "type": "Pillars",
+        "type": "MaturityMap",
         "props": {
-          "index": "01",
-          "eyebrow": "The maturity map",
-          "headline": "Three tiers, base to",
-          "highlight": "summit.",
-          "body": "Altitude is read in three bands. Pebble at the base, plateau on the shelf, peak at the summit. The trail climbs from one to the next.",
-          "items": [
+          "tiers": [
             {
-              "title": "Pebble · 1 to 4 · Surviving",
-              "text": "Manual, reactive, held together by heroics. The work gets done, but it costs hours nobody is counting. Manual, reactive, siloed."
+              "tag": "Pebble",
+              "range": "1–4",
+              "title": "Surviving.",
+              "desc": "Manual, reactive, held together by heroics. The work gets done, but it costs hours nobody is counting.",
+              "traits": "Manual, Reactive, Siloed"
             },
             {
-              "title": "Plateau · 5 to 7 · Organised",
-              "text": "Process exists, some automation has landed, things are improving. But momentum stalls without a clear next move. Structured, automating, improving."
+              "tag": "Plateau",
+              "range": "5–7",
+              "title": "Organised.",
+              "desc": "Process exists, some automation has landed, things are improving. But momentum stalls without a clear next move.",
+              "traits": "Structured, Automating, Improving"
             },
             {
-              "title": "Peak · 8 to 10 · Compounding",
-              "text": "Intelligent, integrated, ahead of the curve. Every system feeds the next and the gains stack on themselves. Intelligent, compounding, ahead."
+              "tag": "Peak",
+              "range": "8–10",
+              "title": "Compounding.",
+              "desc": "Intelligent, integrated, ahead of the curve. Every system feeds the next and the gains stack on themselves.",
+              "traits": "Intelligent, Compounding, Ahead"
             }
           ]
         }
       },
       {
-        "type": "Steps",
+        "type": "Ladder",
         "props": {
-          "index": "02",
-          "eyebrow": "Where your organisation sits",
+          "kicker": "Where your organisation sits",
           "headline": "Lagger to",
           "highlight": "Pioneer.",
-          "body": "Altitude isn't a verdict, it's a starting line. Here's the same climb read as a posture, dim to lime.",
+          "body": "Altitude isn’t a verdict, it’s a starting line. The same climb, read as a posture, dim to lime.",
           "items": [
             {
-              "title": "Lagger · Score under 3",
-              "text": "Behind the field and feeling it. The basics aren't in place, so every day leaks time to work that should run itself."
+              "rank": "Phase 01",
+              "name": "Lagger",
+              "range": "Score under 3",
+              "text": "Behind the field and feeling it. The basics aren’t in place, so every day leaks time to work that should run itself."
             },
             {
-              "title": "Follower · Score 3 to 5",
+              "rank": "Phase 02",
+              "name": "Follower",
+              "range": "Score 3–5",
               "text": "Keeping pace by watching others. Capable, but reactive: reacting to the market instead of shaping your own move."
             },
             {
-              "title": "Leader · Score 6 to 8",
+              "rank": "Phase 03",
+              "name": "Leader",
+              "range": "Score 6–8",
               "text": "Out in front in your category. Systems compound, decisions move fast, and the hours you bought back fund the next gain."
             },
             {
-              "title": "Pioneer · Score 9 to 10",
+              "rank": "Phase 04",
+              "name": "Pioneer",
+              "range": "Score 9–10",
               "text": "Setting the standard others chase. Intelligent by default: the foundation is so deep that growth feels inevitable."
             }
           ]
