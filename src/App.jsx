@@ -77,6 +77,24 @@ function applyHead(seo, pageTitle, slug) {
   else { dropMeta('property', 'og:image'); dropMeta('name', 'twitter:image'); upsertMeta('name', 'twitter:card', 'summary'); }
 }
 
+// Pre-publish accessibility/SEO check: find images on the page that have no alt text. Figure and
+// FeaturedArticle carry an explicit alt field; Team avatars use the member's name as alt (so a photo
+// with no name is the gap). Returns a short human-readable list, used to warn before publishing.
+function findMissingAlt(content) {
+  const issues = [];
+  (content || []).forEach((b) => {
+    const p = (b && b.props) || {};
+    const noAlt = (v) => !(v && String(v).trim());
+    if ((b.type === 'Figure' || b.type === 'FeaturedArticle') && p.image && noAlt(p.alt)) {
+      issues.push(b.type === 'Figure' ? 'Figure image' : 'Featured: ' + (p.title || 'article'));
+    }
+    if (b.type === 'Team' && Array.isArray(p.members)) {
+      p.members.forEach((m) => { if (m && m.photo && noAlt(m.name)) issues.push('Team photo (no name)'); });
+    }
+  });
+  return issues;
+}
+
 export default function App() {
   const [state, setState] = useState(load);
   const [current, setCurrent] = useState(() => state.order[0]); // derive from the one load() above, not a 2nd
@@ -152,8 +170,16 @@ export default function App() {
   // publishing needs the publish capability (admins). Admins can publish directly from any
   // status (the fast-path — they hold the authority); editors must route through review and
   // never reach this. The status history still records the jump, so the audit trail stays honest.
-  function publish(data) {
+  async function publish(data) {
     if (!canPublish) return flash('Editors can’t publish directly. Request review, then an admin publishes.');
+    // accessibility/SEO preflight: warn (don't hard-block) if any image is missing alt text
+    const missing = findMissingAlt(data && data.content);
+    if (missing.length) {
+      const ok = await ask({ kind: 'confirm', title: 'Publish without alt text?',
+        message: missing.length + (missing.length > 1 ? ' images have' : ' image has') + ' no alt text (' + missing.slice(0, 4).join(', ') + (missing.length > 4 ? '…' : '') + '). Alt text matters for accessibility and SEO. Publish anyway, or cancel to add it?',
+        confirmLabel: 'Publish anyway' });
+      if (!ok) return;
+    }
     setState((s) => {
       const p = s.pages[current];
       const versions = pushVersion(p.versions, { label: 'Published', data, by: user.email, status: 'published' });

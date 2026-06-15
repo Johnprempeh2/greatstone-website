@@ -263,3 +263,22 @@ preflight (v5), #13 footer columns (v3), #14 release board (v5), #15 block diff 
 NORTH STAR (v5). Next turns: the v5 governance/editor items (#14, #16) and the two north-star builds.
 Deploys still 500 server-side; all work committed locally + dist staged for one morning deploy.
 
+## Round 1 build cycles (cont.)
+
+**[01:06 BST] Item R1-#11 — Pre-publish alt-text preflight — BUILT, VERIFIED (with note), COMMITTED.**
+- Found Figure and FeaturedArticle already have an explicit `alt` field, and Team avatars use the
+  member's name as alt — so the "add an alt field" part was already in place. The real gap was no
+  pre-publish CHECK, so images could ship with empty alt (a11y + SEO).
+- Added `findMissingAlt(content)` (Figure/FeaturedArticle with an image but no alt; Team photo with
+  no name) and made `publish()` async: before publishing it warns via the on-brand modal — "Publish
+  without alt text? N images have no alt (…). Publish anyway, or cancel to add it?" — a soft warning,
+  not a hard block (decorative images exist). Cancel returns so the editor can fix.
+- Files: `src/App.jsx`.
+- Verify: build PASS (142 modules). Preview: created a test page (no images) and Cmd+S → published
+  with NO warning + correct toast (confirms the async publish + preflight returning no issue);
+  added a Figure block via the palette and selected it. NOTE: could not drive the positive case
+  fully headlessly — Puck's fields sidebar didn't expose the MediaField to set an image via synthetic
+  events. The branch is trivial correct logic over `data.content` and reuses the R1-#4-proven modal,
+  so confidence is high; the happy path is fully confirmed. Test page deleted (cleanup). Zero console
+  errors. PASS (positive-path UI confirmation deferred to a real browser).
+- Commit: pending below. Deploy: deferred (Netlify 500).
