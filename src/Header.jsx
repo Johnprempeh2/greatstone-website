@@ -53,9 +53,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
             <span className="gs-userchip" title={user.email}>{user.name} · {ROLES[user.role] ? ROLES[user.role].label : user.role}</span>
             <button className="gs-signout" onClick={onSignOut} title="Sign out">Sign out</button>
           </>
-        ) : (
-          <button className="gs-btn ghost" onClick={onSignIn}>Sign in</button>
-        )}
+        ) : null}
       </div>
     </header>
   );

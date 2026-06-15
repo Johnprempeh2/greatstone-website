@@ -116,11 +116,9 @@ export default function App() {
     const cmds = [];
     state.order.forEach((slug) => cmds.push({ id: 'go-' + slug, group: 'Go to', label: state.pages[slug].title, hint: mode === 'edit' && slug === current ? 'current' : '', run: () => navigate(slug) }));
     // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
-    // but read-only); a signed-out visitor only gets navigation + sign-in
-    if (!authed) {
-      cmds.push({ id: 'signin', group: 'Admin', label: 'Sign in to edit', hint: '↵', run: goSignIn });
-      return cmds;
-    }
+    // but read-only). The admin login is NOT surfaced on the public site — it lives at the
+    // separate #admin URL — so a signed-out visitor's palette is navigation only.
+    if (!authed) return cmds;
     if (canEdit) {
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
       if (mode === 'view') cmds.push({ id: 'edit', group: 'Editor', label: 'Edit this page', hint: '↵', run: () => setMode('edit') });
