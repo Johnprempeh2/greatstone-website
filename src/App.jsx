@@ -8,6 +8,7 @@ import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
 import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
+import PagesPanel from './cms/PagesPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
 import { load, persist, addPageTo, pushVersion } from './store.js';
@@ -88,6 +89,7 @@ export default function App() {
     setState((s) => { const next = addPageTo(s, title); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
   }
   function navigate(slug) { setCurrent(slug); setMode('view'); setQuery(''); setPanel(null); }
+  function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
   function restoreVersion(v) { patchPage(current, { data: v.data }); setPuckKey((k) => k + 1); setPanel(null); flash('Restored a snapshot into the draft. Publish to make it live.'); }
@@ -114,7 +116,7 @@ export default function App() {
 
   const commands = useMemo(() => {
     const cmds = [];
-    state.order.forEach((slug) => cmds.push({ id: 'go-' + slug, group: 'Go to', label: state.pages[slug].title, hint: mode === 'edit' && slug === current ? 'current' : '', run: () => navigate(slug) }));
+    state.order.forEach((slug) => cmds.push({ id: 'go-' + slug, group: mode === 'edit' ? 'Edit page' : 'Go to', label: state.pages[slug].title, hint: slug === current ? 'current' : '', run: () => (mode === 'edit' ? switchPage(slug) : navigate(slug)) }));
     // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
     // but read-only). The admin login is NOT surfaced on the public site — it lives at the
     // separate #admin URL — so a signed-out visitor's palette is navigation only.
@@ -125,6 +127,7 @@ export default function App() {
       if (mode === 'edit') {
         cmds.push({ id: 'preview', group: 'Editor', label: 'Preview (back to site)', run: () => setMode('view') });
         cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
+        cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
         cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
         cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
         Object.entries(config.components).forEach(([type, def]) => cmds.push({ id: 'add-' + type, group: 'Add block', label: def.label, run: () => addBlock(type) }));
@@ -163,6 +166,7 @@ export default function App() {
       <div className="is-edit">
         {overlays}
         <Stage background={bg} />
+        {panel === 'pages' && <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onClose={() => setPanel(null)} />}
         {panel === 'seo' && <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onClose={() => setPanel(null)} />}
         {panel === 'history' && <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} />}
         <Puck
@@ -176,7 +180,12 @@ export default function App() {
             headerActions: ({ children }) => (
               <div className="gs-edit-actions">
                 <button className="gs-btn ghost" onClick={() => setMode('view')}>← Back to site</button>
-                <span className="gs-edit-name">{page.title}</span>
+                <label className="gs-pagesel" title="Switch page">
+                  <select value={current} onChange={(e) => switchPage(e.target.value)} aria-label="Switch page">
+                    {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
+                  </select>
+                </label>
+                <button className="gs-btn ghost sm" onClick={() => setPanel('pages')}>Pages</button>
                 <span className="gs-userchip" title={user.email}>{user.name} · {ROLES[user.role].label}</span>
                 <label className="gs-statusctl" data-status={page.status}>
                   <span className="gs-dot" />

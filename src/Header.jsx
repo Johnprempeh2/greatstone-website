@@ -1,16 +1,44 @@
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { STAGE_OPTIONS } from './Stage.jsx';
 import { Search } from './blocks/icons.jsx';
 import { ROLES } from './cms/auth.js';
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...p}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>);
 
-// Site chrome (view mode). For a signed-out visitor this is a normal public site header: logo,
-// nav, search, and a discreet sign-in. Editing affordances (3D picker, new page, edit) only
-// appear for a signed-in user WITH the edit capability — a viewer signs in but stays read-only.
-// Real enforcement is server-side; this models the admin-only experience.
-export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignIn, onSignOut }) {
+// Site chrome (view mode). The page links sit inline while they fit; when they don't, they
+// collapse into a single "Pages" dropdown (measured, not breakpoint-guessed, so it works for
+// any number of pages). Editing affordances appear only for a signed-in user with edit rights.
+export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut }) {
   const q = (query || '').trim().toLowerCase();
   const visible = q ? order.filter((s) => (pages[s].title || s).toLowerCase().includes(q) || s.includes(q)) : order;
+
+  const wrapRef = useRef(null);
+  const neededRef = useRef(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // collapse the inline nav into a dropdown when the links overflow the row
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current; if (!wrap) return;
+    const measure = () => {
+      if (!collapsed) neededRef.current = wrap.scrollWidth; // intrinsic links width, cached while inline
+      const next = neededRef.current > wrap.clientWidth + 1;
+      setCollapsed((c) => (c !== next ? next : c));
+    };
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [collapsed, order.length, q]);
+
+  // close the dropdown on outside click / Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e) => { if (!e.target.closest || !e.target.closest('.gs-navmenu')) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onDoc); document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [menuOpen]);
 
   return (
     <header className="gs-header">
@@ -18,14 +46,33 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
         <img src={LOGO} alt="Greatstone International" />
       </a>
 
-      <nav className="gs-nav">
-        {visible.map((slug) => (
-          <button key={slug} className={'gs-navlink' + (slug === current ? ' is-active' : '')} onClick={() => onNavigate(slug)}>
-            {pages[slug].title}
-          </button>
-        ))}
-        {visible.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
-      </nav>
+      <div className="gs-navwrap" ref={wrapRef}>
+        {collapsed ? (
+          <div className="gs-navmenu">
+            <button className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="true">
+              <span>{(pages[current] && pages[current].title) || 'Pages'}</span><Chevron />
+            </button>
+            {menuOpen && (
+              <div className="gs-navmenu-pop" role="menu">
+                {visible.map((slug) => (
+                  <button key={slug} role="menuitem" className={'gs-navmenu-item' + (slug === current ? ' is-active' : '')}
+                    onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
+                ))}
+                {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <nav className="gs-nav">
+            {visible.map((slug) => (
+              <button key={slug} className={'gs-navlink' + (slug === current ? ' is-active' : '')} onClick={() => onNavigate(slug)}>
+                {pages[slug].title}
+              </button>
+            ))}
+            {visible.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
+          </nav>
+        )}
+      </div>
 
       <div className="gs-tools">
         <button className="gs-cmdbtn" onClick={onCommand} title="Command palette (⌘K)" aria-label="Command palette">

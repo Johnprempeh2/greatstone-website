@@ -6,12 +6,30 @@
 .gs-header{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:18px;
   padding:14px clamp(16px,3vw,30px);background:linear-gradient(to bottom,rgba(16,18,16,.86),rgba(16,18,16,0));backdrop-filter:blur(2px)}
 .gs-logo img{width:138px;display:block}
-.gs-nav{display:flex;align-items:center;gap:4px;flex:1;flex-wrap:wrap}
+.gs-logo{flex:none}
+/* the nav lives in a flexible wrap that we measure for overflow */
+.gs-navwrap{flex:1;min-width:0;display:flex;overflow:hidden}
+.gs-nav{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}
 .gs-navlink{background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;
-  letter-spacing:.02em;color:var(--gs-muted);padding:8px 12px;border-radius:8px;transition:color .2s,background .2s}
+  letter-spacing:.02em;color:var(--gs-muted);padding:8px 12px;border-radius:8px;transition:color .2s,background .2s;white-space:nowrap}
 .gs-navlink:hover{color:var(--gs-text);background:rgba(255,255,255,.04)}
 .gs-navlink.is-active{color:var(--gs-accent)}
 .gs-nomatch{font-size:.78rem;color:var(--gs-faint)}
+
+/* collapsed nav: a single "Pages" dropdown when the links don't fit */
+.gs-navmenu{position:relative}
+.gs-navmenu-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
+  border-radius:100px;padding:8px 14px;color:var(--gs-text);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;max-width:48vw}
+.gs-navmenu-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-navmenu-btn:hover{border-color:var(--gs-border)}
+.gs-navmenu-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:50;min-width:220px;max-height:70vh;overflow-y:auto;
+  background:#1a1c1a;border:1px solid var(--gs-border);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.8);animation:gsPop .14s var(--gs-ease)}
+.gs-navmenu-item{text-align:left;background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:600;
+  color:var(--gs-muted);padding:10px 12px;border-radius:9px;transition:color .15s,background .15s}
+.gs-navmenu-item:hover{color:var(--gs-text);background:rgba(255,255,255,.05)}
+.gs-navmenu-item.is-active{color:var(--gs-accent);background:rgba(200,255,0,.08)}
+.gs-navmenu-empty{padding:10px 12px;font-size:.8rem;color:var(--gs-faint)}
 
 .gs-tools{display:flex;align-items:center;gap:10px}
 .gs-cmdbtn{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
@@ -44,15 +62,20 @@
 .gs-signout:hover{color:var(--gs-text)}
 
 @media(max-width:760px){
-  .gs-header{flex-wrap:wrap;gap:10px}
+  .gs-header{gap:10px}
   .gs-search{display:none}
-  .gs-nav{order:3;flex-basis:100%}
 }
 
 /* ---------- edit-mode toolbar (injected into Puck's light header) ---------- */
 .gs-edit-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .gs-edit-actions .gs-btn.ghost{background:#f1f1f1;border-color:#e2e2e2;color:#111}
 .gs-edit-name{font-weight:800;font-size:.82rem;color:#111}
+/* page switcher dropdown in the (light) edit toolbar */
+.gs-pagesel{display:inline-flex;align-items:center}
+.gs-pagesel select{background:#fff;color:#111;border:1px solid #e2e2e2;border-radius:8px;padding:7px 26px 7px 11px;
+  font-family:'Montserrat',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;max-width:200px;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%23111' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
 .gs-statusctl{display:inline-flex;align-items:center;gap:7px;background:#f5f5f5;border:1px solid #e2e2e2;border-radius:100px;padding:5px 10px}
 .gs-statusctl .gs-dot{width:8px;height:8px;border-radius:50%;background:#9aa0a6}
 .gs-statusctl[data-status="draft"] .gs-dot{background:#9aa0a6}
@@ -136,6 +159,23 @@
 .gs-version-tag{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0e1611;background:var(--gs-accent);
   border-radius:100px;padding:2px 7px}
 .gs-version-when{font-size:.74rem;color:var(--gs-faint);margin-top:2px}
+
+/* ---------- pages overview panel ---------- */
+.gs-panel-count{font-size:.72rem;font-weight:800;color:#0e1611;background:var(--gs-accent);border-radius:100px;padding:1px 9px;margin-left:6px;vertical-align:middle}
+.gs-pages{list-style:none;display:flex;flex-direction:column;gap:6px}
+.gs-page-row{display:flex;align-items:center;gap:10px;border:1px solid var(--gs-border-soft);border-radius:12px;padding:4px 12px 4px 4px;
+  transition:border-color .2s var(--gs-ease),background .2s var(--gs-ease)}
+.gs-page-row:hover{border-color:var(--gs-border);background:rgba(255,255,255,.02)}
+.gs-page-row.is-current{border-color:var(--gs-border);background:rgba(200,255,0,.05)}
+.gs-page-open{flex:1;min-width:0;text-align:left;background:none;border:0;cursor:pointer;padding:9px 8px;display:flex;flex-direction:column;gap:3px}
+.gs-page-title{font-size:.92rem;font-weight:700;color:var(--gs-text)}
+.gs-page-title em{font-style:normal;font-weight:700;color:var(--gs-accent);font-size:.78rem}
+.gs-page-meta{font-size:.72rem;color:var(--gs-faint)}
+.gs-page-status{display:inline-flex;align-items:center;gap:6px;font-size:.66rem;font-weight:700;letter-spacing:.04em;color:var(--gs-muted);
+  white-space:nowrap;padding-right:6px}
+.gs-page-status .gs-dot{width:7px;height:7px;border-radius:50%;background:#9aa0a6}
+.gs-st-review .gs-dot{background:#f5a623} .gs-st-approved .gs-dot{background:#4ecdc4} .gs-st-published .gs-dot{background:#39b34a}
+.gs-pages-new{width:100%;margin-top:14px;justify-content:center;display:flex}
 
 /* ---------- toast ---------- */
 .gs-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2500;background:#1a1c1a;border:1px solid var(--gs-border);
