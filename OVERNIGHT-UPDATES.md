@@ -129,6 +129,14 @@ path while the editor stays lazy. Then R1-#4 (modals) and the low-effort UX/a11y
   intact, header/footer/SEO correct); signed in + entered edit mode → lazy Puck chunk loads, canvas
   + toolbar work, fallback resolves; zero new console errors on either path (the 40 console entries
   are frozen from two dead mid-edit HMR versions, not growing across hard reloads). PASS.
-- Commit: pending below.
-- Deploy: deferred (Netlify still 500ing tonight; dist synced after the commit, ready to publish).
+- Commit: `cd8ead9`.
+- Deploy: dist synced; fresh attempt → **3rd consecutive 500** (`zipAndBuild`). Netlify's deploy
+  backend is confirmed down for the night. Pausing deploy attempts entirely now; `puck-proof/`
+  holds the full current build (SEO + three.js defer + Puck-off-public-bundle), ready for one
+  morning deploy. Will only re-attempt much later if there's a signal the backend recovered.
+
+**[23:40 BST] Turn 2 done — yielding.** Shipped R1-#2 (Puck off the public bundle, `cd8ead9`):
+public first-load JS ~1.2MB→243KB, CSS 82KB→36.5KB; editor lazy-loads on demand. Next turn: R1-#4
+on-brand modal replacing `window.prompt/confirm` (newPage/retitle/delete/restore/discard), then the
+low-effort UX/a11y batch (#5–#7, #12). Deploys remain blocked server-side; all work committed locally.
 
