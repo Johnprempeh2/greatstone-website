@@ -3,12 +3,18 @@
 // `versions`) mirrors the rails they're building, so swapping to a real backend is a
 // data-source change, not a rewrite.
 import seedPages from './seed-pages.json';
+import { config } from './puck.config.jsx';
 
-const KEY = 'gs-studio-v4';
+const KEY = 'gs-studio-v6';
 
 let _seq = 0;
 const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);
-const blk = (type, props) => ({ type, props: { id: rid(type), ...props } });
+// backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
+// undefined in the editor — Puck's inline fields expect strings, and a missing one throws.
+const blk = (type, props) => {
+  const def = (config.components[type] && config.components[type].defaultProps) || {};
+  return { type, props: { id: rid(type), ...def, ...props } };
+};
 
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
@@ -87,8 +93,22 @@ export function seedState() {
           { title: 'Plateau', text: 'Organised. Process exists, some automation has landed.' },
           { title: 'Peak', text: 'Compounding. Intelligent, integrated, setting the pace.' },
         ]}),
+        blk('PillarExplorer', {
+          index: '02', eyebrow: 'The Methodology', headline: 'Explore the eight', highlight: 'pillars.',
+          body: 'Every engagement begins with the Digital Transformation Playbook: a rigorous diagnostic across eight pillars. Hover a gem, or pick a pillar, to see what we read.',
+          items: [
+            { title: 'People', text: 'Know who moves what, and set them up to move it well.' },
+            { title: 'Communication', text: 'Make the value land, inside the business and out.' },
+            { title: 'Innovation', text: 'A repeatable way to find the next worthwhile change.' },
+            { title: 'Data', text: 'Map the lifecycle so the right decision is the easy one.' },
+            { title: 'Customer', text: 'See the whole relationship, not just the last ticket.' },
+            { title: 'Competition', text: 'Know the field, and where your edge actually is.' },
+            { title: 'Technology', text: 'A stack that earns its keep and bends when you need it to.' },
+            { title: 'Value', text: 'Tie every move back to money, time or risk.' },
+          ],
+        }),
         blk('Steps', {
-          index: '01', eyebrow: 'The Playbook', headline: 'Diagnose. Report.', highlight: 'Build.',
+          index: '03', eyebrow: 'The Playbook', headline: 'Diagnose. Report.', highlight: 'Build.',
           body: 'The same three moves, whatever tier you start from.',
           items: [
             { title: 'Diagnostic', text: 'We map where the week goes, across all eight pillars.' },
@@ -140,7 +160,7 @@ export function persist(state) {
 }
 
 export function slugify(title) {
-  return title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page';
+  return (title || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page';
 }
 
 export function addPageTo(state, title) {

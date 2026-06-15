@@ -26,6 +26,7 @@ export function mountSummit(container, opts = {}) {
   container.appendChild(cv);
 
   const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.debug.checkShaderErrors = false;   // some backends return null from getProgramInfoLog(); three .trim()s it
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2));
   renderer.setSize(innerWidth, innerHeight);
   renderer.setClearColor(0x000000, 0);              // transparent — the page's emerald void shows through

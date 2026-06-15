@@ -1,22 +1,30 @@
 import { useEffect, useRef } from 'react';
 import { mountGreatstoneLogo } from './lib/greatstone-logo.mjs';
 import { mountSummit } from './lib/summit-bg.mjs';
+import { mountTide } from './lib/tideMount.js';
 
 // The selectable 3D "stage": one fixed layer behind the page. A page's background can be a
 // single scene OR a scroll-staged SEQUENCE that cross-fades as the reader descends — the
-// stone at the top giving way to the summit lower down, exactly how the live homepage reads.
-// Two live WebGL contexts at once is well within budget; each module animates itself and
-// forceContextLoss()es on destroy, so switching pages never leaks a context.
+// stone at the top giving way to the summit (or the tide) lower down, exactly how the live
+// homepage reads. Two live contexts at once is well within budget; each module animates
+// itself and disposes cleanly on destroy, so switching pages never leaks.
 export const STAGE_OPTIONS = [
   { id: 'stone', label: 'Stone (logo)', scenes: ['stone'] },
   { id: 'summit', label: 'Summit (terrain)', scenes: ['summit'] },
+  { id: 'tide', label: 'Tide — waves', scenes: ['tide'] },
+  { id: 'tide-radial', label: 'Tide — radial waves', scenes: ['tideRadial'] },
+  { id: 'tide-calm', label: 'Tide — calm waves', scenes: ['tideCalm'] },
   { id: 'stone-summit', label: 'Stone → Summit (scroll)', scenes: ['stone', 'summit'] },
+  { id: 'stone-tide', label: 'Stone → Tide (scroll)', scenes: ['stone', 'tide'] },
   { id: 'none', label: 'None', scenes: [] },
 ];
 
 const MOUNTERS = {
   stone: (host) => mountGreatstoneLogo(host, { envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg', bloom: 0.9, exposure: 1.4, idle: true, autoTurn: true }),
   summit: (host) => mountSummit(host, {}),
+  tide: (host) => mountTide(host, {}),
+  tideRadial: (host) => mountTide(host, { focalPoint: { x: 0.5, y: 0.5 }, sweep: [0, Math.PI * 2], arcs: 44, warpStrength: 50 }),
+  tideCalm: (host) => mountTide(host, { arcs: 30, flowSpeed: 0.10, crest: false, warpStrength: 28 }),
 };
 
 const smoothstep = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a), 0), 1); return t * t * (3 - 2 * t); };

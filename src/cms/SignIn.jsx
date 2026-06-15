@@ -15,7 +15,8 @@ export default function SignIn({ onAuthed, onCancel }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (signIn(user, pass)) onAuthed();
+    const u = signIn(user, pass);
+    if (u) onAuthed(u);
     else setErr('Those details are not recognised.');
   };
 
@@ -50,7 +51,11 @@ export default function SignIn({ onAuthed, onCancel }) {
         <button type="submit" style={S.btn}>Sign in</button>
         <button type="button" style={S.back} onClick={onCancel}>← Back to site</button>
 
-        <p style={S.note}>Prototype access gate. The live deployment authenticates against Greatstone accounts and enforces editing rights on the server (role-based). Client-side gating here is for demonstration only.</p>
+        <p style={S.note}>
+          Prototype accounts (password <b style={{ color: 'var(--gs-text-muted)' }}>stone</b>):<br />
+          admin@greatstone · editor@greatstone · viewer@greatstone<br /><br />
+          The live deployment authenticates against Greatstone accounts and enforces editing rights on the server (role-based). Client-side gating here is for demonstration only.
+        </p>
       </form>
     </div>
   );

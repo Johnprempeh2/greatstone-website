@@ -27,6 +27,13 @@
   padding:7px 9px;font-family:'Montserrat',sans-serif;font-size:.78rem;cursor:pointer}
 .gs-bg.dark{color:#5a5f59} .gs-bg.dark select{background:#fff;color:#111;border-color:#ddd}
 
+.gs-userchip{display:inline-flex;align-items:center;font-size:.7rem;font-weight:700;letter-spacing:.02em;color:var(--gs-faint);
+  border:1px solid var(--gs-border-soft);border-radius:100px;padding:6px 12px;white-space:nowrap}
+.gs-signout{background:none;border:0;color:var(--gs-faint);font-family:'Montserrat',sans-serif;font-weight:700;font-size:.74rem;cursor:pointer;padding:6px 4px}
+.gs-signout:hover{color:var(--gs-accent)}
+.gs-edit-actions .gs-userchip{color:#444;border-color:#e2e2e2;background:#f8f8f8}
+.gs-edit-actions .gs-signout{color:#666}
+.gs-edit-actions .gs-signout:hover{color:#111}
 .gs-btn{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;border-radius:100px;padding:9px 16px;cursor:pointer;
   border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s}
 .gs-btn:hover{transform:translateY(-1px)}

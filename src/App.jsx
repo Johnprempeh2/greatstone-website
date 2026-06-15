@@ -9,7 +9,7 @@ import CommandPalette from './cms/CommandPalette.jsx';
 import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
 import SignIn from './cms/SignIn.jsx';
-import { isAuthed, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
+import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
 import { load, persist, addPageTo, pushVersion } from './store.js';
 
 const STATUSES = [
@@ -31,9 +31,12 @@ export default function App() {
   const [savedAt, setSavedAt] = useState(null);
   const [toast, setToast] = useState(null);
   const [puckKey, setPuckKey] = useState(0);        // bump to force Puck to re-read data
-  const [authed, setAuthed] = useState(isAuthed);   // prototype gate (real auth is server-side)
+  const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const toastTimer = useRef(null);
+
+  const authed = !!user;
+  const canEdit = can(user, 'edit');
 
   useEffect(() => { persist(state); }, [state]);
   useEffect(() => {
@@ -75,7 +78,7 @@ export default function App() {
   }
   function navigate(slug) { setCurrent(slug); setMode('view'); setQuery(''); setPanel(null); }
   function goSignIn() { location.hash = 'admin'; }
-  function doSignOut() { authSignOut(); setAuthed(false); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
+  function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
   function restoreVersion(v) { patchPage(current, { data: v.data }); setPuckKey((k) => k + 1); setPanel(null); flash('Restored a snapshot into the draft. Publish to make it live.'); }
   function discardDraft() { patchPage(current, { data: page.published }); setPuckKey((k) => k + 1); flash('Reverted to the published version.'); }
   function addBlock(type) {
@@ -101,25 +104,28 @@ export default function App() {
   const commands = useMemo(() => {
     const cmds = [];
     state.order.forEach((slug) => cmds.push({ id: 'go-' + slug, group: 'Go to', label: state.pages[slug].title, hint: mode === 'edit' && slug === current ? 'current' : '', run: () => navigate(slug) }));
-    // editing commands are gated behind sign-in; a signed-out visitor only gets navigation + sign-in
+    // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
+    // but read-only); a signed-out visitor only gets navigation + sign-in
     if (!authed) {
       cmds.push({ id: 'signin', group: 'Admin', label: 'Sign in to edit', hint: '↵', run: goSignIn });
       return cmds;
     }
-    cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
-    if (mode === 'view') cmds.push({ id: 'edit', group: 'Editor', label: 'Edit this page', hint: '↵', run: () => setMode('edit') });
-    if (mode === 'edit') {
-      cmds.push({ id: 'preview', group: 'Editor', label: 'Preview (back to site)', run: () => setMode('view') });
-      cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
-      cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
-      cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
-      Object.entries(config.components).forEach(([type, def]) => cmds.push({ id: 'add-' + type, group: 'Add block', label: def.label, run: () => addBlock(type) }));
-      STATUSES.forEach((s) => cmds.push({ id: 'status-' + s.id, group: 'Set status', label: s.label, run: () => setStatus(s.id) }));
+    if (canEdit) {
+      cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
+      if (mode === 'view') cmds.push({ id: 'edit', group: 'Editor', label: 'Edit this page', hint: '↵', run: () => setMode('edit') });
+      if (mode === 'edit') {
+        cmds.push({ id: 'preview', group: 'Editor', label: 'Preview (back to site)', run: () => setMode('view') });
+        cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
+        cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
+        cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
+        Object.entries(config.components).forEach(([type, def]) => cmds.push({ id: 'add-' + type, group: 'Add block', label: def.label, run: () => addBlock(type) }));
+        STATUSES.forEach((s) => cmds.push({ id: 'status-' + s.id, group: 'Set status', label: s.label, run: () => setStatus(s.id) }));
+      }
+      STAGE_OPTIONS.forEach((o) => cmds.push({ id: 'bg-' + o.id, group: 'Background', label: o.label, run: () => setBg(o.id) }));
     }
-    STAGE_OPTIONS.forEach((o) => cmds.push({ id: 'bg-' + o.id, group: 'Background', label: o.label, run: () => setBg(o.id) }));
-    cmds.push({ id: 'signout', group: 'Admin', label: 'Sign out', run: doSignOut });
+    cmds.push({ id: 'signout', group: 'Admin', label: 'Sign out (' + user.name + ')', run: doSignOut });
     return cmds;
-  }, [state, current, mode, page, authed]);
+  }, [state, current, mode, page, user, canEdit]);
 
   const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss }} />;
   const overlays = (
@@ -136,12 +142,14 @@ export default function App() {
       <div className="is-view">
         {styleTag}
         <Stage background={bg} />
-        <SignIn onAuthed={() => { setAuthed(true); location.hash = ''; flash('Signed in. Editing is on.'); }} onCancel={() => { location.hash = ''; }} />
+        <SignIn
+          onAuthed={(u) => { setUser(u); location.hash = ''; setAdminRoute(false); flash(can(u, 'edit') ? ('Signed in as ' + u.name + '.') : ('Signed in as ' + u.name + ' (read-only).')); }}
+          onCancel={() => { location.hash = ''; setAdminRoute(false); }} />
       </div>
     );
   }
 
-  if (mode === 'edit' && authed) {
+  if (mode === 'edit' && canEdit) {
     return (
       <div className="is-edit">
         {overlays}
@@ -160,6 +168,7 @@ export default function App() {
               <div className="gs-edit-actions">
                 <button className="gs-btn ghost" onClick={() => setMode('view')}>← Back to site</button>
                 <span className="gs-edit-name">{page.title}</span>
+                <span className="gs-userchip" title={user.email}>{user.name} · {ROLES[user.role].label}</span>
                 <label className="gs-statusctl" data-status={page.status}>
                   <span className="gs-dot" />
                   <select value={page.status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
@@ -195,8 +204,8 @@ export default function App() {
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage}
-        onEdit={() => setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
-        authed={authed} onSignIn={goSignIn} onSignOut={doSignOut}
+        onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
+        user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
       <main className="gs-public" key={current}>
         <Render config={config} data={page.published || page.data} />

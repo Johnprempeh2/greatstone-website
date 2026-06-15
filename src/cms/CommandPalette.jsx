@@ -11,7 +11,7 @@ export default function CommandPalette({ open, onClose, commands }) {
   useEffect(() => { if (open) { setQ(''); setSel(0); const t = setTimeout(() => inputRef.current && inputRef.current.focus(), 20); return () => clearTimeout(t); } }, [open]);
 
   const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
+    const s = (q || '').trim().toLowerCase();
     if (!s) return commands;
     return commands.filter((c) => (c.label + ' ' + (c.hint || '') + ' ' + (c.group || '')).toLowerCase().includes(s));
   }, [q, commands]);

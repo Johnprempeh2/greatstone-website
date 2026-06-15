@@ -25,6 +25,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
   const canvas = document.createElement('canvas'); canvas.style.cssText='width:100%;height:100%;display:block';
   container.appendChild(canvas);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:o.transparent, powerPreference:'high-performance' });
+  renderer.debug.checkShaderErrors = false;   // some backends return null from getProgramInfoLog(); three .trim()s it
   renderer.setPixelRatio(Math.min(devicePixelRatio, o.dpr));
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
 
