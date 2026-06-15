@@ -72,15 +72,16 @@ export default function App() {
     setState((s) => ({ ...s, pages: { ...s.pages, [slug]: { ...s.pages[slug], ...patch } } }));
   }
 
-  // publishing is gated: only a publisher (admin) can do it, and only once the page is approved
+  // publishing needs the publish capability (admins). Admins can publish directly from any
+  // status (the fast-path — they hold the authority); editors must route through review and
+  // never reach this. The status history still records the jump, so the audit trail stays honest.
   function publish(data) {
-    if (!canPublish) return flash('Editors can’t publish directly. Request review, then an admin approves and publishes.');
-    if (page.status !== 'approved') return flash('This page needs approval before it can go live.');
+    if (!canPublish) return flash('Editors can’t publish directly. Request review, then an admin publishes.');
     setState((s) => {
       const p = s.pages[current];
       const versions = pushVersion(p.versions, { label: 'Published', data, by: user.email, status: 'published' });
       const statusHistory = [...(p.statusHistory || []), { from: p.status, to: 'published', by: user.email, ts: Date.now() }];
-      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, status: 'published', versions, statusHistory } } };
+      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, status: 'published', approvedBy: p.approvedBy || user.email, versions, statusHistory } } };
     });
     setMode('view'); setPanel(null);
     flash('Published. Snapshot saved to history.');
@@ -165,8 +166,8 @@ export default function App() {
       else if ((e.metaKey || e.ctrlKey) && k === 's') {
         e.preventDefault();
         if (mode !== 'edit') return;
-        if (canPublish && page.status === 'approved') publish(page.data);
-        else flash(canPublish ? 'Changes autosave. Approve the page, then publish.' : 'Changes autosave. Request review to get it published.');
+        if (canPublish) publish(page.data);
+        else flash('Changes autosave. Request review to get it published.');
       } else if (k === 'escape') { if (cmdOpen) setCmdOpen(false); else if (panel) setPanel(null); }
     };
     addEventListener('keydown', onKey);
