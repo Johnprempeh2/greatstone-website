@@ -205,3 +205,17 @@ review notes, #17 resolveFields, #18 site settings, #19 Products (NORTH STAR), #
   parity, so it's intentionally left as-is. The studio has its own working responsive nav
   (`Header.jsx` collapse). Building a second mobile drawer would be redundant. Skipped with rationale.
 
+**[00:22 BST] Item R1-#9 — Undo/redo buttons + shortcuts — BUILT, VERIFIED, COMMITTED.**
+- Puck binds ⌘Z / ⌘⇧Z / ⌘Y for undo/redo natively (confirmed in the dist), but our custom
+  `headerActions` override replaced Puck's default header (which carried the buttons), so they were
+  invisible. Added visible Undo/Redo buttons.
+- Built `src/cms/UndoRedo.jsx` (uses `usePuck().history`; `hasPast()/hasFuture()` are functions in
+  0.20) and rendered it in the toolbar via `<Suspense><UndoRedo/></Suspense>`. It's a separate lazy
+  module so `@measured/puck` stays off the public bundle (its own 0.66KB chunk). No extra keyboard
+  handler — Puck's native hotkeys already work; double-binding would double-undo.
+- Files: `src/cms/UndoRedo.jsx` (new), `src/App.jsx`, `src/studio.css`.
+- Verify: build PASS (141 modules; `UndoRedo-*.js` 0.66KB async). Preview: signed in, entered edit;
+  both buttons present and correctly DISABLED with no history; made an inline edit → Undo enabled;
+  clicked Undo → reverted, Undo disabled + Redo enabled. Zero new console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+

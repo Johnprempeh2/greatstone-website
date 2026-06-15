@@ -13,6 +13,9 @@ function Stage(props) { return <Suspense fallback={null}><LazyStage {...props} /
 // downloads the editor; the chunk arrives only when a signed-in admin opens edit mode. Public
 // pages render through the tiny PublicRender above instead of Puck's heavyweight <Render>.
 const PuckEditor = lazy(() => import('./EditorMount.jsx'));
+// undo/redo buttons live in their own lazy module (they call usePuck → @measured/puck); kept off
+// the public bundle, loaded with the editor and rendered inside Puck's context via headerActions.
+const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -359,6 +362,7 @@ export default function App() {
                 </span>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* tools */}
+                <Suspense fallback={null}><UndoRedo /></Suspense>
                 <button className={'gs-btn ghost sm' + (panel === 'background' ? ' is-on' : '')} onClick={() => setPanel(panel === 'background' ? null : 'background')}>3D background</button>
                 <button className={'gs-btn ghost sm' + (panel === 'seo' ? ' is-on' : '')} onClick={() => setPanel(panel === 'seo' ? null : 'seo')}>SEO</button>
                 <button className={'gs-btn ghost sm' + (panel === 'history' ? ' is-on' : '')} onClick={() => setPanel(panel === 'history' ? null : 'history')}>History</button>

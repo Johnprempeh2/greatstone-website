@@ -62,6 +62,8 @@
 .gs-btn.ghost{background:rgba(255,255,255,.05);border-color:var(--gs-border-soft);color:var(--gs-text)}
 .gs-btn.danger{background:#ff6b6b;color:#1a0c0c}
 .gs-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.gs-undoredo{display:inline-flex;gap:4px;align-items:center}
+.gs-undoredo .gs-btn{padding:7px 10px;font-size:.9rem;line-height:1}
 .gs-signout{background:none;border:0;color:var(--gs-faint);font-family:'Montserrat',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;padding:6px 4px;transition:color .2s}
 .gs-signout:hover{color:var(--gs-text)}
 
