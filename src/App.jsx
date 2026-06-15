@@ -26,6 +26,43 @@ const STATUSES = [
 ];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// Per-page SEO lives on the page (title/description/ogImage). The SeoPanel only PREVIEWS it; the
+// real <head> was never updated, so the document title and social cards stayed on index.html's
+// placeholder. This applies the stored SEO to the head and refreshes it on navigation/edit, so
+// what the panel previews is what the page actually serves. The dev team's Laravel build will
+// render the same fields server-side; the prototype keeps index.html's noindex (don't touch it).
+const SITE_ORIGIN = 'https://greatstone.com'; // matches the SeoPanel URL preview; dev team sets the real domain
+const SITE_NAME = 'Greatstone International';
+function upsertMeta(attr, key, content) {
+  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+  if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+  el.setAttribute('content', content);
+}
+function dropMeta(attr, key) { const el = document.head.querySelector(`meta[${attr}="${key}"]`); if (el) el.remove(); }
+function applyHead(seo, pageTitle, slug) {
+  const s = seo || {};
+  const title = s.title || `${pageTitle} — ${SITE_NAME}`;
+  const desc = (s.description || '').trim();
+  const url = SITE_ORIGIN + (slug === 'home' ? '' : '/' + slug);
+  document.title = title;
+  // canonical
+  let link = document.head.querySelector('link[rel="canonical"]');
+  if (!link) { link = document.createElement('link'); link.setAttribute('rel', 'canonical'); document.head.appendChild(link); }
+  link.setAttribute('href', url);
+  // description family — present only when actually written, so empty pages carry no stub meta
+  if (desc) { upsertMeta('name', 'description', desc); upsertMeta('property', 'og:description', desc); upsertMeta('name', 'twitter:description', desc); }
+  else { dropMeta('name', 'description'); dropMeta('property', 'og:description'); dropMeta('name', 'twitter:description'); }
+  // open graph
+  upsertMeta('property', 'og:type', 'website');
+  upsertMeta('property', 'og:site_name', SITE_NAME);
+  upsertMeta('property', 'og:title', title);
+  upsertMeta('property', 'og:url', url);
+  upsertMeta('name', 'twitter:title', title);
+  // image family — clear it when a page has none so the previous page's image doesn't linger
+  if (s.ogImage) { upsertMeta('property', 'og:image', s.ogImage); upsertMeta('name', 'twitter:image', s.ogImage); upsertMeta('name', 'twitter:card', 'summary_large_image'); }
+  else { dropMeta('property', 'og:image'); dropMeta('name', 'twitter:image'); upsertMeta('name', 'twitter:card', 'summary'); }
+}
+
 export default function App() {
   const [state, setState] = useState(load);
   const [current, setCurrent] = useState(() => state.order[0]); // derive from the one load() above, not a 2nd
@@ -54,6 +91,11 @@ export default function App() {
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
+  // keep the document <head> in sync with the current page's SEO (title/meta/canonical/social)
+  useEffect(() => {
+    const p = state.pages[current] || state.pages[state.order[0]];
+    if (p) applyHead(p.seo, p.title, current);
+  }, [current, state.pages]);
   // route any "Book a Deep Dive" CTA (href="#book") to the contact page
   useEffect(() => {
     const onClick = (e) => {
