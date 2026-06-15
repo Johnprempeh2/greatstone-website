@@ -1,9 +1,14 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { Puck, Render } from '@measured/puck';
 import '@measured/puck/puck.css';
 import { config, blockCss } from './puck.config.jsx';
-import Stage from './Stage.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
+
+// The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
+// first paint. Lazy-load it behind Suspense (transparent fallback): the page content renders
+// immediately and the 3D fades in once its chunk arrives. Same <Stage .../> call sites as before.
+const LazyStage = lazy(() => import('./Stage.jsx'));
+function Stage(props) { return <Suspense fallback={null}><LazyStage {...props} /></Suspense>; }
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
