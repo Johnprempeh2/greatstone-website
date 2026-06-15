@@ -10,6 +10,7 @@ import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
+import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets } from './store.js';
@@ -238,10 +239,14 @@ export default function App() {
       <div className="is-edit">
         {overlays}
         <Stage background={bg} previewP={previewP} />
-        {panel === 'pages' && <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} />}
-        {panel === 'background' && <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => { setPreviewP(null); setPanel(null); }} />}
-        {panel === 'seo' && <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onClose={() => setPanel(null)} />}
-        {panel === 'history' && <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} />}
+        {panel && (
+          <StudioPanel tab={panel} onTab={setPanel} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
+            pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
+            background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
+            seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onClose={() => setPanel(null)} embedded />,
+            history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
+          }} />
+        )}
         <EditorBoundary key={'eb:' + current + ':' + puckKey} label="editor" onReset={discardDraft} resetLabel="Discard draft & recover">
         <Puck
           key={current + ':' + puckKey}

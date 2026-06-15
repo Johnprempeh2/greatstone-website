@@ -25,8 +25,13 @@ import * as Figure from './blocks/Figure.jsx';
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
 const MODULES = { Hero, Chapter, Pillars, PillarExplorer, MaturityMap, Steps, Spectrum, Timeline, Ladder, StatStrip, CaseStudy, RoiBar, Quote, Team, FeaturedArticle, Figure, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid };
 
+// wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
+// editor can pin a scene transition to "when you reach this block" — resolved live from the
+// element's scroll position. The wrapper is a plain block element, layout-transparent.
+const withAnchor = (puck) => ({ ...puck, render: (props) => <div id={'gs-blk-' + props.id} className="gs-blk">{puck.render(props)}</div> });
+
 export const config = {
-  components: Object.fromEntries(Object.entries(MODULES).map(([name, m]) => [name, m.puck])),
+  components: Object.fromEntries(Object.entries(MODULES).map(([name, m]) => [name, withAnchor(m.puck)])),
   // group the block drawer so the section types read as a deliberate kit, not a junk drawer
   categories: {
     page: { title: 'Page', components: ['Hero', 'Invite'] },

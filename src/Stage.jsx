@@ -40,15 +40,29 @@ export default function Stage({ background = 'stone', previewP = null }) {
       const host = document.createElement('div'); host.className = 'gs-layer'; root.appendChild(host);
       return { kind: s.kind, host, handle: MOUNTERS[s.kind] ? MOUNTERS[s.kind](host) : null };
     });
+    // a block-pinned transition resolves its scroll point live from the block's position
+    const resolveAt = (tr, max) => {
+      if (tr.anchor && tr.anchor.type === 'block') {
+        const el = document.getElementById('gs-blk-' + tr.anchor.blockId);
+        if (el && max > 0) {
+          const r = el.getBoundingClientRect(); const docTop = r.top + scrollY;
+          const edgeOff = tr.anchor.edge === 'center' ? r.height / 2 : tr.anchor.edge === 'bottom' ? r.height : 0;
+          return Math.min(Math.max((docTop + edgeOff - innerHeight / 2) / max, 0), 1);
+        }
+        if (tr.anchor.fallbackAt != null) return tr.anchor.fallbackAt; // block deleted → fall back
+      }
+      return tr.at;
+    };
     const apply = () => {
       const c = cfgRef.current; const n = layers.length;
       const max = document.body.scrollHeight - innerHeight;
       const inj = previewRef.current;
       const p = inj != null ? inj : (max > 0 ? Math.min(Math.max(scrollY / max, 0), 1) : 0);
+      const ats = (c.transitions || []).map((tr) => resolveAt(tr, max));
       let prev = 0;
-      const t = (c.transitions || []).map((tr) => {
-        const half = Math.max(tr.fade, 1e-4) / 2;
-        let ti = smoothstep(tr.at - half, tr.at + half, p);
+      const t = ats.map((at, i) => {
+        const half = Math.max(c.transitions[i].fade, 1e-4) / 2;
+        let ti = smoothstep(at - half, at + half, p);
         ti = Math.max(ti, prev); prev = ti; // monotonic: a later transition can't un-fade an earlier one
         return ti;
       });
@@ -57,8 +71,8 @@ export default function Stage({ background = 'stone', previewP = null }) {
         const outgoing = k < n - 1 ? 1 - t[k] : 1;
         l.host.style.opacity = String(incoming * outgoing);
         l.host.style.zIndex = String(k);
-        const bandStart = k > 0 ? c.transitions[k - 1].at : 0;
-        const bandEnd = k < n - 1 ? c.transitions[k].at : 1;
+        const bandStart = k > 0 ? ats[k - 1] : 0;
+        const bandEnd = k < n - 1 ? ats[k] : 1;
         const localClimb = Math.min(Math.max((p - bandStart) / Math.max(bandEnd - bandStart, 1e-4), 0), 1);
         if (l.handle && l.handle.setClimb) l.handle.setClimb(localClimb);
       });

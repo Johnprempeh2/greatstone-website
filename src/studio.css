@@ -148,6 +148,21 @@
 .gs-x{background:none;border:0;color:var(--gs-faint);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px}
 .gs-x:hover{color:var(--gs-text)}
 .gs-panel-body{padding:20px;overflow-y:auto}
+
+/* ---------- unified Studio panel (tabbed) ---------- */
+.gs-studio{display:flex;flex-direction:column;width:min(440px,94vw)}
+.gs-studio-tabs{display:flex;align-items:center;gap:8px;padding:12px 14px 0;border-bottom:1px solid var(--gs-border-soft)}
+.gs-studio-tablist{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.gs-studio-tab{background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;font-family:'Montserrat',sans-serif;
+  font-size:.82rem;font-weight:700;color:var(--gs-faint);padding:8px 12px 12px;transition:color .2s,border-color .2s}
+.gs-studio-tab:hover{color:var(--gs-text)}
+.gs-studio-tab.is-active{color:var(--gs-accent);border-bottom-color:var(--gs-accent)}
+.gs-studio-tabs .gs-x{align-self:flex-start;margin-top:-2px}
+.gs-studio-body{flex:1;overflow-y:auto;padding:20px}
+/* nest the existing panels: drop their own chrome so only the Studio shell frames them */
+.gs-studio-body .gs-panel{position:static;inset:auto;width:auto;max-width:none;height:auto;border:0;box-shadow:none;background:none;animation:none;display:block}
+.gs-studio-body .gs-panel-head{display:none}
+.gs-studio-body .gs-panel-body{padding:0;overflow:visible}
 .gs-field{display:block;margin-bottom:18px}
 .gs-field-label{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:800;letter-spacing:.04em;
   text-transform:uppercase;color:var(--gs-faint);margin-bottom:8px}
@@ -268,7 +283,11 @@
 .gs-scene-acts button:disabled{opacity:.3;cursor:default}
 .gs-scene-acts .gs-scene-del:hover{color:#ff6b6b;border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.08)}
 .gs-trans{margin:2px 0 8px 18px;padding:10px 12px;border-left:2px solid var(--gs-border);background:rgba(200,255,0,.03);border-radius:0 10px 10px 0}
-.gs-trans-label{font-size:.7rem;font-weight:800;letter-spacing:.04em;color:var(--gs-accent);text-transform:uppercase;margin-bottom:8px}
+.gs-trans-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.gs-trans-label{font-size:.7rem;font-weight:800;letter-spacing:.04em;color:var(--gs-accent);text-transform:uppercase}
+.gs-trans-pin{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;color:var(--gs-faint);cursor:pointer;white-space:nowrap}
+.gs-trans-pin input{accent-color:var(--gs-accent);cursor:pointer}
+.gs-trans-row select{flex:1;min-width:0;background:rgba(255,255,255,.04);color:var(--gs-text);border:1px solid var(--gs-border-soft);border-radius:8px;padding:6px 8px;font-family:'Montserrat',sans-serif;font-size:.78rem;cursor:pointer;outline:0}
 .gs-trans-row{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:.76rem;color:var(--gs-muted)}
 .gs-trans-row span{min-width:78px}
 .gs-trans-row input[type="range"]{flex:1;accent-color:var(--gs-accent)}

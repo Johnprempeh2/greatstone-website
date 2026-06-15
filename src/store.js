@@ -261,8 +261,12 @@ export function duplicatePage(state, slug) {
   while (state.pages[dup]) dup = slugify(src.title + ' copy') + '-' + n++;
   const title = src.title + ' copy';
   const clone = JSON.parse(JSON.stringify({ ...src, title, status: 'draft', versions: [], statusHistory: [], approvedBy: null }));
-  // fresh block ids so the clone is independent
-  if (clone.data && clone.data.content) clone.data.content.forEach((b) => { b.props = { ...b.props, id: rid(b.type) }; });
+  // fresh block ids so the clone is independent (track old→new to fix block-pinned backgrounds)
+  const idMap = {};
+  if (clone.data && clone.data.content) clone.data.content.forEach((b) => { const nid = rid(b.type); idMap[b.props.id] = nid; b.props = { ...b.props, id: nid }; });
+  if (clone.background && typeof clone.background === 'object' && Array.isArray(clone.background.transitions)) {
+    clone.background.transitions = clone.background.transitions.map((tr) => (tr.anchor && tr.anchor.type === 'block' && idMap[tr.anchor.blockId]) ? { ...tr, anchor: { ...tr.anchor, blockId: idMap[tr.anchor.blockId] } } : tr);
+  }
   clone.data.root = { props: { title } };
   clone.published = clone.data;
   const i = state.order.indexOf(slug);
