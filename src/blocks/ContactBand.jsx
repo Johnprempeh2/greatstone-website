@@ -36,8 +36,8 @@ export const css = `
 @media(max-width:760px){.contact-band{grid-template-columns:1fr}}
 .b-cb-head{margin:.5rem 0 1rem;font-weight:900;letter-spacing:-.025em}
 .b-cb-body{margin-bottom:1.4rem;line-height:1.7}
-.big-mail{font-size:clamp(1.05rem,2vw,1.5rem);font-weight:800;color:var(--gs-accent);letter-spacing:-.01em;border-bottom:1px solid var(--gs-border);padding-bottom:4px;transition:border-color .25s var(--gs-ease)}
-.big-mail:hover{border-color:var(--gs-accent)}
+.big-mail{font-weight:900;font-size:clamp(1.4rem,3.4vw,2.4rem);letter-spacing:-.02em;color:var(--gs-text);transition:color .25s var(--gs-ease);word-break:break-word}
+.big-mail:hover{color:var(--gs-accent)}
 .calc-card{padding:clamp(24px,3vw,34px);position:relative;overflow:hidden}
 .calc-card::before{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(420px 200px at 110% -20%,var(--gs-accent-dim),transparent 60%)}

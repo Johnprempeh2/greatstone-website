@@ -92,7 +92,7 @@ export const css = `
 .fld{width:100%;font-family:inherit;font-size:.98rem;color:var(--gs-text);background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);border-radius:10px;padding:.8em .9em;transition:border-color .25s var(--gs-ease),background .25s var(--gs-ease),box-shadow .25s var(--gs-ease)}
 .fld::placeholder{color:var(--gs-faint)}
 textarea.fld{resize:vertical;min-height:120px;line-height:1.55}
-select.fld{appearance:none;-webkit-appearance:none;cursor:pointer}
+select.fld{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c8ff00' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1em center;padding-right:2.6em}
 select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .fld:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.4));background:rgba(200,255,0,.04);box-shadow:0 0 0 3px var(--gs-accent-dim)}
 .book-submit{margin-top:1.8rem;width:100%;justify-content:center}
