@@ -38,6 +38,8 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:33 BST] FINAL re-audit complete** — `wg0ice3lr` (10 agents, 68 findings). **Parity 76% → 83%** (was ~65-70% at run start). Per-page now: climb 88 · industries/proof/insights 86 · method/services/about/contact 82 · home 80. Every original top-12 item closed; the deeper pass surfaced finer drift (6 high, 6 med) written to the backlog (RA2 section). NOT closing out — per the directive, new high/med drift = keep working top-down. RA2 top items: (1) home §05 StatStrip → 2×2 glass-card grid; (2) method PillarCards need hrefs (Inspect →); (3) method FeatureGrid → centered 3-point statement w/ 01/02/03; (4) services Outcomes StatStrip → centered+dividers; (5) CTAs solid-lime not ghost; (6) sub-page heroes → compact (services/insights/proof/climb); (7) clear phantom hero CTAs + section numbers (proof/about); (8) contact calculator card CTA/glow; (9) climb hero compact + stacked Pebble/Plateau/Peak; (10) contact 'what happens next' steps + timing; (11) Chapter coda soften + inline-bold; (12) Newsletter/ServiceCards heading scale.
+
 **[14:25 BST] Perf #23 ASSESSED — substantially met; remaining wins flagged (no code change this cycle).**
 - Assessed the public perf posture against #23. ALREADY IN PLACE (prior cycles): font preconnect to both Google
   origins + `display=swap` (index.html); Puck editor JS code-split into the lazy `puck-*.js` chunk (off the public
