@@ -190,7 +190,7 @@ export function seedState() {
   const pages = {
       home: seedPage('Home', 'stone', [
         blk('Hero', {
-          kicker: '',
+          kicker: 'Greatstone International',
           headline: 'The Foundation of', highlight: 'Digital Excellence.',
           body: 'We don’t decorate businesses with technology. We build what holds everything up.',
           prompt: 'Move your cursor. The stone responds', align: 'center', size: 'full', ctaLabel: '', ctaHref: '#',
@@ -205,19 +205,10 @@ export function seedState() {
           body: 'Shoulder-to-shoulder with the people who run it. We learn your rules, then build the system to match the business, never the other way around.',
           coda: 'No reports that gather dust. No tools for the sake of innovation.', align: 'left',
         }),
-        blk('Pillars', {
+        blk('Chapter', {
           index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone', highlight: 'unturned.',
           body: 'Every engagement begins with the Digital Transformation Playbook: a rigorous diagnostic across eight pillars, producing the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
-          items: [
-            { title: 'People', text: 'Know who moves what, and set them up to move it well.' },
-            { title: 'Communication', text: 'Make the value land, inside the business and out.' },
-            { title: 'Innovation', text: 'A repeatable way to find the next worthwhile change.' },
-            { title: 'Data', text: 'Map the lifecycle so the right decision is the easy one.' },
-            { title: 'Customer', text: 'See the whole relationship, not just the last ticket.' },
-            { title: 'Competition', text: 'Know the field, and where your edge actually is.' },
-            { title: 'Technology', text: 'A stack that earns its keep and bends when you need it to.' },
-            { title: 'Value', text: 'Tie every move back to money, time or risk.' },
-          ],
+          coda: '', align: 'center', ctaLabel: 'Explore the eight pillars', ctaHref: '#go/method',
         }),
         blk('Chapter', {
           index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence,', highlight: 'properly integrated.',
