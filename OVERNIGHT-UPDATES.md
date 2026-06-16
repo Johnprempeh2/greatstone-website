@@ -38,6 +38,20 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[09:28 BST] Parity #7 — framed CTA-card variant for Invite + method closing CtaBand — BUILT, VERIFIED, DEPLOYED.** (METHOD PAGE COMPLETE)
+- method.html ends on a contained .cta-band (bordered card, accent-soft fill, radius 24, centered); the studio
+  Invite only had the full-bleed aurora form. Added a "variant" field to Invite: aurora (default) | framed. The
+  framed variant drops the aurora and wraps content in a .b-invite-card (max-width 880, centered, 1px border,
+  radius 26, accent-soft fill, blur, soft ::before radial glow). Seeded the method closing CtaBand as a framed
+  Invite ("The First Step" / "Find out where you stand." / Book a Deep Dive → #book).
+- **The method page is now fully complete**: Hero → FeatureGrid → PillarExplorer → MaturityModel → framed CtaBand.
+  (Left the other pages full-bleed: about/services CTAs are full-bleed in the live source, not bordered cards.)
+- Files: `src/blocks/Invite.jsx`, `src/store.js`.
+- Verify: build PASS (`index-saLR_mVF`). Fresh-seed preview: method ends on the framed card (radius 26, no
+  aurora, correct copy + CTA); home Invite still the full-bleed aurora (no regression); zero console errors;
+  screenshot matches the live method cta-band.
+- Commit: `7bea813`. **Deploy LIVE** `6a310902f4e0b85310a9dfc3`; 200; live bundle has b-invite-card/b-invite-framed.
+
 **[09:16 BST] Parity #6 — MaturityModel block (completes the method page) — BUILT, VERIFIED, DEPLOYED.**
 - method.html's closing methodology section was dropped from the seed. New MaturityModel block (faithful port of
   .tier-row + .phases): centered kicker "Pebble · Plateau · Peak" + "We meet you where you are." + lead; Row A =
