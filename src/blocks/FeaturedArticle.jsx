@@ -1,9 +1,10 @@
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
+import { safeHref } from '../lib/safe-url.js';
 
 // The insights hero post: a two-up card. A real hero image if one is set, otherwise the
 // stone-echo media panel (giant glyph + ridges + corner wave). Editable meta + read time.
-export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime, image, alt }) {
+export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime, image, alt, ctaLabel, ctaHref = '#' }) {
   const ref = useReveal();
   return (
     <section ref={ref} className="b-featured-sec">
@@ -24,6 +25,7 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
               {meta ? <span className="faint">{meta}</span> : null}
               {readTime ? <span className="pill">{readTime}</span> : null}
             </div>
+            {ctaLabel ? <p className="featured__cta"><a className="btn btn--primary" href={safeHref(ctaHref)}>{ctaLabel}</a></p> : null}
           </div>
         </article>
       </div>
@@ -50,7 +52,17 @@ export const css = `
 .featured__body{padding:clamp(28px,3.2vw,48px);display:flex;flex-direction:column;justify-content:center;gap:14px}
 .featured__body .h3{max-width:18ch}
 .featured__meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.78rem}
-.corner-wave{position:absolute;top:0;right:0;width:120px;height:120px;z-index:2;fill:none;stroke:var(--gs-accent);stroke-width:1;opacity:.4;pointer-events:none}
+.featured__cta{margin-top:6px}
+/* animated lime corner-wave (faithful to the live insights .featured): four arcs emit outward, staggered */
+.corner-wave{position:absolute;top:-2px;right:-2px;width:170px;height:170px;z-index:2;pointer-events:none}
+.corner-wave path{fill:none;stroke:var(--gs-accent);stroke-width:1;opacity:0;transform-origin:100% 0%;
+  animation:gsWaveEmit 4.6s var(--gs-ease-inout) infinite}
+.corner-wave path:nth-child(1){animation-delay:0s}
+.corner-wave path:nth-child(2){animation-delay:.7s}
+.corner-wave path:nth-child(3){animation-delay:1.4s}
+.corner-wave path:nth-child(4){animation-delay:2.1s}
+@keyframes gsWaveEmit{0%{opacity:0;transform:scale(.35)}18%{opacity:.55}70%{opacity:.12}100%{opacity:0;transform:scale(1.1)}}
+@media(prefers-reduced-motion:reduce){.corner-wave path{animation:none;opacity:.3}}
 `;
 
 export const puck = {
@@ -64,12 +76,15 @@ export const puck = {
     image: { type: 'custom', label: 'Hero image', render: (props) => <MediaField {...props} /> },
     alt: { type: 'text', label: 'Image alt text (accessibility)' },
     glyph: { type: 'text', label: 'Media glyph (fallback)' },
+    ctaLabel: { type: 'text', label: 'Button label (optional)' },
+    ctaHref: { type: 'text', label: 'Button link' },
   },
   defaultProps: {
     label: 'Featured', glyph: 'G', image: '', alt: '',
     title: 'The hours your business is quietly losing, and how to get them back.',
     excerpt: 'A field-level look at where time actually leaks: the manual handoffs, the duplicated tools, the approvals that wait on a single inbox.',
     meta: 'AI & Automation', readTime: '8 min read',
+    ctaLabel: 'Read the piece', ctaHref: '#',
   },
   render: (props) => <FeaturedArticle {...props} />,
 };
