@@ -38,6 +38,21 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[12:44 BST] Re-audit R4 — Spectrum Tool-first-vs-Problem-first glass figure (services) — BUILT, VERIFIED, DEPLOYED.**
+- services' Spectrum section reproduced the right column as a plain 4-item bullet list, dropping the live's whole
+  point: a bordered glass `.tool-figure` contrasting tool-first vs problem-first. Rebuilt Spectrum.jsx right column
+  as `.b-spectrum-figure`: 6 dot+term+meta rows (1 grey "bad" Tool-first, 5 lime "good" — Problem-first, AI,
+  Automation, Integration, Better process), right-aligned `.b-spectrum-meta` notes, closing on a `.b-spectrum-cap`
+  caption "The diagnosis chooses the tool: never the other way round." Left column now carries the full live lead +
+  the muted aside. Fields: kicker/headline/highlight/body/coda + `rows` (tone/term/meta) array + `caption`
+  (replaced the old `items`). Services Spectrum seed cleared to inherit the faithful defaults.
+- Files: `src/blocks/Spectrum.jsx`, `src/seed-pages.json` (Services Spectrum props → {}).
+- Verify: build PASS (`index-DmiBWkiH`, 370.12 kB). Fresh-seed preview: services Spectrum renders the 6-row glass
+  figure (Tool-first grey, rest lime; correct metas + caption; 1px bordered card) + left lead/aside; zero runtime
+  errors; screenshot matches the live tool-figure. Services should lift well off 68%.
+- Commit: `79d4fba`. **Deploy LIVE** `6a3136f7d27277088ba86d41`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "b-spectrum-figure" / "b-spectrum-row".
+
 **[12:35 BST] Re-audit R1 — calm Invite closing-CTA variants (drop invented aurora on 6 pages) — BUILT, VERIFIED, DEPLOYED.**
 - The single highest-leverage re-audit finding: the closing Invite defaulted to the invented full-bleed aurora
   (gsDrift glow + oversized 4rem display h2) on 6 pages, where live closings are calmer. Added a `band` variant to
