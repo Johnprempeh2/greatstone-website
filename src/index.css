@@ -30,6 +30,10 @@
 .gs-cursor.label .gs-cur-label{opacity:1;transform:translate(-50%,-50%) scale(1)}
 @media(hover:none),(pointer:coarse){.gs-cursor{display:none!important}.gs-cursor-on,.gs-cursor-on *{cursor:auto}}
 @media(prefers-reduced-motion:reduce){.gs-cursor{display:none!important}}
+/* the custom cursor is a wide-desktop flourish. Disable it on narrow viewports too (a narrow desktop
+   window reports a fine pointer, so the coarse-pointer rule above doesn't catch it) — its fixed,
+   mouse-tracked children escape body{overflow-x:hidden} and can push horizontal scroll near the edge. */
+@media(max-width:760px){.gs-cursor{display:none!important}.gs-cursor-on,.gs-cursor-on *{cursor:auto!important}}
 
 /* ghost secondary (matches site.css .btn--ghost): bordered, accent-soft fill, body text */
 .b-cta.ghost{background:var(--gs-accent-soft);color:var(--gs-text);border:1px solid var(--gs-border-strong,var(--gs-accent-mid))}
