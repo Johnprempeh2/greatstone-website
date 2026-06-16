@@ -119,6 +119,9 @@ export default function App() {
   const [cart, setCart] = useState({});     // licence basket: { [productId]: qty } — in-memory, never persisted
   const toastTimer = useRef(null);
   const didNavMount = useRef(false); // skip the initial mount when moving focus on navigation
+  const persistTimer = useRef(null); // debounce the localStorage write
+  const stateRef = useRef(state);    // latest state, for the debounced/unload flush
+  stateRef.current = state;
 
   const authed = !!user;
   const canEdit = can(user, 'edit');
@@ -127,7 +130,19 @@ export default function App() {
 
   // persist() now trims old version snapshots and retries before failing; a failure here means the
   // store is genuinely full, so raise a STICKY banner (not a 2.6s toast) — those edits won't survive a reload
-  useEffect(() => { setStorageError(!persist(state)); }, [state]);
+  // Debounced persist: writing the WHOLE store (pages + products + team + version snapshots) to
+  // localStorage on every keystroke got janky as content grew. Coalesce writes to ~400ms after the
+  // last change; flush on tab close so nothing in-flight is lost. (Quota warning surfaces on the write.)
+  useEffect(() => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => { setStorageError(!persist(stateRef.current)); }, 400);
+    return () => { if (persistTimer.current) clearTimeout(persistTimer.current); };
+  }, [state]);
+  useEffect(() => {
+    const flush = () => persist(stateRef.current);
+    addEventListener('beforeunload', flush);
+    return () => removeEventListener('beforeunload', flush);
+  }, []);
   useEffect(() => {
     const onHash = () => setAdminRoute(isAdminRoute());
     addEventListener('hashchange', onHash);

@@ -502,6 +502,16 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview: added an item, opened the drawer → `aria-modal=true`,
   `aria-labelledby=gs-cart-title`, body scroll LOCKED, focus moved to the close button; pressed
   Escape → drawer closed, body scroll restored, focus returned to the FAB. Zero console errors. PASS.
+- Commit: `a3ed759`. Deploy: deferred (Netlify 500).
+
+**[01:36 BST] Item R2-#2 — Debounce the localStorage persist — BUILT, VERIFIED, COMMITTED.**
+- The persist effect wrote the entire store (pages + products + team + every version snapshot) to
+  localStorage synchronously on every `setState`, so typing in Puck got jankier as content grew.
+- Coalesced writes to ~400ms after the last change (ref + timeout), kept the quota-warning, and added
+  a `beforeunload` flush so an in-flight edit isn't lost on tab close.
+- Files: `src/App.jsx`. Verify: build PASS (149 modules). Preview: app mounts; the migrate-driven
+  state change persisted through the new debounced path (localStorage shows schema 14 + 5 products);
+  zero console errors. PASS.
 - Commit: pending below. Deploy: deferred (Netlify 500).
 - (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
