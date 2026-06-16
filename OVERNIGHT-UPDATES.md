@@ -38,6 +38,23 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:17 BST] Re-audit R3 (minimum) — home copy-scrim for legibility over the 3D — BUILT, VERIFIED, DEPLOYED.**
+- R3 (rank 3, high) is the live's scroll-PINNED stone choreography (sticky 132-195vh panels over the fixed WebGL +
+  per-chapter fade + data-scramble titles + a radial copy scrim). DECISION: full scroll-pinning is **intentionally
+  NOT ported** — it fights the studio's single-renderer + Puck block model (each block is an independent,
+  drag-orderable section, not a pinned scroll-stage) and would risk the editor. Instead ported the audit's stated
+  "minimum": the radial copy-scrim + text-shadow behind the home Chapter copy so text never clashes with the stone.
+  Faithful port of `.panel-inner::before`: `.b-chapter-inner` gets position:relative + text-shadow + a blurred
+  radial `::before` (z-index:-1, dark center→transparent, no visible box). The optional data-scramble title reveal
+  is deferred (signature-motion polish, not legibility).
+- Files: `src/blocks/Chapter.jsx`.
+- Verify: build PASS (`index-DVA2W3w8`, 376.09 kB). Fresh-seed preview: home Chapter inners have the radial
+  ::before (z-index -1, radial-gradient) + text-shadow; §02 copy reads cleanly over the emerald stone with no
+  visible box; zero runtime errors; screenshot confirms legibility.
+- Commit: `a514a32`. **Deploy LIVE** `6a314cc0664781154e9658b5`; greatstone-home.netlify.app/puck-proof/ 200.
+- **RE-AUDIT TOP-12 NOW COMPLETE** (R3 done as the tractable minimum; full pinning documented as out-of-scope). Next:
+  perf-hardening (#23 fonts/bundle), then assess/flag the desktop chrome shell (#3b), then a final re-audit.
+
 **[14:07 BST] Re-audit R5b — BookDeepDive iconed "Why a deep dive" aside (contact) — BUILT, VERIFIED, DEPLOYED. (CONTACT PAGE COMPLETE)**
 - The booking aside rendered a plain diamond-bullet list, dropping the live's iconed `.assure` rows. Added a small
   inline icon set (check / clock / scan, lime stroke) + restructured the aside: kicker + headline + intro + a list
