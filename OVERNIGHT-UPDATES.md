@@ -38,6 +38,33 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[16:40 BST] FINAL RE-AUDIT (88%) + PARITY-FIX BATCH (6 fixes) — BUILT, VERIFIED, DEPLOYED.**
+- Ran the final parity re-audit Workflow (9 page agents + synthesis): overall 88% (climb 94, home/method/services/
+  industries/proof/insights 88, about 86, contact 82). It surfaced fresh high-severity drift — incl. a real
+  regression on the flagship home page. Then ran a SECOND verification Workflow (6 agents) to adversarially confirm
+  each top finding against the live source + return exact patches; all 6 came back confirmed + faithful.
+- Applied the 6 verified fixes (ultracode: workflow-verified, not audit-on-faith):
+  1. **home §05 StatStrip cards band** (HIGH regression) — `.b-proof-cards` resets border/background so the 2×2 glass
+     cards float over the 3D scene (live §05 has no band). Verified: transparent bg, 0 borders.
+  6. **services outcomes** — `.b-proof-plain` numbers now solid lime (no gradient) + suffix at number size, and the
+     count-up is skipped for the plain variant (live figures are static). Verified: +40% / 2× / −60%, no animation.
+  2. **method maturity tiers** — added per-tier lime score-band eyebrow (`.b-mat-rng`): SCORE 1–4 · PEBBLE / 5–7 ·
+     PLATEAU / 8–10 · PEAK, above each h3. Verified.
+  3. **services hero** — gated `gridBackdrop` prop renders the live `.svc-hero` masked 64px line-grid; services opts
+     in, the 5 other heroes stay flat. Verified has-grid + grid ::before.
+  4. **contact BookDeepDive** — heading moved INTO the form card (in-card .h3 "Tell us where the week goes" + muted
+     intro after the template note); dropped the large section-level H2. Verified order + no section head.
+  10. **industries Steps** — added align(left|center) + numberStyle(badge|text); industries centred + small lime text
+     numbers + dropped the orphan "03". Contact Steps confirmed UNCHANGED (left/badge/phase/timing intact).
+- Files: StatStrip.jsx, MaturityModel.jsx, Hero.jsx, BookDeepDive.jsx, Steps.jsx, store.js, seed-pages.json.
+- Verify: build PASS (`index-CQaA93OZ.js`, 385,954 B, +2.9 kB for all six — negligible). Fresh-seed preview across
+  home/services/method/contact/industries + contact-Steps regression check: every fix confirmed, ZERO runtime errors
+  on every page; screenshot of home §05 shows the cards floating over the stone with no band.
+- Commits `710231a` (PF-1/6), `a111a72` (PF-2), `699ae47` (PF-4), `89a5735` (PF-3/10).
+  **Deploy LIVE** `6a316e67fd44af43aab729a8`; greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+- NEXT: re-run the re-audit to re-measure (expect 90%+ now the flagship band regression + 4 other HIGH items are
+  fixed); if it clears, write the closing summary + end the loop.
+
 **[16:18 BST] RA2-5 — CTA solid-vs-ghost audit + home §03 fix — BUILT, VERIFIED, DEPLOYED. (LAST RA2 MED ITEM)**
 - Catalogued every live CTA across the 9 pages: pattern is "Book a Deep Dive" = `btn--primary` (solid lime, dark
   text) with ghost secondaries; method hero leads with primary "Open the interactive breakdown" + ghost "Book a
