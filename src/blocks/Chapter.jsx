@@ -26,7 +26,11 @@ export function Chapter({ index, eyebrow, headline, highlight, body, coda, align
 export const css = `
 .b-chapter{padding:clamp(72px,13vh,150px) 0;position:relative}
 .b-chapter.align-center{text-align:center}
-.b-chapter-inner{max-width:760px}
+/* copy sits over the 3D stone; a soft radial scrim + text-shadow keep it legible without a visible box
+   (faithful to the live .panel-inner::before — full scroll-pinning is intentionally not ported) */
+.b-chapter-inner{max-width:760px;position:relative;text-shadow:0 1px 22px rgba(8,10,9,.85),0 0 50px rgba(8,10,9,.5)}
+.b-chapter-inner::before{content:"";position:absolute;z-index:-1;inset:-14% -16%;pointer-events:none;filter:blur(22px);
+  background:radial-gradient(ellipse 62% 58% at 50% 50%,rgba(9,12,10,.66),rgba(9,12,10,.34) 52%,transparent 76%)}
 .b-chapter.align-center .b-chapter-inner{margin-inline:auto}
 .b-chapter-eyebrow{display:inline-flex;align-items:center;gap:14px;margin-bottom:22px}
 .b-chapter.align-center .b-chapter-eyebrow{justify-content:center}
