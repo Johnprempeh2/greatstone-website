@@ -19,6 +19,7 @@ export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], 
         <div className="b-mat-tiers">
           {tiers.map((t, i) => (
             <div className={'b-mat-tier t' + clampN(i, 3)} data-reveal style={{ transitionDelay: `${i * 80}ms` }} key={i}>
+              {t.range ? <span className="b-mat-rng">{t.range}</span> : null}
               <h3>{t.label}</h3>
               <p>{t.body}</p>
             </div>
@@ -54,6 +55,7 @@ export const css = `
 .b-mat-tier.t1{background:rgba(255,255,255,.025)}
 .b-mat-tier.t2{background:rgba(200,255,0,.045)}
 .b-mat-tier.t3{background:rgba(200,255,0,.09);border-color:var(--gs-border)}
+.b-mat-rng{display:block;font-size:.72rem;font-weight:800;letter-spacing:.14em;color:var(--gs-accent)}
 .b-mat-tier h3{font-size:clamp(1.2rem,1.9vw,1.5rem);font-weight:800;margin:.3em 0}
 .b-mat-tier p{color:var(--gs-text-muted);font-size:.96rem;line-height:1.6}
 .b-mat-phases{margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
@@ -77,8 +79,8 @@ export const puck = {
     body: { type: 'textarea', label: 'Intro', contentEditable: true },
     tiers: {
       type: 'array', label: 'Tiers (3)',
-      arrayFields: { label: { type: 'text', label: 'Label' }, body: { type: 'textarea', label: 'Description' } },
-      defaultItemProps: { label: 'Tier', body: 'What this tier looks like.' },
+      arrayFields: { range: { type: 'text', label: 'Score band' }, label: { type: 'text', label: 'Label' }, body: { type: 'textarea', label: 'Description' } },
+      defaultItemProps: { range: 'SCORE 0–0 · TIER', label: 'Tier', body: 'What this tier looks like.' },
       getItemSummary: (i) => i.label || 'Tier',
     },
     phases: {
@@ -95,9 +97,9 @@ export const puck = {
     heading: 'We meet you where you are.',
     body: 'Your eight scores place you on the mountain. We start the climb from there: no vanity scores, no theatre.',
     tiers: [
-      { label: 'Surviving', body: 'Manual, reactive, held together by your best people doing work that isn’t theirs.' },
-      { label: 'Organised', body: 'Systems in place, some automation, improving, but the gains have stopped compounding.' },
-      { label: 'Compounding', body: 'Intelligent, ahead of the market, where every improvement makes the next one easier.' },
+      { range: 'SCORE 1–4 · PEBBLE', label: 'Surviving', body: 'Manual, reactive, held together by your best people doing work that isn’t theirs.' },
+      { range: 'SCORE 5–7 · PLATEAU', label: 'Organised', body: 'Systems in place, some automation, improving, but the gains have stopped compounding.' },
+      { range: 'SCORE 8–10 · PEAK', label: 'Compounding', body: 'Intelligent, ahead of the market, where every improvement makes the next one easier.' },
     ],
     phases: [
       { score: 'Under 3', label: 'Lagger', body: 'Falling behind the pace of the field.' },
