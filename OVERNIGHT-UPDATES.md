@@ -527,7 +527,12 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
   low-contrast lime-on-lime `.b-cta.is-added` (text → `--gs-text`). Verified the live region renders.
 - Files: `src/blocks/Storefront.jsx`, `src/cms/ProductsPanel.jsx`, `src/App.jsx`, `src/cms/CartDrawer.jsx`, `src/studio.css`.
 - Verify: build PASS (149 modules). Preview as above; zero console errors. PASS.
-- Commits: pending below (2). Deploy: deferred (Netlify 500).
+- Commits: `e85f1aa` (R2-#3/#5) + `550605b` (R2-#4). Deploy: deferred (Netlify 500). dist synced.
+
+**[01:48 BST] Turn 14 done — yielding.** Shipped R2-#3 (draft product visibility), R2-#5 (heading
+hierarchy), R2-#4 (cart aria-live + contrast). Round 2 progress: #1,#2,#3,#4,#5 done. Next: #8 persist
+the basket (quick), then the medium north-star deepeners #6 itemised quote summary, #7 product imagery,
+#9 Product/Offer JSON-LD. Deploys still 500 server-side; everything committed + dist staged.
 
 **[01:38 BST] Turn 13 done — yielding.** Round 2 underway: ran the 15-lens deep-dive (`wwra5n1p6` →
 18-item code-verified backlog) + shipped R2-#1 cart modal a11y (`a3ed759`) + R2-#2 debounce persist
