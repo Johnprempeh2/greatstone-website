@@ -560,6 +560,36 @@ approached carefully (3D modules are fragile). Deploys still 500 server-side; ev
 
 ## Round 3 — started Mon Jun 16 06:10 BST 2026
 
+**[07:00 BST] Item R3-#1 — Invitation lifecycle + Accept-Invite screen (#join/<token>) — BUILT, ADVERSARIALLY REVIEWED, COMMITTED, DEPLOYED.** (north-star: DX dashboard — the highest-value Round-3 item)
+- Modelled the org invite→accept flow end-to-end, prototype-honest. An admin invites a teammate; the invite now
+  carries a token + invitedBy/invitedAt/expiresAt (7-day); the Team panel shows a copyable `…/#join/<token>` link
+  + a Resend button; opening the link renders a new Accept screen that resolves to valid / expired / already-
+  accepted / not-found and, on accept, flips the member to active + stamps acceptedAt.
+- HONESTY BOUNDARY held throughout: app-generated token, per-browser localStorage, and accepting creates NO
+  account, sets NO password, signs NO ONE in. Real token signing, email, server-side resolution + account
+  provisioning are the Laravel handoff (documented in HANDOVER + DATA-MODEL).
+- Store (schema 18→19, additive migration backfills tokens for existing pending invites): freshInvite() +
+  inviteStatus + acceptInvite + resendInvite; flipping a member back to invited re-issues the invite.
+- **Ran an adversarial review WORKFLOW before commit** (`w50psezp5`, 5 agents: prototype-honesty/security,
+  correctness/edge, a11y, code-quality → triage). Verdict: SAFE TO COMMIT, no honesty blocker. It caught a
+  STUDIO-WIDE latent bug manual testing missed: `--gs-warning` / `--gs-success` / `--gs-danger` were used 11×
+  across the CSS but never defined, so ALL of Round 2's amber warning UI (catalogue drift banner, attention
+  badges, warn tiles) was silently falling back. Defined them in site.css. Also fixed: raw capability keys
+  ("MANAGEUSERS") leaking onto the invitee screen → friendly labels; no focus management on the join screen →
+  focus moves in + aria-modal; re-accept was impossible → Resend + re-invite re-stamp; em dashes in user copy →
+  removed (brand voice); exported INVITE_TTL_DAYS; copy-link aria-live + clipboard-failure fallback; stale
+  HANDOVER schema 15→19.
+- Files: `src/store.js`, `src/cms/AcceptInvite.jsx` (new), `src/App.jsx`, `src/cms/TeamPanel.jsx`,
+  `src/studio.css`, `src/site.css`, `DATA-MODEL.md`, `HANDOVER.md`.
+- Verify: build PASS (`index-zoI92OZG`). Preview (fresh server): invite→copy→accept end-to-end (roster flips +
+  audit logged); all 4 invite states; Resend rotates the token; flip-to-invited re-stamps + clears acceptedAt;
+  aria-modal + focus-into-card + friendly caps confirmed; `--gs-warning` resolves to #ffc800; zero em dashes in
+  rendered copy; zero console errors. Valid-invite screenshot captured.
+- Commit: `61ca25d`.
+- **Deploy: LIVE.** Netlify deploy `6a30e6223d44f9a5c662a1a3` "Deploy is ready!";
+  https://greatstone-home.netlify.app/puck-proof/ returns 200; live bundle has the invite flow ("Accept
+  invitation", "Manage the team", `join/`) and the live CSS now carries `--gs-warning:#ffc800`. dist synced.
+
 **[06:15 BST] Round 3 deep-dive complete** — background workflow `wwvwl5vfx` (studio-deep-dive-r3): 16 agents
 (15 lenses + synthesis), 70 raw candidate items → 20 ranked, deduped against all Round 1 + Round 2 built work
 and the SKIP list. Full backlog written to the backlog memory. Top of the list: (1) invitation lifecycle +
