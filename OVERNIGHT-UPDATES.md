@@ -38,6 +38,19 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[10:14 BST] Parity #15 — home background dual `stone-summit` → single `stone` (perf + parity) — BUILT, VERIFIED, DEPLOYED.**
+- The studio home was seeded on the dual `stone-summit` scene-track (TWO WebGLRenderers running at once). Live
+  home (index.html) uses a SINGLE `THREE.WebGLRenderer` — the emerald stone only, no `mountSummit`. Switched the
+  home seed + settings + migrate fallback to single `stone`: parity AND a real perf win (one canvas/renderer, not
+  two — roughly halves the home page's idle GPU/rAF cost). No new code; pure seed/config change.
+- Files: `src/store.js` (line 191 `seedPage('Home', 'stone'…)`, line 331 `settings.background: 'stone'`, line 367
+  migrate fallback `'stone'`).
+- Verify: build PASS (`index-ZCCYvbf1`, 331.63 kB). Fresh-seed preview (blocked the beforeunload re-persist to load
+  the new seed): `homeBg:"stone", settingsBg:"stone", layerCount:1, canvasCount:1` (down from 2); the emerald
+  crystal + "The Foundation of Digital Excellence." render correctly; zero console errors. Matches the live home's
+  single-scene background.
+- Commit: `b9c3a9a`. **Deploy LIVE** `6a3111d379ac871a996cdf1c`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[09:28 BST] Parity #7 — framed CTA-card variant for Invite + method closing CtaBand — BUILT, VERIFIED, DEPLOYED.** (METHOD PAGE COMPLETE)
 - method.html ends on a contained .cta-band (bordered card, accent-soft fill, radius 24, centered); the studio
   Invite only had the full-bleed aurora form. Added a "variant" field to Invite: aurora (default) | framed. The
