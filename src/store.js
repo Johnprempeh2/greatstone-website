@@ -12,7 +12,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 18;
+const SCHEMA = 19;
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
@@ -136,12 +136,42 @@ const SEED_TEAM = [
   { id: 'tm-viewer', name: 'Reviewer', email: 'viewer@greatstone', role: 'viewer', title: 'Read-only reviewer', status: 'active' },
 ];
 export function listTeam(state) { return (state && state.team) || []; }
+export const INVITE_TTL_DAYS = 7;
+// a fresh invitation envelope: the #join token, when it was sent, and a 7-day expiry. PROTOTYPE — the
+// token is app-generated (not a signed server token); "accepting" only flips the roster status, it
+// creates no account. The Laravel build signs the token, emails the link, and on accept provisions the
+// real org user (HANDOVER → Team & roles).
+function freshInvite() {
+  const now = Date.now();
+  return { token: rid('inv'), invitedAt: now, expiresAt: now + INVITE_TTL_DAYS * 86400000, acceptedAt: null };
+}
 export function inviteTeamMember(state, member) {
   const id = rid('tm');
-  return { ...state, team: [...(state.team || []), { id, orgId: (state.org && state.org.id) || ORG.id, name: '', email: '', role: 'editor', title: '', status: 'invited', ...member, id }] };
+  return { ...state, team: [...(state.team || []), { id, orgId: (state.org && state.org.id) || ORG.id, name: '', email: '', role: 'editor', title: '', status: 'invited', invitedBy: null, ...member, ...freshInvite(), id }] };
+}
+// re-send: re-stamp a fresh token + expiry and clear any prior acceptance, so a lapsed/expired invite
+// recovers without losing the member's name/role (and the old link stops resolving).
+export function resendInvite(state, id) {
+  return { ...state, team: (state.team || []).map((m) => (m.id === id ? { ...m, status: 'invited', ...freshInvite() } : m)) };
+}
+// resolve a #join/<token> link to its invitation state, for the Accept-Invite screen to render honestly
+export function inviteStatus(state, token) {
+  const m = token ? (state.team || []).find((x) => x.token === token) : null;
+  if (!m) return { kind: 'notfound', member: null };
+  if (m.status === 'active' || m.acceptedAt) return { kind: 'accepted', member: m };
+  if (m.expiresAt && Date.now() > m.expiresAt) return { kind: 'expired', member: m };
+  return { kind: 'valid', member: m };
+}
+// accept: flip the (valid) invitation to an active member + stamp acceptedAt. PROTOTYPE — this records
+// acceptance only; it does NOT sign anyone in or create credentials (that's the backend).
+export function acceptInvite(state, token) {
+  return { ...state, team: (state.team || []).map((m) => (m.token === token && m.status === 'invited' ? { ...m, status: 'active', acceptedAt: Date.now() } : m)) };
 }
 export function updateTeamMember(state, id, patch) {
-  return { ...state, team: (state.team || []).map((m) => (m.id === id ? { ...m, ...patch, id } : m)) };
+  // flipping a member back to "invited" re-issues the invitation (fresh token, cleared acceptedAt), so
+  // the previous #join link stops resolving and they can accept again.
+  const p = patch && patch.status === 'invited' ? { ...freshInvite(), ...patch } : patch;
+  return { ...state, team: (state.team || []).map((m) => (m.id === id ? { ...m, ...p, id } : m)) };
 }
 export function removeTeamMember(state, id) {
   return { ...state, team: (state.team || []).filter((m) => m.id !== id) };
@@ -360,6 +390,15 @@ function migrate(state) {
   // projection, so nothing is suddenly "unpublished" on upgrade. Draft and published start identical.
   if (!Array.isArray(state.publishedProducts)) state.publishedProducts = clone(state.products || []);
   if (!Array.isArray(state.publishedCategories)) state.publishedCategories = clone(state.categories || []);
+  // invitation lifecycle (additive, schema 19): give any existing pending invite a token + expiry so the
+  // #join link resolves; active members don't need one. acceptedAt left undefined for already-active members.
+  state.team = (state.team || []).map((m) => {
+    if (m.status === 'invited' && !m.token) {
+      const now = Date.now();
+      return { ...m, token: rid('inv'), invitedAt: m.invitedAt || now, expiresAt: m.expiresAt || now + INVITE_TTL_DAYS * 86400000, invitedBy: m.invitedBy || null, acceptedAt: m.acceptedAt || null };
+    }
+    return m;
+  });
   if (!state.pages.products) {
     state.pages.products = productsPage();
     if (!state.order.includes('products')) {

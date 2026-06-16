@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ROLES } from './auth.js';
 
 // Team & roles (admin-only): the org roster — who's on the team, their role and responsibilities,
@@ -7,12 +7,26 @@ import { ROLES } from './auth.js';
 // multi-tenant auth + org scoping + invitation delivery are the Laravel backend (HANDOVER → Team).
 const ROLE_OPTS = Object.keys(ROLES).map((id) => ({ id, label: ROLES[id].label }));
 
-function MemberRow({ member, isYou, onUpdate, onRemove }) {
+function fmtDate(ts) {
+  if (!ts) return '';
+  try { return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch (e) { return ''; }
+}
+
+function MemberRow({ member, isYou, onUpdate, onRemove, onResend }) {
   const [m, setM] = useState(member);
   const [open, setOpen] = useState(false);
+  const [copyMsg, setCopyMsg] = useState('');
+  const linkRef = useRef(null);
   useEffect(() => { setM(member); }, [member.id]);
   const set = (k, v) => setM((p) => ({ ...p, [k]: v }));
   const commit = (k, val) => { const v = val === undefined ? m[k] : val; if (v !== member[k]) onUpdate(member.id, { [k]: v }); };
+  const inviteLink = member.token ? (location.origin + (import.meta.env.BASE_URL || '/') + '#join/' + member.token) : '';
+  const copied = copyMsg.startsWith('Link copied');
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(inviteLink); setCopyMsg('Link copied to clipboard'); }
+    catch (e) { if (linkRef.current) { linkRef.current.focus(); linkRef.current.select(); } setCopyMsg('Press Cmd or Ctrl + C to copy'); } // clipboard API is blocked on non-secure origins
+    setTimeout(() => setCopyMsg(''), 2400);
+  };
   return (
     <li className="gs-tm">
       <div className="gs-tm-top">
@@ -42,13 +56,28 @@ function MemberRow({ member, isYou, onUpdate, onRemove }) {
           </div>
           <label className="gs-field"><span className="gs-field-label">Responsibilities</span>
             <input value={m.title || ''} onChange={(e) => set('title', e.target.value)} onBlur={() => commit('title')} placeholder="e.g. Content lead" /></label>
+          {m.status === 'invited' && member.token ? (
+            <div className="gs-tm-invite-link">
+              <div className="gs-tm-invite-meta">
+                {member.invitedBy ? <span>Invited by {member.invitedBy}</span> : <span>Pending invitation</span>}
+                {member.expiresAt ? <span> · expires {fmtDate(member.expiresAt)}</span> : null}
+              </div>
+              <div className="gs-tm-invite-row">
+                <input className="gs-tm-invite-input" ref={linkRef} value={inviteLink} readOnly onFocus={(e) => e.target.select()} aria-label="Invitation link" />
+                <button type="button" className="gs-btn ghost sm" onClick={copyLink}>{copied ? 'Copied ✓' : 'Copy link'}</button>
+                <button type="button" className="gs-btn ghost sm" onClick={() => onResend && onResend(member.id)} title="Issue a fresh link and reset the 7-day expiry">Resend</button>
+              </div>
+              <span className="gs-sr-only" aria-live="polite">{copyMsg}</span>
+              <span className="gs-field-hint">Share this link with {m.email || 'your teammate'}. Prototype: no email is sent; opening it shows the accept screen.</span>
+            </div>
+          ) : null}
         </div>
       )}
     </li>
   );
 }
 
-export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUpdate, onRemove, onClose }) {
+export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUpdate, onRemove, onResend, onClose }) {
   const isMe = (m) => currentEmail && (m.email || '').toLowerCase() === String(currentEmail).toLowerCase();
   const [inv, setInv] = useState({ name: '', email: '', role: 'editor' });
   const set = (k, v) => setInv((f) => ({ ...f, [k]: v }));
@@ -69,7 +98,7 @@ export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUp
       </div>
       <div className="gs-panel-body">
         {org ? <div className="gs-tm-org"><span className="gs-tm-org-name">{org.name}</span><span className="gs-tm-org-label">Organisation</span></div> : null}
-        <p className="gs-field-hint">Assign roles and invite teammates. Prototype — this records membership only; it creates no account, sets no password and sends no email. Real org sign-in, roles and invites are the Laravel backend (see HANDOVER).</p>
+        <p className="gs-field-hint">Assign roles and invite teammates. Prototype: this records membership only; it creates no account, sets no password and sends no email. Real org sign-in, roles and invites are the Laravel backend (see HANDOVER).</p>
 
         <form className="gs-tm-invite" onSubmit={send}>
           <div className="gs-prod-row">
@@ -87,11 +116,11 @@ export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUp
 
         {invited.length > 0 && <div className="gs-tm-grouplabel">Pending invitations</div>}
         <ul className="gs-tms">
-          {invited.map((m) => <MemberRow key={m.id} member={m} isYou={isMe(m)} onUpdate={onUpdate} onRemove={onRemove} />)}
+          {invited.map((m) => <MemberRow key={m.id} member={m} isYou={isMe(m)} onUpdate={onUpdate} onRemove={onRemove} onResend={onResend} />)}
         </ul>
         <div className="gs-tm-grouplabel">Members</div>
         <ul className="gs-tms">
-          {active.map((m) => <MemberRow key={m.id} member={m} isYou={isMe(m)} onUpdate={onUpdate} onRemove={onRemove} />)}
+          {active.map((m) => <MemberRow key={m.id} member={m} isYou={isMe(m)} onUpdate={onUpdate} onRemove={onRemove} onResend={onResend} />)}
           {active.length === 0 && <li className="gs-empty">No active members yet.</li>}
         </ul>
       </div>

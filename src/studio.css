@@ -296,6 +296,14 @@
 .gs-tm-invite{border:1px solid var(--gs-border-soft);border-radius:12px;padding:14px;margin:6px 0 18px;background:rgba(200,255,0,.03);display:flex;flex-direction:column;gap:10px}
 .gs-tm-invitebtn{align-self:flex-start}
 .gs-tm-grouplabel{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-faint);margin:14px 0 8px}
+/* invited-member invite link */
+.gs-tm-invite-link{margin-top:6px;padding:12px;border:1px dashed var(--gs-border-soft);border-radius:10px;background:rgba(200,255,0,.03)}
+.gs-tm-invite-meta{font-size:.74rem;color:var(--gs-text-muted);margin-bottom:8px}
+.gs-tm-invite-row{display:flex;gap:6px;align-items:center}
+.gs-tm-invite-input{flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:8px;
+  padding:8px 10px;color:var(--gs-text-muted);font-family:'Montserrat',sans-serif;font-size:.76rem;outline:none}
+.gs-tm-invite-input:focus{border-color:var(--gs-accent)}
+.gs-tm-invite-link .gs-field-hint{margin-top:8px}
 .gs-tms{list-style:none;display:flex;flex-direction:column;gap:6px}
 .gs-tm{border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02);overflow:hidden}
 .gs-tm-top{display:flex;align-items:center;gap:8px;padding-right:6px}

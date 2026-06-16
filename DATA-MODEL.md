@@ -12,7 +12,7 @@ That is per-session UI state, not content, and is not part of this model.
 
 ```jsonc
 {
-  "schema": 18,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
+  "schema": 19,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
   "settings": { "background": "stone-summit", "siteName": "Greatstone International" },
   "org": { "id": "org-greatstone", "name": "Greatstone International", "slug": "greatstone" },  // the tenant
   "order": ["home", "method", "services", "industries", "products", "proof", "about", "insights", "climb", "contact"],
@@ -91,9 +91,22 @@ library + each block's fields live in `src/puck.config.jsx` / `src/blocks/*`. St
   "email": "admin@greatstone",       // unique per org (enforce server-side)
   "role": "admin" | "editor" | "viewer",   // capabilities below
   "title": "Studio administrator",   // responsibilities
-  "status": "active" | "invited"     // invited = pending invitation (no real account yet)
+  "status": "active" | "invited",    // invited = pending invitation (no real account yet)
+  // invitation fields (present on invited members; the #join/<token> accept flow):
+  "token": "inv-…",                  // the join link id; PROTOTYPE app-generated, NOT a signed token
+  "invitedBy": "admin@greatstone",   // actor email
+  "invitedAt": 1718500000000,        // epoch millis
+  "expiresAt": 1719100000000,        // invitedAt + 7 days
+  "acceptedAt": 1718600000000 | null // set when the invite is accepted (status → active)
 }
 ```
+**Invitations** → `invitations` table: a pending member is `{status:'invited'}` plus a token + expiry. The
+studio shows the org admin a copyable `…/#join/<token>` link; opening it renders the Accept screen, and
+accepting flips `status → active` + stamps `acceptedAt`. PROTOTYPE BOUNDARY: the token is app-generated and
+data is per-browser localStorage, so "accept" only records membership — it creates **no account, sets no
+password and signs no one in**. The Laravel build signs the token, emails the link, resolves it server-side
+from any device, and on accept **provisions the real org user + authenticates them** (see HANDOVER → Team).
+
 Roles → capabilities (`src/cms/auth.js`, mirror with Spatie):
 `admin` = edit + publish + manageUsers · `editor` = edit (proposes; can't self-publish) · `viewer` = read-only.
 Rules the prototype already enforces in the UI and the real backend must enforce server-side: at least

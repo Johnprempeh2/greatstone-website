@@ -32,8 +32,9 @@ import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
 import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
+import AcceptInvite from './cms/AcceptInvite.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
@@ -61,6 +62,11 @@ function loadCart() { try { const r = localStorage.getItem(CART_KEY); const c = 
 // #product/<slug> (or #/product/<slug>) → the public product detail route; anything else → null
 function readProductHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?product\/([\w-]+)/i);
+  return m ? m[1] : null;
+}
+// #join/<token> → the invite-accept route (the DX-dashboard invitation link)
+function readJoinHash() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?join\/([\w-]+)/i);
   return m ? m[1] : null;
 }
 const SITE_NAME = 'Greatstone International';
@@ -131,6 +137,7 @@ export default function App() {
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
+  const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
@@ -163,7 +170,7 @@ export default function App() {
   // persist the licence basket (non-sensitive) so it survives a reload
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
-    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); };
+    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -376,8 +383,14 @@ export default function App() {
   function inviteTeammate(member) {
     const email = (member.email || '').trim().toLowerCase();
     if (email && (state.team || []).some((m) => (m.email || '').trim().toLowerCase() === email)) return flash('That email is already on the team.');
-    setState((s) => logActivity(inviteTeamMember(s, member), 'Invited ' + (member.email || 'a teammate') + ' as ' + ((ROLES[member.role] || {}).label || member.role || 'editor'), actor()));
-    flash('Invitation recorded (prototype — no email sent).');
+    setState((s) => logActivity(inviteTeamMember(s, { ...member, invitedBy: actor() }), 'Invited ' + (member.email || 'a teammate') + ' as ' + ((ROLES[member.role] || {}).label || member.role || 'editor'), actor()));
+    flash('Invitation recorded. Copy its link to share (prototype — no email sent).');
+  }
+  // accept a #join/<token> invite (prototype: flips the roster status to active; no account/sign-in)
+  function acceptInviteToken(token) {
+    const st = inviteStatus(state, token);
+    if (st.kind !== 'valid') return;
+    setState((s) => logActivity(acceptInvite(s, token), (st.member.email || 'A teammate') + ' accepted their invitation', st.member.email || null));
   }
   function editTeammate(id, patch) {
     const m = (state.team || []).find((x) => x.id === id);
@@ -388,6 +401,11 @@ export default function App() {
       const next = updateTeamMember(s, id, patch);
       return patch.role && m && patch.role !== m.role ? logActivity(next, 'Changed ' + (m.name || m.email || 'a teammate') + ' to ' + ((ROLES[patch.role] || {}).label || patch.role), actor()) : next;
     });
+  }
+  function resendTeammateInvite(id) {
+    const m = (state.team || []).find((x) => x.id === id);
+    setState((s) => logActivity(resendInvite(s, id), 'Re-sent the invitation to ' + ((m && m.email) || 'a teammate'), actor()));
+    flash('Invitation re-sent: a fresh link with 7 more days. Copy it to share.');
   }
   async function removeTeammate(id, name) {
     const m = (state.team || []).find((x) => x.id === id);
@@ -507,6 +525,18 @@ export default function App() {
   );
 
   // the separate admin entry (#admin): sign in before any editing is possible
+  // #join/<token>: the public invite-accept screen — renders regardless of sign-in or mode
+  if (joinToken) {
+    const exitJoin = () => { if (location.hash) location.hash = ''; setJoinToken(null); };
+    return (
+      <div className="is-view">
+        {styleTag}
+        <Stage background={bg} />
+        <AcceptInvite key={joinToken} status={inviteStatus(state, joinToken)} org={state.org} onAccept={() => acceptInviteToken(joinToken)} onBack={exitJoin} />
+      </div>
+    );
+  }
+
   if (adminRoute && !authed) {
     return (
       <div className="is-view">
@@ -533,7 +563,7 @@ export default function App() {
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             products: <ProductsPanel products={state.products} categories={state.categories} drift={catalogDrift} canPublish={canPublish} onPublish={publishCatalogue} onDiscard={discardCatalogue} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
-            ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onClose={() => setPanel(null)} embedded /> } : {}),
+            ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,

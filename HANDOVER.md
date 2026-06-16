@@ -80,7 +80,7 @@ Editing must be admin-only, and the only enforcement that counts is server-side.
 ## Data model and getting the content out
 
 The full field-by-field shape of everything the studio authors (pages, blocks, catalogue, team,
-activity, assets, schema 15) is documented in **DATA-MODEL.md**, with the Laravel table each slice
+activity, assets, schema 19) is documented in **DATA-MODEL.md**, with the Laravel table each slice
 maps onto. To seed the real backend from the content authored here, an admin runs **⌘K → "Export
 site JSON"**, which downloads the live store as `greatstone-site.json` — an importable canonical
 payload, so the dev team never hand-copies content.
@@ -119,14 +119,24 @@ Laravel owns:
   pending invitation, and member edit/remove. The Team tab only renders for a user whose role has
   `manageUsers` (admins) — the RBAC gate is demonstrated in the UI. The data model maps onto Laravel
   `organisations`, `org_user` (with role) and `invitations` tables.
+- **The invite→accept flow is prototyped (shape only).** Inviting a teammate now mints a `token` +
+  `invitedBy`/`invitedAt`/`expiresAt` (7-day) on the pending member; the Team tab shows the admin a
+  copyable `…/#join/<token>` link; opening it renders an Accept screen (`src/cms/AcceptInvite.jsx`) that
+  resolves the token to `valid` / `expired` / `already-accepted` / `not-found` and, on accept, flips the
+  member to `active` + stamps `acceptedAt`. This models the journey end-to-end **without any real auth**:
+  the token is app-generated (not signed), data is per-browser localStorage (so a link won't resolve on
+  another device — the Accept screen says so), and accepting **creates no account, sets no password and
+  signs no one in**. Do not mistake any of this for security.
 - **It assigns roles and records invitations only.** No real account is created, no password is set,
   and no email is sent. Do not wire a real invite/email or account creation onto the front end.
 - **Laravel owns the real thing (multi-tenant).** An organisation signs up and is the tenant scope;
   every query is scoped to the current org. Auth is Laravel + Spatie roles per org; an org admin
-  invites a teammate, which creates an `invitation` and sends a **signed, expiring** link; accepting
-  it provisions the user against that org with the assigned role. Removing a member revokes access.
-  The studio's Team CRUD becomes a Filament/Inertia resource scoped to the org. None of the
-  capability checks here are security — enforce every one server-side, per request.
+  invites a teammate, which creates an `invitation` row and emails a **server-signed, expiring** link
+  (replace the prototype's app-generated token); accepting it resolves server-side from any device and
+  **provisions the user** against that org with the assigned role + authenticates them. Removing a member
+  revokes access. The studio's Team CRUD + Accept screen become a Filament/Inertia resource + a public
+  invitation-accept controller scoped to the org. None of the capability checks here are security —
+  enforce every one server-side, per request.
 
 ## The repository, staging, and using Claude going forward
 
