@@ -152,80 +152,8 @@
         }
       },
       {
-        "type": "Pillars",
-        "props": {
-          "index": "01",
-          "eyebrow": "The universal drains",
-          "headline": "Everyone leaks",
-          "highlight": "here.",
-          "body": "The same quiet tax every business pays, whatever the sector. We close these for all of them.",
-          "items": [
-            {
-              "title": "Meeting triage",
-              "text": "Triage and the scheduling ping-pong that eats the start of every day."
-            },
-            {
-              "title": "Re-keying data",
-              "text": "Moving the same figures by hand between systems that don't talk."
-            },
-            {
-              "title": "Weekly reports",
-              "text": "Rebuilding the same reports from scratch, week after week."
-            },
-            {
-              "title": "Chasing approvals",
-              "text": "Hunting down approvals and signatures to keep work moving."
-            },
-            {
-              "title": "Finding documents",
-              "text": "Searching for the document, then the latest version of it."
-            },
-            {
-              "title": "Manual reconciliation",
-              "text": "Reconciling numbers by hand because nothing adds up automatically."
-            }
-          ]
-        }
-      },
-      {
-        "type": "Pillars",
-        "props": {
-          "index": "02",
-          "eyebrow": "Specific to your world",
-          "headline": "Where your sector quietly",
-          "highlight": "bleeds hours.",
-          "body": "Every industry loses time in its own way. These are the leaks unique to each sector, and we leave no stone unturned. Seven worlds we know well:",
-          "items": [
-            {
-              "title": "Real estate",
-              "text": "Less time on portals, more time closing. Comps and area research by hand, re-listing the same property across every portal, chasing solicitors and surveyors, matching new stock to buyers manually."
-            },
-            {
-              "title": "Healthcare",
-              "text": "Less time on admin, more time on patients. Re-typing patient details across disconnected systems, chasing no-shows, coding claims by hand, compiling compliance reports from scratch."
-            },
-            {
-              "title": "Education",
-              "text": "Less time on paperwork, more time teaching. Re-keying enrolment data across SIS, LMS and finance, building timetables by hand, chasing consent forms, collating attendance and progress."
-            },
-            {
-              "title": "Financial services",
-              "text": "Less time reconciling, more time advising. Manual KYC and onboarding checks, re-keying figures between spreadsheets and core systems, assembling client statements, pulling together regulatory packs."
-            },
-            {
-              "title": "Manufacturing",
-              "text": "Less time on the clipboard, more time on the line. Re-entering orders between ERP, shop floor and accounts, tracking stock on spreadsheets, logging quality checks by hand, rebuilding downtime reports."
-            },
-            {
-              "title": "Professional services",
-              "text": "Less time on the timesheet, more time on the work. Reconstructing billable hours from memory, drafting near-identical proposals, chasing late payments, copying client data between CRM and delivery tools."
-            },
-            {
-              "title": "Retail and hospitality",
-              "text": "Less time behind the scenes, more time with guests. Reconciling sales across POS, online and marketplaces, re-keying stock counts, building rotas by hand, stitching together weekly footfall reports."
-            }
-          ]
-        }
+        "type": "IndustryPicker",
+        "props": {}
       },
       {
         "type": "Steps",
