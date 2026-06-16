@@ -12,13 +12,15 @@ That is per-session UI state, not content, and is not part of this model.
 
 ```jsonc
 {
-  "schema": 17,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
+  "schema": 18,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
   "settings": { "background": "stone-summit", "siteName": "Greatstone International" },
   "org": { "id": "org-greatstone", "name": "Greatstone International", "slug": "greatstone" },  // the tenant
   "order": ["home", "method", "services", "industries", "products", "proof", "about", "insights", "climb", "contact"],
   "pages": { "<slug>": Page },  // keyed by slug; `order` is the nav/sort order
-  "categories": [Category],
-  "products": [Product],
+  "categories": [Category],     // DRAFT catalogue taxonomy (what the Products tab edits)
+  "products": [Product],        // DRAFT catalogue (what the Products tab edits)
+  "publishedCategories": [Category],  // PUBLISHED projection — the public storefront/product pages read this
+  "publishedProducts": [Product],     // PUBLISHED projection — promoted from the draft on "Publish catalogue"
   "team": [TeamMember],
   "activity": [ActivityEntry],  // append-only, capped at 200
   "assets": { "<id>": Asset }
@@ -113,6 +115,11 @@ A registry of image URLs the team has reused. Blocks/products store the URL itse
 
 ## Notes for migration
 
+- **Catalogue publish gate.** `products`/`categories` are the editable DRAFT; `publishedProducts`/
+  `publishedCategories` are the live PROJECTION the public reads. "Publish catalogue" copies draft → published;
+  "Discard" copies published → draft. In Laravel this is a `published_at`/`is_published` column (or a draft vs
+  published row pair) per product/category, with the public storefront query scoped to published — not two
+  separate tables. The prototype snapshots whole arrays for simplicity; the contract is "public reads published".
 - `ts` fields are JS epoch millis. `id`s are app-generated (`<type>-<base36>`); the DB can keep them or remap.
 - Timestamps, real auth/RBAC (org scoping), invitation delivery, and licence purchase + payment are
   backend responsibilities. See HANDOVER.md for those handoff specs. Nothing here ships fake auth or payment.

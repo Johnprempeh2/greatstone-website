@@ -558,6 +558,34 @@ verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #
 (v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
 approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
+**[05:50 BST] Item R2-#11 — Catalogue draft/publish gate — BUILT, VERIFIED, COMMITTED, DEPLOYED.** (north-star: e-commerce governance)
+- Until now, every catalogue edit went live instantly — an admin tweaking a price or status changed the
+  public storefront mid-keystroke. Gave the catalogue the same draft → published model pages already have.
+- Store (schema 17→18, additive): a published projection (`publishedProducts` / `publishedCategories`)
+  alongside the draft (`products` / `categories`). Migration backfills the projection from the existing live
+  catalogue so nothing reads as "unpublished" on upgrade. Helpers `catalogHasDrift` / `publishCatalog` /
+  `discardCatalogDraft`; `findProductBySlug(products, slug)` so the public route resolves against published.
+- App: split CatalogContext — the EDITOR path (Storefront preview in the Puck canvas, Products tab) sees the
+  DRAFT (WYSIWYG of what you're managing); the PUBLIC path (storefront, product detail, cart, JSON-LD, per-
+  product SEO) reads the PUBLISHED projection. Publish/discard handlers are admin-gated; publish is logged to
+  the activity audit.
+- Editor UX: a publish-state banner in the Products tab — "Catalogue is live", or on drift "Unpublished
+  catalogue changes" with Discard + Publish catalogue. Drift also lights the Studio button + Products tab
+  attention badge and the Overview Products tile.
+- Files: `src/store.js`, `src/App.jsx`, `src/cms/ProductsPanel.jsx`, `src/cms/OverviewPanel.jsx`,
+  `src/studio.css`, `DATA-MODEL.md`.
+- Verify: build PASS (`index-BxGzYaFR`). Preview (FRESH server, stale HMR cleared): migration → schema 18,
+  published backfilled, no false drift; edited Bedrock's price to £99,999 in the Products tab → draft drifted
+  to £99,999 while the public product page kept showing the published £12,000; drift banner + Studio/Products
+  badges appeared; "Publish catalogue" promoted draft→published (both £99,999); "Discard" reverted a fresh edit;
+  zero console errors. Restored the test edit to £12,000 (and the deployed site seeds fresh regardless — local
+  localStorage never reaches a visitor). (An interim console showed errors across several dead `?t=` HMR
+  timestamps — proven stale by the clean restart + clean production build.)
+- Commit: `b6d263a`.
+- **Deploy: LIVE.** Netlify deploy `6a30d608944ce6aee08535ce` "Deploy is ready!";
+  https://greatstone-home.netlify.app/puck-proof/ returns 200; live bundle (`index-BxGzYaFR.js`) contains the
+  gate code ("Catalogue is live", "Unpublished catalogue changes", `publishedProducts`). dist synced.
+
 **[04:30 BST] Item R2-#16 — Product detail page (#product/<slug> route + slug/SKU model + per-product SEO) — BUILT, VERIFIED, COMMITTED, DEPLOYED.** (north-star: e-commerce)
 - The catalogue had no per-product page — a visitor could add a licence to the basket but never read the
   full pitch, and there was nothing to link or share. Built shareable product pages at #product/<slug>.
