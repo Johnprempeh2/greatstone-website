@@ -24,11 +24,12 @@ import * as Values from './blocks/Values.jsx';
 import * as MaturityModel from './blocks/MaturityModel.jsx';
 import * as IndustryPicker from './blocks/IndustryPicker.jsx';
 import * as ServiceCards from './blocks/ServiceCards.jsx';
+import * as InsightsGrid from './blocks/InsightsGrid.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Chapter, Pillars, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, Spectrum, Timeline, Ladder, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid };
+const MODULES = { Hero, Chapter, Pillars, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, Spectrum, Timeline, Ladder, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid };
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
@@ -42,7 +43,7 @@ export const config = {
     page: { title: 'Page', components: ['Hero', 'Invite'] },
     story: { title: 'Story', components: ['Chapter', 'Pillars', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'Spectrum', 'Timeline', 'Ladder'] },
     proof: { title: 'Proof', components: ['StatStrip', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid'] },
-    editorial: { title: 'Editorial', components: ['FeaturedArticle', 'Figure'] },
+    editorial: { title: 'Editorial', components: ['FeaturedArticle', 'InsightsGrid', 'Figure'] },
     commerce: { title: 'Commerce', components: ['Storefront'] },
     contact: { title: 'Contact', components: ['TimeCounter', 'BookDeepDive', 'ContactBand'] },
   },

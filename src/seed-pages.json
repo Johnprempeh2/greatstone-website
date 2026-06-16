@@ -463,7 +463,7 @@
   {
     "slug": "insights",
     "title": "Insights",
-    "background": "stone",
+    "background": "tide",
     "seo": {
       "title": "Insights · Greatstone International",
       "description": "Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle.",
@@ -493,37 +493,8 @@
         }
       },
       {
-        "type": "FeatureGrid",
-        "props": {
-          "kicker": "The notes",
-          "heading": "Written from inside the work, not the sidelines.",
-          "items": [
-            {
-              "title": "Why your AI spend isn't paying back yet.",
-              "text": "Most AI budgets buy tools, not outcomes. Here's the gap between a licence and a habit, and how we close it inside the team. 6 min read."
-            },
-            {
-              "title": "The week your team never gets back.",
-              "text": "We tracked one ordinary week across an operations team. The hours lost to copy-paste, context-switching and waiting were not small. 5 min read."
-            },
-            {
-              "title": "Pebble, plateau, peak: a maturity map.",
-              "text": "A plain-language way to place where you really are across the eight pillars, and what the next honest step looks like from here. 9 min read."
-            },
-            {
-              "title": "What 'digital-first' means when the work is physical.",
-              "text": "Field, trade and operations businesses don't need an app for everything. They need the right few. We sort the signal from the demos. 7 min read."
-            },
-            {
-              "title": "Automate the boring before the brilliant.",
-              "text": "The highest-return automations are rarely the flashy ones. We start where the friction is quiet, daily and unloved, then build up. 4 min read."
-            },
-            {
-              "title": "Tools don't transform teams. Habits do.",
-              "text": "Rollout isn't go-live. We stay embedded past launch because the value lives in week six, not week one, when the new way becomes the only way. 6 min read."
-            }
-          ]
-        }
+        "type": "InsightsGrid",
+        "props": {}
       },
       {
         "type": "Invite",
