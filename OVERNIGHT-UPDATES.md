@@ -11,6 +11,25 @@ Audiences kept first-class throughout: (a) public site visitors, (b) studio edit
 
 ---
 
+## === Front-end parity run — started Tue Jun 16 07:39 BST 2026 ===
+
+GOAL (John's redirect): the studio's 22-block library must faithfully reproduce EVERY section/design
+on the live site (greatstone-home.netlify.app — / method services industries proof about insights
+climb contact) — add missing blocks, match formatting precisely, and get performance top-tier.
+Reference = the LOCAL source greatstone-homepage/*.html (inline `<style>` per page) + assets/site.css.
+
+**[07:40 BST] Parity AUDIT launched** — multi-agent workflow `studio-parity-audit-r1`: one agent per live
+page (home/method/services/industries/proof/about/insights/climb/contact) reads the live HTML + CSS and
+compares against the studio block(s) seeded on that page, plus a performance-audit agent; a synthesis
+agent merges into a prioritised GAP LIST (missing blocks / mismatched blocks / perf). Studio page→block
+seed map established: home = Hero+Chapter×3+Pillars+StatStrip+Steps+Invite; method = Hero+FeatureGrid+
+PillarExplorer+Steps; services = Hero+Steps+Spectrum+StatStrip+Invite; industries = Hero+Pillars×2+Steps+
+Invite; proof = Hero+StatStrip+CaseStudy+RoiBar+Quote+Invite; about = Hero+StatStrip+Timeline+Pillars+
+Team+Invite; insights = Hero+FeaturedArticle+FeatureGrid+Invite; climb = Hero+MaturityMap+Ladder+Chapter+
+Invite; contact = TimeCounter+BookDeepDive+Steps+ContactBand.
+
+---
+
 ## Round 1 — started Mon Jun 15 22:50 BST 2026
 
 **Plan:** close out in-progress backlog item #1 (Hero inline on-canvas editing + alignment),
