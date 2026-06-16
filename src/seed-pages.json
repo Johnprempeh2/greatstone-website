@@ -103,9 +103,9 @@
           "headline": "Start with your",
           "highlight": "industry.",
           "body": "Pick your world and the rest adjusts: your drains, your numbers. The same foundation, shaped to the way your sector actually works.",
-          "prompt": "Choose your sector",
+          "prompt": "",
           "align": "left",
-          "size": "full"
+          "size": "compact"
         }
       },
       {

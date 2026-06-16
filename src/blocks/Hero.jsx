@@ -43,6 +43,8 @@ export const css = `
 .b-hero{position:relative;display:flex;align-items:center}
 .b-hero.size-full{min-height:100vh}
 .b-hero.size-standard{min-height:72vh;padding:clamp(80px,14vh,160px) 0}
+/* compact: a short sub-page hero (the live .ind-hero / .ins-hero) so the section below sits near the fold */
+.b-hero.size-compact{min-height:auto;padding:clamp(140px,20vh,220px) 0 clamp(48px,7vh,90px)}
 .b-hero.align-center{text-align:center}
 .b-hero.align-center.size-full{padding-top:72px}
 .b-hero-inner{max-width:660px;position:relative;z-index:2}
@@ -80,7 +82,7 @@ export const puck = {
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},
     size: { type: 'radio', label: 'Height', options: [
-      { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' },
+      { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' }, { label: 'Compact', value: 'compact' },
     ]},
     ctaLabel: { type: 'text', label: 'Primary button label (optional)' },
     ctaHref: { type: 'text', label: 'Primary button link' },
