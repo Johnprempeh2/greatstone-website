@@ -38,6 +38,23 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[15:34 BST] RA2-7 — clear phantom hero CTAs + phantom section numbers (proof/about) + Hero pillEyebrow — BUILT, VERIFIED, DEPLOYED.**
+- Live proof/about heroes carry NO buttons; proof's eyebrow is a bordered `.pill` ("Proof, not promises"), about's
+  is a plain `.kicker` ("Our Story"). The studio had drifted: phantom "Book a Deep Dive" CTAs on both heroes, big
+  "02"/"03" section numbers on CaseStudy/RoiBar/Timeline that live never shows, and a kicker where proof wants a pill.
+- Hero.jsx: new `pillEyebrow` flag (radio: Kicker | Pill) renders the eyebrow as `.pill` vs `.kicker`.
+- CaseStudy/RoiBar/Timeline: the `.b-chapter-eyebrow` wrapper now only renders when index OR eyebrow is set, so
+  clearing both (RoiBar) leaves no empty spacer div.
+- Seed (seed-pages.json): proof Hero ctaLabel '' + pillEyebrow true; proof CaseStudy index '' + eyebrow
+  'Selected engagements' (live sentence-case); proof RoiBar index '' + eyebrow '' (live has neither); about Hero
+  ctaLabel ''; about Timeline index '' + headline 'From a single fix to a foundation.' (the live h2).
+- Verify: build PASS (`index-DTDHowY3.js`, 381.15 kB, +0.16 kB vs prior — negligible). Fresh-seed preview (true
+  reload, not a hash-only nav) on BOTH pages: proof hero = SPAN.pill "Proof, not promises", no .b-cta-row, CaseStudy
+  no .b-chapter-num + eyebrow "Selected engagements", RoiBar no eyebrow div/num; about hero = SPAN.kicker "Our Story"
+  + hero-meta stats intact + no CTA, Timeline no .b-chapter-num + head "From a single fix to a foundation."; zero
+  runtime errors both pages. Screenshot of about hero confirms the no-button + meta-stats layout.
+- Commit `4191adc`. **Deploy LIVE** `6a315ef15aa7045b12b0cbfa`; greatstone-home.netlify.app/puck-proof/ 200, new asset 200.
+
 **[15:17 BST] RA2-8 — contact ContactBand calculator card (CTA + glow + copy) — BUILT, VERIFIED, DEPLOYED. (LAST RA2 HIGH ITEM)**
 - The calc-card had lost the live's ghost CTA, radial glow, and "Run the time-savings calculator" copy. Added
   cardCtaLabel/cardCtaHref (ghost link + Arrow) after cardBody; `.calc-card::before` radial lime glow (420×200 at
