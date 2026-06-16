@@ -38,6 +38,29 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[10:30 BST] Parity #5 — IndustryPicker block (industries' signature interaction) — BUILT, VERIFIED, DEPLOYED.**
+- industries.html's defining section is an interactive sector picker; the studio had it as two STATIC Pillars
+  grids (universal drains + sector drains, no interaction). New IndustryPicker block — faithful port of the live
+  `.picker`: a `role=tablist` of 7 sector chips with a travelling lime underline (measured via offsetLeft/Width,
+  re-measured on resize + double-rAF for font settle); choosing a sector crossfades the right "specific drains"
+  card (`is-swapping`, 220ms) and swaps an `aria-live` headline (payoff sentence auto-accented), while the left
+  "universal drains" card holds constant. Diamond bullets (universal faint, specific lime+glow); the specific list
+  re-keys per sector so the `rowIn` stagger re-fires. Full roving-tabindex keyboard (←/→/↑/↓/Home/End) + focus
+  move; reduced-motion takes an instant branch (no crossfade/stagger/transition). All copy + the UNIVERSAL[6] /
+  INDUSTRIES[7] data are editable Puck fields (nested drains arrays), defaults ported verbatim from the live (em
+  dashes → colons, house style). Namespaced `.b-ind-*`; reuses shared `.card`/`.grid.cols-2`/`.wrap`/`.accent`.
+- Registered under Story; re-seeded industries Hero → **IndustryPicker** → Steps → Invite (replaced the 2 Pillars).
+- Files: `src/blocks/IndustryPicker.jsx` (new), `src/puck.config.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-CqLSTfIq`, public bundle 340.77 kB / +9 kB; three+puck stay code-split). Fresh-seed
+  preview: industries = Hero/IndustryPicker/Steps/Invite; 7 chips, Real estate pre-selected, 6 universal + 5
+  specific drains; clicking Healthcare → headline "Less time on admin. More time on patients." (2nd sentence
+  accented) + 5 healthcare drains + underline travels to 128px; End key → focus + select last chip; zero console
+  errors; screenshot matches the live picker (chip row, accented headline, ⊘/◆ drain cards). NOTE logged for next
+  cycle: industries bg is still `stone-summit` but live uses tide (separate seed gap → new backlog item).
+- Commit: `3b82e2d`. **Deploy LIVE** `6a3117b22952b356ecbfb6d6`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Industry picker" / "Choose your industry" / "b-ind-chip-row". (First Netlify attempt 500'd on a
+  mis-transcribed proxy token; fresh token deployed clean.)
+
 **[10:14 BST] Parity #15 — home background dual `stone-summit` → single `stone` (perf + parity) — BUILT, VERIFIED, DEPLOYED.**
 - The studio home was seeded on the dual `stone-summit` scene-track (TWO WebGLRenderers running at once). Live
   home (index.html) uses a SINGLE `THREE.WebGLRenderer` — the emerald stone only, no `mountSummit`. Switched the
