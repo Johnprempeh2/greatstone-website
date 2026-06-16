@@ -38,6 +38,23 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:23 BST] Re-audit R8 — StatStrip band variant (proof stat-band) — BUILT, VERIFIED, DEPLOYED.**
+- proof's StatStrip carried an (invented) header + aurora + single gradient-blob numbers; the live `.stat-band` is
+  a headerless border-block row with per-stat left accent bars, a solid white number that lights lime on reveal,
+  and a smaller solid-lime suffix. Added a `band` variant to StatStrip.jsx: skips the aurora + renders the header
+  only if any header field is non-empty; split the figure into separate `.b-stat-num` (count-up, data-target) +
+  `.b-stat-suffix` spans; the count-up now adds `.is-lit` to each stat (white→lime, mirroring `.stat.lit`). Band
+  CSS = border-block + linear-gradient(accent-soft→transparent), `.b-stat::before` accent bar, solid num/suffix.
+  Aurora variant unchanged (home §05 verified: gradient numbers + aurora + header intact, no regression).
+- proof seed: StatStrip variant 'band' + header fields explicitly '' (empty strings beat the backfilled defaults).
+- Files: `src/blocks/StatStrip.jsx`, `src/seed-pages.json` (proof StatStrip).
+- Verify: build PASS (`index-BVrs1euo`, 372.60 kB). Fresh-seed preview: proof band has NO header, border-top 1px,
+  4 stats with 2px accent bars, count-up → 12/3.4/6/90 with hrs/×/wks/% suffixes, all `.is-lit` (num lime
+  rgb(200,255,0), suffix lime); home aurora StatStrip unregressed; zero runtime errors; screenshot matches the live
+  stat-band.
+- Commit: `befbb15`. **Deploy LIVE** `6a314024ae8a33079cc318e2`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "b-proof-band" / "b-stat-suffix".
+
 **[13:11 BST] Re-audit R7 — method hero centered + dual CTA — BUILT, VERIFIED, DEPLOYED.**
 - The method hero was left-aligned with a single CTA; the live `.m-hero` is 92vh centered with two buttons.
   Re-seeded the method Hero: align left→center, restored the two-button row (primary "Open the interactive
