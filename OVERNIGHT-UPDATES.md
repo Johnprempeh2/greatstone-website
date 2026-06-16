@@ -38,6 +38,18 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[10:38 BST] Parity (industries bg) — `stone-summit` → `tide` (parity + perf) — DONE, VERIFIED, DEPLOYED.**
+- The industries page seeded on the dual `stone-summit` scene (2 renderers) but live industries.html mounts
+  `mountGreatstoneTide` (single renderer). Switched the industries seed background to `tide` (the same single-scene
+  preset contact already uses): parity with the live tide ripples + a perf win (1 canvas/rAF, not 2). One-line seed
+  change, no code.
+- Files: `src/seed-pages.json` (industries `background`).
+- Verify: build PASS (`index-DbDXmAdp`, 340.77 kB, no size change). Fresh-seed preview: industries bg = tide,
+  `canvasCount:1` (down from 2), tide arc ripples render, IndustryPicker intact (7 chips), zero console errors;
+  screenshot shows the tide background matching the live page.
+- Commit: `46ad395`. **Deploy LIVE** `6a31198a75ed69193e80af05`; greatstone-home.netlify.app/puck-proof/ 200
+  (`index-DbDXmAdp.js`). No public page now defaults to two renderers (home #15 + industries done).
+
 **[10:30 BST] Parity #5 — IndustryPicker block (industries' signature interaction) — BUILT, VERIFIED, DEPLOYED.**
 - industries.html's defining section is an interactive sector picker; the studio had it as two STATIC Pillars
   grids (universal drains + sector drains, no interaction). New IndustryPicker block — faithful port of the live
