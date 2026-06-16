@@ -295,6 +295,17 @@
 .gs-cart-rm{background:none;border:0;color:var(--gs-faint);cursor:pointer;font-size:1.1rem;padding:2px 4px}
 .gs-cart-rm:hover{color:var(--gs-danger)}
 .gs-cart-note{font-size:.78rem;color:var(--gs-text-faint);line-height:1.6}
+.gs-cart-subtotal{display:flex;align-items:baseline;justify-content:space-between;padding:12px 2px;border-top:1px solid var(--gs-border-soft)}
+.gs-cart-subtotal span{font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-text-faint)}
+.gs-cart-subtotal strong{font-size:1.1rem;font-weight:800;color:var(--gs-text)}
+.gs-cart-quote{border:1px solid var(--gs-border-soft);border-radius:10px;padding:12px;background:rgba(255,255,255,.02)}
+.gs-cart-quote ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.gs-cart-quote li{display:flex;justify-content:space-between;gap:10px;font-size:.84rem;color:var(--gs-text-muted)}
+.gs-cart-quote li em{font-style:normal;color:var(--gs-text-faint)}
+.gs-cart-quote li span:last-child{color:var(--gs-text);white-space:nowrap}
+.gs-cart-quote-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:10px;border-top:1px solid var(--gs-border-soft)}
+.gs-cart-quote-total span{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-text-faint)}
+.gs-cart-quote-total strong{font-size:1rem;font-weight:800;color:var(--gs-accent)}
 .gs-cart-proto{font-size:.76rem;color:var(--gs-warning);line-height:1.6;background:rgba(255,200,0,.06);
   border:1px solid rgba(255,200,0,.2);border-radius:8px;padding:10px 12px}
 .gs-cart-proto a{color:var(--gs-accent);font-weight:700}

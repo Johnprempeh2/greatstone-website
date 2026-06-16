@@ -529,6 +529,20 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview as above; zero console errors. PASS.
 - Commits: `e85f1aa` (R2-#3/#5) + `550605b` (R2-#4). Deploy: deferred (Netlify 500). dist synced.
 
+**[01:54 BST] Items R2-#8 + R2-#6 — persist basket + itemised quote — BUILT, VERIFIED, COMMITTED.**
+- R2-#8 (persist basket): the cart was in-memory only, so a half-built licence request evaporated on
+  refresh. Persist the non-sensitive `{productId: qty}` map to `localStorage` (`gs-cart`) + rehydrate
+  on load. Verified: added Bedrock×1 + Slate×2 → reloaded → basket restored (FAB shows 3).
+- R2-#6 (itemised quote): the request/confirmation steps never recapped what was chosen. Added an
+  indicative subtotal to the basket (the "from £X" floor of each line × qty, summed — clearly an
+  estimate, never a charge) and a read-only `QuoteSummary` (lines + total) on the request step.
+  Verified: Bedrock×1 (£12,000) + Slate×2 (£180) → "from £12,360" in both the basket and the request
+  recap. Honest within the no-fake-payment constraint (floor estimate, "final price on your agreement").
+- Files: `src/App.jsx` (#8), `src/cms/CartDrawer.jsx` + `src/studio.css` (#6).
+- Verify: build PASS (149 modules). Preview as above; test basket cleared; app mounts clean (the 8
+  console errors are frozen mid-edit HMR artifacts, not the final code). PASS.
+- Commits: pending below (2). Deploy: deferred (Netlify 500).
+
 **[01:48 BST] Turn 14 done — yielding.** Shipped R2-#3 (draft product visibility), R2-#5 (heading
 hierarchy), R2-#4 (cart aria-live + contrast). Round 2 progress: #1,#2,#3,#4,#5 done. Next: #8 persist
 the basket (quick), then the medium north-star deepeners #6 itemised quote summary, #7 product imagery,

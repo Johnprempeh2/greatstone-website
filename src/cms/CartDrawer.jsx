@@ -50,6 +50,18 @@ export default function CartDrawer() {
   const submit = (e) => { e.preventDefault(); setStep('done'); };
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // an INDICATIVE floor total: the "from £X" floor of each line × its quantity, summed. Clearly an
+  // estimate, never a charge — real pricing (volume, term, exact seats) is set on the agreement.
+  const parsePrice = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; };
+  const subtotal = items.reduce((sum, p) => sum + parsePrice(p.price) * p.qty, 0);
+  const fmtGBP = (n) => '£' + Math.round(n).toLocaleString('en-GB');
+  const QuoteSummary = () => (
+    <div className="gs-cart-quote">
+      <ul>{items.map((p) => (<li key={p.id}><span>{p.name} <em>×{p.qty}</em></span><span>{p.price || 'POA'}{p.period ? ' ' + p.period : ''}</span></li>))}</ul>
+      {subtotal > 0 ? <div className="gs-cart-quote-total"><span>Indicative total</span><strong>from {fmtGBP(subtotal)}</strong></div> : null}
+    </div>
+  );
+
   return (
     <>
       <button ref={fabRef} className="gs-cart-fab" onClick={() => { setOpen(true); setStep('cart'); }} aria-label={'Licence basket, ' + count + ' item' + (count === 1 ? '' : 's')}>
@@ -86,7 +98,8 @@ export default function CartDrawer() {
                         </li>
                       ))}
                     </ul>
-                    <p className="gs-cart-note">Prices are a guide. Final seats, term and total are confirmed on your licence agreement — we’ll tailor volume and multi-year terms.</p>
+                    {subtotal > 0 ? <div className="gs-cart-subtotal"><span>Indicative total</span><strong>from {fmtGBP(subtotal)}</strong></div> : null}
+                    <p className="gs-cart-note">Prices are a guide and the total is indicative. Final seats, term and price are confirmed on your licence agreement — we’ll tailor volume and multi-year terms.</p>
                     <button className="b-cta" onClick={() => setStep('request')}>Request these licences<Arrow /></button>
                   </>
                 )}
@@ -95,6 +108,7 @@ export default function CartDrawer() {
 
             {step === 'request' && (
               <form className="gs-cart-body" onSubmit={submit}>
+                <QuoteSummary />
                 <p className="gs-cart-proto">Prototype — submitting prepares the request on screen only. Nothing is sent and no payment is taken. The live build issues the licence and takes payment server-side.</p>
                 <label className="gs-field"><span className="gs-field-label">Your name</span>
                   <input value={form.name} onChange={(e) => set('name', e.target.value)} required /></label>
