@@ -522,6 +522,7 @@ export default function App() {
         </EditorBoundary>
       </main>
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
+      <div className="gs-sr-only" aria-live="polite" aria-atomic="true">{cartApi.count > 0 ? cartApi.count + ' licence' + (cartApi.count === 1 ? '' : 's') + ' in your basket' : ''}</div>
       <CartDrawer />
     </div>
     </CartContext.Provider>

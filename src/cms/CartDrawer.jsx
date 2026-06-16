@@ -62,6 +62,7 @@ export default function CartDrawer() {
               <h3 id="gs-cart-title">{step === 'done' ? 'Request received' : 'Your licence basket'}</h3>
               <button className="gs-x" onClick={close} aria-label="Close">×</button>
             </div>
+            <div className="gs-sr-only" aria-live="polite">{step === 'done' ? 'Licence request received.' : step === 'request' ? 'Enter your details to send the request.' : ''}</div>
 
             {step === 'cart' && (
               <div className="gs-cart-body">

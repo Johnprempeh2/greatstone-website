@@ -514,6 +514,21 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
   zero console errors. PASS.
 - Commit: `32df026`. Deploy: deferred (Netlify 500). dist synced.
 
+**[01:46 BST] Items R2-#3, R2-#5, R2-#4 — storefront correctness + a11y — BUILT, VERIFIED, COMMITTED.**
+- R2-#5 (heading hierarchy): product card names were `<h3>` like the category `<h3>` — demoted card
+  names to `<h4>` (WCAG 1.3.1). Verified: category=H3, product=H4.
+- R2-#3 (product visibility): Storefront rendered every product regardless of status. Corrected the
+  deep-dive's premise (the seed defines 'legacy' as STILL SOLD — Mortar Connect — so hiding legacy
+  would be wrong): added a **'draft' (hidden)** status; the storefront lists `status !== 'draft'`
+  (active + legacy both show), and ProductsPanel offers Active / Legacy (still sold) / Draft (hidden).
+  Verified: 5 cards incl. the legacy Mortar Connect; draft filter excludes only drafts.
+- R2-#4 (aria-live): added a `.gs-sr-only` utility + a polite live region announcing basket count on
+  add/qty change, a drawer live region announcing the request/confirmation steps, and fixed the
+  low-contrast lime-on-lime `.b-cta.is-added` (text → `--gs-text`). Verified the live region renders.
+- Files: `src/blocks/Storefront.jsx`, `src/cms/ProductsPanel.jsx`, `src/App.jsx`, `src/cms/CartDrawer.jsx`, `src/studio.css`.
+- Verify: build PASS (149 modules). Preview as above; zero console errors. PASS.
+- Commits: pending below (2). Deploy: deferred (Netlify 500).
+
 **[01:38 BST] Turn 13 done — yielding.** Round 2 underway: ran the 15-lens deep-dive (`wwra5n1p6` →
 18-item code-verified backlog) + shipped R2-#1 cart modal a11y (`a3ed759`) + R2-#2 debounce persist
 (`32df026`). Next: the remaining quick storefront/cart wins (R2-#3 hide legacy products, #4 aria-live,
