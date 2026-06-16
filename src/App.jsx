@@ -290,6 +290,20 @@ export default function App() {
   }
   function reorderPage(slug, dir) { setState((s) => movePage(s, slug, dir)); }
   function registerAsset(asset) { setState((s) => addAsset(s, asset)); } // add a picked/uploaded image to the library
+  // dev handoff: download the whole authored store as JSON so the dev team can seed Laravel from real
+  // content instead of hand-copying. Admin-only; it's the same payload localStorage holds (see DATA-MODEL.md).
+  function exportSiteJson() {
+    try {
+      const json = JSON.stringify(stateRef.current, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'greatstone-site.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      flash('Exported site JSON for the dev team.');
+    } catch (e) { flash('Couldn’t export — the data may be too large for the browser.'); }
+  }
   // product catalogue management (admin): add/edit/remove products + categories. Mutates the store
   // through the same CRUD the future Laravel API will mirror; the Storefront reads the result live.
   const actor = () => (user ? user.email : null); // who's making the change, for the audit log
@@ -411,6 +425,7 @@ export default function App() {
         cmds.push({ id: 'releases', group: 'Editor', label: 'Open release board', run: () => setPanel('releases') });
         cmds.push({ id: 'products', group: 'Editor', label: 'Open products catalogue', run: () => setPanel('products') });
         if (canManageUsers) cmds.push({ id: 'team', group: 'Editor', label: 'Open team & roles', run: () => setPanel('team') });
+        if (canManageUsers) cmds.push({ id: 'export', group: 'Admin', label: 'Export site JSON (for the dev team)', run: exportSiteJson });
         cmds.push({ id: 'bgpanel', group: 'Editor', label: 'Open 3D background editor', run: () => setPanel('background') });
         cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
         cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });

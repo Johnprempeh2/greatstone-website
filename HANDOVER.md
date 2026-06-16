@@ -77,6 +77,14 @@ Editing must be admin-only, and the only enforcement that counts is server-side.
   the content database, auth, or secrets. Human review sits between any Claude change and a
   merge. Content stays with marketing in the gated UI.
 
+## Data model and getting the content out
+
+The full field-by-field shape of everything the studio authors (pages, blocks, catalogue, team,
+activity, assets, schema 15) is documented in **DATA-MODEL.md**, with the Laravel table each slice
+maps onto. To seed the real backend from the content authored here, an admin runs **⌘K → "Export
+site JSON"**, which downloads the live store as `greatstone-site.json` — an importable canonical
+payload, so the dev team never hand-copies content.
+
 ## Products, licensing and checkout
 
 The studio ships a working product catalogue and storefront, plus a prototype licence-request flow.

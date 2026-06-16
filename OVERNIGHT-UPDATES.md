@@ -539,6 +539,18 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
   5 Products, e.g. Bedrock price "12000" / InStock; parses cleanly. Zero console errors. PASS.
 - Commit: `ce32b56`. Deploy: deferred (Netlify 500).
 
+**[02:42 BST] Item R2-#17 — Export site JSON + DATA-MODEL.md — BUILT, VERIFIED, COMMITTED.**
+- All authored content (pages, catalogue, team, activity, assets — schema 15) was trapped in
+  localStorage with no export seam, so the dev team's only path to seed Laravel was hand-copying.
+- Added an admin-only `exportSiteJson()` (downloads the live store as `greatstone-site.json`) + a
+  ⌘K command, and wrote `DATA-MODEL.md` — a field-by-field schema reference for every slice with the
+  Laravel table each maps onto (Page/Block/Product/Category/TeamMember/ActivityEntry/Asset, roles,
+  migration notes). HANDOVER.md points to both.
+- Files: `src/App.jsx`, `DATA-MODEL.md` (new), `HANDOVER.md`.
+- Verify: build PASS (149 modules). Preview (as admin): the "Export site JSON (for the dev team)"
+  command appears in the palette under Admin; the store serialises cleanly. Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+
 **[02:30 BST] Item R2-#10 — Catalogue & team audit trail — BUILT, VERIFIED, COMMITTED.**
 - Product/category/team CRUD wrote straight to the store with no actor or timestamp, so an admin
   could quietly drop a product or change a role and nothing was logged.
