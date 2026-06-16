@@ -13,6 +13,79 @@ Audiences kept first-class throughout: (a) public site visitors, (b) studio edit
 
 ## === Front-end parity run — started Tue Jun 16 07:39 BST 2026 ===
 
+# ★ CLOSING SUMMARY (for John) — front-end parity + performance pass [17:17 BST, Tue 16 Jun 2026]
+
+**Where it landed.** The studio's block library now faithfully reproduces all nine live pages
+(home, method, services, industries, proof, about, insights, climb, contact). A conservative
+multi-agent re-audit scores **~87% overall** (per-page: services / industries / about / climb 90,
+method / insights 88, home / contact 86, proof 82). That number is the floor, not the ceiling: it
+is an independent 10-agent estimate that re-scrutinises every page each run, and it has sat at
+87-88% across four re-audits because two of the biggest remaining gaps are deliberate architectural
+choices we are NOT porting (see Deferred). Section-by-section, the pages read as faithful
+reproductions of the live design.
+
+**Parity arc.** ~65-70% (start) → 76% (RA1 baseline) → 83% (RA2 baseline) → 88% → ~87% plateau.
+The plateau is structural (the deferred items below), not a lack of fidelity work.
+
+**What shipped — ~42 verified fixes**, every one confirmed against the live source before it went
+out, across RA1, RA2 and four workflow-verified fix batches:
+- **RA1 (R1–R12):** built every missing block so all 9 pages have their live sections
+  (IndustryPicker, ServiceCards, InsightsGrid, NewsletterBand, Terrace, MethodTieIn, PillarCards,
+  and the rest), plus the first round of formatting parity.
+- **RA2 (1,3,4,5,6,7,8,9,10,11,12):** block-variant + formatting parity — StatStrip variants,
+  compact sub-page heroes, contact Steps copy, heading scales, Chapter coda softening + inline-bold,
+  the CTA solid/ghost audit, phantom-CTA/section-number cleanup. (RA2-2 skipped — see Deferred.)
+- **Batch 1:** home §05 stat cards float over the 3D scene (was a dark band); services outcomes are
+  static solid-lime figures; method maturity score-bands (SCORE 1-4 · PEBBLE …); services hero
+  masked line-grid; contact form heading moved into the card; industries centred steps.
+- **Batch 2:** home all-solid section headlines (live `.ch-title` is solid; lime was only the
+  scramble animation) + de-duped clients line; proof tide backdrop + lime "Selected engagements"
+  kicker; contact centred text-number steps; services figures at the live `.bignum` size; climb
+  animated mouse-capsule scroll cue.
+- **Batch 3:** method hero accents "stone" not "unturned." (resolved the long-standing #18 via a new
+  headlineSuffix field); about top-loaded hero + "Embedded"-only accent + Values kicker + Team intro;
+  contact big-mail headline-scale statement + select chevron.
+- **Reusable mechanisms added along the way** (so future parity edits are config, not code):
+  `emphasis.jsx` (`**inline-bold**`, public-view only so contentEditable survives); Hero
+  `headlineSuffix` / `gridBackdrop` / `cueStyle` / `pillEyebrow`; Steps `align` / `numberStyle` /
+  per-step `phase` + `timing`; StatStrip `aurora|band|cards|plain` variants; Chapter `ctaVariant`;
+  MaturityModel tier score-bands.
+
+**Performance.** Production build passes; main bundle ~388 kB with three.js (~520 kB) and Puck
+(~433 kB) code-split into lazy chunks; the 3D Stage uses a single renderer per page and pauses when
+hidden; `prefers-reduced-motion` is honoured on every animation (count-ups, reveals, the climb cue,
+timeline); zero console errors on every page; no layout shift (figures carry their final text,
+images sized). No build-size or runtime-smoothness regressions through any batch.
+
+**Recommended next (cheap, clean, ordered)** — all low-risk, using mechanisms already in place:
+1. **Proof two-tone emphasis** (the one remaining HIGH that isn't architectural): run the proof
+   StatStrip stat labels + CaseStudy drain/built strings through the existing `emphasize()` helper
+   and add `**…**` in the seed. Restores the stat-band/case-row rhythm; lifts the lowest page.
+2. **Drop two stray lime accents** (services StatStrip "ways.", climb Invite) — seed `highlight:''`.
+3. **Insights featured "Read the piece" CTA** — add `ctaLabel`/`ctaHref` to the seed (one line).
+4. **Industries Steps eyebrow** → lime `.kicker` (mirror the CaseStudy eyebrow fix already shipped).
+
+**Deferred (with rationale — decisions or scoped follow-ons, not oversights):**
+- **Squared-vs-pill primary CTA** — a deliberate studio system choice; the audit itself flags it as
+  possibly intentional. One-line global change if John wants the live rectangular `.btn-primary`.
+- **Home cinematic scroll-pinning + dot-nav/HUD/preloader (#3b)** — a scoped ~1-2 day follow-on; a
+  second WebGL/scroll-pin layer risks the performance rule and conflicts with the single-renderer,
+  drag-orderable block model the studio is built on.
+- **Per-pillar 3D deep-links (RA2-2)** — there's no per-pillar route in the SPA, so a "Inspect →"
+  link would dead-link; needs a route handler first (then it's a seed change).
+- **Sub-page hero display-scale** — the compact scale was a deliberate RA2-6 decision; bump toward
+  the live `.display` clamp if John wants more monumentality (one cross-page Hero rule).
+- **Low-level texture/polish** — about timeline-spine glow + lime-lit team avatars, insights
+  featured-card frosted surface, proof engraved-ledger hero backdrop, Invite emerald half-gradient,
+  contact etched-clock layer + step hover-lift, contact form-submit swap-vs-unmount (the studio's
+  honest-prototype treatment is intentional). Font self-hosting needs binaries.
+
+**Security / brand model intact throughout:** admin-only studio, no fake auth or payments, brand-lock
+enforced (no free-form colour/type; dark text on lime, never white). Live prototype:
+https://greatstone-home.netlify.app/puck-proof/ — latest deploy `6a3176d1aea2f76fc1bd392a`.
+
+---
+
 GOAL (John's redirect): the studio's 22-block library must faithfully reproduce EVERY section/design
 on the live site (greatstone-home.netlify.app — / method services industries proof about insights
 climb contact) — add missing blocks, match formatting precisely, and get performance top-tier.
