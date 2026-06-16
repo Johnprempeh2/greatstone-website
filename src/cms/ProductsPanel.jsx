@@ -39,7 +39,7 @@ function ProductEditor({ product, categories, onUpdate, onRemove }) {
               </select></label>
             <label className="gs-field"><span className="gs-field-label">Status</span>
               <select value={p.status || 'active'} onChange={(e) => { set('status', e.target.value); commit('status', e.target.value); }}>
-                <option value="active">Active</option><option value="legacy">Legacy</option>
+                <option value="active">Active</option><option value="legacy">Legacy (still sold)</option><option value="draft">Draft (hidden)</option>
               </select></label>
           </div>
           <div className="gs-prod-row">

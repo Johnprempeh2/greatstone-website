@@ -15,7 +15,7 @@ function Card({ p, catName }) {
     <article className="b-sf-card" data-reveal>
       {p.badge ? <span className={'b-sf-badge' + (p.status === 'legacy' ? ' is-legacy' : '')}>{p.badge}</span> : null}
       <div className="b-sf-cat">{catName || 'Software'}</div>
-      <h3 className="b-sf-name">{p.name}</h3>
+      <h4 className="b-sf-name">{p.name}</h4>
       <p className="b-sf-summary">{p.summary}</p>
       {Array.isArray(p.features) && p.features.length ? (
         <ul className="b-sf-features">{p.features.map((f, i) => <li key={i}>{f}</li>)}</ul>
@@ -38,15 +38,18 @@ export function Storefront({ heading, body }) {
   const ref = useReveal();
   const { products = [], categories = [] } = useCatalog();
   const catName = (id) => { const c = categories.find((x) => x.id === id); return c ? c.name : ''; };
-  const cats = categories.filter((c) => products.some((p) => p.category === c.id));
-  const uncategorised = products.filter((p) => !categories.some((c) => c.id === p.category));
+  // only LISTED products reach the public storefront. 'draft' is hidden (manage it in the Products
+  // tab); 'active' and 'legacy' both show — legacy products are older but still sold + supported.
+  const listed = products.filter((p) => p.status !== 'draft');
+  const cats = categories.filter((c) => listed.some((p) => p.category === c.id));
+  const uncategorised = listed.filter((p) => !categories.some((c) => c.id === p.category));
 
   return (
     <section ref={ref} className="b-storefront">
       <div className="wrap">
         {heading ? <h2 className="b-sf-head" data-reveal>{heading}</h2> : null}
         {body ? <p className="b-sf-intro" data-reveal>{body}</p> : null}
-        {products.length === 0 ? (
+        {listed.length === 0 ? (
           <p className="b-sf-empty">No products yet. Add them in the studio’s Products tab.</p>
         ) : (
           <div className="b-sf-groups">
@@ -57,7 +60,7 @@ export function Storefront({ heading, body }) {
                   {c.blurb ? <p>{c.blurb}</p> : null}
                 </div>
                 <div className="b-sf-grid">
-                  {products.filter((p) => p.category === c.id).map((p) => <Card key={p.id} p={p} catName={c.name} />)}
+                  {listed.filter((p) => p.category === c.id).map((p) => <Card key={p.id} p={p} catName={c.name} />)}
                 </div>
               </div>
             ))}
