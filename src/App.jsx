@@ -24,13 +24,14 @@ import VersionHistory from './cms/VersionHistory.jsx';
 import ActivityPanel from './cms/ActivityPanel.jsx';
 import ReleaseBoard from './cms/ReleaseBoard.jsx';
 import ProductsPanel from './cms/ProductsPanel.jsx';
+import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
@@ -122,6 +123,7 @@ export default function App() {
   const authed = !!user;
   const canEdit = can(user, 'edit');
   const canPublish = can(user, 'publish');
+  const canManageUsers = can(user, 'manageUsers'); // admins only — gates the Team panel
 
   // persist() now trims old version snapshots and retries before failing; a failure here means the
   // store is genuinely full, so raise a STICKY banner (not a 2.6s toast) — those edits won't survive a reload
@@ -278,6 +280,14 @@ export default function App() {
     setState((s) => removeCategory(s, id)); flash('Category removed.');
   }
   function editCategory(id, patch) { setState((s) => ({ ...s, categories: (s.categories || []).map((c) => (c.id === id ? { ...c, ...patch, id } : c)) })); }
+  // team & roles (admin only). Prototype: records membership/role/invitation; no real account or email.
+  function inviteTeammate(member) { setState((s) => inviteTeamMember(s, member)); flash('Invitation recorded (prototype — no email sent).'); }
+  function editTeammate(id, patch) { setState((s) => updateTeamMember(s, id, patch)); }
+  async function removeTeammate(id, name) {
+    const ok = await ask({ kind: 'confirm', title: 'Remove from team', message: 'Remove “' + (name || 'this teammate') + '” from the team?', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
+    setState((s) => removeTeamMember(s, id)); flash('Removed from team.');
+  }
   function renameSlug(slug, next) {
     const n = (next || '').trim();
     if (!n || n === slug) return;
@@ -354,6 +364,7 @@ export default function App() {
         cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
         cmds.push({ id: 'releases', group: 'Editor', label: 'Open release board', run: () => setPanel('releases') });
         cmds.push({ id: 'products', group: 'Editor', label: 'Open products catalogue', run: () => setPanel('products') });
+        if (canManageUsers) cmds.push({ id: 'team', group: 'Editor', label: 'Open team & roles', run: () => setPanel('team') });
         cmds.push({ id: 'bgpanel', group: 'Editor', label: 'Open 3D background editor', run: () => setPanel('background') });
         cmds.push({ id: 'seo', group: 'Editor', label: 'Open SEO & social', run: () => setPanel('seo') });
         cmds.push({ id: 'history', group: 'Editor', label: 'Open version history', run: () => setPanel('history') });
@@ -367,7 +378,7 @@ export default function App() {
     }
     cmds.push({ id: 'signout', group: 'Admin', label: 'Sign out (' + user.name + ')', run: doSignOut });
     return cmds;
-  }, [cmdOpen, state, current, mode, page, user, canEdit, canPublish]);
+  }, [cmdOpen, state, current, mode, page, user, canEdit, canPublish, canManageUsers]);
 
   const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss }} />;
   const overlays = (
@@ -410,6 +421,7 @@ export default function App() {
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             products: <ProductsPanel products={state.products} categories={state.categories} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
+            ...(canManageUsers ? { team: <TeamPanel team={state.team} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,

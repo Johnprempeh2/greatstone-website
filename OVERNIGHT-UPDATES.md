@@ -419,6 +419,30 @@ licence-request checkout — all mapping to the dev team's Laravel/Stripe model.
 DX-dashboard north star (org-scoped roles + invitations prototype) on the existing role model
 (`cms/auth.js`). Then the leftover v3/v4 items (#13, #15, #17, #18), then Round 2 deep-dive.
 Deploys still 500 server-side; everything committed + dist staged.
+
+**[02:58 BST] Item R1-#20 (COMPLETE) — Team, roles & invitations (DX-dashboard north star) — BUILT, VERIFIED, COMMITTED.**
+- The second north star's CMS-native, prototype-completable slice: an org roster with role
+  assignment + invitations, admin-only. Assigns roles and records invitations ONLY — no real
+  account, no password, no email (real multi-tenant auth/RBAC/invite delivery = Laravel).
+- Store: added a `team` slice + CRUD (`listTeam`, `inviteTeamMember`, `updateTeamMember`,
+  `removeTeamMember`) seeded from the demo accounts; additive schema 13→14 migration. Built
+  `cms/TeamPanel.jsx` — an admin-only "Team" Studio tab: invite form (name/email/role → pending
+  invitation), members + pending lists, per-member edit (name/email/role/status/responsibilities,
+  commit on blur), remove (confirm). Reuses the `ROLES` capability map from `auth.js`. StudioPanel
+  now filters tabs by which panels are provided, and App only provides the `team` panel + palette
+  command when the user has `manageUsers` (admins) — so the RBAC gate is demonstrated. Added a
+  "Team, roles and the DX Dashboard" handoff section to HANDOVER.md (Laravel orgs + Spatie roles +
+  signed expiring invitation links).
+- Files: `src/store.js`, `src/cms/TeamPanel.jsx` (new), `src/cms/StudioPanel.jsx`, `src/App.jsx`,
+  `src/studio.css`, `HANDOVER.md`.
+- Verify: build PASS (149 modules). Preview: as admin → Team tab present (8 tabs), 3 seeded members
+  with correct role pills (Administrator/Editor/Reviewer); invited "Sam Rivers" → pending invitation
+  + honest toast ("no email sent"); removed via confirm modal (back to 3). **RBAC gate confirmed:
+  signed in as editor → Team tab HIDDEN** (Products still present). Schema migrated to 14. Build
+  clean; the 8 "[vite] Failed to reload" entries are mid-edit HMR artifacts. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+- BOTH NORTH STARS DONE: #19 Products/e-commerce + #20 Team/roles/DX-dashboard. NEXT: the leftover
+  v3/v4 items (#13 footer, #15 block diff, #17 resolveFields, #18 site settings), then Round 2 deep-dive.
 - (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.

@@ -100,6 +100,26 @@ What's real today and what Laravel owns:
   studio's Products CRUD becomes Filament resources; `dx@greatstonesoftware.co.uk` receives quote
   requests until the store is live. Prices shown in the catalogue stay display-only guidance.
 
+## Team, roles and the DX Dashboard
+
+The studio's **Team** tab (admin-only) is the prototype for the DX Dashboard's org membership: a
+roster of people, their role and responsibilities, and pending invitations. What's real and what
+Laravel owns:
+
+- **Built here (prototype).** A `team` roster in the store with role assignment (admin / editor /
+  reviewer, the same `ROLES` capability map the editor already gates on), an invite form that adds a
+  pending invitation, and member edit/remove. The Team tab only renders for a user whose role has
+  `manageUsers` (admins) — the RBAC gate is demonstrated in the UI. The data model maps onto Laravel
+  `organisations`, `org_user` (with role) and `invitations` tables.
+- **It assigns roles and records invitations only.** No real account is created, no password is set,
+  and no email is sent. Do not wire a real invite/email or account creation onto the front end.
+- **Laravel owns the real thing (multi-tenant).** An organisation signs up and is the tenant scope;
+  every query is scoped to the current org. Auth is Laravel + Spatie roles per org; an org admin
+  invites a teammate, which creates an `invitation` and sends a **signed, expiring** link; accepting
+  it provisions the user against that org with the assigned role. Removing a member revokes access.
+  The studio's Team CRUD becomes a Filament/Inertia resource scoped to the org. None of the
+  capability checks here are security — enforce every one server-side, per request.
+
 ## The repository, staging, and using Claude going forward
 
 Yes, put this in a Git repository the team can clone, branch and test against. This repo is

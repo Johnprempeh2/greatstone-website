@@ -12,7 +12,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 13;
+const SCHEMA = 14;
 
 let _seq = 0;
 // one canonical id generator (block/scene/asset ids must be unique within a page — they key both
@@ -86,6 +86,29 @@ export function addCategory(state, category) {
 export function removeCategory(state, id) {
   // products in a removed category fall back to uncategorised (empty category)
   return { ...state, categories: (state.categories || []).filter((c) => c.id !== id), products: (state.products || []).map((p) => (p.category === id ? { ...p, category: '' } : p)) };
+}
+
+// ---- team & roles (north-star: DX dashboard org accounts) ----
+// A PROTOTYPE roster: who's on the team, their role, responsibilities and status (active / invited).
+// This models the org-scoped membership + RBAC + invitations the DX Dashboard needs. It assigns
+// roles and records invitations only — it creates NO real accounts, sets NO passwords, and sends
+// NO email. Real multi-tenant auth, org scoping and invitation delivery are the Laravel backend
+// (Spatie roles + a signed invitation link); see HANDOVER → Team & roles.
+const SEED_TEAM = [
+  { id: 'tm-admin', name: 'Studio Admin', email: 'admin@greatstone', role: 'admin', title: 'Studio administrator', status: 'active' },
+  { id: 'tm-editor', name: 'Marketing Editor', email: 'editor@greatstone', role: 'editor', title: 'Content editor', status: 'active' },
+  { id: 'tm-viewer', name: 'Reviewer', email: 'viewer@greatstone', role: 'viewer', title: 'Read-only reviewer', status: 'active' },
+];
+export function listTeam(state) { return (state && state.team) || []; }
+export function inviteTeamMember(state, member) {
+  const id = rid('tm');
+  return { ...state, team: [...(state.team || []), { id, name: '', email: '', role: 'editor', title: '', status: 'invited', ...member, id }] };
+}
+export function updateTeamMember(state, id, patch) {
+  return { ...state, team: (state.team || []).map((m) => (m.id === id ? { ...m, ...patch, id } : m)) };
+}
+export function removeTeamMember(state, id) {
+  return { ...state, team: (state.team || []).filter((m) => m.id !== id) };
 }
 
 export function seedState() {
@@ -228,7 +251,7 @@ export function seedState() {
   });
   pages.products = productsPage();
   const order = ['home', 'method', 'services', 'industries', 'products', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
-  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, categories: SEED_CATEGORIES, products: SEED_PRODUCTS };
+  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, categories: SEED_CATEGORIES, products: SEED_PRODUCTS, team: SEED_TEAM };
 }
 
 // the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
@@ -267,6 +290,7 @@ function migrate(state) {
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
   if (!Array.isArray(state.products)) state.products = SEED_PRODUCTS;
+  if (!Array.isArray(state.team)) state.team = SEED_TEAM;
   if (!state.pages.products) {
     state.pages.products = productsPage();
     if (!state.order.includes('products')) {
