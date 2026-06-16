@@ -38,6 +38,22 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[12:53 BST] Re-audit R5 — TimeCounter redesign to the live time-cost chip (contact) — BUILT, VERIFIED, DEPLOYED.**
+- contact (weakest page, 58%) had the wrong hero design: a centered 6rem decimal clock ("0.0s"). Live is a
+  LEFT-aligned hero ("You still can't buy time. / Let's save yours.") over a compact bordered `.timecost` chip.
+  Rewrote TimeCounter.jsx: left-aligned hero (h1 display scale), a `.b-tc-chip` (border + accent-soft gradient +
+  blur, max-width 540) holding a blinking `.b-tc-dot` (gsTcPulse), a tabular `MM:SS` clock that ticks once per
+  second (paused when tab hidden; Date.now-based so hidden time still counts), an "on this page" label, and the
+  escalating narrative line ("you won't get them back"). Reduced-motion stills only the dot. Live copy as defaults;
+  contact seed cleared to inherit them.
+- Files: `src/blocks/TimeCounter.jsx`, `src/store.js` (contact TimeCounter props → {}).
+- Verify: build PASS (`index-uL8gyLXb`, 370.85 kB). Fresh-seed preview on contact: kicker "Book a Deep Dive",
+  headline "You still can't buy time. / Let's save yours." (accent), compact 540px chip, clock ticks 00:10 → 00:44 →
+  01:02 (MM:SS rollover works), "on this page" label, dot, escalating line; zero runtime errors; screenshot matches
+  the live time-cost counter. (R5 second part — BookDeepDive iconed "Why a deep dive" aside — queued as R5b.)
+- Commit: `b4f041f`. **Deploy LIVE** `6a31391b0b9269273c9f253c`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "b-tc-chip" / "b-tc-clock" / "gsTcPulse".
+
 **[12:44 BST] Re-audit R4 — Spectrum Tool-first-vs-Problem-first glass figure (services) — BUILT, VERIFIED, DEPLOYED.**
 - services' Spectrum section reproduced the right column as a plain 4-item bullet list, dropping the live's whole
   point: a bordered glass `.tool-figure` contrasting tool-first vs problem-first. Rebuilt Spectrum.jsx right column
