@@ -12,7 +12,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 16;
+const SCHEMA = 17;
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
 // every team/catalogue record so the data shape already carries the tenant scope the Laravel build
@@ -51,19 +51,19 @@ const SEED_CATEGORIES = [
   { id: 'cat-data', name: 'Data & Integration', slug: 'data', blurb: 'Make your systems talk, and your numbers tell the truth.' },
 ];
 const SEED_PRODUCTS = [
-  { id: 'prod-bedrock', name: 'Bedrock Platform', category: 'cat-platform', price: 'From £12,000', period: '/year', licence: 'Site licence', badge: 'Core', status: 'active',
+  { id: 'prod-bedrock', slug: 'bedrock-platform', sku: 'GS-BDRK', name: 'Bedrock Platform', category: 'cat-platform', price: 'From £12,000', period: '/year', licence: 'Site licence', badge: 'Core', status: 'active',
     summary: 'The Greatstone delivery platform: workspaces, roles and audited workflows on one foundation your whole organisation builds on.',
     features: ['Unlimited workspaces', 'Role-based access + audit log', 'Bedrock API + webhooks', 'SSO-ready'] },
-  { id: 'prod-slate', name: 'Slate Workflow', category: 'cat-automation', price: 'From £180', period: '/seat/year', licence: 'Per-seat', badge: 'Popular', status: 'active',
+  { id: 'prod-slate', slug: 'slate-workflow', sku: 'GS-SLATE', name: 'Slate Workflow', category: 'cat-automation', price: 'From £180', period: '/seat/year', licence: 'Per-seat', badge: 'Popular', status: 'active',
     summary: 'Turn the processes living in inboxes and spreadsheets into governed, automated workflows, without writing code.',
     features: ['Visual workflow builder', 'Approvals + SLAs', 'Bedrock-native', '120+ connectors'] },
-  { id: 'prod-quarry', name: 'Quarry Analytics', category: 'cat-data', price: 'From £6,000', period: '/year', licence: 'Site licence', badge: '', status: 'active',
+  { id: 'prod-quarry', slug: 'quarry-analytics', sku: 'GS-QRY', name: 'Quarry Analytics', category: 'cat-data', price: 'From £6,000', period: '/year', licence: 'Site licence', badge: '', status: 'active',
     summary: 'Operational analytics that read from the work itself, so the dashboard matches what actually happened.',
     features: ['Live operational metrics', 'Self-serve exploration', 'Scheduled briefings', 'Warehouse export'] },
-  { id: 'prod-keystone', name: 'Keystone Integrations', category: 'cat-data', price: 'From £4,500', period: '/year', licence: 'Per-connection', badge: '', status: 'active',
+  { id: 'prod-keystone', slug: 'keystone-integrations', sku: 'GS-KEY', name: 'Keystone Integrations', category: 'cat-data', price: 'From £4,500', period: '/year', licence: 'Per-connection', badge: '', status: 'active',
     summary: 'The integration layer that keeps your finance, CRM and operational systems in step, one source of truth, no copy-paste.',
     features: ['Pre-built connectors', 'Two-way sync', 'Field-level mapping', 'Failure alerting'] },
-  { id: 'prod-mortar', name: 'Mortar Connect', category: 'cat-automation', price: 'From £95', period: '/seat/year', licence: 'Per-seat', badge: 'Legacy', status: 'legacy',
+  { id: 'prod-mortar', slug: 'mortar-connect', sku: 'GS-MORT', name: 'Mortar Connect', category: 'cat-automation', price: 'From £95', period: '/seat/year', licence: 'Per-seat', badge: 'Legacy', status: 'legacy',
     summary: 'Our original point-to-point connector suite. Still supported and sold for teams that depend on it; new builds use Keystone.',
     features: ['Legacy connector library', 'Long-term support', 'Migration path to Keystone'] },
 ];
@@ -73,13 +73,29 @@ export function listProducts(state, categoryId) {
   const all = (state && state.products) || [];
   return categoryId ? all.filter((p) => p.category === categoryId) : all;
 }
+// products carry a URL slug (the #product/<slug> route) that must stay unique + url-safe. The slug is
+// the shareable identity, so it's kept stable on rename; admins can edit it explicitly in the panel.
+export function productBySlug(state, slug) {
+  if (!slug) return null;
+  const all = (state && state.products) || [];
+  return all.find((p) => (p.slug || slugify(p.name)) === slug) || null;
+}
+function uniqueProductSlug(state, base, exceptId) {
+  let slug = slugify(base) || 'product';
+  const taken = (s) => (state.products || []).some((p) => p.id !== exceptId && (p.slug || slugify(p.name)) === s);
+  let n = 2; const root = slug;
+  while (taken(slug)) slug = root + '-' + n++;
+  return slug;
+}
 export function addProduct(state, product) {
   const id = rid('prod');
-  const p = { id, orgId: (state.org && state.org.id) || ORG.id, name: 'New product', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], image: '', imageAlt: '', ...product, id };
-  return { ...state, products: [...(state.products || []), p] };
+  const base = { id, orgId: (state.org && state.org.id) || ORG.id, name: 'New product', sku: '', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], image: '', imageAlt: '', ...product, id };
+  base.slug = uniqueProductSlug(state, product && product.slug ? product.slug : base.name, id);
+  return { ...state, products: [...(state.products || []), base] };
 }
 export function updateProduct(state, id, patch) {
-  return { ...state, products: (state.products || []).map((p) => (p.id === id ? { ...p, ...patch, id } : p)) };
+  const p = patch && patch.slug !== undefined ? { ...patch, slug: uniqueProductSlug(state, patch.slug || (state.products.find((x) => x.id === id) || {}).name, id) } : patch;
+  return { ...state, products: (state.products || []).map((x) => (x.id === id ? { ...x, ...p, id } : x)) };
 }
 export function removeProduct(state, id) {
   return { ...state, products: (state.products || []).filter((p) => p.id !== id) };
@@ -311,6 +327,16 @@ function migrate(state) {
   if (!state.org) state.org = ORG;
   const oid = state.org.id;
   ['team', 'products', 'categories'].forEach((k) => { state[k] = (state[k] || []).map((x) => (x.orgId ? x : { ...x, orgId: oid })); });
+  // product URL slug + SKU (additive, schema 17): backfill a unique slug from the name + an empty SKU
+  {
+    const seen = new Set();
+    state.products = (state.products || []).map((p) => {
+      let slug = p.slug || slugify(p.name) || 'product';
+      const root = slug; let n = 2; while (seen.has(slug)) slug = root + '-' + n++;
+      seen.add(slug);
+      return p.slug === slug && p.sku !== undefined ? p : { ...p, slug, sku: p.sku || '' };
+    });
+  }
   if (!state.pages.products) {
     state.pages.products = productsPage();
     if (!state.order.includes('products')) {

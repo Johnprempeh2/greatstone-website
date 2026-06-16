@@ -16,7 +16,7 @@ function Card({ p, catName }) {
       {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" /></div> : null}
       {p.badge ? <span className={'b-sf-badge' + (p.status === 'legacy' ? ' is-legacy' : '')}>{p.badge}</span> : null}
       <div className="b-sf-cat">{catName || 'Software'}</div>
-      <h4 className="b-sf-name">{p.name}</h4>
+      <h4 className="b-sf-name"><a className="b-sf-namelink" href={'#product/' + (p.slug || p.id)}>{p.name}</a></h4>
       <p className="b-sf-summary">{p.summary}</p>
       {Array.isArray(p.features) && p.features.length ? (
         <ul className="b-sf-features">{p.features.map((f, i) => <li key={i}>{f}</li>)}</ul>
@@ -30,7 +30,10 @@ function Card({ p, catName }) {
           {inCart ? 'Added · ' + inCart : 'Add to licence'}<Arrow />
         </button>
       </div>
-      {p.licence ? <div className="b-sf-lic">{p.licence}</div> : null}
+      <div className="b-sf-meta">
+        {p.licence ? <span className="b-sf-lic">{p.licence}</span> : <span />}
+        <a className="b-sf-details" href={'#product/' + (p.slug || p.id)}>View details<Arrow /></a>
+      </div>
     </article>
   );
 }
@@ -113,6 +116,8 @@ export const css = `
 .b-sf-badge.is-legacy{background:var(--gs-text-faint);color:#fff}
 .b-sf-cat{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
 .b-sf-name{margin-top:8px;font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+.b-sf-namelink{color:inherit;text-decoration:none}
+.b-sf-namelink:hover{color:var(--gs-accent)}
 .b-sf-summary{margin-top:10px;color:var(--gs-text-muted);font-size:.95rem;line-height:1.6}
 .b-sf-features{margin-top:16px;display:flex;flex-direction:column;gap:7px;list-style:none}
 .b-sf-features li{position:relative;padding-left:20px;font-size:.88rem;color:var(--gs-text);line-height:1.5}
@@ -123,7 +128,11 @@ export const css = `
 .b-sf-amount{font-size:1.15rem;font-weight:800;color:var(--gs-text)}
 .b-sf-period{font-size:.8rem;color:var(--gs-text-faint)}
 .b-cta.sm{padding:.6em 1.2em;font-size:.84rem}
-.b-sf-lic{margin-top:12px;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-text-faint)}
+.b-sf-meta{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.b-sf-lic{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-text-faint)}
+.b-sf-details{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:800;color:var(--gs-accent);text-decoration:none;white-space:nowrap}
+.b-sf-details:hover{text-decoration:underline}
+.b-sf-details svg{width:13px;height:13px}
 .b-sf-empty{margin-top:30px;text-align:center;color:var(--gs-text-faint)}
 `;
 

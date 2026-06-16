@@ -32,7 +32,8 @@ import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, productBySlug } from './store.js';
+import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
@@ -57,6 +58,11 @@ const SITE_ORIGIN = 'https://greatstone.com'; // matches the SeoPanel URL previe
 // a refresh or accidental navigation. NOT the auth/store payload — just resilience on the buy path.
 const CART_KEY = 'gs-cart';
 function loadCart() { try { const r = localStorage.getItem(CART_KEY); const c = r ? JSON.parse(r) : {}; return c && typeof c === 'object' ? c : {}; } catch (e) { return {}; } }
+// #product/<slug> (or #/product/<slug>) → the public product detail route; anything else → null
+function readProductHash() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?product\/([\w-]+)/i);
+  return m ? m[1] : null;
+}
 const SITE_NAME = 'Greatstone International';
 function upsertMeta(attr, key, content) {
   let el = document.head.querySelector(`meta[${attr}="${key}"]`);
@@ -124,6 +130,7 @@ export default function App() {
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
+  const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
@@ -156,15 +163,22 @@ export default function App() {
   // persist the licence basket (non-sensitive) so it survives a reload
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
-    const onHash = () => setAdminRoute(isAdminRoute());
+    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
-  // keep the document <head> in sync with the current page's SEO (title/meta/canonical/social)
+  // keep the document <head> in sync — a product detail route gets its own per-product SEO
+  // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
+    if (productSlug) {
+      const pr = productBySlug(state, productSlug);
+      if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'products/' + (pr.slug || productSlug)); return; }
+    }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages]);
+  }, [current, state.pages, productSlug, state.products]);
+  // a product route opens at the top, like a fresh page
+  useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
   // mount so we don't steal focus on load). Pairs with the skip link + scroll-to-top in navigate().
   useEffect(() => {
@@ -188,6 +202,11 @@ export default function App() {
   const page = state.pages[current] || state.pages[state.order[0]];
   const bg = page.background || state.settings.background || 'stone';
   const catalog = { products: state.products || [], categories: state.categories || [] }; // for the Storefront block
+  // public product detail route (#product/<slug>): resolve the product + its category + same-category siblings
+  const activeProduct = productSlug ? productBySlug(state, productSlug) : null;
+  const activeProductCat = activeProduct ? (state.categories || []).find((c) => c.id === activeProduct.category) : null;
+  const relatedProducts = activeProduct ? (state.products || []).filter((p) => p.id !== activeProduct.id && p.category === activeProduct.category && p.status !== 'draft').slice(0, 3) : [];
+  function exitProduct() { if (location.hash) location.hash = ''; setProductSlug(null); navigate(state.pages.products ? 'products' : state.order[0]); }
   // licence basket (prototype, in-memory): add/adjust/remove products, never takes payment
   const cartApi = useMemo(() => ({
     cart,
@@ -453,7 +472,7 @@ export default function App() {
     return cmds;
   }, [cmdOpen, state, current, mode, page, user, canEdit, canPublish, canManageUsers]);
 
-  const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss }} />;
+  const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss + '\n' + productDetailCss }} />;
   const overlays = (
     <>
       {styleTag}
@@ -575,9 +594,11 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={current}>
-        <EditorBoundary key={'vb:' + current} label="page">
-          <PublicRender config={config} data={page.published || page.data} />
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={productSlug ? 'product:' + productSlug : current}>
+        <EditorBoundary key={productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
+          {productSlug
+            ? <ProductDetail product={activeProduct} categoryName={activeProductCat ? activeProductCat.name : ''} related={relatedProducts} onBack={exitProduct} />
+            : <PublicRender config={config} data={page.published || page.data} />}
         </EditorBoundary>
       </main>
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />

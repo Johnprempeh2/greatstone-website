@@ -10,6 +10,8 @@ function ProductEditor({ product, categories, onUpdate, onRemove }) {
   const [p, setP] = useState(product);
   const [open, setOpen] = useState(false);
   useEffect(() => { setP(product); }, [product.id]); // resync when a different product takes this slot
+  // the store sanitises + de-duplicates the slug on commit, so reflect the canonical value back
+  useEffect(() => { setP((prev) => ({ ...prev, slug: product.slug, sku: product.sku })); }, [product.slug, product.sku]);
   const set = (k, v) => setP((prev) => ({ ...prev, [k]: v }));
   const commit = (k, val) => { const v = val === undefined ? p[k] : val; if (v !== product[k]) onUpdate(product.id, { [k]: v }); };
   const commitFeatures = () => {
@@ -32,6 +34,13 @@ function ProductEditor({ product, categories, onUpdate, onRemove }) {
         <div className="gs-prod-body">
           <label className="gs-field"><span className="gs-field-label">Name</span>
             <input value={p.name || ''} onChange={(e) => set('name', e.target.value)} onBlur={() => commit('name')} /></label>
+          <div className="gs-prod-row">
+            <label className="gs-field"><span className="gs-field-label">URL slug</span>
+              <input value={p.slug || ''} onChange={(e) => set('slug', e.target.value)} onBlur={() => commit('slug')} placeholder="bedrock-platform" />
+              <span className="gs-field-hint">/#product/{p.slug || '…'}</span></label>
+            <label className="gs-field"><span className="gs-field-label">SKU</span>
+              <input value={p.sku || ''} onChange={(e) => set('sku', e.target.value)} onBlur={() => commit('sku')} placeholder="GS-BDRK" /></label>
+          </div>
           <div className="gs-prod-row">
             <label className="gs-field"><span className="gs-field-label">Category</span>
               <select value={p.category || ''} onChange={(e) => { set('category', e.target.value); commit('category', e.target.value); }}>
