@@ -134,8 +134,8 @@ export const css = `
 /* plain variant: live services .outcomes .bignum is a STATIC solid-lime figure with the suffix baked into the
    same span at the same size (site.css: color:var(--gs-accent), font-size:clamp(2.6rem,6vw,5rem)). Override the
    base white->lime gradient to solid lime and match the suffix to the number size; count-up skipped in the JS. */
-.b-proof-plain .b-stat-num,.b-proof-plain .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent)}
-.b-proof-plain .b-stat-suffix{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:900;letter-spacing:-.03em}
+.b-proof-plain .b-stat-num,.b-proof-plain .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent);font-size:clamp(2.6rem,6vw,5rem);letter-spacing:-.03em;line-height:1}
+.b-proof-plain .b-stat-suffix{font-size:clamp(2.6rem,6vw,5rem);font-weight:900;letter-spacing:-.03em}
 .b-stat-foot{margin-top:clamp(28px,4vw,44px);text-align:center;color:var(--gs-faint);font-size:.82rem}
 `;
 
