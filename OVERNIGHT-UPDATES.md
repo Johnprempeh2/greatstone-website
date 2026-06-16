@@ -550,7 +550,13 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview: store migrated to schema 16; org present; ALL products/
   team/categories carry `orgId: org-greatstone`; Team panel shows the "Greatstone International"
   organisation header. Zero console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `9b75776`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:54 BST] Turn 20 done — yielding.** Round 2 progress: #1–#10, #13, #14, #17 done (13 of 18).
+Remaining: #11 catalogue draft/publish gate (v5/high), #12 pause 3D render loop (v5/med, risky/hard to
+verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #18 Studio Home tab
+(v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
+approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
 **[02:42 BST] Item R2-#17 — Export site JSON + DATA-MODEL.md — BUILT, VERIFIED, COMMITTED.**
 - All authored content (pages, catalogue, team, activity, assets — schema 15) was trapped in
