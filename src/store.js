@@ -270,12 +270,12 @@ export function seedState() {
           email: 'dx@greatstonesoftware.co.uk',
         }),
         blk('Steps', {
-          index: '01', eyebrow: 'How a Deep Dive Works', headline: 'Three steps.', highlight: 'No theatre.',
-          body: 'We diagnose, we report, we build. Each layer settles before the next one lands.',
+          index: '', eyebrow: 'What happens next', headline: 'Three steps.', highlight: 'No theatre.',
+          body: 'From the moment you book to the moment you see the hours, the path is short and plainly worth your time.',
           items: [
-            { title: 'Diagnostic', text: 'We map where the week goes, across all eight pillars.' },
-            { title: 'Periscope Report', text: 'A clear read of where you stand and the fastest gains.' },
-            { title: 'Phased Roadmap', text: 'The build, embedded into how you already work, not bolted on.' },
+            { phase: 'Within 24 hours', title: 'We read your week', text: 'We take what you’ve told us and map it against the eight pillars before we ever speak, so the call starts where most engagements end.', timing: 'A short reply, a held slot' },
+            { phase: 'The deep dive', title: '45 focused minutes', text: 'We sit with you, pull on the threads, and surface where the hours are draining. You’ll feel the difference between advice and a foundation being laid.', timing: 'One session, real findings' },
+            { phase: 'The hours, costed', title: 'A picture you can act on', text: 'You leave with a clear read on what your week is quietly costing you, and exactly where Greatstone buys it back. No deck. No fluff.', timing: 'Yours to keep, pressure-free' },
           ],
         }),
         blk('ContactBand', {

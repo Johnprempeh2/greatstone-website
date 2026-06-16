@@ -17,8 +17,10 @@ export function Steps({ index, eyebrow, headline, highlight, body, items = [] })
           {items.map((it, i) => (
             <li className="b-step" data-reveal style={{ transitionDelay: `${i * 90}ms` }} key={i}>
               <span className="b-step-n">{String(i + 1).padStart(2, '0')}</span>
+              {it.phase ? <span className="b-step-phase">{it.phase}</span> : null}
               <h3>{it.title}</h3>
               <p>{it.text}</p>
+              {it.timing ? <p className="b-step-timing">{it.timing}</p> : null}
             </li>
           ))}
         </ol>
@@ -39,8 +41,11 @@ export const css = `
 .b-step-n{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:13px;
   font-weight:900;font-size:1.04rem;color:var(--gs-accent);background:rgba(200,255,0,.08);border:1px solid var(--gs-border);
   font-variant-numeric:tabular-nums}
+.b-step-phase{display:block;margin-top:14px;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}
 .b-step h3{margin-top:18px;font-size:1.22rem;font-weight:800;letter-spacing:-.01em}
+.b-step-phase + h3{margin-top:6px}
 .b-step p{margin-top:10px;color:var(--gs-muted);font-size:.95rem;line-height:1.6}
+.b-step p.b-step-timing{margin-top:.9rem;font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-faint);line-height:1.4}
 `;
 
 const STEP = (title, text) => ({ title, text });
@@ -55,8 +60,13 @@ export const puck = {
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     items: {
       type: 'array', label: 'Steps',
-      arrayFields: { title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
-      defaultItemProps: { title: 'Step', text: 'What happens here.' },
+      arrayFields: {
+        phase: { type: 'text', label: 'Phase label (optional)' },
+        title: { type: 'text', label: 'Title' },
+        text: { type: 'textarea', label: 'Description' },
+        timing: { type: 'text', label: 'Timing line (optional)' },
+      },
+      defaultItemProps: { phase: '', title: 'Step', text: 'What happens here.', timing: '' },
       getItemSummary: (item) => item.title || 'Step',
     },
   },
