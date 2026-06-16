@@ -38,6 +38,19 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[12:03 BST] Perf #17 — rAF-batch Timeline scroll (kill INP jank) — BUILT, VERIFIED, DEPLOYED.**
+- Timeline.jsx's scroll handler did a `getBoundingClientRect()` (forced layout read) + a CSS-var write on EVERY
+  scroll event, unbatched, even when the timeline was off-screen — a classic INP/jank source on the about page.
+  FIX: rAF-batch the work so it runs at most once per frame (a `rafId` guard coalesces a burst of scroll events
+  into a single read+write), plus a visibility-gate IntersectionObserver (`140px` rootMargin) so the handler is
+  near-free when the timeline is scrolled away; the rAF is cancelled on cleanup. Behaviour unchanged (the lime
+  fill still tracks scroll; milestones still light via the existing IO).
+- Files: `src/blocks/Timeline.jsx`.
+- Verify: build PASS (`index-LTagXJyv`, 368.60 kB). Preview on about: fill tracks correctly (centered →
+  `--tl-progress` 0.547, fill 497px, 4/5 items lit); a 40× stress-scroll produced **zero runtime errors** and the
+  progress stayed correct; read+write now coalesced to one-per-frame (no per-event reflow). Smooth 60fps scroll.
+- Commit: `1cfc33d`. **Deploy LIVE** `6a312d8d182086d531fda6d9`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[11:55 BST] Perf #16 — kill image CLS (reserve logo aspect box + Figure aspect-ratio) — BUILT, VERIFIED, DEPLOYED.**
 - The site logo (`<img>`, 800×160, 5:1) was rendered with a CSS width but `height:auto` and no intrinsic dims, so its
   box was 0-height until load → layout shift on every page (header + footer, above-the-fold). Figure's editorial
