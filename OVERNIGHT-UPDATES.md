@@ -38,6 +38,20 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[09:16 BST] Parity #6 — MaturityModel block (completes the method page) — BUILT, VERIFIED, DEPLOYED.**
+- method.html's closing methodology section was dropped from the seed. New MaturityModel block (faithful port of
+  .tier-row + .phases): centered kicker "Pebble · Plateau · Peak" + "We meet you where you are." + lead; Row A =
+  3 graduated tier cards (Surviving/Organised/Compounding, deepening lime tint t1→t3); Row B = 4 phase cards
+  (Lagger/Follower/Leader/Pioneer) each with a score-range eyebrow (Under 3 / 3–5 / 6–8 / 9–10) + escalating lime
+  (p1→p4); closing ghost CTA "See the full climb" → #go/climb. 4→2 / 3→1 cols at 760px; reveal stagger.
+- Registered under Story; seeded onto method after PillarExplorer. The method page is now Hero → FeatureGrid →
+  PillarExplorer → MaturityModel (only the framed closing CTA band, gap #7, remains for full method parity).
+- Files: `src/blocks/MaturityModel.jsx` (new), `src/puck.config.jsx`, `src/store.js`.
+- Verify: build PASS (`index-_nVabF50`). Fresh-seed preview: method MaturityModel renders the right kicker/
+  heading/lead, 3 tiers, 4 phases w/ score ranges, graduated lime tints, ghost CTA → #go/climb; zero console
+  errors; screenshot matches the live maturity section.
+- Commit: `7be558f`. **Deploy LIVE** `6a310631c93179452459314d`; 200; live bundle has b-mat-tier/b-mat-phase.
+
 **[09:05 BST] Parity #3a — desktop chrome: custom cursor + scroll progress (SiteChrome) — BUILT, VERIFIED, DEPLOYED.**
 - First part of the missing desktop chrome layer (live ships it on every viewport; studio had none). New
   SiteChrome component rendered ONLY on the public view (never in the Puck editor — a custom cursor would fight
