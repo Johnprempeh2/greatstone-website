@@ -38,6 +38,24 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[08:37 BST] Parity #2/#8 — Values 4-up block + re-seed the ABOUT page — BUILT, VERIFIED, DEPLOYED.**
+- About was the other mis-seeded page: the 8-pillar Pillars block stood in for the live "Four values. No
+  slideware." grid, and an invented StatStrip carried figures the live page keeps in its hero.
+- New Values block (faithful port of .grid.cols-4 of .card.value-card): auto-numbered cards, big faded lime
+  index (2.2rem/900/opacity.25), heading + muted body, left accent bar wiping up (scaleY, transform-origin
+  top, .5s) on hover; 4→2→1 cols; reduced-motion safe; registered under Proof.
+- Hero: added an optional "meta" stats-row field (the about hero .hero-meta: flex figure+label), so the three
+  figures (20 / 8 / 0) sit in the hero where the live page puts them.
+- Re-seeded about: dropped StatStrip, Pillars→Values, added hero-meta, background summit→**stone** (live about
+  uses mountGreatstone = the stone; single scene = parity + perf, one renderer not two).
+- Files: `src/blocks/Values.jsx` (new), `src/puck.config.jsx`, `src/blocks/Hero.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-DD3TTSn5`). Fresh-seed preview: about = Hero/Timeline/Values/Team/Invite; bg stone
+  (1 layer); hero-meta 20/8/0; Values renders the 4 real values, 4-up at desktop, auto-numbered 01-04; zero
+  console errors; screenshot matches the live about Values + Team grid.
+- Commit: `8e27627`. **Deploy LIVE** `6a30fd3278174a21caa87990` (deploy MCP hiccuped once, retried OK);
+  greatstone-home.netlify.app/puck-proof/ 200; live bundle has "Four values" / "b-value-card" / "b-hero-meta".
+  BOTH mis-seeded pages (method + about) are now fixed.
+
 **[08:24 BST] Parity #1 — re-seed the METHOD page (was showing climb content) — BUILT, VERIFIED, DEPLOYED.**
 - The method page was mis-seeded with climb.html content ("The Climb / Pebble. Plateau. Peak." on the blue
   summit terrain). Live method.html = "The Digital Transformation Playbook / We leave no stone unturned" on the
