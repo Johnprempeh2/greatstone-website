@@ -537,7 +537,21 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Files: `src/blocks/Storefront.jsx`.
 - Verify: build PASS (149 modules). Preview: the Products page carries a valid `ld+json` ItemList,
   5 Products, e.g. Bedrock price "12000" / InStock; parses cleanly. Zero console errors. PASS.
-- Commit: `pending below`. Deploy: deferred (Netlify 500).
+- Commit: `ce32b56`. Deploy: deferred (Netlify 500).
+
+**[02:20 BST] Item R2-#13 — Team-panel guards (last-admin / self / duplicate) — BUILT, VERIFIED, COMMITTED.**
+- The Team panel never received the current user, so an admin could silently remove or demote
+  themselves and orphan the org of all admins; the invite form took any email with no dedupe.
+- Added: pass the current user to TeamPanel; badge "You" on your row and disable self-removal; block
+  removing yourself, removing the last active administrator, and demoting the last active admin out
+  of the admin role; reject a duplicate (case-insensitive) invite email. Mirrors a real `org_user`
+  unique constraint + last-admin rule.
+- Files: `src/App.jsx`, `src/cms/TeamPanel.jsx`, `src/studio.css`.
+- Verify: build PASS (149 modules). Preview (as admin): own row shows "You" + self-remove disabled;
+  inviting editor@greatstone again → "That email is already on the team."; demoting the sole admin →
+  "There must be at least one administrator…" (role stayed admin). No test data created. Zero console
+  errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
 
 **[02:04 BST] Item R2-#7 — Product imagery (model + panel + storefront + basket + alt preflight) — BUILT, VERIFIED, COMMITTED.**
 - The storefront rendered zero imagery though Figure/Team/FeaturedArticle already wire MediaField.

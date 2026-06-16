@@ -7,7 +7,7 @@ import { ROLES } from './auth.js';
 // multi-tenant auth + org scoping + invitation delivery are the Laravel backend (HANDOVER → Team).
 const ROLE_OPTS = Object.keys(ROLES).map((id) => ({ id, label: ROLES[id].label }));
 
-function MemberRow({ member, onUpdate, onRemove }) {
+function MemberRow({ member, isYou, onUpdate, onRemove }) {
   const [m, setM] = useState(member);
   const [open, setOpen] = useState(false);
   useEffect(() => { setM(member); }, [member.id]);
@@ -18,11 +18,11 @@ function MemberRow({ member, onUpdate, onRemove }) {
       <div className="gs-tm-top">
         <button className="gs-tm-id" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           <span className={'gs-prod-caret' + (open ? ' is-open' : '')} aria-hidden="true">▸</span>
-          <span className="gs-tm-name">{m.name || m.email || 'New teammate'}</span>
+          <span className="gs-tm-name">{m.name || m.email || 'New teammate'}{isYou ? <em className="gs-tm-you">You</em> : null}</span>
           <span className={'gs-tm-status gs-tm-' + (m.status || 'active')}>{m.status === 'invited' ? 'Invited' : 'Active'}</span>
         </button>
         <span className="gs-tm-rolepill">{ROLES[m.role] ? ROLES[m.role].label : m.role}</span>
-        <button className="gs-prod-del" onClick={() => onRemove(member.id, m.name || m.email)} aria-label="Remove" title="Remove">×</button>
+        <button className="gs-prod-del" onClick={() => onRemove(member.id, m.name || m.email)} disabled={isYou} aria-label="Remove" title={isYou ? 'You can’t remove yourself' : 'Remove'}>×</button>
       </div>
       {open && (
         <div className="gs-prod-body">
@@ -48,7 +48,8 @@ function MemberRow({ member, onUpdate, onRemove }) {
   );
 }
 
-export default function TeamPanel({ team = [], onInvite, onUpdate, onRemove, onClose }) {
+export default function TeamPanel({ team = [], currentEmail, onInvite, onUpdate, onRemove, onClose }) {
+  const isMe = (m) => currentEmail && (m.email || '').toLowerCase() === String(currentEmail).toLowerCase();
   const [inv, setInv] = useState({ name: '', email: '', role: 'editor' });
   const set = (k, v) => setInv((f) => ({ ...f, [k]: v }));
   const send = (e) => {
@@ -85,11 +86,11 @@ export default function TeamPanel({ team = [], onInvite, onUpdate, onRemove, onC
 
         {invited.length > 0 && <div className="gs-tm-grouplabel">Pending invitations</div>}
         <ul className="gs-tms">
-          {invited.map((m) => <MemberRow key={m.id} member={m} onUpdate={onUpdate} onRemove={onRemove} />)}
+          {invited.map((m) => <MemberRow key={m.id} member={m} isYou={isMe(m)} onUpdate={onUpdate} onRemove={onRemove} />)}
         </ul>
         <div className="gs-tm-grouplabel">Members</div>
         <ul className="gs-tms">
-          {active.map((m) => <MemberRow key={m.id} member={m} onUpdate={onUpdate} onRemove={onRemove} />)}
+          {active.map((m) => <MemberRow key={m.id} member={m} isYou={isMe(m)} onUpdate={onUpdate} onRemove={onRemove} />)}
           {active.length === 0 && <li className="gs-empty">No active members yet.</li>}
         </ul>
       </div>

@@ -307,9 +307,24 @@ export default function App() {
   }
   function editCategory(id, patch) { setState((s) => ({ ...s, categories: (s.categories || []).map((c) => (c.id === id ? { ...c, ...patch, id } : c)) })); }
   // team & roles (admin only). Prototype: records membership/role/invitation; no real account or email.
-  function inviteTeammate(member) { setState((s) => inviteTeamMember(s, member)); flash('Invitation recorded (prototype — no email sent).'); }
-  function editTeammate(id, patch) { setState((s) => updateTeamMember(s, id, patch)); }
+  // Guards mirror what a real org_user unique constraint + last-admin rule enforce server-side.
+  const activeAdmins = (team) => (team || []).filter((m) => m.role === 'admin' && m.status !== 'invited');
+  function inviteTeammate(member) {
+    const email = (member.email || '').trim().toLowerCase();
+    if (email && (state.team || []).some((m) => (m.email || '').trim().toLowerCase() === email)) return flash('That email is already on the team.');
+    setState((s) => inviteTeamMember(s, member)); flash('Invitation recorded (prototype — no email sent).');
+  }
+  function editTeammate(id, patch) {
+    if (patch.role && patch.role !== 'admin') {
+      const m = (state.team || []).find((x) => x.id === id);
+      if (m && m.role === 'admin' && m.status !== 'invited' && activeAdmins(state.team).length <= 1) return flash('There must be at least one administrator — promote someone else first.');
+    }
+    setState((s) => updateTeamMember(s, id, patch));
+  }
   async function removeTeammate(id, name) {
+    const m = (state.team || []).find((x) => x.id === id);
+    if (m && m.email && user && m.email.toLowerCase() === (user.email || '').toLowerCase()) return flash('You can’t remove yourself from the team.');
+    if (m && m.role === 'admin' && m.status !== 'invited' && activeAdmins(state.team).length <= 1) return flash('You can’t remove the last administrator.');
     const ok = await ask({ kind: 'confirm', title: 'Remove from team', message: 'Remove “' + (name || 'this teammate') + '” from the team?', confirmLabel: 'Remove', danger: true });
     if (!ok) return;
     setState((s) => removeTeamMember(s, id)); flash('Removed from team.');
@@ -447,7 +462,7 @@ export default function App() {
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             products: <ProductsPanel products={state.products} categories={state.categories} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
-            ...(canManageUsers ? { team: <TeamPanel team={state.team} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onClose={() => setPanel(null)} embedded /> } : {}),
+            ...(canManageUsers ? { team: <TeamPanel team={state.team} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
