@@ -39,10 +39,12 @@ export function Timeline({ index, eyebrow, headline, highlight, body, items = []
   return (
     <section ref={headRef} className="b-timeline">
       <div className="wrap">
-        <div className="b-chapter-eyebrow" data-reveal>
-          {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
-        </div>
+        {(index || eyebrow) ? (
+          <div className="b-chapter-eyebrow" data-reveal>
+            {index ? <span className="b-chapter-num">{index}</span> : null}
+            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          </div>
+        ) : null}
         <h2 className="b-timeline-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-timeline-body" data-reveal>{body}</p> : null}
         <div className="timeline" ref={tlRef}>

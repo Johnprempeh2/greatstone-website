@@ -7,10 +7,12 @@ export function CaseStudy({ index, eyebrow, headline, highlight, body, items = [
   return (
     <section ref={ref} className="b-cases">
       <div className="wrap">
-        <div className="b-chapter-eyebrow" data-reveal>
-          {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
-        </div>
+        {(index || eyebrow) ? (
+          <div className="b-chapter-eyebrow" data-reveal>
+            {index ? <span className="b-chapter-num">{index}</span> : null}
+            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          </div>
+        ) : null}
         <h2 className="b-cases-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-cases-body" data-reveal>{body}</p> : null}
         <div className="b-cases-grid">

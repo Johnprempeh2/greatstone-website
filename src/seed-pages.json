@@ -175,8 +175,9 @@
           "body": "Every number below came from a real engagement, anonymised but earned. They are the floor, not the ceiling. The only result that counts is the one we build inside your business. We don't advise from the sidelines: we become your foundation, and we leave no stone unturned.",
           "align": "left",
           "size": "compact",
-          "ctaLabel": "Book a Deep Dive",
-          "ctaHref": "#book"
+          "ctaLabel": "",
+          "ctaHref": "#book",
+          "pillEyebrow": true
         }
       },
       {
@@ -220,8 +221,8 @@
       {
         "type": "CaseStudy",
         "props": {
-          "index": "02",
-          "eyebrow": "Selected Engagements",
+          "index": "",
+          "eyebrow": "Selected engagements",
           "headline": "The drain we found.",
           "highlight": "The foundation we left.",
           "body": "Names withheld, outcomes intact. Three businesses, three quiet leaks of time, closed.",
@@ -256,8 +257,8 @@
       {
         "type": "RoiBar",
         "props": {
-          "index": "03",
-          "eyebrow": "Return on Investment",
+          "index": "",
+          "eyebrow": "",
           "headline": "Paid back before",
           "highlight": "the quarter’s out.",
           "body": "On a typical engagement, the investment is recovered in the first few months. Everything after that line is time and money handed back, every week.",
@@ -315,7 +316,7 @@
           "body": "We have spent two decades learning where businesses quietly lose their hours, and how to win them back. We do not hand you a deck and leave. We become the foundation you build the next twenty years on.",
           "align": "left",
           "size": "standard",
-          "ctaLabel": "Book a Deep Dive",
+          "ctaLabel": "",
           "ctaHref": "#book",
           "meta": [
             {
@@ -336,10 +337,10 @@
       {
         "type": "Timeline",
         "props": {
-          "index": "02",
+          "index": "",
           "eyebrow": "The Long Road",
-          "headline": "How the method",
-          "highlight": "took shape.",
+          "headline": "From a single fix to a foundation.",
+          "highlight": "",
           "body": "Twenty years, told as a handful of milestones. Real direction; dates we will firm up with you.",
           "items": [
             {

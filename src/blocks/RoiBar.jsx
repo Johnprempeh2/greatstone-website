@@ -15,10 +15,12 @@ export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct =
   return (
     <section ref={ref} className="b-roi">
       <div className="wrap">
-        <div className="b-chapter-eyebrow" data-reveal>
-          {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
-        </div>
+        {(index || eyebrow) ? (
+          <div className="b-chapter-eyebrow" data-reveal>
+            {index ? <span className="b-chapter-num">{index}</span> : null}
+            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          </div>
+        ) : null}
         <div className="roi" ref={roiRef} style={{ '--roi-w': `${paybackPct}%` }}>
           <div className="roi-track-wrap" data-reveal>
             <div className="roi-track" role="img" aria-label={`Engagement reaches payback at roughly ${paybackNum}; the rest of the year is return.`}>

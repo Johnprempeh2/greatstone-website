@@ -9,7 +9,7 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [] }) {
+export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false }) {
   const ref = useReveal();
   // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
   // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
@@ -17,7 +17,7 @@ export function Hero({ kicker, headline, highlight, body, prompt, align = 'left'
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}`}>
       <div className="wrap b-hero-inner">
-        {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
+        {kicker ? <span className={pillEyebrow ? 'pill' : 'kicker'} data-reveal>{kicker}</span> : null}
         <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
           {stacked
             ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
@@ -90,6 +90,9 @@ export const puck = {
     align: { type: 'radio', label: 'Alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},
+    pillEyebrow: { type: 'radio', label: 'Eyebrow style', options: [
+      { label: 'Kicker (label)', value: false }, { label: 'Pill (bordered)', value: true },
+    ]},
     size: { type: 'radio', label: 'Height', options: [
       { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' }, { label: 'Compact', value: 'compact' },
     ]},
@@ -119,7 +122,7 @@ export const puck = {
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
-    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [],
+    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false,
   },
   render: (props) => <Hero {...props} />,
 };
