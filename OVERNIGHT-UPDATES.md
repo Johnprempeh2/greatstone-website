@@ -38,6 +38,18 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:48 BST] Re-audit R10 — home StatStrip units/labels — BUILT, VERIFIED, DEPLOYED.**
+- Home §05 stats drifted from the live: fixed stat#1 suffix '+'→'+ hrs' and label 'Hours recovered weekly, one
+  engagement'→'Capacity recovered weekly · one engagement'; stat#3 suffix ''→'yrs' and label 'Years of leadership
+  heritage'→'Leadership heritage' (stats #2 £27k + #4 Continents already matched live). Decision logged: the live
+  §05 is a 2×2 glass stat-grid inside a chapter; the studio keeps the aurora StatStrip row as an INTENTIONAL
+  restyle (the re-audit explicitly allows this) rather than adding a one-off glass 'cards' variant.
+- Files: `src/store.js` (home StatStrip seed).
+- Verify: build PASS (`index-BldLtYd8`, 373.77 kB). Fresh-seed preview: home StatStrip count-up → 21 + hrs / £27 k /
+  20 yrs / 2 with labels Capacity recovered weekly · one engagement / Capacity returned annually / Leadership
+  heritage / Continents, one team; zero runtime errors.
+- Commit: `77ff723`. **Deploy LIVE** `6a31460d4e52d900c7939452`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[13:40 BST] Re-audit R11 — industries hero compact + drop cursor prompt — BUILT, VERIFIED, DEPLOYED.**
 - The industries hero used size 'full' (100vh), pushing the IndustryPicker fully below the fold, and carried a
   "Choose your sector" cursor cue the live `.ind-hero` doesn't have. Added a `compact` Hero size (min-height:auto,
