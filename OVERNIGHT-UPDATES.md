@@ -38,6 +38,23 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[11:09 BST] Parity #10 — NewsletterBand block (insights "Foundation Brief" signup) — BUILT, VERIFIED, DEPLOYED. (INSIGHTS PAGE COMPLETE)**
+- insights.html closes on a contained `.signup` glass card (lime radial glow, blur, email pill + Subscribe); the
+  studio closed on a generic Invite. New NewsletterBand block — faithful port of `.signup`: glass card (radial lime
+  glow + `--gs-glass` + blur), kicker "The Foundation Brief", headline "Field notes, in your inbox. No noise."
+  (accented), lead, an email pill input + lime Subscribe, and a legal note. Honest prototype: submit transmits
+  nothing, validates a non-empty email then swaps to an inline `role=status` confirmation ("You’re on the list.
+  (Prototype: nothing was sent.)"); the legal note says it isn't wired up. Namespaced `.b-news-*`; reuses
+  `.btn--primary`/`.kicker`/`.accent`/`.wrap`.
+- Registered under Page; re-seeded insights closing Invite → **NewsletterBand**. **The insights page is now fully
+  complete**: Hero → FeaturedArticle → InsightsGrid → NewsletterBand (all faithful to live).
+- Files: `src/blocks/NewsletterBand.jsx` (new), `src/puck.config.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-_FR18HTW`, 354.71 kB / +3 kB). Fresh-seed preview: insights closes on the glass card
+  (kicker/accented headline/lead/email pill/Subscribe/legal all correct); submitting test@example.com swaps to the
+  confirmation, form removed, nothing sent; zero console errors; screenshot matches the live signup band.
+- Commit: `642a39c`. **Deploy LIVE** `6a3120cbf4e0b8ae3ca9de38`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Newsletter band" / "b-news-card" / "Foundation Brief".
+
 **[10:59 BST] Parity #9 — InsightsGrid block (insights filterable post grid) + insights tide bg — BUILT, VERIFIED, DEPLOYED.**
 - insights.html's article wall is a row of category chips that crossfade a grid of post cards by data-cat;
   the studio stood in a flat FeatureGrid (no filter, no media). New InsightsGrid block — faithful port of
