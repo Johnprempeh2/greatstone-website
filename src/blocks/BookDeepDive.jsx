@@ -5,10 +5,18 @@ import { safeMailto } from '../lib/safe-url.js';
 
 const SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
+// small inline icon set for the "Why a deep dive" assure rows (lime stroke, set in CSS)
+const ico = (children) => <svg viewBox="0 0 24 24">{children}</svg>;
+const ICONS = {
+  check: ico(<><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></>),
+  clock: ico(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
+  scan: ico(<><path d="M4 7V5a2 2 0 0 1 2-2h2" /><path d="M16 3h2a2 2 0 0 1 2 2v2" /><path d="M20 17v2a2 2 0 0 1-2 2h-2" /><path d="M8 21H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></>),
+};
+
 // The "Book a Deep Dive" page: the booking form beside a short framing aside. PROTOTYPE — the
 // form never transmits anything; submit shows a confirmation and points to email. The real
 // build POSTs to Laravel (validated + stored server-side); this is the page design + UX only.
-export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideHeading, asidePoints = [], email = 'dx@greatstonesoftware.co.uk' }) {
+export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], email = 'dx@greatstonesoftware.co.uk' }) {
   const ref = useReveal([asidePoints.length]);
   const [sent, setSent] = useState(false);
   return (
@@ -49,10 +57,20 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
           </div>
 
           <aside className="book-aside">
+            {asideKicker ? <span className="kicker">{asideKicker}</span> : null}
             <h3 className="h3">{asideHeading}</h3>
-            <ul className="b-book-points">
-              {asidePoints.map((p, i) => <li key={i}><b>{p.title}</b>{p.text ? <> {p.text}</> : null}</li>)}
-            </ul>
+            {asideBody ? <p className="b-book-aside-body">{asideBody}</p> : null}
+            <div className="b-book-assure-list">
+              {asidePoints.map((p, i) => (
+                <div className="b-book-assure" key={i}>
+                  <span className="b-book-ai" aria-hidden="true">{ICONS[p.icon] || ICONS.check}</span>
+                  <div>
+                    <div className="b-book-at">{p.title}</div>
+                    {p.text ? <div className="b-book-ad">{p.text}</div> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
             <a className="b-book-mail" href={safeMailto(email)}>{email}</a>
           </aside>
         </div>
@@ -85,11 +103,16 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .book-sent{text-align:center;padding:18px 0}
 .book-sent h3{font-size:1.4rem;font-weight:800}
 .book-sent p{margin:12px auto 22px;color:var(--gs-muted);max-width:42ch;line-height:1.6}
-.book-aside .h3{margin-bottom:1rem}
-.b-book-points{list-style:none;display:grid;gap:14px}
-.b-book-points li{position:relative;padding-left:22px;color:var(--gs-muted);font-size:.96rem;line-height:1.6}
-.b-book-points li::before{content:"";position:absolute;left:0;top:.6em;width:9px;height:9px;border-radius:2px;background:var(--gs-accent)}
-.b-book-points li b{color:var(--gs-text);font-weight:700}
+.book-aside .h3{margin:.5rem 0 .6rem}
+.b-book-aside-body{margin-bottom:1.4rem;color:var(--gs-muted);font-size:.96rem;line-height:1.6}
+/* iconed "Why a deep dive" assure rows (faithful to the live .assure: 34px lime icon tile + title + desc) */
+.b-book-assure{display:flex;gap:.9rem;align-items:flex-start;padding:1rem 0;border-bottom:1px solid var(--gs-border-soft)}
+.b-book-assure:last-of-type{border-bottom:0}
+.b-book-ai{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:var(--gs-accent-soft);border:1px solid var(--gs-border)}
+.b-book-ai svg{width:17px;height:17px;stroke:var(--gs-accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.b-book-at{font-weight:700;font-size:.96rem}
+.b-book-ad{margin-top:2px;font-size:.86rem;color:var(--gs-text-muted);line-height:1.5}
 .b-book-mail{display:inline-block;margin-top:22px;color:var(--gs-accent);font-weight:700;border-bottom:1px solid var(--gs-border);padding-bottom:3px}
 `;
 
@@ -103,11 +126,17 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     submitLabel: { type: 'text', label: 'Submit button' },
+    asideKicker: { type: 'text', label: 'Aside kicker', contentEditable: true },
     asideHeading: { type: 'text', label: 'Aside heading', contentEditable: true },
+    asideBody: { type: 'textarea', label: 'Aside intro', contentEditable: true },
     asidePoints: {
-      type: 'array', label: 'What you get',
-      arrayFields: { title: { type: 'text', label: 'Lead' }, text: { type: 'text', label: 'Note' } },
-      defaultItemProps: { title: 'A point', text: 'detail.' },
+      type: 'array', label: 'Assurance rows',
+      arrayFields: {
+        icon: { type: 'select', label: 'Icon', options: [{ label: 'Check', value: 'check' }, { label: 'Clock', value: 'clock' }, { label: 'Scan', value: 'scan' }] },
+        title: { type: 'text', label: 'Title' },
+        text: { type: 'text', label: 'Description' },
+      },
+      defaultItemProps: { icon: 'check', title: 'A point', text: 'detail.' },
       getItemSummary: (item) => item.title || 'Point',
     },
     email: { type: 'text', label: 'Contact email' },
@@ -117,11 +146,13 @@ export const puck = {
     headline: 'Book a', highlight: 'Deep Dive.',
     body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
     submitLabel: 'Book a Deep Dive',
-    asideHeading: 'What you walk away with',
+    asideKicker: 'Why a deep dive',
+    asideHeading: 'We don’t advise. We become your foundation.',
+    asideBody: 'A deep dive isn’t a sales call dressed up. It’s the first hour of the work: us assessing how you actually run, against the eight pillars of our method, so the time we hand back is real and measured.',
     asidePoints: [
-      PT('A scored read', 'across all eight pillars of the method.'),
-      PT('The Periscope Report', 'where you stand and the fastest gains.'),
-      PT('A phased roadmap', 'the route up, embedded in how you work.'),
+      { icon: 'check', title: 'Eight pillars, one honest score', text: 'We assess your whole operation, not the symptom you walked in with.' },
+      { icon: 'clock', title: 'Hours quantified, not promised', text: 'You leave knowing exactly where the time goes, and where it comes back.' },
+      { icon: 'scan', title: 'No stone unturned', text: 'We look everywhere the hours hide, even the places you’ve stopped checking.' },
     ],
     email: 'dx@greatstonesoftware.co.uk',
   },

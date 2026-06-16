@@ -266,12 +266,7 @@ export function seedState() {
         blk('BookDeepDive', {
           eyebrow: 'Tell us where the week goes', headline: 'Book a', highlight: 'Deep Dive.',
           body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
-          submitLabel: 'Book a Deep Dive', asideHeading: 'What you walk away with',
-          asidePoints: [
-            { title: 'A scored read', text: 'across all eight pillars of the method.' },
-            { title: 'The Periscope Report', text: 'where you stand and the fastest gains.' },
-            { title: 'A phased roadmap', text: 'the route up, embedded in how you already work.' },
-          ],
+          submitLabel: 'Book a Deep Dive',
           email: 'dx@greatstonesoftware.co.uk',
         }),
         blk('Steps', {
