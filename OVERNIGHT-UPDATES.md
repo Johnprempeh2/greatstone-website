@@ -38,6 +38,34 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[17:00 BST] RE-AUDIT #2 (87%) + PARITY-FIX BATCH 2 (7 fixes, dragging pages) — BUILT, VERIFIED, DEPLOYED.**
+- Re-audit held ~87% (noisy LLM estimate); the three pages dragging the average were home/proof/contact (all 82).
+  Ran a third verification Workflow (7 agents) to confirm each finding vs live + return exact patches; all 7 came
+  back confirmed + faithful. Applied them:
+  - **home all-solid headlines** (HIGH): live `.ch-title`s are solid at rest (the lime is only the transient
+    scramble animation). Folded highlight→headline + highlight:'' on home §01-06 Chapter/StatStrip/Terrace; Hero
+    accent kept. Verified 0 accent spans on section headlines, Hero accent intact.
+  - **home §05 clients de-dupe** (MED): cleared the StatStrip clients line (names already in the body sentence; live
+    has no separate row). Verified gone.
+  - **proof backdrop** (HIGH): page background stone-summit → tide (live proof uses the tide-only canvas; also
+    lighter perf). Verified bg='tide'.
+  - **proof eyebrow** (MED): CaseStudy renders a lime `.kicker` when eyebrow-but-no-index (was faint grey + tick).
+    Verified "Selected engagements" now rgb(200,255,0).
+  - **contact Steps** (HIGH): align:'center' + numberStyle:'text' — centred header + small lime text numbers like
+    live (phase + timing rows intact). Verified.
+  - **services .bignum** (MED): plain-variant number + suffix → clamp(2.6rem,6vw,5rem) (was ~32% small). Verified 77px.
+  - **climb scroll-cue** (HIGH): gated Hero `cueStyle:'mouse'` renders the live 18×30 capsule + dropping lime dot
+    (bHeroCueDrop 1.9s, reduced-motion guarded); climb opts in, other heroes keep the text prompt. Verified capsule
+    + animation, old prompt replaced, GPU-only (no perf hit).
+- Files: store.js, seed-pages.json, CaseStudy.jsx, StatStrip.jsx, Hero.jsx.
+- Verify: build PASS (`index-BbUwq3Qd.js`, 387,306 B, +1.35 kB — negligible). Fresh-seed preview on
+  home/proof/contact/services/climb: every fix confirmed, ZERO runtime errors on every page; climb hero screenshot
+  confirms the cue. DEFERRED (not over-corrected): the squared-vs-pill CTA system is a deliberate studio choice the
+  audit itself flagged as possibly-intentional — left for John to decide, not changed unilaterally.
+- Commits `8221422`, `9ffee70`, `1e3d13b`. **Deploy LIVE** `6a31730b975ecd600302586c`;
+  greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+- NEXT: final re-audit re-measure, then the closing summary.
+
 **[16:40 BST] FINAL RE-AUDIT (88%) + PARITY-FIX BATCH (6 fixes) — BUILT, VERIFIED, DEPLOYED.**
 - Ran the final parity re-audit Workflow (9 page agents + synthesis): overall 88% (climb 94, home/method/services/
   industries/proof/insights 88, about 86, contact 82). It surfaced fresh high-severity drift — incl. a real
