@@ -38,6 +38,17 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[15:56 BST] RA2-12 — NewsletterBand + ServiceCards section headings match live .h2 — BUILT, VERIFIED, DEPLOYED.**
+- Live insights `.signup .h2` and services section `.h2` both use the global `.h2` = clamp(2rem,4.5vw,3.6rem). The
+  studio's `.b-news-h2` (clamp 1.6→2.5rem) and `.b-svc-h2` (clamp 1.7→2.7rem) were ~25-31% undersized, so those
+  section headings read smaller than the live design.
+- NewsletterBand.jsx: `.b-news-h2` → clamp(2rem,4.5vw,3.6rem) (line-height 1.08); `.b-news-lead` max-width 54ch → 60ch
+  (matches live `.lead`). ServiceCards.jsx: `.b-svc-h2` → clamp(2rem,4.5vw,3.6rem).
+- Verify: build PASS (`index-YrrL___4.js`, 382,231 B, −2 B — CSS-only, no perf change). Preview at 1280px:
+  insights `.b-news-h2` = 58px (= live .h2 expected 58px), lead widened; services `.b-svc-h2` = 58px (= expected),
+  heading "Three moves. One foundation."; screenshot confirms the larger section heading; zero runtime errors.
+- Commit `74f55cb`. **Deploy LIVE** `6a3163fddddb940bb7fce6c8`; greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+
 **[15:46 BST] RA2-10 — contact Steps faithful to live (titles + phase labels + timing lines) — BUILT, VERIFIED, DEPLOYED.**
 - Live contact "What happens next" steps carry, per card, a phase descriptor (`.num` "01 — Within 24 hours"), a
   title, body, and a faint uppercase `.timing` line. The studio's contact Steps had stale generic copy
