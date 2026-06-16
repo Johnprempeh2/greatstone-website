@@ -549,7 +549,12 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Files: `src/App.jsx`, `DATA-MODEL.md` (new), `HANDOVER.md`.
 - Verify: build PASS (149 modules). Preview (as admin): the "Export site JSON (for the dev team)"
   command appears in the palette under Admin; the store serialises cleanly. Zero console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `6f2a8a6`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:44 BST] Turn 19 done — yielding.** Round 2 progress: #1–#10, #13, #17 done (12 of 18). Remaining:
+#11 catalogue draft/publish gate (v5/high), #12 pause 3D render loop (v5/med), #14 orgId tenant (v4/med),
+#15 Studio IA (v4/med), #16 product detail page (v5/high), #18 Studio Home tab (v4/med). Next: #12 the
+3D perf fix + #14 orgId (contained), then the higher-effort #11/#16. Deploys still 500 server-side.
 
 **[02:30 BST] Item R2-#10 — Catalogue & team audit trail — BUILT, VERIFIED, COMMITTED.**
 - Product/category/team CRUD wrote straight to the store with no actor or timestamp, so an admin
