@@ -196,29 +196,29 @@ export function seedState() {
           prompt: 'Move your cursor. The stone responds', align: 'center', size: 'full', ctaLabel: '', ctaHref: '#',
         }),
         blk('Chapter', {
-          index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner.', highlight: 'Not a software house.',
+          index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner. Not a software house.', highlight: '',
           body: 'For two decades our team has modernised how organisations actually work (their **tools**, their **processes**, their **people**), and now the intelligent layer above them all.',
           coda: 'Digital transformation first. AI as the accelerator.', align: 'left',
         }),
         blk('Chapter', {
-          index: '02', eyebrow: 'Embedded, Not Advisory', headline: 'We sit inside', highlight: 'the business.',
+          index: '02', eyebrow: 'Embedded, Not Advisory', headline: 'We sit inside the business.', highlight: '',
           body: 'Shoulder-to-shoulder with the people who run it. We learn your rules, then build the system to match the business, **never the other way around**.',
           coda: 'No reports that gather dust. No tools for the sake of innovation.', align: 'left',
         }),
         blk('Chapter', {
-          index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone', highlight: 'unturned.',
+          index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone unturned.', highlight: '',
           body: 'Every engagement begins with the **Digital Transformation Playbook**: a rigorous diagnostic across **eight pillars**, producing the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
           coda: '', align: 'center', ctaLabel: 'Explore the eight pillars', ctaHref: '#go/method', ctaVariant: 'primary',
         }),
         blk('Chapter', {
-          index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence,', highlight: 'properly integrated.',
+          index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence, properly integrated.', highlight: '',
           body: 'We build **agentic systems** on the stack you already own. Intelligence that reasons across your own data, with human oversight built in, delivered in sprints that earn their keep early.',
           coda: 'Privacy-first by architecture. **Not wrappers. Not gimmicks.**', align: 'left',
         }),
         blk('StatStrip', {
-          index: '05', eyebrow: 'Proof, Not Promises', headline: 'Measured in', highlight: 'hours back.', variant: 'cards', columns: 2,
+          index: '05', eyebrow: 'Proof, Not Promises', headline: 'Measured in hours back.', highlight: '', variant: 'cards', columns: 2,
           body: 'Our leadership has delivered transformation for **Deloitte, Lloyds, Bank of Scotland and the NHS**. Today we’re embedded with clients across the UK and Africa.',
-          clients: 'Deloitte · Lloyds · Bank of Scotland · NHS',
+          clients: '',
           stats: [
             { value: 21, prefix: '', suffix: '+ hrs', dec: 0, label: 'Capacity recovered weekly · one engagement' },
             { value: 27, prefix: '£', suffix: 'k', dec: 0, label: 'Capacity returned annually' },
@@ -227,7 +227,7 @@ export function seedState() {
           ],
         }),
         blk('Terrace', {
-          index: '06', eyebrow: 'How a Deep Dive Works', headline: 'Three moves to your', highlight: 'foundation.',
+          index: '06', eyebrow: 'How a Deep Dive Works', headline: 'Three moves to your foundation.', highlight: '',
           body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',
           slabs: [
             { n: '01', title: 'Diagnostic', body: 'We map where the week goes, across all eight pillars.' },
@@ -270,7 +270,7 @@ export function seedState() {
           email: 'dx@greatstonesoftware.co.uk',
         }),
         blk('Steps', {
-          index: '', eyebrow: 'What happens next', headline: 'Three steps.', highlight: 'No theatre.',
+          index: '', eyebrow: 'What happens next', headline: 'Three steps.', highlight: 'No theatre.', align: 'center', numberStyle: 'text',
           body: 'From the moment you book to the moment you see the hours, the path is short and plainly worth your time.',
           items: [
             { phase: 'Within 24 hours', title: 'We read your week', text: 'We take what you’ve told us and map it against the eight pillars before we ever speak, so the call starts where most engagements end.', timing: 'A short reply, a held slot' },
