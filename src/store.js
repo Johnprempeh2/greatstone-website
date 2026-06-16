@@ -283,8 +283,9 @@ export function seedState() {
           body: 'No forms, no gatekeeping. Write a line about where your week goes and we’ll write back with where it could go instead.',
           email: 'dx@greatstonesoftware.co.uk',
           cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
-          cardHeading: 'See the hours, in your own numbers',
-          cardBody: 'A short read of what a Deep Dive surfaces, before you spend a minute on the call.',
+          cardHeading: 'Run the time-savings calculator',
+          cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The deep dive picks up exactly where it leaves off.',
+          cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
         }),
       ], { title: 'Book a Deep Dive — Greatstone International', description: 'You still can’t buy time. Let’s save yours. Book a Deep Dive: the first step costs nothing.', ogImage: '' }),
   };

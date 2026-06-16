@@ -1,9 +1,11 @@
 import { useReveal } from './reveal.js';
-import { safeMailto } from '../lib/safe-url.js';
+import { safeMailto, safeHref } from '../lib/safe-url.js';
+import { Arrow } from './icons.jsx';
 
 // The direct-contact close: a big mailto on one side, a "before you book" prompt card on the
-// other. No gatekeeping.
-export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftware.co.uk', cardKicker, cardStat, cardStatUnit, cardHeading, cardBody }) {
+// other. No gatekeeping. The card echoes the live .calc-card (radial glow + a ghost link out
+// to the time-savings calculator).
+export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftware.co.uk', cardKicker, cardStat, cardStatUnit, cardHeading, cardBody, cardCtaLabel, cardCtaHref = '#' }) {
   const ref = useReveal();
   return (
     <section ref={ref} className="b-contactband">
@@ -20,6 +22,7 @@ export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftw
             {cardStat ? <div className="calc-time"><b>{cardStat}</b><span>{cardStatUnit}</span></div> : null}
             <h3 className="h3 b-cb-cardhead">{cardHeading}</h3>
             {cardBody ? <p className="muted">{cardBody}</p> : null}
+            {cardCtaLabel ? <a className="b-cta ghost b-cb-cardcta" href={safeHref(cardCtaHref)}>{cardCtaLabel}<Arrow /></a> : null}
           </div>
         </div>
       </div>
@@ -35,7 +38,11 @@ export const css = `
 .b-cb-body{margin-bottom:1.4rem;line-height:1.7}
 .big-mail{font-size:clamp(1.05rem,2vw,1.5rem);font-weight:800;color:var(--gs-accent);letter-spacing:-.01em;border-bottom:1px solid var(--gs-border);padding-bottom:4px;transition:border-color .25s var(--gs-ease)}
 .big-mail:hover{border-color:var(--gs-accent)}
-.calc-card{padding:clamp(24px,3vw,34px)}
+.calc-card{padding:clamp(24px,3vw,34px);position:relative;overflow:hidden}
+.calc-card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(420px 200px at 110% -20%,var(--gs-accent-dim),transparent 60%)}
+.calc-card>*{position:relative;z-index:1}
+.b-cb-cardcta{margin-top:1.3rem;display:inline-flex}
 .calc-time{display:flex;align-items:baseline;gap:.4em;margin:.7rem 0 .3rem}
 .calc-time b{font-weight:900;font-size:clamp(2.2rem,4vw,3rem);color:var(--gs-accent);line-height:1;letter-spacing:-.03em}
 .calc-time span{font-size:.9rem;font-weight:600;color:var(--gs-muted)}
@@ -54,6 +61,8 @@ export const puck = {
     cardStatUnit: { type: 'text', label: 'Card figure unit' },
     cardHeading: { type: 'text', label: 'Card heading', contentEditable: true },
     cardBody: { type: 'textarea', label: 'Card body', contentEditable: true },
+    cardCtaLabel: { type: 'text', label: 'Card button label (optional)' },
+    cardCtaHref: { type: 'text', label: 'Card button link' },
   },
   defaultProps: {
     kicker: 'Rather just talk?', heading: 'Reach us direct.',
@@ -61,7 +70,8 @@ export const puck = {
     email: 'dx@greatstonesoftware.co.uk',
     cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
     cardHeading: 'Run the time-savings calculator',
-    cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing.',
+    cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The deep dive picks up exactly where it leaves off.',
+    cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
   },
   render: (props) => <ContactBand {...props} />,
 };
