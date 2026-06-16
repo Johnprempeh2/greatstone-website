@@ -29,6 +29,8 @@
   --gs-ease:          cubic-bezier(0.16,1,0.3,1);
   --gs-ease-inout:    cubic-bezier(0.65,0,0.35,1);
   --gs-dur:           300ms;
+  --gs-dur-micro:     150ms;   /* hovers, presses, cursor dot */
+  --gs-dur-standard:  300ms;   /* cursor ring/label, state changes */
   --gs-maxw:          1180px;
   --gs-gutter:        clamp(20px, 5vw, 64px);
 }

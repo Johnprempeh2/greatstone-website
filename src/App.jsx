@@ -35,6 +35,7 @@ import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from '.
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
 import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
 import AcceptInvite from './cms/AcceptInvite.jsx';
+import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
@@ -639,6 +640,7 @@ export default function App() {
     <div className="is-view">
       {overlays}
       <a className="gs-skip" href="#gs-main">Skip to content</a>
+      <SiteChrome />
       <Stage background={bg} />
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
