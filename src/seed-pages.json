@@ -19,7 +19,9 @@
           "align": "left",
           "size": "standard",
           "ctaLabel": "Book a Deep Dive",
-          "ctaHref": "#book"
+          "ctaHref": "#book",
+          "ctaLabel2": "See the Method",
+          "ctaHref2": "#go/method"
         }
       },
       {
@@ -120,7 +122,9 @@
           "body": "A Deep Dive is where it begins: a focused look at where your week goes and what it's costing. No deck, no pitch. Just the first stone, turned over.",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
-          "email": "dx@greatstonesoftware.co.uk"
+          "email": "",
+          "ctaLabel2": "Explore the 8 pillars",
+          "ctaHref2": "#go/method"
         }
       }
     ]
@@ -256,7 +260,9 @@
           "body": "Book a deep dive and we'll show you the hours your industry is quietly losing, and how we buy them back.",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
-          "email": "dx@greatstonesoftware.co.uk"
+          "email": "",
+          "ctaLabel2": "See the method",
+          "ctaHref2": "#go/method"
         }
       }
     ]
@@ -391,7 +397,9 @@
           "body": "Book a Deep Dive and we'll find the hours your business is quietly losing, then show you exactly what reclaiming them is worth.",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
-          "email": "dx@greatstonesoftware.co.uk"
+          "email": "",
+          "ctaLabel2": "See how we work",
+          "ctaHref2": "#go/method"
         }
       }
     ]
@@ -537,7 +545,9 @@
           "body": "A deep dive is two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
-          "email": "dx@greatstonesoftware.co.uk"
+          "email": "",
+          "ctaLabel2": "See the Method",
+          "ctaHref2": "#go/method"
         }
       }
     ]
@@ -727,7 +737,9 @@
           "body": "A deep dive scores you across all eight pillars and hands you the route up: pebble, plateau, or peak. The climb starts with one honest read.",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
-          "email": "dx@greatstonesoftware.co.uk"
+          "email": "",
+          "ctaLabel2": "Explore the Method",
+          "ctaHref2": "#go/method"
         }
       }
     ]

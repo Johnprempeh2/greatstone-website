@@ -4,7 +4,7 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
-export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', email }) {
+export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', email }) {
   const ref = useReveal();
   return (
     <section ref={ref} className="b-invite" id="invite">
@@ -15,6 +15,7 @@ export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref =
         {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
         <div className="b-invite-actions" data-reveal>
           {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+          {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
           {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
         </div>
       </div>
@@ -31,7 +32,7 @@ export const css = `
 .b-invite-inner{position:relative;z-index:1;max-width:820px;margin-inline:auto}
 .b-invite h2{margin-top:14px;font-size:clamp(2.2rem,6vw,4rem);font-weight:900;line-height:1.0;letter-spacing:-.035em;color:#fff}
 .b-invite-body{margin:22px auto 0;max-width:54ch;color:var(--gs-muted);font-size:clamp(1.02rem,1.6vw,1.22rem);line-height:1.7}
-.b-invite-actions{margin-top:clamp(30px,5vw,46px);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:26px}
+.b-invite-actions{margin-top:clamp(30px,5vw,46px);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px}
 .b-invite-email{font-size:.94rem;font-weight:700;color:var(--gs-text);border-bottom:1px solid var(--gs-border);padding-bottom:3px;
   transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease)}
 .b-invite-email:hover{color:var(--gs-accent);border-color:var(--gs-accent)}
@@ -44,15 +45,17 @@ export const puck = {
     headline: { type: 'text', label: 'Headline', contentEditable: true },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
-    ctaLabel: { type: 'text', label: 'Button label' },
-    ctaHref: { type: 'text', label: 'Button link' },
-    email: { type: 'text', label: 'Contact email' },
+    ctaLabel: { type: 'text', label: 'Primary button label' },
+    ctaHref: { type: 'text', label: 'Primary button link' },
+    ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
+    ctaHref2: { type: 'text', label: 'Ghost button link' },
+    email: { type: 'text', label: 'Contact email (optional)' },
   },
   defaultProps: {
     eyebrow: 'Start the Conversation',
     headline: 'The first step', highlight: 'costs nothing.',
     body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-    ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk',
+    ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', email: '',
   },
   render: (props) => <Invite {...props} />,
 };

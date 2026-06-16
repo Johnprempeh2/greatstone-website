@@ -194,17 +194,20 @@ export default function App() {
     const m = document.getElementById('gs-main');
     if (m && typeof m.focus === 'function') m.focus({ preventScroll: true });
   }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
-  // route any "Book a Deep Dive" CTA (href="#book") to the contact page
+  // in-app CTA links: "#book" → contact page; "#go/<slug>" → that page (so cross-page ghost CTAs
+  // navigate within the SPA instead of hitting a dead .html href). preventDefault keeps the hash clean.
   useEffect(() => {
     const onClick = (e) => {
-      const a = e.target.closest && e.target.closest('a[href="#book"]');
+      const a = e.target.closest && e.target.closest('a[href^="#"]');
       if (!a) return;
-      e.preventDefault();
-      navigate(state.pages.contact ? 'contact' : state.order[0]);
+      const href = a.getAttribute('href') || '';
+      if (href === '#book') { e.preventDefault(); navigate(state.pages.contact ? 'contact' : state.order[0]); return; }
+      const m = href.match(/^#go\/([\w-]+)$/);
+      if (m && state.pages[m[1]]) { e.preventDefault(); navigate(m[1]); }
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
-  }, [state.order]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.order, state.pages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const page = state.pages[current] || state.pages[state.order[0]];
   const bg = page.background || state.settings.background || 'stone';

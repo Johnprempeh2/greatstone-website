@@ -10,6 +10,11 @@
 .b-cta{display:inline-flex;align-items:center;gap:.6em;background:var(--gs-accent);color:#0e1611;font-weight:700;font-size:.95rem;
   padding:.9em 1.7em;border-radius:100px;transition:transform var(--gs-dur) var(--gs-ease),box-shadow var(--gs-dur) var(--gs-ease)}
 .b-cta:hover{transform:translateY(-2px);box-shadow:0 12px 44px -12px var(--gs-accent-glow)}
+/* ghost secondary (matches site.css .btn--ghost): bordered, accent-soft fill, body text */
+.b-cta.ghost{background:var(--gs-accent-soft);color:var(--gs-text);border:1px solid var(--gs-border-strong,var(--gs-accent-mid))}
+.b-cta.ghost:hover{box-shadow:none;border-color:var(--gs-accent-mid)}
+/* row that holds a primary + a ghost button side by side, wrapping on narrow screens */
+.b-cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 @keyframes gsDrift{0%{transform:translate3d(-3%,-2%,0) scale(1.02)}100%{transform:translate3d(4%,3%,0) scale(1.08)}}
 
 /* confident, restrained entrance, set once and never re-hidden (JS adds .is-in) */

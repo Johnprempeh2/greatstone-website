@@ -9,7 +9,7 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', meta = [] }) {
+export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [] }) {
   const ref = useReveal();
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}`}>
@@ -27,7 +27,12 @@ export function Hero({ kicker, headline, highlight, body, prompt, align = 'left'
             ))}
           </div>
         ) : null}
-        {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {(ctaLabel || ctaLabel2) ? (
+          <div className="b-cta-row" data-reveal>
+            {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+            {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
+          </div>
+        ) : null}
         {prompt ? <span className="b-hero-prompt" data-reveal>{prompt}</span> : null}
       </div>
     </section>
@@ -48,7 +53,8 @@ export const css = `
 .b-hero .lede{margin-top:24px;color:var(--gs-text-muted);font-size:clamp(15px,1.4vw,18px);line-height:1.8;max-width:560px;
   text-shadow:0 2px 30px rgba(0,0,0,.7)}
 .b-hero.align-center .lede{margin-inline:auto}
-.b-hero .b-cta{margin-top:30px}
+.b-hero .b-cta-row{margin-top:30px}
+.b-hero.align-center .b-cta-row{justify-content:center}
 /* optional stats row (about hero .hero-meta) */
 .b-hero-meta{display:flex;flex-wrap:wrap;gap:clamp(28px,5vw,64px);margin-top:clamp(34px,5vh,56px)}
 .b-hero.align-center .b-hero-meta{justify-content:center}
@@ -76,8 +82,10 @@ export const puck = {
     size: { type: 'radio', label: 'Height', options: [
       { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' },
     ]},
-    ctaLabel: { type: 'text', label: 'Button label (optional)' },
-    ctaHref: { type: 'text', label: 'Button link' },
+    ctaLabel: { type: 'text', label: 'Primary button label (optional)' },
+    ctaHref: { type: 'text', label: 'Primary button link' },
+    ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
+    ctaHref2: { type: 'text', label: 'Ghost button link' },
     meta: {
       type: 'array', label: 'Stats row (optional)',
       arrayFields: { bignum: { type: 'text', label: 'Figure' }, label: { type: 'text', label: 'Label' } },
@@ -91,7 +99,7 @@ export const puck = {
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
-    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', meta: [],
+    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [],
   },
   render: (props) => <Hero {...props} />,
 };
