@@ -18,6 +18,7 @@
           "body": "Most partners hand you a deck and leave. We embed in how you already work, find the hours your business is quietly losing, and build the systems that buy them back. One team, three moves, no stone unturned.",
           "align": "left",
           "size": "compact",
+          "gridBackdrop": true,
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
           "ctaLabel2": "See the Method",
@@ -118,7 +119,9 @@
       {
         "type": "Steps",
         "props": {
-          "index": "03",
+          "index": "",
+          "align": "center",
+          "numberStyle": "text",
           "eyebrow": "Same foundation, your shape",
           "headline": "How we",
           "highlight": "tailor it.",

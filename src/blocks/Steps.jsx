@@ -2,10 +2,10 @@ import { useReveal } from './reveal.js';
 
 // A numbered process: how a Deep Dive works. Each step settles before the next lands (the
 // stagger does the talking). Numbering is derived; marketing edits titles and copy.
-export function Steps({ index, eyebrow, headline, highlight, body, items = [] }) {
+export function Steps({ index, eyebrow, headline, highlight, body, items = [], align = 'left', numberStyle = 'badge' }) {
   const ref = useReveal([items.length]);
   return (
-    <section ref={ref} className="b-steps">
+    <section ref={ref} className="b-steps" data-align={align}>
       <div className="wrap">
         <div className="b-chapter-eyebrow" data-reveal>
           {index ? <span className="b-chapter-num">{index}</span> : null}
@@ -16,7 +16,7 @@ export function Steps({ index, eyebrow, headline, highlight, body, items = [] })
         <ol className="b-steps-grid">
           {items.map((it, i) => (
             <li className="b-step" data-reveal style={{ transitionDelay: `${i * 90}ms` }} key={i}>
-              <span className="b-step-n">{String(i + 1).padStart(2, '0')}</span>
+              <span className={numberStyle === 'text' ? 'b-step-n is-text' : 'b-step-n'}>{String(i + 1).padStart(2, '0')}</span>
               {it.phase ? <span className="b-step-phase">{it.phase}</span> : null}
               <h3>{it.title}</h3>
               <p>{it.text}</p>
@@ -46,6 +46,13 @@ export const css = `
 .b-step-phase + h3{margin-top:6px}
 .b-step p{margin-top:10px;color:var(--gs-muted);font-size:.95rem;line-height:1.6}
 .b-step p.b-step-timing{margin-top:.9rem;font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-faint);line-height:1.4}
+/* centred header (live industries wraps kicker/h2/lead in .center); cards stay left */
+.b-steps[data-align="center"] .b-chapter-eyebrow{justify-content:center}
+.b-steps[data-align="center"] .b-steps-head,
+.b-steps[data-align="center"] .b-steps-body{margin-left:auto;margin-right:auto;text-align:center}
+/* small lime TEXT number (live .card .num: .78rem / .2em / lime) instead of the badge tile */
+.b-step-n.is-text{display:inline-block;width:auto;height:auto;border:0;background:none;border-radius:0;
+  font-size:.78rem;font-weight:700;letter-spacing:.2em;color:var(--gs-accent);font-variant-numeric:tabular-nums}
 `;
 
 const STEP = (title, text) => ({ title, text });
@@ -58,6 +65,12 @@ export const puck = {
     headline: { type: 'text', label: 'Headline', contentEditable: true },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
+    align: { type: 'radio', label: 'Header alignment', options: [
+      { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
+    ]},
+    numberStyle: { type: 'radio', label: 'Step number style', options: [
+      { label: 'Badge tile', value: 'badge' }, { label: 'Small lime text', value: 'text' },
+    ]},
     items: {
       type: 'array', label: 'Steps',
       arrayFields: {
@@ -73,6 +86,7 @@ export const puck = {
   defaultProps: {
     index: '06', eyebrow: 'How a Deep Dive Works',
     headline: 'Three moves to your', highlight: 'foundation.',
+    align: 'left', numberStyle: 'badge',
     body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',
     items: [
       STEP('Diagnostic', 'We map where the week goes, across all eight pillars.'),

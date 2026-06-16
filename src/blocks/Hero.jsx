@@ -9,13 +9,13 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false }) {
+export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false }) {
   const ref = useReveal();
   // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
   // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
   const stacked = Array.isArray(lines) && lines.length > 0;
   return (
-    <section ref={ref} className={`b-hero size-${size} align-${align}`}>
+    <section ref={ref} className={`b-hero size-${size} align-${align}${gridBackdrop ? ' has-grid' : ''}`}>
       <div className="wrap b-hero-inner">
         {kicker ? <span className={pillEyebrow ? 'pill' : 'kicker'} data-reveal>{kicker}</span> : null}
         <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
@@ -76,6 +76,12 @@ export const css = `
   letter-spacing:2.5px;text-transform:uppercase;color:var(--gs-text-faint)}
 .b-hero-prompt::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--gs-accent))}
 .b-hero.align-center .b-hero-prompt{justify-content:center}
+/* opt-in engineered grid backdrop — faithful to the live .svc-hero::before (services only) */
+.b-hero.has-grid::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;opacity:.5;
+  background-image:linear-gradient(var(--gs-border-soft) 1px,transparent 1px),linear-gradient(90deg,var(--gs-border-soft) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(120% 90% at 80% 0%,#000 25%,transparent 70%);
+          mask-image:radial-gradient(120% 90% at 80% 0%,#000 25%,transparent 70%)}
 `;
 
 export const puck = {
@@ -92,6 +98,9 @@ export const puck = {
     ]},
     pillEyebrow: { type: 'radio', label: 'Eyebrow style', options: [
       { label: 'Kicker (label)', value: false }, { label: 'Pill (bordered)', value: true },
+    ]},
+    gridBackdrop: { type: 'radio', label: 'Grid backdrop', options: [
+      { label: 'None', value: false }, { label: 'Engineered grid', value: true },
     ]},
     size: { type: 'radio', label: 'Height', options: [
       { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' }, { label: 'Compact', value: 'compact' },
@@ -122,7 +131,7 @@ export const puck = {
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
-    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false,
+    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false,
   },
   render: (props) => <Hero {...props} />,
 };
