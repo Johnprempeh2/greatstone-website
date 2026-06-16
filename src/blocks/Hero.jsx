@@ -9,7 +9,7 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false }) {
+export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false }) {
   const ref = useReveal();
   // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
   // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
@@ -21,7 +21,7 @@ export function Hero({ kicker, headline, highlight, body, prompt, cueStyle = 'te
         <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
           {stacked
             ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
-            : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</>}
+            : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
         </h1>
         {body ? <p className="lede" data-reveal>{body}</p> : null}
         {Array.isArray(meta) && meta.length ? (
@@ -104,6 +104,7 @@ export const puck = {
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     headline: { type: 'text', label: 'Headline', contentEditable: true },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
+    headlineSuffix: { type: 'text', label: 'Headline suffix (after highlight, optional)' },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     prompt: { type: 'text', label: 'Cursor prompt (optional)', contentEditable: true },
     cueStyle: { type: 'radio', label: 'Cue style', options: [
@@ -148,6 +149,7 @@ export const puck = {
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
+    headlineSuffix: '',
     align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false,
   },
   render: (props) => <Hero {...props} />,
