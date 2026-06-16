@@ -235,13 +235,13 @@ export function seedState() {
             { value: 2, prefix: '', suffix: '', dec: 0, label: 'Continents, one team' },
           ],
         }),
-        blk('Steps', {
+        blk('Terrace', {
           index: '06', eyebrow: 'How a Deep Dive Works', headline: 'Three moves to your', highlight: 'foundation.',
           body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',
-          items: [
-            { title: 'Diagnostic', text: 'We map where the week goes, across all eight pillars.' },
-            { title: 'Periscope Report', text: 'A clear read of where you stand and the fastest gains.' },
-            { title: 'Phased Roadmap', text: 'The build, embedded into how you already work, not bolted on.' },
+          slabs: [
+            { n: '01', title: 'Diagnostic', body: 'We map where the week goes, across all eight pillars.' },
+            { n: '02', title: 'Periscope Report', body: 'A clear read of where you stand and the fastest gains.' },
+            { n: '03', title: 'Phased Roadmap', body: 'The build, embedded into how you already work, not bolted on.' },
           ],
         }),
         blk('Invite', {

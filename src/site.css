@@ -26,6 +26,7 @@
   --gs-text-faint:    #8d938c;   /* lifted to clear WCAG AA 4.5:1 on the dark editor panels (#161816/#1a1c1a) */
   --gs-border:        rgba(200,255,0,0.10);
   --gs-border-soft:   rgba(255,255,255,0.07);
+  --gs-border-strong: rgba(200,255,0,0.18);  /* canonical brand token (was missing; .btn--ghost fell back to accent-mid) */
   --gs-ease:          cubic-bezier(0.16,1,0.3,1);
   --gs-ease-inout:    cubic-bezier(0.65,0,0.35,1);
   --gs-dur:           300ms;
