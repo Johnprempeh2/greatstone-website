@@ -38,6 +38,22 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[15:46 BST] RA2-10 — contact Steps faithful to live (titles + phase labels + timing lines) — BUILT, VERIFIED, DEPLOYED.**
+- Live contact "What happens next" steps carry, per card, a phase descriptor (`.num` "01 — Within 24 hours"), a
+  title, body, and a faint uppercase `.timing` line. The studio's contact Steps had stale generic copy
+  ("Diagnostic / Periscope Report / Phased Roadmap") and none of the timing detail.
+- Steps.jsx: two new OPTIONAL per-step fields, `phase` (lime kicker above the title) and `timing` (faint uppercase
+  line below the body), each rendered only when set, so the home/method/industries Steps usages are untouched.
+  `.b-step p.b-step-timing` is scoped to win specificity over `.b-step p` (faint colour, no !important).
+- contact Steps seed (store.js): index '' (live shows no section number), eyebrow 'What happens next', head
+  'Three steps. No theatre.' + the live lead; the three live cards verbatim (We read your week / 45 focused
+  minutes / A picture you can act on) with phase + timing lines; em dashes in the bodies converted to house voice.
+- Verify: build PASS (`index-CcCAp6NC.js`, 382.2 kB, +~1.1 kB — negligible). Fresh-seed preview on contact:
+  eyebrow "What happens next", no .b-chapter-num, head "Three steps. No theatre.", all 3 cards correct
+  (n/phase/title/timing match live), screenshot confirms layout. Industries Steps re-checked: 3 cards, no phase/
+  timing rendered, titles intact, zero errors. Method/services have no Steps block. Zero runtime errors.
+- Commit `b6f8e1c`. **Deploy LIVE** `6a3161cdf5d33d0098ef40d0`; greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+
 **[15:34 BST] RA2-7 — clear phantom hero CTAs + phantom section numbers (proof/about) + Hero pillEyebrow — BUILT, VERIFIED, DEPLOYED.**
 - Live proof/about heroes carry NO buttons; proof's eyebrow is a bordered `.pill` ("Proof, not promises"), about's
   is a plain `.kicker` ("Our Story"). The studio had drifted: phantom "Book a Deep Dive" CTAs on both heroes, big
