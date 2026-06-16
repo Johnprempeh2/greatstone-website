@@ -12,7 +12,7 @@ That is per-session UI state, not content, and is not part of this model.
 
 ```jsonc
 {
-  "schema": 16,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
+  "schema": 17,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
   "settings": { "background": "stone-summit", "siteName": "Greatstone International" },
   "org": { "id": "org-greatstone", "name": "Greatstone International", "slug": "greatstone" },  // the tenant
   "order": ["home", "method", "services", "industries", "products", "proof", "about", "insights", "climb", "contact"],
@@ -59,6 +59,8 @@ library + each block's fields live in `src/puck.config.jsx` / `src/blocks/*`. St
 ```jsonc
 {
   "id": "prod-bedrock",
+  "slug": "bedrock-platform",        // unique, url-safe; the #product/<slug> route + shareable identity (stable on rename)
+  "sku": "GS-BDRK",                  // stock-keeping unit (display/ops; "" until set)
   "name": "Bedrock Platform",
   "category": "cat-platform",        // FK → Category.id ("" = uncategorised)
   "price": "From £12,000",           // display string (sales-led); parse the floor for an Offer.price

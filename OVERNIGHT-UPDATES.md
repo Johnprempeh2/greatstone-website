@@ -558,6 +558,30 @@ verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #
 (v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
 approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
+**[04:30 BST] Item R2-#16 — Product detail page (#product/<slug> route + slug/SKU model + per-product SEO) — BUILT, VERIFIED, COMMITTED, DEPLOYED.** (north-star: e-commerce)
+- The catalogue had no per-product page — a visitor could add a licence to the basket but never read the
+  full pitch, and there was nothing to link or share. Built shareable product pages at #product/<slug>.
+- Data model: every product now carries a stable URL **slug** + a **SKU** (schema 16→17, additive migration
+  backfills both from the name/seed; admins edit them in the Products tab, slug auto-sanitised + de-duplicated).
+- `ProductDetail` (new public view, route-rendered — not a Puck block): breadcrumb, badge, category eyebrow,
+  full summary, price/period/licence + SKU, add-to-licence (same prototype basket) + "Talk to us", hero image,
+  "What's included" feature grid, and same-category related products that link onward. Single Product JSON-LD
+  inline + per-product <title>/description/og through the existing head plumbing. Storefront cards now link to
+  detail from the product name and a "View details" affordance.
+- Honest boundary held: no backend dependency, no fake payment — the buy path stays prototype basket → contact
+  handoff. Route is public-only; the editor path is untouched.
+- Files: `src/blocks/ProductDetail.jsx` (new), `src/store.js`, `src/App.jsx`, `src/blocks/Storefront.jsx`,
+  `src/cms/ProductsPanel.jsx`, `DATA-MODEL.md`.
+- Verify: build PASS (`index-DNw70zrK`, +10KB). Preview on a FRESH server (restarted to clear stale HMR):
+  #product/<slug> renders for bedrock/quarry/slate; per-product <title> correct; related products resolve by
+  category (Quarry→Keystone, Slate→Mortar) with correct hrefs; add-to-licence updates the basket; back + forward
+  (card name + "View details") round-trip cleanly; zero console errors. (An interim console showed 8 errors all
+  frozen at one dead `?t=` HMR timestamp — proven stale by the clean restart + clean production build.) Screenshot captured.
+- Commit: `cbd090f`.
+- **Deploy: LIVE.** Netlify deploy `6a30c358f5cc4d4aa4ba330a` "Deploy is ready!";
+  https://greatstone-home.netlify.app/puck-proof/ returns 200; live bundle (`index-DNw70zrK.js`) contains the
+  detail code (`b-pd-name`, "What's included", `product/`, `bedrock-platform`). dist synced.
+
 **[03:24 BST] Item R2-#15 — Studio IA: one toolbar button + grouped tabs + attention badges — BUILT, VERIFIED, COMMITTED, DEPLOYED.**
 - The edit toolbar had grown crowded (five separate panel buttons — Home, Pages, 3D background, SEO,
   History) while four Studio tabs (Products, Team, Releases, Activity) had no toolbar entry at all and
