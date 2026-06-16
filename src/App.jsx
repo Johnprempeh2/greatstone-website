@@ -52,6 +52,10 @@ const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // what the panel previews is what the page actually serves. The dev team's Laravel build will
 // render the same fields server-side; the prototype keeps index.html's noindex (don't touch it).
 const SITE_ORIGIN = 'https://greatstone.com'; // matches the SeoPanel URL preview; dev team sets the real domain
+// the licence basket is non-sensitive ({productId: qty}); persist it so a half-built request survives
+// a refresh or accidental navigation. NOT the auth/store payload — just resilience on the buy path.
+const CART_KEY = 'gs-cart';
+function loadCart() { try { const r = localStorage.getItem(CART_KEY); const c = r ? JSON.parse(r) : {}; return c && typeof c === 'object' ? c : {}; } catch (e) { return {}; } }
 const SITE_NAME = 'Greatstone International';
 function upsertMeta(attr, key, content) {
   let el = document.head.querySelector(`meta[${attr}="${key}"]`);
@@ -116,7 +120,7 @@ export default function App() {
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
-  const [cart, setCart] = useState({});     // licence basket: { [productId]: qty } — in-memory, never persisted
+  const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
   const toastTimer = useRef(null);
   const didNavMount = useRef(false); // skip the initial mount when moving focus on navigation
   const persistTimer = useRef(null); // debounce the localStorage write
@@ -143,6 +147,8 @@ export default function App() {
     addEventListener('beforeunload', flush);
     return () => removeEventListener('beforeunload', flush);
   }, []);
+  // persist the licence basket (non-sensitive) so it survives a reload
+  useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
     const onHash = () => setAdminRoute(isAdminRoute());
     addEventListener('hashchange', onHash);
