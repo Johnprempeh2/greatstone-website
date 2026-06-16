@@ -399,7 +399,7 @@
   {
     "slug": "about",
     "title": "About",
-    "background": "stone-summit",
+    "background": "stone",
     "seo": {
       "title": "About · Greatstone International",
       "description": "Twenty years embedded, not advisory. Greatstone finds the hours a business is quietly losing and wins them back, becoming the foundation you build the next twenty years on.",
@@ -416,34 +416,18 @@
           "align": "left",
           "size": "standard",
           "ctaLabel": "Book a Deep Dive",
-          "ctaHref": "#book"
-        }
-      },
-      {
-        "type": "StatStrip",
-        "props": {
-          "index": "01",
-          "eyebrow": "Our Story",
-          "headline": "Two decades, eight pillars,",
-          "highlight": "no stone unturned.",
-          "body": "The shape of the work, in three numbers.",
-          "stats": [
+          "ctaHref": "#book",
+          "meta": [
             {
-              "value": 20,
-              "suffix": "",
-              "dec": 0,
+              "bignum": "20",
               "label": "Years building the foundations others stand on"
             },
             {
-              "value": 8,
-              "suffix": "",
-              "dec": 0,
+              "bignum": "8",
               "label": "Pillars we assess every business against"
             },
             {
-              "value": 0,
-              "suffix": "",
-              "dec": 0,
+              "bignum": "0",
               "label": "Stones left unturned, by design"
             }
           ]
@@ -487,13 +471,10 @@
         }
       },
       {
-        "type": "Pillars",
+        "type": "Values",
         "props": {
-          "index": "04",
-          "eyebrow": "What We Stand On",
-          "headline": "Four values.",
-          "highlight": "No slideware.",
-          "body": "What the work rests on, when the deck is closed.",
+          "kicker": "",
+          "heading": "Four values. No slideware.",
           "items": [
             {
               "title": "We leave no stone unturned",
