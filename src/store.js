@@ -276,6 +276,7 @@ export function seedState() {
             { title: 'Value', text: 'Tie every move back to money, time or risk.' },
           ],
         }),
+        blk('MaturityModel', {}),
       ], { title: 'Method — Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
