@@ -13,6 +13,28 @@ Audiences kept first-class throughout: (a) public site visitors, (b) studio edit
 
 ## === Front-end parity run — started Tue Jun 16 07:39 BST 2026 ===
 
+# ⚡ PERFORMANCE PASS [18:51 BST, Tue 16 Jun 2026] — public critical path cut ~66%
+
+Measure-first pass on load, runtime, and responsiveness.
+- **Biggest win (load): kept Puck + three.js off the public critical path.** The build had a chunking flaw —
+  Puck was the only manualChunk, so REACT got bundled INSIDE the 433KB editor chunk; every public visitor
+  downloaded the whole editor just to obtain React (and three.js was eager too, dragged in by an unused-but-
+  registered PillarExplorer block that statically imported it). Fix: isolate React into its own chunk + make
+  PillarExplorer import three dynamically. Now the public `index.html` modulepreloads ONLY the app entry (316KB)
+  + react (143KB); Puck (288KB) loads when the editor opens, three.js (561KB) when the 3D Stage mounts (after
+  first paint). **Eager public JS ~1.34MB → ~0.46MB.** React verified a singleton (no duplicate-React risk).
+- **Runtime (already solid — verified, no change needed):** every 3D scene lib (stone/summit/tide/pillar) already
+  pauses on `document.hidden`, caps devicePixelRatio (1.5 mobile / 2 desktop), honours `prefers-reduced-motion`,
+  gates rendering on IntersectionObserver visibility + the Stage fade-pause, and cancels its rAF on teardown.
+  Scroll/reveal work is rAF-batched. So 60fps/battery posture was already in place.
+- **Responsiveness (verified clean):** swept all 9 pages at 390px — no real horizontal overflow (the one apparent
+  390px "overflow" was a preview-emulator innerWidth/clientWidth quirk; at 1280 they match and overflow is 0;
+  `body{overflow-x:hidden}` is the safety net). Added a sensible guard: the custom desktop cursor is now disabled
+  on narrow viewports (≤760px), not just on touch.
+- **Assets:** lean — `env-emerald.jpg` (126KB) is the only image and loads lazily with the 3D.
+- Commits `c8c523a` (chunking), `a347de0` (cursor). Build `index-5piL-b1i.js`. Deploy LIVE `6a318cc920d9b141e55f582d`;
+  live HTML confirmed to modulepreload only entry + react. Pushed to GitHub (`Johnprempeh2/greatstone-cms`).
+
 # ⟳ POST-CLOSE FIX [18:14 BST, Tue 16 Jun 2026] — "deploys not showing" resolved + 2 refinements
 
 John reported the live `/puck-proof/` looked unchanged vs localhost (e.g. the industries page). Root cause was
