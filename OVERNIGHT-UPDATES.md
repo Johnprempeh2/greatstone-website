@@ -512,7 +512,13 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Files: `src/App.jsx`. Verify: build PASS (149 modules). Preview: app mounts; the migrate-driven
   state change persisted through the new debounced path (localStorage shows schema 14 + 5 products);
   zero console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `32df026`. Deploy: deferred (Netlify 500). dist synced.
+
+**[01:38 BST] Turn 13 done — yielding.** Round 2 underway: ran the 15-lens deep-dive (`wwra5n1p6` →
+18-item code-verified backlog) + shipped R2-#1 cart modal a11y (`a3ed759`) + R2-#2 debounce persist
+(`32df026`). Next: the remaining quick storefront/cart wins (R2-#3 hide legacy products, #4 aria-live,
+#5 heading hierarchy, #8 persist basket), then the medium north-star deepeners (#6 quote summary, #7
+product imagery, #9 JSON-LD). Deploys still 500 server-side; everything committed + dist staged.
 - (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
