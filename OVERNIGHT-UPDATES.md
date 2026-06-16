@@ -38,6 +38,19 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[15:17 BST] RA2-8 — contact ContactBand calculator card (CTA + glow + copy) — BUILT, VERIFIED, DEPLOYED. (LAST RA2 HIGH ITEM)**
+- The calc-card had lost the live's ghost CTA, radial glow, and "Run the time-savings calculator" copy. Added
+  cardCtaLabel/cardCtaHref (ghost link + Arrow) after cardBody; `.calc-card::before` radial lime glow (420×200 at
+  110% -20%, accent-dim) + `.calc-card>*{z-index:1}` to keep content above it. Restored the live cardHeading + the
+  45-seconds cardBody. CTA → #go/services (the calculator lives on the services page in the full build).
+- Files: `src/blocks/ContactBand.jsx`, `src/store.js` (contact ContactBand seed).
+- Verify: build PASS (`index-CBONF5oV`, 380.99 kB). Fresh-seed preview on contact: calc-card heading "Run the
+  time-savings calculator", CTA "Open the calculator" → #go/services, radial-gradient ::before glow present; zero
+  runtime errors.
+- Commit: `1939861`. **Deploy LIVE** `6a315ae26f1b7a4baf3f71ff`; greatstone-home.netlify.app/puck-proof/ 200.
+- **ALL RA2 HIGH ITEMS NOW CLOSED** (RA2-1,3,4,8,9 done; RA2-2 PillarCards-hrefs skipped — no per-pillar route, a
+  fake "Inspect →" would dead-link). Remaining = med polish (RA2-5,7,10,11,12) then a final re-audit + summary.
+
 **[15:07 BST] RA2-9 + RA2-6 — climb stacked hero + compact sub-page heroes — BUILT, VERIFIED, DEPLOYED.**
 - RA2-9: climb hero was full-height with inline "Pebble. Plateau. Peak."; live stacks the three words on their own
   lines with only "Peak." accented + glow, at a short height. Added a contentEditable-safe `lines` array to Hero.jsx
