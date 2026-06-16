@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCart } from './CartContext.js';
 import { useCatalog } from './CatalogContext.js';
 import { Arrow } from '../blocks/icons.jsx';
@@ -21,24 +21,45 @@ export default function CartDrawer() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState('cart'); // 'cart' | 'request' | 'done'
   const [form, setForm] = useState({ name: '', company: '', email: '' });
+  const panelRef = useRef(null);
+  const fabRef = useRef(null);
+  const close = () => { setOpen(false); setTimeout(() => setStep('cart'), 250); };
+
+  // real-modal behaviour: lock body scroll, move focus in, trap Tab, Escape to close, and restore
+  // focus to the basket button on close (mirrors cms/Modal.jsx). Hooks run before the early return.
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = 'hidden';
+    const t = setTimeout(() => { const p = panelRef.current; const f = p && p.querySelector('button, input, [href], select, textarea'); if (f) f.focus(); }, 30);
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const f = [...panelRef.current.querySelectorAll('button, input, [href], select, textarea')].filter((el) => !el.disabled && el.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    addEventListener('keydown', onKey);
+    return () => { clearTimeout(t); removeEventListener('keydown', onKey); document.body.style.overflow = ''; if (fabRef.current) fabRef.current.focus(); };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = Object.keys(cart).map((id) => { const p = products.find((x) => x.id === id); return p ? { ...p, qty: cart[id] } : null; }).filter(Boolean);
   if (count === 0 && !open) return null; // the basket button only appears once something's in it
 
-  const close = () => { setOpen(false); setTimeout(() => setStep('cart'), 250); };
   const submit = (e) => { e.preventDefault(); setStep('done'); };
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <>
-      <button className="gs-cart-fab" onClick={() => { setOpen(true); setStep('cart'); }} aria-label={'Licence basket, ' + count + ' item' + (count === 1 ? '' : 's')}>
+      <button ref={fabRef} className="gs-cart-fab" onClick={() => { setOpen(true); setStep('cart'); }} aria-label={'Licence basket, ' + count + ' item' + (count === 1 ? '' : 's')}>
         <CartIcon /><span className="gs-cart-count">{count}</span>
       </button>
       {open && (
         <div className="gs-cart-scrim" onMouseDown={close}>
-          <aside className="gs-cart" role="dialog" aria-label="Licence basket" onMouseDown={(e) => e.stopPropagation()}>
+          <aside className="gs-cart" role="dialog" aria-modal="true" aria-labelledby="gs-cart-title" ref={panelRef} onMouseDown={(e) => e.stopPropagation()}>
             <div className="gs-cart-head">
-              <h3>{step === 'done' ? 'Request received' : 'Your licence basket'}</h3>
+              <h3 id="gs-cart-title">{step === 'done' ? 'Request received' : 'Your licence basket'}</h3>
               <button className="gs-x" onClick={close} aria-label="Close">×</button>
             </div>
 

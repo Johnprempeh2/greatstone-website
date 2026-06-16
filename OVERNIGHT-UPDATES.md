@@ -473,6 +473,36 @@ much-expanded studio. Deploys still 500 server-side; everything committed + dist
 15 lens agents re-auditing the expanded studio (extra scrutiny on the new storefront/cart/products/
 team surfaces + the 8-tab IA), deduping against everything Round 1 built, → a fresh ranked backlog.
 Will write it to the backlog memory file + log here, then Round 2 build cycles begin.
+
+**[01:22 BST] Round 2 deep-dive complete** — `wwra5n1p6`, 16 agents, 15/15 lenses, 82 raw → 18 ranked
+(347s, 1.34M tokens). The synth VERIFIED each claim against the live code and caught real bugs/gaps.
+Written to the backlog memory file. Round 2 build order (top = low-effort high-value one-cycle ships):
+1. CartDrawer → real modal (focus-trap/Escape/restore/aria-modal/scroll-lock) · v5 · NS
+2. Debounce the localStorage persist (fires on every keystroke today) · v5
+3. Hide legacy products from the public storefront · v4 · NS
+4. aria-live for add-to-basket / qty / steps · v4 · 5. Storefront heading hierarchy h3→h4 · v4
+6. Itemised quote summary in the basket · v5 · NS · 7. Product imagery (+alt) · v5 · NS
+8. Persist the basket across reloads · v4 · NS · 9. Product/Offer JSON-LD · v5 · NS
+10. Catalogue & team audit trail · v5 · 11. Catalogue draft/publish gate · v5 · NS
+12. Pause 3D render loop off-screen + DPR clamp · v5 · 13. Team panel guards (last-admin etc.) · v4 · NS
+14. Organisation + orgId tenant key · v4 · NS · 15. Studio IA: one Studio button + grouped tabs · v4
+16. Product detail page (#product/<slug>) · v5 · NS · 17. Export site JSON + DATA-MODEL.md · v5 · dev
+18. Studio Home/Overview tab · v4. Building in order now.
+
+### Round 2 build cycles
+
+**[01:30 BST] Item R2-#1 — CartDrawer → real modal — BUILT, VERIFIED, COMMITTED.**
+- The deep-dive confirmed the basket drawer opened `role="dialog"` with no aria-modal, no Escape,
+  no focus management, and the page scrolling behind — a keyboard/AT user was stranded on the
+  freshest interactive surface.
+- Mirrored `cms/Modal.jsx`: on open, lock body scroll, move focus into the drawer, trap Tab, Escape
+  closes, and restore focus to the basket FAB on close. Added `aria-modal="true"` +
+  `aria-labelledby` (the heading carries `id="gs-cart-title"`). Hooks placed before the early return.
+- Files: `src/cms/CartDrawer.jsx`.
+- Verify: build PASS (149 modules). Preview: added an item, opened the drawer → `aria-modal=true`,
+  `aria-labelledby=gs-cart-title`, body scroll LOCKED, focus moved to the close button; pressed
+  Escape → drawer closed, body scroll restored, focus returned to the FAB. Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
 - (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
