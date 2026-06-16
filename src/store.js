@@ -17,7 +17,7 @@ const SCHEMA = 19;
 // studio whose seedVersion is older than this is re-seeded ONCE from the fresh bundle — so a deploy's
 // content updates actually show for returning visitors instead of being masked by their saved store.
 // Review-prototype behaviour: a bump resets in-editor drafts; between bumps, edits persist normally.
-const SEED_VERSION = 20260616;
+const SEED_VERSION = 20260617;
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
@@ -51,27 +51,68 @@ export const canTransition = (from, to) => !!(TRANSITIONS[from] && TRANSITIONS[f
 // A CMS-native catalogue: products organised by category, managed from inside the studio. This is
 // the prototype data model that maps 1:1 onto the dev team's Laravel Products/Categories tables.
 // Prices/licences are display-only here; real checkout + licence issuance is a backend handoff.
+// Greatstone resells hand-picked third-party developer software, organised by VENDOR BRAND (this is
+// the real catalogue shape on greatstonesoftware.co.uk). Each category IS a vendor and carries its
+// logo (logo = a URL, editable in the Products tab; domain drives a fallback). `count` is the real
+// catalogue size for context. Prices are indicative guides until the full catalogue import (the
+// authoritative price/SKU list comes from the vendor feed); real checkout is a backend handoff.
+const vlogo = (domain) => 'https://logo.clearbit.com/' + domain; // editable per vendor; graceful-fallbacks in the card
 const SEED_CATEGORIES = [
-  { id: 'cat-platform', name: 'Platforms', slug: 'platforms', blurb: 'The foundations everything else is built on.' },
-  { id: 'cat-automation', name: 'Automation & Workflow', slug: 'automation', blurb: 'Take the manual, repetitive work off your team’s plate.' },
-  { id: 'cat-data', name: 'Data & Integration', slug: 'data', blurb: 'Make your systems talk, and your numbers tell the truth.' },
+  { id: 'cat-aspose', name: 'Aspose', slug: 'aspose', domain: 'aspose.com', logo: vlogo('aspose.com'), count: 107, blurb: 'File-format automation APIs for documents, spreadsheets, slides, PDF and more, across .NET, Java, Python and Node.' },
+  { id: 'cat-groupdocs', name: 'GroupDocs', slug: 'groupdocs', domain: 'groupdocs.com', logo: vlogo('groupdocs.com'), count: 32, blurb: 'Document viewing, conversion, comparison, annotation and signing APIs spanning 170+ formats.' },
+  { id: 'cat-devexpress', name: 'DevExpress', slug: 'devexpress', domain: 'devexpress.com', logo: vlogo('devexpress.com'), count: 14, blurb: 'UI controls and developer productivity tools for .NET desktop, web and mobile.' },
+  { id: 'cat-iron', name: 'Iron Software', slug: 'iron-software', domain: 'ironsoftware.com', logo: vlogo('ironsoftware.com'), count: 10, blurb: 'C# libraries for PDF, OCR, Excel, barcodes and web scraping.' },
+  { id: 'cat-apryse', name: 'Apryse', slug: 'apryse', domain: 'apryse.com', logo: vlogo('apryse.com'), count: 9, blurb: 'Document SDKs for web, server and mobile: viewing, editing, conversion and data extraction (formerly PDFTron).' },
+  { id: 'cat-iris', name: 'IRIS', slug: 'iris', domain: 'irislink.com', logo: vlogo('irislink.com'), count: 6, blurb: 'OCR, PDF and intelligent document-capture software.' },
+  { id: 'cat-activepdf', name: 'ActivePDF', slug: 'activepdf', domain: 'activepdf.com', logo: vlogo('activepdf.com'), count: 5, blurb: 'PDF automation, generation and conversion tooling for .NET.' },
+  { id: 'cat-pdflib', name: 'PDFlib', slug: 'pdflib', domain: 'pdflib.com', logo: vlogo('pdflib.com'), count: 4, blurb: 'Programmable PDF generation and text-extraction libraries.' },
+  { id: 'cat-conholdate', name: 'Conholdate', slug: 'conholdate', domain: 'conholdate.com', logo: vlogo('conholdate.com'), count: 4, blurb: 'Combined document-processing APIs spanning the Aspose and GroupDocs families.' },
+  { id: 'cat-investintech', name: 'Investintech', slug: 'investintech', domain: 'investintech.com', logo: vlogo('investintech.com'), count: 3, blurb: 'PDF creation, conversion and editing tools.' },
+  { id: 'cat-nitro', name: 'Nitro', slug: 'nitro', domain: 'gonitro.com', logo: vlogo('gonitro.com'), count: 3, blurb: 'PDF productivity and e-signing for business.' },
 ];
+// A representative slice of the real catalogue (the full ~200 imports from the vendor feed on Friday).
+// Confirmed prices are marked; the rest are indicative guides ('From …') pending the authoritative feed.
+const P = (vendor, name, price, opts = {}) => ({
+  id: 'prod-' + slugify(name), slug: slugify(name), sku: opts.sku || '', name, category: vendor,
+  price: price || '', period: opts.period || '', licence: opts.licence || 'Per developer · perpetual + 1yr support',
+  badge: opts.badge || '', status: opts.status || 'active', summary: opts.summary || '', features: opts.features || [],
+});
 const SEED_PRODUCTS = [
-  { id: 'prod-bedrock', slug: 'bedrock-platform', sku: 'GS-BDRK', name: 'Bedrock Platform', category: 'cat-platform', price: 'From £12,000', period: '/year', licence: 'Site licence', badge: 'Core', status: 'active',
-    summary: 'The Greatstone delivery platform: workspaces, roles and audited workflows on one foundation your whole organisation builds on.',
-    features: ['Unlimited workspaces', 'Role-based access + audit log', 'Bedrock API + webhooks', 'SSO-ready'] },
-  { id: 'prod-slate', slug: 'slate-workflow', sku: 'GS-SLATE', name: 'Slate Workflow', category: 'cat-automation', price: 'From £180', period: '/seat/year', licence: 'Per-seat', badge: 'Popular', status: 'active',
-    summary: 'Turn the processes living in inboxes and spreadsheets into governed, automated workflows, without writing code.',
-    features: ['Visual workflow builder', 'Approvals + SLAs', 'Bedrock-native', '120+ connectors'] },
-  { id: 'prod-quarry', slug: 'quarry-analytics', sku: 'GS-QRY', name: 'Quarry Analytics', category: 'cat-data', price: 'From £6,000', period: '/year', licence: 'Site licence', badge: '', status: 'active',
-    summary: 'Operational analytics that read from the work itself, so the dashboard matches what actually happened.',
-    features: ['Live operational metrics', 'Self-serve exploration', 'Scheduled briefings', 'Warehouse export'] },
-  { id: 'prod-keystone', slug: 'keystone-integrations', sku: 'GS-KEY', name: 'Keystone Integrations', category: 'cat-data', price: 'From £4,500', period: '/year', licence: 'Per-connection', badge: '', status: 'active',
-    summary: 'The integration layer that keeps your finance, CRM and operational systems in step, one source of truth, no copy-paste.',
-    features: ['Pre-built connectors', 'Two-way sync', 'Field-level mapping', 'Failure alerting'] },
-  { id: 'prod-mortar', slug: 'mortar-connect', sku: 'GS-MORT', name: 'Mortar Connect', category: 'cat-automation', price: 'From £95', period: '/seat/year', licence: 'Per-seat', badge: 'Legacy', status: 'legacy',
-    summary: 'Our original point-to-point connector suite. Still supported and sold for teams that depend on it; new builds use Keystone.',
-    features: ['Legacy connector library', 'Long-term support', 'Migration path to Keystone'] },
+  // Aspose
+  P('cat-aspose', 'Aspose.Cells for .NET', '£870', { badge: 'Popular', summary: 'Create, edit and convert Excel spreadsheets in .NET without Microsoft Office.', features: ['XLS/XLSX/CSV/ODS', 'Charts + pivot tables', 'PDF + HTML export'] }),
+  P('cat-aspose', 'Aspose.Words for .NET', 'From £870', { summary: 'Generate and convert Word documents programmatically: DOCX, PDF, HTML and more.', features: ['Mail merge + reporting', 'DOCX ⇄ PDF/HTML', 'No Word install'] }),
+  P('cat-aspose', 'Aspose.PDF for .NET', 'From £870', { summary: 'Create, edit, render and extract from PDF documents in .NET.', features: ['Create + edit PDF', 'Form filling', 'PDF/A + redaction'] }),
+  P('cat-aspose', 'Aspose.Total for .NET', 'From £3,597', { badge: 'Bundle', licence: 'Bundle · perpetual + 1yr support', summary: 'Every Aspose .NET file-format API in one developer bundle.', features: ['20+ APIs', 'Documents, sheets, slides, PDF', 'Best value'] }),
+  // GroupDocs
+  P('cat-groupdocs', 'GroupDocs.Viewer for .NET', 'From £1,199', { summary: 'Render 170+ document formats to HTML, image or PDF in your app, no third-party software.', features: ['170+ formats', 'HTML/Image/PDF output', 'Watermarks'] }),
+  P('cat-groupdocs', 'GroupDocs.Conversion for .NET', 'From £1,199', { summary: 'Convert between documents, spreadsheets, presentations, images and PDF.', features: ['50+ formats', 'High-fidelity output', 'Server-side'] }),
+  P('cat-groupdocs', 'GroupDocs.Total for .NET', 'From £4,799', { badge: 'Bundle', licence: 'Bundle · perpetual + 1yr support', summary: 'The full GroupDocs document-automation suite in one licence.', features: ['Viewer, Conversion, Comparison', 'Signature + Annotation', '170+ formats'] }),
+  // DevExpress
+  P('cat-devexpress', 'DevExpress Universal', '£1,563', { badge: 'Top seller', period: '/developer', licence: 'Per developer · 1yr subscription', summary: 'Every DevExpress UI control and tool for .NET in one subscription.', features: ['WinForms, WPF, Blazor, .NET MAUI', 'Reporting + Dashboard', 'Priority support'] }),
+  P('cat-devexpress', 'DevExpress DXperience', 'From £1,099', { period: '/developer', licence: 'Per developer · 1yr subscription', summary: 'DevExpress UI controls for desktop and web .NET development.', features: ['WinForms + WPF + Web', 'Office-inspired controls', 'Annual updates'] }),
+  P('cat-devexpress', 'DevExpress WPF Subscription', 'From £729', { period: '/developer', licence: 'Per developer · 1yr subscription', summary: 'The complete DevExpress control suite for WPF.', features: ['90+ WPF controls', 'Themes + templates', 'MVVM-ready'] }),
+  // Iron Software
+  P('cat-iron', 'IronPDF', 'From £599', { badge: 'Popular', summary: 'Generate, edit and read PDFs in C# from HTML, URLs or images.', features: ['HTML → PDF', 'Edit + merge', '.NET 8 ready'] }),
+  P('cat-iron', 'IronOCR', 'From £599', { summary: 'Read text from images and scanned PDFs in C# with Tesseract 5.', features: ['127 languages', 'Image + PDF OCR', 'Barcode reading'] }),
+  P('cat-iron', 'Iron Suite', 'From £1,498', { badge: 'Bundle', licence: 'Bundle · perpetual + 1yr support', summary: 'All nine Iron Software C# libraries for the price of two.', features: ['PDF, OCR, Excel, Barcode', 'WebScraper + more', 'Best value'] }),
+  // Apryse
+  P('cat-apryse', 'Apryse WebViewer', 'Contact for licence', { summary: 'A JavaScript document viewer and editor for any web app, 30+ formats.', features: ['View + annotate in-browser', 'PDF, Office, CAD, images', 'No server round-trips'] }),
+  P('cat-apryse', 'Apryse PDF SDK', 'Contact for licence', { summary: 'Cross-platform document SDK: viewing, editing, conversion and data extraction.', features: ['Web, server, mobile', 'PDF + Office', 'Data extraction'] }),
+  // IRIS
+  P('cat-iris', 'Readiris PDF', 'From £99', { licence: 'Per user · perpetual', summary: 'Convert, edit, sign and OCR PDFs and paper documents on the desktop.', features: ['OCR 138 languages', 'PDF edit + sign', 'Batch convert'] }),
+  P('cat-iris', 'IRISPowerscan', 'Contact for licence', { summary: 'High-volume scanning and intelligent document capture for the enterprise.', features: ['Batch capture', 'Classification + extraction', 'Export to ECM'] }),
+  // ActivePDF
+  P('cat-activepdf', 'ActivePDF Toolkit', 'Contact for licence', { licence: 'Server licence', summary: 'Programmatically create, manipulate and assemble PDFs in .NET.', features: ['Create + stamp + merge', 'Form fill', 'Server-side'] }),
+  P('cat-activepdf', 'ActivePDF DocConverter', 'Contact for licence', { licence: 'Server licence', summary: 'Convert hundreds of file types to PDF and PDF/A at scale.', features: ['300+ formats', 'PDF/A archiving', 'Watched folders'] }),
+  // PDFlib
+  P('cat-pdflib', 'PDFlib + PDI', 'From £950', { licence: 'Per platform · perpetual', summary: 'Generate PDF on the fly and import pages from existing PDFs.', features: ['Programmatic PDF', 'Page import (PDI)', 'Cross-platform'] }),
+  P('cat-pdflib', 'PDFlib TET', 'From £950', { licence: 'Per platform · perpetual', summary: 'Text and image extraction toolkit for PDF content.', features: ['Text + table extraction', 'Geometry-aware', 'Search indexing'] }),
+  // Conholdate
+  P('cat-conholdate', 'Conholdate.Total for .NET', 'From £4,799', { badge: 'Bundle', licence: 'Bundle · perpetual + 1yr support', summary: 'Aspose and GroupDocs document APIs combined in one .NET licence.', features: ['Two families, one bundle', '170+ formats', 'Best coverage'] }),
+  // Investintech
+  P('cat-investintech', 'Able2Extract Professional', 'From £130', { licence: 'Per user · perpetual', summary: 'Convert, edit and create PDFs, with accurate PDF-to-Excel conversion.', features: ['PDF ⇄ Excel/Word', 'OCR scanned PDFs', 'Edit + redact'] }),
+  // Nitro
+  P('cat-nitro', 'Nitro PDF Pro', 'From £140', { period: '/user/year', licence: 'Per user · subscription', summary: 'Create, edit, convert and e-sign PDFs across the business.', features: ['Edit + convert', 'e-Sign included', 'Office integration'] }),
 ];
 
 export function listCategories(state) { return (state && state.categories) || []; }
@@ -122,7 +163,7 @@ export function removeProduct(state, id) {
 }
 export function addCategory(state, category) {
   const id = rid('cat');
-  return { ...state, categories: [...(state.categories || []), { id, orgId: (state.org && state.org.id) || ORG.id, name: 'New category', slug: id, blurb: '', ...category, id }] };
+  return { ...state, categories: [...(state.categories || []), { id, orgId: (state.org && state.org.id) || ORG.id, name: 'New vendor', slug: id, blurb: '', logo: '', domain: '', count: 0, ...category, id }] };
 }
 export function removeCategory(state, id) {
   // products in a removed category fall back to uncategorised (empty category)
@@ -311,9 +352,9 @@ export function seedState() {
 // the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
 function productsPage() {
   return seedPage('Products', 'stone', [
-    blk('Hero', { kicker: 'Greatstone Software', headline: 'Software built on the same foundation.', highlight: 'Licensed, supported, yours.', body: 'The products our delivery teams build on, available to license directly. One platform, the tools around it, and the integrations that keep them honest.', align: 'center', size: 'standard', ctaLabel: 'Talk to us about licensing', ctaHref: '#book' }),
-    blk('Storefront', { heading: 'The catalogue', body: 'Every licence includes onboarding and support. Prices are a guide; talk to us for volume and multi-year terms.' }),
-  ], { title: 'Products — Greatstone International', description: 'Greatstone software products and licences: the Bedrock platform, Slate workflow automation, Quarry analytics and Keystone integrations.', ogImage: '' });
+    blk('Hero', { kicker: 'Software Catalogue', headline: 'Hand-picked developer software,', highlight: 'licensed and supported.', body: 'The document, PDF and developer tools your teams rely on, from the vendors who make them best. Trusted licensing, UK support, and a partner who knows the whole stack.', align: 'center', size: 'standard', ctaLabel: 'Talk to us about licensing', ctaHref: '#book' }),
+    blk('Storefront', { heading: 'Browse by vendor', body: 'Hundreds of products across the vendors you already trust. Every licence includes support; prices are a guide, talk to us for volume and multi-year terms.' }),
+  ], { title: 'Software Catalogue — Greatstone International', description: 'Hand-picked third-party developer software, licensed and supported by Greatstone: Aspose, DevExpress, GroupDocs, Iron Software, Apryse and more.', ogImage: '' });
 }
 
 export function load() {

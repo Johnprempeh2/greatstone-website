@@ -14,14 +14,19 @@ function SearchGlyph() {
 // catalogue powers the storefront everywhere it appears. The "Request a licence" CTA routes to the
 // contact flow (#book); a real licence-purchase checkout is a backend handoff (see HANDOVER), never
 // a fake payment here. Editable: the section heading + intro only (brand-locked cards).
-function Card({ p, catName }) {
+// vendor logos can fail to load (third-party hotlink) — hide the <img> gracefully so the name still reads
+const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
+function Card({ p, catName, catLogo }) {
   const { add, cart } = useCart();
   const inCart = cart[p.id] || 0;
   return (
     <article className="b-sf-card" data-reveal>
       {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" /></div> : null}
       {p.badge ? <span className={'b-sf-badge' + (p.status === 'legacy' ? ' is-legacy' : '')}>{p.badge}</span> : null}
-      <div className="b-sf-cat">{catName || 'Software'}</div>
+      <div className="b-sf-cat">
+        {catLogo ? <img className="b-sf-vlogo" src={catLogo} alt="" loading="lazy" onError={hideOnError} /> : null}
+        <span>{catName || 'Software'}</span>
+      </div>
       <h4 className="b-sf-name"><a className="b-sf-namelink" href={'#product/' + (p.slug || p.id)}>{p.name}</a></h4>
       <p className="b-sf-summary">{p.summary}</p>
       {Array.isArray(p.features) && p.features.length ? (
@@ -48,6 +53,7 @@ export function Storefront({ heading, body, controls = 'show' }) {
   const ref = useReveal();
   const { products = [], categories = [] } = useCatalog();
   const catName = (id) => { const c = categories.find((x) => x.id === id); return c ? c.name : ''; };
+  const catLogo = (id) => { const c = categories.find((x) => x.id === id); return c ? c.logo : ''; };
   // only LISTED products reach the public storefront. 'draft' is hidden (manage it in the Products
   // tab); 'active' and 'legacy' both show — legacy products are older but still sold + supported.
   const listed = products.filter((p) => p.status !== 'draft');
@@ -130,20 +136,27 @@ export function Storefront({ heading, body, controls = 'show' }) {
           <p className="b-sf-empty">No products yet. Add them in the studio’s Products tab.</p>
         ) : isDefault ? (
           <div className="b-sf-groups">
-            {cats.map((c) => (
-              <div className="b-sf-group" key={c.id}>
-                <div className="b-sf-grouphead">
-                  <h3>{c.name}</h3>
-                  {c.blurb ? <p>{c.blurb}</p> : null}
+            {cats.map((c) => {
+              const n = listed.filter((p) => p.category === c.id).length;
+              return (
+                <div className="b-sf-group" key={c.id}>
+                  <div className="b-sf-grouphead">
+                    <div className="b-sf-grouptitle">
+                      {c.logo ? <span className="b-sf-grouplogo"><img src={c.logo} alt={c.name} loading="lazy" onError={hideOnError} /></span> : null}
+                      <h3>{c.name}</h3>
+                      <span className="b-sf-groupn">{c.count || n} {(c.count || n) === 1 ? 'product' : 'products'}</span>
+                    </div>
+                    {c.blurb ? <p>{c.blurb}</p> : null}
+                  </div>
+                  <div className="b-sf-grid">
+                    {listed.filter((p) => p.category === c.id).map((p) => <Card key={p.id} p={p} catName={c.name} catLogo={c.logo} />)}
+                  </div>
                 </div>
-                <div className="b-sf-grid">
-                  {listed.filter((p) => p.category === c.id).map((p) => <Card key={p.id} p={p} catName={c.name} />)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {uncategorised.length ? (
               <div className="b-sf-group">
-                <div className="b-sf-grouphead"><h3>More</h3></div>
+                <div className="b-sf-grouphead"><div className="b-sf-grouptitle"><h3>More</h3></div></div>
                 <div className="b-sf-grid">{uncategorised.map((p) => <Card key={p.id} p={p} catName="" />)}</div>
               </div>
             ) : null}
@@ -154,7 +167,7 @@ export function Storefront({ heading, body, controls = 'show' }) {
               {view.length} {view.length === 1 ? 'product' : 'products'}{cat !== 'all' ? ' in ' + chipName(cat) : ''}{ql ? ' matching “' + q.trim() + '”' : ''}
             </p>
             {view.length ? (
-              <div className="b-sf-grid">{view.map((p) => <Card key={p.id} p={p} catName={catName(p.category)} />)}</div>
+              <div className="b-sf-grid">{view.map((p) => <Card key={p.id} p={p} catName={catName(p.category)} catLogo={catLogo(p.category)} />)}</div>
             ) : (
               <p className="b-sf-noresults">No products match. <button type="button" className="b-sf-clear" onClick={clearAll}>Clear filters</button></p>
             )}
@@ -191,8 +204,14 @@ export const css = `
 .b-sf-noresults{margin-top:20px;text-align:center;color:var(--gs-text-muted)}
 .b-sf-clear{background:none;border:0;padding:0;color:var(--gs-accent);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline}
 .b-sf-groups{margin-top:clamp(36px,6vw,68px);display:flex;flex-direction:column;gap:clamp(40px,6vw,72px)}
+.b-sf-grouptitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .b-sf-grouphead h3{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
-.b-sf-grouphead p{margin-top:6px;color:var(--gs-text-muted);font-size:.98rem;line-height:1.6;max-width:54ch}
+.b-sf-grouphead p{margin-top:8px;color:var(--gs-text-muted);font-size:.98rem;line-height:1.6;max-width:54ch}
+/* vendor logo seated in a light chip so any brand mark reads on the dark cards */
+.b-sf-grouplogo{display:inline-flex;align-items:center;background:#fff;border-radius:8px;padding:6px 10px;line-height:0}
+.b-sf-grouplogo img{height:26px;width:auto;max-width:140px;object-fit:contain;display:block}
+.b-sf-groupn{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text-faint);
+  background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:100px;padding:4px 11px}
 .b-sf-grid{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .b-sf-card{position:relative;display:flex;flex-direction:column;background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);
   border-radius:18px;padding:24px;backdrop-filter:blur(8px);transition:border-color .3s var(--gs-ease),transform .3s var(--gs-ease)}
@@ -202,7 +221,8 @@ export const css = `
 .b-sf-badge{position:absolute;top:18px;right:18px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   color:#0e1611;background:var(--gs-accent);border-radius:6px;padding:3px 8px}
 .b-sf-badge.is-legacy{background:var(--gs-text-faint);color:#fff}
-.b-sf-cat{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
+.b-sf-cat{display:flex;align-items:center;gap:8px;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
+.b-sf-vlogo{height:16px;width:auto;max-width:74px;object-fit:contain;background:#fff;border-radius:4px;padding:2px 5px;line-height:0}
 .b-sf-name{margin-top:8px;font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
 .b-sf-namelink{color:inherit;text-decoration:none}
 .b-sf-namelink:hover{color:var(--gs-accent)}
