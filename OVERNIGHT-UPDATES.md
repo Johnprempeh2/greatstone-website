@@ -38,6 +38,18 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:48 BST] RA2-4 — services Outcomes StatStrip `plain` centered variant — BUILT, VERIFIED, DEPLOYED.**
+- services outcomes was a left-aligned aurora block with the footnote as the lead; live `.outcomes` is centered with
+  hairline vertical dividers between stats + a faint footnote. Added a `plain` variant to StatStrip.jsx: centered
+  head (eyebrow renders as a plain `.kicker`, no number) + stats, `.b-stat:not(:last-child)::after` vertical
+  divider, no aurora; new `footnote` field rendered faint+centered after the grid. Seeded services StatStrip
+  variant:'plain', index '', body→footnote, and blanked the phantom backfilled `clients` line (live has none).
+- Files: `src/blocks/StatStrip.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-D8MVO5bp`, 378.35 kB). Fresh-seed preview: services outcomes centered, kicker "The
+  payback", "Hours back, three ways.", 3 stats (+40% / 2× / −60%) with vertical dividers (none on last), footnote
+  present, no aurora, no clients line; zero runtime errors; screenshot matches the live outcomes strip.
+- Commit: `a0e2cff`. **Deploy LIVE** `6a3154290c8d99007f68fbb6`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[14:38 BST] RA2-1 — home §05 StatStrip 2×2 glass-card grid — BUILT, VERIFIED, DEPLOYED.**
 - The flagship §05 rendered as a bare 4-up aurora row; the live is a 2×2 glass stat-grid with a lime hero-stat.
   Added a `cards` variant to StatStrip.jsx: no aurora, 2-col grid, each `.b-stat` a glass card (--gs-glass bg + 1px
