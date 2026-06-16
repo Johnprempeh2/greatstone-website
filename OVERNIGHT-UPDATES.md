@@ -38,6 +38,20 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:02 BST] Re-audit R2 + R6 — home §03 Methodology chapter + CTA + hero kicker — BUILT, VERIFIED, DEPLOYED.**
+- R2: the live homepage §03 is a centered Methodology chapter that HIDES the 8-pillar grid (it lives behind the
+  method-mode overlay) and offers an "Explore the eight pillars" CTA. The studio surfaced the full Pillars grid +
+  dropped the CTA. Gave Chapter.jsx optional `ctaLabel`/`ctaHref` (ghost link, centered when align=center), then
+  re-seeded home §03 Pillars-grid → centered Chapter (03 / The Methodology / "We leave no stone unturned." +
+  "Explore the eight pillars" → #go/method). The 8-pillar grid now lives only on Method (PillarCards), as live.
+- R6: home Hero kicker was '' (no eyebrow above the headline); set to "Greatstone International".
+- Files: `src/blocks/Chapter.jsx` (ctaLabel/ctaHref + .b-chapter-cta), `src/store.js` (home Hero kicker + §03).
+- Verify: build PASS (`index-D7p65lNa`, 370.70 kB). Fresh-seed preview: home = Hero/Chapter×4/StatStrip/Terrace/
+  Invite (no Pillars grid); hero kicker "Greatstone International" renders; §03 centered with the ghost CTA, which
+  navigates to Method (PillarCards "Every facet, examined." shown); zero runtime errors; screenshot matches the
+  live centered §03.
+- Commit: `3d7799a`. **Deploy LIVE** `6a313b5d2c9cb02e975767b5`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[12:53 BST] Re-audit R5 — TimeCounter redesign to the live time-cost chip (contact) — BUILT, VERIFIED, DEPLOYED.**
 - contact (weakest page, 58%) had the wrong hero design: a centered 6rem decimal clock ("0.0s"). Live is a
   LEFT-aligned hero ("You still can't buy time. / Let's save yours.") over a compact bordered `.timecost` chip.
