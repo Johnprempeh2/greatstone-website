@@ -170,13 +170,22 @@
 
 /* ---------- unified Studio panel (tabbed) ---------- */
 .gs-studio{display:flex;flex-direction:column;width:min(440px,94vw)}
-.gs-studio-tabs{display:flex;align-items:center;gap:8px;padding:12px 14px 0;border-bottom:1px solid var(--gs-border-soft)}
-.gs-studio-tablist{display:flex;gap:2px;flex:1;flex-wrap:wrap}
-.gs-studio-tab{background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;font-family:'Montserrat',sans-serif;
-  font-size:.82rem;font-weight:700;color:var(--gs-faint);padding:8px 12px 12px;transition:color .2s,border-color .2s}
+.gs-studio-tabs{display:flex;align-items:flex-start;gap:8px;padding:12px 14px 0;border-bottom:1px solid var(--gs-border-soft)}
+.gs-studio-tablist{display:flex;gap:2px 12px;flex:1;flex-wrap:wrap;align-items:flex-end}
+.gs-studio-group{display:inline-flex;align-items:flex-end;gap:1px}
+.gs-studio-grouplabel{font-size:.56rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--gs-text-faint);
+  padding-bottom:13px;margin-right:5px;opacity:.65;user-select:none}
+.gs-studio-tab{display:inline-flex;align-items:center;gap:5px;background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;
+  font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:700;color:var(--gs-faint);padding:8px 10px 12px;transition:color .2s,border-color .2s}
 .gs-studio-tab:hover{color:var(--gs-text)}
 .gs-studio-tab.is-active{color:var(--gs-accent);border-bottom-color:var(--gs-accent)}
+.gs-studio-tabbadge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:100px;
+  font-size:.6rem;font-weight:800;line-height:1;color:#1a0c0c;background:var(--gs-warning);font-variant-numeric:tabular-nums}
 .gs-studio-tabs .gs-x{align-self:flex-start;margin-top:-2px}
+/* toolbar: one Studio button replaces the per-panel buttons; badge counts items needing action */
+.gs-studio-btn{display:inline-flex;align-items:center;gap:6px}
+.gs-studio-btnbadge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;border-radius:100px;
+  font-size:.62rem;font-weight:800;line-height:1;color:#1a0c0c;background:var(--gs-warning);font-variant-numeric:tabular-nums}
 .gs-studio-body{flex:1;overflow-y:auto;padding:20px}
 /* nest the existing panels: drop their own chrome so only the Studio shell frames them */
 .gs-studio-body .gs-panel{position:static;inset:auto;width:auto;max-width:none;height:auto;border:0;box-shadow:none;background:none;animation:none;display:block}

@@ -198,6 +198,16 @@ export default function App() {
     count: Object.values(cart).reduce((a, b) => a + b, 0),
   }), [cart]);
   const hasUnpublished = useMemo(() => !eq(page.data, page.published), [page.data, page.published]);
+  // Attention signals surfaced on the one "Studio" toolbar button + the relevant tabs, so editors see
+  // what needs action without opening every panel. A page counts once (drift OR awaiting review).
+  const studioAttention = useMemo(() => {
+    const pagesNeedingAction = state.order.filter((s) => {
+      const p = state.pages[s]; if (!p) return false;
+      return !eq(p.data, p.published) || p.status === 'review' || p.status === 'approved';
+    }).length;
+    const pendingInvites = canManageUsers ? state.team.filter((m) => m.status === 'invited').length : 0;
+    return { releases: pagesNeedingAction, team: pendingInvites, total: pagesNeedingAction + pendingInvites };
+  }, [state.order, state.pages, state.team, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -480,7 +490,7 @@ export default function App() {
         {overlays}
         <Stage background={bg} previewP={previewP} />
         {panel && (
-          <StudioPanel tab={panel} onTab={setPanel} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
+          <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             home: <OverviewPanel order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
@@ -511,8 +521,10 @@ export default function App() {
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
                   </select>
                 </label>
-                <button className={'gs-btn ghost sm' + (panel === 'home' ? ' is-on' : '')} onClick={() => setPanel(panel === 'home' ? null : 'home')}>Home</button>
-                <button className={'gs-btn ghost sm' + (panel === 'pages' ? ' is-on' : '')} onClick={() => setPanel(panel === 'pages' ? null : 'pages')}>Pages</button>
+                <button className={'gs-btn ghost sm gs-studio-btn' + (panel ? ' is-on' : '')} onClick={() => setPanel(panel ? null : 'home')}
+                  aria-expanded={!!panel} title="Open the Studio (pages, products, team, releases, background, SEO, history, activity)">
+                  Studio{studioAttention.total ? <span className="gs-studio-btnbadge" aria-label={studioAttention.total + ' items need attention'}>{studioAttention.total}</span> : null}
+                </button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* state */}
                 <label className="gs-statusctl" data-status={page.status} title="Page status">
@@ -528,9 +540,6 @@ export default function App() {
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* tools */}
                 <Suspense fallback={null}><UndoRedo /></Suspense>
-                <button className={'gs-btn ghost sm' + (panel === 'background' ? ' is-on' : '')} onClick={() => setPanel(panel === 'background' ? null : 'background')}>3D background</button>
-                <button className={'gs-btn ghost sm' + (panel === 'seo' ? ' is-on' : '')} onClick={() => setPanel(panel === 'seo' ? null : 'seo')}>SEO</button>
-                <button className={'gs-btn ghost sm' + (panel === 'history' ? ' is-on' : '')} onClick={() => setPanel(panel === 'history' ? null : 'history')}>History</button>
                 <button className="gs-btn ghost sm" onClick={() => setCmdOpen(true)} aria-label="Command palette" title="Command palette (⌘K)">⌘K</button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* account + publish */}
