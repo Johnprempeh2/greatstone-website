@@ -440,7 +440,15 @@ Deploys still 500 server-side; everything committed + dist staged.
   + honest toast ("no email sent"); removed via confirm modal (back to 3). **RBAC gate confirmed:
   signed in as editor → Team tab HIDDEN** (Products still present). Schema migrated to 14. Build
   clean; the 8 "[vite] Failed to reload" entries are mid-edit HMR artifacts. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `3f1dad0`. Deploy: deferred (Netlify 500). dist synced.
+
+**[03:00 BST] Turn 12 done — yielding. BOTH NORTH STARS DELIVERED.** R1-#19 Products/e-commerce
+(`4fbce97`/`b88cebb`/`cf37fe5`) + R1-#20 Team/roles/DX-dashboard (`3f1dad0`). The studio now has a
+real product catalogue with management + storefront + licence basket, AND an org team/roles/invite
+prototype with an RBAC gate — both mapping cleanly to the dev team's Laravel build, with handoff
+specs in HANDOVER.md. Round 1 remaining (all low-value v3/v4): #13 footer columns, #15 block diff,
+#17 resolveFields, #18 site settings. Next: knock those out, then run the Round 2 deep-dive over the
+much-expanded studio. Deploys still 500 server-side; everything committed + dist staged.
 - BOTH NORTH STARS DONE: #19 Products/e-commerce + #20 Team/roles/DX-dashboard. NEXT: the leftover
   v3/v4 items (#13 footer, #15 block diff, #17 resolveFields, #18 site settings), then Round 2 deep-dive.
 - (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
