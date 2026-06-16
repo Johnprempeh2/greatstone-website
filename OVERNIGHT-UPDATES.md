@@ -541,7 +541,11 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Files: `src/App.jsx` (#8), `src/cms/CartDrawer.jsx` + `src/studio.css` (#6).
 - Verify: build PASS (149 modules). Preview as above; test basket cleared; app mounts clean (the 8
   console errors are frozen mid-edit HMR artifacts, not the final code). PASS.
-- Commits: pending below (2). Deploy: deferred (Netlify 500).
+- Commits: `2298717` (R2-#8) + `e369d8c` (R2-#6). Deploy: deferred (Netlify 500). dist synced.
+
+**[01:56 BST] Turn 15 done — yielding.** Round 2 progress: #1–#6, #8 done (7 items). Next: #7 product
+imagery (medium — adds image+alt to the catalogue model/panel/storefront/basket), #9 Product/Offer
+JSON-LD, #10 catalogue+team audit trail, #12 pause 3D render loop, #13 team guards. Deploys still 500.
 
 **[01:48 BST] Turn 14 done — yielding.** Shipped R2-#3 (draft product visibility), R2-#5 (heading
 hierarchy), R2-#4 (cart aria-live + contrast). Round 2 progress: #1,#2,#3,#4,#5 done. Next: #8 persist
