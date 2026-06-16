@@ -497,16 +497,8 @@
         "props": {}
       },
       {
-        "type": "Invite",
-        "props": {
-          "eyebrow": "The Foundation Brief",
-          "headline": "Field notes, in your inbox.",
-          "highlight": "No noise.",
-          "body": "One considered read a month on time, maturity and adoption, written from inside the work, not the sidelines.",
-          "ctaLabel": "Subscribe",
-          "ctaHref": "#book",
-          "email": "dx@greatstonesoftware.co.uk"
-        }
+        "type": "NewsletterBand",
+        "props": {}
       }
     ]
   },
