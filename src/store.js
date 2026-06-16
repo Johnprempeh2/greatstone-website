@@ -247,7 +247,7 @@ export function seedState() {
         blk('Invite', {
           eyebrow: 'Start the Conversation', headline: 'The first step', highlight: 'costs nothing.',
           body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-          ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk',
+          ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk', variant: 'band',
         }),
       ], { title: 'Greatstone International — The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
 

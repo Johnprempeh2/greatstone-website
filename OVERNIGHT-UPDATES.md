@@ -38,6 +38,8 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[12:30 BST] PARITY RE-AUDIT complete** — `whlg914il` (10 agents, 68 findings). **Overall parity now 76%** (was ~65-70% at the start of this run). Page scores: climb 86 · insights 84 · method/industries/proof/about 82 · home 74 · services 68 · contact 58. Top-12 remaining gaps written to the backlog memory (RE-AUDIT section). The single highest-leverage finding: the closing-CTA (Invite) defaults to the invented full-bleed aurora across 6 pages, where live uses calmer treatments (framed card / plain band / pill+border). Working the top item next.
+
 **[12:03 BST] Perf #17 — rAF-batch Timeline scroll (kill INP jank) — BUILT, VERIFIED, DEPLOYED.**
 - Timeline.jsx's scroll handler did a `getBoundingClientRect()` (forced layout read) + a CSS-var write on EVERY
   scroll event, unbatched, even when the timeline was off-screen — a classic INP/jank source on the about page.

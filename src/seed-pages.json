@@ -104,7 +104,8 @@
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "Explore the 8 pillars",
-          "ctaHref2": "#go/method"
+          "ctaHref2": "#go/method",
+          "variant": "framed"
         }
       }
     ]
@@ -170,7 +171,8 @@
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See the method",
-          "ctaHref2": "#go/method"
+          "ctaHref2": "#go/method",
+          "variant": "band"
         }
       }
     ]
@@ -307,7 +309,8 @@
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See how we work",
-          "ctaHref2": "#go/method"
+          "ctaHref2": "#go/method",
+          "variant": "framed"
         }
       }
     ]
@@ -455,7 +458,8 @@
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See the Method",
-          "ctaHref2": "#go/method"
+          "ctaHref2": "#go/method",
+          "variant": "band"
         }
       }
     ]
@@ -602,7 +606,9 @@
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "Explore the Method",
-          "ctaHref2": "#go/method"
+          "ctaHref2": "#go/method",
+          "variant": "band",
+          "pill": true
         }
       }
     ]
