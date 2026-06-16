@@ -60,7 +60,7 @@ export function ServiceCards({ kicker, heading, highlight, cards = [] }) {
 
 export const css = `
 .b-svc-head{text-align:center;margin-bottom:clamp(36px,5vw,64px)}
-.b-svc-h2{margin-top:.4em;font-size:clamp(1.7rem,4vw,2.7rem);font-weight:900;letter-spacing:-.025em;line-height:1.05}
+.b-svc-h2{margin-top:.4em;font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;letter-spacing:-.025em;line-height:1.05}
 .b-svc-grid{align-items:stretch}
 .b-svc-card{position:relative;overflow:hidden;height:100%;display:flex;flex-direction:column}
 .b-svc-badge{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--gs-border);

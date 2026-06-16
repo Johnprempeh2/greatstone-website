@@ -48,8 +48,8 @@ export const css = `
 .b-news-card{position:relative;overflow:hidden;border:1px solid var(--gs-border);border-radius:24px;
   padding:clamp(34px,5vw,64px);text-align:center;backdrop-filter:blur(10px);
   background:radial-gradient(120% 160% at 50% -40%,rgba(200,255,0,.10),transparent 60%),var(--gs-glass,rgba(30,38,32,.55))}
-.b-news-h2{max-width:18ch;margin:.3em auto 0;font-size:clamp(1.6rem,3.6vw,2.5rem);font-weight:900;letter-spacing:-.02em;line-height:1.12}
-.b-news-lead{margin:16px auto 0;max-width:54ch}
+.b-news-h2{max-width:18ch;margin:.3em auto 0;font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;letter-spacing:-.02em;line-height:1.08}
+.b-news-lead{margin:16px auto 0;max-width:60ch}
 .b-news-form{display:flex;gap:10px;max-width:520px;margin:26px auto 0}
 .b-news-form input{flex:1;font-family:inherit;font-size:.95rem;color:var(--gs-text);padding:.9em 1.2em;border-radius:100px;
   border:1px solid var(--gs-border-soft);background:rgba(0,0,0,.25);transition:border-color var(--gs-dur)}
