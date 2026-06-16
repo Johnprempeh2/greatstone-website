@@ -17,14 +17,23 @@ export function Timeline({ index, eyebrow, headline, highlight, body, items = []
     const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) e.target.classList.add('lit'); }),
       { threshold: 0.35, rootMargin: '0px 0px -18% 0px' });
     els.forEach((e) => io.observe(e));
-    const onScroll = () => {
-      if (!track) return;
+
+    // rAF-batch the scroll work: at most one layout read + style write per frame (never per scroll
+    // event), and only while the timeline is on/near screen — so the listener is near-free elsewhere.
+    let visible = false, rafId = 0;
+    const update = () => {
+      rafId = 0;
+      if (!track || !visible) return;
       const r = track.getBoundingClientRect();
       const p = Math.min(Math.max((innerHeight * 0.55 - r.top) / Math.max(r.height, 1), 0), 1);
       track.style.setProperty('--tl-progress', String(p));
     };
-    addEventListener('scroll', onScroll, { passive: true }); onScroll();
-    return () => { io.disconnect(); removeEventListener('scroll', onScroll); };
+    const onScroll = () => { if (!rafId) rafId = requestAnimationFrame(update); };
+    const visIO = new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) onScroll(); },
+      { rootMargin: '140px 0px 140px 0px' });
+    visIO.observe(tl);
+    addEventListener('scroll', onScroll, { passive: true });
+    return () => { io.disconnect(); visIO.disconnect(); removeEventListener('scroll', onScroll); if (rafId) cancelAnimationFrame(rafId); };
   }, [items.length]);
 
   return (
