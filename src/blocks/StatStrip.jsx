@@ -58,7 +58,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
             {stats.map((s, i) => (
               <div className="b-stat" data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
                 <div className="b-stat-fig">
-                  <span className="b-stat-num" data-target={s.value} data-prefix={s.prefix || ''} data-dec={s.dec || 0}>{(s.prefix || '') + '0'}</span>
+                  <span className="b-stat-num" data-target={s.value} data-prefix={s.prefix || ''} data-dec={s.dec || 0}>{(s.prefix || '') + (plain ? fmt(s.value, s.dec || 0) : '0')}</span>
                   {s.suffix ? <span className="b-stat-suffix">{s.suffix}</span> : null}
                 </div>
                 <div className="b-stat-l">{s.label}</div>
@@ -125,17 +125,17 @@ export const css = `
 .b-proof-plain .b-proof-head,.b-proof-plain .b-proof-body{margin-inline:auto}
 .b-proof-plain .b-proof-stats{margin-top:clamp(32px,4vw,56px)}
 .b-proof-plain .b-stat{position:relative}
-.b-proof-plain .b-stat-fig{justify-content:center}
+.b-proof-plain .b-stat-fig{justify-content:center;gap:0}/* live .bignum is one span — num+suffix sit flush, no inter-span gap */
 .b-proof-plain .b-stat-l{margin-inline:auto}
 .b-proof-plain .b-stat-n{margin-inline:auto;max-width:30ch}
 .b-proof-plain .b-stat:not(:last-child)::after{content:'';position:absolute;right:calc(-1 * clamp(9px,1.2vw,16px));top:18%;bottom:18%;
   width:1px;background:linear-gradient(180deg,transparent,var(--gs-border),transparent)}
 @media(max-width:900px){.b-proof-plain .b-stat:not(:last-child)::after{display:none}}
 /* plain variant: live services .outcomes .bignum is a STATIC solid-lime figure with the suffix baked into the
-   same span at the same size (site.css: color:var(--gs-accent), font-size:clamp(2.6rem,6vw,5rem)). Override the
-   base white->lime gradient to solid lime and match the suffix to the number size; count-up skipped in the JS. */
-.b-proof-plain .b-stat-num,.b-proof-plain .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent);font-size:clamp(2.6rem,6vw,5rem);letter-spacing:-.03em;line-height:1}
-.b-proof-plain .b-stat-suffix{font-size:clamp(2.6rem,6vw,5rem);font-weight:900;letter-spacing:-.03em}
+   same span at the same size (site.css: font-weight:900, font-size:clamp(2.6rem,6vw,5rem), line-height:1,
+   color:var(--gs-accent), letter-spacing:-.03em). Override the base white->lime gradient + smaller/lighter suffix
+   so num and suffix render as one solid-lime figure; count-up is skipped and the final value painted on mount. */
+.b-proof-plain .b-stat-num,.b-proof-plain .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent);font-weight:900;font-size:clamp(2.6rem,6vw,5rem);letter-spacing:-.03em;line-height:1}
 .b-stat-foot{margin-top:clamp(28px,4vw,44px);text-align:center;color:var(--gs-faint);font-size:.82rem}
 `;
 

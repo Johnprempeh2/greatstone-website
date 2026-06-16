@@ -14,15 +14,22 @@ export function Steps({ index, eyebrow, headline, highlight, body, items = [], a
         <h2 className="b-steps-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-steps-body" data-reveal>{body}</p> : null}
         <ol className="b-steps-grid">
-          {items.map((it, i) => (
-            <li className="b-step" data-reveal style={{ transitionDelay: `${i * 90}ms` }} key={i}>
-              <span className={numberStyle === 'text' ? 'b-step-n is-text' : 'b-step-n'}>{String(i + 1).padStart(2, '0')}</span>
-              {it.phase ? <span className="b-step-phase">{it.phase}</span> : null}
-              <h3>{it.title}</h3>
-              <p>{it.text}</p>
-              {it.timing ? <p className="b-step-timing">{it.timing}</p> : null}
-            </li>
-          ))}
+          {items.map((it, i) => {
+            const num = String(i + 1).padStart(2, '0');
+            // Text mode reads the number as a label line, so fold the phase into it
+            // ("01 — Within 24 hours", matching the live contact page). Badge mode can't
+            // hold a phrase in its tile, so it keeps the separate uppercase phase label.
+            const textMode = numberStyle === 'text';
+            return (
+              <li className="b-step" data-reveal style={{ transitionDelay: `${i * 90}ms` }} key={i}>
+                <span className={textMode ? 'b-step-n is-text' : 'b-step-n'}>{textMode && it.phase ? `${num} — ${it.phase}` : num}</span>
+                {it.phase && !textMode ? <span className="b-step-phase">{it.phase}</span> : null}
+                <h3>{it.title}</h3>
+                <p>{it.text}</p>
+                {it.timing ? <p className="b-step-timing">{it.timing}</p> : null}
+              </li>
+            );
+          })}
         </ol>
       </div>
     </section>
