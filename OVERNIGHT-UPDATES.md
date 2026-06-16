@@ -38,6 +38,26 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[08:24 BST] Parity #1 — re-seed the METHOD page (was showing climb content) — BUILT, VERIFIED, DEPLOYED.**
+- The method page was mis-seeded with climb.html content ("The Climb / Pebble. Plateau. Peak." on the blue
+  summit terrain). Live method.html = "The Digital Transformation Playbook / We leave no stone unturned" on the
+  emerald stone background, about scoring the eight pillars. Re-seeded faithfully from the live source.
+- Changes: method background summit→**stone** (single 3D scene, not the dual stone-summit — parity AND a perf
+  win, one renderer not two); Hero = "The Digital Transformation Playbook" + "We leave no / stone unturned." +
+  eight-faces lead + Book a Deep Dive; FeatureGrid = the 3 framing principles (We score not guess / We benchmark
+  / We climb the lowest first) under "One method. Eight pillars. No guesswork." + the real intro lead;
+  PillarExplorer = "The Eight Pillars / Every facet, examined." over the 8 real pillars; dropped the misplaced
+  Steps. Added an optional intro/body field to FeatureGrid (the section's lead had nowhere to live). Live em
+  dashes → colons (house style). The Maturity-model + framed CTA-band closing sections remain (gaps #6/#7).
+- Files: `src/store.js`, `src/blocks/FeatureGrid.jsx`.
+- Verify: build PASS (`index-2F9_cFr8`). Preview on a FRESH seed (had to block the beforeunload re-persist to
+  load it): method bg = stone (1 layer); hero/principles/pillars render the correct method content; FeatureGrid
+  intro shows; zero console errors; screenshot matches the live method hero. PARITY: method hero now faithful
+  (minor: Hero accents "stone unturned." where live accents only "stone" — a mid-headline accent is Hero-polish #18).
+- Commit: `86b9dbd`. **Deploy LIVE** `6a30fa0a18208626d8fda433`; greatstone-home.netlify.app/puck-proof/ 200;
+  live bundle has "Digital Transformation Playbook" / "We climb the lowest first". (NB: the seed is factory
+  content — fresh visitors get it; a returning visitor's localStorage keeps their authored copy, by CMS design.)
+
 ---
 
 ## Round 1 — started Mon Jun 15 22:50 BST 2026
