@@ -28,6 +28,16 @@ Invite; proof = Hero+StatStrip+CaseStudy+RoiBar+Quote+Invite; about = Hero+StatS
 Team+Invite; insights = Hero+FeaturedArticle+FeatureGrid+Invite; climb = Hero+MaturityMap+Ladder+Chapter+
 Invite; contact = TimeCounter+BookDeepDive+Steps+ContactBand.
 
+**[08:01 BST] Parity AUDIT complete** — `w1zr4coyb`: 11 agents, 69 findings → 24 ranked gaps written to the
+backlog memory (full specs preserved in the audit output file). **Verdict: ~65-70% parity.** Strong content +
+structure reproduction (Chapter, StatStrip count-up, Timeline, MaturityMap, Ladder, RoiBar, Quote, ContactBand,
+FeaturedArticle are near-faithful ports), but the studio loses the live site's SIGNATURE MOTION + bespoke
+section visuals (scramble headlines, scan-line cards, terraced slab stacks, pillar-fracture explorer, industry
+picker), substitutes generic glass-card grids for distinctive editorial layouts, lacks the whole desktop chrome
+layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method shows climb content; about shows
+the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
+bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
+
 ---
 
 ## Round 1 — started Mon Jun 15 22:50 BST 2026
