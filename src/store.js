@@ -12,7 +12,8 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 17;
+const SCHEMA = 18;
+const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
 // every team/catalogue record so the data shape already carries the tenant scope the Laravel build
@@ -75,10 +76,24 @@ export function listProducts(state, categoryId) {
 }
 // products carry a URL slug (the #product/<slug> route) that must stay unique + url-safe. The slug is
 // the shareable identity, so it's kept stable on rename; admins can edit it explicitly in the panel.
-export function productBySlug(state, slug) {
+export function findProductBySlug(products, slug) {
   if (!slug) return null;
-  const all = (state && state.products) || [];
-  return all.find((p) => (p.slug || slugify(p.name)) === slug) || null;
+  return (products || []).find((p) => (p.slug || slugify(p.name)) === slug) || null;
+}
+export function productBySlug(state, slug) { return findProductBySlug(state && state.products, slug); }
+// the catalogue has the same draft → published gate as pages: admins edit the DRAFT (products/categories)
+// in the Products tab; the public storefront + product pages render the PUBLISHED projection. Publishing
+// promotes the draft; discarding reverts it. So an in-progress price change never goes live by accident.
+export function catalogHasDrift(state) {
+  if (!state) return false;
+  return JSON.stringify(state.products || []) !== JSON.stringify(state.publishedProducts || [])
+    || JSON.stringify(state.categories || []) !== JSON.stringify(state.publishedCategories || []);
+}
+export function publishCatalog(state) {
+  return { ...state, publishedProducts: clone(state.products || []), publishedCategories: clone(state.categories || []) };
+}
+export function discardCatalogDraft(state) {
+  return { ...state, products: clone(state.publishedProducts || []), categories: clone(state.publishedCategories || []) };
 }
 function uniqueProductSlug(state, base, exceptId) {
   let slug = slugify(base) || 'product';
@@ -282,7 +297,11 @@ export function seedState() {
   pages.products = productsPage();
   const order = ['home', 'method', 'services', 'industries', 'products', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
-  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG, categories: withOrg(SEED_CATEGORIES), products: withOrg(SEED_PRODUCTS), team: withOrg(SEED_TEAM), activity: [] };
+  const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
+  // the catalogue ships published: draft (products/categories) and the public projection start identical
+  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG,
+    categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
+    team: withOrg(SEED_TEAM), activity: [] };
 }
 
 // the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
@@ -337,6 +356,10 @@ function migrate(state) {
       return p.slug === slug && p.sku !== undefined ? p : { ...p, slug, sku: p.sku || '' };
     });
   }
+  // catalogue publish gate (additive, schema 18): the existing live catalogue becomes the published
+  // projection, so nothing is suddenly "unpublished" on upgrade. Draft and published start identical.
+  if (!Array.isArray(state.publishedProducts)) state.publishedProducts = clone(state.products || []);
+  if (!Array.isArray(state.publishedCategories)) state.publishedCategories = clone(state.categories || []);
   if (!state.pages.products) {
     state.pages.products = productsPage();
     if (!state.order.includes('products')) {

@@ -78,7 +78,7 @@ function ProductEditor({ product, categories, onUpdate, onRemove }) {
   );
 }
 
-export default function ProductsPanel({ products = [], categories = [], onCreate, onUpdate, onRemove, onCreateCategory, onUpdateCategory, onRemoveCategory, onClose }) {
+export default function ProductsPanel({ products = [], categories = [], drift = false, canPublish = false, onPublish, onDiscard, onCreate, onUpdate, onRemove, onCreateCategory, onUpdateCategory, onRemoveCategory, onClose }) {
   const [showCats, setShowCats] = useState(false);
   return (
     <aside className="gs-panel" role="dialog" aria-label="Products">
@@ -87,7 +87,20 @@ export default function ProductsPanel({ products = [], categories = [], onCreate
         <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
       </div>
       <div className="gs-panel-body">
-        <p className="gs-field-hint">The catalogue behind the Storefront block. Add, edit and remove products here; changes show on the Products page live. Real licence checkout is a backend handoff — see HANDOVER.</p>
+        <div className={'gs-cat-pub' + (drift ? ' is-drift' : '')}>
+          <div className="gs-cat-pub-state">
+            <span className="gs-cat-pub-dot" aria-hidden="true" />
+            <span>{drift ? 'Unpublished catalogue changes' : 'Catalogue is live'}</span>
+          </div>
+          {drift ? (
+            <div className="gs-cat-pub-actions">
+              <button className="gs-btn ghost sm" onClick={onDiscard}>Discard</button>
+              <button className="gs-btn primary sm" onClick={onPublish} disabled={!canPublish}
+                title={canPublish ? 'Publish the catalogue to the public site' : 'Only an admin can publish'}>Publish catalogue</button>
+            </div>
+          ) : null}
+        </div>
+        <p className="gs-field-hint">The catalogue behind the Storefront block. Edits here are a draft; the public Products page and product pages show the <strong>published</strong> catalogue until you publish. Real licence checkout is a backend handoff — see HANDOVER.</p>
         <ul className="gs-prods">
           {products.map((p) => (
             <ProductEditor key={p.id} product={p} categories={categories} onUpdate={onUpdate} onRemove={onRemove} />

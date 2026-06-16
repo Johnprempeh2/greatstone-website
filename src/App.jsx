@@ -32,7 +32,7 @@ import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, productBySlug } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft } from './store.js';
 import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
@@ -171,12 +171,12 @@ export default function App() {
   // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
     if (productSlug) {
-      const pr = productBySlug(state, productSlug);
+      const pr = findProductBySlug(state.publishedProducts, productSlug);
       if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'products/' + (pr.slug || productSlug)); return; }
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.products]);
+  }, [current, state.pages, productSlug, state.publishedProducts]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -201,11 +201,18 @@ export default function App() {
 
   const page = state.pages[current] || state.pages[state.order[0]];
   const bg = page.background || state.settings.background || 'stone';
-  const catalog = { products: state.products || [], categories: state.categories || [] }; // for the Storefront block
-  // public product detail route (#product/<slug>): resolve the product + its category + same-category siblings
-  const activeProduct = productSlug ? productBySlug(state, productSlug) : null;
-  const activeProductCat = activeProduct ? (state.categories || []).find((c) => c.id === activeProduct.category) : null;
-  const relatedProducts = activeProduct ? (state.products || []).filter((p) => p.id !== activeProduct.id && p.category === activeProduct.category && p.status !== 'draft').slice(0, 3) : [];
+  // the catalogue has a draft → published gate: the editor (Storefront preview in the Puck canvas, the
+  // Products tab) sees the DRAFT; the public site renders the PUBLISHED projection. So an in-progress
+  // price or status change never reaches visitors until an admin publishes the catalogue.
+  const draftCatalog = { products: state.products || [], categories: state.categories || [] };
+  const pubProducts = state.publishedProducts || [];
+  const pubCategories = state.publishedCategories || [];
+  const publishedCatalog = { products: pubProducts, categories: pubCategories };
+  const catalogDrift = catalogHasDrift(state);
+  // public product detail route (#product/<slug>): resolve from the PUBLISHED catalogue + same-category siblings
+  const activeProduct = productSlug ? findProductBySlug(pubProducts, productSlug) : null;
+  const activeProductCat = activeProduct ? pubCategories.find((c) => c.id === activeProduct.category) : null;
+  const relatedProducts = activeProduct ? pubProducts.filter((p) => p.id !== activeProduct.id && p.category === activeProduct.category && p.status !== 'draft').slice(0, 3) : [];
   function exitProduct() { if (location.hash) location.hash = ''; setProductSlug(null); navigate(state.pages.products ? 'products' : state.order[0]); }
   // licence basket (prototype, in-memory): add/adjust/remove products, never takes payment
   const cartApi = useMemo(() => ({
@@ -225,8 +232,9 @@ export default function App() {
       return !eq(p.data, p.published) || p.status === 'review' || p.status === 'approved';
     }).length;
     const pendingInvites = canManageUsers ? state.team.filter((m) => m.status === 'invited').length : 0;
-    return { releases: pagesNeedingAction, team: pendingInvites, total: pagesNeedingAction + pendingInvites };
-  }, [state.order, state.pages, state.team, canManageUsers]);
+    const catalogue = catalogHasDrift(state) ? 1 : 0; // unpublished catalogue changes need a publish
+    return { releases: pagesNeedingAction, team: pendingInvites, products: catalogue, total: pagesNeedingAction + pendingInvites + catalogue };
+  }, [state.order, state.pages, state.team, state.products, state.categories, state.publishedProducts, state.publishedCategories, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -351,6 +359,17 @@ export default function App() {
     setState((s) => logActivity(removeCategory(s, id), 'Removed category “' + (name || 'category') + '”', actor())); flash('Category removed.');
   }
   function editCategory(id, patch) { setState((s) => ({ ...s, categories: (s.categories || []).map((c) => (c.id === id ? { ...c, ...patch, id } : c)) })); }
+  // catalogue publish gate (admin only): promote the draft catalogue to the public projection, or revert
+  // the draft to what's live. Mirrors page publish; the public storefront/product pages only ever read published.
+  function publishCatalogue() {
+    if (!canPublish) return;
+    setState((s) => logActivity(publishCatalog(s), 'Published the catalogue', actor())); flash('Catalogue published — live on the site.');
+  }
+  async function discardCatalogue() {
+    const ok = await ask({ kind: 'confirm', title: 'Discard catalogue changes', message: 'Revert all unpublished catalogue edits back to what’s live? This can’t be undone.', confirmLabel: 'Discard changes', danger: true });
+    if (!ok) return;
+    setState((s) => discardCatalogDraft(s)); flash('Reverted to the published catalogue.');
+  }
   // team & roles (admin only). Prototype: records membership/role/invitation; no real account or email.
   // Guards mirror what a real org_user unique constraint + last-admin rule enforce server-side.
   const activeAdmins = (team) => (team || []).filter((m) => m.role === 'admin' && m.status !== 'invited');
@@ -502,18 +521,18 @@ export default function App() {
 
   if (mode === 'edit' && canEdit) {
     return (
-      <CatalogContext.Provider value={catalog}>
+      <CatalogContext.Provider value={draftCatalog}>
       <CartContext.Provider value={cartApi}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
       <div className="is-edit">
         {overlays}
         <Stage background={bg} previewP={previewP} />
         {panel && (
-          <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
-            home: <OverviewPanel order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
+          <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team, products: studioAttention.products }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
+            home: <OverviewPanel order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
-            products: <ProductsPanel products={state.products} categories={state.categories} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
+            products: <ProductsPanel products={state.products} categories={state.categories} drift={catalogDrift} canPublish={canPublish} onPublish={publishCatalogue} onDiscard={discardCatalogue} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
@@ -582,7 +601,7 @@ export default function App() {
   }
 
   return (
-    <CatalogContext.Provider value={catalog}>
+    <CatalogContext.Provider value={publishedCatalog}>
     <CartContext.Provider value={cartApi}>
     <div className="is-view">
       {overlays}

@@ -12,7 +12,7 @@ function when(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function OverviewPanel({ order = [], pages = {}, products = [], categories = [], team = [], activity = [], org, onClose }) {
+export default function OverviewPanel({ order = [], pages = {}, products = [], categories = [], team = [], activity = [], org, catalogDrift = false, onClose }) {
   // Page status counts mirror the Releases board exactly (status-field based), so the two views never
   // disagree. Live + In review + Draft sum to the total — no contradictory axes on one dashboard.
   const pg = order.reduce((m, slug) => {
@@ -38,7 +38,7 @@ export default function OverviewPanel({ order = [], pages = {}, products = [], c
           <div className={'gs-ov-tile' + (pendingReview ? ' is-warn' : '')}><b>{pendingReview}</b><span>In review</span></div>
           <div className={'gs-ov-tile' + (pg.drift ? ' is-warn' : '')}><b>{pg.drift}</b><span>Unpublished changes</span></div>
           <div className="gs-ov-tile"><b>{pg.draft || 0}</b><span>Draft pages</span></div>
-          <div className="gs-ov-tile"><b>{prod.total}</b><span>Products</span></div>
+          <div className={'gs-ov-tile' + (catalogDrift ? ' is-warn' : '')}><b>{prod.total}</b><span>{catalogDrift ? 'Products · unpublished' : 'Products'}</span></div>
           <div className={'gs-ov-tile' + (tm.invited ? ' is-warn' : '')}><b>{tm.invited}</b><span>Pending invites</span></div>
         </div>
 

@@ -258,6 +258,14 @@
 .gs-ov-recent-meta{font-size:.7rem;color:var(--gs-faint);white-space:nowrap;flex-shrink:0}
 
 /* products management panel */
+.gs-cat-pub{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;
+  border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02)}
+.gs-cat-pub.is-drift{border-color:var(--gs-warning);background:rgba(255,200,0,.06)}
+.gs-cat-pub-state{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:700;color:var(--gs-text-muted)}
+.gs-cat-pub-dot{width:8px;height:8px;border-radius:50%;background:var(--gs-success);flex-shrink:0}
+.gs-cat-pub.is-drift .gs-cat-pub-dot{background:var(--gs-warning)}
+.gs-cat-pub.is-drift .gs-cat-pub-state{color:var(--gs-warning)}
+.gs-cat-pub-actions{display:flex;gap:8px}
 .gs-prods{list-style:none;display:flex;flex-direction:column;gap:6px;margin:14px 0}
 .gs-prod{border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02);overflow:hidden}
 .gs-prod-top{display:flex;align-items:center}
