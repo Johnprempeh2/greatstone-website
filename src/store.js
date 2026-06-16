@@ -216,7 +216,7 @@ export function seedState() {
           coda: 'Privacy-first by architecture. Not wrappers. Not gimmicks.', align: 'left',
         }),
         blk('StatStrip', {
-          index: '05', eyebrow: 'Proof, Not Promises', headline: 'Measured in', highlight: 'hours back.',
+          index: '05', eyebrow: 'Proof, Not Promises', headline: 'Measured in', highlight: 'hours back.', variant: 'cards', columns: 2,
           body: 'Our leadership has delivered transformation for Deloitte, Lloyds, Bank of Scotland and the NHS. Today we’re embedded with clients across the UK and Africa.',
           clients: 'Deloitte · Lloyds · Bank of Scotland · NHS',
           stats: [

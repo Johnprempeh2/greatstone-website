@@ -10,6 +10,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
   const reveal = useReveal([stats.length]);
   const countRef = useRef(null);
   const band = variant === 'band';
+  const cards = variant === 'cards';
   useEffect(() => {
     const el = countRef.current; if (!el) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -30,8 +31,8 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
 
   const hasHeader = index || eyebrow || headline || highlight || body || clients;
   return (
-    <section ref={reveal} className={'b-proof' + (band ? ' b-proof-band' : '')}>
-      {band ? null : <div className="b-proof-aurora" aria-hidden="true" />}
+    <section ref={reveal} className={'b-proof' + (band ? ' b-proof-band' : '') + (cards ? ' b-proof-cards' : '')}>
+      {(band || cards) ? null : <div className="b-proof-aurora" aria-hidden="true" />}
       <div className="wrap">
         {hasHeader ? (
           <>
@@ -98,6 +99,15 @@ export const css = `
 .b-proof-band .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent);
   font-size:clamp(1.3rem,2.6vw,2.1rem)}
 .b-proof-band .b-stat-l{margin-top:12px;font-weight:600;color:var(--gs-text-muted);font-size:.86rem;max-width:24ch}
+/* cards variant — the live home §05 2×2 glass stat-grid: each stat a glass card, first stat the lime hero-stat */
+.b-proof-cards .b-proof-stats{grid-template-columns:repeat(2,1fr) !important;gap:14px;max-width:560px}
+.b-proof-cards .b-stat{background:var(--gs-glass,rgba(30,38,32,.55));border:1px solid var(--gs-border);border-radius:10px;
+  padding:20px;backdrop-filter:blur(6px)}
+.b-proof-cards .b-stat-num,.b-proof-cards .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-text)}
+.b-proof-cards .b-stat-num{font-size:clamp(1.9rem,4vw,2.6rem)}
+.b-proof-cards .b-stat:first-child .b-stat-num,.b-proof-cards .b-stat:first-child .b-stat-suffix{color:var(--gs-accent)}
+.b-proof-cards .b-stat:first-child .b-stat-num{font-size:clamp(2.4rem,5vw,3rem)}
+.b-proof-cards .b-stat-l{margin-top:10px;font-size:.84rem}
 `;
 
 const STAT = (value, suffix, prefix, dec, label) => ({ value, suffix, prefix, dec, label });
@@ -113,7 +123,7 @@ export const puck = {
     clients: { type: 'text', label: 'Clients line', contentEditable: true },
     columns: { type: 'number', label: 'Columns', min: 2, max: 4 },
     variant: { type: 'radio', label: 'Style', options: [
-      { label: 'Aurora (with header)', value: 'aurora' }, { label: 'Band (headerless stat row)', value: 'band' },
+      { label: 'Aurora (with header)', value: 'aurora' }, { label: 'Band (headerless stat row)', value: 'band' }, { label: 'Cards (2-up glass)', value: 'cards' },
     ]},
     stats: {
       type: 'array', label: 'Stats',
