@@ -3,58 +3,79 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeHref } from '../lib/safe-url.js';
 
-// The one thing you can't make more of. A live clock counts the time slipping past since the
-// visitor arrived, under the "you can't buy time, we're the exception" line. The number is
-// code-driven (rAF, paused when the tab is hidden, seconds-only under reduced-motion); the copy
-// is editable. Pairs with a tide background.
-export function TimeCounter({ kicker, headline, highlight, body, clockLabel, coda, ctaLabel, ctaHref = '#book' }) {
+// contact.html's signature hero: "You still can't buy time. Let's save yours." over a compact bordered
+// time-cost chip — a blinking dot + a live MM:SS clock counting the visitor's time on the page + an
+// escalating narrative line ("you won't get them back"). Faithful port of .timecost / tcPulse. The
+// clock ticks once per second (paused when the tab is hidden); reduced-motion only stills the dot.
+export function TimeCounter({ kicker, headline, highlight, body, clockLabel, ctaLabel, ctaHref = '#book' }) {
   const ref = useReveal();
   const clockRef = useRef(null);
+  const lineRef = useRef(null);
   useEffect(() => {
-    const el = clockRef.current; if (!el) return;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let t0 = null, raf = 0, lastSec = -1;
-    const loop = (now) => {
-      if (!document.hidden) {
-        if (t0 == null) t0 = now;
-        const t = (now - t0) / 1000;
-        if (reduce) { const s = Math.floor(t); if (s !== lastSec) { lastSec = s; el.textContent = s + 's'; } }
-        else el.textContent = t.toFixed(1) + 's';
-      }
-      raf = requestAnimationFrame(loop);
+    const clk = clockRef.current, line = lineRef.current;
+    if (!clk) return;
+    const pad = (n) => (n < 10 ? '0' + n : '' + n);
+    const phrase = (s) => {
+      if (s < 1) return 'The clock’s already running. You won’t get this second back, now imagine a year of them.';
+      if (s < 60) return `You’ve been here <b>${s} second${s === 1 ? '' : 's'}</b>, that’s ${s} you won’t get back. Now imagine a year of them.`;
+      const m = Math.floor(s / 60), r = s % 60;
+      return `You’ve been here <b>${m} minute${m === 1 ? '' : 's'} ${r}s</b>, gone for good. A whole business loses that every few minutes, all year.`;
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    let t0 = null, lastSec = -1;
+    const tick = () => {
+      if (document.hidden) return;
+      if (t0 == null) t0 = Date.now();
+      const s = Math.floor((Date.now() - t0) / 1000);
+      if (s === lastSec) return;
+      lastSec = s;
+      clk.textContent = pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+      if (line) line.innerHTML = phrase(s);
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
     <section ref={ref} className="b-time">
       <div className="wrap b-time-inner">
         {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
-        <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-time-body" data-reveal>{body}</p> : null}
-        <div className="b-time-clock" data-reveal>
-          {clockLabel ? <span className="b-time-label">{clockLabel}</span> : null}
-          <span className="b-time-num" ref={clockRef}>0.0s</span>
+        <h1 className="b-time-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h1>
+        {body ? <p className="lead b-time-body" data-reveal>{body}</p> : null}
+
+        <div className="b-tc-chip" data-reveal role="status" aria-live="off">
+          <div className="b-tc-top">
+            <span className="b-tc-dot" aria-hidden="true" />
+            <span className="b-tc-clock" ref={clockRef}>00:00</span>
+            {clockLabel ? <span className="b-tc-label">{clockLabel}</span> : null}
+          </div>
+          <p className="b-tc-line" ref={lineRef}>The clock’s already running. You won’t get this second back, now imagine a year of them.</p>
         </div>
-        {coda ? <p className="b-time-coda" data-reveal>{coda}</p> : null}
-        {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
+
+        {ctaLabel ? <a className="b-cta b-time-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
   );
 }
 
 export const css = `
-.b-time{padding:clamp(72px,13vw,160px) 0;position:relative;text-align:center}
-.b-time-inner{max-width:760px;margin-inline:auto;position:relative;z-index:2}
-.b-time h2{margin-top:14px;font-size:clamp(2rem,5.4vw,3.8rem);font-weight:900;line-height:1.02;letter-spacing:-.03em;color:#fff}
-.b-time-body{margin:22px auto 0;max-width:54ch;color:var(--gs-muted);font-size:clamp(1.02rem,1.6vw,1.22rem);line-height:1.7}
-.b-time-clock{margin-top:clamp(32px,5vw,52px);display:flex;flex-direction:column;align-items:center;gap:8px}
-.b-time-label{font-size:.7rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--gs-faint)}
-.b-time-num{font-weight:900;font-size:clamp(3rem,9vw,6rem);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
-  color:var(--gs-accent);text-shadow:0 0 50px rgba(200,255,0,.35)}
-.b-time-coda{margin:clamp(28px,4vw,40px) auto 0;max-width:48ch;font-weight:800;color:var(--gs-text);font-size:clamp(1rem,1.6vw,1.22rem)}
-.b-time .b-cta{margin-top:clamp(28px,4vw,40px)}
+.b-time{padding:clamp(120px,18vh,210px) 0 clamp(48px,8vh,96px);position:relative}
+.b-time-inner{max-width:920px;position:relative;z-index:2}
+.b-time-head{margin-top:14px;font-size:clamp(2.4rem,7vw,5rem);font-weight:900;line-height:1.0;letter-spacing:-.03em;color:#fff;max-width:16ch}
+.b-time-body{margin-top:22px;max-width:60ch}
+.b-tc-chip{margin-top:2.4rem;display:inline-flex;flex-direction:column;gap:.45rem;padding:1.1rem 1.5rem;
+  border:1px solid var(--gs-border);border-radius:16px;background:linear-gradient(180deg,var(--gs-accent-soft),transparent);
+  backdrop-filter:blur(6px);max-width:min(540px,92vw)}
+.b-tc-top{display:flex;align-items:center;gap:.7rem}
+.b-tc-dot{width:9px;height:9px;border-radius:50%;background:var(--gs-accent);box-shadow:0 0 0 0 var(--gs-accent-glow);
+  animation:gsTcPulse 1s steps(1,end) infinite}
+@keyframes gsTcPulse{0%{box-shadow:0 0 0 0 var(--gs-accent-glow);opacity:1}50%{box-shadow:0 0 0 7px transparent;opacity:.35}100%{box-shadow:0 0 0 0 transparent;opacity:1}}
+.b-tc-clock{font-variant-numeric:tabular-nums;font-weight:900;font-size:clamp(1.5rem,3.4vw,2.2rem);letter-spacing:-.01em;color:var(--gs-accent);line-height:1}
+.b-tc-label{font-size:.72rem;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--gs-text-faint)}
+.b-tc-line{font-size:clamp(.95rem,1.5vw,1.1rem);color:var(--gs-text-muted)}
+.b-tc-line b{color:var(--gs-text);font-weight:700}
+.b-time-cta{margin-top:clamp(28px,4vw,40px)}
+@media(prefers-reduced-motion:reduce){.b-tc-dot{animation:none}}
 `;
 
 export const puck = {
@@ -62,19 +83,18 @@ export const puck = {
   fields: {
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     headline: { type: 'text', label: 'Headline', contentEditable: true },
-    highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    highlight: { type: 'text', label: 'Highlighted line', contentEditable: true },
+    body: { type: 'textarea', label: 'Lead', contentEditable: true },
     clockLabel: { type: 'text', label: 'Clock label', contentEditable: true },
-    coda: { type: 'textarea', label: 'Coda (optional)', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Button label (optional)' },
     ctaHref: { type: 'text', label: 'Button link' },
   },
   defaultProps: {
-    kicker: 'The one thing you can’t make more of',
-    headline: 'You can’t buy time.', highlight: 'We’re the exception.',
-    body: 'It moves in one direction and never comes back. The whole of business is a fight to spend less of it on the wrong things. That fight is what we win for you.',
-    clockLabel: 'Slipping past since you arrived',
-    coda: '', ctaLabel: 'Book a Deep Dive', ctaHref: '#book',
+    kicker: 'Book a Deep Dive',
+    headline: 'You still can’t buy time.', highlight: 'Let’s save yours.',
+    body: 'Everyone sells you tools. We buy back the hours your business is quietly losing, week after week, in the gaps you’ve stopped noticing. One deep dive. No pitch, no obligation. We come in, look hard, and leave no stone unturned.',
+    clockLabel: 'on this page',
+    ctaLabel: '', ctaHref: '#book',
   },
   render: (props) => <TimeCounter {...props} />,
 };

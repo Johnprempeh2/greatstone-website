@@ -270,12 +270,7 @@ export function seedState() {
       ], { title: 'Method — Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
-        blk('TimeCounter', {
-          kicker: 'The one thing you can’t make more of',
-          headline: 'You can’t buy time.', highlight: 'We’re the exception.',
-          body: 'It moves in one direction and never comes back. The whole of business is a fight to spend less of it on the wrong things. That fight is what we win for you.',
-          clockLabel: 'Slipping past since you arrived', coda: '', ctaLabel: '', ctaHref: '#book',
-        }),
+        blk('TimeCounter', {}),
         blk('BookDeepDive', {
           eyebrow: 'Tell us where the week goes', headline: 'Book a', highlight: 'Deep Dive.',
           body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
