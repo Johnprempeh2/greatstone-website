@@ -38,6 +38,17 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:40 BST] Re-audit R11 — industries hero compact + drop cursor prompt — BUILT, VERIFIED, DEPLOYED.**
+- The industries hero used size 'full' (100vh), pushing the IndustryPicker fully below the fold, and carried a
+  "Choose your sector" cursor cue the live `.ind-hero` doesn't have. Added a `compact` Hero size (min-height:auto,
+  padding clamp(140px,20vh,220px) 0 clamp(48px,7vh,90px) — matches the live .ind-hero/.ins-hero), set the
+  industries Hero to size 'compact' + prompt ''.
+- Files: `src/blocks/Hero.jsx` (compact size + radio option), `src/seed-pages.json` (industries Hero).
+- Verify: build PASS (`index-u0MVMOXm`, 373.77 kB). Fresh-seed preview: industries hero `size-compact` (height 723px
+  vs 860 viewport, no longer full-screen), no `.b-hero-prompt`, picker chip row now reaches the fold (top 805px,
+  above-fold true) instead of being pushed below; zero runtime errors; screenshot matches the live compact hero.
+- Commit: `dcb2f14`. **Deploy LIVE** `6a31442fddb1be3f0a7f69c0`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[13:32 BST] Re-audit R9 — FeaturedArticle 'Read the piece' CTA + animated corner-wave (insights) — BUILT, VERIFIED, DEPLOYED.**
 - The insights featured card was missing the live's "Read the piece" CTA and its corner-wave was static. Added
   ctaLabel/ctaHref fields (default 'Read the piece'/'#') → a `btn btn--primary` after the meta row; animated the
