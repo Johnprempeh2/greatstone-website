@@ -588,16 +588,8 @@
         }
       },
       {
-        "type": "Chapter",
-        "props": {
-          "index": "03",
-          "eyebrow": "The climb meets the method",
-          "headline": "We score all eight. Then climb the",
-          "highlight": "lowest first.",
-          "body": "Your altitude isn't one number, it's eight. We assess you across all eight pillars of the method (data, process, people, systems, security, experience, insight, growth), find the one holding the whole climb back, and start there.",
-          "coda": "We leave no stone unturned.",
-          "align": "left"
-        }
+        "type": "MethodTieIn",
+        "props": {}
       },
       {
         "type": "Invite",
