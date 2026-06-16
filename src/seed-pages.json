@@ -35,11 +35,11 @@
       {
         "type": "StatStrip",
         "props": {
-          "index": "03",
+          "index": "",
           "eyebrow": "The payback",
           "headline": "Hours back, three",
           "highlight": "ways.",
-          "body": "Illustrative targets. Your numbers are set by the DXP assessment.",
+          "body": "",
           "stats": [
             {
               "value": 40,
@@ -66,7 +66,10 @@
               "note": "Manual gaps closed, the quiet failures designed out."
             }
           ],
-          "columns": 3
+          "columns": 3,
+          "variant": "plain",
+          "footnote": "Illustrative targets: your numbers are set by the DXP assessment.",
+          "clients": ""
         }
       },
       {

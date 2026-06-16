@@ -6,11 +6,12 @@ const fmt = (n, dec) => (dec > 0 ? n.toFixed(dec) : Math.round(n).toLocaleString
 // Proof, not promises: an intro, a clients line, and a row of stats that count up once on
 // entry (and honour reduced-motion by showing the final figure immediately). The counter
 // drives DOM text directly so the figures are real text content for accessibility/SEO.
-export function StatStrip({ index, eyebrow, headline, highlight, body, clients, stats = [], columns = 4, variant = 'aurora' }) {
+export function StatStrip({ index, eyebrow, headline, highlight, body, clients, stats = [], columns = 4, variant = 'aurora', footnote }) {
   const reveal = useReveal([stats.length]);
   const countRef = useRef(null);
   const band = variant === 'band';
   const cards = variant === 'cards';
+  const plain = variant === 'plain';
   useEffect(() => {
     const el = countRef.current; if (!el) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -31,16 +32,20 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
 
   const hasHeader = index || eyebrow || headline || highlight || body || clients;
   return (
-    <section ref={reveal} className={'b-proof' + (band ? ' b-proof-band' : '') + (cards ? ' b-proof-cards' : '')}>
-      {(band || cards) ? null : <div className="b-proof-aurora" aria-hidden="true" />}
+    <section ref={reveal} className={'b-proof' + (band ? ' b-proof-band' : '') + (cards ? ' b-proof-cards' : '') + (plain ? ' b-proof-plain' : '')}>
+      {(band || cards || plain) ? null : <div className="b-proof-aurora" aria-hidden="true" />}
       <div className="wrap">
         {hasHeader ? (
           <>
             {(index || eyebrow) ? (
-              <div className="b-chapter-eyebrow" data-reveal>
-                {index ? <span className="b-chapter-num">{index}</span> : null}
-                {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
-              </div>
+              plain
+                ? (eyebrow ? <span className="kicker" data-reveal>{eyebrow}</span> : null)
+                : (
+                  <div className="b-chapter-eyebrow" data-reveal>
+                    {index ? <span className="b-chapter-num">{index}</span> : null}
+                    {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+                  </div>
+                )
             ) : null}
             {(headline || highlight) ? <h2 className="b-proof-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
             {body ? <p className="b-proof-body" data-reveal>{body}</p> : null}
@@ -61,6 +66,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
             ))}
           </div>
         )}
+        {footnote ? <p className="b-stat-foot" data-reveal>{footnote}</p> : null}
       </div>
     </section>
   );
@@ -108,6 +114,19 @@ export const css = `
 .b-proof-cards .b-stat:first-child .b-stat-num,.b-proof-cards .b-stat:first-child .b-stat-suffix{color:var(--gs-accent)}
 .b-proof-cards .b-stat:first-child .b-stat-num{font-size:clamp(2.4rem,5vw,3rem)}
 .b-proof-cards .b-stat-l{margin-top:10px;font-size:.84rem}
+/* plain variant — the live services .outcomes: centered, vertical hairline dividers between stats, no aurora,
+   with a faint footnote after the grid */
+.b-proof-plain{text-align:center}
+.b-proof-plain .b-proof-head,.b-proof-plain .b-proof-body{margin-inline:auto}
+.b-proof-plain .b-proof-stats{margin-top:clamp(32px,4vw,56px)}
+.b-proof-plain .b-stat{position:relative}
+.b-proof-plain .b-stat-fig{justify-content:center}
+.b-proof-plain .b-stat-l{margin-inline:auto}
+.b-proof-plain .b-stat-n{margin-inline:auto;max-width:30ch}
+.b-proof-plain .b-stat:not(:last-child)::after{content:'';position:absolute;right:calc(-1 * clamp(9px,1.2vw,16px));top:18%;bottom:18%;
+  width:1px;background:linear-gradient(180deg,transparent,var(--gs-border),transparent)}
+@media(max-width:900px){.b-proof-plain .b-stat:not(:last-child)::after{display:none}}
+.b-stat-foot{margin-top:clamp(28px,4vw,44px);text-align:center;color:var(--gs-faint);font-size:.82rem}
 `;
 
 const STAT = (value, suffix, prefix, dec, label) => ({ value, suffix, prefix, dec, label });
@@ -123,8 +142,9 @@ export const puck = {
     clients: { type: 'text', label: 'Clients line', contentEditable: true },
     columns: { type: 'number', label: 'Columns', min: 2, max: 4 },
     variant: { type: 'radio', label: 'Style', options: [
-      { label: 'Aurora (with header)', value: 'aurora' }, { label: 'Band (headerless stat row)', value: 'band' }, { label: 'Cards (2-up glass)', value: 'cards' },
+      { label: 'Aurora (with header)', value: 'aurora' }, { label: 'Band (headerless stat row)', value: 'band' }, { label: 'Cards (2-up glass)', value: 'cards' }, { label: 'Plain (centered + dividers)', value: 'plain' },
     ]},
+    footnote: { type: 'text', label: 'Footnote (optional)', contentEditable: true },
     stats: {
       type: 'array', label: 'Stats',
       arrayFields: {
