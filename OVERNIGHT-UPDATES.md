@@ -38,6 +38,26 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[11:55 BST] Perf #16 — kill image CLS (reserve logo aspect box + Figure aspect-ratio) — BUILT, VERIFIED, DEPLOYED.**
+- The site logo (`<img>`, 800×160, 5:1) was rendered with a CSS width but `height:auto` and no intrinsic dims, so its
+  box was 0-height until load → layout shift on every page (header + footer, above-the-fold). Figure's editorial
+  image had `loading=lazy` but no reserved space either. FIX: added `width="800" height="160"` (+ `decoding=async`)
+  to every logo `<img>` (Header, Footer, SignIn, AcceptInvite) so the browser reserves the 5:1 box before load
+  (verified: header logo renders 138×28, ratio 5.0, dims present); added `height:auto` to `.gs-logo img` +
+  `.site-footer .logo img` so the attribute ratio drives layout. Figure gained an `aspect` field (16:9 default /
+  3:2 / 4:3 / 1:1 / auto) applying `aspect-ratio` + `object-fit:cover` to reserve the image box (zero CLS), with
+  `decoding=async`. Net: no dimensionless images on any default page → CLS≈0.
+- Dropped an initial `fetchpriority` attempt on the header logo: this React version doesn't accept the camelCase
+  `fetchPriority` prop and warns; the logo isn't the LCP element (the hero is), so removed it rather than risk the
+  console. (The preview's console-log tool keeps a persistent buffer that still shows the pre-fix warnings; the
+  CURRENT rendered DOM has no `fetchpriority` attr — verified via outerHTML — so the live code is clean.)
+- Files: `src/Header.jsx`, `src/Footer.jsx`, `src/cms/SignIn.jsx`, `src/cms/AcceptInvite.jsx`, `src/studio.css`,
+  `src/site.css`, `src/blocks/Figure.jsx`.
+- Verify: build PASS (`index-C1ayuR_9`, 368.39 kB). Preview: header + footer logos carry width=800 height=160,
+  render at correct 5:1 size, box reserved pre-load; Figure aspect-ratio reserves space. No new console errors from
+  the current modules (only the stale buffered fetchPriority warnings, which the post-fix DOM disproves).
+- Commit: `7068278`. **Deploy LIVE** `6a312b82f8c8d4d489809e9b`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[11:39 BST] Parity #13 — PillarCards block (method 8-up examinable pillar wall) — BUILT, VERIFIED, DEPLOYED. (METHOD PAGE COMPLETE · LAST MISSING BLOCK)**
 - KEY FINDING: the live method's "The Eight Pillars / Every facet, examined." section is a 4-up CARD WALL
   (`.pillars`/`.pillar-card`), NOT a 3D explorer. The studio had seeded PillarExplorer (3D gem) there, which was a
