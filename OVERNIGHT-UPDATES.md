@@ -551,7 +551,13 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
   inviting editor@greatstone again → "That email is already on the team."; demoting the sole admin →
   "There must be at least one administrator…" (role stayed admin). No test data created. Zero console
   errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `29f081b`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:22 BST] Turn 17 done — yielding.** Round 2 progress: #1–#9, #13 done (10 items). Remaining:
+#10 catalogue+team audit trail (v5/med), #11 catalogue draft/publish gate (v5/high), #12 pause 3D
+render loop (v5/med), #14 orgId tenant (v4/med), #15 Studio IA (v4/med), #16 product detail page
+(v5/high), #17 export+DATA-MODEL.md (v5/low, dev), #18 Studio Home tab (v4/med). Next: #10 audit
+trail, #12 the 3D perf fix, #17 export. Deploys still 500 server-side; everything committed + staged.
 
 **[02:04 BST] Item R2-#7 — Product imagery (model + panel + storefront + basket + alt preflight) — BUILT, VERIFIED, COMMITTED.**
 - The storefront rendered zero imagery though Figure/Team/FeaturedArticle already wire MediaField.
