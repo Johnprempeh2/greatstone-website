@@ -4,21 +4,27 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
-export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', email }) {
+export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', email, variant = 'aurora' }) {
   const ref = useReveal();
-  return (
-    <section ref={ref} className="b-invite" id="invite">
-      <div className="b-invite-aurora" aria-hidden="true" />
-      <div className="wrap b-invite-inner">
-        {eyebrow ? <span className="kicker" data-reveal>{eyebrow}</span> : null}
-        <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
-        <div className="b-invite-actions" data-reveal>
-          {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
-          {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
-          {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
-        </div>
+  const framed = variant === 'framed';
+  const inner = (
+    <>
+      {eyebrow ? <span className="kicker" data-reveal>{eyebrow}</span> : null}
+      <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+      {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
+      <div className="b-invite-actions" data-reveal>
+        {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
+        {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
       </div>
+    </>
+  );
+  return (
+    <section ref={ref} className={'b-invite' + (framed ? ' b-invite-framed' : '')} id="invite">
+      {framed ? null : <div className="b-invite-aurora" aria-hidden="true" />}
+      {framed
+        ? <div className="wrap"><div className="b-invite-card">{inner}</div></div>
+        : <div className="wrap b-invite-inner">{inner}</div>}
     </section>
   );
 }
@@ -36,6 +42,16 @@ export const css = `
 .b-invite-email{font-size:.94rem;font-weight:700;color:var(--gs-text);border-bottom:1px solid var(--gs-border);padding-bottom:3px;
   transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease)}
 .b-invite-email:hover{color:var(--gs-accent);border-color:var(--gs-accent)}
+/* framed variant: a contained bordered card (the live method .cta-band), no full-bleed aurora */
+.b-invite-framed{padding:clamp(48px,9vw,110px) 0}
+.b-invite-card{position:relative;max-width:880px;margin-inline:auto;text-align:center;overflow:hidden;
+  border:1px solid var(--gs-border);border-radius:26px;background:var(--gs-accent-soft);
+  padding:clamp(40px,6vw,72px);backdrop-filter:blur(10px)}
+.b-invite-card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(600px 320px at 50% -20%,var(--gs-accent-dim),transparent 70%)}
+.b-invite-card>*{position:relative;z-index:1}
+.b-invite-card h2{font-size:clamp(1.8rem,4.4vw,3.1rem)}
+.b-invite-card .b-invite-body{max-width:46ch}
 `;
 
 export const puck = {
@@ -50,12 +66,15 @@ export const puck = {
     ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
     ctaHref2: { type: 'text', label: 'Ghost button link' },
     email: { type: 'text', label: 'Contact email (optional)' },
+    variant: { type: 'radio', label: 'Style', options: [
+      { label: 'Full-bleed (aurora)', value: 'aurora' }, { label: 'Framed card', value: 'framed' },
+    ]},
   },
   defaultProps: {
     eyebrow: 'Start the Conversation',
     headline: 'The first step', highlight: 'costs nothing.',
     body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-    ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', email: '',
+    ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora',
   },
   render: (props) => <Invite {...props} />,
 };

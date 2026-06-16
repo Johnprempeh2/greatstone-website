@@ -277,6 +277,9 @@ export function seedState() {
           ],
         }),
         blk('MaturityModel', {}),
+        blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
+          body: 'A Deep Dive scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
+          ctaLabel: 'Book a Deep Dive', ctaHref: '#book', variant: 'framed' }),
       ], { title: 'Method — Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
