@@ -38,6 +38,22 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[08:49 BST] Parity #4 — dual-CTA (primary + ghost) on Hero + Invite — BUILT, VERIFIED, DEPLOYED.** (fixes 6+ pages)
+- Live heroes/CTA bands render two buttons (.btn--primary + .btn--ghost); the studio supported one CTA and kept
+  swapping the ghost for a mailto. One contract change fixes the drift across six pages.
+- index.css: ghost variant `.b-cta.ghost` (accent-soft fill + border + body text, matching .btn--ghost) + a
+  `.b-cta-row` flex wrapper. Hero + Invite: added ctaLabel2/ctaHref2 rendered beside the primary; Invite email
+  now optional (default off). App: extended the CTA click interceptor — "#book"→contact (as before) and new
+  "#go/<slug>"→navigate(slug) so cross-page ghost links work in the SPA instead of hitting a dead .html href.
+- Seeded the real ghost labels: services hero "See the Method"; CTA-band ghosts on services "Explore the 8
+  pillars", industries "See the method", proof "See how we work", about "See the Method", climb "Explore the
+  Method" — all → #go/method.
+- Files: `src/blocks/Hero.jsx`, `src/blocks/Invite.jsx`, `src/index.css`, `src/App.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-DnDtZSkZ`). Fresh-seed preview: services hero = Book a Deep Dive + See the Method
+  (ghost); Invite = Book + Explore the 8 pillars; the ghost navigates to the method page with a clean hash;
+  zero console errors; screenshot shows both buttons.
+- Commit: `343055a`. **Deploy LIVE** `6a310008913504f36416d2ac`; 200; live bundle has `b-cta-row`/`b-cta ghost`/`#go/`.
+
 **[08:37 BST] Parity #2/#8 — Values 4-up block + re-seed the ABOUT page — BUILT, VERIFIED, DEPLOYED.**
 - About was the other mis-seeded page: the 8-pillar Pillars block stood in for the live "Four values. No
   slideware." grid, and an invented StatStrip carried figures the live page keeps in its hero.
