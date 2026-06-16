@@ -264,8 +264,8 @@ export function seedState() {
       contact: seedPage('Contact', 'tide', [
         blk('TimeCounter', {}),
         blk('BookDeepDive', {
-          eyebrow: 'Tell us where the week goes', headline: 'Book a', highlight: 'Deep Dive.',
-          body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
+          eyebrow: 'Tell us where the week goes', headline: 'Tell us where the week goes', highlight: '',
+          body: 'Two minutes here saves us an hour later. The more honest the picture, the sharper the dive.',
           submitLabel: 'Book a Deep Dive',
           email: 'dx@greatstonesoftware.co.uk',
         }),

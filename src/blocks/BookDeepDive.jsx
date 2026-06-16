@@ -22,15 +22,11 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
   return (
     <section ref={ref} className="b-book">
       <div className="wrap">
-        <div className="b-chapter-eyebrow" data-reveal>
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
-        </div>
-        <h2 className="b-book-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-book-body" data-reveal>{body}</p> : null}
-
         <div className="grid b-book-grid" data-reveal>
           <div className="card book-card">
             <span className="form-template-note">Template form</span>
+            <h2 className="h3 b-book-card-head">{headline}{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
+            {body ? <p className="b-book-card-intro muted">{body}</p> : null}
             {sent ? (
               <div className="book-sent">
                 <h3>Thanks. One more step.</h3>
@@ -81,9 +77,10 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
 
 export const css = `
 .b-book{padding:clamp(56px,9vw,120px) 0;position:relative}
-.b-book-head{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:900;line-height:1.03;letter-spacing:-.03em;max-width:18ch}
-.b-book-body{margin-top:18px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:60ch;line-height:1.7}
-.b-book-grid{grid-template-columns:1.15fr .85fr;gap:clamp(24px,4vw,56px);align-items:start;margin-top:clamp(28px,4vw,44px)}
+.b-book-grid{grid-template-columns:1.15fr .85fr;gap:clamp(24px,4vw,56px);align-items:start}
+/* heading + intro now live inside the card (faithful to live: h2.h3 + .muted intro right after the template note) */
+.b-book-card-head{font-size:clamp(1.3rem,2.4vw,2rem);font-weight:800;line-height:1.04;letter-spacing:-.02em}
+.b-book-card-intro{margin:.6rem 0 1.8rem;color:var(--gs-text-muted)}
 @media(max-width:860px){.b-book-grid{grid-template-columns:1fr}}
 .book-card{padding:clamp(26px,3.4vw,44px)}
 .form-template-note{display:inline-flex;align-items:center;gap:.5em;margin-bottom:1.6rem;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-faint)}
