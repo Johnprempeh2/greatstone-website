@@ -1,12 +1,14 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeHref } from '../lib/safe-url.js';
+import { emphasize } from './emphasis.jsx';
 
 // The editorial "chapter" section the live homepage leans on: a numbered eyebrow, a big
 // honest headline, a paragraph, an optional accent coda line, and an optional ghost CTA
 // (e.g. home §03 "Explore the eight pillars" → method). Reused for several chapters.
-export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#' }) {
+export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', puck }) {
   const ref = useReveal();
+  const editing = puck?.isEditing;
   return (
     <section ref={ref} className={`b-chapter align-${align}`}>
       <div className="wrap b-chapter-inner">
@@ -15,8 +17,8 @@ export function Chapter({ index, eyebrow, headline, highlight, body, coda, align
           {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
         </div>
         <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-chapter-body" data-reveal>{body}</p> : null}
-        {coda ? <p className="b-chapter-coda" data-reveal>{coda}</p> : null}
+        {body ? <p className="b-chapter-body" data-reveal>{emphasize(body, editing)}</p> : null}
+        {coda ? <p className="b-chapter-coda" data-reveal>{emphasize(coda, editing)}</p> : null}
         {ctaLabel ? <a className="b-cta ghost b-chapter-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
@@ -42,8 +44,11 @@ export const css = `
 .b-chapter h2{font-size:clamp(1.9rem,4.6vw,3.3rem);font-weight:900;line-height:1.03;letter-spacing:-.03em}
 .b-chapter-body{margin-top:24px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-chapter.align-center .b-chapter-body{margin-inline:auto}
-.b-chapter-coda{margin-top:22px;font-size:clamp(1rem,1.6vw,1.24rem);font-weight:800;color:var(--gs-text);letter-spacing:-.01em}
-.b-chapter-coda::first-line{color:var(--gs-accent)}
+/* coda is just a follow-on body paragraph (the live .ch-copy is one muted block, no lime callout) */
+.b-chapter-coda{margin-top:14px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
+.b-chapter.align-center .b-chapter-coda{margin-inline:auto}
+/* subtle inline emphasis, faithful to live .ch-copy strong: brighter text + weight 700, never lime */
+.b-chapter-body strong,.b-chapter-coda strong{color:var(--gs-text);font-weight:700}
 .b-chapter-cta{margin-top:28px;display:inline-flex}
 .b-chapter.align-center .b-chapter-cta{margin-inline:auto}
 `;

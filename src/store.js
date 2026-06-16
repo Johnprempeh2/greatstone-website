@@ -197,27 +197,27 @@ export function seedState() {
         }),
         blk('Chapter', {
           index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner.', highlight: 'Not a software house.',
-          body: 'For two decades our team has modernised how organisations actually work (their tools, their processes, their people), and now the intelligent layer above them all.',
+          body: 'For two decades our team has modernised how organisations actually work (their **tools**, their **processes**, their **people**), and now the intelligent layer above them all.',
           coda: 'Digital transformation first. AI as the accelerator.', align: 'left',
         }),
         blk('Chapter', {
           index: '02', eyebrow: 'Embedded, Not Advisory', headline: 'We sit inside', highlight: 'the business.',
-          body: 'Shoulder-to-shoulder with the people who run it. We learn your rules, then build the system to match the business, never the other way around.',
+          body: 'Shoulder-to-shoulder with the people who run it. We learn your rules, then build the system to match the business, **never the other way around**.',
           coda: 'No reports that gather dust. No tools for the sake of innovation.', align: 'left',
         }),
         blk('Chapter', {
           index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone', highlight: 'unturned.',
-          body: 'Every engagement begins with the Digital Transformation Playbook: a rigorous diagnostic across eight pillars, producing the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
+          body: 'Every engagement begins with the **Digital Transformation Playbook**: a rigorous diagnostic across **eight pillars**, producing the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
           coda: '', align: 'center', ctaLabel: 'Explore the eight pillars', ctaHref: '#go/method',
         }),
         blk('Chapter', {
           index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence,', highlight: 'properly integrated.',
-          body: 'We build agentic systems on the stack you already own. Intelligence that reasons across your own data, with human oversight built in, delivered in sprints that earn their keep early.',
-          coda: 'Privacy-first by architecture. Not wrappers. Not gimmicks.', align: 'left',
+          body: 'We build **agentic systems** on the stack you already own. Intelligence that reasons across your own data, with human oversight built in, delivered in sprints that earn their keep early.',
+          coda: 'Privacy-first by architecture. **Not wrappers. Not gimmicks.**', align: 'left',
         }),
         blk('StatStrip', {
           index: '05', eyebrow: 'Proof, Not Promises', headline: 'Measured in', highlight: 'hours back.', variant: 'cards', columns: 2,
-          body: 'Our leadership has delivered transformation for Deloitte, Lloyds, Bank of Scotland and the NHS. Today we’re embedded with clients across the UK and Africa.',
+          body: 'Our leadership has delivered transformation for **Deloitte, Lloyds, Bank of Scotland and the NHS**. Today we’re embedded with clients across the UK and Africa.',
           clients: 'Deloitte · Lloyds · Bank of Scotland · NHS',
           stats: [
             { value: 21, prefix: '', suffix: '+ hrs', dec: 0, label: 'Capacity recovered weekly · one engagement' },

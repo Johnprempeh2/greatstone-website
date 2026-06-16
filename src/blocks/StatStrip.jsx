@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
+import { emphasize } from './emphasis.jsx';
 
 const fmt = (n, dec) => (dec > 0 ? n.toFixed(dec) : Math.round(n).toLocaleString('en-GB'));
 
 // Proof, not promises: an intro, a clients line, and a row of stats that count up once on
 // entry (and honour reduced-motion by showing the final figure immediately). The counter
 // drives DOM text directly so the figures are real text content for accessibility/SEO.
-export function StatStrip({ index, eyebrow, headline, highlight, body, clients, stats = [], columns = 4, variant = 'aurora', footnote }) {
+export function StatStrip({ index, eyebrow, headline, highlight, body, clients, stats = [], columns = 4, variant = 'aurora', footnote, puck }) {
   const reveal = useReveal([stats.length]);
   const countRef = useRef(null);
   const band = variant === 'band';
@@ -48,7 +49,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
                 )
             ) : null}
             {(headline || highlight) ? <h2 className="b-proof-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
-            {body ? <p className="b-proof-body" data-reveal>{body}</p> : null}
+            {body ? <p className="b-proof-body" data-reveal>{emphasize(body, puck?.isEditing)}</p> : null}
             {clients ? <p className="b-proof-clients" data-reveal>{clients}</p> : null}
           </>
         ) : null}
@@ -82,6 +83,7 @@ export const css = `
 .b-proof .wrap{position:relative;z-index:1}
 .b-proof-head{font-size:clamp(1.9rem,4.8vw,3.3rem);font-weight:900;line-height:1.02;letter-spacing:-.03em}
 .b-proof-body{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
+.b-proof-body strong{color:var(--gs-text);font-weight:700}
 .b-proof-clients{margin-top:18px;color:var(--gs-faint);font-size:.82rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .b-proof-stats{display:grid;grid-template-columns:repeat(var(--b-cols,4),1fr);gap:clamp(18px,3vw,40px);margin-top:clamp(34px,5vw,56px)}
 @media(max-width:760px){.b-proof-stats{grid-template-columns:repeat(2,1fr) !important;gap:28px}}
