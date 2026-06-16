@@ -6,7 +6,7 @@ import { emphasize } from './emphasis.jsx';
 // The editorial "chapter" section the live homepage leans on: a numbered eyebrow, a big
 // honest headline, a paragraph, an optional accent coda line, and an optional ghost CTA
 // (e.g. home §03 "Explore the eight pillars" → method). Reused for several chapters.
-export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', puck }) {
+export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', puck }) {
   const ref = useReveal();
   const editing = puck?.isEditing;
   return (
@@ -19,7 +19,7 @@ export function Chapter({ index, eyebrow, headline, highlight, body, coda, align
         <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-chapter-body" data-reveal>{emphasize(body, editing)}</p> : null}
         {coda ? <p className="b-chapter-coda" data-reveal>{emphasize(coda, editing)}</p> : null}
-        {ctaLabel ? <a className="b-cta ghost b-chapter-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel ? <a className={'b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost')} href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
   );
@@ -65,15 +65,18 @@ export const puck = {
     align: { type: 'radio', label: 'Alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},
-    ctaLabel: { type: 'text', label: 'Ghost button label (optional)' },
-    ctaHref: { type: 'text', label: 'Ghost button link' },
+    ctaLabel: { type: 'text', label: 'Button label (optional)' },
+    ctaHref: { type: 'text', label: 'Button link' },
+    ctaVariant: { type: 'radio', label: 'Button style', options: [
+      { label: 'Ghost', value: 'ghost' }, { label: 'Primary (solid)', value: 'primary' },
+    ]},
   },
   defaultProps: {
     index: '01', eyebrow: 'Twenty Years Deep',
     headline: 'A transformation partner.', highlight: 'Not a software house.',
     body: 'For two decades our team has modernised how organisations actually work (their tools, their processes, their people), and now the intelligent layer above them all.',
     coda: 'Digital transformation first. AI as the accelerator.',
-    align: 'left', ctaLabel: '', ctaHref: '#',
+    align: 'left', ctaLabel: '', ctaHref: '#', ctaVariant: 'ghost',
   },
   render: (props) => <Chapter {...props} />,
 };

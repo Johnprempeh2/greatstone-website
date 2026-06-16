@@ -208,7 +208,7 @@ export function seedState() {
         blk('Chapter', {
           index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone', highlight: 'unturned.',
           body: 'Every engagement begins with the **Digital Transformation Playbook**: a rigorous diagnostic across **eight pillars**, producing the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
-          coda: '', align: 'center', ctaLabel: 'Explore the eight pillars', ctaHref: '#go/method',
+          coda: '', align: 'center', ctaLabel: 'Explore the eight pillars', ctaHref: '#go/method', ctaVariant: 'primary',
         }),
         blk('Chapter', {
           index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence,', highlight: 'properly integrated.',
