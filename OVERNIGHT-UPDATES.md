@@ -539,7 +539,13 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview: set an image on Bedrock via the panel MediaField →
   storefront card rendered it (16:9) and the basket line showed a thumbnail; removed it via the panel
   (clean image-less seed — no fabricated product images). Zero console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `d31d87d`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:06 BST] Turn 16 done — yielding.** Round 2 progress: #1–#8 done (8 items). Next: #9 Product/Offer
+JSON-LD structured data, #10 catalogue+team audit trail, #12 pause 3D render loop off-screen + DPR
+clamp, #13 team guards (last-admin/self-demote/duplicate-invite). Then the higher-effort #11 catalogue
+draft/publish gate, #14 orgId tenant, #15 IA, #16 product detail page, #17 export+data-model, #18 home
+tab. Deploys still 500 server-side; everything committed + dist staged.
 
 **[01:54 BST] Items R2-#8 + R2-#6 — persist basket + itemised quote — BUILT, VERIFIED, COMMITTED.**
 - R2-#8 (persist basket): the cart was in-memory only, so a half-built licence request evaporated on
