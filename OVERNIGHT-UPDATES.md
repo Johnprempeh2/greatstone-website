@@ -539,6 +539,19 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
   5 Products, e.g. Bedrock price "12000" / InStock; parses cleanly. Zero console errors. PASS.
 - Commit: `ce32b56`. Deploy: deferred (Netlify 500).
 
+**[02:52 BST] Item R2-#14 — Organisation entity + orgId tenant key — BUILT, VERIFIED, COMMITTED.**
+- No org/tenant scope existed, yet the DX-dashboard north star is org-scoped accounts and the
+  migrated shape would have had no tenant column.
+- Added an `org` entity `{id,name,slug}` (one 'Greatstone' org) and stamped `orgId` on every product,
+  category and team record — seeds, new records (add/invite paths), and an additive schema 15→16
+  migration that backfills the org + any record missing orgId. Team panel shows the org header. Updated
+  DATA-MODEL.md with the Organisation table + the per-record orgId → tenant-column mapping.
+- Files: `src/store.js`, `src/App.jsx`, `src/cms/TeamPanel.jsx`, `src/studio.css`, `DATA-MODEL.md`.
+- Verify: build PASS (149 modules). Preview: store migrated to schema 16; org present; ALL products/
+  team/categories carry `orgId: org-greatstone`; Team panel shows the "Greatstone International"
+  organisation header. Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+
 **[02:42 BST] Item R2-#17 — Export site JSON + DATA-MODEL.md — BUILT, VERIFIED, COMMITTED.**
 - All authored content (pages, catalogue, team, activity, assets — schema 15) was trapped in
   localStorage with no export seam, so the dev team's only path to seed Laravel was hand-copying.

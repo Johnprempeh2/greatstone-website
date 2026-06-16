@@ -48,7 +48,7 @@ function MemberRow({ member, isYou, onUpdate, onRemove }) {
   );
 }
 
-export default function TeamPanel({ team = [], currentEmail, onInvite, onUpdate, onRemove, onClose }) {
+export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUpdate, onRemove, onClose }) {
   const isMe = (m) => currentEmail && (m.email || '').toLowerCase() === String(currentEmail).toLowerCase();
   const [inv, setInv] = useState({ name: '', email: '', role: 'editor' });
   const set = (k, v) => setInv((f) => ({ ...f, [k]: v }));
@@ -68,6 +68,7 @@ export default function TeamPanel({ team = [], currentEmail, onInvite, onUpdate,
         <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
       </div>
       <div className="gs-panel-body">
+        {org ? <div className="gs-tm-org"><span className="gs-tm-org-name">{org.name}</span><span className="gs-tm-org-label">Organisation</span></div> : null}
         <p className="gs-field-hint">Assign roles and invite teammates. Prototype — this records membership only; it creates no account, sets no password and sends no email. Real org sign-in, roles and invites are the Laravel backend (see HANDOVER).</p>
 
         <form className="gs-tm-invite" onSubmit={send}>

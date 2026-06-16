@@ -12,8 +12,9 @@ That is per-session UI state, not content, and is not part of this model.
 
 ```jsonc
 {
-  "schema": 15,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
+  "schema": 16,                 // integer; bump + migrate forward, never re-key (drafts/history are in here)
   "settings": { "background": "stone-summit", "siteName": "Greatstone International" },
+  "org": { "id": "org-greatstone", "name": "Greatstone International", "slug": "greatstone" },  // the tenant
   "order": ["home", "method", "services", "industries", "products", "proof", "about", "insights", "climb", "contact"],
   "pages": { "<slug>": Page },  // keyed by slug; `order` is the nav/sort order
   "categories": [Category],
@@ -23,6 +24,16 @@ That is per-session UI state, not content, and is not part of this model.
   "assets": { "<id>": Asset }
 }
 ```
+
+## Organisation  → `organisations` (tenant)
+
+```jsonc
+{ "id": "org-greatstone", "name": "Greatstone International", "slug": "greatstone" }
+```
+The prototype runs one org, but **every Product, Category and TeamMember carries `orgId`** (FK →
+Organisation.id), so the shape is already multi-tenant: the Laravel build adds the `org_id` column +
+scopes every query to the current org. Pages are the public marketing site (one per deployment) and
+stay un-scoped for now.
 
 ## Page  → `pages` (+ `page_versions`)
 

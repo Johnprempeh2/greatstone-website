@@ -256,6 +256,10 @@
 .gs-cat-name:focus{border-color:var(--gs-accent)}
 
 /* team & roles panel */
+.gs-tm-org{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 12px;margin-bottom:12px;
+  border:1px solid var(--gs-border);border-radius:10px;background:rgba(200,255,0,.05)}
+.gs-tm-org-name{font-size:.96rem;font-weight:800;color:var(--gs-text)}
+.gs-tm-org-label{font-size:.6rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-text-faint)}
 .gs-tm-invite{border:1px solid var(--gs-border-soft);border-radius:12px;padding:14px;margin:6px 0 18px;background:rgba(200,255,0,.03);display:flex;flex-direction:column;gap:10px}
 .gs-tm-invitebtn{align-self:flex-start}
 .gs-tm-grouplabel{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-faint);margin:14px 0 8px}

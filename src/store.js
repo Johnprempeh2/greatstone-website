@@ -12,7 +12,12 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 15;
+const SCHEMA = 16;
+
+// the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
+// every team/catalogue record so the data shape already carries the tenant scope the Laravel build
+// enforces. organisations + per-record orgId map straight onto the tenant column + scoped queries.
+const ORG = { id: 'org-greatstone', name: 'Greatstone International', slug: 'greatstone' };
 
 let _seq = 0;
 // one canonical id generator (block/scene/asset ids must be unique within a page — they key both
@@ -70,7 +75,7 @@ export function listProducts(state, categoryId) {
 }
 export function addProduct(state, product) {
   const id = rid('prod');
-  const p = { id, name: 'New product', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], image: '', imageAlt: '', ...product, id };
+  const p = { id, orgId: (state.org && state.org.id) || ORG.id, name: 'New product', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], image: '', imageAlt: '', ...product, id };
   return { ...state, products: [...(state.products || []), p] };
 }
 export function updateProduct(state, id, patch) {
@@ -81,7 +86,7 @@ export function removeProduct(state, id) {
 }
 export function addCategory(state, category) {
   const id = rid('cat');
-  return { ...state, categories: [...(state.categories || []), { id, name: 'New category', slug: id, blurb: '', ...category, id }] };
+  return { ...state, categories: [...(state.categories || []), { id, orgId: (state.org && state.org.id) || ORG.id, name: 'New category', slug: id, blurb: '', ...category, id }] };
 }
 export function removeCategory(state, id) {
   // products in a removed category fall back to uncategorised (empty category)
@@ -102,7 +107,7 @@ const SEED_TEAM = [
 export function listTeam(state) { return (state && state.team) || []; }
 export function inviteTeamMember(state, member) {
   const id = rid('tm');
-  return { ...state, team: [...(state.team || []), { id, name: '', email: '', role: 'editor', title: '', status: 'invited', ...member, id }] };
+  return { ...state, team: [...(state.team || []), { id, orgId: (state.org && state.org.id) || ORG.id, name: '', email: '', role: 'editor', title: '', status: 'invited', ...member, id }] };
 }
 export function updateTeamMember(state, id, patch) {
   return { ...state, team: (state.team || []).map((m) => (m.id === id ? { ...m, ...patch, id } : m)) };
@@ -260,7 +265,8 @@ export function seedState() {
   });
   pages.products = productsPage();
   const order = ['home', 'method', 'services', 'industries', 'products', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
-  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, categories: SEED_CATEGORIES, products: SEED_PRODUCTS, team: SEED_TEAM };
+  const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
+  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG, categories: withOrg(SEED_CATEGORIES), products: withOrg(SEED_PRODUCTS), team: withOrg(SEED_TEAM), activity: [] };
 }
 
 // the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
@@ -301,6 +307,10 @@ function migrate(state) {
   if (!Array.isArray(state.products)) state.products = SEED_PRODUCTS;
   if (!Array.isArray(state.team)) state.team = SEED_TEAM;
   if (!Array.isArray(state.activity)) state.activity = [];
+  // tenant scope (additive): one org + orgId stamped on every catalogue/team record
+  if (!state.org) state.org = ORG;
+  const oid = state.org.id;
+  ['team', 'products', 'categories'].forEach((k) => { state[k] = (state[k] || []).map((x) => (x.orgId ? x : { ...x, orgId: oid })); });
   if (!state.pages.products) {
     state.pages.products = productsPage();
     if (!state.order.includes('products')) {
