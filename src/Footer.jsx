@@ -14,7 +14,7 @@ export default function Footer({ order, pages, onNavigate }) {
           <path d="M404 112 Q332 144 296 202 Q260 260 276 326 Q292 392 340 426" />
         </g>
       </svg>
-      <div className="logo"><img src={LOGO} alt="Greatstone International" /></div>
+      <div className="logo"><img src={LOGO} alt="Greatstone International" width="800" height="160" loading="lazy" decoding="async" /></div>
       <div className="tagline">The Foundation of Digital Excellence</div>
       <nav className="foot-links">
         {order.map((slug) => (

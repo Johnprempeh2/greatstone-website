@@ -113,7 +113,7 @@ export default function AcceptInvite({ status, org, onAccept, onBack }) {
   return (
     <div style={S.screen}>
       <div style={{ ...S.card, outline: 'none' }} role="dialog" aria-modal="true" aria-label="Accept invitation" tabIndex={-1} ref={cardRef}>
-        <img src={LOGO} alt="Greatstone International" style={S.logo} />
+        <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" style={S.logo} />
         {body}
       </div>
     </div>

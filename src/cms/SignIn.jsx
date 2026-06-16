@@ -37,7 +37,7 @@ export default function SignIn({ onAuthed, onCancel }) {
   return (
     <div style={S.screen}>
       <form style={S.card} onSubmit={submit} aria-label="Studio sign in">
-        <img src={LOGO} alt="Greatstone International" style={S.logo} />
+        <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" style={S.logo} />
         <h1 style={S.h1}>Studio sign in</h1>
         <p style={S.sub}>Editing is restricted to the Greatstone team. Sign in to open the studio.</p>
 

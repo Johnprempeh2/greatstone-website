@@ -3,14 +3,17 @@ import { MediaField } from '../cms/MediaField.jsx';
 
 // A general image with an optional caption — the simplest "drop a real photo on the page"
 // block. Image comes from the media library (URL or small upload); alt + caption are editable.
-export function Figure({ image, alt, caption, width = 'standard' }) {
+export function Figure({ image, alt, caption, width = 'standard', aspect = '16:9' }) {
   const ref = useReveal();
+  // reserve the image box up-front (aspect-ratio + cover) so it never shifts layout as it loads;
+  // 'auto' keeps the intrinsic ratio (no reservation) for editors who want true height.
+  const imgStyle = aspect && aspect !== 'auto' ? { aspectRatio: aspect.replace(':', ' / '), objectFit: 'cover' } : undefined;
   return (
     <section ref={ref} className={`b-figure width-${width}`}>
       <div className="wrap">
         <figure className="b-figure-inner" data-reveal>
           {image
-            ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" />
+            ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" decoding="async" style={imgStyle} />
             : <div className="b-figure-ph">Choose an image in the panel →</div>}
           {caption ? <figcaption className="b-figure-cap">{caption}</figcaption> : null}
         </figure>
@@ -38,8 +41,12 @@ export const puck = {
     width: { type: 'radio', label: 'Width', options: [
       { label: 'Standard', value: 'standard' }, { label: 'Wide', value: 'wide' },
     ]},
+    aspect: { type: 'select', label: 'Aspect ratio (reserves space)', options: [
+      { label: '16:9', value: '16:9' }, { label: '3:2', value: '3:2' }, { label: '4:3', value: '4:3' },
+      { label: '1:1', value: '1:1' }, { label: 'Auto (intrinsic)', value: 'auto' },
+    ]},
   },
-  defaultProps: { image: '', alt: '', caption: '', width: 'standard' },
+  defaultProps: { image: '', alt: '', caption: '', width: 'standard', aspect: '16:9' },
   render: (props) => <Figure {...props} />,
 };
 

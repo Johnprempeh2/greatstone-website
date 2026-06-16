@@ -161,6 +161,7 @@ body.nav-locked { overflow:hidden; }
 .site-footer { position:relative; padding:clamp(64px,9vh,120px) var(--gs-gutter) 48px; text-align:center; overflow:hidden; border-top:1px solid var(--gs-border-soft); }
 .site-footer .foot-wave { position:absolute; right:-40px; bottom:-40px; width:min(440px,60vw); opacity:.5; pointer-events:none; }
 .site-footer .logo { max-width:130px; margin:0 auto 14px; opacity:.8; }
+.site-footer .logo img { width:100%; height:auto; display:block; }
 .site-footer .tagline { font-weight:700; letter-spacing:.04em; }
 .site-footer .foot-links { display:flex; gap:22px; justify-content:center; flex-wrap:wrap; margin:20px 0; }
 .site-footer .foot-links a { font-size:.82rem; color:var(--gs-text-muted); transition:color var(--gs-dur); }

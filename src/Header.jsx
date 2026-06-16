@@ -51,7 +51,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
   return (
     <header className="gs-header">
       <a className="gs-logo" href="#" onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
-        <img src={LOGO} alt="Greatstone International" />
+        <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
       </a>
 
       <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>
