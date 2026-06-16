@@ -410,9 +410,15 @@ then R1-#20 (Team/roles/invitations prototype).
   "Thanks, Jane — we'd prepare a licence agreement for 2 products and send it to jane@northwind.co";
   "Done" cleared the basket + closed. Build clean; the 24 "[vite] Failed to reload" entries are
   mid-edit HMR artifacts (final code builds + runs). PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
-- R1-#19 DONE across 3 parts: catalogue model + management UX + storefront + basket/checkout +
-  handoff spec. NEXT: R1-#20 — Team/roles/invitations prototype (the DX-dashboard north star).
-- NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
+- Commit: `cf37fe5`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:40 BST] Turn 11 done — yielding. R1-#19 PRODUCTS NORTH STAR COMPLETE.** Three commits
+(`4fbce97` foundation, `b88cebb` management, `cf37fe5` basket/checkout + handoff). The studio now has
+a real catalogue, in-studio product/category management, an on-brand public storefront, and an honest
+licence-request checkout — all mapping to the dev team's Laravel/Stripe model. Next turn: R1-#20, the
+DX-dashboard north star (org-scoped roles + invitations prototype) on the existing role model
+(`cms/auth.js`). Then the leftover v3/v4 items (#13, #15, #17, #18), then Round 2 deep-dive.
+Deploys still 500 server-side; everything committed + dist staged.
+- (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
