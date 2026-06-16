@@ -38,6 +38,37 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:25 BST] Perf #23 ASSESSED — substantially met; remaining wins flagged (no code change this cycle).**
+- Assessed the public perf posture against #23. ALREADY IN PLACE (prior cycles): font preconnect to both Google
+  origins + `display=swap` (index.html); Puck editor JS code-split into the lazy `puck-*.js` chunk (off the public
+  bundle); three.js in a separate deferred `three-*.js` chunk; the Puck editor CSS split into the lazy
+  `EditorMount-*.css` (8.38 kB gz); `decoding=async` on all imgs (#16); CLS≈0 (#16); single-renderer backgrounds
+  (#15); rAF-batched Timeline (#17). Public critical path is lean: `index-*.js` ~112 kB gz + `index-*.css` ~10.4 kB
+  gz + Google Fonts. No build-size regression anywhere in this run.
+- REMAINING #23 levers — FLAGGED as deliberate follow-ons rather than done blind:
+  (1) **Self-host Montserrat woff2 400-900 + preload the 900 for LCP** — a real win (drops the render-blocking
+  cross-origin Fonts CSS) but needs ~6 subsetted binary font files added + an @font-face block; better done
+  deliberately with subsetting than by dumping binaries. Current preconnect+swap already de-risk the Fonts path.
+  (2) **Split editor-only rules out of `studio.css`** — studio.css (imported in main.jsx) mixes PUBLIC header chrome
+  (.gs-header/.gs-logo/.gs-navmenu, used by the public Header) with editor-only chrome (toolbar/command-palette/
+  panels); cleanly gating the editor rules behind EditorMount would shave a few KB gz off public CSS but risks the
+  public header styling for marginal gain (public CSS is already ~10 kB gz). Low priority.
+- No commit/deploy this cycle (nothing changed; manufacturing a change would risk the "no build-size/▒smoothness
+  regression" bar). Logged only.
+
+**[14:25 BST] #3b desktop chrome shell ASSESSED — FLAGGED to John as a scoped follow-on (not built blind).**
+- The parity audit's remaining big-ticket item is the live's desktop chrome LAYER: an emerald `#gsFacets`
+  facet-trail canvas, a scroll HUD (`.gs-progress` scaleX line + `.scroll-cue` + a right-rail `.dot-nav` synced to
+  blocks + a `.hud-chapter` current-section readout), and a `#loader` preloader gating the hero reveal. #3a (the
+  custom cursor + scroll-progress) is already shipped.
+- RECOMMENDATION (flagged, NOT built this run): this is a ~1-2 day, higher-risk piece — it's app-shell + a SECOND
+  WebGL/canvas layer (facets) that cuts against the single-renderer perf rule we've held, plus a dot-nav that must
+  resolve live against the per-page block anchors (gs-blk-<id>) and stay correct as blocks reorder in the editor.
+  Building it blind risks the perf bar (#15) and the editor. Suggested scope when John wants it: (a) facet canvas
+  as an OPTIONAL, reduced-motion-gated, pointer-fine-only layer that shares/│defers behind the existing Stage, with
+  a hard perf budget; (b) dot-nav + hud-chapter driven by the existing gs-blk anchors via one shared rAF scroll
+  dispatcher (reuse the Timeline pattern); (c) preloader as a lightweight first-paint gate. Deferred by design.
+
 **[14:17 BST] Re-audit R3 (minimum) — home copy-scrim for legibility over the 3D — BUILT, VERIFIED, DEPLOYED.**
 - R3 (rank 3, high) is the live's scroll-PINNED stone choreography (sticky 132-195vh panels over the fixed WebGL +
   per-chapter fade + data-scramble titles + a radial copy scrim). DECISION: full scroll-pinning is **intentionally
