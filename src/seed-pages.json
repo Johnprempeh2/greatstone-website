@@ -179,11 +179,6 @@
       {
         "type": "StatStrip",
         "props": {
-          "index": "01",
-          "eyebrow": "Headline results",
-          "headline": "The floor, not the ceiling.",
-          "highlight": "Measured, not theoretical.",
-          "body": "Drawn from real engagements across the book of work.",
           "stats": [
             {
               "value": 12,
@@ -209,7 +204,14 @@
               "dec": 0,
               "label": "adoption of what we build, ninety days in"
             }
-          ]
+          ],
+          "variant": "band",
+          "index": "",
+          "eyebrow": "",
+          "headline": "",
+          "highlight": "",
+          "body": "",
+          "clients": ""
         }
       },
       {
