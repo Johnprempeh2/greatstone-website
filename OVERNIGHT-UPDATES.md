@@ -38,6 +38,23 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[16:18 BST] RA2-5 — CTA solid-vs-ghost audit + home §03 fix — BUILT, VERIFIED, DEPLOYED. (LAST RA2 MED ITEM)**
+- Catalogued every live CTA across the 9 pages: pattern is "Book a Deep Dive" = `btn--primary` (solid lime, dark
+  text) with ghost secondaries; method hero leads with primary "Open the interactive breakdown" + ghost "Book a
+  Deep Dive". Compared against the studio Hero + Invite seeds: ALL primary/ghost assignments already match live, so
+  no change needed there (verified, not over-corrected).
+- One genuine divergence: live index §03 "Explore the eight pillars" is `btn-primary` (solid), but the studio
+  Chapter block hard-coded its CTA to ghost. Fix: added a `ctaVariant` (primary|ghost, default ghost) to Chapter
+  and set the home §03 Chapter to primary (it's the only Chapter with a CTA, so the default change is inert).
+- Files: `src/blocks/Chapter.jsx`, `src/store.js` (home §03).
+- Verify: build PASS (`index-BR951vNF.js`, 383,059 B, +200 B — negligible). Fresh-seed preview on home: §03 CTA
+  "Explore the eight pillars" = class `b-cta b-chapter-cta` (no ghost), background rgb(200,255,0) lime + rgb(14,22,17)
+  dark text (brand-correct, never white); zero runtime errors.
+- Deploy hiccup: first deploy command failed because I duplicated a segment of the proxy-path token (my copy error,
+  not a server fault). Requested a fresh token, wrote the exact command to a temp script (Write copies verbatim),
+  ran it clean. Lesson reinforced: copy the token exactly; a script file beats inline transcription.
+- Commit `b10c709`. **Deploy LIVE** `6a31694082a5e22074876f19`; greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+
 **[16:08 BST] RA2-11 — Chapter coda softened + **inline-bold** parsing (Chapter + StatStrip) — BUILT, VERIFIED, DEPLOYED.**
 - Live homepage `.ch-copy` is one muted paragraph with subtle `<strong>` emphasis (`.ch-copy strong` = brighter
   text `var(--gs-text)` + weight 700, NEVER lime). The studio over-emphasised: the Chapter coda was weight 800 with
