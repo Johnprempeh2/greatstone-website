@@ -20,7 +20,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
       const stat = node.closest('.b-stat'); if (stat) stat.classList.add('is-lit'); // live: .stat.lit num turns lime
       const target = parseFloat(node.dataset.target || '0'), dec = parseInt(node.dataset.dec || '0', 10);
       const pre = node.dataset.prefix || '';
-      if (reduce) { node.textContent = pre + fmt(target, dec); return; }
+      if (reduce || plain) { node.textContent = pre + fmt(target, dec); return; } // live services outcomes are static figures, no count-up
       const dur = 1500; let start = null;
       const step = (ts) => { if (start === null) start = ts; const pr = Math.min((ts - start) / dur, 1); const e = 1 - Math.pow(1 - pr, 3);
         node.textContent = pre + fmt(target * e, dec); if (pr < 1) requestAnimationFrame(step); else node.textContent = pre + fmt(target, dec); };
@@ -29,7 +29,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
     const obs = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { run(); obs.disconnect(); } }), { threshold: 0.3 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [JSON.stringify(stats)]);
+  }, [JSON.stringify(stats), plain]);
 
   const hasHeader = index || eyebrow || headline || highlight || body || clients;
   return (
@@ -108,6 +108,9 @@ export const css = `
   font-size:clamp(1.3rem,2.6vw,2.1rem)}
 .b-proof-band .b-stat-l{margin-top:12px;font-weight:600;color:var(--gs-text-muted);font-size:.86rem;max-width:24ch}
 /* cards variant — the live home §05 2×2 glass stat-grid: each stat a glass card, first stat the lime hero-stat */
+/* cards floats the glass grid over the 3D scene — no enclosing band/border, matching live §05 .chapter>.panel
+   (no bg/border, just an invisible text scrim). Scoped to cards so band/plain/aurora keep their own backgrounds. */
+.b-proof-cards{border-top:0;border-bottom:0;background:none;padding:clamp(40px,8vh,110px) 0}
 .b-proof-cards .b-proof-stats{grid-template-columns:repeat(2,1fr) !important;gap:14px;max-width:560px}
 .b-proof-cards .b-stat{background:var(--gs-glass,rgba(30,38,32,.55));border:1px solid var(--gs-border);border-radius:10px;
   padding:20px;backdrop-filter:blur(6px)}
@@ -128,6 +131,11 @@ export const css = `
 .b-proof-plain .b-stat:not(:last-child)::after{content:'';position:absolute;right:calc(-1 * clamp(9px,1.2vw,16px));top:18%;bottom:18%;
   width:1px;background:linear-gradient(180deg,transparent,var(--gs-border),transparent)}
 @media(max-width:900px){.b-proof-plain .b-stat:not(:last-child)::after{display:none}}
+/* plain variant: live services .outcomes .bignum is a STATIC solid-lime figure with the suffix baked into the
+   same span at the same size (site.css: color:var(--gs-accent), font-size:clamp(2.6rem,6vw,5rem)). Override the
+   base white->lime gradient to solid lime and match the suffix to the number size; count-up skipped in the JS. */
+.b-proof-plain .b-stat-num,.b-proof-plain .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent)}
+.b-proof-plain .b-stat-suffix{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:900;letter-spacing:-.03em}
 .b-stat-foot{margin-top:clamp(28px,4vw,44px);text-align:center;color:var(--gs-faint);font-size:.82rem}
 `;
 
