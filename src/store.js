@@ -251,16 +251,20 @@ export function seedState() {
         }),
       ], { title: 'Greatstone International — The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
 
-      method: seedPage('Method', 'summit', [
-        blk('Hero', { kicker: 'The Climb', headline: 'Pebble. Plateau.', highlight: 'Peak.', body: 'Where you stand on the climb decides the route up. This page rides the summit terrain as it grows beneath you.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book' }),
-        blk('FeatureGrid', { kicker: 'Where you stand', heading: 'Three tiers, one route up.', items: [
-          { title: 'Pebble', text: 'Surviving. Manual, reactive, held together by heroics.' },
-          { title: 'Plateau', text: 'Organised. Process exists, some automation has landed.' },
-          { title: 'Peak', text: 'Compounding. Intelligent, integrated, setting the pace.' },
-        ]}),
+      method: seedPage('Method', 'stone', [
+        blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone unturned.',
+          body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
+          prompt: '', align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book' }),
+        blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.',
+          body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: a full, honest read of the business across eight pillars, so the work that follows is the work that actually moves you.',
+          items: [
+            { title: 'We score, not guess', text: 'Every pillar gets a number, a clear, defensible read of where you stand today.' },
+            { title: 'We benchmark', text: 'Your scores set against your peers, so you can see the gap and the lead.' },
+            { title: 'We climb the lowest first', text: 'The biggest gain is hiding in your weakest pillar. That’s where we start.' },
+          ]}),
         blk('PillarExplorer', {
-          index: '02', eyebrow: 'The Methodology', headline: 'Explore the eight', highlight: 'pillars.',
-          body: 'Every engagement begins with the Digital Transformation Playbook: a rigorous diagnostic across eight pillars. Hover a gem, or pick a pillar, to see what we read.',
+          index: '', eyebrow: 'The Eight Pillars', headline: 'Every facet, examined.', highlight: '',
+          body: 'Here’s what we look at, and what we measure. Click any pillar to turn it over in 3D.',
           items: [
             { title: 'People', text: 'Know who moves what, and set them up to move it well.' },
             { title: 'Communication', text: 'Make the value land, inside the business and out.' },
@@ -272,16 +276,7 @@ export function seedState() {
             { title: 'Value', text: 'Tie every move back to money, time or risk.' },
           ],
         }),
-        blk('Steps', {
-          index: '03', eyebrow: 'The Playbook', headline: 'Diagnose. Report.', highlight: 'Build.',
-          body: 'The same three moves, whatever tier you start from.',
-          items: [
-            { title: 'Diagnostic', text: 'We map where the week goes, across all eight pillars.' },
-            { title: 'Periscope Report', text: 'A clear read of where you stand and the fastest gains.' },
-            { title: 'Phased Roadmap', text: 'The build, embedded into how you already work, not bolted on.' },
-          ],
-        }),
-      ], { title: 'Method — Greatstone International', description: 'Pebble, plateau, peak. Where you stand on the climb decides the route up.', ogImage: '' }),
+      ], { title: 'Method — Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
         blk('TimeCounter', {
