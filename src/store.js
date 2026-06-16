@@ -220,9 +220,9 @@ export function seedState() {
           body: 'Our leadership has delivered transformation for Deloitte, Lloyds, Bank of Scotland and the NHS. Today we’re embedded with clients across the UK and Africa.',
           clients: 'Deloitte · Lloyds · Bank of Scotland · NHS',
           stats: [
-            { value: 21, prefix: '', suffix: '+', dec: 0, label: 'Hours recovered weekly, one engagement' },
+            { value: 21, prefix: '', suffix: '+ hrs', dec: 0, label: 'Capacity recovered weekly · one engagement' },
             { value: 27, prefix: '£', suffix: 'k', dec: 0, label: 'Capacity returned annually' },
-            { value: 20, prefix: '', suffix: '', dec: 0, label: 'Years of leadership heritage' },
+            { value: 20, prefix: '', suffix: 'yrs', dec: 0, label: 'Leadership heritage' },
             { value: 2, prefix: '', suffix: '', dec: 0, label: 'Continents, one team' },
           ],
         }),
