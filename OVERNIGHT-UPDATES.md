@@ -38,6 +38,24 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[11:29 BST] Parity #14 — MethodTieIn block (climb method tie-in + mini 8-pillar bar chart) — BUILT, VERIFIED, DEPLOYED. (CLIMB PAGE COMPLETE)**
+- climb.html's "(4) method tie-in" is a 2-col band: LEFT kicker + headline (accented "lowest first") + lead + a
+  ghost link to the method; RIGHT a 4×2 mini bar chart of the eight pillars (each a square with a bottom-anchored
+  bar at its score), the single "lowest" pillar lime-highlighted ("we climb the lowest first"). The studio had this
+  as a plain invented Chapter coda (no chart). New MethodTieIn block — faithful port of `.tiein`/`.pillars-mini`:
+  grid 1.1fr/.9fr (1-col <860px), `.b-tiein-pm` squares w/ `::before` bars (gradient, height var --h), `.lowest`
+  highlight (accent-mid border + glow), bars grow 0→--h on scroll-in (IntersectionObserver, reduced-motion instant).
+  Editable copy + ghost CTA + pillars array (label/height/lowest). Namespaced `.b-tiein-*`; reuses `.b-cta.ghost`.
+- Registered under Story; re-seeded climb invented Chapter coda → **MethodTieIn**. **The climb page is now complete**:
+  Hero → MaturityMap → Ladder → MethodTieIn → Invite (faithful to live).
+- Files: `src/blocks/MethodTieIn.jsx` (new), `src/puck.config.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-BAVe4jOi`, 362.46 kB / +4 kB). Fresh-seed preview: climb tie-in renders accented
+  headline + "See the 8 pillars" ghost CTA + 8 pillar bars (Data 42 / Process 58 / People 22 LOWEST / Systems 66 /
+  Security 50 / Experience 74 / Insight 38 / Growth 60); is-grown fires (People bar ~22px, Experience ~76px), lowest
+  border accent-mid; zero console errors; screenshot matches the live tie-in over the summit terrain.
+- Commit: `77c6cb8`. **Deploy LIVE** `6a312568ee11186332e70667`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Method tie-in (pillar bars)" / "b-tiein-pm".
+
 **[11:19 BST] Parity #12 — Terrace block (home §06 "How a Deep Dive works" slab stack) + define missing `--gs-border-strong` — BUILT, VERIFIED, DEPLOYED.**
 - home §06 is a terraced foundation: a centered chapter over a stack of slabs that grow WIDER descending
   (calc(70% + i*15%)), each a lime trapezoid (clip-path) that settles up from below in a top-down stagger on
