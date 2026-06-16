@@ -558,6 +558,28 @@ verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #
 (v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
 approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
+**[03:05 BST] Item R2-#18 — Studio Home tab (content-health overview) — BUILT, VERIFIED, COMMITTED, DEPLOYED.**
+- Editors had no at-a-glance read of site readiness — page status, draft drift, catalogue and team
+  health were each buried in a separate tab. Added a Studio **Home** tab (now the first tab) with six
+  headline tiles (Live pages, In review, Unpublished changes, Draft pages, Products, Pending invites),
+  a Catalogue and Team summary line, and a recent-changes feed off the activity log. Warn tiles (amber)
+  light when review/drift/invites are pending. Reachable from a new toolbar **Home** button and ⌘K.
+- A first cut showed contradictory tiles (10 Live + 9 "Never published") because "live" was status-
+  field based while "never published" read the version history — two different axes on one board.
+  Fixed: all page counts now mirror the Releases board (status-field based), so Live + In review +
+  Draft sum to the page total. Dropped the version-based tile entirely.
+- Files: `src/cms/OverviewPanel.jsx` (new), `src/cms/StudioPanel.jsx`, `src/App.jsx`, `src/studio.css`.
+- Verify: build PASS (150 modules). Preview as admin: Home tab renders first/active; tiles read
+  10 live + 0 review + 0 draft = 10 total (consistent), 5 products, 3 categories, 3 members; recent-
+  changes feed populated; zero console errors. Screenshot captured for the morning review. PASS.
+- Commit: `ce56efa`.
+- **Deploy: LIVE — Netlify is back up.** First successful deploy of the run (the all-night zipAndBuild
+  500s have cleared, credits unblocked as flagged). Deploy `6a30ada9944ce635fa85362f`; built fast;
+  https://greatstone-home.netlify.app/puck-proof/ returns 200 and the live bundle (`index-BB3xWV26.js`)
+  contains the new code (`gs-ov-tiles`, "Live pages", "Studio home"). dist synced into the deploy repo.
+  (Note: an interim poll watched for the wrong hash — `uSKW_RoX`, the pre-fix build I never shipped —
+  so it looked stuck; the shipped, fixed build is `BB3xWV26` and is confirmed live.)
+
 **[02:42 BST] Item R2-#17 — Export site JSON + DATA-MODEL.md — BUILT, VERIFIED, COMMITTED.**
 - All authored content (pages, catalogue, team, activity, assets — schema 15) was trapped in
   localStorage with no export seam, so the dev team's only path to seed Laravel was hand-copying.
