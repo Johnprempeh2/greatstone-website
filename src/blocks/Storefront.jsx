@@ -1,7 +1,13 @@
+import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { useCatalog } from '../cms/CatalogContext.js';
 import { useCart } from '../cms/CartContext.js';
+
+const priceFloor = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? m[1] : ''; };
+function SearchGlyph() {
+  return (<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>);
+}
 
 // Storefront: renders the product catalogue from the store (via CatalogContext), grouped by category.
 // Products are managed in the studio's Products tab, not in this block's fields — so the same
@@ -38,7 +44,7 @@ function Card({ p, catName }) {
   );
 }
 
-export function Storefront({ heading, body }) {
+export function Storefront({ heading, body, controls = 'show' }) {
   const ref = useReveal();
   const { products = [], categories = [] } = useCatalog();
   const catName = (id) => { const c = categories.find((x) => x.id === id); return c ? c.name : ''; };
@@ -48,9 +54,34 @@ export function Storefront({ heading, body }) {
   const cats = categories.filter((c) => listed.some((p) => p.category === c.id));
   const uncategorised = listed.filter((p) => !categories.some((c) => c.id === p.category));
 
-  // Product/Offer JSON-LD so search can surface the catalogue (price/availability rich results).
-  // Emitted inline (crawlers read it from the DOM); the "from £X" floor is the Offer price, sold = InStock.
-  const priceFloor = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? m[1] : ''; };
+  // discoverability controls: filter by category, search by name/summary, sort. Past a handful of
+  // products a static grouped wall is hard to scan, so a brand-locked bar appears (editor can hide it).
+  const [cat, setCat] = useState('all');
+  const [q, setQ] = useState('');
+  const [sort, setSort] = useState('featured');
+  const showBar = controls !== 'hide' && listed.length > 3;
+  const isDefault = cat === 'all' && !q.trim() && sort === 'featured';
+
+  const chips = [{ id: 'all', name: 'All', n: listed.length }]
+    .concat(cats.map((c) => ({ id: c.id, name: c.name, n: listed.filter((p) => p.category === c.id).length })))
+    .concat(uncategorised.length ? [{ id: '__more__', name: 'More', n: uncategorised.length }] : []);
+  const chipName = (id) => (chips.find((c) => c.id === id) || {}).name || '';
+
+  // filtered + sorted view (only used when a control is non-default); priceless items sort last
+  const ql = q.trim().toLowerCase();
+  let view = listed;
+  if (cat === '__more__') view = view.filter((p) => !categories.some((c) => c.id === p.category));
+  else if (cat !== 'all') view = view.filter((p) => p.category === cat);
+  if (ql) view = view.filter((p) => (p.name + ' ' + (p.summary || '')).toLowerCase().includes(ql));
+  const pv = (p) => { const v = parseFloat(priceFloor(p.price)); return isNaN(v) ? null : v; };
+  if (sort === 'name') view = [...view].sort((a, b) => a.name.localeCompare(b.name));
+  else if (sort === 'price-asc' || sort === 'price-desc') {
+    const dir = sort === 'price-asc' ? 1 : -1;
+    view = [...view].sort((a, b) => { const av = pv(a), bv = pv(b); if (av === null && bv === null) return 0; if (av === null) return 1; if (bv === null) return -1; return dir * (av - bv); });
+  }
+  const clearAll = () => { setCat('all'); setQ(''); setSort('featured'); };
+
+  // Product/Offer JSON-LD describes the WHOLE catalogue (not the filtered view) so search engines index it all.
   const ld = listed.length ? {
     '@context': 'https://schema.org', '@type': 'ItemList',
     itemListElement: listed.map((p, i) => {
@@ -70,9 +101,34 @@ export function Storefront({ heading, body }) {
       <div className="wrap">
         {heading ? <h2 className="b-sf-head" data-reveal>{heading}</h2> : null}
         {body ? <p className="b-sf-intro" data-reveal>{body}</p> : null}
+
+        {showBar ? (
+          <div className="b-sf-controls">
+            <div className="b-sf-search">
+              <SearchGlyph />
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products" aria-label="Search products" />
+            </div>
+            <div className="b-sf-chips" role="group" aria-label="Filter by category">
+              {chips.map((ch) => (
+                <button key={ch.id} type="button" className={'b-sf-chip' + (cat === ch.id ? ' is-on' : '')}
+                  aria-pressed={cat === ch.id} onClick={() => setCat(ch.id)}>{ch.name}<span className="b-sf-chipn">{ch.n}</span></button>
+              ))}
+            </div>
+            <label className="b-sf-sort">
+              <span className="gs-sr-only">Sort products</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="featured">Featured</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
+
         {listed.length === 0 ? (
           <p className="b-sf-empty">No products yet. Add them in the studio’s Products tab.</p>
-        ) : (
+        ) : isDefault ? (
           <div className="b-sf-groups">
             {cats.map((c) => (
               <div className="b-sf-group" key={c.id}>
@@ -92,6 +148,17 @@ export function Storefront({ heading, body }) {
               </div>
             ) : null}
           </div>
+        ) : (
+          <div className="b-sf-results">
+            <p className="b-sf-resultcount" role="status" aria-live="polite">
+              {view.length} {view.length === 1 ? 'product' : 'products'}{cat !== 'all' ? ' in ' + chipName(cat) : ''}{ql ? ' matching “' + q.trim() + '”' : ''}
+            </p>
+            {view.length ? (
+              <div className="b-sf-grid">{view.map((p) => <Card key={p.id} p={p} catName={catName(p.category)} />)}</div>
+            ) : (
+              <p className="b-sf-noresults">No products match. <button type="button" className="b-sf-clear" onClick={clearAll}>Clear filters</button></p>
+            )}
+          </div>
         )}
       </div>
     </section>
@@ -102,6 +169,27 @@ export const css = `
 .b-storefront{position:relative;padding:clamp(48px,9vw,110px) 0;z-index:2}
 .b-sf-head{font-size:clamp(1.9rem,4.6vw,3.1rem);font-weight:900;letter-spacing:-.03em;line-height:1.04;text-align:center}
 .b-sf-intro{margin:18px auto 0;max-width:60ch;text-align:center;color:var(--gs-text-muted);font-size:clamp(1rem,1.5vw,1.16rem);line-height:1.7}
+.b-sf-controls{margin-top:clamp(28px,5vw,46px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;justify-content:center}
+.b-sf-search{display:inline-flex;align-items:center;gap:8px;background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);
+  border-radius:100px;padding:9px 16px;color:var(--gs-text-faint);min-width:min(280px,80vw)}
+.b-sf-search:focus-within{border-color:var(--gs-accent)}
+.b-sf-search svg{flex-shrink:0}
+.b-sf-search input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.92rem}
+.b-sf-search input::placeholder{color:var(--gs-text-faint)}
+.b-sf-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.b-sf-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);
+  border-radius:100px;padding:8px 14px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.84rem;font-weight:700;
+  color:var(--gs-text-muted);transition:border-color .2s var(--gs-ease),color .2s var(--gs-ease)}
+.b-sf-chip:hover{color:var(--gs-text);border-color:var(--gs-border)}
+.b-sf-chip.is-on{background:var(--gs-accent);border-color:var(--gs-accent);color:#0e1611}
+.b-sf-chipn{font-size:.72rem;font-weight:800;opacity:.7;font-variant-numeric:tabular-nums}
+.b-sf-sort select{background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);border-radius:100px;padding:9px 16px;
+  color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;outline:none}
+.b-sf-sort select:focus{border-color:var(--gs-accent)}
+.b-sf-results{margin-top:clamp(28px,5vw,44px)}
+.b-sf-resultcount{text-align:center;color:var(--gs-text-muted);font-size:.9rem;font-weight:700;margin-bottom:22px}
+.b-sf-noresults{margin-top:20px;text-align:center;color:var(--gs-text-muted)}
+.b-sf-clear{background:none;border:0;padding:0;color:var(--gs-accent);font:inherit;font-weight:800;cursor:pointer;text-decoration:underline}
 .b-sf-groups{margin-top:clamp(36px,6vw,68px);display:flex;flex-direction:column;gap:clamp(40px,6vw,72px)}
 .b-sf-grouphead h3{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
 .b-sf-grouphead p{margin-top:6px;color:var(--gs-text-muted);font-size:.98rem;line-height:1.6;max-width:54ch}
@@ -141,10 +229,12 @@ export const puck = {
   fields: {
     heading: { type: 'text', label: 'Section heading', contentEditable: true },
     body: { type: 'textarea', label: 'Intro', contentEditable: true },
+    controls: { type: 'radio', label: 'Filter & search bar', options: [{ label: 'Show (4+ products)', value: 'show' }, { label: 'Hide', value: 'hide' }] },
   },
   defaultProps: {
     heading: 'The catalogue',
     body: 'Every licence includes onboarding and support. Prices are a guide; talk to us for volume and multi-year terms.',
+    controls: 'show',
   },
   render: (props) => <Storefront {...props} />,
 };
