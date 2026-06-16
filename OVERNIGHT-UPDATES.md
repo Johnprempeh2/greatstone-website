@@ -38,6 +38,17 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:38 BST] RA2-1 — home §05 StatStrip 2×2 glass-card grid — BUILT, VERIFIED, DEPLOYED.**
+- The flagship §05 rendered as a bare 4-up aurora row; the live is a 2×2 glass stat-grid with a lime hero-stat.
+  Added a `cards` variant to StatStrip.jsx: no aurora, 2-col grid, each `.b-stat` a glass card (--gs-glass bg + 1px
+  border + radius 10 + blur), first stat the lime hero-stat (bigger + accent), rest solid white. Seeded home §05
+  variant:'cards', columns:2.
+- Files: `src/blocks/StatStrip.jsx`, `src/store.js`.
+- Verify: build PASS (`index-BFPVY_X4`, 377.04 kB). Fresh-seed preview: home §05 = 2-col glass cards, first stat
+  21+ hrs lime + glass bg rgba(30,38,32,.55) + 1px border, others (£27k/20yrs/2) white; count-up fires; no aurora;
+  zero runtime errors; screenshot matches the live 2×2 stat-grid.
+- Commit: `f9a7b42`. **Deploy LIVE** `6a3151c73aab122ce9434cd7`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[14:33 BST] FINAL re-audit complete** — `wg0ice3lr` (10 agents, 68 findings). **Parity 76% → 83%** (was ~65-70% at run start). Per-page now: climb 88 · industries/proof/insights 86 · method/services/about/contact 82 · home 80. Every original top-12 item closed; the deeper pass surfaced finer drift (6 high, 6 med) written to the backlog (RA2 section). NOT closing out — per the directive, new high/med drift = keep working top-down. RA2 top items: (1) home §05 StatStrip → 2×2 glass-card grid; (2) method PillarCards need hrefs (Inspect →); (3) method FeatureGrid → centered 3-point statement w/ 01/02/03; (4) services Outcomes StatStrip → centered+dividers; (5) CTAs solid-lime not ghost; (6) sub-page heroes → compact (services/insights/proof/climb); (7) clear phantom hero CTAs + section numbers (proof/about); (8) contact calculator card CTA/glow; (9) climb hero compact + stacked Pebble/Plateau/Peak; (10) contact 'what happens next' steps + timing; (11) Chapter coda soften + inline-bold; (12) Newsletter/ServiceCards heading scale.
 
 **[14:25 BST] Perf #23 ASSESSED — substantially met; remaining wins flagged (no code change this cycle).**
