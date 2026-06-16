@@ -31,7 +31,7 @@ import StudioPanel from './cms/StudioPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity } from './store.js';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
@@ -292,18 +292,19 @@ export default function App() {
   function registerAsset(asset) { setState((s) => addAsset(s, asset)); } // add a picked/uploaded image to the library
   // product catalogue management (admin): add/edit/remove products + categories. Mutates the store
   // through the same CRUD the future Laravel API will mirror; the Storefront reads the result live.
-  function createProduct() { setState((s) => addProduct(s, {})); flash('Product added. Edit its details below.'); }
+  const actor = () => (user ? user.email : null); // who's making the change, for the audit log
+  function createProduct() { setState((s) => logActivity(addProduct(s, {}), 'Added a product', actor())); flash('Product added. Edit its details below.'); }
   function editProduct(id, patch) { setState((s) => updateProduct(s, id, patch)); }
   async function deleteProduct(id, name) {
     const ok = await ask({ kind: 'confirm', title: 'Remove product', message: 'Remove “' + (name || 'this product') + '” from the catalogue?', confirmLabel: 'Remove', danger: true });
     if (!ok) return;
-    setState((s) => removeProduct(s, id)); flash('Product removed.');
+    setState((s) => logActivity(removeProduct(s, id), 'Removed product “' + (name || 'product') + '”', actor())); flash('Product removed.');
   }
-  function createCategory() { setState((s) => addCategory(s, {})); }
+  function createCategory() { setState((s) => logActivity(addCategory(s, {}), 'Added a category', actor())); }
   async function deleteCategory(id, name) {
     const ok = await ask({ kind: 'confirm', title: 'Remove category', message: 'Remove “' + (name || 'this category') + '”? Products in it become uncategorised.', confirmLabel: 'Remove', danger: true });
     if (!ok) return;
-    setState((s) => removeCategory(s, id)); flash('Category removed.');
+    setState((s) => logActivity(removeCategory(s, id), 'Removed category “' + (name || 'category') + '”', actor())); flash('Category removed.');
   }
   function editCategory(id, patch) { setState((s) => ({ ...s, categories: (s.categories || []).map((c) => (c.id === id ? { ...c, ...patch, id } : c)) })); }
   // team & roles (admin only). Prototype: records membership/role/invitation; no real account or email.
@@ -312,14 +313,18 @@ export default function App() {
   function inviteTeammate(member) {
     const email = (member.email || '').trim().toLowerCase();
     if (email && (state.team || []).some((m) => (m.email || '').trim().toLowerCase() === email)) return flash('That email is already on the team.');
-    setState((s) => inviteTeamMember(s, member)); flash('Invitation recorded (prototype — no email sent).');
+    setState((s) => logActivity(inviteTeamMember(s, member), 'Invited ' + (member.email || 'a teammate') + ' as ' + ((ROLES[member.role] || {}).label || member.role || 'editor'), actor()));
+    flash('Invitation recorded (prototype — no email sent).');
   }
   function editTeammate(id, patch) {
+    const m = (state.team || []).find((x) => x.id === id);
     if (patch.role && patch.role !== 'admin') {
-      const m = (state.team || []).find((x) => x.id === id);
       if (m && m.role === 'admin' && m.status !== 'invited' && activeAdmins(state.team).length <= 1) return flash('There must be at least one administrator — promote someone else first.');
     }
-    setState((s) => updateTeamMember(s, id, patch));
+    setState((s) => {
+      const next = updateTeamMember(s, id, patch);
+      return patch.role && m && patch.role !== m.role ? logActivity(next, 'Changed ' + (m.name || m.email || 'a teammate') + ' to ' + ((ROLES[patch.role] || {}).label || patch.role), actor()) : next;
+    });
   }
   async function removeTeammate(id, name) {
     const m = (state.team || []).find((x) => x.id === id);
@@ -327,7 +332,7 @@ export default function App() {
     if (m && m.role === 'admin' && m.status !== 'invited' && activeAdmins(state.team).length <= 1) return flash('You can’t remove the last administrator.');
     const ok = await ask({ kind: 'confirm', title: 'Remove from team', message: 'Remove “' + (name || 'this teammate') + '” from the team?', confirmLabel: 'Remove', danger: true });
     if (!ok) return;
-    setState((s) => removeTeamMember(s, id)); flash('Removed from team.');
+    setState((s) => logActivity(removeTeamMember(s, id), 'Removed ' + (name || 'a teammate') + ' from the team', actor())); flash('Removed from team.');
   }
   function renameSlug(slug, next) {
     const n = (next || '').trim();
@@ -466,7 +471,7 @@ export default function App() {
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
-            activity: <ActivityPanel statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} onClose={() => setPanel(null)} embedded />,
+            activity: <ActivityPanel statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={() => setPanel(null)} embedded />,
           }} />
         )}
         <EditorBoundary key={'eb:' + current + ':' + puckKey} label="editor" onReset={discardDraft} resetLabel="Discard draft & recover">

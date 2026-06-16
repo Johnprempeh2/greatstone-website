@@ -539,6 +539,19 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
   5 Products, e.g. Bedrock price "12000" / InStock; parses cleanly. Zero console errors. PASS.
 - Commit: `ce32b56`. Deploy: deferred (Netlify 500).
 
+**[02:30 BST] Item R2-#10 — Catalogue & team audit trail — BUILT, VERIFIED, COMMITTED.**
+- Product/category/team CRUD wrote straight to the store with no actor or timestamp, so an admin
+  could quietly drop a product or change a role and nothing was logged.
+- Added an append-only `activity` slice + `logActivity(state, label, by)` (capped 200; schema 14→15,
+  additive). Stamped it on add/remove product, add/remove category, invite/remove teammate, and role
+  changes — each with the actor's email + time. The Activity panel now merges this site-wide log with
+  the current page's status events into one feed, each entry tagged with its scope.
+- Files: `src/store.js`, `src/App.jsx`, `src/cms/ActivityPanel.jsx`, `src/studio.css`.
+- Verify: build PASS (149 modules). Preview (as admin): added a product → Activity showed "Added a
+  product · admin@greatstone · Catalogue & team"; removed it → "Removed product 'New product'" logged
+  (catalogue back to 5). Schema migrated to 15. Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+
 **[02:20 BST] Item R2-#13 — Team-panel guards (last-admin / self / duplicate) — BUILT, VERIFIED, COMMITTED.**
 - The Team panel never received the current user, so an admin could silently remove or demote
   themselves and orphan the org of all admins; the invite form took any email with no dedupe.

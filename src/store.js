@@ -12,7 +12,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // migrations run against it. OLD_KEYS are read once so anyone mid-flight on the old key carries over.
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
-const SCHEMA = 14;
+const SCHEMA = 15;
 
 let _seq = 0;
 // one canonical id generator (block/scene/asset ids must be unique within a page — they key both
@@ -109,6 +109,15 @@ export function updateTeamMember(state, id, patch) {
 }
 export function removeTeamMember(state, id) {
   return { ...state, team: (state.team || []).filter((m) => m.id !== id) };
+}
+
+// ---- activity log (audit trail) ----
+// An append-only feed of who-changed-what across the catalogue and team — the gap the Laravel audit
+// log fills. Page status changes already record their own history; this captures the rest. Capped so
+// localStorage doesn't grow without bound. Compose it around a mutation: logActivity(addProduct(s,..), ..).
+export function logActivity(state, label, by) {
+  const entry = { id: rid('act'), ts: Date.now(), by: by || null, label };
+  return { ...state, activity: [entry, ...(state.activity || [])].slice(0, 200) };
 }
 
 export function seedState() {
@@ -291,6 +300,7 @@ function migrate(state) {
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
   if (!Array.isArray(state.products)) state.products = SEED_PRODUCTS;
   if (!Array.isArray(state.team)) state.team = SEED_TEAM;
+  if (!Array.isArray(state.activity)) state.activity = [];
   if (!state.pages.products) {
     state.pages.products = productsPage();
     if (!state.order.includes('products')) {

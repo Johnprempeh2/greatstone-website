@@ -21,8 +21,11 @@ function eventLabel(from, to) {
   return (STATUS_LABEL[from] || from) + ' → ' + (STATUS_LABEL[to] || to);
 }
 
-export default function ActivityPanel({ statusHistory = [], status, approvedBy, onClose }) {
-  const events = statusHistory.slice().reverse(); // newest first
+export default function ActivityPanel({ statusHistory = [], status, approvedBy, activity = [], pageTitle, onClose }) {
+  // unified feed: this page's status/governance events + the site-wide catalogue & team audit log
+  const pageEvents = statusHistory.map((e) => ({ ts: e.ts, by: e.by, label: eventLabel(e.from, e.to), note: e.note, scope: pageTitle || 'This page' }));
+  const siteEvents = (activity || []).map((a) => ({ ts: a.ts, by: a.by, label: a.label, scope: 'Catalogue & team' }));
+  const events = pageEvents.concat(siteEvents).sort((a, b) => b.ts - a.ts);
   return (
     <aside className="gs-panel" role="dialog" aria-label="Activity">
       <div className="gs-panel-head">
@@ -32,19 +35,19 @@ export default function ActivityPanel({ statusHistory = [], status, approvedBy, 
       <div className="gs-panel-body">
         <div className="gs-activity-now">
           <span className="gs-activity-dot" data-status={status} aria-hidden="true" />
-          <span>Currently <strong>{STATUS_LABEL[status] || status}</strong>{approvedBy ? ' · approved by ' + approvedBy : ''}</span>
+          <span>This page is <strong>{STATUS_LABEL[status] || status}</strong>{approvedBy ? ' · approved by ' + approvedBy : ''}</span>
         </div>
-        {events.length === 0 && <p className="gs-empty">No activity yet. Submitting for review, approving and publishing are recorded here with who and when.</p>}
+        {events.length === 0 && <p className="gs-empty">No activity yet. Page status changes and catalogue/team edits are recorded here with who and when.</p>}
         <ol className="gs-versions">
           {events.map((e, i) => (
             <li className="gs-version" key={e.ts + '-' + i}>
               <div className="gs-version-dot" aria-hidden="true" />
               <div className="gs-version-main">
                 <div className="gs-version-top">
-                  <span className="gs-version-label">{eventLabel(e.from, e.to)}</span>
+                  <span className="gs-version-label">{e.label}</span>
                   {i === 0 && <span className="gs-version-tag">latest</span>}
                 </div>
-                <div className="gs-version-when">{when(e.ts)}{e.by ? ' · ' + e.by : ''}</div>
+                <div className="gs-version-when">{when(e.ts)}{e.by ? ' · ' + e.by : ''} · <span className="gs-activity-scope">{e.scope}</span></div>
                 {e.note ? <div className="gs-activity-note">“{e.note}”</div> : null}
               </div>
             </li>
