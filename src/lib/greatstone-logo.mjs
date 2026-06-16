@@ -16,6 +16,7 @@ const SLABS = {"imageSize":[372,526],"slabs":[
 ]};
 const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarsePointer = matchMedia('(hover:none),(pointer:coarse)').matches; // phones/tablets: render fewer pixels
 
 export function mountGreatstoneLogo(container, opts = {}) {
   const o = Object.assign({ envUrl:'env-emerald.jpg', bloom:0.78, exposure:1.4, dpr:2,
@@ -26,7 +27,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
   container.appendChild(canvas);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:o.transparent, powerPreference:'high-performance' });
   renderer.debug.checkShaderErrors = false;   // some backends return null from getProgramInfoLog(); three .trim()s it
-  renderer.setPixelRatio(Math.min(devicePixelRatio, o.dpr));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, coarsePointer ? 1.5 : o.dpr)); // clamp DPR on mobile
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
 
   const scene = new THREE.Scene();
@@ -126,7 +127,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
     camera.aspect=w/h; camera.position.z = 9.5 / Math.min(camera.aspect,1); camera.updateProjectionMatrix(); }
   const ro=new ResizeObserver(resize); ro.observe(container); resize();
 
-  const clock=new THREE.Clock(); const tmpV=new THREE.Vector3(); let raf=0, visible=true;
+  const clock=new THREE.Clock(); const tmpV=new THREE.Vector3(); let raf=0, visible=true, active=true;
   let scrollT=0, scrollS=0;   /* scroll progress 0..1 (target + smoothed) drives the fracture */
   const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting;},{threshold:0}); io.observe(container);
 
@@ -166,11 +167,15 @@ export function mountGreatstoneLogo(container, opts = {}) {
     if (sceneRT){ renderer.setRenderTarget(sceneRT); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null); }
     composer.render();
   }
-  function loop(){ if(visible && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
+  // render only when on-screen, the tab is foreground, AND this layer is contributing (a faded-out
+  // scene in a multi-scene track stops rendering — it's invisible). rAF keeps spinning (it's cheap);
+  // only the expensive frame() is gated. dt is capped in frame(), so resuming never jumps.
+  function loop(){ if(visible && active && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
   loop();
   return {
     setClimb(p){ scrollT = clamp(p,0,1); },   /* Stage drives this from scroll position */
     setScroll(p){ scrollT = clamp(p,0,1); },
+    setActive(v){ active = v !== false; },    /* Stage pauses faded-out layers (opacity ~0) */
     destroy(){ cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
       removeEventListener('pointermove', _onPointerMove); removeEventListener('blur', _onPointerLeave);
       renderer.forceContextLoss(); renderer.dispose(); pmrem.dispose(); canvas.remove(); } };

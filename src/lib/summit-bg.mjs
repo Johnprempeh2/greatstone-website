@@ -243,15 +243,15 @@ export function mountSummit(container, opts = {}) {
   update(0);
   composer.render();
 
-  let raf = 0;
+  let raf = 0, active = true;   // Stage pauses faded-out layers (opacity ~0) in a multi-scene track
   if (!reduce) {
     const nowFn = (typeof performance !== 'undefined' && performance.now) ? () => performance.now() : () => Date.now();
     let last = nowFn();
     const loop = () => {
       const now = nowFn();
-      let dt = (now - last) / 1000; last = now;
+      let dt = (now - last) / 1000; last = now;   // last always advances → no jump when paused
       if (dt > 0.05) dt = 0.05;
-      if (!document.hidden) { update(dt); composer.render(); }
+      if (active && !document.hidden) { update(dt); composer.render(); }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -262,6 +262,7 @@ export function mountSummit(container, opts = {}) {
 
   return {
     setClimb(v) { climb.tgt = Math.min(1, Math.max(0, v)); },
+    setActive(v) { active = v !== false; },   // Stage pauses this layer when faded out
     renderFrame(dt) { update(typeof dt === 'number' ? dt : 0.016); composer.render(); },  // manual tick (preview/debug)
     resize,
     destroy() {

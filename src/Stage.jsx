@@ -54,12 +54,15 @@ export default function Stage({ background = 'stone', previewP = null }) {
         // ?? guards a malformed track (scenes without a matching transition) → never write opacity "NaN"
         const incoming = k > 0 ? (t[k - 1] ?? 1) : 1;
         const outgoing = k < n - 1 ? 1 - (t[k] ?? 0) : 1;
-        l.host.style.opacity = String(incoming * outgoing);
+        const op = incoming * outgoing;
+        l.host.style.opacity = String(op);
         l.host.style.zIndex = String(k);
         const bandStart = k > 0 ? ats[k - 1] : 0;
         const bandEnd = k < n - 1 ? ats[k] : 1;
         const localClimb = Math.min(Math.max((p - bandStart) / Math.max(bandEnd - bandStart, 1e-4), 0), 1);
         if (l.handle && l.handle.setClimb) l.handle.setClimb(localClimb);
+        // pause a fully faded-out scene's WebGL loop — single-scene pages stay opaque (op=1) so unaffected
+        if (l.handle && l.handle.setActive) l.handle.setActive(op > 0.01);
       });
     };
     applyRef.current = apply;
