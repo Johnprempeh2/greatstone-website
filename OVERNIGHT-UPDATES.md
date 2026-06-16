@@ -38,6 +38,21 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[12:35 BST] Re-audit R1 — calm Invite closing-CTA variants (drop invented aurora on 6 pages) — BUILT, VERIFIED, DEPLOYED.**
+- The single highest-leverage re-audit finding: the closing Invite defaulted to the invented full-bleed aurora
+  (gsDrift glow + oversized 4rem display h2) on 6 pages, where live closings are calmer. Added a `band` variant to
+  Invite.jsx (no aurora div, no card; h2 at the shared `.h2` clamp(2rem,4.5vw,3.6rem)) + a `pill` option (eyebrow
+  as a `.pill` badge + a top border) for the climb-style close. Reassigned per page in the seeds: services/proof =
+  framed card; home/industries/about = plain band; climb = band + pill+border; method stays framed (#7).
+- Files: `src/blocks/Invite.jsx`, `src/seed-pages.json`, `src/store.js`.
+- Verify: build PASS (`index-BNSM_HZj`, 369.39 kB). Fresh-seed preview: variants resolve correctly on every page
+  (home/industries/about band, services/proof/method framed, climb band+pill); home close now `b-invite-band` with
+  NO aurora div + h2 at 57.6px (calm .h2, was 4rem display); climb close is `b-invite-pillband` (pill eyebrow "Find
+  your altitude" + 1px top border, no aurora); cycling all 6 pages = zero runtime errors; screenshot matches the
+  live calm close.
+- Commit: `c024a16`. **Deploy LIVE** `6a3134e7c0700a00ed63c394`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "b-invite-band" / "b-invite-pillband".
+
 **[12:30 BST] PARITY RE-AUDIT complete** — `whlg914il` (10 agents, 68 findings). **Overall parity now 76%** (was ~65-70% at the start of this run). Page scores: climb 86 · insights 84 · method/industries/proof/about 82 · home 74 · services 68 · contact 58. Top-12 remaining gaps written to the backlog memory (RE-AUDIT section). The single highest-leverage finding: the closing-CTA (Invite) defaults to the invented full-bleed aurora across 6 pages, where live uses calmer treatments (framed card / plain band / pill+border). Working the top item next.
 
 **[12:03 BST] Perf #17 — rAF-batch Timeline scroll (kill INP jank) — BUILT, VERIFIED, DEPLOYED.**
