@@ -13,6 +13,11 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 const KEY = 'gs-studio';
 const OLD_KEYS = ['gs-studio-v11'];
 const SCHEMA = 19;
+// Bump whenever the bundled SEED CONTENT changes (new/edited seed pages or blocks). On load, a stored
+// studio whose seedVersion is older than this is re-seeded ONCE from the fresh bundle — so a deploy's
+// content updates actually show for returning visitors instead of being masked by their saved store.
+// Review-prototype behaviour: a bump resets in-editor drafts; between bumps, edits persist normally.
+const SEED_VERSION = 20260616;
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
@@ -298,7 +303,7 @@ export function seedState() {
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
-  return { schema: SCHEMA, settings: { background: 'stone', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG,
+  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { background: 'stone', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
 }
@@ -317,7 +322,13 @@ export function load() {
     if (!raw) { // first run on the stable key: carry over any prior versioned-key data, then drop it
       for (const k of OLD_KEYS) { const old = localStorage.getItem(k); if (old) { raw = old; try { localStorage.removeItem(k); } catch (e) { /* ignore */ } break; } }
     }
-    if (raw) return migrate(JSON.parse(raw));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // a deploy with changed seed content (newer SEED_VERSION) re-seeds once so the updates show;
+      // persist immediately so it happens on the bump, not on every load.
+      if (parsed && parsed.seedVersion !== SEED_VERSION) { const fresh = seedState(); persist(fresh); return fresh; }
+      return migrate(parsed);
+    }
   } catch (e) { /* ignore */ }
   return seedState();
 }
