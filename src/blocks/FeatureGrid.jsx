@@ -2,16 +2,23 @@ import { useReveal } from './reveal.js';
 
 // A general three-up card grid for when a section just needs parallel points. Lighter than
 // Pillars (no numbering, no sweep) — use it for tiers, services, anything that comes in threes.
-export function FeatureGrid({ kicker, heading, body, items = [] }) {
+export function FeatureGrid({ kicker, heading, body, items = [], variant = 'cards' }) {
   const ref = useReveal([items.length]);
+  const principles = variant === 'principles';
   return (
-    <section ref={ref} className="b-features">
+    <section ref={ref} className={'b-features' + (principles ? ' b-features-center' : '')}>
       <div className="wrap">
         {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
         {heading ? <h2 className="b-features-head" data-reveal>{heading}</h2> : null}
         {body ? <p className="b-features-intro" data-reveal>{body}</p> : null}
         <div className="b-grid">
-          {items.map((it, i) => (
+          {items.map((it, i) => principles ? (
+            <div className="b-feat-principle" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
+              {it.n ? <div className="b-feat-n">{it.n}</div> : null}
+              <h3>{it.title}</h3>
+              <p>{it.text}</p>
+            </div>
+          ) : (
             <article className="b-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
               <h3>{it.title}</h3>
               <p>{it.text}</p>
@@ -34,6 +41,12 @@ export const css = `
 .b-card:hover{transform:translateY(-4px);border-color:var(--gs-border)}
 .b-card h3{font-size:1.18rem;font-weight:800}
 .b-card p{margin-top:8px;color:var(--gs-muted);font-size:.95rem;line-height:1.55}
+/* principles variant — the live method framing: centered, no card chrome, leading 01/02/03 number */
+.b-features-center{text-align:center}
+.b-features-center .b-features-head,.b-features-center .b-features-intro{margin-inline:auto}
+.b-feat-n{font-size:.72rem;font-weight:800;letter-spacing:.18em;color:var(--gs-accent)}
+.b-feat-principle h3{font-size:1.15rem;font-weight:800;margin:.5em 0 .3em}
+.b-feat-principle p{color:var(--gs-text-muted);font-size:.92rem;line-height:1.55}
 `;
 
 export const puck = {
@@ -42,19 +55,22 @@ export const puck = {
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     heading: { type: 'text', label: 'Heading', contentEditable: true },
     body: { type: 'textarea', label: 'Intro (optional)', contentEditable: true },
+    variant: { type: 'radio', label: 'Style', options: [
+      { label: 'Cards', value: 'cards' }, { label: 'Principles (centered)', value: 'principles' },
+    ]},
     items: {
       type: 'array', label: 'Features',
-      arrayFields: { title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
-      defaultItemProps: { title: 'Pillar', text: 'A short description.' },
+      arrayFields: { n: { type: 'text', label: 'Number (principles)' }, title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
+      defaultItemProps: { n: '', title: 'Pillar', text: 'A short description.' },
       getItemSummary: (item) => item.title || 'Feature',
     },
   },
   defaultProps: {
-    kicker: 'The method', heading: 'Eight pillars. One honest read.',
+    kicker: 'The method', heading: 'Eight pillars. One honest read.', variant: 'cards',
     items: [
-      { title: 'People', text: 'Know who moves what, and set them up to move it well.' },
-      { title: 'Communication', text: 'Make the value land, inside the business and out.' },
-      { title: 'Data', text: 'Map the lifecycle so the right decision is the easy one.' },
+      { n: '', title: 'People', text: 'Know who moves what, and set them up to move it well.' },
+      { n: '', title: 'Communication', text: 'Make the value land, inside the business and out.' },
+      { n: '', title: 'Data', text: 'Map the lifecycle so the right decision is the easy one.' },
     ],
   },
   render: (props) => <FeatureGrid {...props} />,
