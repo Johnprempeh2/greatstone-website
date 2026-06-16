@@ -38,6 +38,27 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[10:59 BST] Parity #9 — InsightsGrid block (insights filterable post grid) + insights tide bg — BUILT, VERIFIED, DEPLOYED.**
+- insights.html's article wall is a row of category chips that crossfade a grid of post cards by data-cat;
+  the studio stood in a flat FeatureGrid (no filter, no media). New InsightsGrid block — faithful port of
+  `.chips` + `#postGrid`: chips (aria-pressed, "All" auto-prepended, lime active) drive a 200ms grid crossfade;
+  each `.b-ins-post` card has a `.b-ins-media` panel (gradient-ink g1→g6 cycling, or an optional MediaField image
+  with ink-zoom hover + overlay texture), an uppercase lime `.b-ins-tag` (label derived from the category list so
+  it stays in sync), title, excerpt, and a lime-bullet read-time pinned to the foot. Empty-state note when a filter
+  has no posts; reduced-motion instant branch. Categories + posts (incl. per-post image) are editable arrays;
+  defaults ported verbatim. Namespaced `.b-ins-*`; reuses `.card`/`.grid.cols-3`/`.wrap`.
+- Also flipped insights bg `stone` → `tide` (live insights mounts `mountGreatstoneTide`; both single-renderer, so
+  parity-only, no perf delta).
+- Registered under Editorial; re-seeded insights Hero → FeaturedArticle → **InsightsGrid** → Invite (was FeatureGrid).
+- Files: `src/blocks/InsightsGrid.jsx` (new), `src/puck.config.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-kXfVs7Y2`, 351.67 kB / +6 kB; three+puck code-split). Fresh-seed preview: insights =
+  Hero/FeaturedArticle/InsightsGrid/Invite, bg tide (canvasCount 1); 5 chips (All pressed), 6 posts with inks
+  g1→g6, tags derived (AI&Automation/Adoption/Digital Maturity/Industry/…), titles + read-times correct; clicking
+  AI&Automation crossfades to exactly the 2 AI posts (chip pressed); zero console errors; screenshot matches the
+  live grid (chips, gradient cards, lime tags, dot read-times).
+- Commit: `abe3cf9`. **Deploy LIVE** `6a311e5cf4e0b8a4eca9df47`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Insights grid" / "b-ins-chip" / "b-ins-post".
+
 **[10:48 BST] Parity #11 — ServiceCards block (services "Three moves. One foundation.") + services tide bg — BUILT, VERIFIED, DEPLOYED.**
 - services.html's signature offer section is three framed cards with a lime "scan line" that sweeps top→bottom
   once as each card reveals (staggered L→R), corner ticks, badged 01/02/03, accent sub-eyebrows + glowing-dot
