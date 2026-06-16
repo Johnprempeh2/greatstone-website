@@ -243,9 +243,10 @@ export function seedState() {
       ], { title: 'Greatstone International — The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
 
       method: seedPage('Method', 'stone', [
-        blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone unturned.',
+        blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no stone', highlight: 'unturned.',
           body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
-          prompt: '', align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book' }),
+          prompt: '', align: 'center', size: 'full',
+          ctaLabel: 'Open the interactive breakdown', ctaHref: '#go/method', ctaLabel2: 'Book a Deep Dive', ctaHref2: '#book' }),
         blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.',
           body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: a full, honest read of the business across eight pillars, so the work that follows is the work that actually moves you.',
           items: [
