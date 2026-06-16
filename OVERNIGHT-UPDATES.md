@@ -529,6 +529,16 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview as above; zero console errors. PASS.
 - Commits: `e85f1aa` (R2-#3/#5) + `550605b` (R2-#4). Deploy: deferred (Netlify 500). dist synced.
 
+**[02:12 BST] Item R2-#9 — Product/Offer JSON-LD on the storefront — BUILT, VERIFIED, COMMITTED.**
+- The e-commerce surface shipped zero schema.org markup, so search could never surface price/
+  availability for any product. The Storefront now emits an `ItemList` of `Product` + `Offer`
+  (GBP, "from £X" floor as the price, sold = InStock, brand Greatstone, image when set) inline as
+  `application/ld+json`. Highest-leverage SEO win on the new surface.
+- Files: `src/blocks/Storefront.jsx`.
+- Verify: build PASS (149 modules). Preview: the Products page carries a valid `ld+json` ItemList,
+  5 Products, e.g. Bedrock price "12000" / InStock; parses cleanly. Zero console errors. PASS.
+- Commit: `pending below`. Deploy: deferred (Netlify 500).
+
 **[02:04 BST] Item R2-#7 — Product imagery (model + panel + storefront + basket + alt preflight) — BUILT, VERIFIED, COMMITTED.**
 - The storefront rendered zero imagery though Figure/Team/FeaturedArticle already wire MediaField.
 - Added `image` + `imageAlt` to the catalogue model (`addProduct` default), a MediaField + alt input

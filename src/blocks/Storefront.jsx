@@ -45,8 +45,25 @@ export function Storefront({ heading, body }) {
   const cats = categories.filter((c) => listed.some((p) => p.category === c.id));
   const uncategorised = listed.filter((p) => !categories.some((c) => c.id === p.category));
 
+  // Product/Offer JSON-LD so search can surface the catalogue (price/availability rich results).
+  // Emitted inline (crawlers read it from the DOM); the "from £X" floor is the Offer price, sold = InStock.
+  const priceFloor = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? m[1] : ''; };
+  const ld = listed.length ? {
+    '@context': 'https://schema.org', '@type': 'ItemList',
+    itemListElement: listed.map((p, i) => {
+      const offer = { '@type': 'Offer', priceCurrency: 'GBP', availability: 'https://schema.org/InStock' };
+      const price = priceFloor(p.price); if (price) offer.price = price;
+      const item = { '@type': 'Product', name: p.name, brand: { '@type': 'Brand', name: 'Greatstone International' }, offers: offer };
+      if (p.summary) item.description = p.summary;
+      if (p.image) item.image = p.image;
+      const cn = catName(p.category); if (cn) item.category = cn;
+      return { '@type': 'ListItem', position: i + 1, item };
+    }),
+  } : null;
+
   return (
     <section ref={ref} className="b-storefront">
+      {ld ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} /> : null}
       <div className="wrap">
         {heading ? <h2 className="b-sf-head" data-reveal>{heading}</h2> : null}
         {body ? <p className="b-sf-intro" data-reveal>{body}</p> : null}
