@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { mountPillarExplorer } from '../lib/pillar-explorer.mjs';
 import { useReveal } from './reveal.js';
+// three.js is imported DYNAMICALLY inside the effect (not statically) so this editor-registered but
+// heavy 3D block never drags three.js onto the public critical path.
 
 // The methodology, in three dimensions: the eight pillars as emerald gems you can hover and
 // click, with a synced detail panel and accessible tabs. The 3D is code-owned; marketing
@@ -12,16 +13,20 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
   const [selected, setSelected] = useState(0);
 
   useEffect(() => {
-    const host = hostRef.current; if (!host) return;
-    let handle;
-    try {
-      handle = mountPillarExplorer(host, {
-        envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
-        initial: 0, onSelect: (i) => setSelected(i),
-      });
-      handleRef.current = handle;
-    } catch (e) { /* if WebGL is unavailable, the tabs + detail panel still work */ }
-    return () => { if (handle && handle.destroy) handle.destroy(); };
+    const host = hostRef.current; if (!host) return undefined;
+    let handle; let alive = true;
+    // dynamic import: three.js loads only when this block actually mounts, never on the public critical path
+    import('../lib/pillar-explorer.mjs').then(({ mountPillarExplorer }) => {
+      if (!alive || !hostRef.current) return;
+      try {
+        handle = mountPillarExplorer(host, {
+          envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
+          initial: 0, onSelect: (i) => setSelected(i),
+        });
+        handleRef.current = handle;
+      } catch (e) { /* if WebGL is unavailable, the tabs + detail panel still work */ }
+    }).catch(() => { /* chunk failed to load: tabs + detail panel still work */ });
+    return () => { alive = false; if (handle && handle.destroy) handle.destroy(); };
   }, []);
 
   const choose = (i) => { setSelected(i); if (handleRef.current) handleRef.current.setSelected(i); };
