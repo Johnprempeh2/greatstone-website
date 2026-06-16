@@ -13,6 +13,21 @@ Audiences kept first-class throughout: (a) public site visitors, (b) studio edit
 
 ## === Front-end parity run — started Tue Jun 16 07:39 BST 2026 ===
 
+# ⟳ POST-CLOSE FIX [18:14 BST, Tue 16 Jun 2026] — "deploys not showing" resolved + 2 refinements
+
+John reported the live `/puck-proof/` looked unchanged vs localhost (e.g. the industries page). Root cause was
+NOT the deploy — the live bundle provably contained every new feature. The studio only seeded `localStorage`
+ONCE and never re-seeded over an existing store, so a returning visitor's saved store masked the deployed seed.
+**Fix (chosen: auto re-seed on deploy):** added `SEED_VERSION` to `store.js` — on load, a store with an older/
+absent `seedVersion` is re-seeded once from the fresh bundle and the new version persisted (no loop); a matching
+version takes the unchanged `migrate()` path so edits persist between bumps. Both paths verified in preview. Net:
+returning visitors now pick up content updates on a normal reload — no incognito/clear-storage needed. Bump
+`SEED_VERSION` whenever seed content changes. Also folded in two refinements already in the tree: contact Steps
+render number+phase on one line in text mode ("01 — Within 24 hours", matching live); services plain stats paint
+the final figure on mount with num+suffix flush. Build `index-CCf9vBsk.js` (388,312 B). Commits `bf48335`,
+`0e3994b`. Deploy LIVE `6a318470324b8d6f92415852`; greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+Pushed to GitHub (`Johnprempeh2/greatstone-cms`).
+
 # ★ CLOSING SUMMARY (for John) — front-end parity + performance pass [17:17 BST, Tue 16 Jun 2026]
 
 **Where it landed.** The studio's block library now faithfully reproduces all nine live pages
