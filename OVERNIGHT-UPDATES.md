@@ -38,6 +38,25 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[11:19 BST] Parity #12 — Terrace block (home §06 "How a Deep Dive works" slab stack) + define missing `--gs-border-strong` — BUILT, VERIFIED, DEPLOYED.**
+- home §06 is a terraced foundation: a centered chapter over a stack of slabs that grow WIDER descending
+  (calc(70% + i*15%)), each a lime trapezoid (clip-path) that settles up from below in a top-down stagger on
+  scroll-in. The studio rendered §06 as a flat 3-col Steps. New Terrace block — reuses the `.b-chapter align-center`
+  framing (eyebrow 06 / "Three moves to your foundation." / intro copy) over a faithful `.dd-stack` port:
+  `.b-terrace-slab` widths 70/85/100%, trapezoid clip-path, lime gradient, translateY+scaleY settle (720ms,
+  130ms·i stagger) gated by an IntersectionObserver (threshold .35; reduced-motion + already-in-view settle
+  instantly); number/title/desc grid. Editable index/eyebrow/headline/highlight/intro + slabs array.
+- **Fixed a latent missing brand token**: `--gs-border-strong` was used (slab border + `.btn--ghost` fallback) but
+  never defined in the studio :root, so it resolved to nothing. Added the canonical `rgba(200,255,0,0.18)` to
+  site.css :root (also un-breaks every `.btn--ghost` border site-wide, which had been falling back to accent-mid).
+- Registered under Story; re-seeded home §06 Steps → **Terrace**.
+- Files: `src/blocks/Terrace.jsx` (new), `src/puck.config.jsx`, `src/store.js`, `src/site.css` (:root token).
+- Verify: build PASS (`index-CN0ZXwqU`, 358.52 kB / +4 kB). Fresh-seed preview: home = …StatStrip/**Terrace**/Invite;
+  3 slabs widths 420/510/600 (widening), trapezoid clip-path, border now rgba(200,255,0,.18), settle fires; zero
+  console errors; screenshot matches the live terraced foundation (eyebrow, accented headline, widening lime slabs).
+- Commit: `0580d15`. **Deploy LIVE** `6a312324ca52e89ebdc7d1ac`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Terrace (slab stack)" / "b-terrace-slab".
+
 **[11:09 BST] Parity #10 — NewsletterBand block (insights "Foundation Brief" signup) — BUILT, VERIFIED, DEPLOYED. (INSIGHTS PAGE COMPLETE)**
 - insights.html closes on a contained `.signup` glass card (lime radial glow, blur, email pill + Subscribe); the
   studio closed on a generic Invite. New NewsletterBand block — faithful port of `.signup`: glass card (radial lime
