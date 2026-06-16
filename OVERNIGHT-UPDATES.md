@@ -550,7 +550,13 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview (as admin): added a product → Activity showed "Added a
   product · admin@greatstone · Catalogue & team"; removed it → "Removed product 'New product'" logged
   (catalogue back to 5). Schema migrated to 15. Zero console errors. PASS.
-- Commit: pending below. Deploy: deferred (Netlify 500).
+- Commit: `762985f`. Deploy: deferred (Netlify 500). dist synced.
+
+**[02:32 BST] Turn 18 done — yielding.** Round 2 progress: #1–#10, #13 done (11 of 18). Remaining:
+#11 catalogue draft/publish gate (v5/high), #12 pause 3D render loop (v5/med), #14 orgId tenant
+(v4/med), #15 Studio IA (v4/med), #16 product detail page (v5/high), #17 export+DATA-MODEL.md (v5/low),
+#18 Studio Home tab (v4/med). Next: #12 the 3D perf fix + #17 the dev export (both contained), then the
+higher-effort #11/#16. Deploys still 500 server-side; everything committed + dist staged.
 
 **[02:20 BST] Item R2-#13 — Team-panel guards (last-admin / self / duplicate) — BUILT, VERIFIED, COMMITTED.**
 - The Team panel never received the current user, so an admin could silently remove or demote
