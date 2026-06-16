@@ -2,7 +2,7 @@
   {
     "slug": "services",
     "title": "Services",
-    "background": "stone-summit",
+    "background": "tide",
     "seo": {
       "title": "Services · Greatstone International",
       "description": "We don't advise, we become your foundation. One team, three moves: find the drains, build the systems, embed and scale. Full-spectrum digital excellence, problem first.",
@@ -25,28 +25,8 @@
         }
       },
       {
-        "type": "Steps",
-        "props": {
-          "index": "01",
-          "eyebrow": "The offer",
-          "headline": "Three moves. One",
-          "highlight": "foundation.",
-          "body": "Three moves take you from diagnosis to lasting capability. Embedded, not advisory.",
-          "items": [
-            {
-              "title": "Find the drains",
-              "text": "Discovery and DXP. Before we build anything, we find where the week actually goes. Our 8-pillar Digital Excellence assessment maps the silent leaks (the rework, the swivel-chair, the waiting) and scores you on every pillar, so the plan is evidence, not opinion."
-            },
-            {
-              "title": "Build the systems",
-              "text": "AI, automation and integration. We build the fix into how you already work, not bolted on beside it. AI where it earns its keep, automation for the repetitive, integration so your tools finally talk. Shipped in weeks, owned by your team, measured against the hours it returns."
-            },
-            {
-              "title": "Embed and scale",
-              "text": "Adoption and ongoing. A system nobody uses saves nobody time. We train your people, drive real adoption, and stay on as your foundation: tuning, extending and scaling what works. We don't disappear when the invoice clears."
-            }
-          ]
-        }
+        "type": "ServiceCards",
+        "props": {}
       },
       {
         "type": "Spectrum",
