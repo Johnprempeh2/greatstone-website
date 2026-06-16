@@ -558,6 +558,19 @@ verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #
 (v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
 approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
+## Round 3 — started Mon Jun 16 06:10 BST 2026
+
+**[06:15 BST] Round 3 deep-dive complete** — background workflow `wwvwl5vfx` (studio-deep-dive-r3): 16 agents
+(15 lenses + synthesis), 70 raw candidate items → 20 ranked, deduped against all Round 1 + Round 2 built work
+and the SKIP list. Full backlog written to the backlog memory. Top of the list: (1) invitation lifecycle +
+Accept-Invite screen at #join/<token> [NS: DX dashboard], (2) storefront filter/sort/search [NS: e-commerce],
+(3) Organization+WebSite JSON-LD, (4) global Site Content singleton, (5) block-anchored review comments [NS],
+(6) content-health score + board, (7) block-fields manifest for the dev handoff. Five themes: north-star next
+slices, "turn stored data into governance signal", deterministic (no-backend) AI-feeling authoring, media-DAM
+maturity, dev-handoff fidelity. The synthesis deliberately dropped real-multiplayer / A-B / i18n (backend-
+dependent — would risk faking infrastructure) and pure internal refactors (code-split / test-harness / god-
+component — valuable DX but flagged to John separately, not on-brand product surface). Build cycles resume now.
+
 **[06:04 BST] ✅ ROUND 2 COMPLETE — 18 of 18 items built, verified, committed and DEPLOYED LIVE.** Every Round-2
 backlog item shipped (no skips). Highlights: cart a11y, debounced persist, JSON-LD, product imagery, audit
 trail, org/orgId tenant key, team guards, export+DATA-MODEL, Studio Home overview, Studio IA consolidation,
