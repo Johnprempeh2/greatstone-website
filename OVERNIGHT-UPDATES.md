@@ -38,6 +38,19 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[15:07 BST] RA2-9 + RA2-6 — climb stacked hero + compact sub-page heroes — BUILT, VERIFIED, DEPLOYED.**
+- RA2-9: climb hero was full-height with inline "Pebble. Plateau. Peak."; live stacks the three words on their own
+  lines with only "Peak." accented + glow, at a short height. Added a contentEditable-safe `lines` array to Hero.jsx
+  (overrides headline when set; each line a block `.b-hero-line`, accent ones get lime + text-shadow:0 0 50px
+  accent-glow). Seeded climb Hero size:'compact' + lines [Pebble./Plateau./Peak.(accent)].
+- RA2-6: services/insights/proof heroes were size:'standard' (72vh, too tall, pushed the first section down); set
+  all three (and climb) to size:'compact' in the seed (the compact size from R11 matches the live sub-page heroes).
+- Files: `src/blocks/Hero.jsx` (lines array + .b-hero-stack/.b-hero-glow CSS), `src/seed-pages.json`.
+- Verify: build PASS (`index-aF-Guwgk`, 380.19 kB). Fresh-seed preview: climb hero size-compact, 3 block lines
+  Pebble./Plateau./Peak. with "Peak." accent + glow (rgba(200,255,0,.22)); services/insights/proof/climb all
+  size:'compact'; zero runtime errors; screenshot matches the live climb stacked hero.
+- Commit: `2e22aab`. **Deploy LIVE** `6a3158a6822e9d4499ed1791`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[14:57 BST] RA2-3 — method FeatureGrid centered `principles` variant — BUILT, VERIFIED, DEPLOYED.**
 - The method framing rendered as a left-aligned bordered card wall; live is a centered three-point statement with
   01/02/03 numbers, no card chrome. Added a `principles` variant to FeatureGrid.jsx: `.b-features-center` (centered
