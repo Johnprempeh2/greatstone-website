@@ -560,6 +560,27 @@ approached carefully (3D modules are fragile). Deploys still 500 server-side; ev
 
 ## Round 3 — started Mon Jun 16 06:10 BST 2026
 
+**[07:25 BST] Item R3-#2 — Storefront filter, sort & search — BUILT, VERIFIED, COMMITTED, DEPLOYED.** (north-star: e-commerce discoverability)
+- The storefront showed every product in static category groups with zero discoverability; past a handful, a
+  buyer couldn't filter, search or sort. Added a brand-locked controls bar (appears at 4+ listed products; an
+  editor can hide it via a new "Filter & search bar" field): category chips with live counts (aria-pressed),
+  name/summary search, and a sort (Featured / price low-high / high-low / Name A-Z; priceless items sort last).
+- Default state (All + no search + Featured) keeps the existing grouped-by-category layout untouched; any active
+  control switches to a flat filtered grid with a polite-live result count + a no-results state with Clear. The
+  Product/Offer JSON-LD still describes the WHOLE catalogue (not the filtered view). Reads the same useCatalog()
+  published set, so it honours the catalogue publish gate.
+- Files: `src/blocks/Storefront.jsx`.
+- Verify: build PASS (`index-B-5bDkGV`). Preview (Products page, 5 products): bar shows with counts (All 5,
+  Platforms 1, Automation 2, Data 2); Platforms chip → 1 flat card + aria-pressed=true + "1 product in
+  Platforms"; price low-high orders 95/180/4,500/6,000/12,000; search "analytics" → Quarry; no-match →
+  no-results → Clear → back to grouped; zero console errors. (Couldn't screenshot the bar: it sits far below
+  the hero and the preview captures from scroll-top with scroll-behavior:smooth resetting programmatic scroll;
+  verified functionally instead, every interaction path.)
+- Commit: `b76c1f4`.
+- **Deploy: LIVE.** Netlify deploy `6a30ec19c93179e99859313b` "Deploy is ready!";
+  https://greatstone-home.netlify.app/puck-proof/ returns 200; live bundle has the filter code ("Search
+  products", "Filter by category", "price-asc", "Clear filters"). dist synced.
+
 **[07:00 BST] Item R3-#1 — Invitation lifecycle + Accept-Invite screen (#join/<token>) — BUILT, ADVERSARIALLY REVIEWED, COMMITTED, DEPLOYED.** (north-star: DX dashboard — the highest-value Round-3 item)
 - Modelled the org invite→accept flow end-to-end, prototype-honest. An admin invites a teammate; the invite now
   carries a token + invitedBy/invitedAt/expiresAt (7-day); the Team panel shows a copyable `…/#join/<token>` link
