@@ -38,6 +38,18 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:11 BST] Re-audit R7 — method hero centered + dual CTA — BUILT, VERIFIED, DEPLOYED.**
+- The method hero was left-aligned with a single CTA; the live `.m-hero` is 92vh centered with two buttons.
+  Re-seeded the method Hero: align left→center, restored the two-button row (primary "Open the interactive
+  breakdown" → #go/method + ghost "Book a Deep Dive" → #book), and split headline → "We leave no stone" / highlight
+  "unturned." (matches the home §03 treatment; the live mid-word accent on "stone" is the separate Hero #18 polish,
+  not addressable via the trailing-highlight contract without breaking contentEditable editing).
+- Files: `src/store.js` (method Hero seed).
+- Verify: build PASS (`index-Bodf4PFC`, 370.77 kB). Fresh-seed preview: method hero centered (text-align center,
+  align-center class), kicker + "We leave no stone unturned.", two CTAs (primary "Open the interactive breakdown" +
+  ghost "Book a Deep Dive"); zero runtime errors; screenshot matches the live centered hero.
+- Commit: `3b75959`. **Deploy LIVE** `6a313d45cf890c240a68d566`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[13:02 BST] Re-audit R2 + R6 — home §03 Methodology chapter + CTA + hero kicker — BUILT, VERIFIED, DEPLOYED.**
 - R2: the live homepage §03 is a centered Methodology chapter that HIDES the 8-pillar grid (it lives behind the
   method-mode overlay) and offers an "Explore the eight pillars" CTA. The studio surfaced the full Pillars grid +
