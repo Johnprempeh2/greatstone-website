@@ -30,31 +30,7 @@
       },
       {
         "type": "Spectrum",
-        "props": {
-          "kicker": "Full-spectrum DX",
-          "headline": "Start with the problem. Then pick the",
-          "highlight": "tool.",
-          "body": "When all you sell is a hammer, everything looks like a nail. We work the other way round: diagnose what is actually costing you hours, then choose only what fits.",
-          "coda": "Sometimes the right answer isn’t AI at all. We’ll tell you.",
-          "items": [
-            {
-              "title": "AI",
-              "text": "where it reasons better than a rule."
-            },
-            {
-              "title": "Automation",
-              "text": "for the repetitive and predictable."
-            },
-            {
-              "title": "Integration",
-              "text": "so your tools finally talk."
-            },
-            {
-              "title": "A better process",
-              "text": "when that is all it takes."
-            }
-          ]
-        }
+        "props": {}
       },
       {
         "type": "StatStrip",
