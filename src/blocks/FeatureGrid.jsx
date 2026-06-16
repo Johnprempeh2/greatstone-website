@@ -25,7 +25,7 @@ export function FeatureGrid({ kicker, heading, body, items = [] }) {
 
 export const css = `
 .b-features{padding:clamp(48px,8vh,110px) 0;position:relative}
-.b-features-head{font-size:clamp(1.7rem,3.4vw,2.6rem);font-weight:900;letter-spacing:-.025em;margin-top:12px}
+.b-features-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;letter-spacing:-.025em;margin-top:12px;line-height:1.05}
 .b-features-intro{margin:18px auto 0;max-width:64ch;color:var(--gs-muted);font-size:clamp(1rem,1.4vw,1.16rem);line-height:1.75}
 .b-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2vw,24px);margin-top:clamp(26px,4vw,42px)}
 @media(max-width:860px){.b-grid{grid-template-columns:1fr}}

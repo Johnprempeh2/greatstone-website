@@ -43,7 +43,7 @@ export function PillarCards({ kicker, heading, body, pillars = [] }) {
 
 export const css = `
 .b-pc-head{margin-bottom:44px}
-.b-pc-h2{font-size:clamp(1.7rem,3.6vw,2.6rem);font-weight:900;letter-spacing:-.025em;margin-top:.1em}
+.b-pc-h2{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;letter-spacing:-.025em;margin-top:.1em;line-height:1.05}
 .b-pc-lead{margin-inline:auto}
 .b-pc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 @media(max-width:1000px){.b-pc-grid{grid-template-columns:repeat(2,1fr)}}

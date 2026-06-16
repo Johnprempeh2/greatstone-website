@@ -47,7 +47,7 @@ export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], 
 
 export const css = `
 .b-mat{padding:clamp(48px,7vh,90px) 0;position:relative;text-align:center}
-.b-mat-head{margin-top:12px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:900;letter-spacing:-.025em}
+.b-mat-head{margin-top:12px;font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;letter-spacing:-.025em;line-height:1.05}
 .b-mat-lead{margin:16px auto 0;max-width:60ch;color:var(--gs-text-muted);font-size:clamp(1rem,1.4vw,1.16rem);line-height:1.7}
 .b-mat-tiers{margin-top:clamp(30px,5vw,48px);display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:left}
 .b-mat-tier{padding:28px;border-radius:18px;border:1px solid var(--gs-border-soft)}
