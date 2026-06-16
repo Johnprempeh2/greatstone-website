@@ -162,7 +162,7 @@
   {
     "slug": "proof",
     "title": "Proof",
-    "background": "stone-summit",
+    "background": "tide",
     "seo": {
       "title": "Proof · Greatstone International",
       "description": "Real results from real engagements: hours given back, first-year ROI, payback inside a quarter. Anonymised case studies in real estate, healthcare and logistics.",
@@ -509,6 +509,7 @@
           "highlight": "Peak.",
           "body": "Every business sits somewhere on the mountain. We meet you where you are, and we climb. No vanity scores, no theatre. Just a clear read of where you stand and the shortest honest route up.",
           "prompt": "Scroll to climb",
+          "cueStyle": "mouse",
           "align": "left",
           "size": "compact",
           "lines": [

@@ -9,7 +9,7 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false }) {
+export function Hero({ kicker, headline, highlight, body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false }) {
   const ref = useReveal();
   // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
   // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
@@ -40,7 +40,11 @@ export function Hero({ kicker, headline, highlight, body, prompt, align = 'left'
             {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
           </div>
         ) : null}
-        {prompt ? <span className="b-hero-prompt" data-reveal>{prompt}</span> : null}
+        {prompt ? (
+          cueStyle === 'mouse'
+            ? <span className="b-hero-mousecue" data-reveal><span className="b-hero-capsule" aria-hidden="true"></span>{prompt}</span>
+            : <span className="b-hero-prompt" data-reveal>{prompt}</span>
+        ) : null}
       </div>
     </section>
   );
@@ -76,6 +80,15 @@ export const css = `
   letter-spacing:2.5px;text-transform:uppercase;color:var(--gs-text-faint)}
 .b-hero-prompt::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--gs-accent))}
 .b-hero.align-center .b-hero-prompt{justify-content:center}
+/* faithful port of the live climb .scroll-cue: an animated mouse-capsule + dropping lime dot. Opt-in via cueStyle:'mouse' */
+.b-hero-mousecue{display:inline-flex;align-items:center;gap:.7em;margin-top:46px;font-size:.72rem;font-weight:700;
+  letter-spacing:.28em;text-transform:uppercase;color:var(--gs-text-faint)}
+.b-hero.align-center .b-hero-mousecue{justify-content:center}
+.b-hero-capsule{width:18px;height:30px;border:1.5px solid var(--gs-border);border-radius:100px;position:relative}
+.b-hero-capsule::after{content:"";position:absolute;left:50%;top:6px;width:3px;height:6px;margin-left:-1.5px;
+  border-radius:3px;background:var(--gs-accent);animation:bHeroCueDrop 1.9s var(--gs-ease) infinite}
+@keyframes bHeroCueDrop{0%,15%{transform:translateY(0);opacity:1}70%,100%{transform:translateY(12px);opacity:0}}
+@media (prefers-reduced-motion: reduce){.b-hero-capsule::after{animation:none}}
 /* opt-in engineered grid backdrop — faithful to the live .svc-hero::before (services only) */
 .b-hero.has-grid::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;opacity:.5;
   background-image:linear-gradient(var(--gs-border-soft) 1px,transparent 1px),linear-gradient(90deg,var(--gs-border-soft) 1px,transparent 1px);
@@ -93,6 +106,9 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     prompt: { type: 'text', label: 'Cursor prompt (optional)', contentEditable: true },
+    cueStyle: { type: 'radio', label: 'Cue style', options: [
+      { label: 'Text line', value: 'text' }, { label: 'Mouse capsule (scroll)', value: 'mouse' },
+    ]},
     align: { type: 'radio', label: 'Alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},
@@ -131,6 +147,7 @@ export const puck = {
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
+    cueStyle: 'text',
     align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false,
   },
   render: (props) => <Hero {...props} />,
