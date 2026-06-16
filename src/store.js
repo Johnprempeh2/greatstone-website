@@ -188,7 +188,7 @@ export function logActivity(state, label, by) {
 
 export function seedState() {
   const pages = {
-      home: seedPage('Home', 'stone-summit', [
+      home: seedPage('Home', 'stone', [
         blk('Hero', {
           kicker: '',
           headline: 'The Foundation of', highlight: 'Digital Excellence.',
@@ -328,7 +328,7 @@ export function seedState() {
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
-  return { schema: SCHEMA, settings: { background: 'stone-summit', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG,
+  return { schema: SCHEMA, settings: { background: 'stone', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
 }
@@ -364,7 +364,7 @@ function migrate(state) {
     if (p.approvedBy === undefined) p.approvedBy = null;
     if (p.published == null) p.published = p.data; // never strand a page with no renderable live content
   });
-  if (!state.settings) state.settings = { background: 'stone-summit', siteName: 'Greatstone International' };
+  if (!state.settings) state.settings = { background: 'stone', siteName: 'Greatstone International' };
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
