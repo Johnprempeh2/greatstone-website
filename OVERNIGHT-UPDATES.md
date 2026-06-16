@@ -38,6 +38,24 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[11:39 BST] Parity #13 — PillarCards block (method 8-up examinable pillar wall) — BUILT, VERIFIED, DEPLOYED. (METHOD PAGE COMPLETE · LAST MISSING BLOCK)**
+- KEY FINDING: the live method's "The Eight Pillars / Every facet, examined." section is a 4-up CARD WALL
+  (`.pillars`/`.pillar-card`), NOT a 3D explorer. The studio had seeded PillarExplorer (3D gem) there, which was a
+  non-faithful interpretation. New PillarCards block — faithful port of `.pillar-card`: 4-up grid (2-up <1000px,
+  1-up <560px), each card with `.b-pc-top` (P·0N number + hover-only "Inspect →"), name, one-line tag, definition,
+  and a row of `.b-pc-assess` chips, with a lime top-border sweep on hover. Cards render as non-link `<article>`
+  by default (no dead links; become `<a>` only when a deep-link is set). Em dashes in the defs → colons (house
+  voice). Editable header + pillars (nested chips arrays). Namespaced `.b-pc-*`; reuses `.card`-style tokens.
+- Registered under Story; re-seeded method PillarExplorer → **PillarCards** (PillarExplorer stays in the library).
+  **The method page is now fully faithful**: Hero → FeatureGrid → PillarCards → MaturityModel → framed Invite.
+- This was the **last missing block** from the parity audit's gap list.
+- Files: `src/blocks/PillarCards.jsx` (new), `src/puck.config.jsx`, `src/store.js`.
+- Verify: build PASS (`index-BPcgMZEq`, 367.86 kB / +5 kB). Fresh-seed preview: method pillar section = 8 cards
+  P·01–P·08 (People→Value), chip counts 4/3/3/4/3/3/3/4 matching live, no em dashes, non-link articles; zero
+  console errors; screenshot matches the live pillar wall.
+- Commit: `b525d94`. **Deploy LIVE** `6a3127def8c8d4c605809ef8`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Pillar cards (8-up wall)" / "b-pc-card".
+
 **[11:29 BST] Parity #14 — MethodTieIn block (climb method tie-in + mini 8-pillar bar chart) — BUILT, VERIFIED, DEPLOYED. (CLIMB PAGE COMPLETE)**
 - climb.html's "(4) method tie-in" is a 2-col band: LEFT kicker + headline (accented "lowest first") + lead + a
   ghost link to the method; RIGHT a 4×2 mini bar chart of the eight pillars (each a square with a bottom-anchored
