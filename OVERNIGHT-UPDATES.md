@@ -38,6 +38,22 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[09:05 BST] Parity #3a — desktop chrome: custom cursor + scroll progress (SiteChrome) — BUILT, VERIFIED, DEPLOYED.**
+- First part of the missing desktop chrome layer (live ships it on every viewport; studio had none). New
+  SiteChrome component rendered ONLY on the public view (never in the Puck editor — a custom cursor would fight
+  precise editing; verified absent in edit mode).
+- Custom cursor (faithful port): lime dot follows the raw pointer, ring + "Explore" label follow an eased
+  position, mix-blend difference; .hover on interactive elements, .label on [data-cursor="explore"] (the Stage).
+  Gated to (hover:hover)+(pointer:fine), off under reduced-motion; rAF loop pauses when hidden. Scroll-progress
+  line: top 2px lime gradient bar, scaleX by scroll %, rAF-batched capture-listener.
+- Added the missing `--gs-dur-micro`/`--gs-dur-standard` tokens (the cursor CSS used them; undefined — same
+  latent-bug class as --gs-warning).
+- Files: `src/cms/SiteChrome.jsx` (new), `src/index.css`, `src/site.css`, `src/App.jsx`, `src/Stage.jsx`.
+- Verify: build PASS (`index-BXHRLw_j`). Preview (fine pointer): dot follows raw pointer, ring eases, .hover on
+  links, progress tracks scroll; cursor + gs-cursor-on ABSENT in edit mode; zero console errors.
+- Commit: `e1b89ca`. **Deploy LIVE** `6a3103c75a6d004250e36109`; 200; live bundle has gs-cur-ring/gs-cursor-on/gs-progress.
+- REMAINING for gap #3 (a follow-up "3b"): #gsFacets facet-trail canvas, dot-nav + hud-chapter scroll HUD, #loader preloader.
+
 **[08:49 BST] Parity #4 — dual-CTA (primary + ghost) on Hero + Invite — BUILT, VERIFIED, DEPLOYED.** (fixes 6+ pages)
 - Live heroes/CTA bands render two buttons (.btn--primary + .btn--ghost); the studio supported one CTA and kept
   swapping the ghost for a mailto. One contract change fixes the drift across six pages.
