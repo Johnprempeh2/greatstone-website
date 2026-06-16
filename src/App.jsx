@@ -22,6 +22,7 @@ import CommandPalette from './cms/CommandPalette.jsx';
 import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
 import ActivityPanel from './cms/ActivityPanel.jsx';
+import OverviewPanel from './cms/OverviewPanel.jsx';
 import ReleaseBoard from './cms/ReleaseBoard.jsx';
 import ProductsPanel from './cms/ProductsPanel.jsx';
 import TeamPanel from './cms/TeamPanel.jsx';
@@ -421,6 +422,7 @@ export default function App() {
       if (mode === 'edit') {
         cmds.push({ id: 'preview', group: 'Editor', label: 'Preview (back to site)', run: () => setMode('view') });
         if (canPublish) cmds.push({ id: 'publish', group: 'Editor', label: 'Publish this page', run: () => publish(page.data) });
+        cmds.push({ id: 'home', group: 'Editor', label: 'Open Studio home', run: () => setPanel('home') });
         cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
         cmds.push({ id: 'releases', group: 'Editor', label: 'Open release board', run: () => setPanel('releases') });
         cmds.push({ id: 'products', group: 'Editor', label: 'Open products catalogue', run: () => setPanel('products') });
@@ -479,6 +481,7 @@ export default function App() {
         <Stage background={bg} previewP={previewP} />
         {panel && (
           <StudioPanel tab={panel} onTab={setPanel} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
+            home: <OverviewPanel order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             products: <ProductsPanel products={state.products} categories={state.categories} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
@@ -508,6 +511,7 @@ export default function App() {
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
                   </select>
                 </label>
+                <button className={'gs-btn ghost sm' + (panel === 'home' ? ' is-on' : '')} onClick={() => setPanel(panel === 'home' ? null : 'home')}>Home</button>
                 <button className={'gs-btn ghost sm' + (panel === 'pages' ? ' is-on' : '')} onClick={() => setPanel(panel === 'pages' ? null : 'pages')}>Pages</button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* state */}

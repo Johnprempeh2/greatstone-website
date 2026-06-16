@@ -2,7 +2,7 @@
 // instead of four separate slide-overs. The existing panels are nested verbatim (their own
 // heads are flattened by CSS); only the active tab is mounted, so switching to another tab
 // unmounts the previous (e.g. leaving Background clears its live preview).
-const TABS = [['pages', 'Pages'], ['products', 'Products'], ['team', 'Team'], ['releases', 'Releases'], ['background', 'Background'], ['seo', 'SEO'], ['history', 'History'], ['activity', 'Activity']];
+const TABS = [['home', 'Home'], ['pages', 'Pages'], ['products', 'Products'], ['team', 'Team'], ['releases', 'Releases'], ['background', 'Background'], ['seo', 'SEO'], ['history', 'History'], ['activity', 'Activity']];
 
 export default function StudioPanel({ tab, onTab, onClose, panels }) {
   const tabs = TABS.filter(([id]) => panels[id]); // only show tabs whose panel is provided (e.g. Team is admin-only)

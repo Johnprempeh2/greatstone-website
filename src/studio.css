@@ -232,6 +232,22 @@
 .gs-rel-drift{font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#1a0c0c;background:var(--gs-warning);border-radius:5px;padding:2px 6px;font-style:normal}
 .gs-rel-meta{font-size:.74rem;color:var(--gs-faint)}
 
+/* studio home: content-health overview */
+.gs-ov-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.gs-ov-tile{background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);border-radius:10px;padding:12px 8px;text-align:center}
+.gs-ov-tile b{display:block;font-size:1.5rem;font-weight:800;color:var(--gs-text);line-height:1;font-variant-numeric:tabular-nums}
+.gs-ov-tile span{display:block;margin-top:5px;font-size:.64rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-faint);line-height:1.3}
+.gs-ov-tile.is-warn{border-color:var(--gs-warning)}
+.gs-ov-tile.is-warn b{color:var(--gs-warning)}
+.gs-ov-line{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 2px;border-top:1px solid var(--gs-border-soft);font-size:.84rem}
+.gs-ov-line>span:first-child{font-weight:700;color:var(--gs-text-muted)}
+.gs-ov-line>span:last-child{color:var(--gs-faint);text-align:right}
+.gs-ov-recent-label{margin:16px 0 8px;font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gs-text-faint)}
+.gs-ov-recent{list-style:none;display:flex;flex-direction:column;gap:2px}
+.gs-ov-recent li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--gs-border-soft)}
+.gs-ov-recent-label-txt{font-size:.82rem;color:var(--gs-text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-ov-recent-meta{font-size:.7rem;color:var(--gs-faint);white-space:nowrap;flex-shrink:0}
+
 /* products management panel */
 .gs-prods{list-style:none;display:flex;flex-direction:column;gap:6px;margin:14px 0}
 .gs-prod{border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02);overflow:hidden}
