@@ -90,11 +90,12 @@ function applyHead(seo, pageTitle, slug) {
 // Pre-publish accessibility/SEO check: find images on the page that have no alt text. Figure and
 // FeaturedArticle carry an explicit alt field; Team avatars use the member's name as alt (so a photo
 // with no name is the gap). Returns a short human-readable list, used to warn before publishing.
-function findMissingAlt(content) {
+function findMissingAlt(content, products) {
   const issues = [];
-  (content || []).forEach((b) => {
+  const noAlt = (v) => !(v && String(v).trim());
+  const list = content || [];
+  list.forEach((b) => {
     const p = (b && b.props) || {};
-    const noAlt = (v) => !(v && String(v).trim());
     if ((b.type === 'Figure' || b.type === 'FeaturedArticle') && p.image && noAlt(p.alt)) {
       issues.push(b.type === 'Figure' ? 'Figure image' : 'Featured: ' + (p.title || 'article'));
     }
@@ -102,6 +103,10 @@ function findMissingAlt(content) {
       p.members.forEach((m) => { if (m && m.photo && noAlt(m.name)) issues.push('Team photo (no name)'); });
     }
   });
+  // a page that shows the storefront also surfaces every product image — flag any with no alt text
+  if (list.some((b) => b.type === 'Storefront')) {
+    (products || []).forEach((p) => { if (p && p.image && p.status !== 'draft' && noAlt(p.imageAlt)) issues.push('Product: ' + (p.name || 'product')); });
+  }
   return issues;
 }
 
@@ -212,7 +217,7 @@ export default function App() {
   async function publish(data) {
     if (!canPublish) return flash('Editors can’t publish directly. Request review, then an admin publishes.');
     // accessibility/SEO preflight: warn (don't hard-block) if any image is missing alt text
-    const missing = findMissingAlt(data && data.content);
+    const missing = findMissingAlt(data && data.content, state.products);
     if (missing.length) {
       const ok = await ask({ kind: 'confirm', title: 'Publish without alt text?',
         message: missing.length + (missing.length > 1 ? ' images have' : ' image has') + ' no alt text (' + missing.slice(0, 4).join(', ') + (missing.length > 4 ? '…' : '') + '). Alt text matters for accessibility and SEO. Publish anyway, or cancel to add it?',

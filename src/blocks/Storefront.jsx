@@ -13,6 +13,7 @@ function Card({ p, catName }) {
   const inCart = cart[p.id] || 0;
   return (
     <article className="b-sf-card" data-reveal>
+      {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" /></div> : null}
       {p.badge ? <span className={'b-sf-badge' + (p.status === 'legacy' ? ' is-legacy' : '')}>{p.badge}</span> : null}
       <div className="b-sf-cat">{catName || 'Software'}</div>
       <h4 className="b-sf-name">{p.name}</h4>
@@ -88,6 +89,8 @@ export const css = `
 .b-sf-card{position:relative;display:flex;flex-direction:column;background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);
   border-radius:18px;padding:24px;backdrop-filter:blur(8px);transition:border-color .3s var(--gs-ease),transform .3s var(--gs-ease)}
 .b-sf-card:hover{border-color:var(--gs-border);transform:translateY(-3px)}
+.b-sf-media{margin:-4px -4px 14px;border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:rgba(255,255,255,.03)}
+.b-sf-media img{width:100%;height:100%;object-fit:cover;display:block}
 .b-sf-badge{position:absolute;top:18px;right:18px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   color:#0e1611;background:var(--gs-accent);border-radius:6px;padding:3px 8px}
 .b-sf-badge.is-legacy{background:var(--gs-text-faint);color:#fff}

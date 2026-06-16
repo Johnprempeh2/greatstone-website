@@ -85,6 +85,7 @@ export default function CartDrawer() {
                     <ul className="gs-cart-items">
                       {items.map((p) => (
                         <li className="gs-cart-item" key={p.id}>
+                          {p.image ? <img className="gs-cart-thumb" src={p.image} alt="" loading="lazy" /> : null}
                           <div className="gs-cart-itemmain">
                             <span className="gs-cart-itemname">{p.name}</span>
                             <span className="gs-cart-itemprice">{p.price}{p.period ? ' ' + p.period : ''}{p.licence ? ' · ' + p.licence : ''}</span>

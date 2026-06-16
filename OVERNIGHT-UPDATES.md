@@ -529,6 +529,18 @@ Written to the backlog memory file. Round 2 build order (top = low-effort high-v
 - Verify: build PASS (149 modules). Preview as above; zero console errors. PASS.
 - Commits: `e85f1aa` (R2-#3/#5) + `550605b` (R2-#4). Deploy: deferred (Netlify 500). dist synced.
 
+**[02:04 BST] Item R2-#7 — Product imagery (model + panel + storefront + basket + alt preflight) — BUILT, VERIFIED, COMMITTED.**
+- The storefront rendered zero imagery though Figure/Team/FeaturedArticle already wire MediaField.
+- Added `image` + `imageAlt` to the catalogue model (`addProduct` default), a MediaField + alt input
+  per product in the Products panel (reusing the media library), an image area on the Storefront
+  card (16:9, lazy), a thumbnail per basket line, and extended `findMissingAlt` so publishing a page
+  with the Storefront flags any product image lacking alt text.
+- Files: `src/store.js`, `src/cms/ProductsPanel.jsx`, `src/blocks/Storefront.jsx`, `src/cms/CartDrawer.jsx`, `src/studio.css`, `src/App.jsx`.
+- Verify: build PASS (149 modules). Preview: set an image on Bedrock via the panel MediaField →
+  storefront card rendered it (16:9) and the basket line showed a thumbnail; removed it via the panel
+  (clean image-less seed — no fabricated product images). Zero console errors. PASS.
+- Commit: pending below. Deploy: deferred (Netlify 500).
+
 **[01:54 BST] Items R2-#8 + R2-#6 — persist basket + itemised quote — BUILT, VERIFIED, COMMITTED.**
 - R2-#8 (persist basket): the cart was in-memory only, so a half-built licence request evaporated on
   refresh. Persist the non-sensitive `{productId: qty}` map to `localStorage` (`gs-cart`) + rehydrate

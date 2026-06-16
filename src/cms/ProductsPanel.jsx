@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MediaField } from './MediaField.jsx';
 
 // Products management (admin): add / edit / remove products and categories from inside the studio.
 // Edits are local while you type and commit to the store on blur, so the catalogue doesn't thrash
@@ -58,6 +59,10 @@ function ProductEditor({ product, categories, onUpdate, onRemove }) {
             <textarea rows={3} value={p.summary || ''} onChange={(e) => set('summary', e.target.value)} onBlur={() => commit('summary')} /></label>
           <label className="gs-field"><span className="gs-field-label">Features (one per line)</span>
             <textarea rows={4} value={featuresText} onChange={(e) => set('featuresText', e.target.value)} onBlur={commitFeatures} /></label>
+          <div className="gs-field"><span className="gs-field-label">Image / logo</span>
+            <MediaField value={p.image || ''} onChange={(v) => { set('image', v); commit('image', v); }} /></div>
+          <label className="gs-field"><span className="gs-field-label">Image alt text</span>
+            <input value={p.imageAlt || ''} onChange={(e) => set('imageAlt', e.target.value)} onBlur={() => commit('imageAlt')} placeholder="Describe the image for accessibility" /></label>
         </div>
       )}
     </li>

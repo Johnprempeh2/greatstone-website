@@ -70,7 +70,7 @@ export function listProducts(state, categoryId) {
 }
 export function addProduct(state, product) {
   const id = rid('prod');
-  const p = { id, name: 'New product', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], ...product, id };
+  const p = { id, name: 'New product', category: (state.categories[0] && state.categories[0].id) || '', price: '', period: '', licence: '', badge: '', status: 'active', summary: '', features: [], image: '', imageAlt: '', ...product, id };
   return { ...state, products: [...(state.products || []), p] };
 }
 export function updateProduct(state, id, patch) {
