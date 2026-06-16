@@ -38,6 +38,18 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:57 BST] RA2-3 — method FeatureGrid centered `principles` variant — BUILT, VERIFIED, DEPLOYED.**
+- The method framing rendered as a left-aligned bordered card wall; live is a centered three-point statement with
+  01/02/03 numbers, no card chrome. Added a `principles` variant to FeatureGrid.jsx: `.b-features-center` (centered
+  head/intro/principles), `.b-feat-principle` plain blocks (no bg/border/hover-lift) with a leading `.b-feat-n`
+  number (small lime, .18em tracking). New `variant` field + per-item `n`. Seeded method FeatureGrid
+  variant:'principles' + n 01/02/03.
+- Files: `src/blocks/FeatureGrid.jsx`, `src/store.js`.
+- Verify: build PASS (`index-C2np5wJF`, 379.38 kB). Fresh-seed preview on method: framing centered, 3 principles
+  with 01/02/03, titles We score not guess / We benchmark / We climb the lowest first, no card bg (transparent);
+  zero runtime errors; screenshot matches the live centered framing.
+- Commit: `b6e0143`. **Deploy LIVE** `6a3156528ed2174174f7cae4`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[14:48 BST] RA2-4 — services Outcomes StatStrip `plain` centered variant — BUILT, VERIFIED, DEPLOYED.**
 - services outcomes was a left-aligned aurora block with the footnote as the lead; live `.outcomes` is centered with
   hairline vertical dividers between stats + a faint footnote. Added a `plain` variant to StatStrip.jsx: centered
