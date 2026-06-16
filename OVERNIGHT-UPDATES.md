@@ -38,6 +38,27 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[10:48 BST] Parity #11 — ServiceCards block (services "Three moves. One foundation.") + services tide bg — BUILT, VERIFIED, DEPLOYED.**
+- services.html's signature offer section is three framed cards with a lime "scan line" that sweeps top→bottom
+  once as each card reveals (staggered L→R), corner ticks, badged 01/02/03, accent sub-eyebrows + glowing-dot
+  bullets pinned to the card foot. The studio stood in a generic Steps block. New ServiceCards block — faithful
+  port of `.svc-grid`/`.svc-card`: `.b-svc-scan` line (gradient + trailing wash, `gsSvcScan` 1.25s on `.is-in`,
+  nth-child .32s/.49s stagger), `--scan-h` measured per card to its own height (re-measured on resize, skipped
+  under reduced-motion), `.b-svc-tick` tl/br corners, badge + accent sub + glowing-dot `<ul>` (margin-top:auto).
+  Heading "Three moves. One foundation." with accented last word; all copy + cards (nested bullets arrays) are
+  editable fields; defaults ported verbatim (em dashes → parentheticals/colons). Namespaced `.b-svc-*`; reuses
+  `.card`/`.grid.cols-3`/`.wrap`/`.kicker`/`.accent`.
+- Also flipped services bg `stone-summit` → `tide` (live services mounts `mountGreatstoneTide`; single renderer).
+- Registered under Story; re-seeded services Hero → **ServiceCards** → Spectrum → StatStrip → Invite (was Steps).
+- Files: `src/blocks/ServiceCards.jsx` (new), `src/puck.config.jsx`, `src/seed-pages.json`.
+- Verify: build PASS (`index-DGJgfpDa`, 345.90 kB / +5 kB; three+puck code-split). Fresh-seed preview: services =
+  Hero/ServiceCards/Spectrum/StatStrip/Invite, bg tide (canvasCount 1); 3 cards badges 01/02/03, subs
+  Discovery&DXP / AI·Automation·Integration / Adoption&ongoing, titles Find the drains / Build the systems / Embed
+  &scale, 3 bullets + 2 ticks + scan each, `--scan-h` measured 567px; zero console errors; screenshot matches the
+  live offer section (badges, accent eyebrows, dot bullets, scan line).
+- Commit: `6b1e9a9`. **Deploy LIVE** `6a311bd22a8be991196e145d`; greatstone-home.netlify.app/puck-proof/ 200; live
+  bundle has "Service cards" / "b-svc-card" / "gsSvcScan".
+
 **[10:38 BST] Parity (industries bg) — `stone-summit` → `tide` (parity + perf) — DONE, VERIFIED, DEPLOYED.**
 - The industries page seeded on the dual `stone-summit` scene (2 renderers) but live industries.html mounts
   `mountGreatstoneTide` (single renderer). Switched the industries seed background to `tide` (the same single-scene
