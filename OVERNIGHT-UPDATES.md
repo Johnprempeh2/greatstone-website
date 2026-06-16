@@ -38,6 +38,26 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[16:08 BST] RA2-11 — Chapter coda softened + **inline-bold** parsing (Chapter + StatStrip) — BUILT, VERIFIED, DEPLOYED.**
+- Live homepage `.ch-copy` is one muted paragraph with subtle `<strong>` emphasis (`.ch-copy strong` = brighter
+  text `var(--gs-text)` + weight 700, NEVER lime). The studio over-emphasised: the Chapter coda was weight 800 with
+  a `::first-line` lime treatment, and the bodies carried no inline emphasis at all.
+- New `src/blocks/emphasis.jsx`: `emphasize(text, isEditing)` renders `**double-asterisk**` runs as `<strong>`.
+  PUBLIC-VIEW ONLY — when `puck.isEditing` it returns the raw string so the field's contentEditable inline editing
+  stays intact (editors see the literal `**markers**`, visitors see rendered emphasis). PublicRender already passes
+  `isEditing:false`; the Puck editor passes `true`.
+- Chapter.jsx + StatStrip.jsx: body (and Chapter coda) routed through `emphasize()`; `<strong>` styled to match
+  live (`color:var(--gs-text);font-weight:700`). `.b-chapter-coda` softened to muted body weight, `::first-line`
+  lime rule removed (it now reads as a follow-on body paragraph, like the live single block).
+- store.js home seed bodies re-authored with `**…**` on the exact live `<strong>` words: §01 tools/processes/people,
+  §02 "never the other way around", §03 Digital Transformation Playbook + eight pillars, §04 "agentic systems" +
+  coda "Not wrappers. Not gimmicks.", §05 StatStrip "Deloitte, Lloyds, Bank of Scotland and the NHS".
+- Verify: build PASS (`index-FWpTIiTC.js`, 382,859 B, +628 B — negligible). Fresh-seed preview on home (public):
+  every chapter's strong runs land on the right words, NO literal `**` leaks, coda computed weight 400 (was 800),
+  no first-line lime, sample `<strong>` = rgb(245,245,245) (= var(--gs-text)) weight 700 (not lime); StatStrip body
+  strong = the clients line; screenshot of §04 confirms subtle emphasis + muted coda; zero runtime errors.
+- Commit `5218cc1`. **Deploy LIVE** `6a3166e2cb95911b9a4703ed`; greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+
 **[15:56 BST] RA2-12 — NewsletterBand + ServiceCards section headings match live .h2 — BUILT, VERIFIED, DEPLOYED.**
 - Live insights `.signup .h2` and services section `.h2` both use the global `.h2` = clamp(2rem,4.5vw,3.6rem). The
   studio's `.b-news-h2` (clamp 1.6→2.5rem) and `.b-svc-h2` (clamp 1.7→2.7rem) were ~25-31% undersized, so those
