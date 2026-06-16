@@ -38,6 +38,17 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:32 BST] Re-audit R9 — FeaturedArticle 'Read the piece' CTA + animated corner-wave (insights) — BUILT, VERIFIED, DEPLOYED.**
+- The insights featured card was missing the live's "Read the piece" CTA and its corner-wave was static. Added
+  ctaLabel/ctaHref fields (default 'Read the piece'/'#') → a `btn btn--primary` after the meta row; animated the
+  4-arc `.corner-wave` (sized 170×170 to its viewBox) with the live `gsWaveEmit` keyframes (scale .35→1.1, opacity
+  pulse) on a 4.6s loop, staggered 0/.7/1.4/2.1s per arc, with a `prefers-reduced-motion` static fallback.
+- Files: `src/blocks/FeaturedArticle.jsx`.
+- Verify: build PASS (`index-zwbztZwM`, 373.54 kB). Fresh-seed preview on insights: featured card shows the "Read
+  the piece" btn--primary; corner-wave has 4 paths animating `gsWaveEmit` at 170px; zero runtime errors; screenshot
+  shows the lime arcs emanating from the top-right + the CTA.
+- Commit: `60c6e30`. **Deploy LIVE** `6a314246d3fd5637864ebabb`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[13:23 BST] Re-audit R8 — StatStrip band variant (proof stat-band) — BUILT, VERIFIED, DEPLOYED.**
 - proof's StatStrip carried an (invented) header + aurora + single gradient-blob numbers; the live `.stat-band` is
   a headerless border-block row with per-stat left accent bars, a solid white number that lights lime on reveal,
