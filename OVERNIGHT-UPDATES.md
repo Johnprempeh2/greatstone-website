@@ -38,6 +38,17 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[13:57 BST] Re-audit R12 — method heading scale to .h2 — BUILT, VERIFIED, DEPLOYED.**
+- The method section heads read a notch small: FeatureGrid/PillarCards/MaturityModel head clamps capped ~2.6-2.7rem
+  while the live uses the shared `.h2` clamp(2rem,4.5vw,3.6rem). Bumped all three (`.b-features-head`, `.b-pc-h2`,
+  `.b-mat-head`) to clamp(2rem,4.5vw,3.6rem) + line-height 1.05. All three blocks are method-only, so no other page
+  is affected.
+- Files: `src/blocks/FeatureGrid.jsx`, `src/blocks/PillarCards.jsx`, `src/blocks/MaturityModel.jsx`.
+- Verify: build PASS (`index-vwGYV3r4`, 373.81 kB). Fresh-seed preview at 1280px: all three method heads render
+  58px (= .h2 cap, up from ~42px); zero runtime errors; screenshot shows "One method. Eight pillars. No guesswork."
+  at the correct large scale.
+- Commit: `1f88feb`. **Deploy LIVE** `6a314829a401b9052d35a1ec`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[13:48 BST] Re-audit R10 — home StatStrip units/labels — BUILT, VERIFIED, DEPLOYED.**
 - Home §05 stats drifted from the live: fixed stat#1 suffix '+'→'+ hrs' and label 'Hours recovered weekly, one
   engagement'→'Capacity recovered weekly · one engagement'; stat#3 suffix ''→'yrs' and label 'Years of leadership
