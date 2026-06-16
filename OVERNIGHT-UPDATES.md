@@ -558,6 +558,34 @@ verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #
 (v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
 approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
+**[06:04 BST] ✅ ROUND 2 COMPLETE — 18 of 18 items built, verified, committed and DEPLOYED LIVE.** Every Round-2
+backlog item shipped (no skips). Highlights: cart a11y, debounced persist, JSON-LD, product imagery, audit
+trail, org/orgId tenant key, team guards, export+DATA-MODEL, Studio Home overview, Studio IA consolidation,
+product detail pages, catalogue draft/publish gate, and the 3D render-loop optimisation below. The two north
+stars deepened materially (Products/e-commerce: detail pages + slug/SKU + catalogue governance; DX-dashboard:
+org tenancy + team guards). Next: a fresh 15-lens DEEP-DIVE over the whole studio → Round 3 backlog.
+
+**[06:04 BST] Item R2-#12 — Pause faded 3D scenes + clamp DPR on mobile — BUILT, VERIFIED, COMMITTED, DEPLOYED.** (the flagged-risky one)
+- The persistent stage is fixed/inset:0, so on a stone→summit page BOTH scenes rendered WebGL full-rate even
+  though only one is visible at any scroll position (the IntersectionObserver is always true on a fixed element).
+  Now Stage pauses a scene's render loop when its computed opacity falls to ~0; single-scene pages (opacity always
+  1) are untouched. Also clamped the stone's DPR to 1.5 on coarse pointers (phones/tablets) — it was rendering at
+  DPR 2 on mobile, while summit already clamped.
+- Approached carefully per the brief (fragile bespoke 3D). Gated on a new `active` flag AND-ed with the existing
+  on-screen + !document.hidden gates; rAF keeps spinning (cheap), only the expensive frame() is skipped; dt is
+  capped so resuming never jumps. Single-scene safety: opacity 1 → always active.
+- Files: `src/Stage.jsx`, `src/lib/greatstone-logo.mjs`, `src/lib/summit-bg.mjs`.
+- Verify (genuine, not by-construction): build PASS (`Stage-B0M4gm1W`). Preview on a FRESH server with WebGL
+  draw-call counting per layer canvas: scroll-top → stone 2190 draws / summit 0 (paused); scroll-bottom → stone
+  ~0 / summit 1224; scroll back to top → stone 2160 (resumed cleanly, no jump). ≈50% fewer draws at any scroll
+  position on the common multi-scene pages. Stone renders correctly (screenshot — emerald mark intact + idling),
+  zero console errors. The coarse-pointer DPR branch can't be exercised on a desktop preview, but it mirrors
+  summit-bg's proven, already-shipped pattern verbatim.
+- Commit: `0f99b23` (note: a stray backtick in the message stripped one word "active" — cosmetic only).
+- **Deploy: LIVE.** Netlify deploy `6a30d958913504888616d26d` "Deploy is ready!";
+  https://greatstone-home.netlify.app/puck-proof/ returns 200; the lazy Stage chunk (`Stage-B0M4gm1W.js`)
+  contains `setActive`. dist synced.
+
 **[05:50 BST] Item R2-#11 — Catalogue draft/publish gate — BUILT, VERIFIED, COMMITTED, DEPLOYED.** (north-star: e-commerce governance)
 - Until now, every catalogue edit went live instantly — an admin tweaking a price or status changed the
   public storefront mid-keystroke. Gave the catalogue the same draft → published model pages already have.
