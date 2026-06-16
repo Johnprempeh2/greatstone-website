@@ -558,6 +558,29 @@ verify headlessly), #15 Studio IA (v4/med), #16 product detail page (v5/high), #
 (v4/med). Next: #18 Studio Home (contained editor-UX win) + #15 IA, then the high-effort #11/#16; #12
 approached carefully (3D modules are fragile). Deploys still 500 server-side; everything committed + staged.
 
+**[03:24 BST] Item R2-#15 — Studio IA: one toolbar button + grouped tabs + attention badges — BUILT, VERIFIED, COMMITTED, DEPLOYED.**
+- The edit toolbar had grown crowded (five separate panel buttons — Home, Pages, 3D background, SEO,
+  History) while four Studio tabs (Products, Team, Releases, Activity) had no toolbar entry at all and
+  were only reachable via ⌘K. The nine-tab rail also read as a flat wall.
+- Consolidated to ONE **Studio** button that opens the hub to Home; the toolbar is now
+  Site · Studio · undo/redo · ⌘K · sign out. Grouped the rail into labelled sections — Home ·
+  Content (Pages/Products) · Page (Background/SEO/History) · Governance (Releases/Activity) · Org (Team)
+  — so every surface is one click from the same button and the hub scans. Added warning-amber attention
+  badges (on the Studio button + the Releases and Team tabs) counting pages needing release action
+  (in review/approved OR unpublished drift) and pending invites; a page counts once.
+- Files: `src/cms/StudioPanel.jsx`, `src/App.jsx`, `src/studio.css`.
+- Verify: build PASS (`index-xMAKuoRE`). Preview as admin: toolbar shows the single Studio button; rail
+  renders all five labelled groups (screenshot) and opens to Home; zero console errors throughout. Badge
+  zero-state confirmed (no attention → no badge — correct). Drove a throwaway draft page to confirm the
+  count plumbing ("1 Draft pages" tile), then deleted it — state restored to 10 pages, activity log
+  unchanged (page ops don't pollute it). The non-zero badge count is a trivial conditional over the same
+  verified attention value; the governed status select resists synthetic events headlessly so the
+  amber-count render is verified by construction, not a live screenshot.
+- Commit: `33c2e41`.
+- **Deploy: LIVE.** Netlify deploy `6a30b3c691350428a816d269` returned "Deploy is ready!";
+  https://greatstone-home.netlify.app/puck-proof/ returns 200 and the live bundle (`index-xMAKuoRE.js`)
+  contains the new code (`gs-studio-grouplabel`, `gs-studio-btnbadge`, "Governance"). dist synced.
+
 **[03:05 BST] Item R2-#18 — Studio Home tab (content-health overview) — BUILT, VERIFIED, COMMITTED, DEPLOYED.**
 - Editors had no at-a-glance read of site readiness — page status, draft drift, catalogue and team
   health were each buried in a separate tab. Added a Studio **Home** tab (now the first tab) with six
