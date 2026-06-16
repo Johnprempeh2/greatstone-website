@@ -315,10 +315,11 @@
         "props": {
           "kicker": "Our Story",
           "headline": "Twenty years deep.",
-          "highlight": "Embedded, not advisory.",
+          "highlight": "Embedded",
+          "headlineSuffix": ", not advisory.",
           "body": "We have spent two decades learning where businesses quietly lose their hours, and how to win them back. We do not hand you a deck and leave. We become the foundation you build the next twenty years on.",
           "align": "left",
-          "size": "standard",
+          "size": "compact",
           "ctaLabel": "",
           "ctaHref": "#book",
           "meta": [
@@ -377,7 +378,7 @@
       {
         "type": "Values",
         "props": {
-          "kicker": "",
+          "kicker": "What We Stand On",
           "heading": "Four values. No slideware.",
           "items": [
             {
@@ -404,6 +405,7 @@
         "props": {
           "kicker": "The People",
           "heading": "Senior hands, on the floor with you.",
+          "body": "Placeholder names and roles. The real strip lands here once we confirm who is on your engagement.",
           "items": [
             {
               "name": "Ben Mensah",

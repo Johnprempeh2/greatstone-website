@@ -5,13 +5,14 @@ const initials = (name) => (name || '').trim().split(/\s+/).map((w) => w[0] || '
 
 // The people strip: senior hands, named. A real photo if one is set, otherwise an initials
 // badge derived from the name (so it always reads, even before headshots are added).
-export function Team({ kicker, heading, items = [] }) {
+export function Team({ kicker, heading, body, items = [] }) {
   const ref = useReveal([items.length]);
   return (
     <section ref={ref} className="b-team">
       <div className="wrap">
         {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
         {heading ? <h2 className="b-team-head" data-reveal>{heading}</h2> : null}
+        {body ? <p className="b-team-body lead" data-reveal>{body}</p> : null}
         <div className="team-grid">
           {items.map((m, i) => (
             <div className="card team-card" data-reveal style={{ transitionDelay: `${i * 55}ms` }} key={i}>
@@ -30,6 +31,7 @@ export function Team({ kicker, heading, items = [] }) {
 export const css = `
 .b-team{padding:clamp(48px,8vh,110px) 0;position:relative}
 .b-team-head{font-size:clamp(1.7rem,3.4vw,2.6rem);font-weight:900;letter-spacing:-.025em;margin-top:12px}
+.b-team-body{margin-top:1rem}
 .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,30px);margin-top:clamp(28px,4vh,48px)}
 @media(max-width:820px){.team-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.team-grid{grid-template-columns:1fr}}
@@ -48,6 +50,7 @@ export const puck = {
   fields: {
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     heading: { type: 'text', label: 'Heading', contentEditable: true },
+    body: { type: 'textarea', label: 'Intro (optional)', contentEditable: true },
     items: {
       type: 'array', label: 'People',
       arrayFields: { name: { type: 'text', label: 'Name' }, role: { type: 'text', label: 'Role' }, photo: { type: 'custom', label: 'Photo', render: (props) => <MediaField {...props} /> } },
@@ -56,7 +59,7 @@ export const puck = {
     },
   },
   defaultProps: {
-    kicker: 'The People', heading: 'Senior hands, on the floor with you.',
+    kicker: 'The People', heading: 'Senior hands, on the floor with you.', body: '',
     items: [
       T('Ben Mensah', 'Founder & CEO'),
       T('John Prempeh', 'Senior DX Executive'),
