@@ -17,7 +17,7 @@
           "highlight": "foundation.",
           "body": "Most partners hand you a deck and leave. We embed in how you already work, find the hours your business is quietly losing, and build the systems that buy them back. One team, three moves, no stone unturned.",
           "align": "left",
-          "size": "standard",
+          "size": "compact",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
           "ctaLabel2": "See the Method",
@@ -174,7 +174,7 @@
           "highlight": "Yours is the one that matters.",
           "body": "Every number below came from a real engagement, anonymised but earned. They are the floor, not the ceiling. The only result that counts is the one we build inside your business. We don't advise from the sidelines: we become your foundation, and we leave no stone unturned.",
           "align": "left",
-          "size": "standard",
+          "size": "compact",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book"
         }
@@ -463,7 +463,7 @@
           "highlight": "the foundation.",
           "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No theory for theory's sake. We leave no stone unturned.",
           "align": "left",
-          "size": "standard"
+          "size": "compact"
         }
       },
       {
@@ -506,7 +506,21 @@
           "body": "Every business sits somewhere on the mountain. We meet you where you are, and we climb. No vanity scores, no theatre. Just a clear read of where you stand and the shortest honest route up.",
           "prompt": "Scroll to climb",
           "align": "left",
-          "size": "full"
+          "size": "compact",
+          "lines": [
+            {
+              "text": "Pebble.",
+              "accent": false
+            },
+            {
+              "text": "Plateau.",
+              "accent": false
+            },
+            {
+              "text": "Peak.",
+              "accent": true
+            }
+          ]
         }
       },
       {

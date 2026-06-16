@@ -9,13 +9,20 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [] }) {
+export function Hero({ kicker, headline, highlight, body, prompt, align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [] }) {
   const ref = useReveal();
+  // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
+  // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
+  const stacked = Array.isArray(lines) && lines.length > 0;
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}`}>
       <div className="wrap b-hero-inner">
         {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
-        <h1 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h1>
+        <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
+          {stacked
+            ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
+            : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</>}
+        </h1>
         {body ? <p className="lede" data-reveal>{body}</p> : null}
         {Array.isArray(meta) && meta.length ? (
           <div className="b-hero-meta" data-reveal>
@@ -52,6 +59,8 @@ export const css = `
 /* matches the live homepage .hero-title scale exactly */
 .b-hero h1{font-weight:900;line-height:1.02;letter-spacing:-2.5px;font-size:clamp(40px,6.2vw,84px);
   text-shadow:0 2px 60px rgba(0,0,0,.6);margin-top:20px}
+.b-hero h1.b-hero-stack .b-hero-line{display:block}
+.b-hero h1.b-hero-stack .b-hero-line.b-hero-glow{text-shadow:0 0 50px var(--gs-accent-glow),0 2px 60px rgba(0,0,0,.6)}
 .b-hero .lede{margin-top:24px;color:var(--gs-text-muted);font-size:clamp(15px,1.4vw,18px);line-height:1.8;max-width:560px;
   text-shadow:0 2px 30px rgba(0,0,0,.7)}
 .b-hero.align-center .lede{margin-inline:auto}
@@ -94,6 +103,15 @@ export const puck = {
       defaultItemProps: { bignum: '20', label: 'Years' },
       getItemSummary: (item) => item.bignum || 'Stat',
     },
+    lines: {
+      type: 'array', label: 'Stacked headline lines (optional, overrides headline)',
+      arrayFields: {
+        text: { type: 'text', label: 'Line' },
+        accent: { type: 'radio', label: 'Accent', options: [{ label: 'No', value: false }, { label: 'Yes (lime + glow)', value: true }] },
+      },
+      defaultItemProps: { text: 'Line', accent: false },
+      getItemSummary: (item) => item.text || 'Line',
+    },
   },
   defaultProps: {
     kicker: 'The Foundation of Digital Excellence',
@@ -101,7 +119,7 @@ export const puck = {
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',
     prompt: 'Move your cursor. The stone responds',
-    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [],
+    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [],
   },
   render: (props) => <Hero {...props} />,
 };
