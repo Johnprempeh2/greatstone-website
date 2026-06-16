@@ -449,8 +449,30 @@ prototype with an RBAC gate — both mapping cleanly to the dev team's Laravel b
 specs in HANDOVER.md. Round 1 remaining (all low-value v3/v4): #13 footer columns, #15 block diff,
 #17 resolveFields, #18 site settings. Next: knock those out, then run the Round 2 deep-dive over the
 much-expanded studio. Deploys still 500 server-side; everything committed + dist staged.
-- BOTH NORTH STARS DONE: #19 Products/e-commerce + #20 Team/roles/DX-dashboard. NEXT: the leftover
-  v3/v4 items (#13 footer, #15 block diff, #17 resolveFields, #18 site settings), then Round 2 deep-dive.
+- BOTH NORTH STARS DONE: #19 Products/e-commerce + #20 Team/roles/DX-dashboard.
+
+## ROUND 1 COMPLETE → ROUND 2 deep-dive launched
+
+**[01:15 BST] Round 1 closed — 14 built + 1 verified-skip; 4 consciously deferred to Round 2.**
+- BUILT (14): #1 SEO→head, #2 Puck off bundle, #3 three.js defer, #4 modals, #5 Hero CTA, #6 aurora
+  a11y, #7 scroll-to-top, #9 undo/redo, #10 Activity log, #11 alt preflight, #12 skip-link, #14
+  Release board, #16 review notes, #19 Products north star (3 commits), #20 Team north star.
+- VERIFIED-SKIP: #8 mobile nav (studio already has working responsive nav; "unused drawer CSS" is
+  live-site parity).
+- CONSCIOUSLY DEFERRED to Round-2 re-prioritisation (all low-value v3/v4): #13 footer columns (footer
+  deliberately mirrors the live site's flat footer = parity, same call as #8); #15 block-level diff on
+  restore (restore is already snapshot-safe — diff is polish); #17 resolveFields/enum hardening (niche
+  Puck); #18 global Site Settings tab (centralises the contact email hardcoded in Footer+CartDrawer —
+  moderate value, but a 9th Studio tab worsens IA crowding, so the deep-dive should weigh it holistically).
+- Rationale for going to the deep-dive now: the studio roughly DOUBLED since the last audit (products,
+  team, cart, storefront, 8 tabs). A fresh 15-lens audit over the expanded surfaces will surface
+  higher-value work (storefront mobile/a11y, cart accessibility, product detail, org scoping, IA) than
+  grinding the 4 marginal leftovers — which it will re-weigh anyway.
+
+**[01:16 BST] Round 2 deep-dive launched** — background workflow `wwra5n1p6` (studio-deep-dive-r2):
+15 lens agents re-auditing the expanded studio (extra scrutiny on the new storefront/cart/products/
+team surfaces + the 8-tab IA), deduping against everything Round 1 built, → a fresh ranked backlog.
+Will write it to the backlog memory file + log here, then Round 2 build cycles begin.
 - (history) NEXT (R1-#19 cont.): a Products management panel/tab (add/edit/remove + categories), a prototype
   cart + checkout UI (clearly labelled, transmits nothing), and a backend handoff spec for real
   licence-purchase + payments. Then R1-#20 Team/roles/invitations prototype.
