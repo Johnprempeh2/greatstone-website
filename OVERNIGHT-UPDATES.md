@@ -38,6 +38,26 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[17:16 BST] RE-AUDIT #3 (87%) + PARITY-FIX BATCH 3 (6 fixes, laggard pages method/about/contact) — BUILT, VERIFIED, DEPLOYED.**
+- Re-audit #3 stayed ~87% (plateau) with about(82)+contact(82) the laggards. Ran a 4th verification Workflow (6
+  agents); all 6 confirmed vs live. Applied:
+  - **method hero accent** (HIGH, the long-standing #18): new Hero `headlineSuffix` field (plain, non-contentEditable,
+    rendered after the .accent span) lets the lime land mid-phrase. Method now 'We leave no **stone** unturned.'
+    (was the accent wrongly on 'unturned.'). Verified accent='stone'.
+  - **about top-loaded hero** (HIGH): size standard→compact (live .about-hero is top-loaded; meta stats intact).
+  - **about accent** (MED): highlight 'Embedded' + headlineSuffix ', not advisory.' (live accents only 'Embedded').
+  - **about Values + Team** (MED): Values kicker 'What We Stand On'; new optional Team `body` field + the live intro.
+  - **contact big-mail** (HIGH): headline scale (clamp 1.4-2.4rem, white→lime hover, no underline) — was a small
+    pre-lime underlined link. Verified 38px white.
+  - **contact select chevron** (MED): live lime data-URI chevron + padding. Verified present.
+- Files: Hero.jsx, store.js, seed-pages.json, Team.jsx, ContactBand.jsx, BookDeepDive.jsx.
+- Verify: build PASS (`index-HVxycmVc.js`, 388,031 B, +725 B — negligible). Fresh-seed preview on method/about/
+  contact: every fix confirmed (method accent 'stone'; about compact + 'Embedded' accent + meta + Values kicker +
+  Team intro; contact big-mail 38px white + select chevron); zero runtime errors; about-hero screenshot confirms.
+- Commits `18d70ad`, `0180531`, `185d6e1`. **Deploy LIVE** `6a3176d1aea2f76fc1bd392a`;
+  greatstone-home.netlify.app/puck-proof/ 200, asset 200.
+- NEXT: final re-audit re-measure, then the CLOSING SUMMARY.
+
 **[17:00 BST] RE-AUDIT #2 (87%) + PARITY-FIX BATCH 2 (7 fixes, dragging pages) — BUILT, VERIFIED, DEPLOYED.**
 - Re-audit held ~87% (noisy LLM estimate); the three pages dragging the average were home/proof/contact (all 82).
   Ran a third verification Workflow (7 agents) to confirm each finding vs live + return exact patches; all 7 came
