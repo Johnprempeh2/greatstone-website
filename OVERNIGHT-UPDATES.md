@@ -38,6 +38,19 @@ layer (cursor/facets/scroll-HUD/preloader), and has TWO pages mis-seeded (method
 the wrong Values + an invented StatStrip). Build order = synthesis Top-5: (1) re-seed method + about (pure content
 bugs); (2) desktop chrome shell; (3) dual-CTA Hero/Invite; (4) the 4 signature blocks; (5) perf + CLS. Building now.
 
+**[14:07 BST] Re-audit R5b — BookDeepDive iconed "Why a deep dive" aside (contact) — BUILT, VERIFIED, DEPLOYED. (CONTACT PAGE COMPLETE)**
+- The booking aside rendered a plain diamond-bullet list, dropping the live's iconed `.assure` rows. Added a small
+  inline icon set (check / clock / scan, lime stroke) + restructured the aside: kicker + headline + intro + a list
+  of `.b-book-assure` rows (34px accent-soft icon tile + title + desc), faithful to the live. New editable fields
+  asideKicker + asideBody + per-row `icon` select; defaults ported from the live ("Why a deep dive" / "We don't
+  advise. We become your foundation." / 3 assure rows). Contact seed's old aside overrides cleared to inherit them.
+- Files: `src/blocks/BookDeepDive.jsx`, `src/store.js` (contact BookDeepDive seed).
+- Verify: build PASS (`index-Ck2yvAtD`, 375.57 kB). Fresh-seed preview on contact: aside shows kicker "Why a deep
+  dive" + headline + 3 rows (Eight pillars one honest score / Hours quantified not promised / No stone unturned),
+  each with a 34px lime icon tile (svg stroke rgb(200,255,0)); zero runtime errors; screenshot matches the live
+  booking aside. **The contact page is now fully faithful** (TimeCounter chip + form + iconed aside).
+- Commit: `e0e81bf`. **Deploy LIVE** `6a314a9e6de50515e9615b81`; greatstone-home.netlify.app/puck-proof/ 200.
+
 **[13:57 BST] Re-audit R12 — method heading scale to .h2 — BUILT, VERIFIED, DEPLOYED.**
 - The method section heads read a notch small: FeatureGrid/PillarCards/MaturityModel head clamps capped ~2.6-2.7rem
   while the live uses the shared `.h2` clamp(2rem,4.5vw,3.6rem). Bumped all three (`.b-features-head`, `.b-pc-h2`,
