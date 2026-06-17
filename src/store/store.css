@@ -1,0 +1,57 @@
+/* Storefront — live catalogue surface. Uses the global --gs-* brand tokens. */
+/* The store is a dense data UI, not a cinematic hero — a calm scrim sits over the 3D Stage so
+   cards stay legible (their backgrounds are near-transparent by brand default). */
+.st-scrim { position: fixed; inset: 0; background: rgba(15,17,15,.84); pointer-events: none; z-index: 0; }
+.st-wrap { position: relative; z-index: 1; max-width: var(--gs-maxw, 1180px); margin: 0 auto; padding: clamp(96px,14vh,150px) clamp(20px,5vw,64px) clamp(60px,9vh,120px); }
+.st-card { backdrop-filter: blur(6px); }
+.st-head { margin-bottom: clamp(20px,3vw,34px); }
+.st-kicker { font-size:.72rem; font-weight:700; letter-spacing:.32em; text-transform:uppercase; color:var(--gs-accent); }
+.st-h1 { font-weight:900; font-size:clamp(2rem,4.5vw,3.4rem); line-height:1.02; letter-spacing:-.02em; margin:.3em 0 .25em; }
+.st-h1 .accent { color:var(--gs-accent); }
+.st-lead { color:var(--gs-text-muted); max-width:60ch; line-height:1.6; }
+.st-stats { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.st-stat { font-size:.8rem; color:var(--gs-text-muted); border:1px solid var(--gs-border); background:var(--gs-accent-soft); border-radius:100px; padding:.45em 1em; }
+.st-stat b { color:var(--gs-accent); font-weight:800; }
+
+.st-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:22px 0 16px; }
+.st-search { flex:1 1 280px; min-width:200px; position:relative; }
+.st-search input { width:100%; padding:.8em 1em .8em 2.6em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.04); color:var(--gs-text); font:inherit; font-size:.95rem; }
+.st-search input:focus { outline:none; border-color:var(--gs-accent-mid); }
+.st-search svg { position:absolute; left:1em; top:50%; transform:translateY(-50%); width:17px; height:17px; stroke:var(--gs-text-faint); }
+.st-select { appearance:none; -webkit-appearance:none; padding:.7em 2.4em .7em 1.1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.04); color:var(--gs-text); font:inherit; font-size:.9rem; cursor:pointer; }
+.st-count { font-size:.86rem; color:var(--gs-text-muted); margin-left:auto; }
+.st-count b { color:var(--gs-text); }
+
+.st-layout { display:grid; grid-template-columns:230px 1fr; gap:clamp(18px,3vw,36px); align-items:start; }
+@media (max-width:880px){ .st-layout { grid-template-columns:1fr; } .st-facets { display:none; } .st-facets.open { display:flex; } }
+.st-facets { display:flex; flex-direction:column; gap:20px; position:sticky; top:88px; }
+.st-facet h4 { font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--gs-text-faint); margin-bottom:10px; }
+.st-pills { display:flex; flex-wrap:wrap; gap:6px; }
+.st-pill { font-size:.78rem; padding:.4em .85em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.03); color:var(--gs-text-muted); cursor:pointer; }
+.st-pill:hover { border-color:var(--gs-accent-mid); color:var(--gs-text); }
+.st-pill.on { background:var(--gs-accent); border-color:var(--gs-accent); color:#0e1611; font-weight:700; }
+.st-clear { font-size:.74rem; font-weight:700; color:var(--gs-accent); background:none; border:0; cursor:pointer; padding:0; }
+
+.st-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(216px,1fr)); gap:14px; }
+.st-card { display:flex; flex-direction:column; padding:18px; border-radius:15px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); background:var(--gs-card,rgba(255,255,255,.035)); text-align:left; transition:transform .25s, border-color .25s; height:100%; }
+.st-card:hover { transform:translateY(-3px); border-color:var(--gs-border,rgba(200,255,0,.18)); }
+.st-card-icon { width:44px; height:44px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.05); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); margin-bottom:12px; overflow:hidden; }
+.st-card-icon img { max-width:28px; max-height:28px; object-fit:contain; }
+.st-card h3 { font-size:1rem; font-weight:800; line-height:1.2; margin-bottom:6px; color:var(--gs-text); }
+.st-card .vendor { display:flex; align-items:center; gap:.5em; margin-bottom:10px; min-height:15px; }
+.st-card .vendor img { height:13px; opacity:.9; }
+.st-card .vendor span { font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--gs-text-faint); }
+.st-card .desc { font-size:.83rem; line-height:1.5; color:var(--gs-text-muted); margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.st-badges { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+.st-badge { font-size:.64rem; font-weight:700; padding:.26em .58em; border-radius:5px; background:var(--gs-accent-soft); border:1px solid var(--gs-border); color:var(--gs-accent); }
+.st-foot { margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:12px; border-top:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); }
+.st-price b { font-size:1rem; font-weight:800; color:var(--gs-text); }
+.st-price s { color:var(--gs-text-faint); font-size:.78rem; margin-right:.4em; }
+.st-price .poa { font-size:.82rem; font-weight:700; color:var(--gs-text-muted); }
+.st-price .lbl { display:block; font-size:.68rem; color:var(--gs-text-faint); }
+.st-go { font-size:.78rem; font-weight:700; color:var(--gs-accent); white-space:nowrap; }
+.st-empty { grid-column:1/-1; text-align:center; padding:60px 20px; border:1px dashed var(--gs-border); border-radius:16px; color:var(--gs-text-muted); }
+.st-more { display:block; margin:24px auto 0; padding:.8em 1.8em; border-radius:100px; border:1px solid var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; cursor:pointer; }
+.st-loading { grid-column:1/-1; text-align:center; padding:60px; color:var(--gs-text-faint); }
+.st-filterbtn { display:none; }
+@media (max-width:880px){ .st-filterbtn { display:inline-flex; align-items:center; gap:.5em; padding:.7em 1.2em; border-radius:100px; border:1px solid var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; font-size:.85rem; cursor:pointer; } }

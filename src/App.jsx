@@ -16,6 +16,9 @@ const PuckEditor = lazy(() => import('./EditorMount.jsx'));
 // undo/redo buttons live in their own lazy module (they call usePuck → @measured/puck); kept off
 // the public bundle, loaded with the editor and rendered inside Puck's context via headerActions.
 const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
+// Live storefront — reads Supabase (@supabase/supabase-js); lazy so the public bundle stays lean
+// (the chunk arrives only on the #shop route).
+const LazyStoreBrowse = lazy(() => import('./store/StoreBrowse.jsx'));
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -69,6 +72,11 @@ function readProductHash() {
 function readJoinHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?join\/([\w-]+)/i);
   return m ? m[1] : null;
+}
+// #shop or #shop/<vendor-slug> → the live storefront (reads Supabase)
+function readShopHash() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?shop(?:\/([\w-]+))?/i);
+  return m ? { vendor: m[1] || '' } : null;
 }
 const SITE_NAME = 'Greatstone International';
 function upsertMeta(attr, key, content) {
@@ -139,6 +147,7 @@ export default function App() {
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
+  const [shopRoute, setShopRoute] = useState(readShopHash);        // #shop[/<vendor>] → live storefront
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
@@ -171,7 +180,7 @@ export default function App() {
   // persist the licence basket (non-sensitive) so it survives a reload
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
-    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); };
+    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -648,9 +657,11 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
-          {productSlug
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
+        <EditorBoundary key={shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
+          {shopRoute
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
+            : productSlug
             ? <ProductDetail product={activeProduct} categoryName={activeProductCat ? activeProductCat.name : ''} related={relatedProducts} onBack={exitProduct} />
             : <PublicRender config={config} data={page.published || page.data} />}
         </EditorBoundary>

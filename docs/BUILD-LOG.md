@@ -67,5 +67,13 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 
 **PHASE 0 COMPLETE** — schema, RLS (incl. public-read), seed, pricing engine, and the data layer, all verified against the live cloud Supabase the production app will use.
 
-### Phase 1 (next) — storefront
-Build the public store (Vite+React) against the data layer: dual-axis browse (vendor + category) with faceted filter/search/sort/pagination, product detail page (variants/editions table, specs, gallery, related), services template, on-brand (greatstone-brand). Verify in the browser via the preview tools against the live data. Then admin studio core → cart + Stripe test checkout → pricing UI → bulk Excel → AI-assist.
+### Phase 1a — storefront LISTING (live, browser-verified)
+- `src/store/StoreBrowse.jsx` + `src/store/store.css`: the public catalogue listing, reads the live data layer. Faceted by vendor (10) / platform / category (32) + debounced search + sort (featured/A–Z/price) + load-more + result count + empty state. Lazy-loaded (`#shop` route, code-split so the public bundle stays lean).
+- Wired an additive `#shop[/<vendor>]` hash route in `App.jsx` (readShopHash + state + onHash + a render branch; nothing existing touched).
+- Copied the 10 logos + 153 icons into `public/catalog/`; paths mapped via `BASE_URL`.
+- **Browser-verified against live Supabase** (dev server :5180): 159 results, 3-col grid, real icons/vendor-logos/prices (Able2Extract £80, Aspose.Pdf £870, Apryse POA), vendor filter (Aspose→86), search (ocr→11), console clean.
+- Fixes during verify: debounced search + out-of-order-response guard (caught a real race); a fixed scrim so the decorative 3D Stage doesn't bleed through the near-transparent cards.
+- Committed.
+
+### Phase 1b (next) — live product detail page
+Make `#product/<slug>` read the live offering via `getOffering()` (variants/editions table with per-edition prices, specs, gallery, platform badges, related, Request-a-quote + Start-trial CTAs → contact). Currently `#product/<slug>` still renders the old localStorage `ProductDetail` block — swap it to the live data. Then nav entry to the shop, services template, admin studio core, cart + Stripe test checkout, pricing UI, bulk Excel, AI-assist.
