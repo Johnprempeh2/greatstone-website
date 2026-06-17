@@ -69,13 +69,14 @@ async function recordOrder(session: Stripe.Checkout.Session) {
     const p = item.price?.product;
     const vid = (p && typeof p === 'object') ? (p as Stripe.Product).metadata?.variant_id : null;
     if (!vid) continue; // VAT / non-variant line — counted in total, not an order item
+    const ruleId = (p && typeof p === 'object') ? ((p as Stripe.Product).metadata?.applied_rule_id || null) : null; // discount provenance
     const v: any = vmap.get(vid);
     const qty = item.quantity || 1;
     const unit = item.price?.unit_amount ?? 0;
     const lineTotal = item.amount_subtotal ?? unit * qty;
     subtotal += lineTotal;
     items.push({
-      org_id: orgId, offering_id: v?.offering?.id || null, variant_id: vid,
+      org_id: orgId, offering_id: v?.offering?.id || null, variant_id: vid, applied_rule_id: ruleId,
       offering_name: v?.offering?.name || (typeof p === 'object' ? (p as Stripe.Product).name : 'Licence'),
       variant_name: v?.name || null, qty, unit_price_minor: unit, line_total_minor: lineTotal, currency,
     });

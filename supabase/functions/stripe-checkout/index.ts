@@ -20,7 +20,7 @@ const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { sta
 function toRule(r: any) {
   const t = { vendorIds: [] as string[], categoryIds: [] as string[], offeringIds: [] as string[] };
   for (const x of r.pricing_rule_targets || []) { if (x.vendor_id) t.vendorIds.push(x.vendor_id); if (x.category_id) t.categoryIds.push(x.category_id); if (x.offering_id) t.offeringIds.push(x.offering_id); }
-  return { scopeType: r.scope_type, targets: t, appliesToOfferingType: r.applies_to_offering_type, adjustmentType: r.adjustment_type, adjustmentValue: Number(r.adjustment_value || 0), adjustmentValuePct: Number(r.adjustment_value_pct || 0), currency: r.currency, audience: r.audience, startsAt: r.starts_at, endsAt: r.ends_at, priority: r.priority ?? 100, floorFraction: Number(r.floor_fraction || 0) };
+  return { id: r.id, scopeType: r.scope_type, targets: t, appliesToOfferingType: r.applies_to_offering_type, adjustmentType: r.adjustment_type, adjustmentValue: Number(r.adjustment_value || 0), adjustmentValuePct: Number(r.adjustment_value_pct || 0), currency: r.currency, audience: r.audience, startsAt: r.starts_at, endsAt: r.ends_at, priority: r.priority ?? 100, floorFraction: Number(r.floor_fraction || 0) };
 }
 // USD minor → GBP minor at the live rate, rounded to the whole pound. MUST match src/lib/pricing.mjs.
 function usdToGbpMinor(usdMinor: number | null, displayRate: number) {
@@ -48,10 +48,10 @@ function finalPrice(base: number, currency: string, off: any, rules: any[], now:
     if (r.adjustmentType === 'percentage') { if (r.adjustmentValuePct > 0) cut = Math.round(base * r.adjustmentValuePct / 100); }
     else if (r.adjustmentType === 'fixed') { if (r.currency === currency && r.adjustmentValue > 0) cut = r.adjustmentValue; }
     if (cut <= 0) continue;
-    if (!win || r.priority < win.priority || (r.priority === win.priority && cut > win.cut)) win = { priority: r.priority, cut, floor: r.floorFraction };
+    if (!win || r.priority < win.priority || (r.priority === win.priority && cut > win.cut)) win = { priority: r.priority, cut, floor: r.floorFraction, id: r.id };
   }
-  if (!win) return base;
-  return Math.max(base - win.cut, Math.round(base * win.floor), 0);
+  if (!win) return { amount: base, ruleId: null };
+  return { amount: Math.max(base - win.cut, Math.round(base * win.floor), 0), ruleId: win.id };
 }
 
 // Resolve the signed-in buyer from the forwarded JWT (validated via getUser — never trust a raw token).
@@ -109,9 +109,10 @@ Deno.serve(async (req) => {
       const gbpBase = usdToGbpMinor(v.base_price_minor, rate); // stored USD → whole-pound GBP, same rounding the storefront showed
       if (gbpBase == null || gbpBase <= 0) continue; // POA, or rounds below £1 → not card-purchasable (Stripe rejects £0 lines)
       const qty = Math.max(1, Math.min(100, Number(it.quantity) || 1));
-      const unit = finalPrice(gbpBase, 'GBP', v.offering, rules, now); // discounts apply AFTER conversion, on the GBP figure
+      const fp = finalPrice(gbpBase, 'GBP', v.offering, rules, now); // discounts apply AFTER conversion, on the GBP figure
+      const unit = fp.amount;
       subtotal += unit * qty;
-      line_items.push({ quantity: qty, price_data: { currency: 'gbp', unit_amount: unit, product_data: { name: `${v.offering.name} — ${v.name}`, metadata: { variant_id: v.id, vendor: v.offering.vendor?.name ?? '' } } } });
+      line_items.push({ quantity: qty, price_data: { currency: 'gbp', unit_amount: unit, product_data: { name: `${v.offering.name} — ${v.name}`, metadata: { variant_id: v.id, vendor: v.offering.vendor?.name ?? '', applied_rule_id: fp.ruleId ?? '' } } } });
     }
     if (!line_items.length) return json({ error: 'No purchasable items (all POA or unavailable — use Request a quote).' }, 400);
     const vat = Math.round(subtotal * VAT);

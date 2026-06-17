@@ -1,7 +1,8 @@
 // Catalogue admin — Supabase-authenticated. Sign-in gate → offerings manager (list + edit).
 // Writes go through the signed-in user's session; the staff_all RLS (0004) enforces admin-only.
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase.mjs';
+import { useModal } from './useModal.mjs';
 import { signIn, signOut, getSession, onAuth, getStaffUser, isStaff } from './adminAuth.mjs';
 import { fmtMoney, usdToGbpMinor } from '../lib/pricing.mjs';
 import PricingRules from './PricingRules.jsx';
@@ -141,7 +142,8 @@ function EditDrawer({ offering, onClose, onSaved }) {
   const [featured, setFeatured] = useState(!!offering.featured);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  useEffect(() => { const onKey = (e) => { if (e.key === 'Escape') onClose(); }; addEventListener('keydown', onKey); return () => removeEventListener('keydown', onKey); }, [onClose]);
+  const drawerRef = useRef(null);
+  useModal(drawerRef, true, onClose); // focus-in, Tab-trap, scroll-lock, Escape, focus-restore
 
   const save = async () => {
     setBusy(true); setErr(null);
@@ -155,7 +157,7 @@ function EditDrawer({ offering, onClose, onSaved }) {
 
   return (
     <div className="ca-drawer-scrim" onClick={onClose}>
-      <div className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={'Edit ' + offering.name}>
+      <div ref={drawerRef} tabIndex={-1} className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={'Edit ' + offering.name}>
         <h2>Edit offering</h2>
         <label>Name<input value={name} onChange={e => setName(e.target.value)} /></label>
         <label>Short description<textarea rows="3" value={shortDesc} onChange={e => setShortDesc(e.target.value)} /></label>

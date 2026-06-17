@@ -2,6 +2,7 @@
 // confirmation panel. Prices shown here are indicative; the edge function reconfirms every figure
 // server-side before charging. TEST MODE — uses Stripe test keys; no real money moves.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useModal } from './useModal.mjs';
 import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 
@@ -16,16 +17,8 @@ export default function StoreCart({ confirmed = false }) {
   const count = cartCount();
 
   const drawerRef = useRef(null);
-  const restoreRef = useRef(null);
-  // open: capture focus, move it into the drawer, close on Escape, and restore focus to the trigger on close
-  useEffect(() => {
-    if (!open) return;
-    restoreRef.current = document.activeElement;
-    const t = setTimeout(() => { if (drawerRef.current) drawerRef.current.focus(); }, 30);
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
-    addEventListener('keydown', onKey);
-    return () => { clearTimeout(t); removeEventListener('keydown', onKey); if (restoreRef.current && restoreRef.current.focus) restoreRef.current.focus(); };
-  }, [open]);
+  const closeCart = useCallback(() => setOpen(false), []);
+  useModal(drawerRef, open, closeCart); // focus-in, Tab-trap, scroll-lock, Escape, focus-restore
 
   const checkout = useCallback(async () => {
     setBusy(true); setErr(null);
@@ -45,6 +38,7 @@ export default function StoreCart({ confirmed = false }) {
         <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         {count > 0 && <span className="sc-fab-badge">{count}</span>}
       </button>
+      <div className="gs-sr-only" aria-live="polite" aria-atomic="true">{count > 0 ? count + ' item' + (count === 1 ? '' : 's') + ' in your basket' : 'Basket empty'}</div>
 
       {open && (
         <div className="sc-scrim" onClick={() => setOpen(false)}>

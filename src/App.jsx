@@ -224,7 +224,7 @@ export default function App() {
     if (mode !== 'view') return;
     const m = document.getElementById('gs-main');
     if (m && typeof m.focus === 'function') m.focus({ preventScroll: true });
-  }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [current, shopRoute, productSlug, accountRoute, catalogueAdmin, confirmRoute]); // eslint-disable-line react-hooks/exhaustive-deps
   // in-app CTA links: "#book" → contact page; "#go/<slug>" → that page (so cross-page ghost CTAs
   // navigate within the SPA instead of hitting a dead .html href). preventDefault keeps the hash clean.
   useEffect(() => {

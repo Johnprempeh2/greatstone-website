@@ -66,7 +66,7 @@ export default function StoreProduct({ slug, onBack }) {
           </div>
           <div className="sp-cta">
             {fromP && fromP.final != null
-              ? <><button className="gs-btn primary" onClick={() => { const el = document.getElementById('sp-editions'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>See editions &amp; pricing</button>
+              ? <><button className="gs-btn primary" onClick={() => { const el = document.getElementById('sp-editions'); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }}>See editions &amp; pricing</button>
                   <a className="gs-btn ghost" href="#book">Request a quote</a></>
               : <a className="gs-btn primary" href="#book">Request a quote</a>}
           </div>
