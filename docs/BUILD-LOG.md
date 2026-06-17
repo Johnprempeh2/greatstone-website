@@ -35,5 +35,12 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - **Verify:** `node build-seed.mjs` + apply both SQL files with `ON_ERROR_STOP=1` → zero errors; all spot-checks pass.
 - Committed.
 
-### Cycle 3 (next) — RLS + typed data layer
-`0002_rls.sql`: enable RLS + org-scoped policies (`current_setting('app.current_org')`) on every business table (only 1/28 enabled so far). Then `src/data/` — Supabase client + a typed catalogue data-access layer (list/get offerings with computed price, vendors, categories, search/facets) per `docs/api-contract.md`, runnable against local Postgres. Then Phase 1 storefront.
+### Cycle 3 — RLS / tenant isolation
+- `supabase/migrations/0002_rls.sql`: an `app_current_org()` helper + `ENABLE`/`FORCE ROW LEVEL SECURITY` + an `org_isolation` policy (`org_id = app_current_org()`, USING + WITH CHECK) on all 26 org-scoped tables; `organisations` scoped by own id; `permissions` global read-only. **28/28 tables now have RLS.**
+- Seed now `SET LOCAL app.current_org` so inserts satisfy the WITH CHECK under FORCE RLS (mirrors the app setting the GUC per request).
+- **Validated on local Postgres as a non-superuser role** (the real app scenario — superusers bypass RLS, which made the first test misleading): no org set → 0 rows · correct org → 159 offerings / 819 variants · wrong org → 0. Isolation is real.
+- **Verify:** 0001 + 0002 + seed apply clean with `ON_ERROR_STOP=1`; isolation test passes as `app_test` (NOSUPERUSER).
+- Committed.
+
+### Cycle 4 (next) — pricing engine (pure, fully testable) + typed data layer
+`src/lib/pricing.{js,test.js}` — the single `effectivePrice(offering, variant, rules, tier, now)` per spec Part 3: single-winner, floor-clamped, never-negative, never-on-POA, scheduled, scope match (all/vendor/category/offering/tier). Pure module + unit tests (real numbers: Aspose.Cells £870→£696, IronPDF £509, POA untouched) — runs with zero infra. Then `src/data/` Supabase client + typed catalogue queries (built against the contract; full e2e test needs Supabase/PostgREST → flag if Docker/cloud absent). Then Phase 1 storefront.

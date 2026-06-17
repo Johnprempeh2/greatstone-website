@@ -21,6 +21,7 @@ const billing = (name = '') => /subscription/i.test(name) ? 'annual' : /one[\s-]
 const L = [];
 L.push('-- Greatstone catalogue seed (generated from products.json). Money = minor units (pence).');
 L.push('BEGIN;');
+L.push(`SET LOCAL app.current_org = '${ORG_ID}';   -- satisfy RLS WITH CHECK during seed (app sets this per request)`);
 L.push(`TRUNCATE offering_specs, offering_variants, offering_media, offerings, categories, vendors RESTART IDENTITY CASCADE;`);
 L.push('');
 L.push('-- Organisation (idempotent)');
