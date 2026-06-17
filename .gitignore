@@ -8,3 +8,5 @@ dist
 !.env.example
 supabase/.branches
 supabase/.temp
+docs/_apply-all.sql
+docs/_schema-only.sql
