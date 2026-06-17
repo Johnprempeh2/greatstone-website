@@ -172,3 +172,8 @@ Then: admin sign-in (Supabase Auth) → offerings manager → pricing/discount r
 **Re-verified (live Supabase + Stripe test):** checkout still creates a session; signed **unpaid** event → 200, **0** orders written; signed **paid** event → 200, **1** order written; test data cleaned up (0 rows). No client changes this pass (edge-function only).
 
 This closes the planned commerce build. The money path (cart → secure checkout → Stripe → idempotent webhook → orders → admin view) is built, hardened, and verified end-to-end on the interim Supabase. Larger follow-ups (end-customer accounts + order history, guest→customer linking, services type) are product decisions to take with John, not autonomous work.
+
+### Phase 3e — cart.mjs unit tests · 33 tests green
+**2026-06-17.** `src/store/cart.test.mjs` (**10 tests**) covers the checkout math that was untested: add/dedup-and-accumulate (qty clamped to 100), ignore items with no variantId, currency default, `setQty` clamp+round to [1,100], remove/clear, `cartCount`/`cartSubtotalMinor` sums, localStorage persistence, and the two `startCheckout` guard rejections (empty basket / unconfigured). In-memory localStorage stub so the singleton loads under `node --test`. **Full suite: 33 pass / 0 fail** (16 pricing + 7 bulk + 10 cart).
+
+**Commerce build closed out.** Catalogue, pricing/mass-discounts, bulk CSV, storefront, cart, Stripe checkout, webhook→orders, orders admin — built, hardened, and tested/verified on the interim Supabase. Next steps are John's calls (end-customer accounts + order history, guest→customer linking, services type, then the test→live go-live checkpoint), not autonomous work — so the build loop winds down here.
