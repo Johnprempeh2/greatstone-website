@@ -1,0 +1,175 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Arrow } from './icons.jsx';
+import { safeHref } from '../lib/safe-url.js';
+
+// The full-screen "interactive breakdown" — the live homepage's #/method methodology explorer brought
+// into the studio. Eight emerald pillar-gems in a ring around a central EXPLORE orb; hover to feel one,
+// click to look inside; a slide-in detail panel with what-we-assess + Prev/Next + back. Reached from the
+// method Hero's "Open the interactive breakdown" CTA (#breakdown). three.js loads only when this mounts.
+// Content (the eight pillars, incl. each one's optional link) comes from the editable Pillar-cards block,
+// so marketing edits the cards and the breakdown follows.
+const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const pad2 = (n) => String(n).padStart(2, '0');
+
+export default function MethodExplorer({ pillars = [], onClose }) {
+  const items = pillars.slice(0, 8);
+  const hostRef = useRef(null);
+  const handleRef = useRef(null);
+  const [selected, setSelected] = useState(-1); // -1 = ring view; >=0 = a pillar's detail is open
+  const open = selected >= 0;
+  const active = open ? items[selected] : null;
+
+  // mount the 3D ring (dynamic import keeps three.js off the critical path); onSelect opens the detail
+  useEffect(() => {
+    const host = hostRef.current; if (!host) return undefined;
+    let handle; let alive = true;
+    import('../lib/pillar-explorer.mjs').then(({ mountPillarExplorer }) => {
+      if (!alive || !hostRef.current) return;
+      try {
+        handle = mountPillarExplorer(host, {
+          envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
+          layout: 'ring', bloom: 0.85, initial: -1,
+          onSelect: (i) => setSelected(i),
+        });
+        handleRef.current = handle;
+      } catch (e) { /* no WebGL → the pillar list below still drives the detail panel */ }
+    }).catch(() => {});
+    return () => { alive = false; if (handle && handle.destroy) handle.destroy(); };
+  }, []);
+
+  const choose = useCallback((i) => { setSelected(i); if (handleRef.current) handleRef.current.setSelected(i); }, []);
+  const close = useCallback(() => { setSelected(-1); if (handleRef.current) handleRef.current.setSelected(-1); }, []);
+  const step = useCallback((d) => { if (!items.length) return; const n = (selected + d + items.length) % items.length; choose(n); }, [selected, items.length, choose]);
+
+  // keyboard: Escape closes the detail then the explorer; arrows page through pillars when open
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); if (open) close(); else onClose && onClose(); }
+      else if (open && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) { e.preventDefault(); step(1); }
+      else if (open && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) { e.preventDefault(); step(-1); }
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, [open, close, step, onClose]);
+
+  return (
+    <div className={'me' + (open ? ' is-open' : '')}>
+      <style>{CSS}</style>
+      <div className="me-top">
+        <img className="me-logo" src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
+        <button className="me-back" onClick={onClose}><span>← Back</span></button>
+      </div>
+
+      <header className="me-head">
+        <div className="me-kicker">The Digital Transformation Playbook</div>
+        <h2 className="me-title">Eight pillars. <span className="accent">No stone unturned.</span></h2>
+        <p className="me-sub">We break your business into eight facets — hover to feel each one, click to look inside.</p>
+      </header>
+
+      <div className="me-stage">
+        <div className="me-canvas" ref={hostRef} aria-hidden="true" />
+        <div className="me-orb" aria-hidden="true"><span>EXPLORE</span></div>
+        {/* accessible / no-WebGL fallback: pick any pillar by name */}
+        <div className="me-picks" role="tablist" aria-label="Pillars">
+          {items.map((p, i) => (
+            <button key={i} role="tab" aria-selected={i === selected}
+              className={'me-pick' + (i === selected ? ' is-active' : '')} onClick={() => choose(i)}>
+              {p.name || ('Pillar ' + (i + 1))}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <aside className={'me-detail' + (open ? ' is-open' : '')} aria-hidden={open ? 'false' : 'true'}>
+        {active ? (
+          <>
+            <button className="me-detail-close" onClick={close}><span>← All pillars</span></button>
+            <div className="me-detail-index">{active.n || ('P·' + pad2(selected + 1))} / {pad2(items.length)}</div>
+            <div className="me-detail-label">The Methodology · No stone unturned</div>
+            <h3 className="me-detail-name">{active.name}</h3>
+            {active.tag ? <div className="me-detail-tag">{active.tag}</div> : null}
+            {active.def ? <p className="me-detail-def">{active.def}</p> : null}
+            {Array.isArray(active.chips) && active.chips.length ? (
+              <div className="me-assess">
+                <div className="me-assess-h">What we assess</div>
+                <ul>{active.chips.map((c, j) => <li key={j}>{c.text || c}</li>)}</ul>
+              </div>
+            ) : null}
+            {active.href && active.href !== '#' ? (
+              <a className="me-detail-cta" href={safeHref(active.href)} onClick={onClose}>Inspect this pillar<Arrow /></a>
+            ) : null}
+            <nav className="me-pager">
+              <button onClick={() => step(-1)} aria-label="Previous pillar"><span>← Prev</span></button>
+              <button onClick={() => step(1)} aria-label="Next pillar"><span>Next →</span></button>
+            </nav>
+          </>
+        ) : null}
+      </aside>
+    </div>
+  );
+}
+
+const CSS = `
+.me{position:fixed;inset:0;z-index:4000;overflow:hidden;
+  background:radial-gradient(1200px 800px at 50% 18%,rgba(20,60,42,.55),transparent 62%),
+  radial-gradient(900px 700px at 50% 120%,rgba(14,49,34,.5),transparent 60%),#06100b;
+  display:flex;flex-direction:column;color:var(--gs-text,#f5f5f5);animation:meIn .4s var(--gs-ease,ease)}
+@keyframes meIn{from{opacity:0}to{opacity:1}}
+.me-top{display:flex;align-items:center;justify-content:space-between;padding:clamp(16px,2.4vw,26px) clamp(18px,4vw,44px);position:relative;z-index:3}
+.me-logo{height:24px;width:auto;display:block}
+.me-back{background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft,rgba(255,255,255,.14));border-radius:100px;
+  padding:9px 18px;color:var(--gs-text,#f5f5f5);font:700 .78rem/1 Montserrat,sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:border-color .25s,background .25s}
+.me-back:hover{border-color:var(--gs-border,rgba(200,255,0,.3));background:rgba(200,255,0,.06)}
+.me-head{text-align:center;padding:clamp(6px,1.5vw,16px) 24px 0;position:relative;z-index:2;transition:opacity .4s var(--gs-ease,ease),transform .4s var(--gs-ease,ease)}
+.me.is-open .me-head{opacity:0;transform:translateY(-12px);pointer-events:none}
+.me-kicker{font-size:.72rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--gs-accent,#c8ff00)}
+.me-title{font-size:clamp(1.7rem,4.4vw,3rem);font-weight:900;letter-spacing:-.02em;margin-top:.3em}
+.me-title .accent{color:var(--gs-accent,#c8ff00)}
+.me-sub{margin:14px auto 0;max-width:60ch;color:var(--gs-text-muted,#b0b0b0);font-size:clamp(.95rem,1.4vw,1.1rem);line-height:1.6}
+.me-stage{position:relative;flex:1;min-height:0}
+.me-canvas{position:absolute;inset:0}
+.me-canvas canvas{width:100%;height:100%;display:block}
+.me-orb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:118px;height:118px;border-radius:50%;
+  border:1px solid var(--gs-accent-mid,rgba(200,255,0,.4));display:grid;place-items:center;pointer-events:none;
+  box-shadow:0 0 60px -10px rgba(200,255,0,.35);animation:meOrb 3.2s ease-in-out infinite}
+@keyframes meOrb{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.06)}}
+.me-orb span{background:var(--gs-accent,#c8ff00);color:#0e1611;font:800 .68rem/1 Montserrat,sans-serif;letter-spacing:.14em;border-radius:100px;padding:8px 14px}
+.me.is-open .me-orb{opacity:0;transition:opacity .3s}
+.me-picks{position:absolute;left:0;right:0;bottom:clamp(14px,3vh,28px);display:flex;flex-wrap:wrap;gap:7px;justify-content:center;padding:0 18px;z-index:2}
+.me-pick{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft,rgba(255,255,255,.12));border-radius:100px;
+  padding:7px 14px;color:var(--gs-text-muted,#b0b0b0);font:700 .76rem/1 Montserrat,sans-serif;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.me-pick:hover{color:var(--gs-text,#fff);border-color:var(--gs-border,rgba(200,255,0,.3))}
+.me-pick.is-active{color:#0e1611;background:var(--gs-accent,#c8ff00);border-color:var(--gs-accent,#c8ff00)}
+.me-detail{position:absolute;top:0;right:0;bottom:0;width:min(440px,92vw);z-index:5;
+  background:linear-gradient(200deg,rgba(16,32,24,.96),rgba(8,18,12,.98));border-left:1px solid var(--gs-border,rgba(200,255,0,.18));
+  backdrop-filter:blur(10px);box-shadow:-40px 0 90px -40px rgba(0,0,0,.8);padding:clamp(24px,3vw,40px);overflow-y:auto;
+  transform:translateX(100%);transition:transform .45s var(--gs-ease,ease);display:flex;flex-direction:column;gap:6px}
+.me-detail.is-open{transform:translateX(0)}
+.me-detail-close{align-self:flex-start;background:none;border:0;color:var(--gs-text-faint,#8d938c);font:700 .78rem/1 Montserrat,sans-serif;cursor:pointer;padding:4px 0;margin-bottom:14px}
+.me-detail-close:hover{color:var(--gs-accent,#c8ff00)}
+.me-detail-index{font-size:.72rem;font-weight:900;letter-spacing:.14em;color:var(--gs-accent,#c8ff00);font-variant-numeric:tabular-nums}
+.me-detail-label{font-size:.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-faint,#8d938c);margin-top:10px}
+.me-detail-name{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:900;letter-spacing:-.02em;margin-top:6px}
+.me-detail-tag{font-size:1rem;font-weight:700;color:var(--gs-text,#f5f5f5);margin-top:4px}
+.me-detail-def{margin-top:14px;color:var(--gs-text-muted,#b0b0b0);font-size:.96rem;line-height:1.65}
+.me-assess{margin-top:22px}
+.me-assess-h{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-faint,#8d938c)}
+.me-assess ul{list-style:none;display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.me-assess li{font-size:.74rem;color:var(--gs-text-muted,#b0b0b0);border:1px solid var(--gs-border-soft,rgba(255,255,255,.14));border-radius:100px;padding:5px 12px}
+.me-detail-cta{margin-top:22px;display:inline-flex;align-items:center;gap:7px;font-size:.84rem;font-weight:800;color:var(--gs-accent,#c8ff00);text-decoration:none}
+.me-detail-cta svg{transition:transform .25s var(--gs-ease,ease)}
+.me-detail-cta:hover svg{transform:translateX(4px)}
+.me-pager{margin-top:auto;padding-top:24px;display:flex;gap:10px}
+.me-pager button{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft,rgba(255,255,255,.14));border-radius:100px;
+  padding:11px;color:var(--gs-text,#f5f5f5);font:700 .8rem/1 Montserrat,sans-serif;cursor:pointer;transition:border-color .2s,background .2s}
+.me-pager button:hover{border-color:var(--gs-border,rgba(200,255,0,.3));background:rgba(200,255,0,.06)}
+.me :focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:2px;border-radius:8px}
+@media (max-width:760px){
+  .me-detail{width:100%;top:auto;bottom:0;height:78vh;border-left:0;border-top:1px solid var(--gs-border,rgba(200,255,0,.18));transform:translateY(100%)}
+  .me-detail.is-open{transform:translateY(0)}
+  .me-orb{width:92px;height:92px}
+}
+@media (prefers-reduced-motion: reduce){
+  .me,.me-orb,.me-detail,.me-head{animation:none !important;transition:none !important}
+}
+`;

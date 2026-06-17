@@ -36,24 +36,6 @@ const blk = (type, props) => {
   return { type, props: { id: rid(type), ...def, ...props } };
 };
 
-// The interactive method dashboard (3D pillar explorer) for the Method page. Each pillar carries an
-// editable link, rendered as a CTA in the detail panel (defaults to "book a deep dive"). Shared by the
-// fresh seed AND the load() migration, so existing saved sites also gain the dashboard.
-const PE_PILLAR = (title, text) => ({ title, text, href: '#book', linkLabel: 'Assess this pillar' });
-const methodPillarExplorerProps = () => ({
-  index: '', eyebrow: 'Explore the method', headline: 'Eight pillars,', highlight: 'in your hands.',
-  body: 'Move across the gems, or pick a pillar, to see what we read and where the next gain tends to hide. Each one links through to book its assessment.',
-  items: [
-    PE_PILLAR('People', 'We map the relationship networks inside your company — roles, capabilities, resourcing and sentiment — so change lands with the grain.'),
-    PE_PILLAR('Communication', 'How well you communicate your value, inside and out, and the strategies that leave any audience engaged.'),
-    PE_PILLAR('Innovation', 'How deliberately you innovate — whether you do it constantly, and whether your environment enables it.'),
-    PE_PILLAR('Data', 'Your data lifecycle end to end: structure, accuracy, consistency, reliability and validity.'),
-    PE_PILLAR('Customer', 'Who your customers really are and how to serve them better — intelligence, journeys and every touchpoint between.'),
-    PE_PILLAR('Competition', 'Whether you’re staying ahead of the field, and how we position you as a pioneer in it.'),
-    PE_PILLAR('Technology', 'How maturely you use your stack, where integrations fall short, and how resilient the infrastructure really is.'),
-    PE_PILLAR('Value', 'Aligning your values with value for the customer, so every transformation pays off both ways.'),
-  ],
-});
 
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
@@ -311,7 +293,7 @@ export function seedState() {
         blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
           body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
           prompt: '', align: 'center', size: 'full',
-          ctaLabel: 'Open the interactive breakdown', ctaHref: '#go/method', ctaLabel2: 'Book a Deep Dive', ctaHref2: '#book' }),
+          ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: 'Book a Deep Dive', ctaHref2: '#book' }),
         blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
           body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: a full, honest read of the business across eight pillars, so the work that follows is the work that actually moves you.',
           items: [
@@ -319,7 +301,6 @@ export function seedState() {
             { n: '02', title: 'We benchmark', text: 'Your scores set against your peers, so you can see the gap and the lead.' },
             { n: '03', title: 'We climb the lowest first', text: 'The biggest gain is hiding in your weakest pillar. That’s where we start.' },
           ]}),
-        blk('PillarExplorer', methodPillarExplorerProps()),
         blk('PillarCards', {}),
         blk('MaturityModel', {}),
         blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
@@ -406,19 +387,20 @@ function migrate(state) {
     if (p.approvedBy === undefined) p.approvedBy = null;
     if (p.published == null) p.published = p.data; // never strand a page with no renderable live content
   });
-  // method page (additive): ensure the interactive PillarExplorer dashboard is present — added after the
-  // page first shipped, so existing saved sites get it too. Inserted into BOTH the draft and the live
-  // projection (right after the FeatureGrid), idempotently.
+  // method page (additive): the "interactive breakdown" is now a FULL-SCREEN explorer at #breakdown
+  // (not an inline section). On existing saved sites: drop any inline PillarExplorer that an earlier
+  // build auto-inserted, and repoint the Hero "Open the interactive breakdown" CTA to #breakdown.
   {
     const mp = state.pages && state.pages.method;
-    const lacks = (c) => Array.isArray(c) && !c.some((b) => b && b.type === 'PillarExplorer');
-    const withDash = (content) => {
-      const i = content.findIndex((b) => b && b.type === 'FeatureGrid');
-      const at = i >= 0 ? i + 1 : Math.min(1, content.length);
-      return [...content.slice(0, at), blk('PillarExplorer', methodPillarExplorerProps()), ...content.slice(at)];
+    const fix = (content) => {
+      if (!Array.isArray(content)) return content;
+      return content
+        .filter((b) => !(b && b.type === 'PillarExplorer'))
+        .map((b) => (b && b.type === 'Hero' && b.props && b.props.ctaHref === '#go/method' && /interactive breakdown/i.test(b.props.ctaLabel || '')
+          ? { ...b, props: { ...b.props, ctaHref: '#breakdown' } } : b));
     };
-    if (mp && mp.data && lacks(mp.data.content)) mp.data.content = withDash(mp.data.content);
-    if (mp && mp.published && lacks(mp.published.content)) mp.published.content = withDash(mp.published.content);
+    if (mp && mp.data) mp.data.content = fix(mp.data.content);
+    if (mp && mp.published) mp.published.content = fix(mp.published.content);
   }
   if (!state.settings) state.settings = { background: 'stone', siteName: 'Greatstone International' };
   if (!state.assets) state.assets = {};

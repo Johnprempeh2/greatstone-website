@@ -26,6 +26,7 @@ const LazyCatalogueAdmin = lazy(() => import('./store/CatalogueAdmin.jsx'));
 const LazyStoreCart = lazy(() => import('./store/StoreCart.jsx'));
 const LazyAccount = lazy(() => import('./store/AccountDashboard.jsx')); // #account — customer self-serve portal
 const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
+const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -82,6 +83,10 @@ function readJoinHash() {
 // can never disagree. Sections: overview|pages|releases|seo|background|history|activity|team|editor.
 function readAdminHash() {
   return parseAdminHash(typeof location !== 'undefined' ? location.hash : '');
+}
+// #breakdown → the full-screen interactive methodology explorer (the method Hero's "interactive breakdown")
+function readBreakdownHash() {
+  return /^#\/?breakdown\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
 // #shop or #shop/<vendor-slug> → the live storefront (reads Supabase)
 function readShopHash() {
@@ -183,6 +188,7 @@ export default function App() {
   const [confirmRoute, setConfirmRoute] = useState(readConfirmHash); // #order-confirmed → Stripe success page
   const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
+  const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
@@ -216,7 +222,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -660,6 +666,24 @@ export default function App() {
         {styleTag}
         <Stage background={bg} />
         <div className="gs-editor-loading" role="status" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Checking your session…</div>
+      </div>
+    );
+  }
+
+  // #breakdown — the full-screen interactive methodology explorer, opened from the method Hero CTA.
+  // Public, renders over everything. Its eight pillars come from the editable Pillar-cards block on the
+  // method page, so marketing edits the cards (incl. each pillar's link) and the breakdown follows.
+  if (breakdownRoute) {
+    const mp = state.pages.method;
+    const content = (mp && ((mp.published && mp.published.content) || (mp.data && mp.data.content))) || [];
+    const pc = content.find((b) => b && b.type === 'PillarCards');
+    const pillars = (pc && pc.props && Array.isArray(pc.props.pillars)) ? pc.props.pillars : [];
+    return (
+      <div className="is-view">
+        {styleTag}
+        <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#06100b' }} />}>
+          <LazyMethodExplorer pillars={pillars} onClose={() => { setBreakdownRoute(false); navigate(state.pages.method ? 'method' : state.order[0]); }} />
+        </Suspense>
       </div>
     );
   }

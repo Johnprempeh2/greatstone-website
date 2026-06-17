@@ -18,7 +18,7 @@ const TINTS = [0x16432f, 0x1b5039, 0x113826, 0x154631, 0x0e3122, 0x1b5039, 0x123
 
 export function mountPillarExplorer(container, opts = {}) {
   const o = Object.assign({ envUrl: 'env-emerald.jpg', bloom: 0.7, exposure: 1.35, keys: Object.keys(PILLAR_SVG),
-    cols: 4, onSelect: null }, opts);
+    cols: 4, onSelect: null, layout: 'grid', ringRadius: 2.95, camZ: null }, opts);
 
   const canvas = document.createElement('canvas'); canvas.style.cssText = 'width:100%;height:100%;display:block';
   container.appendChild(canvas);
@@ -89,14 +89,22 @@ export function mountPillarExplorer(container, opts = {}) {
       clearcoat: 1.0, clearcoatRoughness: 0.04, flatShading: false, emissive: 0x052314, emissiveIntensity: 0.45 });
     addRim(mat); mats.push(mat);
     const mesh = new THREE.Mesh(geo, mat);
-    const col = i % cols, row = Math.floor(i / cols);
-    const hx = (col - (cols - 1) / 2) * spanX, hy = ((rows - 1) / 2 - row) * spanY;
+    let hx, hy;
+    if (o.layout === 'ring') {
+      // 8 gems on an ellipse around a central focus, starting at the top and going clockwise
+      const a = (i / o.keys.length) * Math.PI * 2 - Math.PI / 2;
+      hx = Math.cos(a) * o.ringRadius * 1.18;
+      hy = -Math.sin(a) * o.ringRadius * 0.86;
+    } else {
+      const col = i % cols, row = Math.floor(i / cols);
+      hx = (col - (cols - 1) / 2) * spanX; hy = ((rows - 1) / 2 - row) * spanY;
+    }
     mesh.position.set(hx, hy, 0);
     mesh.userData = { i, home: new THREE.Vector3(hx, hy, 0), lift: 0, spin: (i % 2 ? 1 : -1) * 0.15, phase: i * 0.7 };
     grid.add(mesh); gems.push(mesh);
   });
-  // fit the whole grid into frame
-  grid.scale.setScalar(rows > 1 ? 0.92 : 1);
+  // fit the whole arrangement into frame
+  grid.scale.setScalar(o.layout === 'ring' ? 0.86 : (rows > 1 ? 0.92 : 1));
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -125,7 +133,8 @@ export function mountPillarExplorer(container, opts = {}) {
   function resize() {
     const w = container.clientWidth || 600, h = container.clientHeight || 500;
     renderer.setSize(w, h, false); composer.setSize(w, h); bloom.setSize(w, h);
-    camera.aspect = w / h; camera.position.z = (rows > 1 ? 8.6 : 7.0) / Math.min(camera.aspect, 1.2); camera.updateProjectionMatrix();
+    const baseZ = o.camZ != null ? o.camZ : (o.layout === 'ring' ? 9.4 : (rows > 1 ? 8.6 : 7.0));
+    camera.aspect = w / h; camera.position.z = baseZ / Math.min(camera.aspect, o.layout === 'ring' ? 1.35 : 1.2); camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize); ro.observe(container); resize();
 
