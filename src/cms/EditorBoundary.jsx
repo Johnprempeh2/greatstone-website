@@ -1,4 +1,5 @@
 import React from 'react';
+import { reportError } from '../lib/report.mjs';
 
 // A React error boundary so one block that throws (a bad prop after a migration, a malformed
 // array) shows a recoverable card instead of white-screening the whole studio or the public
@@ -7,7 +8,7 @@ import React from 'react';
 export default class EditorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(error) { return { error }; }
-  componentDidCatch(error, info) { if (typeof console !== 'undefined') console.error('[studio] block error', error, info); }
+  componentDidCatch(error, info) { reportError(error, { where: 'EditorBoundary', label: this.props.label, componentStack: info && info.componentStack }); }
   recover = () => { this.setState({ error: null }); if (this.props.onReset) this.props.onReset(); };
 
   render() {

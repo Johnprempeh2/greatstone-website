@@ -24,7 +24,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (event.type === 'checkout.session.completed') await recordOrder(event.data.object as Stripe.Checkout.Session);
+    switch (event.type) {
+      case 'checkout.session.completed':              // card: already paid. async methods: payment_status='unpaid' → recordOrder skips, books on async_payment_succeeded.
+      case 'checkout.session.async_payment_succeeded': // delayed method (bank debit etc.) cleared
+        await recordOrder(event.data.object as Stripe.Checkout.Session); break;
+      case 'checkout.session.async_payment_failed':
+      case 'checkout.session.expired':
+        console.warn('checkout', event.type, (event.data.object as Stripe.Checkout.Session).id); break;
+      default: break; // ignore other event types
+    }
   } catch (e) {
     // Return 500 so Stripe retries (with backoff, up to ~3 days). This is safe — the order write is
     // idempotent on the session id — so a transient DB/network failure recovers on a later delivery
@@ -94,5 +102,37 @@ async function recordOrder(session: Stripe.Checkout.Session) {
     const { error: iErr } = await supabase.from('order_items').insert(items.map((it) => ({ ...it, order_id: inserted.id })));
     if (iErr) throw iErr;
   }
-  console.log('recorded order', inserted.id, '· items', items.length, '· total', totalMinor, currency, '· email', email || '(none)');
+  console.log('recorded order', inserted.id, '· items', items.length, '· total', totalMinor, currency, '· email', customerEmail || '(none)');
+  // Confirmation email — only on a NEW order (retries return early above, so never doubles). Never throws.
+  await sendOrderEmail({ to: customerEmail, reference: sessionId, items, subtotal, total: totalMinor, currency }).catch((e) => console.error('order email failed:', (e as Error).message));
+}
+
+// Transactional-ish order confirmation via Resend (HTTP). No-ops cleanly if RESEND_API_KEY is unset,
+// so the webhook + order capture never depend on email being configured. Set RESEND_API_KEY + RESEND_FROM
+// (a verified sender, e.g. "Greatstone <orders@greatstonesoftware.co.uk>") to switch it on.
+async function sendOrderEmail(o: { to: string | null; reference: string; items: any[]; subtotal: number; total: number; currency: string }) {
+  const KEY = Deno.env.get('RESEND_API_KEY');
+  const FROM = Deno.env.get('RESEND_FROM') || 'Greatstone <onboarding@resend.dev>';
+  if (!KEY) { console.log('order email skipped — RESEND_API_KEY not set'); return; }
+  if (!o.to) { console.log('order email skipped — no customer email'); return; }
+  const money = (m: number) => '£' + (m / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const rows = o.items.map((it) => `<tr><td style="padding:6px 0;color:#cfd3cb">${it.offering_name}${it.variant_name ? ' · ' + it.variant_name : ''} ×${it.qty}</td><td style="padding:6px 0;text-align:right;color:#fff">${money(it.line_total_minor)}</td></tr>`).join('');
+  const vat = o.total - o.subtotal;
+  const html = `<div style="background:#1f1f1f;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif;padding:28px;max-width:560px;margin:0 auto;border-radius:14px">
+    <div style="font-weight:800;font-size:18px;letter-spacing:.04em">GREATST<span style="color:#c8ff00">O</span>NE</div>
+    <h1 style="font-size:20px;margin:18px 0 6px">Thanks for your order</h1>
+    <p style="color:#b0b0b0;font-size:14px;margin:0 0 18px">Order reference <b style="color:#fff">${o.reference}</b>. Your licence keys will be issued by our team and will appear in your account, normally within one business day.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">${rows}
+      <tr><td style="padding:10px 0 0;border-top:1px solid #333;color:#b0b0b0">Subtotal (ex VAT)</td><td style="padding:10px 0 0;border-top:1px solid #333;text-align:right;color:#b0b0b0">${money(o.subtotal)}</td></tr>
+      <tr><td style="color:#b0b0b0">VAT</td><td style="text-align:right;color:#b0b0b0">${money(vat)}</td></tr>
+      <tr><td style="padding-top:6px;font-weight:800">Total</td><td style="padding-top:6px;text-align:right;font-weight:800;color:#c8ff00">${money(o.total)}</td></tr>
+    </table>
+    <p style="color:#707070;font-size:12px;margin-top:22px">Greatstone International · The Foundation of Digital Excellence</p>
+  </div>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ from: FROM, to: o.to, subject: 'Your Greatstone order ' + o.reference.replace(/^cs_(test|live)_/, '').slice(0, 12), html }),
+  });
+  if (!res.ok) throw new Error('resend ' + res.status + ' ' + (await res.text()).slice(0, 140));
+  console.log('order email sent to', o.to);
 }

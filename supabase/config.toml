@@ -1,0 +1,14 @@
+# Supabase project config (version-controlled). Pins the edge-function JWT settings so a fresh
+# `supabase functions deploy` keeps the intended posture: each function does its OWN auth
+# (Stripe signature verification on the webhook; getUser() validation on checkout/portal), so
+# Supabase's gateway JWT check is disabled (= the --no-verify-jwt we deploy with).
+project_id = "melnjvwmayjukpyngolv"
+
+[functions.stripe-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.stripe-portal]
+verify_jwt = false

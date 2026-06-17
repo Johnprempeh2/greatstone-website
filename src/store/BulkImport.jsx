@@ -4,7 +4,7 @@
 // Prices are USD; GBP recalculates automatically from the live FX rate (no GBP is ever written here).
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
-import { variantsToSkuCsv, csvToObjects, buildSkuPlan, changesToPatch, slugify } from './bulkCsv.mjs';
+import { variantsToSkuCsv, csvToObjects, buildSkuPlan } from './bulkCsv.mjs';
 
 const usd = (minor) => minor == null ? 'POA' : '$' + (minor / 100).toFixed(2);
 
@@ -54,67 +54,13 @@ export default function BulkImport({ staff }) {
     if (!plan || !maps) return;
     setBusy(true);
     try {
-      const orgId = staff.org_id;
-      const slugToId = new Map([...maps.offeringsBySlug].map(([slug, o]) => [slug, o.id]));
-      // 1) resolve/create parent offerings for new SKUs (grouped by slug; created once)
-      const newOfferings = new Map();
-      for (const cr of plan.creates) {
-        cr._slug = cr.offeringSlug || slugify(cr.offeringName || cr.sku);
-        if (!slugToId.has(cr._slug) && !newOfferings.has(cr._slug)) newOfferings.set(cr._slug, cr);
-      }
-      for (const [slug, cr] of newOfferings) {
-        // products require a vendor (chk_product_has_vendor): resolve by slug/name, else auto-create it.
-        let vId = cr.vendor ? (maps.vendorsBySlug.get(slugify(cr.vendor))?.id || maps.vendorsByName.get(cr.vendor.toLowerCase())?.id || null) : null;
-        if (!vId && cr.vendor) {
-          const vslug = slugify(cr.vendor);
-          const { data: nv, error: ve } = await supabase.from('vendors').insert({ org_id: orgId, slug: vslug, name: cr.vendor }).select('id,slug,name').single();
-          if (ve) throw new Error('vendor "' + cr.vendor + '": ' + ve.message);
-          vId = nv.id; maps.vendorsBySlug.set(vslug, nv); maps.vendorsByName.set(cr.vendor.toLowerCase(), nv);
-        }
-        let cId = cr.category ? (maps.categoriesBySlug.get(slugify(cr.category))?.id || maps.categoriesByName.get(cr.category.toLowerCase())?.id || null) : null;
-        if (!cId && cr.category) {
-          const cslug = slugify(cr.category);
-          const { data: nc, error: ce } = await supabase.from('categories').insert({ org_id: orgId, slug: cslug, name: cr.category }).select('id,slug,name').single();
-          if (ce) throw new Error('category "' + cr.category + '": ' + ce.message);
-          cId = nc.id; maps.categoriesBySlug.set(cslug, nc); maps.categoriesByName.set(cr.category.toLowerCase(), nc);
-        }
-        const { data, error } = await supabase.from('offerings').insert({
-          org_id: orgId, slug, name: cr.offeringName || cr.variant.name || slug, type: 'product',
-          status: cr.status, featured: cr.featured, fulfilment: 'license', vendor_id: vId, category_id: cId,
-        }).select('id').single();
-        if (error) throw new Error('offering "' + slug + '": ' + error.message);
-        slugToId.set(slug, data.id);
-      }
-      // 2) creates → one bulk insert (full rows)
-      const createRows = plan.creates.map(cr => ({
-        org_id: orgId, offering_id: slugToId.get(cr._slug), sku: cr.sku, name: cr.variant.name,
-        license_type: cr.variant.license_type, billing_period: cr.variant.billing_period,
-        base_price_minor: cr.variant.base_price_minor, currency: cr.variant.base_price_minor != null ? 'USD' : null,
-      }));
-      if (createRows.length) { const { error } = await supabase.from('offering_variants').insert(createRows); if (error) throw error; }
-      // 3) updates → chunked parallel patches (by variant id; the partial unique index rules out a single upsert)
-      let updated = 0;
-      for (let i = 0; i < plan.updates.length; i += 25) {
-        const batch = plan.updates.slice(i, i + 25);
-        const res = await Promise.all(batch.map(u => {
-          const patch = changesToPatch(u.changes);
-          if ('base_price_minor' in patch) patch.currency = patch.base_price_minor != null ? 'USD' : null;
-          return supabase.from('offering_variants').update(patch).eq('id', u.variantId);
-        }));
-        const bad = res.find(r => r.error); if (bad) throw bad.error;
-        updated += batch.length;
-      }
-      // 4) recompute from_price (min USD) for every touched offering
-      const touched = new Set([...createRows.map(r => r.offering_id), ...plan.updates.map(u => u.offeringId)]);
-      for (const oid of touched) {
-        if (!oid) continue;
-        const { data: vs } = await supabase.from('offering_variants').select('base_price_minor').eq('offering_id', oid).is('deleted_at', null).not('base_price_minor', 'is', null);
-        const min = (vs || []).reduce((m, v) => (m == null || v.base_price_minor < m) ? v.base_price_minor : m, null);
-        await supabase.from('offerings').update({ from_price_minor: min, from_price_currency: min != null ? 'USD' : null }).eq('id', oid);
-      }
-      // 5) audit (best-effort)
-      supabase.from('import_jobs').insert({ org_id: orgId, filename: fileName || 'sku-import.csv', type: 'variants', status: 'applied', dry_run: false, applied_at: new Date().toISOString(), total_rows: plan.counts.total, diff_summary: plan.counts, created_by: staff.id }).then(({ error }) => { if (error) console.warn('audit', error.message); });
-      flash(`Applied · created ${plan.counts.new}, updated ${updated}.`);
+      // One atomic transaction (import_skus RPC, migration 0010): creates + updates + from_price
+      // recompute all commit or all roll back — no orphaned offerings/vendors on a mid-import failure.
+      const { data, error } = await supabase.rpc('import_skus', { p_creates: plan.creates, p_updates: plan.updates });
+      if (error) throw error;
+      // audit log (best-effort, non-blocking — not part of the import transaction)
+      supabase.from('import_jobs').insert({ org_id: staff.org_id, filename: fileName || 'sku-import.csv', type: 'variants', status: 'applied', dry_run: false, applied_at: new Date().toISOString(), total_rows: plan.counts.total, diff_summary: plan.counts, created_by: staff.id }).then(({ error: e }) => { if (e) console.warn('audit', e.message); });
+      flash(`Applied · created ${data?.created ?? 0}, updated ${data?.updated ?? 0}.`);
       setPlan(null); setFileName(''); load();
     } catch (e) { flash('Import failed: ' + e.message); console.error(e); }
     setBusy(false);
