@@ -57,5 +57,15 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - **Validated as `anon`:** published offerings → 159; set IronPDF→draft → 158 (hidden) + its variants → 0 (parent-gated); **`customers` → permission denied** (customer/quote/order data does NOT leak to the public). Security boundary holds.
 - Committed.
 
-### Cycle 6 (next) — push to the cloud Supabase + typed data layer + storefront
-**Unblock needed:** the DB password / connection string (Settings → Database) to apply migrations to the cloud project — DDL can't run over the anon/service REST API. Once provided: `psql` 0001+0002+0003+seed to the cloud DB (or `supabase db push`), add admin write-grants, then build `src/data/` (supabase-js client + typed catalogue queries, price via `pricing.mjs`) and verify live, then Phase 1 storefront → auth → Stripe checkout. Stripe integration is built in code (edge functions + test keys); the Stripe plugin is optional MCP tooling, not required.
+### Cycle 6 — pushed to CLOUD Supabase + typed data layer (live-verified)
+- John provided the **Session-pooler** (IPv4) connection string (eu-west-2). The direct host is IPv6-only and unreachable from this machine; the pooler works.
+- Applied `0001 + 0002 + 0003 + seed` to the **live cloud Supabase** (Postgres 17). Cloud counts: 10 vendors · 32 categories · 159 offerings · 819 variants · 2,831 specs.
+- **Live security check via anon REST** (the storefront's actual path): published offerings readable (159); IronPDF returns 10 variants + 24 specs in one relational read; all 10 vendors load; **customers/quotes/orders/users return empty to anon** — RLS holds on the real backend.
+- Built the data layer: `src/lib/supabase.mjs` (Vite+Node dual client) + `src/data/catalog.mjs` (`listOfferings` with vendor/category/platform/type/search/sort/pagination, `getOffering`, `listVendors`, `listCategories`, `relatedOfferings`, `getActiveRules`; prices decorated via `pricing.mjs`).
+- **Verified live:** listings 159; vendor=ironsoftware→10; search pdf→30; platform=.NET→47; price-sort (Readiris £63 first); getOffering(ironpdf)→10 variants/24 specs; related→4. All against the live project.
+- Committed.
+
+**PHASE 0 COMPLETE** — schema, RLS (incl. public-read), seed, pricing engine, and the data layer, all verified against the live cloud Supabase the production app will use.
+
+### Phase 1 (next) — storefront
+Build the public store (Vite+React) against the data layer: dual-axis browse (vendor + category) with faceted filter/search/sort/pagination, product detail page (variants/editions table, specs, gallery, related), services template, on-brand (greatstone-brand). Verify in the browser via the preview tools against the live data. Then admin studio core → cart + Stripe test checkout → pricing UI → bulk Excel → AI-assist.
