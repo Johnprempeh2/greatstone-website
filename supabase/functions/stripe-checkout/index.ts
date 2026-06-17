@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     for (const it of items) {
       const v = (variants || []).find((x: any) => x.id === it.variantId);
       if (!v || v.base_price_minor == null || !v.offering || v.offering.status !== 'published') continue; // POA / unknown / unpublished → not card-purchasable
+      if ((v.currency || 'GBP') !== 'GBP') continue; // single-currency (GBP) checkout — never charge a non-GBP price as GBP
       const qty = Math.max(1, Math.min(100, Number(it.quantity) || 1));
       const unit = finalPrice(v.base_price_minor, v.currency || 'GBP', v.offering, rules, now);
       subtotal += unit * qty;

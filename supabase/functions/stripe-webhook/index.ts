@@ -26,15 +26,20 @@ Deno.serve(async (req) => {
   try {
     if (event.type === 'checkout.session.completed') await recordOrder(event.data.object as Stripe.Checkout.Session);
   } catch (e) {
-    // Log and ack (200) so Stripe doesn't retry-storm on a data issue; transient failures are visible in logs.
+    // Return 500 so Stripe retries (with backoff, up to ~3 days). This is safe — the order write is
+    // idempotent on the session id — so a transient DB/network failure recovers on a later delivery
+    // instead of silently losing the order. Only Stripe (holding the signing secret) can reach here.
     console.error('webhook handler error:', (e as Error).message);
-    return new Response(JSON.stringify({ received: true, warning: String((e as Error).message) }), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify({ error: String((e as Error).message) }), { status: 500, headers: { 'content-type': 'application/json' } });
   }
   return new Response(JSON.stringify({ received: true }), { status: 200, headers: { 'content-type': 'application/json' } });
 });
 
 async function recordOrder(session: Stripe.Checkout.Session) {
   const sessionId = session.id;
+  // checkout.session.completed also fires for async methods that haven't cleared yet — don't book those
+  // as confirmed (a later async_payment_succeeded would; card payments arrive here already 'paid').
+  if (session.payment_status === 'unpaid') { console.log('session not paid yet, skipping:', sessionId); return; }
   const currency = (session.currency || 'gbp').toUpperCase();
   const totalMinor = session.amount_total ?? 0;
   const email = session.customer_details?.email || (session as any).customer_email || null;

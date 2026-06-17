@@ -161,3 +161,14 @@ Then: admin sign-in (Supabase Auth) → offerings manager → pricing/discount r
 **Verified:** production build green (CatalogueAdmin 24.5KB). Against the live DB with a seeded order: the component's exact embedded select returns the order + items (no column/embed typos); **anon read returns 0 rows** (orders are staff-only, not public); the fulfilled update works; seed cleaned up (table back to 0). Per the security boundary I did not sign in as John — the in-admin visual is his to test (same as the pricing/bulk tabs); query validity + RLS are DB-verified.
 
 **Commerce platform status:** catalogue + pricing/discounts + bulk CSV + storefront + cart + Stripe checkout + webhook→orders + orders admin — all built and live-verified on the interim Supabase. Open follow-ups: guest→customer record linking, customer accounts/order history on the storefront, services (type='service') when data exists. **Go-live checkpoint for John unchanged:** test→live Stripe keys + webhook re-register + licence-key fulfilment process.
+
+### Phase 3d — payments hardening pass · verified
+**2026-06-17.** Bug-hunt over the fresh payment code before review; three fixes, all re-deployed + re-verified.
+
+- **webhook: retry-safe errors.** Handler errors now return **500** (was 200-swallow) so Stripe retries with backoff — safe because the order write is idempotent on the session id, so a transient DB/network failure recovers on a later delivery instead of silently losing the order.
+- **webhook: skip unpaid sessions.** `checkout.session.completed` can fire for async payment methods still `unpaid`; we now skip those (a later `async_payment_succeeded` would book them). Card payments arrive `paid` and proceed.
+- **checkout: single-currency guard.** Line items are charged in GBP; a non-GBP variant (none today, but possible later) is now skipped rather than mischarged as GBP.
+
+**Re-verified (live Supabase + Stripe test):** checkout still creates a session; signed **unpaid** event → 200, **0** orders written; signed **paid** event → 200, **1** order written; test data cleaned up (0 rows). No client changes this pass (edge-function only).
+
+This closes the planned commerce build. The money path (cart → secure checkout → Stripe → idempotent webhook → orders → admin view) is built, hardened, and verified end-to-end on the interim Supabase. Larger follow-ups (end-customer accounts + order history, guest→customer linking, services type) are product decisions to take with John, not autonomous work.
