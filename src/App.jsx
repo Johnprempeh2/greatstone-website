@@ -440,9 +440,12 @@ export default function App() {
   // should start at its hero, not wherever the last one was scrolled to). The .gs-public remount
   // (key={current}) gives the brief fade — see gsPageIn in index.css.
   function navigate(slug) {
+    if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product
+    setShopRoute(null); setProductSlug(null);
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
+  function goShop() { if (typeof location !== 'undefined') location.hash = 'shop'; if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
@@ -654,7 +657,7 @@ export default function App() {
       <Stage background={bg} />
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
-        onSearch={setQuery} onNavigate={navigate} onNewPage={newPage}
+        onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />

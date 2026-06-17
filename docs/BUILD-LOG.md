@@ -75,5 +75,15 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - Fixes during verify: debounced search + out-of-order-response guard (caught a real race); a fixed scrim so the decorative 3D Stage doesn't bleed through the near-transparent cards.
 - Committed.
 
-### Phase 1b (next) — live product detail page
-Make `#product/<slug>` read the live offering via `getOffering()` (variants/editions table with per-edition prices, specs, gallery, platform badges, related, Request-a-quote + Start-trial CTAs → contact). Currently `#product/<slug>` still renders the old localStorage `ProductDetail` block — swap it to the live data. Then nav entry to the shop, services template, admin studio core, cart + Stripe test checkout, pricing UI, bulk Excel, AI-assist.
+### Phase 1b — live product detail page (browser-verified)
+- `src/store/StoreProduct.jsx` + `sp-*` styles: live PDP via `getOffering()`. Breadcrumb, gallery (prev/next + thumbs), vendor logo + platform badges, price box, **editions/variants table** with per-edition prices, key features (specs), related products, Request-a-quote + free-trial CTAs (→ `#book` contact), SEO `<title>`, graceful not-found.
+- `App.jsx`: `#product/<slug>` now renders the live `LazyStoreProduct` (code-split) instead of the old localStorage `ProductDetail` block.
+- **Verified live** (dev :5180): IronPDF → £509 + VAT, 10 editions, 24 features, 9-image gallery, 4 related, breadcrumb + SEO title correct. Production build green (2.62s).
+
+### Phase 1c — nav glue (verified)
+- `Header.jsx`: a "Shop" entry in the nav (inline + collapsed dropdown) → `goShop()` (`#shop`), active-state aware. `App.jsx` `navigate()` now clears `location.hash` + shop/product state so page-nav cleanly leaves the store.
+- Verified: Shop appears in the nav; click → `#shop` (159 results); clicking a page from the store clears the hash and returns to the page.
+- **Note (cleanup later):** there's still a legacy "Products" Puck page (old localStorage Storefront block) alongside the new live "Shop". Retire or redirect the old page once the live store is canonical.
+
+### Phase 1d (next) — services template, then Phase 2 admin
+Render `type='service'` offerings with a services template (engagement/POA framing, book-a-call). Then Phase 2: admin studio core (offerings manager + dashboard launcher reading the live data). Phase 3 (cart + real Stripe test checkout) needs a Supabase personal access token to deploy the checkout edge function — pause + ask there.
