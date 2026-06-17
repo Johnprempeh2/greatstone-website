@@ -91,8 +91,15 @@ John provided a Supabase **personal access token** (in `.env`, gitignored) and c
 - `0004_admin_writes.sql`: `app_staff_org()` (SECURITY DEFINER, resolves the signed-in user's org iff they're owner/admin/editor) + `staff_all` RLS policies (FOR ALL, authenticated) on catalogue/pricing/quotes/orders/imports/ai/content tables + `self_read`/`staff_users` on users + grants to `authenticated`.
 - **Verified on the cloud DB** (simulating the Supabase JWT GUCs): admin `UPDATE offerings` → 1 row (allowed) + SELECT sees drafts; **anon → 0 rows, non-staff JWT → 0 rows** (denied). Secure write boundary holds.
 
-### Phase 2b (next) — admin sign-in (Supabase Auth) + offerings manager
-Wire the studio's admin entry to `supabase.auth.signInWithPassword` (the prototype localStorage session becomes a real Supabase session; the user's JWT drives the write RLS above). Then the offerings manager: list (search/filter/bulk-select) + editor (fields, variants sub-table, specs, media, SEO, status), reading/writing the live data. Then pricing/discount rules UI, bulk Excel, AI-assist, Stripe checkout (edge functions now deployable via the access token).
+### Phase 2b — catalogue admin: Supabase sign-in + offerings manager v1 (verified)
+- `src/store/adminAuth.mjs`: Supabase Auth helpers (signIn/out, session, `getStaffUser` → public.users role). Additive — does NOT touch the legacy Puck-pages prototype auth.
+- `src/store/CatalogueAdmin.jsx` + `admin.css`: a new `#catalogue` surface — sign-in gate → offerings manager (searchable live list incl. drafts, edit drawer: name/short-desc/status/featured, saving via the authenticated client gated by `staff_all` RLS). Non-staff signed-in users get "not authorised".
+- `App.jsx`: additive `#catalogue` route (lazy/code-split), cleared by page nav.
+- **Verified** (dev :5180): sign-in form renders on-brand; a wrong password is rejected with "Invalid login credentials" (proves the live Supabase Auth integration); console clean; production build green. **Per my security boundary I did not sign in as John** — the happy-path sign-in + live edit is his to test (his password); the write RLS itself is DB-verified (Phase 2a).
+- **John: to use the admin** — run the dev server and open `/#catalogue`, sign in with the Supabase admin account (john@greatstonesoftware.co.uk).
+
+### Phase 2c (next) — deeper offerings editor + pricing rules UI
+Flesh out the offerings editor (variants/editions table with prices, specs, platforms/tags, vendor/category, media), add vendor/category managers, then the **pricing & mass-discount rules UI** (create rule → scope vendor/category/product/tier → %/fixed → schedule → live before/after preview, writing `pricing_rules`). Then bulk Excel import/export, AI-assist, and the Stripe checkout (edge functions, now deployable via the access token).
 
 ### (was) ⏸ PAUSED — Phase 1 (public storefront) complete; Phase 2+ needs admin auth
 **Done & live:** Phase 0 (schema/RLS/seed/pricing engine/data layer) + Phase 1 (storefront listing, live product pages, nav glue) — all against the real cloud Supabase, browser-verified, build green. Commits c0ce787…c864f2d.

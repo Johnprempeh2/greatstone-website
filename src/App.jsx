@@ -20,6 +20,7 @@ const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
 // (the chunk arrives only on the #shop route).
 const LazyStoreBrowse = lazy(() => import('./store/StoreBrowse.jsx'));
 const LazyStoreProduct = lazy(() => import('./store/StoreProduct.jsx'));
+const LazyCatalogueAdmin = lazy(() => import('./store/CatalogueAdmin.jsx'));
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -78,6 +79,10 @@ function readJoinHash() {
 function readShopHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?shop(?:\/([\w-]+))?/i);
   return m ? { vendor: m[1] || '' } : null;
+}
+// #catalogue → the live catalogue admin (Supabase-authenticated, gated to staff)
+function readCatalogueHash() {
+  return /^#\/?catalogue\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
 const SITE_NAME = 'Greatstone International';
 function upsertMeta(attr, key, content) {
@@ -149,6 +154,7 @@ export default function App() {
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
   const [shopRoute, setShopRoute] = useState(readShopHash);        // #shop[/<vendor>] → live storefront
+  const [catalogueAdmin, setCatalogueAdmin] = useState(readCatalogueHash); // #catalogue → live catalogue admin (Supabase auth)
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
@@ -181,7 +187,7 @@ export default function App() {
   // persist the licence basket (non-sensitive) so it survives a reload
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
-    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); };
+    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -441,7 +447,7 @@ export default function App() {
   // (key={current}) gives the brief fade — see gsPageIn in index.css.
   function navigate(slug) {
     if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product
-    setShopRoute(null); setProductSlug(null);
+    setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false);
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
@@ -663,7 +669,9 @@ export default function App() {
       />
       <main className="gs-public" id="gs-main" tabIndex={-1} key={shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
         <EditorBoundary key={shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
-          {shopRoute
+          {catalogueAdmin
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyCatalogueAdmin /></Suspense>
+            : shopRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>

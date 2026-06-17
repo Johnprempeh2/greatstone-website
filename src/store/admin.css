@@ -1,0 +1,48 @@
+/* Catalogue admin — uses global --gs-* tokens. Sits over the Stage; opaque surfaces. */
+.ca-wrap { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:clamp(90px,12vh,130px) clamp(18px,4vw,48px) 80px; }
+.ca-center { text-align:center; padding:60px 20px; color:var(--gs-text-muted); }
+.ca-center h2 { color:var(--gs-text); margin-bottom:.4em; }
+
+/* sign-in */
+.ca-signin { max-width:380px; margin:4vh auto 0; background:rgba(20,24,20,.9); border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); border-radius:18px; padding:32px; backdrop-filter:blur(8px); }
+.ca-signin h1 { font-size:1.8rem; font-weight:900; margin:.2em 0 .3em; }
+.ca-sub { color:var(--gs-text-muted); font-size:.9rem; margin-bottom:20px; }
+.ca-signin form, .ca-drawer { display:flex; flex-direction:column; gap:14px; }
+.ca-signin label, .ca-drawer label { display:flex; flex-direction:column; gap:6px; font-size:.8rem; font-weight:700; color:var(--gs-text-muted); }
+.ca-signin input, .ca-drawer input, .ca-drawer textarea, .ca-drawer select { padding:.7em .9em; border-radius:10px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.95rem; }
+.ca-signin input:focus, .ca-drawer input:focus, .ca-drawer textarea:focus, .ca-drawer select:focus { outline:none; border-color:var(--gs-accent-mid); }
+.ca-err { background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); color:#ff9b9b; border-radius:9px; padding:.6em .9em; font-size:.85rem; }
+
+/* manager */
+.ca-head { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+.ca-head h1 { font-size:clamp(1.6rem,3vw,2.4rem); font-weight:900; letter-spacing:-.02em; margin-top:.2em; }
+.ca-headtools { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ca-who { font-size:.78rem; color:var(--gs-text-faint); }
+.gs-btn.sm { padding:.5em 1em; font-size:.82rem; }
+.ca-toolbar { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.ca-search { flex:1 1 280px; padding:.7em 1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; }
+.ca-search:focus { outline:none; border-color:var(--gs-accent-mid); }
+.ca-count { font-size:.82rem; color:var(--gs-text-muted); }
+.ca-table-wrap { border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:14px; overflow:hidden; background:rgba(18,20,18,.7); }
+.ca-table { width:100%; border-collapse:collapse; }
+.ca-table th { text-align:left; font-size:.66rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--gs-text-faint); padding:12px 16px; border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); background:rgba(255,255,255,.02); }
+.ca-table td { padding:11px 16px; border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.06)); font-size:.88rem; color:var(--gs-text-muted); }
+.ca-table tr:last-child td { border-bottom:0; }
+.ca-table tr:hover td { background:var(--gs-accent-soft); }
+.ca-name { color:var(--gs-text); font-weight:600; }
+.ca-star { color:var(--gs-accent); margin-left:.4em; }
+.ca-muted { color:var(--gs-text-faint); text-align:center; padding:30px; }
+.ca-status { font-size:.72rem; font-weight:700; padding:.2em .6em; border-radius:5px; text-transform:capitalize; }
+.ca-published { background:rgba(200,255,0,.12); color:var(--gs-accent); }
+.ca-draft { background:rgba(255,200,0,.12); color:#ffc800; }
+.ca-archived { background:rgba(255,255,255,.08); color:var(--gs-text-faint); }
+
+/* edit drawer */
+.ca-drawer-scrim { position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.5); display:flex; justify-content:flex-end; }
+.ca-drawer { width:min(440px,92vw); height:100%; overflow-y:auto; background:rgba(18,21,18,.98); border-left:1px solid var(--gs-border); padding:28px; }
+.ca-drawer h2 { font-size:1.3rem; font-weight:800; margin-bottom:6px; }
+.ca-check { flex-direction:row !important; align-items:center; gap:.5em !important; }
+.ca-check input { width:auto; }
+.ca-drawer-foot { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+.ca-note { font-size:.76rem; color:var(--gs-text-faint); margin-top:6px; }
+.ca-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:90; background:var(--gs-accent); color:#0e1611; font-weight:700; padding:.7em 1.4em; border-radius:100px; font-size:.85rem; }
