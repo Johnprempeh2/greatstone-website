@@ -9,7 +9,8 @@
 // they never silently act on a hidden "current" page. Commerce items deep-link to the Supabase
 // catalogue (#catalogue/<tab>), which has its own sign-in — the rail shows that connection's status.
 import { useState, useEffect, useRef } from 'react';
-import { getSession, getStaffUser } from '../store/adminAuth.mjs';
+// adminAuth (and its @supabase/supabase-js dependency) is imported DYNAMICALLY inside the session
+// effect below, so the heavy Supabase client stays out of the eager bundle the public homepage loads.
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 const PER_PAGE = new Set(['seo', 'background', 'history', 'activity']);
@@ -59,16 +60,18 @@ export default function AdminConsole({
   const nav = buildNav(attention);
   const groupOf = (id) => nav.find((g) => g.items.some((it) => it.id === id))?.group || 'Content';
 
-  // Supabase catalogue session status — the Commerce destinations sign in separately.
+  // Supabase catalogue session status — the Commerce destinations sign in separately. Loaded lazily
+  // (dynamic import) so the public bundle never pays for the Supabase client.
   const [supa, setSupa] = useState({ state: 'checking' });
   useEffect(() => {
     let alive = true;
-    getSession().then(async (s) => {
+    import('../store/adminAuth.mjs').then(async ({ getSession, getStaffUser }) => {
+      const s = await getSession();
       if (!alive) return;
       if (!s) { setSupa({ state: 'out' }); return; }
       const staff = await getStaffUser().catch(() => null);
       if (alive) setSupa({ state: staff ? 'in' : 'notstaff', email: s.user?.email, role: staff?.role });
-    });
+    }).catch(() => { if (alive) setSupa({ state: 'out' }); });
     return () => { alive = false; };
   }, []);
   const supaChip = supa.state === 'in' ? `Signed in as ${supa.email} · ${supa.role}`
@@ -77,9 +80,14 @@ export default function AdminConsole({
     : 'Checking…';
   const supaDot = supa.state === 'in' ? 'is-on' : supa.state === 'notstaff' ? 'is-warn' : '';
 
-  // move focus to the main region on every destination change, so keyboard/SR users land in content
+  // move focus to the main region when you SWITCH destinations (not on first mount — landing on
+  // #admin should leave focus at the top so the skip link + rail come first, mirroring the public side)
   const mainRef = useRef(null);
-  useEffect(() => { const m = mainRef.current; if (m) try { m.focus({ preventScroll: true }); } catch { m.focus(); } }, [view]);
+  const didMount = useRef(false);
+  useEffect(() => {
+    if (!didMount.current) { didMount.current = true; return; }
+    const m = mainRef.current; if (m) try { m.focus({ preventScroll: true }); } catch { m.focus(); }
+  }, [view]);
 
   const activate = (it) => {
     if (it.need && !allowed(it.need)) return;
@@ -93,8 +101,11 @@ export default function AdminConsole({
 
   const def = nav.flatMap((g) => g.items).find((it) => it.id === view);
   const perPage = PER_PAGE.has(view) && order.length > 0;
-  const bodyContent = (view === 'team' && !canManageUsers)
-    ? <p className="ac-locked-note">Your role doesn’t have access to team management.</p>
+  // gate the BODY by capability the same way the rail gates the item, so a deep-linked
+  // #admin/seo can't drive edits when the role can't edit (the rail only disables the button).
+  const viewAllowed = allowed(def?.need);
+  const bodyContent = !viewAllowed
+    ? <p className="ac-locked-note">Your role doesn’t have access to this area.</p>
     : (panels[view] || panels.overview);
 
   return (
@@ -165,6 +176,7 @@ export default function AdminConsole({
               </div>
             )}
           </header>
+          {perPage && <p className="gs-sr-only" aria-live="polite">Now editing {pages[current]?.title || current}</p>}
           <div className="ac-body">{bodyContent}</div>
         </main>
       </div>

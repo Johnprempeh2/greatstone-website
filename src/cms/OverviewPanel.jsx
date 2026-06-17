@@ -14,7 +14,7 @@ function when(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function OverviewPanel({ order = [], pages = {}, products = [], categories = [], team = [], activity = [], org, catalogDrift = false, onClose, embedded }) {
+export default function OverviewPanel({ order = [], pages = {}, products = [], categories = [], team = [], activity = [], org, catalogDrift = false, onClose, embedded, onSection }) {
   // Page status counts mirror the Releases board exactly (status-field based), so the two views never
   // disagree. Live + In review + Draft sum to the total — no contradictory axes on one dashboard.
   const pg = order.reduce((m, slug) => {
@@ -28,16 +28,24 @@ export default function OverviewPanel({ order = [], pages = {}, products = [], c
   const recent = (activity || []).slice(0, 5);
   const pendingReview = (pg.review || 0) + (pg.approved || 0);
 
+  // a tile is a clickable shortcut into the relevant destination when onSection is wired (console);
+  // in the in-editor sidebar (no onSection) it stays a plain readout.
+  const Tile = ({ n, label, warn, to }) => (
+    to && onSection
+      ? <button type="button" className={'gs-ov-tile' + (warn ? ' is-warn' : '')} onClick={() => onSection(to)} title={'Go to ' + to}><b>{n}</b><span>{label}</span></button>
+      : <div className={'gs-ov-tile' + (warn ? ' is-warn' : '')}><b>{n}</b><span>{label}</span></div>
+  );
+
   return (
     <PanelFrame embedded={embedded} label={'Studio' + (org ? ' · ' + org.name : '')} name="Studio home" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-ov-tiles">
-          <div className="gs-ov-tile"><b>{pg.published || 0}</b><span>Live pages</span></div>
-          <div className={'gs-ov-tile' + (pendingReview ? ' is-warn' : '')}><b>{pendingReview}</b><span>In review</span></div>
-          <div className={'gs-ov-tile' + (pg.drift ? ' is-warn' : '')}><b>{pg.drift}</b><span>Unpublished changes</span></div>
-          <div className="gs-ov-tile"><b>{pg.draft || 0}</b><span>Draft pages</span></div>
-          <div className={'gs-ov-tile' + (catalogDrift ? ' is-warn' : '')}><b>{prod.total}</b><span>{catalogDrift ? 'Products · unpublished' : 'Products'}</span></div>
-          <div className={'gs-ov-tile' + (tm.invited ? ' is-warn' : '')}><b>{tm.invited}</b><span>Pending invites</span></div>
+          <Tile n={pg.published || 0} label="Live pages" to="pages" />
+          <Tile n={pendingReview} label="In review" warn={!!pendingReview} to="releases" />
+          <Tile n={pg.drift} label="Unpublished changes" warn={!!pg.drift} to="releases" />
+          <Tile n={pg.draft || 0} label="Draft pages" to="pages" />
+          <Tile n={prod.total} label={catalogDrift ? 'Products · unpublished' : 'Products'} warn={catalogDrift} />
+          <Tile n={tm.invited} label="Pending invites" warn={!!tm.invited} to="team" />
         </div>
 
         <div className="gs-ov-line">

@@ -42,7 +42,8 @@ import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
-import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
+import { currentUser, can, ROLES, signOut as authSignOut } from './cms/auth.js';
+import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
 import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
 import AcceptInvite from './cms/AcceptInvite.jsx';
@@ -75,11 +76,11 @@ function readJoinHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?join\/([\w-]+)/i);
   return m ? m[1] : null;
 }
-// #admin[/<section>] → the admin console; returns the section ('overview' default), or null when off it.
-// Sections: overview | pages | releases | seo | background | history | activity | team.
+// #admin[/<section>[/<slug>]] → the admin console (or the editor when section==='editor'). Defers to
+// the pure, unit-tested parseAdminHash so the URL, the rendered destination and the active rail item
+// can never disagree. Sections: overview|pages|releases|seo|background|history|activity|team|editor.
 function readAdminHash() {
-  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?admin(?:\/([a-z]+))?$/i);
-  return m ? (m[1] || 'overview') : null;
+  return parseAdminHash(typeof location !== 'undefined' ? location.hash : '');
 }
 // #shop or #shop/<vendor-slug> → the live storefront (reads Supabase)
 function readShopHash() {
@@ -171,8 +172,7 @@ export default function App() {
   const [puckKey, setPuckKey] = useState(0);        // bump to force Puck to re-read data
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
-  const [adminRoute, setAdminRoute] = useState(isAdminRoute);
-  const [adminSection, setAdminSection] = useState(readAdminHash); // #admin/<section> → which console destination
+  const [adminNav, setAdminNav] = useState(readAdminHash); // { section, slug } | null — the one admin-route source
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
   const [shopRoute, setShopRoute] = useState(readShopHash);        // #shop[/<vendor>] → live storefront
@@ -188,6 +188,10 @@ export default function App() {
   const stateRef = useRef(state);    // latest state, for the debounced/unload flush
   stateRef.current = state;
 
+  const onAdmin = !!adminNav;                          // anywhere under #admin (console or editor)
+  const adminSection = adminNav ? adminNav.section : 'overview';
+  const adminSlug = adminNav ? adminNav.slug : null;
+  const editorReturn = useRef('overview');             // the console section to return to from ◇ Hub
   const authed = !!user;
   const canEdit = can(user, 'edit');
   const canPublish = can(user, 'publish');
@@ -209,10 +213,36 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminRoute(isAdminRoute()); setAdminSection(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
+  // Editing is URL-addressable. (A) A #admin/editor/<slug> URL — refresh, a shared link, Back/Forward
+  // — restores the editor on the right page. (B) While editing under the admin area, mirror the page
+  // in the hash so a refresh keeps you in the editor and Back leaves it cleanly. (C) Per-page console
+  // views (#admin/seo/<slug>) drive the acted-on page from the URL, so it survives refresh.
+  useEffect(() => {
+    if (!adminNav || !authed) return;
+    if (adminNav.section === 'editor' && !canEdit) { goAdmin('overview'); return; } // viewers can't edit → console
+    if (!canEdit) return;
+    if (adminNav.section === 'editor') {
+      if (adminNav.slug && state.pages[adminNav.slug] && adminNav.slug !== current) { setCurrent(adminNav.slug); setPuckKey((k) => k + 1); }
+      if (mode !== 'edit') setMode('edit');
+    } else if (mode === 'edit') {
+      setMode('view'); // URL left the editor (Back/Forward, a shared console link) → leave edit mode too
+    }
+  }, [adminNav, authed, canEdit]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (mode === 'edit' && authed && canEdit && /^#\/?admin/i.test(typeof location !== 'undefined' ? location.hash : '')) {
+      const want = '#admin/editor/' + current;
+      if (location.hash !== want) location.hash = want;
+    }
+  }, [mode, current, authed, canEdit]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (adminNav && adminNav.slug && PER_PAGE_SECTIONS.has(adminNav.section) && state.pages[adminNav.slug] && adminNav.slug !== current) {
+      setCurrent(adminNav.slug);
+    }
+  }, [adminNav]); // eslint-disable-line react-hooks/exhaustive-deps
   // keep the document <head> in sync — a product detail route gets its own per-product SEO
   // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
@@ -465,12 +495,27 @@ export default function App() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
   function goShop() { if (typeof location !== 'undefined') location.hash = 'shop'; if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
-  // Return to the admin console home (#admin) from anywhere in the studio or catalogue.
-  function goHub() { setMode('view'); setPanel(null); if (typeof location !== 'undefined') location.hash = 'admin'; setAdminRoute(true); setAdminSection('overview'); }
-  // Navigate to an admin console destination (#admin/<section>) — full-screen, no editor mounted.
-  function goAdmin(section) { setMode('view'); setPanel(null); const h = 'admin' + (section && section !== 'overview' ? '/' + section : ''); if (typeof location !== 'undefined') location.hash = h; setAdminRoute(true); setAdminSection(section || 'overview'); }
-  // Open a page in the Puck editor from the console (the ONLY path that mounts the heavyweight editor).
-  function openPageInEditor(slug) { if (slug) { setCurrent(slug); setPuckKey((k) => k + 1); } setPanel(null); setMode('edit'); }
+  // Go to an admin console destination (#admin/<section>[/<slug>]) — full-screen, no editor mounted.
+  // Setting the hash drives the render; we also set adminNav synchronously so the view doesn't flash.
+  function goAdmin(section, slug) {
+    setMode('view'); setPanel(null);
+    const sec = section || 'overview';
+    const h = 'admin' + (sec !== 'overview' ? '/' + sec : '') + (slug ? '/' + slug : '');
+    if (typeof location !== 'undefined') location.hash = h;
+    setAdminNav({ section: sec, slug: slug || null });
+  }
+  // Return to the console section the editor was launched from (not always Overview).
+  function goHub() { goAdmin(editorReturn.current || 'overview'); }
+  // Open a page in the Puck editor from the console — the ONLY console path that mounts the editor.
+  // Remember where we came from, and make the editor URL-addressable (#admin/editor/<slug>) so a
+  // mid-edit refresh or a shared link restores the editor instead of dropping back to the console.
+  function openPageInEditor(slug) {
+    if (adminSection && adminSection !== 'editor') editorReturn.current = adminSection;
+    const target = slug || current;
+    setCurrent(target); setPuckKey((k) => k + 1); setPanel(null); setMode('edit');
+    if (typeof location !== 'undefined') location.hash = 'admin/editor/' + target;
+    setAdminNav({ section: 'editor', slug: target });
+  }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
@@ -580,14 +625,14 @@ export default function App() {
     );
   }
 
-  if (adminRoute && !authed) {
+  if (onAdmin && !authed) {
     return (
       <div className="is-view">
         {styleTag}
         <Stage background={bg} />
         <SignIn
           onAuthed={(u) => { setUser(u); flash(can(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
-          onCancel={() => { location.hash = ''; setAdminRoute(false); }} />
+          onCancel={() => { location.hash = ''; setAdminNav(null); }} />
       </div>
     );
   }
@@ -596,11 +641,11 @@ export default function App() {
   // 'Page editor' destination falls through to the editor branch below). Every destination renders
   // here WITHOUT mounting the Puck editor; only the 3D background view mounts the Stage so its live
   // preview works. The panels are rendered embedded (no dialog chrome) straight into the console body.
-  if (adminRoute && authed && mode !== 'edit') {
+  if (onAdmin && authed && adminSection !== 'editor' && mode !== 'edit') {
     const section = adminSection || 'overview';
     const onConsoleClose = () => {}; // embedded panels have no close ×; the rail/Back owns navigation
     const consolePanels = {
-      overview: <OverviewPanel embedded order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} />,
+      overview: <OverviewPanel embedded onSection={goAdmin} order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} />,
       pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} />,
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
@@ -620,14 +665,14 @@ export default function App() {
           user={user} canEdit={canEdit} canManageUsers={canManageUsers} attention={studioAttention}
           section={section} panels={consolePanels}
           order={state.order} pages={state.pages} current={current}
-          onSection={goAdmin} onEditor={() => setMode('edit')} onEditPage={openPageInEditor}
-          onSelectPage={(slug) => { setCurrent(slug); setPreviewP(null); }}
+          onSection={goAdmin} onEditor={() => openPageInEditor(current)} onEditPage={openPageInEditor}
+          onSelectPage={(slug) => { setPreviewP(null); goAdmin(section, slug); }}
           onCommerce={(tab) => { if (typeof location !== 'undefined') location.hash = 'catalogue' + (tab && tab !== 'offerings' ? '/' + tab : ''); }}
           onStore={goShop}
           onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }}
           onExport={exportSiteJson}
           onSignOut={doSignOut}
-          onSite={() => navigate(state.order[0])}
+          onSite={() => navigate(current)}
         />
       </div>
       </MediaContext.Provider>
@@ -635,7 +680,7 @@ export default function App() {
     );
   }
 
-  if (mode === 'edit' && canEdit) {
+  if (canEdit && (mode === 'edit' || (onAdmin && adminSection === 'editor'))) {
     return (
       <CatalogContext.Provider value={draftCatalog}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
@@ -668,8 +713,8 @@ export default function App() {
             headerActions: ({ children }) => (
               <div className="gs-edit-actions">
                 {/* page context */}
-                <button className="gs-btn ghost sm" onClick={goHub} title="Back to the admin hub">◇ Hub</button>
-                <button className="gs-btn ghost sm" onClick={() => setMode('view')} title="Back to the live site">← Site</button>
+                <button className="gs-btn ghost sm" onClick={goHub} title="Back to the admin console">◇ Hub</button>
+                <button className="gs-btn ghost sm" onClick={() => navigate(current)} title="View the live site">← Site</button>
                 <label className="gs-pagesel" title="Switch page">
                   <select value={current} onChange={(e) => switchPage(e.target.value)} aria-label="Switch page">
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}

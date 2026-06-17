@@ -15,7 +15,9 @@ export default function StudioPanel({ tab, onTab, onClose, panels, badges = {} }
   return (
     <aside className="gs-panel gs-studio" role="dialog" aria-label="Studio">
       <div className="gs-studio-tabs">
-        <div className="gs-studio-tablist" role="tablist">
+        {/* plain buttons with aria-current, not a role="tablist" — we don't implement the full ARIA
+            tabs keyboard contract (arrow keys / roving tabindex), so we don't claim it. */}
+        <div className="gs-studio-tablist">
           {GROUPS.map((g, gi) => {
             const tabs = g.tabs.filter(([id]) => panels[id]); // only tabs whose panel is provided (Team is admin-only)
             if (!tabs.length) return null;
@@ -23,7 +25,7 @@ export default function StudioPanel({ tab, onTab, onClose, panels, badges = {} }
               <div className="gs-studio-group" key={gi}>
                 {g.label ? <span className="gs-studio-grouplabel">{g.label}</span> : null}
                 {tabs.map(([id, label]) => (
-                  <button key={id} role="tab" aria-selected={tab === id}
+                  <button key={id} aria-current={tab === id ? 'true' : undefined}
                     className={'gs-studio-tab' + (tab === id ? ' is-active' : '')} onClick={() => onTab(id)}>
                     {label}{badges[id] ? <span className="gs-studio-tabbadge" aria-label={badges[id] + ' need attention'}>{badges[id]}</span> : null}
                   </button>
