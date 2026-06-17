@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { useCatalog } from '../cms/CatalogContext.js';
-import { useCart } from '../cms/CartContext.js';
 
 const priceFloor = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? m[1] : ''; };
 function SearchGlyph() {
@@ -17,8 +16,6 @@ function SearchGlyph() {
 // vendor logos can fail to load (third-party hotlink) — hide the <img> gracefully so the name still reads
 const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
 function Card({ p, catName, catLogo }) {
-  const { add, cart } = useCart();
-  const inCart = cart[p.id] || 0;
   return (
     <article className="b-sf-card" data-reveal>
       {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" /></div> : null}
@@ -37,9 +34,7 @@ function Card({ p, catName, catLogo }) {
           <span className="b-sf-amount">{p.price || 'Contact us'}</span>
           {p.period ? <span className="b-sf-period">{p.period}</span> : null}
         </div>
-        <button type="button" className={'b-cta sm' + (inCart ? ' is-added' : '')} onClick={() => add(p.id)}>
-          {inCart ? 'Added · ' + inCart : 'Add to licence'}<Arrow />
-        </button>
+        <a className="b-cta sm" href={'#product/' + (p.slug || p.id)}>View &amp; buy<Arrow /></a>
       </div>
       <div className="b-sf-meta">
         {p.licence ? <span className="b-sf-lic">{p.licence}</span> : <span />}

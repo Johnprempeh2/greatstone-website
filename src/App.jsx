@@ -49,8 +49,6 @@ import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
-import { CartContext } from './cms/CartContext.js';
-import CartDrawer from './cms/CartDrawer.jsx';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -66,10 +64,6 @@ const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // what the panel previews is what the page actually serves. The dev team's Laravel build will
 // render the same fields server-side; the prototype keeps index.html's noindex (don't touch it).
 const SITE_ORIGIN = 'https://greatstone.com'; // matches the SeoPanel URL preview; dev team sets the real domain
-// the licence basket is non-sensitive ({productId: qty}); persist it so a half-built request survives
-// a refresh or accidental navigation. NOT the auth/store payload — just resilience on the buy path.
-const CART_KEY = 'gs-cart';
-function loadCart() { try { const r = localStorage.getItem(CART_KEY); const c = r ? JSON.parse(r) : {}; return c && typeof c === 'object' ? c : {}; } catch (e) { return {}; } }
 // #product/<slug> (or #/product/<slug>) → the public product detail route; anything else → null
 function readProductHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?product\/([\w-]+)/i);
@@ -178,7 +172,6 @@ export default function App() {
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
-  const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
   const toastTimer = useRef(null);
   const didNavMount = useRef(false); // skip the initial mount when moving focus on navigation
   const persistTimer = useRef(null); // debounce the localStorage write
@@ -205,8 +198,6 @@ export default function App() {
     addEventListener('beforeunload', flush);
     return () => removeEventListener('beforeunload', flush);
   }, []);
-  // persist the licence basket (non-sensitive) so it survives a reload
-  useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
     const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
     addEventListener('hashchange', onHash);
@@ -262,15 +253,6 @@ export default function App() {
   const activeProductCat = activeProduct ? pubCategories.find((c) => c.id === activeProduct.category) : null;
   const relatedProducts = activeProduct ? pubProducts.filter((p) => p.id !== activeProduct.id && p.category === activeProduct.category && p.status !== 'draft').slice(0, 3) : [];
   function exitProduct() { if (location.hash) location.hash = ''; setProductSlug(null); navigate(state.pages.products ? 'products' : state.order[0]); }
-  // licence basket (prototype, in-memory): add/adjust/remove products, never takes payment
-  const cartApi = useMemo(() => ({
-    cart,
-    add: (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 })),
-    setQty: (id, q) => setCart((c) => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; }),
-    remove: (id) => setCart((c) => { const n = { ...c }; delete n[id]; return n; }),
-    clear: () => setCart({}),
-    count: Object.values(cart).reduce((a, b) => a + b, 0),
-  }), [cart]);
   const hasUnpublished = useMemo(() => !eq(page.data, page.published), [page.data, page.published]);
   // Attention signals surfaced on the one "Studio" toolbar button + the relevant tabs, so editors see
   // what needs action without opening every panel. A page counts once (drift OR awaiting review).
@@ -596,7 +578,6 @@ export default function App() {
   if (mode === 'edit' && canEdit) {
     return (
       <CatalogContext.Provider value={draftCatalog}>
-      <CartContext.Provider value={cartApi}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
       <div className="is-edit">
         {overlays}
@@ -669,14 +650,12 @@ export default function App() {
         </EditorBoundary>
       </div>
       </MediaContext.Provider>
-      </CartContext.Provider>
       </CatalogContext.Provider>
     );
   }
 
   return (
     <CatalogContext.Provider value={publishedCatalog}>
-    <CartContext.Provider value={cartApi}>
     <div className="is-view">
       {overlays}
       <a className="gs-skip" href="#gs-main">Skip to content</a>
@@ -710,10 +689,7 @@ export default function App() {
       </main>
       {(shopRoute || productSlug) && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
-      <div className="gs-sr-only" aria-live="polite" aria-atomic="true">{cartApi.count > 0 ? cartApi.count + ' licence' + (cartApi.count === 1 ? '' : 's') + ' in your basket' : ''}</div>
-      <CartDrawer />
     </div>
-    </CartContext.Provider>
     </CatalogContext.Provider>
   );
 }

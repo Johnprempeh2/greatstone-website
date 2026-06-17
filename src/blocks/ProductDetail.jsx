@@ -1,5 +1,4 @@
 import { Arrow } from './icons.jsx';
-import { useCart } from '../cms/CartContext.js';
 
 // Product detail: the full view for one licence, reached at #product/<slug> from the storefront. Public,
 // route-rendered (not a Puck block) — the catalogue is managed in the studio's Products tab, so this
@@ -8,7 +7,6 @@ import { useCart } from '../cms/CartContext.js';
 const priceFloor = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? m[1] : ''; };
 
 export function ProductDetail({ product, categoryName, related = [], onBack }) {
-  const { add, cart } = useCart();
   if (!product) {
     return (
       <section className="b-pd b-pd-missing">
@@ -21,7 +19,6 @@ export function ProductDetail({ product, categoryName, related = [], onBack }) {
     );
   }
   const p = product;
-  const inCart = cart[p.id] || 0;
   const offer = { '@type': 'Offer', priceCurrency: 'GBP', availability: 'https://schema.org/InStock' };
   const floor = priceFloor(p.price); if (floor) offer.price = floor;
   const ld = { '@context': 'https://schema.org', '@type': 'Product', name: p.name, brand: { '@type': 'Brand', name: 'Greatstone International' }, offers: offer };
@@ -51,9 +48,7 @@ export function ProductDetail({ product, categoryName, related = [], onBack }) {
                 {p.period ? <span className="b-pd-period">{p.period}</span> : null}
               </div>
               <div className="b-pd-actions">
-                <button type="button" className={'b-cta' + (inCart ? ' is-added' : '')} onClick={() => add(p.id)}>
-                  {inCart ? 'Added · ' + inCart : 'Add to licence'}<Arrow />
-                </button>
+                <a className="b-cta" href="#shop">Buy in the store<Arrow /></a>
                 <a className="b-cta ghost" href="#book">Talk to us</a>
               </div>
               {p.licence ? <div className="b-pd-lic">{p.licence}{p.sku ? ' · ' + p.sku : ''}</div> : (p.sku ? <div className="b-pd-lic">{p.sku}</div> : null)}

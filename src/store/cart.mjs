@@ -1,7 +1,7 @@
-// Live-store basket — separate from the legacy prototype CartContext (that one keys by old
-// localStorage product ids and never takes payment). This one keys by Supabase variant id and
-// drives the real Stripe checkout. Module singleton + useSyncExternalStore so the FAB, drawer and
+// The store basket — the single canonical cart. Keys by Supabase variant id and drives the real
+// Stripe checkout + the quote request. Module singleton + useSyncExternalStore so the FAB, drawer and
 // "Add" buttons across lazy store pages all share one source of truth without a provider.
+// (The legacy prototype CartContext/CartDrawer was retired — this is the only cart now.)
 import { useSyncExternalStore } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 
