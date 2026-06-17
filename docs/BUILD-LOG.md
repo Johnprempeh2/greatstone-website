@@ -85,5 +85,18 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - Verified: Shop appears in the nav; click → `#shop` (159 results); clicking a page from the store clears the hash and returns to the page.
 - **Note (cleanup later):** there's still a legacy "Products" Puck page (old localStorage Storefront block) alongside the new live "Shop". Retire or redirect the old page once the live store is canonical.
 
-### Phase 1d (next) — services template, then Phase 2 admin
-Render `type='service'` offerings with a services template (engagement/POA framing, book-a-call). Then Phase 2: admin studio core (offerings manager + dashboard launcher reading the live data). Phase 3 (cart + real Stripe test checkout) needs a Supabase personal access token to deploy the checkout edge function — pause + ask there.
+### ⏸ PAUSED — Phase 1 (public storefront) complete; Phase 2+ needs admin auth
+**Done & live:** Phase 0 (schema/RLS/seed/pricing engine/data layer) + Phase 1 (storefront listing, live product pages, nav glue) — all against the real cloud Supabase, browser-verified, build green. Commits c0ce787…c864f2d.
+
+**Why paused:** everything remaining writes to the DB and is admin-gated:
+- offerings manager (edit products/variants/prices), vendor/category managers
+- pricing & mass-discount rules UI
+- bulk Excel import/export, AI-assist
+- cart + real Stripe test checkout
+Secure DB writes need **Supabase Auth** (an admin signs in; RLS gates writes by `users.org_role`) — the prototype localStorage session can't gate real DB writes. And deploying the checkout/admin **edge functions** needs a Supabase **personal access token**.
+
+**To resume Phase 2+, from John:**
+1. A Supabase **personal access token** (Dashboard → Account → Access Tokens) → unlocks edge-function deploys (Stripe checkout + admin writes) + CLI project management. Stored in `.env`, never committed.
+2. Create an **admin user** (Dashboard → Authentication → Users → Add user) — I can't create accounts; I'll wire admin sign-in to it and gate catalogue/pricing writes to it.
+
+Then: admin sign-in (Supabase Auth) → offerings manager → pricing/discount rules → bulk Excel → AI-assist → Stripe checkout, all against the live backend, verified each step.
