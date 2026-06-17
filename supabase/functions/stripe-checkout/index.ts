@@ -7,6 +7,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', { httpClient: Stripe.createFetchHttpClient(), apiVersion: '2024-06-20' });
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+const SUPA_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const VAT = Number(Deno.env.get('VAT_RATE') ?? '0.20');
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -52,6 +54,32 @@ function finalPrice(base: number, currency: string, off: any, rules: any[], now:
   return Math.max(base - win.cut, Math.round(base * win.floor), 0);
 }
 
+// Resolve the signed-in buyer from the forwarded JWT (validated via getUser — never trust a raw token).
+// Returns null for guests/staff/forged tokens. Creates/reuses a Stripe Customer on the COMPANY so cards
+// are saved + shared. Any failure degrades to guest checkout rather than blocking the sale.
+async function resolveBuyer(req: Request) {
+  try {
+    const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    if (!token || token === ANON_KEY) return null;                       // guest
+    const userClient = createClient(SUPA_URL, ANON_KEY, { global: { headers: { Authorization: 'Bearer ' + token } } });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return null;                                              // forged/expired token → guest
+    const { data: staff } = await supabase.from('users').select('id').eq('auth_subject', user.id).maybeSingle();
+    if (staff) return null;                                             // staff don't get customer linkage
+    const { data: cu } = await supabase.from('customer_users')
+      .select('id, email, customer:customers(id, name, stripe_customer_id)')
+      .eq('auth_subject', user.id).maybeSingle();
+    if (!cu || !cu.customer) return { customerId: null, customerUserId: null, stripeCustomerId: null, email: user.email ?? null };
+    let stripeCustomerId = (cu.customer as any).stripe_customer_id as string | null;
+    if (!stripeCustomerId) {
+      const sc = await stripe.customers.create({ email: cu.email || user.email || undefined, name: (cu.customer as any).name || undefined, metadata: { customer_id: (cu.customer as any).id } });
+      stripeCustomerId = sc.id;
+      await supabase.from('customers').update({ stripe_customer_id: stripeCustomerId }).eq('id', (cu.customer as any).id);
+    }
+    return { customerId: (cu.customer as any).id as string, customerUserId: cu.id as string, stripeCustomerId, email: (cu.email || user.email) ?? null };
+  } catch (e) { console.warn('resolveBuyer', (e as Error).message); return null; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -90,13 +118,25 @@ Deno.serve(async (req) => {
     if (vat > 0) line_items.push({ quantity: 1, price_data: { currency: 'gbp', unit_amount: vat, product_data: { name: `UK VAT (${Math.round(VAT * 100)}%)` } } });
 
     const origin = req.headers.get('origin') || '';
-    const session = await stripe.checkout.sessions.create({
+    const buyer = await resolveBuyer(req);
+    const params: any = {
       mode: 'payment', line_items,
       success_url: successUrl || `${origin}/#order-confirmed?session={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${origin}/#shop`,
-      customer_email: customerEmail || undefined,
-      metadata: { source: 'greatstone-store' },
-    });
+      metadata: {
+        source: 'greatstone-store',
+        customer_id: buyer?.customerId ?? '',
+        customer_user_id: buyer?.customerUserId ?? '',
+        customer_email: buyer?.email || customerEmail || '',
+      },
+    };
+    if (buyer?.stripeCustomerId) {
+      params.customer = buyer.stripeCustomerId;                          // Stripe rejects customer + customer_email together
+      params.payment_intent_data = { setup_future_usage: 'off_session' }; // SAVE the card to the customer
+    } else {
+      params.customer_email = customerEmail || undefined;               // guest
+    }
+    const session = await stripe.checkout.sessions.create(params);
     return json({ url: session.url, id: session.id });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 400);

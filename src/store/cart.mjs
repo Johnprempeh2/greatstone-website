@@ -3,6 +3,7 @@
 // drives the real Stripe checkout. Module singleton + useSyncExternalStore so the FAB, drawer and
 // "Add" buttons across lazy store pages all share one source of truth without a provider.
 import { useSyncExternalStore } from 'react';
+import { supabase } from '../lib/supabase.mjs';
 
 const KEY = 'gs_store_cart_v1';
 const MAX_QTY = 100;
@@ -53,9 +54,13 @@ export async function startCheckout({ email } = {}) {
   if (!payload.length) throw new Error('Your basket is empty.');
   if (!SUPA_URL || !ANON) throw new Error('Store is not configured.');
   const base = location.origin + location.pathname;
+  // Forward the buyer's JWT when signed in, so the edge fn can link the order to their account and
+  // attach a Stripe Customer for saved cards. Falls back to the anon key for guest checkout.
+  let token = ANON;
+  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; if (data?.session?.access_token) token = data.session.access_token; } catch { /* guest */ }
   const res = await fetch(SUPA_URL + '/functions/v1/stripe-checkout', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + ANON },
+    headers: { 'content-type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + token },
     body: JSON.stringify({
       items: payload,
       customerEmail: email || undefined,

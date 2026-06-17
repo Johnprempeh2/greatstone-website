@@ -17,7 +17,7 @@ const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="no
 // Site chrome (view mode). The page links sit inline while they fit; when they don't, they
 // collapse into a single "Pages" dropdown (measured, not breakpoint-guessed, so it works for
 // any number of pages). Editing affordances appear only for a signed-in user with edit rights.
-export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut }) {
+export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut }) {
   const q = (query || '').trim().toLowerCase();
   const visible = q ? order.filter((s) => (pages[s].title || s).toLowerCase().includes(q) || s.includes(q)) : order;
 
@@ -67,6 +67,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                     onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
                 ))}
                 {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Shop</button>}
+                {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Account</button>}
                 {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
             )}
@@ -79,6 +80,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
               </button>
             ))}
             {onShop && <button className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Shop</button>}
+            {onAccount && <button className={'gs-navlink' + (accountActive ? ' is-active' : '')} onClick={onAccount}>Account</button>}
             {visible.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
           </nav>
         )}

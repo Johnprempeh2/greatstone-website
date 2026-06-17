@@ -107,3 +107,10 @@
 .ca-ord-tot.total { font-weight:800; color:var(--gs-text); border-top:none; padding-top:2px; }
 .ca-ord-ref { font-size:.74rem; color:var(--gs-text-faint); margin-top:8px; }
 .ca-ord-ref code { color:var(--gs-text-muted); }
+
+/* ── Customer account (#account) ─────────────────────────────────────────── */
+.ca-ok { background:rgba(78,205,196,.12); color:var(--gs-teal,#4ecdc4); border-radius:6px; padding:.55em .8em; font-size:.85rem; margin:.4em 0; }
+.ca-link { background:none; border:none; color:var(--gs-accent); cursor:pointer; font:inherit; padding:0; text-decoration:underline; }
+.acct-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:8px; }
+@media (max-width:720px){ .acct-grid { grid-template-columns:1fr; } }
+.acct-keys { font-size:.78rem; color:var(--gs-text-faint); border-top:1px dashed var(--gs-border,rgba(200,255,0,.08)); padding-top:8px; margin-top:4px; }

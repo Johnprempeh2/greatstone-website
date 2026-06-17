@@ -196,3 +196,12 @@ one global rate (no stored GBP mirror — cleaner than the trigger approach, no 
 - `FxRateEditor.jsx` (new "Currency (FX)" admin tab) — edit the rate, live before→after preview, rate history.
 - `PricingRules.jsx` preview + `build-seed.mjs` updated for USD.
 - **Verified live:** $63→£48, $67→£52, currency GBP; checkout charged £1,338 for a $1,740 variant with a tampered client price ignored (+VAT); rate 1.30→1.50 repriced £392→£339 instantly with no reseed, audit-logged, reverted. Full suite 35 green; build green.
+
+### Customer accounts (hybrid B2B-ready + full self-serve portal) — DONE, verified
+- **`customerAuth.mjs`** — signUp/signIn/reset/updatePassword/getSession/onAuth + `ensureAccount()` (calls the `ensure_customer_account` RPC; idempotent; no-ops pre-confirmation) + `getCustomerProfile()`.
+- **`AccountDashboard.jsx`** (`#account`, lazy 12KB) — sign in / create account / forgot-password gate + recovery-password panel; profile editor (company/name/phone via `customer_self_update`); order history (customer_self RLS → own orders only) with licence-key placeholder; **Manage billing & cards** (Stripe portal); **one-click re-order** (rebuilds basket from order_items → `#shop`).
+- **`stripe-checkout`** — forwards the buyer JWT, validates via `getUser()`, resolves the customer (service_role), **creates/reuses a Stripe Customer on the company** + `setup_future_usage:'off_session'` to save the card, stamps `customer_id/customer_user_id/customer_email` into session metadata. Guests unchanged (Stripe rejects customer + customer_email together — sends exactly one). Staff/forged tokens degrade to guest.
+- **`stripe-webhook`** — stamps `orders.customer_id/customer_user_id/customer_email` from metadata (idempotency unchanged).
+- **`stripe-portal`** (new edge fn) — Billing Portal session for the signed-in buyer. **Needs a one-time Stripe dashboard Customer Portal config (test mode) before it returns a URL.**
+- **`cart.mjs`** forwards the access token; **App.jsx** `#account` route + lazy chunk; **Header** Account link.
+- **Verified live (Supabase + Stripe test, full cleanup):** confirmed signup → provision (idempotent) → 0 own orders pre-purchase (RLS) → checkout attached Stripe customer + matching metadata → webhook linked order → **customer reads only their own order via RLS** → staff-collision guard raises. Build green.

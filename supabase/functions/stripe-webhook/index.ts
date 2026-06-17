@@ -43,6 +43,11 @@ async function recordOrder(session: Stripe.Checkout.Session) {
   const currency = (session.currency || 'gbp').toUpperCase();
   const totalMinor = session.amount_total ?? 0;
   const email = session.customer_details?.email || (session as any).customer_email || null;
+  // buyer linkage stamped into session.metadata by stripe-checkout (empty for guests)
+  const md: any = session.metadata || {};
+  const customerId = md.customer_id || null;
+  const customerUserId = md.customer_user_id || null;
+  const customerEmail = md.customer_email || email || null;
 
   // line items carry the variant id on each ad-hoc product's metadata (set in stripe-checkout)
   const li = await stripe.checkout.sessions.listLineItems(sessionId, { expand: ['data.price.product'], limit: 100 });
@@ -78,7 +83,8 @@ async function recordOrder(session: Stripe.Checkout.Session) {
 
   // idempotent: ON CONFLICT (org_id, reference) DO NOTHING → null row means it was already recorded
   const { data: inserted, error } = await supabase.from('orders')
-    .upsert({ org_id: orgId, reference: sessionId, status: 'confirmed', currency, subtotal_minor: subtotal, total_minor: totalMinor, placed_at: new Date().toISOString() },
+    .upsert({ org_id: orgId, reference: sessionId, status: 'confirmed', currency, subtotal_minor: subtotal, total_minor: totalMinor, placed_at: new Date().toISOString(),
+              customer_id: customerId, customer_user_id: customerUserId, customer_email: customerEmail },
       { onConflict: 'org_id,reference', ignoreDuplicates: true })
     .select('id').maybeSingle();
   if (error) throw error;
