@@ -49,5 +49,13 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - **Verify:** `npm test` → 16/16 pass. Zero infra needed.
 - Committed.
 
-### Cycle 5 (next) — typed catalogue data layer
-`src/data/` — the Supabase client (`supabase.mjs`, reads VITE_SUPABASE_URL/ANON from env) + a typed catalogue data-access layer per `docs/api-contract.md` §2 (list offerings with pagination/filter[vendor,category,platform,type]/sort/search + computed price, get-by-slug with variants/specs, vendors, categories). Built against the contract; price computed via `pricing.mjs`. Full e2e needs Supabase/PostgREST → **here is the likely PAUSE point**: the storefront UI + auth + checkout need Docker (local Supabase) or a cloud project + Stripe keys. Will build the data-layer code, then pause and report if infra absent.
+### Cycle 5 — public-read RLS + grants + PROPER RLS validation
+- John provided a **cloud Supabase project** (URL + anon + service_role) and **Stripe test keys** — secured in `.env` (gitignored, never committed/echoed). Project verified live (auth health 200).
+- **Correction:** cycle 3 "validated RLS" was tested as the local **superuser**, which *bypasses RLS* — so it proved nothing. The policies were correct but unverified. Now properly validated as the non-superuser `anon` role (mirrors Supabase).
+- `0003_public_read.sql`: a storefront needs the anon role to read the **published** catalogue without an org context. Added permissive `public_read` SELECT policies (published + not-deleted; child tables gated on parent published) on vendors/categories/offerings/variants/specs/media/pricing_rules(+targets), plus table **GRANTs** to `anon`/`authenticated` (RLS filters rows; grants gate table access — required or PostgREST 401s).
+- `supabase/seed/local-roles.sql`: local-only harness creating `anon`/`authenticated`/`service_role(BYPASSRLS)` so RLS is testable locally.
+- **Validated as `anon`:** published offerings → 159; set IronPDF→draft → 158 (hidden) + its variants → 0 (parent-gated); **`customers` → permission denied** (customer/quote/order data does NOT leak to the public). Security boundary holds.
+- Committed.
+
+### Cycle 6 (next) — push to the cloud Supabase + typed data layer + storefront
+**Unblock needed:** the DB password / connection string (Settings → Database) to apply migrations to the cloud project — DDL can't run over the anon/service REST API. Once provided: `psql` 0001+0002+0003+seed to the cloud DB (or `supabase db push`), add admin write-grants, then build `src/data/` (supabase-js client + typed catalogue queries, price via `pricing.mjs`) and verify live, then Phase 1 storefront → auth → Stripe checkout. Stripe integration is built in code (edge functions + test keys); the Stripe plugin is optional MCP tooling, not required.
