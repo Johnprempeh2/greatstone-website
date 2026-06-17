@@ -28,5 +28,12 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - **Blocker (expected):** full Supabase (Auth, Edge Functions, Storage) needs Docker or a cloud project; Stripe needs test keys. Local Postgres covers schema/seed/pricing-logic/data-layer cycles until then.
 - Committed: foundation (docs spec, `supabase/migrations/0001`, `.env.example`, `.gitignore`).
 
-### Cycle 2 (next) — seed the 159 products + RLS migration + typed data layer
-Generate `supabase/seed/` from `greatstone-homepage/assets/products.json` → vendors/categories/offerings/variants/specs/media; add `0002_rls.sql` (enable RLS + org-scoped policies on every business table); build `src/data/` (supabase client + typed queries). Validate seed + RLS on local Postgres.
+### Cycle 2 — seed the real catalogue
+- `supabase/seed/build-seed.mjs` generates `supabase/seed/seed.sql` from `greatstone-homepage/assets/products.json` → the unified `offerings` model (products as `type=product`), vendors, functional categories, variants, specs. Money stored as **integer minor units** (pence). Icons/galleries parked in `offerings.attributes` until the media/Storage cycle.
+- **2nd real schema bug caught by the local DB:** `uq_variant_edition UNIQUE(offering_id, sku, license_type, billing_period)` is NOT satisfiable by the real feed — editions collide on those three (Aspose +1yr vs +5yr support) AND on `name` (aspose-tex-for-c++ has 6 "Developer, C++" rows). Relaxed: no natural unique key on variants; the bulk importer will REPLACE-per-offering; variant dedup is a bulk/AI cleanup task. Documented in the migration + synced to `docs/schema.sql`.
+- **Validated on local Postgres:** schema + seed apply clean. Counts: 10 vendors · 32 categories · 159 offerings · 819 variants · 2,831 specs. Integrity: 159/159 offerings carry both vendor AND category (dual-axis), 146 priced / 13 POA (matches spec), 12 featured, IronPDF £509 / 10 variants, full-text search returns 11 hits for "ocr".
+- **Verify:** `node build-seed.mjs` + apply both SQL files with `ON_ERROR_STOP=1` → zero errors; all spot-checks pass.
+- Committed.
+
+### Cycle 3 (next) — RLS + typed data layer
+`0002_rls.sql`: enable RLS + org-scoped policies (`current_setting('app.current_org')`) on every business table (only 1/28 enabled so far). Then `src/data/` — Supabase client + a typed catalogue data-access layer (list/get offerings with computed price, vendors, categories, search/facets) per `docs/api-contract.md`, runnable against local Postgres. Then Phase 1 storefront.

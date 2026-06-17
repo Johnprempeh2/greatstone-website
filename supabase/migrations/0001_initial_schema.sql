@@ -357,9 +357,12 @@ CREATE TABLE offering_variants (
     deleted_at       TIMESTAMPTZ,
     row_version      INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT chk_variant_price_pair
-        CHECK ((base_price_minor IS NULL) = (currency IS NULL)),         -- price implies currency
-    CONSTRAINT uq_variant_edition
-        UNIQUE (offering_id, sku, license_type, billing_period)          -- stable upsert key for re-import
+        CHECK ((base_price_minor IS NULL) = (currency IS NULL))          -- price implies currency
+    -- NOTE: no natural UNIQUE key on variants. Validated against the real feed: editions collide on
+    -- (sku, license_type, billing_period) — e.g. Aspose "+1yr" vs "+5yr" support share all three — AND
+    -- on name (aspose-tex-for-c++ has 6 "Developer, C++" rows). So the bulk importer upserts by
+    -- REPLACING all variants for an offering (keyed by offering slug), not per-variant; variant
+    -- dedup/identity is a data-cleanup task for the bulk/AI tooling. idx_variants_sku aids lookup.
 );
 CREATE INDEX idx_variants_offering ON offering_variants(offering_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_variants_sku      ON offering_variants(org_id, sku)  WHERE deleted_at IS NULL;
