@@ -85,7 +85,16 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - Verified: Shop appears in the nav; click → `#shop` (159 results); clicking a page from the store clears the hash and returns to the page.
 - **Note (cleanup later):** there's still a legacy "Products" Puck page (old localStorage Storefront block) alongside the new live "Shop". Retire or redirect the old page once the live store is canonical.
 
-### ⏸ PAUSED — Phase 1 (public storefront) complete; Phase 2+ needs admin auth
+### Phase 2a — admin auth + write RLS foundation (RESUMED, verified)
+John provided a Supabase **personal access token** (in `.env`, gitignored) and created the admin auth user **john@greatstonesoftware.co.uk** (uid `079636cf…`).
+- Provisioned John as `owner` in `public.users` (auth_subject → uid). *(One-off data, not committed — auth uids are environment-specific. To add staff: insert a `public.users` row with their auth uid + role; see this entry.)*
+- `0004_admin_writes.sql`: `app_staff_org()` (SECURITY DEFINER, resolves the signed-in user's org iff they're owner/admin/editor) + `staff_all` RLS policies (FOR ALL, authenticated) on catalogue/pricing/quotes/orders/imports/ai/content tables + `self_read`/`staff_users` on users + grants to `authenticated`.
+- **Verified on the cloud DB** (simulating the Supabase JWT GUCs): admin `UPDATE offerings` → 1 row (allowed) + SELECT sees drafts; **anon → 0 rows, non-staff JWT → 0 rows** (denied). Secure write boundary holds.
+
+### Phase 2b (next) — admin sign-in (Supabase Auth) + offerings manager
+Wire the studio's admin entry to `supabase.auth.signInWithPassword` (the prototype localStorage session becomes a real Supabase session; the user's JWT drives the write RLS above). Then the offerings manager: list (search/filter/bulk-select) + editor (fields, variants sub-table, specs, media, SEO, status), reading/writing the live data. Then pricing/discount rules UI, bulk Excel, AI-assist, Stripe checkout (edge functions now deployable via the access token).
+
+### (was) ⏸ PAUSED — Phase 1 (public storefront) complete; Phase 2+ needs admin auth
 **Done & live:** Phase 0 (schema/RLS/seed/pricing engine/data layer) + Phase 1 (storefront listing, live product pages, nav glue) — all against the real cloud Supabase, browser-verified, build green. Commits c0ce787…c864f2d.
 
 **Why paused:** everything remaining writes to the DB and is admin-gated:
