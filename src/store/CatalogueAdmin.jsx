@@ -13,10 +13,11 @@ import FxRateEditor from './FxRateEditor.jsx';
 import './store.css';
 import './admin.css';
 
-export default function CatalogueAdmin() {
+export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
   const [session, setSession] = useState(undefined); // undefined = checking
   const [staff, setStaff] = useState(null);
-  const [tab, setTab] = useState('offerings');
+  const [tab, setTab] = useState(initialTab);
+  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab]); // hub deep-links (#catalogue/<tab>)
   useEffect(() => {
     getSession().then(s => setSession(s || null));
     const { data } = onAuth(s => setSession(s || null));
@@ -46,6 +47,7 @@ export default function CatalogueAdmin() {
         </div>
         <div className="ca-tabtools">
           <span className="ca-who">{staff.full_name || staff.email} · {staff.role}</span>
+          {onHub && <button className="gs-btn ghost sm" onClick={onHub}>◇ Hub</button>}
           <a className="gs-btn ghost sm" href="#shop">View store</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
@@ -68,6 +70,7 @@ function SignInGate() {
   };
   return (
     <div className="ca-wrap"><div className="ca-signin">
+      <button type="button" className="ca-link" style={{ alignSelf: 'flex-start', marginBottom: 4 }} onClick={() => { if (typeof history !== 'undefined' && history.length > 1) history.back(); else location.hash = 'admin'; }}>← Back</button>
       <span className="st-kicker">Catalogue admin</span>
       <h1>Sign in</h1>
       <p className="ca-sub">Manage the Greatstone software catalogue, pricing and quotes.</p>

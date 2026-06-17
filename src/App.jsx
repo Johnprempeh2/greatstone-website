@@ -39,6 +39,7 @@ import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
+import AdminHub from './cms/AdminHub.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
@@ -79,9 +80,11 @@ function readShopHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?shop(?:\/([\w-]+))?/i);
   return m ? { vendor: m[1] || '' } : null;
 }
-// #catalogue → the live catalogue admin (Supabase-authenticated, gated to staff)
+// #catalogue[/<tab>] → the live catalogue admin (Supabase-authenticated, gated to staff). Returns the
+// tab to open ('offerings' default) so the hub can deep-link to Orders/Quotes/etc., or null when off it.
 function readCatalogueHash() {
-  return /^#\/?catalogue\b/i.test(typeof location !== 'undefined' ? location.hash : '');
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?catalogue(?:\/([a-z]+))?/i);
+  return m ? (m[1] || 'offerings') : null;
 }
 // #order-confirmed[?session=…] → Stripe redirected back after a successful payment
 function readConfirmHash() {
@@ -455,6 +458,8 @@ export default function App() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
   function goShop() { if (typeof location !== 'undefined') location.hash = 'shop'; if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+  // Return to the central admin hub (#admin landing) from anywhere in the studio or catalogue.
+  function goHub() { setMode('view'); setPanel(null); if (typeof location !== 'undefined') location.hash = 'admin'; setAdminRoute(true); }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
@@ -505,6 +510,7 @@ export default function App() {
     // but read-only). The admin login is NOT surfaced on the public site — it lives at the
     // separate #admin URL — so a signed-out visitor's palette is navigation only.
     if (!authed) return cmds;
+    if (authed) cmds.push({ id: 'hub', group: 'Admin', label: 'Go to the admin hub', run: goHub });
     if (canEdit) {
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
       cmds.push({ id: 'dup', group: 'Pages', label: 'Duplicate this page', run: () => clonePage(current) });
@@ -569,8 +575,27 @@ export default function App() {
         {styleTag}
         <Stage background={bg} />
         <SignIn
-          onAuthed={(u) => { setUser(u); location.hash = ''; setAdminRoute(false); flash(can(u, 'edit') ? ('Signed in as ' + u.name + '.') : ('Signed in as ' + u.name + ' (read-only).')); }}
+          onAuthed={(u) => { setUser(u); flash(can(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
           onCancel={() => { location.hash = ''; setAdminRoute(false); }} />
+      </div>
+    );
+  }
+
+  // Central admin hub — the launcher you land on after signing in (mode!=='edit' so a 'Page editor'
+  // card falls through to the editor branch below). Cards deep-link to the existing surfaces.
+  if (adminRoute && authed && mode !== 'edit') {
+    return (
+      <div className="is-view">
+        <AdminHub
+          user={user} canEdit={canEdit} canManageUsers={canManageUsers} attention={studioAttention}
+          onEditor={() => setMode('edit')}
+          onPanel={(tab) => { setMode('edit'); setPanel(tab); }}
+          onCatalogue={(tab) => { if (typeof location !== 'undefined') location.hash = 'catalogue' + (tab && tab !== 'offerings' ? '/' + tab : ''); }}
+          onShop={goShop}
+          onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }}
+          onExport={exportSiteJson}
+          onSignOut={doSignOut}
+        />
       </div>
     );
   }
@@ -608,6 +633,7 @@ export default function App() {
             headerActions: ({ children }) => (
               <div className="gs-edit-actions">
                 {/* page context */}
+                <button className="gs-btn ghost sm" onClick={goHub} title="Back to the admin hub">◇ Hub</button>
                 <button className="gs-btn ghost sm" onClick={() => setMode('view')} title="Back to the live site">← Site</button>
                 <label className="gs-pagesel" title="Switch page">
                   <select value={current} onChange={(e) => switchPage(e.target.value)} aria-label="Switch page">
@@ -679,7 +705,7 @@ export default function App() {
             : confirmRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreCart confirmed /></Suspense>
             : catalogueAdmin
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyCatalogueAdmin /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyCatalogueAdmin initialTab={typeof catalogueAdmin === 'string' ? catalogueAdmin : 'offerings'} onHub={goHub} /></Suspense>
             : shopRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
