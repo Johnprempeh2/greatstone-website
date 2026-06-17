@@ -141,6 +141,7 @@ function EditDrawer({ offering, onClose, onSaved }) {
   const [featured, setFeatured] = useState(!!offering.featured);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  useEffect(() => { const onKey = (e) => { if (e.key === 'Escape') onClose(); }; addEventListener('keydown', onKey); return () => removeEventListener('keydown', onKey); }, [onClose]);
 
   const save = async () => {
     setBusy(true); setErr(null);
@@ -154,7 +155,7 @@ function EditDrawer({ offering, onClose, onSaved }) {
 
   return (
     <div className="ca-drawer-scrim" onClick={onClose}>
-      <div className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-label={'Edit ' + offering.name}>
+      <div className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={'Edit ' + offering.name}>
         <h2>Edit offering</h2>
         <label>Name<input value={name} onChange={e => setName(e.target.value)} /></label>
         <label>Short description<textarea rows="3" value={shortDesc} onChange={e => setShortDesc(e.target.value)} /></label>

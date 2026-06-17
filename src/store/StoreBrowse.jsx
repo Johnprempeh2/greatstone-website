@@ -105,7 +105,7 @@ export default function StoreBrowse({ initialVendor = '' }) {
 
         <div className="st-grid">
           {err ? <div className="st-empty"><h3>{err}</h3></div>
-            : loading && !items.length ? <div className="st-loading">Loading the catalogue…</div>
+            : loading && !items.length ? Array.from({ length: 8 }).map((_, i) => <div key={i} className="st-card st-skel" aria-hidden="true" />)
               : !items.length ? <div className="st-empty"><h3>No products match those filters</h3><button className="st-clear" onClick={clearAll}>Clear all filters</button></div>
                 : items.map(o => <Card key={o.id} o={o} />)}
           {items.length < total && !loading && <button className="st-more" onClick={loadMore}>Load more ({total - items.length} more)</button>}

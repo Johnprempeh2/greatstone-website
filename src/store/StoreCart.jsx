@@ -1,7 +1,7 @@
 // Live-store basket UI: floating button + slide-over drawer + Stripe checkout, plus the post-payment
 // confirmation panel. Prices shown here are indicative; the edge function reconfirms every figure
 // server-side before charging. TEST MODE — uses Stripe test keys; no real money moves.
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 
@@ -15,12 +15,16 @@ export default function StoreCart({ confirmed = false }) {
   const [err, setErr] = useState(null);
   const count = cartCount();
 
-  // close the drawer with Escape; lock nothing else (the store stays interactive behind the scrim click)
+  const drawerRef = useRef(null);
+  const restoreRef = useRef(null);
+  // open: capture focus, move it into the drawer, close on Escape, and restore focus to the trigger on close
   useEffect(() => {
     if (!open) return;
+    restoreRef.current = document.activeElement;
+    const t = setTimeout(() => { if (drawerRef.current) drawerRef.current.focus(); }, 30);
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
     addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
+    return () => { clearTimeout(t); removeEventListener('keydown', onKey); if (restoreRef.current && restoreRef.current.focus) restoreRef.current.focus(); };
   }, [open]);
 
   const checkout = useCallback(async () => {
@@ -44,9 +48,9 @@ export default function StoreCart({ confirmed = false }) {
 
       {open && (
         <div className="sc-scrim" onClick={() => setOpen(false)}>
-          <aside className="sc-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Your basket">
+          <aside ref={drawerRef} tabIndex={-1} className="sc-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="sc-title">
             <header className="sc-head">
-              <h2>Your basket{count ? ' · ' + count : ''}</h2>
+              <h2 id="sc-title">Your basket{count ? ' · ' + count : ''}</h2>
               <button className="sc-x" onClick={() => setOpen(false)} aria-label="Close basket">✕</button>
             </header>
 

@@ -226,3 +226,16 @@ Ran a 20-agent review workflow (4 dimensions → skeptic-verified each finding):
 - **[LOW] Stripe Customer create race** — added an idempotency key (`gs-cust-<id>`) in checkout + portal.
 
 Full suite **45 green**; build green; functions redeployed.
+
+## UX critique + polish pass (17 Jun 2026)
+Ran a 3-agent UX critique (account best-practices / responsiveness / UI/UX+a11y) + live visual capture at desktop & mobile (signed-in dashboard via a throwaway test customer, since cleaned up).
+
+**Account page rebuilt** (`AccountDashboard.jsx`): identity header (initials avatar + company + email + tier), four-section IA (Profile / Security / Billing / Order history); **in-account change password** (Security card — was email-link-only); order history now **collapsible** (default closed) with an **error/retry state** and a **mobile card reflow** (labelled stacked cards via `data-label`, replacing a 582px sideways-scrolling table); email-change hint.
+
+**3D bleed-through fixed** (visual-only finding the code agents couldn't see): the stage rendered behind translucent account/admin cards. Now `App.jsx` only mounts the 3D stage on storefront/public routes — utility pages (account, admin, confirm) render on a solid surface (kills the bleed + the WebGL cost there). Fixed the account page tucking under the fixed header (scoped the no-offset rule to `.ca-tabbar ~ .ca-wrap`).
+
+**Responsiveness:** data tables now scroll instead of clipping (`overflow-x:auto` + min-width; was `overflow:hidden`); admin tab-bar scrolls as a strip <640; cart drawer `min(420px,100%)` (no gutter); 44px touch targets on coarse pointers; mobile header offsets; ≤480 storefront grid tuning; consistent 768px form-collapse breakpoint.
+
+**UI/UX + a11y:** global `:focus-visible` lime ring across store/admin (WCAG 2.4.7); cart + admin drawers get `aria-modal`, autofocus + focus-restore (cart) and Escape (admin); 3D stage now pauses when the tab is hidden + freezes for `prefers-reduced-motion`; reduced-motion now also kills hover-lifts; storefront loading skeletons; product page CTAs fixed (was two buttons both → #book incl. a misleading "free trial" — now primary "See editions & pricing" scrolls to the table, ghost "Request a quote", and POA shows a single quote CTA).
+
+Verified live (preview, desktop + mobile): no bleed, sections render, orders collapse + reflow to cards, header clears, no horizontal overflow. Suite 45 green; build green.

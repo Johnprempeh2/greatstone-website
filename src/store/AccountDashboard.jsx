@@ -1,6 +1,6 @@
-// Customer self-serve portal (#account). Sign in / create account / reset, then: profile, order
-// history (customer_self RLS → only their own), saved cards & invoices via the Stripe Billing Portal,
-// and one-click re-order. Mirrors CatalogueAdmin's gate idiom but with customerAuth + a customer lens.
+// Customer self-serve portal (#account). Sign in / create account / reset, then a four-section
+// account: identity header + Profile / Security / Billing, and a collapsible, mobile-friendly order
+// history (customer_self RLS → only their own). One-click re-order. Mirrors CatalogueAdmin's gate idiom.
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
@@ -10,6 +10,7 @@ import './store.css';
 import './admin.css';
 
 const isResetMode = () => typeof location !== 'undefined' && /reset=1/.test(location.hash);
+const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
 
 export default function AccountDashboard() {
   const [session, setSession] = useState(undefined); // undefined = checking
@@ -27,7 +28,7 @@ export default function AccountDashboard() {
   if (profile && !isCustomer(profile)) return (
     <div className="ca-wrap"><div className="ca-center">
       <h2>This is a staff account</h2>
-      <p>{session.user?.email} manages the catalogue. Use the <a href="#catalogue">catalogue admin</a> instead.</p>
+      <p>{session.user?.email} manages the catalogue. Use the <a className="ca-link" href="#catalogue">catalogue admin</a> instead.</p>
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
@@ -57,10 +58,12 @@ function AuthGate() {
       <span className="st-kicker">Your account</span>
       <h1>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Sign in'}</h1>
       <p className="ca-sub">Order history, saved cards and faster checkout for the Greatstone software store.</p>
-      <div className="ca-tabs" style={{ marginBottom: 14 }}>
-        <button className={mode === 'signin' ? 'on' : ''} onClick={() => setMode('signin')}>Sign in</button>
-        <button className={mode === 'signup' ? 'on' : ''} onClick={() => setMode('signup')}>Create account</button>
-      </div>
+      {mode !== 'forgot' && (
+        <div className="ca-tabs" role="tablist" style={{ marginBottom: 14 }}>
+          <button role="tab" aria-selected={mode === 'signin'} className={mode === 'signin' ? 'on' : ''} onClick={() => { setMode('signin'); setErr(null); setMsg(null); }}>Sign in</button>
+          <button role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'on' : ''} onClick={() => { setMode('signup'); setErr(null); setMsg(null); }}>Create account</button>
+        </div>
+      )}
       <form onSubmit={submit}>
         {mode === 'signup' && <>
           <label>Company (optional)<input value={company} onChange={e => setCompany(e.target.value)} autoComplete="organization" /></label>
@@ -74,8 +77,8 @@ function AuthGate() {
       </form>
       <p className="ca-note" style={{ marginTop: 12 }}>
         {mode === 'forgot'
-          ? <button className="ca-link" onClick={() => setMode('signin')}>Back to sign in</button>
-          : <button className="ca-link" onClick={() => setMode('forgot')}>Forgot your password?</button>}
+          ? <button className="ca-link" onClick={() => { setMode('signin'); setErr(null); setMsg(null); }}>Back to sign in</button>
+          : <button className="ca-link" onClick={() => { setMode('forgot'); setErr(null); setMsg(null); }}>Forgot your password?</button>}
       </p>
     </div></div>
   );
@@ -106,16 +109,18 @@ function SetNewPassword() {
 function Dashboard({ session, profile, onProfile }) {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [ordersErr, setOrdersErr] = useState(null);
+  const [open, setOpen] = useState(null);      // expanded order id
   const [toast, setToast] = useState(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
 
   const loadOrders = useCallback(() => {
-    setLoadingOrders(true);
+    setLoadingOrders(true); setOrdersErr(null);
     supabase.from('orders')
       .select('id, reference, status, currency, subtotal_minor, total_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor, variant_id)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(100)
-      .then(({ data }) => { setOrders(data || []); setLoadingOrders(false); });
+      .then(({ data, error }) => { setOrdersErr(error || null); setOrders(data || []); setLoadingOrders(false); });
   }, []);
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
@@ -123,7 +128,7 @@ function Dashboard({ session, profile, onProfile }) {
     setPortalBusy(true);
     const { data, error } = await supabase.functions.invoke('stripe-portal', { body: { returnUrl: location.origin + location.pathname + '#account' } });
     setPortalBusy(false);
-    if (error || !data?.url) { flash('Billing portal unavailable. ' + (error?.message || '')); return; }
+    if (error || !data?.url) { flash('Billing portal unavailable. ' + (error?.message || 'Ask us to enable it.')); return; }
     location.href = data.url;
   };
 
@@ -141,12 +146,18 @@ function Dashboard({ session, profile, onProfile }) {
   const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
   const company = profile?.customer?.name || '';
   const tier = profile?.customer?.tier?.name;
+  const ref = (s) => (s || '').replace(/^cs_(test|live)_/, '').slice(0, 12) + '…';
 
   return (
     <div className="ca-wrap">
-      <header className="ca-head">
-        <div><span className="st-kicker">Your account</span><h1>{company || 'Welcome back'}</h1></div>
-        <div className="ca-tabtools">
+      <header className="acct-id">
+        <div className="acct-avatar" aria-hidden="true">{initialsOf(company || profile?.full_name || profile?.email)}</div>
+        <div className="acct-id-text">
+          <span className="st-kicker">Your account</span>
+          <div className="acct-id-name">{company || 'Welcome back'}</div>
+          <div className="acct-id-sub">{profile?.full_name ? profile.full_name + ' · ' : ''}{profile?.email || session.user?.email}{tier && <span className="acct-tier">{tier}</span>}</div>
+        </div>
+        <div className="acct-id-actions">
           <a className="gs-btn ghost sm" href="#shop">Continue shopping</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
@@ -154,44 +165,59 @@ function Dashboard({ session, profile, onProfile }) {
 
       <div className="acct-grid">
         <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
+        <SecurityCard email={profile?.email} flash={flash} />
         <div className="pr-form">
           <h2>Billing &amp; cards</h2>
-          <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal. {tier && <>Your pricing tier: <b>{tier}</b>.</>}</p>
+          <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal.</p>
           <button className="gs-btn ghost" onClick={openPortal} disabled={portalBusy}>{portalBusy ? 'Opening…' : 'Manage billing & cards →'}</button>
         </div>
       </div>
 
-      <h2 className="pr-listh">Order history</h2>
+      <div className="acct-ordhead">
+        <h2>Order history</h2>
+        {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
+      </div>
       <div className="ca-table-wrap">
-        <table className="ca-table">
-          <thead><tr><th>Date</th><th>Reference</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <table className="ca-table acct-orders">
+          <thead><tr><th>Date</th><th>Reference</th><th>Items</th><th>Total</th><th>Status</th><th><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
-            {loadingOrders ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
-              : !orders.length ? <tr><td colSpan="6" className="ca-muted">No orders yet. <a href="#shop">Browse the store →</a></td></tr>
-                : orders.map(o => (
-                  <React.Fragment key={o.id}>
-                    <tr>
-                      <td>{fmtDate(o.placed_at || o.created_at)}</td>
-                      <td className="ca-name"><code className="ca-ref">{(o.reference || '').replace(/^cs_(test|live)_/, '').slice(0, 12)}…</code></td>
-                      <td>{(o.order_items || []).length}</td>
-                      <td className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
-                      <td><span className={'ca-status ca-ord-' + o.status}>{o.status}</span></td>
-                      <td className="ca-ord-actions"><button className="gs-btn ghost sm" onClick={() => reorder(o)}>Buy again</button></td>
-                    </tr>
-                    <tr className="ca-ord-detailrow"><td colSpan="6">
-                      <div className="ca-ord-items">
-                        {(o.order_items || []).map(it => (
-                          <div key={it.id} className="ca-ord-item">
-                            <span className="oi-name">{it.offering_name}{it.variant_name ? ' · ' + it.variant_name : ''}</span>
-                            <span className="oi-qty">×{it.qty}</span>
-                            <span className="oi-amt">{fmtMoney(it.line_total_minor, o.currency)}</span>
-                          </div>
-                        ))}
-                        <div className="acct-keys">Licence keys are issued by our team and appear here once delivered.</div>
-                      </div>
-                    </td></tr>
-                  </React.Fragment>
-                ))}
+            {loadingOrders ? <tr><td colSpan="6" className="ca-muted">Loading your orders…</td></tr>
+              : ordersErr ? <tr><td colSpan="6" className="ca-muted">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></td></tr>
+                : !orders.length ? <tr><td colSpan="6" className="ca-muted">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></td></tr>
+                  : orders.map(o => {
+                    const expanded = open === o.id;
+                    return (
+                      <React.Fragment key={o.id}>
+                        <tr className="acct-ordrow" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : o.id)}>
+                          <td data-label="Date">{fmtDate(o.placed_at || o.created_at)}</td>
+                          <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code></td>
+                          <td data-label="Items">{(o.order_items || []).length}</td>
+                          <td data-label="Total" className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
+                          <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span></td>
+                          <td className="ca-ord-actions acct-ord-cell-actions">
+                            <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
+                            <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
+                          </td>
+                        </tr>
+                        {expanded && (
+                          <tr className="ca-ord-detailrow" id={'ord-' + o.id}><td colSpan="6">
+                            <div className="ca-ord-items">
+                              {(o.order_items || []).map(it => (
+                                <div key={it.id} className="ca-ord-item">
+                                  <span className="oi-name">{it.offering_name}{it.variant_name ? ' · ' + it.variant_name : ''}</span>
+                                  <span className="oi-qty">×{it.qty}</span>
+                                  <span className="oi-amt">{fmtMoney(it.line_total_minor, o.currency)}</span>
+                                </div>
+                              ))}
+                              <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
+                              <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
+                              <div className="acct-keys">Licence keys are issued by our team and appear here once delivered.</div>
+                            </div>
+                          </td></tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
           </tbody>
         </table>
       </div>
@@ -222,11 +248,36 @@ function ProfileCard({ profile, onProfile, flash }) {
   return (
     <div className="pr-form">
       <h2>Profile</h2>
-      <label>Company<input value={company} onChange={e => setCompany(e.target.value)} /></label>
-      <label>Your name<input value={name} onChange={e => setName(e.target.value)} /></label>
-      <label>Phone<input value={phone} onChange={e => setPhone(e.target.value)} /></label>
+      <label>Company<input value={company} onChange={e => setCompany(e.target.value)} autoComplete="organization" /></label>
+      <label>Your name<input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
+      <label>Phone<input value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" /></label>
       <label>Email<input value={profile?.email || ''} readOnly disabled /></label>
+      <p className="ca-note">Contact us to change your account email.</p>
       <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
     </div>
+  );
+}
+
+function SecurityCard({ email, flash }) {
+  const [pw, setPw] = useState(''); const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const save = async (e) => {
+    e.preventDefault(); setErr(null);
+    if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
+    if (pw !== confirm) { setErr('Passwords do not match.'); return; }
+    setBusy(true);
+    const { error } = await updatePassword(pw); setBusy(false);
+    if (error) { setErr(error.message); return; }
+    setPw(''); setConfirm(''); flash('Password updated.');
+  };
+  return (
+    <form className="pr-form" onSubmit={save}>
+      <h2>Security</h2>
+      <label>New password<input type="password" value={pw} onChange={e => setPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
+      <label>Confirm new password<input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} minLength={8} autoComplete="new-password" /></label>
+      {err && <div className="ca-err" role="alert">{err}</div>}
+      <button className="gs-btn primary" type="submit" disabled={busy || !pw}>{busy ? 'Updating…' : 'Update password'}</button>
+      <p className="ca-note">Signed in as {email}. We'll never ask for your password by email.</p>
+    </form>
   );
 }

@@ -73,8 +73,14 @@ export default function Stage({ background = 'stone', previewP = null }) {
     // events don't bubble, but capturing listeners on ancestors still fire for descendant scrollers)
     addEventListener('scroll', onScroll, { passive: true, capture: true });
     addEventListener('resize', onScroll, { passive: true });
+    // Pause every layer's WebGL loop when the tab is hidden (battery/CPU); re-apply on return.
+    const onVis = () => { if (document.hidden) layers.forEach((l) => { if (l.handle && l.handle.setActive) l.handle.setActive(false); }); else apply(); };
+    document.addEventListener('visibilitychange', onVis);
     apply();
+    // Honour reduced motion: render one frame then freeze (the scrim makes a static frame indistinguishable).
+    if (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) layers.forEach((l) => { if (l.handle && l.handle.setActive) l.handle.setActive(false); });
     return () => {
+      document.removeEventListener('visibilitychange', onVis);
       removeEventListener('scroll', onScroll, { capture: true }); removeEventListener('resize', onScroll);
       applyRef.current = null;
       layers.forEach((l) => { if (l.handle && l.handle.destroy) l.handle.destroy(); if (l.host.parentNode) l.host.parentNode.removeChild(l.host); });

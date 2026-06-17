@@ -65,8 +65,10 @@ export default function StoreProduct({ slug, onBack }) {
               : <><div className="lbl">Pricing</div><div className="poa">Price on application</div><div className="sub">We'll prepare a quote tailored to your team and use case.</div></>}
           </div>
           <div className="sp-cta">
-            <a className="gs-btn primary" href="#book">Request a quote</a>
-            <a className="gs-btn ghost" href="#book">Start a free trial</a>
+            {fromP && fromP.final != null
+              ? <><button className="gs-btn primary" onClick={() => { const el = document.getElementById('sp-editions'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>See editions &amp; pricing</button>
+                  <a className="gs-btn ghost" href="#book">Request a quote</a></>
+              : <a className="gs-btn primary" href="#book">Request a quote</a>}
           </div>
           <p className="sp-note">Browse-and-enquire: we license and support every product directly. No account or card needed to ask.</p>
         </div>
@@ -77,7 +79,7 @@ export default function StoreProduct({ slug, onBack }) {
       {!!(o.specs && o.specs.length) && <section className="sp-section"><h2>Key features</h2>
         <div className="sp-specs">{o.specs.map((s, i) => <div key={i} className="sp-spec"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>{s.label}</div>)}</div></section>}
 
-      {!!(o.variants && o.variants.length) && <section className="sp-section"><h2>Editions &amp; licensing</h2>
+      {!!(o.variants && o.variants.length) && <section className="sp-section" id="sp-editions"><h2>Editions &amp; licensing</h2>
         <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th>Edition</th><th>Licence</th><th>Price</th><th></th></tr></thead>
           <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td>{v.pricing && v.pricing.final != null ? <AddToBasket offering={o} variant={v} /> : <a className="sp-q" href="#book">Request quote ›</a>}</td></tr>)}</tbody></table></div>
         <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p></section>}

@@ -155,3 +155,34 @@
 .sc-ref { font-size:.84rem; }
 .sc-ref code { color:var(--gs-text); background:rgba(255,255,255,.06); padding:.2em .5em; border-radius:6px; }
 .sc-confirm-cta { display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap; }
+
+/* ── Responsiveness + motion polish (UX pass) ───────────────────────────── */
+.sc-drawer { width:min(420px,100%); }   /* 100% of the inset:0 scrim — avoids the 100vw scrollbar gutter */
+
+@media (prefers-reduced-motion:reduce){
+  .st-card:hover, .sp-rel:hover, .sc-fab:hover, .sp-add:hover { transform:none !important; }
+}
+
+@media (max-width:640px){
+  .st-wrap, .sp-wrap { padding-top:clamp(72px,11vh,96px); }
+  .sp-gallery { position:static; }       /* nothing to stay sticky against once .sp-top is one column */
+  .st-pill { padding:.6em 1.1em; }        /* lift toward a 44px touch target */
+  .sc-x { padding:10px; font-size:1.25rem; }
+  .sp-nav { width:44px; height:44px; }
+}
+@media (pointer:coarse){ .sc-qty button { min-width:40px; min-height:40px; } }
+
+@media (max-width:480px){
+  .st-grid { grid-template-columns:1fr; gap:12px; }
+  .st-card { padding:16px; }
+  .st-count { margin-left:0; width:100%; order:3; }
+  .st-h1 { font-size:clamp(1.8rem,7vw,2.5rem); }
+  .sp-title { font-size:clamp(1.6rem,6vw,2.2rem); }
+}
+
+/* loading skeleton for the catalogue grid */
+.st-skel { min-height:230px; border:1px solid var(--gs-border,rgba(200,255,0,.08)); border-radius:14px;
+  background:linear-gradient(100deg, rgba(255,255,255,.03) 40%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.03) 60%);
+  background-size:200% 100%; animation:stShimmer 1.2s linear infinite; }
+@keyframes stShimmer { to { background-position:-200% 0; } }
+@media (prefers-reduced-motion:reduce){ .st-skel { animation:none; } }

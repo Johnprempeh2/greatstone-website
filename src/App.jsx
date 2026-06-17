@@ -674,7 +674,9 @@ export default function App() {
       {overlays}
       <a className="gs-skip" href="#gs-main">Skip to content</a>
       <SiteChrome />
-      <Stage background={bg} />
+      {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
+          (account, catalogue admin, order confirmation) render on a solid surface — no bleed-through, no WebGL cost. */}
+      {!(accountRoute || catalogueAdmin || confirmRoute) && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
