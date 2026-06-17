@@ -1,3 +1,4 @@
+import PanelFrame from './PanelFrame.jsx';
 // Version history: every publish snapshots the page. Restore rolls the editor back to any
 // snapshot (which you then re-publish), so a bad edit is never more than two clicks from
 // undone. Interim store is localStorage; in production these are the Laravel page snapshots.
@@ -10,13 +11,9 @@ function when(ts) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function VersionHistory({ versions = [], onRestore, onClose }) {
+export default function VersionHistory({ versions = [], onRestore, onClose, embedded }) {
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Version history">
-      <div className="gs-panel-head">
-        <h3>Version history</h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label="Version history" onClose={onClose}>
       <div className="gs-panel-body">
         {versions.length === 0 && <p className="gs-empty">No snapshots yet. Publishing the page saves one here.</p>}
         <ol className="gs-versions">
@@ -35,6 +32,6 @@ export default function VersionHistory({ versions = [], onRestore, onClose }) {
           ))}
         </ol>
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

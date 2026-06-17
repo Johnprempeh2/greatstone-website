@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MediaField } from './MediaField.jsx';
+import PanelFrame from './PanelFrame.jsx';
 
 // In-context SEO: edit the meta title/description and watch a live Google result and social
 // card update, with length guidance (green in range, amber out). Catches the silent SEO
@@ -9,7 +10,7 @@ function meter(len, lo, hi) {
   return { cls: len === 0 ? 'is-empty' : ok ? 'is-ok' : 'is-warn', note: len === 0 ? 'empty' : ok ? 'good length' : len < lo ? 'a little short' : 'too long, will truncate' };
 }
 
-export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugLocked, onClose }) {
+export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugLocked, onClose, embedded }) {
   const title = seo.title || '';
   const desc = seo.description || '';
   const shownTitle = title || (pageTitle + ' — Greatstone International');
@@ -25,11 +26,7 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugL
   const commitSlug = () => { const v = (slugDraft || '').trim(); if (v && v !== slug && onSlug) onSlug(v); };
 
   return (
-    <aside className="gs-panel" role="dialog" aria-label="SEO">
-      <div className="gs-panel-head">
-        <h3>SEO &amp; social</h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label="SEO &amp; social" name="SEO and social" onClose={onClose}>
       <div className="gs-panel-body">
         <label className="gs-field">
           <span className="gs-field-label">Page URL {slugLocked && <em className="gs-meter is-empty">fixed</em>}</span>
@@ -70,6 +67,6 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugL
           </div>
         </div>
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

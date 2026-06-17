@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ROLES } from './auth.js';
+import PanelFrame from './PanelFrame.jsx';
 
 // Team & roles (admin-only): the org roster — who's on the team, their role and responsibilities,
 // plus pending invitations. This is the DX-dashboard prototype: it assigns roles and records
@@ -77,7 +78,7 @@ function MemberRow({ member, isYou, onUpdate, onRemove, onResend }) {
   );
 }
 
-export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUpdate, onRemove, onResend, onClose }) {
+export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUpdate, onRemove, onResend, onClose, embedded }) {
   const isMe = (m) => currentEmail && (m.email || '').toLowerCase() === String(currentEmail).toLowerCase();
   const [inv, setInv] = useState({ name: '', email: '', role: 'editor' });
   const set = (k, v) => setInv((f) => ({ ...f, [k]: v }));
@@ -91,11 +92,7 @@ export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUp
   const invited = team.filter((m) => m.status === 'invited');
 
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Team">
-      <div className="gs-panel-head">
-        <h3>Team <span className="gs-panel-count">{team.length}</span></h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label={<>Team <span className="gs-panel-count">{team.length}</span></>} name="Team and roles" onClose={onClose}>
       <div className="gs-panel-body">
         {org ? <div className="gs-tm-org"><span className="gs-tm-org-name">{org.name}</span><span className="gs-tm-org-label">Organisation</span></div> : null}
         <p className="gs-field-hint">Assign roles and invite teammates. Prototype: this records membership only; it creates no account, sets no password and sends no email. Real org sign-in, roles and invites are the Laravel backend (see HANDOVER).</p>
@@ -124,6 +121,6 @@ export default function TeamPanel({ team = [], org, currentEmail, onInvite, onUp
           {active.length === 0 && <li className="gs-empty">No active members yet.</li>}
         </ul>
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

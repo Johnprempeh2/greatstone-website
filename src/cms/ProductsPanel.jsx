@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MediaField } from './MediaField.jsx';
+import PanelFrame from './PanelFrame.jsx';
 
 // Products management (admin): add / edit / remove products and categories from inside the studio.
 // Edits are local while you type and commit to the store on blur, so the catalogue doesn't thrash
@@ -78,14 +79,10 @@ function ProductEditor({ product, categories, onUpdate, onRemove }) {
   );
 }
 
-export default function ProductsPanel({ products = [], categories = [], drift = false, canPublish = false, onPublish, onDiscard, onCreate, onUpdate, onRemove, onCreateCategory, onUpdateCategory, onRemoveCategory, onClose }) {
+export default function ProductsPanel({ products = [], categories = [], drift = false, canPublish = false, onPublish, onDiscard, onCreate, onUpdate, onRemove, onCreateCategory, onUpdateCategory, onRemoveCategory, onClose, embedded }) {
   const [showCats, setShowCats] = useState(false);
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Products">
-      <div className="gs-panel-head">
-        <h3>Products <span className="gs-panel-count">{products.length}</span></h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label={<>Products <span className="gs-panel-count">{products.length}</span></>} name="Products" onClose={onClose}>
       <div className="gs-panel-body">
         <div className={'gs-cat-pub' + (drift ? ' is-drift' : '')}>
           <div className="gs-cat-pub-state">
@@ -124,6 +121,6 @@ export default function ProductsPanel({ products = [], categories = [], drift = 
           </div>
         )}
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

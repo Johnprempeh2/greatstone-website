@@ -39,7 +39,7 @@ import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
-import AdminHub from './cms/AdminHub.jsx';
+import AdminConsole from './cms/AdminConsole.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { currentUser, can, ROLES, isAdminRoute, signOut as authSignOut } from './cms/auth.js';
@@ -74,6 +74,12 @@ function readProductHash() {
 function readJoinHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?join\/([\w-]+)/i);
   return m ? m[1] : null;
+}
+// #admin[/<section>] → the admin console; returns the section ('overview' default), or null when off it.
+// Sections: overview | pages | releases | seo | background | history | activity | team.
+function readAdminHash() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?admin(?:\/([a-z]+))?$/i);
+  return m ? (m[1] || 'overview') : null;
 }
 // #shop or #shop/<vendor-slug> → the live storefront (reads Supabase)
 function readShopHash() {
@@ -166,6 +172,7 @@ export default function App() {
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
   const [adminRoute, setAdminRoute] = useState(isAdminRoute);
+  const [adminSection, setAdminSection] = useState(readAdminHash); // #admin/<section> → which console destination
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
   const [shopRoute, setShopRoute] = useState(readShopHash);        // #shop[/<vendor>] → live storefront
@@ -202,7 +209,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
+    const onHash = () => { setAdminRoute(isAdminRoute()); setAdminSection(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -458,8 +465,12 @@ export default function App() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
   function goShop() { if (typeof location !== 'undefined') location.hash = 'shop'; if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
-  // Return to the central admin hub (#admin landing) from anywhere in the studio or catalogue.
-  function goHub() { setMode('view'); setPanel(null); if (typeof location !== 'undefined') location.hash = 'admin'; setAdminRoute(true); }
+  // Return to the admin console home (#admin) from anywhere in the studio or catalogue.
+  function goHub() { setMode('view'); setPanel(null); if (typeof location !== 'undefined') location.hash = 'admin'; setAdminRoute(true); setAdminSection('overview'); }
+  // Navigate to an admin console destination (#admin/<section>) — full-screen, no editor mounted.
+  function goAdmin(section) { setMode('view'); setPanel(null); const h = 'admin' + (section && section !== 'overview' ? '/' + section : ''); if (typeof location !== 'undefined') location.hash = h; setAdminRoute(true); setAdminSection(section || 'overview'); }
+  // Open a page in the Puck editor from the console (the ONLY path that mounts the heavyweight editor).
+  function openPageInEditor(slug) { if (slug) { setCurrent(slug); setPuckKey((k) => k + 1); } setPanel(null); setMode('edit'); }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
   function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
@@ -581,22 +592,46 @@ export default function App() {
     );
   }
 
-  // Central admin hub — the launcher you land on after signing in (mode!=='edit' so a 'Page editor'
-  // card falls through to the editor branch below). Cards deep-link to the existing surfaces.
+  // Central admin CONSOLE — the full-screen shell you land on after signing in (mode!=='edit' so the
+  // 'Page editor' destination falls through to the editor branch below). Every destination renders
+  // here WITHOUT mounting the Puck editor; only the 3D background view mounts the Stage so its live
+  // preview works. The panels are rendered embedded (no dialog chrome) straight into the console body.
   if (adminRoute && authed && mode !== 'edit') {
+    const section = adminSection || 'overview';
+    const onConsoleClose = () => {}; // embedded panels have no close ×; the rail/Back owns navigation
+    const consolePanels = {
+      overview: <OverviewPanel embedded order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} />,
+      pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} />,
+      releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
+      seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
+      background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
+      history: <VersionHistory embedded versions={page.versions} onRestore={restoreVersion} onClose={onConsoleClose} />,
+      activity: <ActivityPanel embedded statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={onConsoleClose} />,
+      ...(canManageUsers ? { team: <TeamPanel embedded team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={onConsoleClose} /> } : {}),
+    };
     return (
-      <div className="is-view">
-        <AdminHub
+      <CatalogContext.Provider value={draftCatalog}>
+      <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
+      <div className={'is-view ac-root' + (section === 'background' ? ' ac-has-stage' : '')}>
+        {overlays}
+        <a className="gs-skip" href="#admin-main">Skip to content</a>
+        {section === 'background' && <Stage background={page.background || state.settings.background} previewP={previewP} />}
+        <AdminConsole
           user={user} canEdit={canEdit} canManageUsers={canManageUsers} attention={studioAttention}
-          onEditor={() => setMode('edit')}
-          onPanel={(tab) => { setMode('edit'); setPanel(tab); }}
-          onCatalogue={(tab) => { if (typeof location !== 'undefined') location.hash = 'catalogue' + (tab && tab !== 'offerings' ? '/' + tab : ''); }}
-          onShop={goShop}
+          section={section} panels={consolePanels}
+          order={state.order} pages={state.pages} current={current}
+          onSection={goAdmin} onEditor={() => setMode('edit')} onEditPage={openPageInEditor}
+          onSelectPage={(slug) => { setCurrent(slug); setPreviewP(null); }}
+          onCommerce={(tab) => { if (typeof location !== 'undefined') location.hash = 'catalogue' + (tab && tab !== 'offerings' ? '/' + tab : ''); }}
+          onStore={goShop}
           onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }}
           onExport={exportSiteJson}
           onSignOut={doSignOut}
+          onSite={() => navigate(state.order[0])}
         />
       </div>
+      </MediaContext.Provider>
+      </CatalogContext.Provider>
     );
   }
 
@@ -609,7 +644,7 @@ export default function App() {
         <Stage background={bg} previewP={previewP} />
         {panel && (
           <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team, products: studioAttention.products }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
-            home: <OverviewPanel order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} onClose={() => setPanel(null)} />,
+            home: <OverviewPanel embedded order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             products: <ProductsPanel products={state.products} categories={state.categories} drift={catalogDrift} canPublish={canPublish} onPublish={publishCatalogue} onDiscard={discardCatalogue} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,

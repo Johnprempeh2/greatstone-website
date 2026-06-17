@@ -2,6 +2,8 @@
 // published, and when. The store captured statusHistory all along (+ approvedBy) but nothing showed
 // it; this surfaces it as a read-only timeline. Distinct from History (which restores version
 // snapshots): Activity is the accountability log. In production this maps to the Laravel audit log.
+import PanelFrame from './PanelFrame.jsx';
+
 const STATUS_LABEL = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
 
 function when(ts) {
@@ -21,17 +23,13 @@ function eventLabel(from, to) {
   return (STATUS_LABEL[from] || from) + ' → ' + (STATUS_LABEL[to] || to);
 }
 
-export default function ActivityPanel({ statusHistory = [], status, approvedBy, activity = [], pageTitle, onClose }) {
+export default function ActivityPanel({ statusHistory = [], status, approvedBy, activity = [], pageTitle, onClose, embedded }) {
   // unified feed: this page's status/governance events + the site-wide catalogue & team audit log
   const pageEvents = statusHistory.map((e) => ({ ts: e.ts, by: e.by, label: eventLabel(e.from, e.to), note: e.note, scope: pageTitle || 'This page' }));
   const siteEvents = (activity || []).map((a) => ({ ts: a.ts, by: a.by, label: a.label, scope: 'Catalogue & team' }));
   const events = pageEvents.concat(siteEvents).sort((a, b) => b.ts - a.ts);
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Activity">
-      <div className="gs-panel-head">
-        <h3>Activity</h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label="Activity" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-activity-now">
           <span className="gs-activity-dot" data-status={status} aria-hidden="true" />
@@ -54,6 +52,6 @@ export default function ActivityPanel({ statusHistory = [], status, approvedBy, 
           ))}
         </ol>
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

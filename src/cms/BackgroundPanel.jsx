@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { STAGE_OPTIONS, SCENE_KINDS, scrollContext, resolveTransitionAt } from '../stage-presets.js';
 import { normalizeBackground } from '../store.js';
+import PanelFrame from './PanelFrame.jsx';
 
 // Granular 3D background editor ("scene track"). The page's background is a list of scenes that
 // cross-fade at editable points; each transition is anchored either to a SCROLL percentage or
@@ -20,7 +21,7 @@ const blockLabel = (b) => {
   return (s ? s + ' · ' : '') + b.type;
 };
 
-export default function BackgroundPanel({ value, onChange, onPreview, onClose, blocks = [] }) {
+export default function BackgroundPanel({ value, onChange, onPreview, onClose, blocks = [], embedded }) {
   const model = useMemo(() => normalizeBackground(value), [value]);
   const [scrub, setScrub] = useState(null);
 
@@ -70,8 +71,7 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
   const bandEnd = (k) => (k < scenes.length - 1 ? atOf(k) : 1);
 
   return (
-    <aside className="gs-panel" role="dialog" aria-label="3D background">
-      <div className="gs-panel-head"><h3>3D background</h3><button className="gs-x" onClick={onClose} aria-label="Close">×</button></div>
+    <PanelFrame embedded={embedded} label="3D background" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-track" aria-hidden="true">
           <div className="gs-track-bands">
@@ -146,6 +146,6 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
         ))}
         {scenes.length < 3 && <button className="gs-btn ghost sm gs-scene-add" onClick={addScene}>+ Add scene</button>}
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

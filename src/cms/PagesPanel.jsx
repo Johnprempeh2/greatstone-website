@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PanelFrame from './PanelFrame.jsx';
 
 // Pages hub (edit mode): every page with its path, section count and status, plus the full set
 // of management actions — open, duplicate, rename, reorder, delete — and a status filter so a
@@ -6,17 +7,13 @@ import { useState } from 'react';
 const STATUS = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
 const FILTERS = [['all', 'All'], ['draft', 'Draft'], ['review', 'In review'], ['approved', 'Approved'], ['published', 'Published']];
 
-export default function PagesPanel({ order, pages, current, onOpen, onNew, onDelete, onDuplicate, onRename, onMove, onClose }) {
+export default function PagesPanel({ order, pages, current, onOpen, onNew, onDelete, onDuplicate, onRename, onMove, onClose, embedded }) {
   const [filter, setFilter] = useState('all');
   const counts = order.reduce((m, s) => { m[pages[s].status] = (m[pages[s].status] || 0) + 1; return m; }, {});
   const shown = order.filter((s) => filter === 'all' || pages[s].status === filter);
 
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Pages">
-      <div className="gs-panel-head">
-        <h3>Pages <span className="gs-panel-count">{order.length}</span></h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label={<>Pages <span className="gs-panel-count">{order.length}</span></>} name="Pages" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-pagefilter">
           {FILTERS.map(([id, label]) => (
@@ -53,6 +50,6 @@ export default function PagesPanel({ order, pages, current, onOpen, onNew, onDel
         </ul>
         <button className="gs-btn ghost sm gs-pages-new" onClick={onNew}>+ New page</button>
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

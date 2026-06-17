@@ -187,10 +187,11 @@
 .gs-studio-btnbadge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;border-radius:100px;
   font-size:.62rem;font-weight:800;line-height:1;color:#1a0c0c;background:var(--gs-warning);font-variant-numeric:tabular-nums}
 .gs-studio-body{flex:1;overflow-y:auto;padding:20px}
-/* nest the existing panels: drop their own chrome so only the Studio shell frames them */
-.gs-studio-body .gs-panel{position:static;inset:auto;width:auto;max-width:none;height:auto;border:0;box-shadow:none;background:none;animation:none;display:block}
-.gs-studio-body .gs-panel-head{display:none}
-.gs-studio-body .gs-panel-body{padding:0;overflow:visible}
+/* Embedded panels (PanelFrame embedded=true): a plain landmarked <section>, not a fixed dialog —
+   the parent (Studio sidebar OR the full-screen admin console) owns the frame. Replaces the old
+   `.gs-studio-body .gs-panel` un-styling hack and the dialog-inside-a-dialog it papered over. */
+.gs-panel.is-embed{position:static;inset:auto;width:auto;max-width:none;height:auto;border:0;box-shadow:none;background:none;animation:none;display:block}
+.gs-panel.is-embed>.gs-panel-body{padding:0;overflow:visible}
 .gs-field{display:block;margin-bottom:18px}
 .gs-field-label{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:800;letter-spacing:.04em;
   text-transform:uppercase;color:var(--gs-faint);margin-bottom:8px}
@@ -517,27 +518,75 @@
 .gs-modal-field input:focus{border-color:var(--gs-accent)}
 .gs-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
 
-/* ── Central admin hub (#admin landing) ─────────────────────────────────── */
-.hub-wrap { min-height:100vh; background:var(--gs-bg,#1f1f1f); color:var(--gs-text,#f5f5f5); }
-.hub-head { display:flex; align-items:center; justify-content:space-between; gap:16px; max-width:1100px; margin:0 auto; padding:clamp(16px,3vw,28px) clamp(18px,4vw,48px); border-bottom:1px solid rgba(255,255,255,.1); }
-.hub-logo { font-weight:900; font-size:1.2rem; letter-spacing:.04em; } .hub-logo span { color:var(--gs-accent,#c8ff00); }
-.hub-head-r { display:flex; align-items:center; gap:12px; }
-.hub-who { font-size:.8rem; color:var(--gs-text-faint,#9a9a9a); }
-.hub-intro { max-width:1100px; margin:0 auto; padding:clamp(24px,5vw,44px) clamp(18px,4vw,48px) 4px; }
-.hub-intro h1 { font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; letter-spacing:-.02em; margin:.25em 0 .15em; }
-.hub-intro p { color:var(--gs-text-muted,#b0b0b0); font-size:1rem; }
-.hub-section { max-width:1100px; margin:clamp(22px,4vw,38px) auto 0; padding:0 clamp(18px,4vw,48px) 18px; }
-.hub-section h2 { font-size:1.1rem; font-weight:800; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
-.hub-sec-note { font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gs-text-faint,#9a9a9a); }
-.hub-chip { font-size:.72rem; font-weight:600; color:var(--gs-text-muted,#b0b0b0); background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:100px; padding:.25em .8em; }
-.hub-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(248px,1fr)); gap:12px; }
-.hub-card { display:flex; flex-direction:column; gap:6px; text-align:left; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:18px; cursor:pointer; font:inherit; color:var(--gs-text,#f5f5f5); transition:border-color .2s var(--gs-ease,ease), transform .2s var(--gs-ease,ease), background .2s; }
-.hub-card:hover { border-color:var(--gs-accent,#c8ff00); transform:translateY(-2px); background:rgba(255,255,255,.07); }
-.hub-card:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
-.hub-card.is-locked { opacity:.45; cursor:not-allowed; }
-.hub-card.is-locked:hover { border-color:rgba(255,255,255,.1); transform:none; background:rgba(255,255,255,.045); }
-.hub-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.hub-card-label { font-size:1rem; font-weight:800; }
-.hub-card-badge { min-width:20px; height:20px; padding:0 6px; border-radius:100px; background:var(--gs-accent,#c8ff00); color:#0e1611; font-size:.72rem; font-weight:800; display:grid; place-items:center; }
-.hub-card-desc { font-size:.84rem; color:var(--gs-text-muted,#b0b0b0); line-height:1.5; }
-@media (max-width:560px){ .hub-grid { grid-template-columns:1fr; } }
+/* ── Admin CONSOLE (#admin) — full-screen shell: topbar + persistent rail + main ──────────── */
+.ac{min-height:100vh;display:flex;flex-direction:column;
+  background:
+    radial-gradient(1100px 760px at 80% -8%,rgba(27,80,57,.22),transparent 60%),
+    radial-gradient(900px 700px at 2% 110%,rgba(14,49,34,.30),transparent 58%),var(--gs-bg)}
+.ac-root.ac-has-stage .ac{background:transparent}  /* 3D background view: let the Stage show through */
+
+.ac-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:12px clamp(16px,3vw,32px);border-bottom:1px solid var(--gs-border-soft);
+  background:rgba(18,20,18,.86);backdrop-filter:blur(10px)}
+.ac-logo{background:none;border:0;padding:0;cursor:pointer;display:inline-flex;align-items:center}
+.ac-logo img{height:26px;width:auto;display:block}
+.ac-topbar-tag{font-size:.66rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gs-accent)}
+.ac-spacer{flex:1}
+.ac-whoami{font-size:.78rem;color:var(--gs-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+
+.ac-shell{flex:1;display:grid;grid-template-columns:248px minmax(0,1fr)}
+.ac-rail{border-right:1px solid var(--gs-border-soft);padding:18px 12px 40px;display:flex;flex-direction:column;gap:20px;
+  background:rgba(16,18,16,.45)}
+.ac-railgroup{display:flex;flex-direction:column;gap:6px}
+.ac-raillabel{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-faint);padding:0 10px 2px}
+.ac-railnote{font-weight:700;opacity:.7}
+.ac-supachip{display:flex;align-items:flex-start;gap:7px;margin:0 8px 4px;padding:8px 10px;border-radius:10px;
+  background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);font-size:.7rem;line-height:1.4;color:var(--gs-faint)}
+.ac-supadot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;margin-top:5px;background:var(--gs-faint)}
+.ac-supachip.is-on .ac-supadot{background:var(--gs-success)}
+.ac-supachip.is-warn .ac-supadot{background:var(--gs-warning)}
+.ac-railitems{list-style:none;display:flex;flex-direction:column;gap:1px}
+.ac-railitem{width:100%;display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:9px;cursor:pointer;
+  font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:600;color:var(--gs-muted);text-align:left;
+  padding:9px 10px;transition:color .15s,background .15s}
+.ac-railitem:hover{color:var(--gs-text);background:rgba(255,255,255,.04)}
+.ac-railitem.is-active{color:var(--gs-accent);background:rgba(200,255,0,.1);font-weight:700}
+.ac-railitem.is-locked{opacity:.4;cursor:not-allowed}
+.ac-railitem.is-locked:hover{color:var(--gs-muted);background:none}
+.ac-railitem-l{flex:1;min-width:0}
+.ac-railitem-go{font-size:.74rem;color:var(--gs-faint)}
+.ac-railitem.is-active .ac-railitem-go{color:var(--gs-accent)}
+.ac-railbadge{min-width:18px;height:18px;padding:0 5px;border-radius:100px;background:var(--gs-warning);color:#1a0c0c;
+  font-size:.64rem;font-weight:800;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+
+.ac-main{min-width:0;padding:clamp(22px,3.5vw,38px) clamp(18px,4vw,46px) 80px;outline:none}
+.ac-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.ac-head h1{font-size:clamp(1.6rem,3vw,2.4rem);font-weight:900;letter-spacing:-.02em;margin-top:.2em}
+.ac-pagepick{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ac-pagepick-l{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-faint)}
+.ac-pagepick-l select{font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:600;color:var(--gs-text);
+  background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:9px;padding:.5em .8em;text-transform:none;letter-spacing:0}
+.ac-pagepick-l select:focus-visible{outline:2px solid var(--gs-accent);outline-offset:1px}
+.ac-body{max-width:920px}
+.ac-root.ac-has-stage .ac-body{max-width:760px;background:rgba(16,18,16,.74);backdrop-filter:blur(10px);
+  border:1px solid var(--gs-border-soft);border-radius:16px;padding:22px}
+.ac-locked-note{color:var(--gs-faint);font-size:.9rem}
+.ac :focus-visible,.ac-railitem:focus-visible,.ac-logo:focus-visible{outline:2px solid var(--gs-accent);outline-offset:2px;border-radius:8px}
+
+@media (max-width:860px){
+  .ac-shell{grid-template-columns:1fr}
+  .ac-rail{flex-direction:row;gap:14px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--gs-border-soft);
+    padding:12px;position:sticky;top:51px;z-index:15;background:rgba(16,18,16,.92);backdrop-filter:blur(10px)}
+  .ac-railgroup{flex:0 0 auto}
+  .ac-supachip{display:none}
+  .ac-railitems{flex-direction:row;gap:4px}
+  .ac-railitem{white-space:nowrap;padding:8px 12px}
+  .ac-railitem-go{display:none}
+  .ac-root.ac-has-stage .ac-body{max-width:none}
+}
+
+/* honour the OS reduced-motion preference across the whole studio (panels, modals, console) */
+@media (prefers-reduced-motion: reduce){
+  .gs-panel,.gs-studio,.gs-cart,.gs-cart-scrim,.gs-cart-fab,.gs-modal,.gs-modal-scrim,.gs-cmd,.gs-cmd-scrim{animation:none !important}
+  .ac-railitem,.gs-btn{transition:none !important}
+}

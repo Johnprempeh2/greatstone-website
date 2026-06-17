@@ -2,6 +2,8 @@
 // list, but nothing showed the whole site's publish state at once — which pages have unpublished
 // changes (draft drift), which are awaiting review/approval, and when each last went live. This is
 // the lead's "what's ready / what's pending" board. Read-only overview; actions happen in-page.
+import PanelFrame from './PanelFrame.jsx';
+
 const STATUS = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -15,7 +17,7 @@ function when(ts) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function ReleaseBoard({ order, pages, current, onOpen, onClose }) {
+export default function ReleaseBoard({ order, pages, current, onOpen, onClose, embedded }) {
   const rows = order.map((slug) => {
     const p = pages[slug];
     const lastPub = (p.versions || []).find((v) => v.status === 'published');
@@ -28,11 +30,7 @@ export default function ReleaseBoard({ order, pages, current, onOpen, onClose })
   const sorted = rows.slice().sort((a, b) => score(b) - score(a) || order.indexOf(a.slug) - order.indexOf(b.slug));
 
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Releases">
-      <div className="gs-panel-head">
-        <h3>Releases</h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label="Releases" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-rel-summary">
           <div className="gs-rel-stat"><b>{counts.published || 0}</b><span>Published</span></div>
@@ -57,6 +55,6 @@ export default function ReleaseBoard({ order, pages, current, onOpen, onClose })
           ))}
         </ul>
       </div>
-    </aside>
+    </PanelFrame>
   );
 }

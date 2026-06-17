@@ -1,6 +1,8 @@
 // Studio Home: a content-health overview so a lead (and the future DX-dashboard audience) reads site
 // readiness at a glance — page status + draft drift, catalogue health, team + pending invites, and the
 // most recent changes. Read-only; the numbers come straight from the store the other panels manage.
+import PanelFrame from './PanelFrame.jsx';
+
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 function when(ts) {
@@ -12,7 +14,7 @@ function when(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function OverviewPanel({ order = [], pages = {}, products = [], categories = [], team = [], activity = [], org, catalogDrift = false, onClose }) {
+export default function OverviewPanel({ order = [], pages = {}, products = [], categories = [], team = [], activity = [], org, catalogDrift = false, onClose, embedded }) {
   // Page status counts mirror the Releases board exactly (status-field based), so the two views never
   // disagree. Live + In review + Draft sum to the total — no contradictory axes on one dashboard.
   const pg = order.reduce((m, slug) => {
@@ -27,11 +29,7 @@ export default function OverviewPanel({ order = [], pages = {}, products = [], c
   const pendingReview = (pg.review || 0) + (pg.approved || 0);
 
   return (
-    <aside className="gs-panel" role="dialog" aria-label="Studio home">
-      <div className="gs-panel-head">
-        <h3>Studio{org ? ' · ' + org.name : ''}</h3>
-        <button className="gs-x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+    <PanelFrame embedded={embedded} label={'Studio' + (org ? ' · ' + org.name : '')} name="Studio home" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-ov-tiles">
           <div className="gs-ov-tile"><b>{pg.published || 0}</b><span>Live pages</span></div>
@@ -62,6 +60,6 @@ export default function OverviewPanel({ order = [], pages = {}, products = [], c
           </ul>
         )}
       </div>
-    </aside>
+    </PanelFrame>
   );
 }
