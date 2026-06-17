@@ -56,6 +56,24 @@ test('buildSkuPlan: new product with a vendor → create', () => {
   assert.equal(p.creates[0].vendor, 'Acme');
 });
 
+test('buildSkuPlan: invalid billing_period → invalid (not a commit-time crash)', () => {
+  const p = buildSkuPlan([{ sku: 'NEW-9', offering_slug: 'ironpdf', edition_name: 'X', billing_period: 'yearly', list_price_usd: '100' }], skuCurrent());
+  assert.equal(p.counts.invalid, 1);
+  assert.ok(p.invalid.some(e => /billing_period/.test(e.reason)));
+});
+
+test('buildSkuPlan: new SKU whose derived slug collides with an existing offering → invalid (no silent graft)', () => {
+  // skuCurrent has offering slug 'ironpdf'; a blank offering_slug + name "IronPDF" derives 'ironpdf'
+  const p = buildSkuPlan([{ sku: 'NEW-10', offering_name: 'IronPDF', vendor: 'Iron', edition_name: 'X', list_price_usd: '100' }], skuCurrent());
+  assert.equal(p.counts.new, 0);
+  assert.ok(p.invalid.some(e => /matches an existing product/.test(e.reason)));
+});
+
+test('buildSkuPlan: undeerivable slug (no alphanumerics, no offering_slug) → invalid', () => {
+  const p = buildSkuPlan([{ sku: '@@@', offering_name: '###', vendor: 'Iron', list_price_usd: '100' }], skuCurrent());
+  assert.ok(p.invalid.some(e => /cannot derive a product slug/.test(e.reason)));
+});
+
 test('buildSkuPlan: unchanged SKU (same price, blank text) → unchanged', () => {
   const p = buildSkuPlan([{ sku: 'IRON-LITE', list_price_usd: '509.00' }], skuCurrent());
   assert.equal(p.counts.matching, 0);

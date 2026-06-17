@@ -211,3 +211,18 @@ one global rate (no stored GBP mirror — cleaner than the trigger approach, no 
 - **`BulkImport.jsx`** — export SKU CSV → edit → re-import with a **pre-commit preview** (records · update · new · invalid · duplicate · unchanged + diff table). Commit: resolve/auto-create parent offerings (+ auto-create vendor/category by name), bulk-insert new SKUs, chunked parallel price/text updates by SKU, recompute each touched offering's `from_price` (min USD), write an `import_jobs` audit row. New products land as **draft** (reviewable). Updates are USD-only — GBP recalculates from the live FX rate automatically.
 - **Caught + fixed a real bug:** products require a vendor (`chk_product_has_vendor`). New-product rows with no vendor are now flagged invalid in the preview (not a commit crash), and a named-but-unknown vendor is auto-created.
 - **Verified live:** round-trip of all 673 real SKUs → 0 false diffs (stable); price update + create-under-existing + create-new-product-with-auto-vendor + from_price/GBP recompute all correct; 14 bulk unit tests. Full suite 40 green.
+
+### Adversarial review + hardening — DONE
+Ran a 20-agent review workflow (4 dimensions → skeptic-verified each finding): 16 flagged, 14 confirmed, 2 correctly dismissed. All confirmed issues fixed:
+- **[HIGH] Cross-tenant IDOR** — a buyer could `UPDATE customer_users SET customer_id=<victim>` (policy pinned only auth_subject) and read another company's orders/PII. Fixed in **0009_account_guards.sql** with a BEFORE UPDATE trigger (`guard_customer_user_update`) that blocks identity/tenant column changes for self-service buyers (staff/service_role pass via `app_customer_id() IS NULL`). A column GRANT was rejected because staff share the `authenticated` role. **Verified live: reassign blocked, name/phone still editable.**
+- **[MED] `customers` over-broad self-update** — buyer could rewrite tier_id/stripe_customer_id/slug/etc. Fixed with `guard_customer_update` trigger (verified: stripe_customer_id overwrite blocked). 
+- **[MED] Unverified-email account re-link** — `ensure_customer_account` now requires `email_verified` before re-linking a seeded contact (defence-in-depth; also enable email confirmation in the Supabase dashboard).
+- **[MED] Admin list showed USD with a £ sign** — OfferingsManager now converts `from_price` USD→GBP at the live rate.
+- **[MED] SKU import silent graft** — a new SKU whose derived slug collided with an existing offering would graft onto it; now flagged invalid (attach requires explicit offering_slug). Empty-slug also flagged.
+- **[MED] `billing_period` unvalidated** — a typo aborted the whole bulk insert; now validated against the enum in the dry-run.
+- **[MED] Non-transactional apply** — mitigated by catching the common failures at dry-run (billing_period/slug). Full transactional import RPC is the recommended next hardening (orphans are draft + recoverable; staff-only).
+- **[LOW] Soft-deleted discount rules** still read by `getActiveRules` — added `.is('deleted_at', null)` + `remove()` clears `active`.
+- **[LOW] £0 round-to-zero line item** — checkout skips items that round below £1.
+- **[LOW] Stripe Customer create race** — added an idempotency key (`gs-cust-<id>`) in checkout + portal.
+
+Full suite **45 green**; build green; functions redeployed.

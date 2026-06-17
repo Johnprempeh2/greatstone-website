@@ -72,7 +72,7 @@ async function resolveBuyer(req: Request) {
     if (!cu || !cu.customer) return { customerId: null, customerUserId: null, stripeCustomerId: null, email: user.email ?? null };
     let stripeCustomerId = (cu.customer as any).stripe_customer_id as string | null;
     if (!stripeCustomerId) {
-      const sc = await stripe.customers.create({ email: cu.email || user.email || undefined, name: (cu.customer as any).name || undefined, metadata: { customer_id: (cu.customer as any).id } });
+      const sc = await stripe.customers.create({ email: cu.email || user.email || undefined, name: (cu.customer as any).name || undefined, metadata: { customer_id: (cu.customer as any).id } }, { idempotencyKey: 'gs-cust-' + (cu.customer as any).id });
       stripeCustomerId = sc.id;
       await supabase.from('customers').update({ stripe_customer_id: stripeCustomerId }).eq('id', (cu.customer as any).id);
     }
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       const v = (variants || []).find((x: any) => x.id === it.variantId);
       if (!v || v.base_price_minor == null || !v.offering || v.offering.status !== 'published') continue; // POA / unknown / unpublished → not card-purchasable
       const gbpBase = usdToGbpMinor(v.base_price_minor, rate); // stored USD → whole-pound GBP, same rounding the storefront showed
-      if (gbpBase == null) continue;
+      if (gbpBase == null || gbpBase <= 0) continue; // POA, or rounds below £1 → not card-purchasable (Stripe rejects £0 lines)
       const qty = Math.max(1, Math.min(100, Number(it.quantity) || 1));
       const unit = finalPrice(gbpBase, 'GBP', v.offering, rules, now); // discounts apply AFTER conversion, on the GBP figure
       subtotal += unit * qty;

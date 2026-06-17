@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { signIn, signOut, getSession, onAuth, getStaffUser, isStaff } from './adminAuth.mjs';
-import { fmtMoney } from '../lib/pricing.mjs';
+import { fmtMoney, usdToGbpMinor } from '../lib/pricing.mjs';
 import PricingRules from './PricingRules.jsx';
 import BulkImport from './BulkImport.jsx';
 import OrdersManager from './OrdersManager.jsx';
@@ -84,6 +84,9 @@ function OfferingsManager({ staff }) {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState(null);
+  const [rate, setRate] = useState(1.30); // from_price is stored USD; show GBP at the live rate
+
+  useEffect(() => { supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle().then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate); if (r > 0) setRate(r); }); }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -117,7 +120,7 @@ function OfferingsManager({ staff }) {
                     <td className="ca-name">{o.name}{o.featured && <span className="ca-star" title="Featured">★</span>}</td>
                     <td>{o.vendor?.name}</td>
                     <td>{o.type}</td>
-                    <td>{o.from_price_minor != null ? fmtMoney(o.from_price_minor) : 'POA'}</td>
+                    <td>{o.from_price_minor != null ? fmtMoney(usdToGbpMinor(o.from_price_minor, rate)) : 'POA'}</td>
                     <td><span className={'ca-status ca-' + o.status}>{o.status}</span></td>
                     <td><button className="gs-btn ghost sm" onClick={() => setEditing(o)}>Edit</button></td>
                   </tr>

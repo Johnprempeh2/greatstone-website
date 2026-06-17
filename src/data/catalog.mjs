@@ -37,7 +37,7 @@ export async function getFxRate(sb) {
 export async function getActiveRules(sb) {
   const { data, error } = await sb.from('pricing_rules')
     .select('*,pricing_rule_targets(vendor_id,category_id,offering_id,tier_id)')
-    .eq('active', true).eq('status', 'published');
+    .eq('active', true).eq('status', 'published').is('deleted_at', null); // mirror the edge fn; don't lean on RLS
   if (error) throw error;
   return (data || []).map(toRule);
 }

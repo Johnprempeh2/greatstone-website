@@ -4,9 +4,8 @@
 // Prices are USD; GBP recalculates automatically from the live FX rate (no GBP is ever written here).
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
-import { variantsToSkuCsv, csvToObjects, buildSkuPlan, changesToPatch } from './bulkCsv.mjs';
+import { variantsToSkuCsv, csvToObjects, buildSkuPlan, changesToPatch, slugify } from './bulkCsv.mjs';
 
-const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 const usd = (minor) => minor == null ? 'POA' : '$' + (minor / 100).toFixed(2);
 
 export default function BulkImport({ staff }) {

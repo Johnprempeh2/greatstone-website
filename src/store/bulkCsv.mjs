@@ -87,6 +87,8 @@ export function changesToPatch(changes) {
 export const SKU_COLS = ['sku', 'offering_slug', 'offering_name', 'vendor', 'category', 'edition_name', 'license_type', 'billing_period', 'list_price_usd', 'status', 'featured'];
 
 export const normalizeSku = (s) => String(s == null ? '' : s).trim();   // case-sensitive exact match
+export const slugify = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+const BILLING_PERIODS = ['one_time', 'perpetual', 'monthly', 'quarterly', 'annual', 'multi_year']; // matches the billing_period enum
 
 /** Parse a USD list price into integer minor units (cents). Blank → {minor:null} (POA/no-change).
  * Accepts '870', '870.00', '$1,299.99', '£1,299'. Non-numeric/negative → {error}. */
@@ -131,6 +133,8 @@ export function buildSkuPlan(objects, current) {
     if (price.error) { invalid.push({ rowIndex, sku, reason: price.error }); return; }
     const status = (row.status || '').trim();
     if (status && !STATUSES.includes(status)) { invalid.push({ rowIndex, sku, reason: 'invalid status "' + status + '"' }); return; }
+    const bp = (row.billing_period || '').trim();
+    if (bp && !BILLING_PERIODS.includes(bp)) { invalid.push({ rowIndex, sku, reason: 'invalid billing_period "' + bp + '" (use one of: ' + BILLING_PERIODS.join(', ') + ')' }); return; }
 
     const cur = variantsBySku.get(sku);
     if (cur) {                                                          // UPDATE existing SKU
@@ -147,14 +151,20 @@ export function buildSkuPlan(objects, current) {
     } else {                                                            // CREATE new SKU
       const offeringSlug = (row.offering_slug || '').trim() || null;
       const vendor = (row.vendor || '').trim() || null;
-      // A new product offering requires a vendor (chk_product_has_vendor). Attaching to an EXISTING
-      // offering doesn't. Flag the gap here so it shows in the preview rather than failing at commit.
-      const parentExists = offeringSlug && offeringsBySlug.has(offeringSlug);
+      const offeringName = (row.offering_name || '').trim() || null;
+      // The slug the importer will actually use (mirror of apply()): explicit, else derived from name/sku.
+      const effectiveSlug = offeringSlug || slugify(offeringName || sku);
+      if (!effectiveSlug) { invalid.push({ rowIndex, sku, reason: 'cannot derive a product slug — set offering_slug' }); return; }
+      const parentExists = offeringsBySlug.has(effectiveSlug);
+      // Attaching to an existing offering must be EXPLICIT (offering_slug). A derived slug that happens to
+      // collide with an unrelated product would silently graft onto it — reject so it shows in the preview.
+      if (!offeringSlug && parentExists) { invalid.push({ rowIndex, sku, reason: 'product name matches an existing product — set offering_slug to attach, or rename' }); return; }
+      // A new product offering requires a vendor (chk_product_has_vendor); attaching to an existing one doesn't.
       if (!parentExists && !vendor) { invalid.push({ rowIndex, sku, reason: 'new product needs a vendor' }); return; }
       creates.push({
         sku,
-        offeringSlug,
-        offeringName: (row.offering_name || '').trim() || null,
+        offeringSlug: effectiveSlug,
+        offeringName,
         vendor,
         category: (row.category || '').trim() || null,
         status: status || 'draft',

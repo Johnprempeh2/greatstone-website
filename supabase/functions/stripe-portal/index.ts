@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     let stripeCustomerId = (cu.customer as any).stripe_customer_id as string | null;
     if (!stripeCustomerId) {  // create on first portal visit (e.g. before any purchase)
-      const sc = await stripe.customers.create({ email: cu.email || user.email || undefined, name: (cu.customer as any).name || undefined, metadata: { customer_id: (cu.customer as any).id } });
+      const sc = await stripe.customers.create({ email: cu.email || user.email || undefined, name: (cu.customer as any).name || undefined, metadata: { customer_id: (cu.customer as any).id } }, { idempotencyKey: 'gs-cust-' + (cu.customer as any).id });
       stripeCustomerId = sc.id;
       await supabase.from('customers').update({ stripe_customer_id: stripeCustomerId }).eq('id', (cu.customer as any).id);
     }

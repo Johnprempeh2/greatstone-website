@@ -74,7 +74,7 @@ export default function PricingRules({ staff }) {
     setBusy(false); setForm(blankForm); flash('Discount rule saved' + (form.active ? ' and live.' : ' (inactive — toggle on when ready).')); loadRules();
   };
   const toggleActive = async (r) => { await supabase.from('pricing_rules').update({ active: !r.active }).eq('id', r.id); loadRules(); };
-  const remove = async (r) => { await supabase.from('pricing_rules').update({ deleted_at: new Date().toISOString() }).eq('id', r.id); loadRules(); flash('Rule removed.'); };
+  const remove = async (r) => { await supabase.from('pricing_rules').update({ deleted_at: new Date().toISOString(), active: false }).eq('id', r.id); loadRules(); flash('Rule removed.'); };
 
   const scopeLabel = (r) => r.scope_type === 'all' ? 'All products'
     : r.scope_type === 'vendor' ? `${r.pricing_rule_targets?.length || 0} vendor(s)`
