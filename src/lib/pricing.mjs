@@ -104,6 +104,17 @@ export function offeringFromPrice(offering, variants, rules, tier = null, now = 
   return best; // null if all POA
 }
 
+/** Convert a USD minor-unit price to GBP minor units at the given display rate ('$ per £'),
+ * rounded to the WHOLE POUND (Greatstone display rule). null for POA or an invalid rate.
+ * The single conversion truth — mirrored byte-for-byte in the stripe-checkout edge function.
+ * Example: usdToGbpMinor(100000, 1.32) === 75800  ($1000 → £758). */
+export function usdToGbpMinor(usdMinor, displayRate) {
+  if (usdMinor == null) return null;                                 // POA stays POA
+  const r = Number(displayRate);
+  if (!(r > 0)) return null;                                         // refuse a zero/invalid rate
+  return Math.round((usdMinor / 100) / r) * 100;                     // whole-pound, back to minor units
+}
+
 // ---- formatting (GBP; minor units) ----
 export const fmtMoney = (minor, currency = 'GBP') =>
   minor == null ? 'POA'

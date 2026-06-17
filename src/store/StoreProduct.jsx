@@ -83,7 +83,7 @@ export default function StoreProduct({ slug, onBack }) {
         <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p></section>}
 
       {!!related.length && <section className="sp-section"><h2>Related products</h2>
-        <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={'#product/' + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.from_price_minor != null ? 'from ' + fmtMoney(r.from_price_minor) : 'Request a quote'} ›</div></a>)}</div></section>}
+        <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={'#product/' + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.pricing && r.pricing.final != null ? 'from ' + fmtMoney(r.pricing.final) : 'Request a quote'} ›</div></a>)}</div></section>}
 
       <div className="sp-back"><button className="st-more" onClick={onBack}>← Back to the catalogue</button></div>
     </div>

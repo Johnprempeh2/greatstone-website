@@ -20,6 +20,14 @@ function toRule(r: any) {
   for (const x of r.pricing_rule_targets || []) { if (x.vendor_id) t.vendorIds.push(x.vendor_id); if (x.category_id) t.categoryIds.push(x.category_id); if (x.offering_id) t.offeringIds.push(x.offering_id); }
   return { scopeType: r.scope_type, targets: t, appliesToOfferingType: r.applies_to_offering_type, adjustmentType: r.adjustment_type, adjustmentValue: Number(r.adjustment_value || 0), adjustmentValuePct: Number(r.adjustment_value_pct || 0), currency: r.currency, audience: r.audience, startsAt: r.starts_at, endsAt: r.ends_at, priority: r.priority ?? 100, floorFraction: Number(r.floor_fraction || 0) };
 }
+// USD minor → GBP minor at the live rate, rounded to the whole pound. MUST match src/lib/pricing.mjs.
+function usdToGbpMinor(usdMinor: number | null, displayRate: number) {
+  if (usdMinor == null) return null;
+  const r = Number(displayRate);
+  if (!(r > 0)) return null;
+  return Math.round((usdMinor / 100) / r) * 100;
+}
+
 // single-winner, floor-clamped, never-negative (public audience only at checkout)
 function finalPrice(base: number, currency: string, off: any, rules: any[], now: Date) {
   let win: any = null;
@@ -60,14 +68,20 @@ Deno.serve(async (req) => {
     const { data: ruleRows } = await supabase.from('pricing_rules').select('*, pricing_rule_targets(vendor_id,category_id,offering_id,tier_id)').eq('active', true).eq('status', 'published').is('deleted_at', null);
     const rules = (ruleRows || []).map(toRule);
     const now = new Date();
+    // Prices are STORED in USD; recompute GBP from the live rate server-side so the customer is charged
+    // exactly the rounded GBP they saw — never a client-sent value.
+    const { data: fx } = await supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle();
+    const rate = Number(fx?.usd_to_gbp_display_rate);
+    if (!(rate > 0)) return json({ error: 'FX rate unavailable' }, 400);
 
     const line_items: any[] = []; let subtotal = 0;
     for (const it of items) {
       const v = (variants || []).find((x: any) => x.id === it.variantId);
       if (!v || v.base_price_minor == null || !v.offering || v.offering.status !== 'published') continue; // POA / unknown / unpublished → not card-purchasable
-      if ((v.currency || 'GBP') !== 'GBP') continue; // single-currency (GBP) checkout — never charge a non-GBP price as GBP
+      const gbpBase = usdToGbpMinor(v.base_price_minor, rate); // stored USD → whole-pound GBP, same rounding the storefront showed
+      if (gbpBase == null) continue;
       const qty = Math.max(1, Math.min(100, Number(it.quantity) || 1));
-      const unit = finalPrice(v.base_price_minor, v.currency || 'GBP', v.offering, rules, now);
+      const unit = finalPrice(gbpBase, 'GBP', v.offering, rules, now); // discounts apply AFTER conversion, on the GBP figure
       subtotal += unit * qty;
       line_items.push({ quantity: qty, price_data: { currency: 'gbp', unit_amount: unit, product_data: { name: `${v.offering.name} — ${v.name}`, metadata: { variant_id: v.id, vendor: v.offering.vendor?.name ?? '' } } } });
     }

@@ -7,6 +7,7 @@ import { fmtMoney } from '../lib/pricing.mjs';
 import PricingRules from './PricingRules.jsx';
 import BulkImport from './BulkImport.jsx';
 import OrdersManager from './OrdersManager.jsx';
+import FxRateEditor from './FxRateEditor.jsx';
 import './store.css';
 import './admin.css';
 
@@ -36,6 +37,7 @@ export default function CatalogueAdmin() {
         <div className="ca-tabs">
           <button className={tab === 'offerings' ? 'on' : ''} onClick={() => setTab('offerings')}>Offerings</button>
           <button className={tab === 'pricing' ? 'on' : ''} onClick={() => setTab('pricing')}>Pricing &amp; discounts</button>
+          <button className={tab === 'fx' ? 'on' : ''} onClick={() => setTab('fx')}>Currency (FX)</button>
           <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>Orders</button>
           <button className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
         </div>
@@ -45,7 +47,7 @@ export default function CatalogueAdmin() {
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
       </div>
-      {tab === 'pricing' ? <PricingRules staff={staff} /> : tab === 'orders' ? <OrdersManager staff={staff} /> : tab === 'bulk' ? <BulkImport staff={staff} /> : <OfferingsManager staff={staff} />}
+      {tab === 'pricing' ? <PricingRules staff={staff} /> : tab === 'fx' ? <FxRateEditor staff={staff} /> : tab === 'orders' ? <OrdersManager staff={staff} /> : tab === 'bulk' ? <BulkImport staff={staff} /> : <OfferingsManager staff={staff} />}
     </>
   );
 }

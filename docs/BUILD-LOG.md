@@ -177,3 +177,22 @@ This closes the planned commerce build. The money path (cart → secure checkout
 **2026-06-17.** `src/store/cart.test.mjs` (**10 tests**) covers the checkout math that was untested: add/dedup-and-accumulate (qty clamped to 100), ignore items with no variantId, currency default, `setQty` clamp+round to [1,100], remove/clear, `cartCount`/`cartSubtotalMinor` sums, localStorage persistence, and the two `startCheckout` guard rejections (empty basket / unconfigured). In-memory localStorage stub so the singleton loads under `node --test`. **Full suite: 33 pass / 0 fail** (16 pricing + 7 bulk + 10 cart).
 
 **Commerce build closed out.** Catalogue, pricing/mass-discounts, bulk CSV, storefront, cart, Stripe checkout, webhook→orders, orders admin — built, hardened, and tested/verified on the interim Supabase. Next steps are John's calls (end-customer accounts + order history, guest→customer linking, services type, then the test→live go-live checkpoint), not autonomous work — so the build loop winds down here.
+
+## COMMERCE-V2 (17 Jun 2026) — customer accounts + USD/FX + SKU bulk import
+Greenlit by John. Design pass run as a 3-agent workflow (FX / accounts / SKU), reconciled into one
+coherent architecture: **USD is the single stored source of truth; GBP is computed at read time** from
+one global rate (no stored GBP mirror — cleaner than the trigger approach, no drift, instant reprice).
+
+### Migrations 0005–0008 (applied + verified on live Supabase)
+- **0005_fx_settings** — `org_settings` (one editable USD→GBP rate/org, NUMERIC, 0.10–100 guardrail, seeded 1.30) + `fx_rate_history` audit + log trigger + RLS (org_isolation/staff_all/public_read). No reprice trigger needed (GBP is read-time).
+- **0006_relabel_usd** — relabel the 159 demo prices' currency to USD (numbers unchanged); 819 variants + 146 offerings now USD.
+- **0007_variant_sku_unique** — de-collide the feed's repeating SKUs (suffix -2/-3…) then partial `UNIQUE(org_id, sku)`. SKU is now the match key.
+- **0008_customer_accounts** — `customers.stripe_customer_id`; `orders.customer_email`+`customer_user_id`; `uq_customer_users_auth`; `app_customer_id()` SECURITY DEFINER; `ensure_customer_account()` provisioning RPC (idempotent, staff-collision guard); `customer_self` RLS on orders/order_items/customers/customer_users/customer_tiers.
+
+### FX core — DONE, verified
+- `pricing.mjs` `usdToGbpMinor(usd, rate)=round((usd/100)/rate)*100` (whole pound) + 2 tests. Engine unchanged otherwise — it receives the converted GBP.
+- `catalog.mjs` `getFxRate()` + converts USD→GBP on every read (cards, product, related); sort-by-price unchanged (GBP monotonic in USD).
+- `stripe-checkout` recomputes GBP server-side from stored USD + live rate (mirror helper) — charges exactly what the customer saw, ignores client prices.
+- `FxRateEditor.jsx` (new "Currency (FX)" admin tab) — edit the rate, live before→after preview, rate history.
+- `PricingRules.jsx` preview + `build-seed.mjs` updated for USD.
+- **Verified live:** $63→£48, $67→£52, currency GBP; checkout charged £1,338 for a $1,740 variant with a tampered client price ignored (+VAT); rate 1.30→1.50 repriced £392→£339 instantly with no reseed, audit-logged, reverted. Full suite 35 green; build green.

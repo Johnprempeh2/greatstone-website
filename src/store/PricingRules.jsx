@@ -3,7 +3,7 @@
 // then save it (writes pricing_rules + pricing_rule_targets via the authenticated client; staff_all RLS).
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase.mjs';
-import { effectivePrice, fmtMoney } from '../lib/pricing.mjs';
+import { effectivePrice, fmtMoney, usdToGbpMinor } from '../lib/pricing.mjs';
 
 const blankForm = { name: '', scopeType: 'all', targetIds: [], adjType: 'percentage', pct: '10', fixed: '', label: '', active: false };
 
@@ -12,6 +12,7 @@ export default function PricingRules({ staff }) {
   const [vendors, setVendors] = useState([]);
   const [categories, setCategories] = useState([]);
   const [catalogue, setCatalogue] = useState([]); // lightweight, for preview
+  const [rate, setRate] = useState(1.30);          // live USD→GBP rate so the preview shows real pounds
   const [form, setForm] = useState(blankForm);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -25,6 +26,7 @@ export default function PricingRules({ staff }) {
     supabase.from('vendors').select('id,slug,name').eq('status', 'published').order('name').then(({ data }) => setVendors(data || []));
     supabase.from('categories').select('id,slug,name').eq('status', 'published').order('name').then(({ data }) => setCategories(data || []));
     supabase.from('offerings').select('id,name,type,vendor_id,category_id,from_price_minor,from_price_currency').eq('status', 'published').limit(500).then(({ data }) => setCatalogue(data || []));
+    supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle().then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate); if (r > 0) setRate(r); });
   }, []);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
@@ -40,13 +42,14 @@ export default function PricingRules({ staff }) {
     };
     const hits = [];
     for (const o of catalogue) {
-      if (o.from_price_minor == null) continue;
+      const gbp = usdToGbpMinor(o.from_price_minor, rate); // stored USD → GBP at the live rate
+      if (gbp == null) continue;
       const ctx = { id: o.id, type: o.type, vendorId: o.vendor_id, categoryId: o.category_id };
-      const p = effectivePrice(ctx, { basePriceMinor: o.from_price_minor, currency: o.from_price_currency || 'GBP' }, [draft]);
+      const p = effectivePrice(ctx, { basePriceMinor: gbp, currency: 'GBP' }, [draft]);
       if (p.hasDiscount) hits.push({ name: o.name, base: p.base, final: p.final });
     }
     return hits;
-  }, [form, catalogue]);
+  }, [form, catalogue, rate]);
 
   const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const toggleTarget = (id) => setForm(f => ({ ...f, targetIds: f.targetIds.includes(id) ? f.targetIds.filter(x => x !== id) : [...f.targetIds, id] }));

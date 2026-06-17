@@ -1,7 +1,19 @@
 // Unit tests for the pricing engine. Run: node --test src/lib/pricing.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { effectivePrice, offeringFromPrice, ruleApplies, fmtMoney, fmtFrom } from './pricing.mjs';
+import { effectivePrice, offeringFromPrice, ruleApplies, fmtMoney, fmtFrom, usdToGbpMinor } from './pricing.mjs';
+
+test('usdToGbpMinor: whole-pound rounding matches the spec example', () => {
+  assert.equal(usdToGbpMinor(100000, 1.32), 75800);   // $1000 / 1.32 = 757.57 → £758
+  assert.equal(usdToGbpMinor(87000, 1.30), 66900);    // $870 / 1.30 = 669.23 → £669
+  assert.equal(usdToGbpMinor(87000, 1.50), 58000);    // $870 / 1.50 = 580 → £580
+});
+test('usdToGbpMinor: POA and invalid rate → null', () => {
+  assert.equal(usdToGbpMinor(null, 1.30), null);
+  assert.equal(usdToGbpMinor(100000, 0), null);
+  assert.equal(usdToGbpMinor(100000, -1), null);
+  assert.equal(usdToGbpMinor(100000, NaN), null);
+});
 
 const offering = { id: 'o1', type: 'product', vendorId: 'aspose', categoryId: 'cat-spreadsheets' };
 const variant = (basePriceMinor = 87000, currency = 'GBP') => ({ basePriceMinor, currency });
