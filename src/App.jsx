@@ -25,6 +25,7 @@ const LazyCatalogueAdmin = lazy(() => import('./store/CatalogueAdmin.jsx'));
 // routes pull it (and the cart singleton it depends on) into the bundle.
 const LazyStoreCart = lazy(() => import('./store/StoreCart.jsx'));
 const LazyAccount = lazy(() => import('./store/AccountDashboard.jsx')); // #account — customer self-serve portal
+const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -95,6 +96,11 @@ function readConfirmHash() {
 // #account → customer self-serve portal (sign in / orders / billing)
 function readAccountHash() {
   return /^#\/?account\b/i.test(typeof location !== 'undefined' ? location.hash : '');
+}
+// #invoice/<orderId> → printable VAT invoice
+function readInvoiceHash() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?invoice\/([\w-]+)/i);
+  return m ? m[1] : null;
 }
 const SITE_NAME = 'Greatstone International';
 function upsertMeta(attr, key, content) {
@@ -169,6 +175,7 @@ export default function App() {
   const [catalogueAdmin, setCatalogueAdmin] = useState(readCatalogueHash); // #catalogue → live catalogue admin (Supabase auth)
   const [confirmRoute, setConfirmRoute] = useState(readConfirmHash); // #order-confirmed → Stripe success page
   const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
+  const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const [cart, setCart] = useState(loadCart); // licence basket: { [productId]: qty } — persisted (non-sensitive)
@@ -201,7 +208,7 @@ export default function App() {
   // persist the licence basket (non-sensitive) so it survives a reload
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* ignore */ } }, [cart]);
   useEffect(() => {
-    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); };
+    const onHash = () => { setAdminRoute(isAdminRoute()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -224,7 +231,7 @@ export default function App() {
     if (mode !== 'view') return;
     const m = document.getElementById('gs-main');
     if (m && typeof m.focus === 'function') m.focus({ preventScroll: true });
-  }, [current, shopRoute, productSlug, accountRoute, catalogueAdmin, confirmRoute]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [current, shopRoute, productSlug, accountRoute, catalogueAdmin, confirmRoute, invoiceRoute]); // eslint-disable-line react-hooks/exhaustive-deps
   // in-app CTA links: "#book" → contact page; "#go/<slug>" → that page (so cross-page ghost CTAs
   // navigate within the SPA instead of hitting a dead .html href). preventDefault keeps the hash clean.
   useEffect(() => {
@@ -461,7 +468,7 @@ export default function App() {
   // (key={current}) gives the brief fade — see gsPageIn in index.css.
   function navigate(slug) {
     if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product
-    setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false);
+    setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false); setInvoiceRoute(null);
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
@@ -676,7 +683,7 @@ export default function App() {
       <SiteChrome />
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) render on a solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || catalogueAdmin || confirmRoute) && <Stage background={bg} />}
+      {!(accountRoute || catalogueAdmin || confirmRoute || invoiceRoute) && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
@@ -684,9 +691,11 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
-          {accountRoute
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
+        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
+          {invoiceRoute
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
+            : accountRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount /></Suspense>
             : confirmRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreCart confirmed /></Suspense>

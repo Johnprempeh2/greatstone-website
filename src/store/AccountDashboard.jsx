@@ -118,11 +118,17 @@ function Dashboard({ session, profile, onProfile }) {
   const loadOrders = useCallback(() => {
     setLoadingOrders(true); setOrdersErr(null);
     supabase.from('orders')
-      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor, variant_id)')
+      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, invoice_number, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor, variant_id)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(100)
       .then(({ data, error }) => { setOrdersErr(error || null); setOrders(data || []); setLoadingOrders(false); });
   }, []);
   useEffect(() => { loadOrders(); }, [loadOrders]);
+  const [quotes, setQuotes] = useState([]);
+  useEffect(() => {
+    supabase.from('quotes').select('id, reference, status, currency, indicative_total_minor, quoted_total_minor, created_at')
+      .is('deleted_at', null).order('created_at', { ascending: false }).limit(50)
+      .then(({ data }) => setQuotes(data || []));
+  }, []);
 
   const openPortal = async () => {
     setPortalBusy(true);
@@ -173,6 +179,25 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
       </div>
 
+      {!!quotes.length && <>
+        <div className="acct-ordhead"><h2>Quotes</h2></div>
+        <div className="ca-table-wrap">
+          <table className="ca-table acct-orders">
+            <thead><tr><th>Date</th><th>Reference</th><th>Indicative</th><th>Status</th></tr></thead>
+            <tbody>
+              {quotes.map(qt => (
+                <tr key={qt.id}>
+                  <td data-label="Date">{fmtDate(qt.created_at)}</td>
+                  <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
+                  <td data-label="Indicative" className="ca-amt">{qt.quoted_total_minor != null ? fmtMoney(qt.quoted_total_minor, qt.currency) : qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '—'}</td>
+                  <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{qt.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>}
+
       <div className="acct-ordhead">
         <h2>Order history</h2>
         {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
@@ -196,6 +221,7 @@ function Dashboard({ session, profile, onProfile }) {
                           <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                           <td className="ca-ord-actions acct-ord-cell-actions">
                             <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
+                            {o.invoice_number && <a className="gs-btn ghost sm" href={'#invoice/' + o.id} onClick={(e) => e.stopPropagation()}>Invoice</a>}
                             <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
                           </td>
                         </tr>

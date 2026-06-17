@@ -175,3 +175,18 @@
 }
 
 .ca-ord-refund { margin-left:.5em; font-size:.72rem; font-weight:700; color:var(--gs-danger,#ff6b6b); white-space:nowrap; }
+
+/* ── Quotes admin ────────────────────────────────────────────────────────── */
+.ca-q-new { background:rgba(255,200,0,.12); color:#ffc800; }
+.ca-q-contacted { background:rgba(78,205,196,.14); color:var(--gs-teal,#4ecdc4); }
+.ca-q-quoted { background:rgba(177,151,252,.16); color:var(--gs-purple,#b197fc); }
+.ca-q-won { background:rgba(200,255,0,.14); color:var(--gs-accent); }
+.ca-q-lost, .ca-q-cancelled { background:rgba(255,255,255,.08); color:var(--gs-text-faint); }
+.q-contact { font-size:.84rem; color:var(--gs-text-muted); padding:2px 0 8px; }
+.q-converted { font-size:.84rem; color:var(--gs-text-muted); border-top:1px solid var(--gs-border,rgba(200,255,0,.08)); padding-top:10px; margin-top:8px; }
+.q-terms { border-top:1px solid var(--gs-border,rgba(200,255,0,.08)); padding-top:12px; margin-top:8px; }
+.q-terms-row { display:flex; gap:12px; flex-wrap:wrap; }
+.q-terms-row label { display:flex; flex-direction:column; gap:4px; font-size:.72rem; font-weight:700; color:var(--gs-text-muted); }
+.q-terms-row input, .q-terms-row select { padding:.5em .7em; border-radius:8px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.14)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.86rem; }
+.q-terms-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+.gs-btn.primary.sm { padding:.5em 1em; font-size:.82rem; }

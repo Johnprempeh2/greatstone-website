@@ -15,7 +15,7 @@ export default function OrdersManager({ staff }) {
   const load = useCallback(() => {
     setLoading(true);
     supabase.from('orders')
-      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor)')
+      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, invoice_number, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(200)
@@ -61,6 +61,7 @@ export default function OrdersManager({ staff }) {
                       <td><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                       <td className="ca-ord-actions">
                         <button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>{expanded === o.id ? 'Hide' : 'View'}</button>
+                        {o.invoice_number && <a className="gs-btn ghost sm" href={'#invoice/' + o.id}>Invoice</a>}
                         {o.status === 'confirmed' && <button className="gs-btn ghost sm" onClick={() => markFulfilled(o.id)}>Mark fulfilled</button>}
                         {(o.status === 'confirmed' || o.status === 'fulfilled') && <button className="gs-btn ghost sm" onClick={() => cancelOrder(o.id)}>Cancel</button>}
                       </td>

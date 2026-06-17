@@ -73,3 +73,23 @@ export async function startCheckout({ email } = {}) {
   if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout. Please try again or request a quote.');
   return data.url;
 }
+
+// Submit the basket as a B2B quote request (pay on invoice). Server captures indicative prices + the
+// contact/PO details; staff finalise and invoice. Forwards the JWT so a signed-in buyer's quote links
+// to their account. Returns the human quote reference (Q-YYYY-NNNNNN).
+export async function requestQuote({ contact, poReference, message } = {}) {
+  const payload = getCart().map((x) => ({ variantId: x.variantId, quantity: x.qty }));
+  if (!payload.length) throw new Error('Your basket is empty.');
+  if (!SUPA_URL || !ANON) throw new Error('Store is not configured.');
+  let token = ANON;
+  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; if (data?.session?.access_token) token = data.session.access_token; } catch { /* guest */ }
+  const res = await fetch(SUPA_URL + '/functions/v1/request-quote', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ items: payload, contact, poReference, message }),
+  });
+  let data = {};
+  try { data = await res.json(); } catch { /* non-JSON error body */ }
+  if (!res.ok || !data.reference) throw new Error(data.error || 'Could not submit the quote request. Please try again.');
+  return data.reference;
+}
