@@ -98,7 +98,12 @@ John provided a Supabase **personal access token** (in `.env`, gitignored) and c
 - **Verified** (dev :5180): sign-in form renders on-brand; a wrong password is rejected with "Invalid login credentials" (proves the live Supabase Auth integration); console clean; production build green. **Per my security boundary I did not sign in as John** — the happy-path sign-in + live edit is his to test (his password); the write RLS itself is DB-verified (Phase 2a).
 - **John: to use the admin** — run the dev server and open `/#catalogue`, sign in with the Supabase admin account (john@greatstonesoftware.co.uk).
 
-### Phase 2c (next) — deeper offerings editor + pricing rules UI
+### Phase 2c — pricing/discount rules UI + bulk Excel round-trip (verified)
+- `PricingRules.jsx` (admin tab): create a discount rule (scope all/vendor/category, %/fixed, badge, live toggle) with a LIVE before→after preview over the real catalogue; saves `pricing_rules` (+ targets). List + toggle + soft-delete. **Preview verified vs live data: 20% off Aspose → 86 products, Aspose.Cells £870→£696.** Commit 51e6bf2.
+- `bulkCsv.mjs` (pure) + `bulkCsv.test.mjs` (**7 tests**): export offerings → CSV; parse (RFC4180-ish, quoted commas/newlines); dry-run diff by slug (editable: name/short_description/status/featured; validates status; flags unknown slugs). `BulkImport.jsx` (admin tab): export download, CSV upload → dry-run diff table → apply (writes via authenticated client). 
+- **All 23 tests pass** (16 pricing + 7 bulk); build green. Signed-in apply is John's to test.
+
+### Phase 2c — (was) deeper offerings editor + pricing rules UI
 Flesh out the offerings editor (variants/editions table with prices, specs, platforms/tags, vendor/category, media), add vendor/category managers, then the **pricing & mass-discount rules UI** (create rule → scope vendor/category/product/tier → %/fixed → schedule → live before/after preview, writing `pricing_rules`). Then bulk Excel import/export, AI-assist, and the Stripe checkout (edge functions, now deployable via the access token).
 
 ### (was) ⏸ PAUSED — Phase 1 (public storefront) complete; Phase 2+ needs admin auth

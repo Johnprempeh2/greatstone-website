@@ -76,3 +76,13 @@
 .pr-listh { font-size:1.2rem; font-weight:800; margin:30px 0 12px; }
 .pr-badge { font-size:.66rem; font-weight:700; padding:.2em .5em; border-radius:5px; background:var(--gs-accent-soft); color:var(--gs-accent); margin-left:.5em; }
 .pr-val { color:var(--gs-text); font-weight:800; } .pr-actions { display:flex; gap:6px; }
+
+/* bulk import/export */
+.bk-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+@media (max-width:820px){ .bk-grid { grid-template-columns:1fr; } }
+.bk-file { display:inline-flex; align-items:center; gap:.6em; padding:.7em 1.2em; border-radius:100px; border:1px dashed var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; font-size:.85rem; cursor:pointer; }
+.bk-file input { display:none; }
+.bk-diff { margin-top:24px; }
+.bk-errn { color:#ff9b9b; }
+.bk-errs { margin:0 0 14px; padding-left:20px; color:#ff9b9b; font-size:.84rem; }
+.bk-chg { font-size:.82rem; color:var(--gs-text-muted); } .bk-chg b { color:var(--gs-text); } .bk-chg s { color:var(--gs-text-faint); }
