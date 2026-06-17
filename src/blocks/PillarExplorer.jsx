@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
+import { Arrow } from './icons.jsx';
+import { safeHref } from '../lib/safe-url.js';
 // three.js is imported DYNAMICALLY inside the effect (not statically) so this editor-registered but
 // heavy 3D block never drags three.js onto the public critical path.
 
@@ -48,6 +50,7 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
             <span className="b-pillarx-n">{String(selected + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span>
             <h3>{active.title}</h3>
             <p>{active.text}</p>
+            {active.href ? <a className="b-pillarx-cta" href={safeHref(active.href)}>{active.linkLabel || 'Inspect this pillar'}<Arrow /></a> : null}
           </aside>
         </div>
 
@@ -76,6 +79,10 @@ export const css = `
 .b-pillarx-n{font-size:.72rem;font-weight:900;letter-spacing:.12em;color:var(--gs-accent);font-variant-numeric:tabular-nums}
 .b-pillarx-detail h3{margin-top:12px;font-size:clamp(1.3rem,2.2vw,1.7rem);font-weight:800;letter-spacing:-.01em}
 .b-pillarx-detail p{margin-top:12px;color:var(--gs-muted);font-size:1rem;line-height:1.65}
+.b-pillarx-cta{margin-top:18px;display:inline-flex;align-items:center;gap:7px;font-size:.82rem;font-weight:800;
+  letter-spacing:.04em;color:var(--gs-accent);text-decoration:none}
+.b-pillarx-cta svg{transition:transform .25s var(--gs-ease)}
+.b-pillarx-cta:hover svg{transform:translateX(4px)}
 .b-pillarx-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:clamp(20px,3vw,30px)}
 .b-pillarx-tab{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:100px;
   padding:8px 16px;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;color:var(--gs-muted);cursor:pointer;
@@ -84,7 +91,7 @@ export const css = `
 .b-pillarx-tab.is-active{color:#0e1611;background:var(--gs-accent);border-color:var(--gs-accent)}
 `;
 
-const P = (title, text) => ({ title, text });
+const P = (title, text, href = '', linkLabel = '') => ({ title, text, href, linkLabel });
 
 export const puck = {
   label: 'Pillar explorer (3D)',
@@ -96,8 +103,13 @@ export const puck = {
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     items: {
       type: 'array', label: 'Pillars (eight, in order)',
-      arrayFields: { title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
-      defaultItemProps: { title: 'Pillar', text: 'A short, honest read.' },
+      arrayFields: {
+        title: { type: 'text', label: 'Title' },
+        text: { type: 'textarea', label: 'Description' },
+        href: { type: 'text', label: 'Link (optional)' },        // a per-pillar link the panel shows as a CTA
+        linkLabel: { type: 'text', label: 'Link label' },
+      },
+      defaultItemProps: { title: 'Pillar', text: 'A short, honest read.', href: '', linkLabel: 'Inspect this pillar' },
       getItemSummary: (item) => item.title || 'Pillar',
     },
   },

@@ -36,6 +36,25 @@ const blk = (type, props) => {
   return { type, props: { id: rid(type), ...def, ...props } };
 };
 
+// The interactive method dashboard (3D pillar explorer) for the Method page. Each pillar carries an
+// editable link, rendered as a CTA in the detail panel (defaults to "book a deep dive"). Shared by the
+// fresh seed AND the load() migration, so existing saved sites also gain the dashboard.
+const PE_PILLAR = (title, text) => ({ title, text, href: '#book', linkLabel: 'Assess this pillar' });
+const methodPillarExplorerProps = () => ({
+  index: '', eyebrow: 'Explore the method', headline: 'Eight pillars,', highlight: 'in your hands.',
+  body: 'Move across the gems, or pick a pillar, to see what we read and where the next gain tends to hide. Each one links through to book its assessment.',
+  items: [
+    PE_PILLAR('People', 'We map the relationship networks inside your company — roles, capabilities, resourcing and sentiment — so change lands with the grain.'),
+    PE_PILLAR('Communication', 'How well you communicate your value, inside and out, and the strategies that leave any audience engaged.'),
+    PE_PILLAR('Innovation', 'How deliberately you innovate — whether you do it constantly, and whether your environment enables it.'),
+    PE_PILLAR('Data', 'Your data lifecycle end to end: structure, accuracy, consistency, reliability and validity.'),
+    PE_PILLAR('Customer', 'Who your customers really are and how to serve them better — intelligence, journeys and every touchpoint between.'),
+    PE_PILLAR('Competition', 'Whether you’re staying ahead of the field, and how we position you as a pioneer in it.'),
+    PE_PILLAR('Technology', 'How maturely you use your stack, where integrations fall short, and how resilient the infrastructure really is.'),
+    PE_PILLAR('Value', 'Aligning your values with value for the customer, so every transformation pays off both ways.'),
+  ],
+});
+
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
   return { title, background, status, seo: seo || { title: title + ' — Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
@@ -300,6 +319,7 @@ export function seedState() {
             { n: '02', title: 'We benchmark', text: 'Your scores set against your peers, so you can see the gap and the lead.' },
             { n: '03', title: 'We climb the lowest first', text: 'The biggest gain is hiding in your weakest pillar. That’s where we start.' },
           ]}),
+        blk('PillarExplorer', methodPillarExplorerProps()),
         blk('PillarCards', {}),
         blk('MaturityModel', {}),
         blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
@@ -386,6 +406,20 @@ function migrate(state) {
     if (p.approvedBy === undefined) p.approvedBy = null;
     if (p.published == null) p.published = p.data; // never strand a page with no renderable live content
   });
+  // method page (additive): ensure the interactive PillarExplorer dashboard is present — added after the
+  // page first shipped, so existing saved sites get it too. Inserted into BOTH the draft and the live
+  // projection (right after the FeatureGrid), idempotently.
+  {
+    const mp = state.pages && state.pages.method;
+    const lacks = (c) => Array.isArray(c) && !c.some((b) => b && b.type === 'PillarExplorer');
+    const withDash = (content) => {
+      const i = content.findIndex((b) => b && b.type === 'FeatureGrid');
+      const at = i >= 0 ? i + 1 : Math.min(1, content.length);
+      return [...content.slice(0, at), blk('PillarExplorer', methodPillarExplorerProps()), ...content.slice(at)];
+    };
+    if (mp && mp.data && lacks(mp.data.content)) mp.data.content = withDash(mp.data.content);
+    if (mp && mp.published && lacks(mp.published.content)) mp.published.content = withDash(mp.published.content);
+  }
   if (!state.settings) state.settings = { background: 'stone', siteName: 'Greatstone International' };
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
