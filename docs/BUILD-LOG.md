@@ -42,5 +42,12 @@ Newest entries at the bottom. One entry per item: what changed, files, verify re
 - **Verify:** 0001 + 0002 + seed apply clean with `ON_ERROR_STOP=1`; isolation test passes as `app_test` (NOSUPERUSER).
 - Committed.
 
-### Cycle 4 (next) — pricing engine (pure, fully testable) + typed data layer
-`src/lib/pricing.{js,test.js}` — the single `effectivePrice(offering, variant, rules, tier, now)` per spec Part 3: single-winner, floor-clamped, never-negative, never-on-POA, scheduled, scope match (all/vendor/category/offering/tier). Pure module + unit tests (real numbers: Aspose.Cells £870→£696, IronPDF £509, POA untouched) — runs with zero infra. Then `src/data/` Supabase client + typed catalogue queries (built against the contract; full e2e test needs Supabase/PostgREST → flag if Docker/cloud absent). Then Phase 1 storefront.
+### Cycle 4 — pricing/discount engine (pure, fully tested)
+- `src/lib/pricing.mjs` — the single `effectivePrice(offering, variant, rules, tier, now)` (+ `pickWinningRule`, `ruleApplies`, `ruleCut`, `offeringFromPrice`, `fmtMoney`, `fmtFrom`). Single-winner (no stacking), floor-clamped, never-negative, never-on-POA, scheduled, scoped (all/vendor/category/offering/tier), tier-gated audience, currency-safe fixed discounts. Pure — runs server-side (edge fn) and for the studio "preview as tier". Money in minor units.
+- `src/lib/pricing.test.mjs` — **16 unit tests, all pass** (`npm test` via node's built-in runner, no deps): Aspose.Cells £870→£696, fixed-discount currency match, POA untouched, floor clamp + never-negative, single-winner, tie-break by reduction, schedule windows, tier audience, type gating, draft/inactive ignored, scope matches, lowest-from-price, formatting.
+- Added `"test": "node --test"` to package.json.
+- **Verify:** `npm test` → 16/16 pass. Zero infra needed.
+- Committed.
+
+### Cycle 5 (next) — typed catalogue data layer
+`src/data/` — the Supabase client (`supabase.mjs`, reads VITE_SUPABASE_URL/ANON from env) + a typed catalogue data-access layer per `docs/api-contract.md` §2 (list offerings with pagination/filter[vendor,category,platform,type]/sort/search + computed price, get-by-slug with variants/specs, vendors, categories). Built against the contract; price computed via `pricing.mjs`. Full e2e needs Supabase/PostgREST → **here is the likely PAUSE point**: the storefront UI + auth + checkout need Docker (local Supabase) or a cloud project + Stripe keys. Will build the data-layer code, then pause and report if infra absent.
