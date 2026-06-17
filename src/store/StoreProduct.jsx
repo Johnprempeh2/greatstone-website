@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { getOffering, relatedOfferings } from '../data/catalog.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
+import { addItem } from './cart.mjs';
 import './store.css';
 
 const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || '/';
@@ -78,8 +79,8 @@ export default function StoreProduct({ slug, onBack }) {
 
       {!!(o.variants && o.variants.length) && <section className="sp-section"><h2>Editions &amp; licensing</h2>
         <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th>Edition</th><th>Licence</th><th>Price</th><th></th></tr></thead>
-          <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td><a className="sp-q" href="#book">Request quote ›</a></td></tr>)}</tbody></table></div>
-        <p className="sp-note">Prices exclude VAT and are indicative of the vendor's UK list. We confirm the exact figure, volume discounts and support terms in your quote.</p></section>}
+          <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td>{v.pricing && v.pricing.final != null ? <AddToBasket offering={o} variant={v} /> : <a className="sp-q" href="#book">Request quote ›</a>}</td></tr>)}</tbody></table></div>
+        <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p></section>}
 
       {!!related.length && <section className="sp-section"><h2>Related products</h2>
         <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={'#product/' + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.from_price_minor != null ? 'from ' + fmtMoney(r.from_price_minor) : 'Request a quote'} ›</div></a>)}</div></section>}
@@ -88,4 +89,15 @@ export default function StoreProduct({ slug, onBack }) {
     </div>
     </>
   );
+}
+
+// Adds a specific edition to the live basket. Brief "Added ✓" confirmation; the basket FAB badge
+// (StoreCart) also updates immediately since both read the same cart singleton.
+function AddToBasket({ offering, variant }) {
+  const [done, setDone] = useState(false);
+  const add = () => {
+    addItem({ variantId: variant.id, offeringSlug: offering.slug, name: offering.name, edition: variant.name, vendor: offering.vendor && offering.vendor.name, unitMinor: variant.pricing.final, currency: variant.pricing.currency || 'GBP' });
+    setDone(true); setTimeout(() => setDone(false), 1600);
+  };
+  return <button className={'sp-add' + (done ? ' done' : '')} onClick={add} aria-label={'Add ' + offering.name + ' ' + variant.name + ' to basket'}>{done ? 'Added ✓' : 'Add to basket'}</button>;
 }

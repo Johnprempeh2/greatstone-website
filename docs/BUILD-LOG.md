@@ -121,3 +121,20 @@ Secure DB writes need **Supabase Auth** (an admin signs in; RLS gates writes by 
 2. Create an **admin user** (Dashboard → Authentication → Users → Add user) — I can't create accounts; I'll wire admin sign-in to it and gate catalogue/pricing writes to it.
 
 Then: admin sign-in (Supabase Auth) → offerings manager → pricing/discount rules → bulk Excel → AI-assist → Stripe checkout, all against the live backend, verified each step.
+
+### Phase 3 — Stripe checkout (cart → secure session → confirmation) · LIVE backend, verified
+**2026-06-17.** The customer-facing buy path, end-to-end, against the real cloud Supabase + Stripe **test** keys.
+
+- **`supabase/functions/stripe-checkout/index.ts`** (Deno edge function) — **deployed** to project `melnjvwmayjukpyngolv` via the access token (`functions deploy --no-verify-jwt`, no Docker needed). SECURE: takes `[{variantId, quantity}]` only; **never trusts client prices** — looks up `base_price_minor` by id (service_role), re-applies active `pricing_rules` server-side (a compact mirror of `src/lib/pricing.mjs`: single-winner, floor-clamped, public-audience-only), adds 20% UK VAT as a line item, creates the Checkout Session. POA / unpublished / unknown variants are dropped (quote-only). `STRIPE_SECRET_KEY` + `VAT_RATE` set as function secrets (not in the bundle).
+- **`src/store/cart.mjs`** — live-store basket singleton (separate from the legacy prototype `CartContext`, which keys by old ids + never pays). localStorage-backed, `useSyncExternalStore` hook, `startCheckout()` posts the basket to the edge function and returns the Stripe URL.
+- **`src/store/StoreCart.jsx`** — floating basket FAB + badge, slide-over drawer (line items, qty steppers, remove, subtotal/VAT/total, optional receipt email, "Checkout securely" → redirect), and the post-payment confirmation panel (clears the basket, shows the session ref). On-brand (lime/charcoal/Montserrat, reduced-motion safe).
+- **`StoreProduct.jsx`** — "Add to basket" per priced edition; POA editions keep "Request a quote".
+- **`App.jsx`** — lazy `LazyStoreCart`; new `#order-confirmed[?session=…]` route → confirmation; FAB mounted on `#shop`/`#product`.
+- **`store.css`** — basket FAB/drawer/confirmation styles.
+
+**Verified (dev :5180, real Supabase + Stripe test):**
+- Server-side curl: variant £290 ×2 → +VAT → real `cs_test_…` session created.
+- Browser: added 2 IronPDF editions → drawer math exact (£1,798 sub / £359.60 VAT / £2,157.60 total); `startCheckout()` from the page origin returned `https://checkout.stripe.com/c/pay/cs_test_…` (CORS + gateway + anon key all good).
+- `#order-confirmed` renders the on-brand "Payment received" panel and clears the basket. **Zero console errors. Production build green** (cart 2.55KB / StoreCart 4.91KB chunks, both lazy — public bundle unchanged).
+
+**Not yet (next):** Stripe **webhook → `orders`** edge function (persist the order on `checkout.session.completed`; create the Stripe webhook endpoint + signing secret via the Stripe API). Then guest/account linking on orders, and an orders view in the admin. **Checkpoint for John before any go-live:** swap test keys → live, and confirm fulfilment (licence-key issuing) process.
