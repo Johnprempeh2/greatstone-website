@@ -235,7 +235,12 @@ export default function App() {
   useEffect(() => {
     if (mode === 'edit' && authed && canEdit && /^#\/?admin/i.test(typeof location !== 'undefined' ? location.hash : '')) {
       const want = '#admin/editor/' + current;
-      if (location.hash !== want) location.hash = want;
+      if (location.hash !== want) {
+        // entering the editor → push (one Back returns to the console); hopping pages mid-edit →
+        // replace, so editing five pages doesn't cost five Backs to leave.
+        if (/^#\/?admin\/editor\//i.test(location.hash)) history.replaceState(null, '', want);
+        else location.hash = want;
+      }
     }
   }, [mode, current, authed, canEdit]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {

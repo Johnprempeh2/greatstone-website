@@ -20,7 +20,12 @@ test('leading-slash variant is tolerated', () => {
 
 test('section is normalised to lowercase (so the URL and rail never desync on case)', () => {
   assert.deepEqual(parseAdminHash('#admin/PAGES'), { section: 'pages', slug: null });
-  assert.deepEqual(parseAdminHash('#admin/Seo/Method'), { section: 'seo', slug: 'method' });
+  assert.deepEqual(parseAdminHash('#admin/Seo'), { section: 'seo', slug: null });
+});
+
+test('slug is preserved verbatim (page identifiers can be mixed-case)', () => {
+  assert.deepEqual(parseAdminHash('#admin/editor/CaseStudy'), { section: 'editor', slug: 'CaseStudy' });
+  assert.deepEqual(parseAdminHash('#admin/Seo/Method'), { section: 'seo', slug: 'Method' });
 });
 
 test('non-admin and malformed hashes return null (fall through to the public site)', () => {

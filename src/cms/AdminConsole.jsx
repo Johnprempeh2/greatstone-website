@@ -176,7 +176,8 @@ export default function AdminConsole({
               </div>
             )}
           </header>
-          {perPage && <p className="gs-sr-only" aria-live="polite">Now editing {pages[current]?.title || current}</p>}
+          {/* always-mounted live region (a conditionally-mounted one can miss the first announcement) */}
+          <p className="gs-sr-only" aria-live="polite">{perPage ? 'Now editing ' + (pages[current]?.title || current) : ''}</p>
           <div className="ac-body">{bodyContent}</div>
         </main>
       </div>

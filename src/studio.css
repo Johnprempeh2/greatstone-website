@@ -577,8 +577,7 @@
 /* Overview tiles become shortcuts into their destination in the console (plain readout in the editor sidebar) */
 button.gs-ov-tile{cursor:pointer;font:inherit;width:100%;transition:border-color .15s,background .15s}
 button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,255,.05)}
-/* visually-hidden live region for screen-reader announcements (e.g. page-picker changes) */
-.gs-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* (.gs-sr-only — the visually-hidden live-region utility — is defined once above) */
 
 @media (max-width:860px){
   .ac-shell{grid-template-columns:1fr}

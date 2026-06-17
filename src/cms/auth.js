@@ -40,7 +40,9 @@ export function can(user, action) {
   return !!(r && r.can[action]);
 }
 
-// hash-based admin entry: #admin shows sign-in; everything else is the public site
+// hash-based admin entry: #admin shows sign-in; everything else is the public site. Defers to the
+// single parser in adminRoute.mjs so there is exactly one admin-route matcher (no divergent regex).
+import { parseAdminHash } from './adminRoute.mjs';
 export function isAdminRoute() {
-  return typeof location !== 'undefined' && /(^|#)\/?admin/i.test(location.hash);
+  return typeof location !== 'undefined' && !!parseAdminHash(location.hash);
 }
