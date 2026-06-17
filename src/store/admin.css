@@ -173,3 +173,5 @@
   .gs-btn.sm { padding:.7em 1.1em; }
   .ca-link { padding:.4em .2em; display:inline-block; }
 }
+
+.ca-ord-refund { margin-left:.5em; font-size:.72rem; font-weight:700; color:var(--gs-danger,#ff6b6b); white-space:nowrap; }

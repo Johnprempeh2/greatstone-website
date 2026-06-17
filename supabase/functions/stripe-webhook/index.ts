@@ -31,6 +31,8 @@ Deno.serve(async (req) => {
       case 'checkout.session.async_payment_failed':
       case 'checkout.session.expired':
         console.warn('checkout', event.type, (event.data.object as Stripe.Checkout.Session).id); break;
+      case 'charge.refunded':                          // refund issued in Stripe → reconcile back to the order
+        await recordRefund(event.data.object as Stripe.Charge); break;
       default: break; // ignore other event types
     }
   } catch (e) {
@@ -93,7 +95,8 @@ async function recordOrder(session: Stripe.Checkout.Session) {
   // idempotent: ON CONFLICT (org_id, reference) DO NOTHING → null row means it was already recorded
   const { data: inserted, error } = await supabase.from('orders')
     .upsert({ org_id: orgId, reference: sessionId, status: 'confirmed', currency, subtotal_minor: subtotal, total_minor: totalMinor, placed_at: new Date().toISOString(),
-              customer_id: customerId, customer_user_id: customerUserId, customer_email: customerEmail },
+              customer_id: customerId, customer_user_id: customerUserId, customer_email: customerEmail,
+              stripe_payment_intent: (typeof session.payment_intent === 'string' ? session.payment_intent : (session.payment_intent as any)?.id) ?? null },
       { onConflict: 'org_id,reference', ignoreDuplicates: true })
     .select('id').maybeSingle();
   if (error) throw error;
@@ -105,6 +108,22 @@ async function recordOrder(session: Stripe.Checkout.Session) {
   console.log('recorded order', inserted.id, '· items', items.length, '· total', totalMinor, currency, '· email', customerEmail || '(none)');
   // Confirmation email — only on a NEW order (retries return early above, so never doubles). Never throws.
   await sendOrderEmail({ to: customerEmail, reference: sessionId, items, subtotal, total: totalMinor, currency }).catch((e) => console.error('order email failed:', (e as Error).message));
+}
+
+// Reconcile a Stripe refund (issued in the dashboard) back to the order. Maps charge → order via the
+// stored payment intent. Idempotent: refunded_minor is set to the absolute amount_refunded, so a
+// re-delivered event is a no-op. Full refund → status 'refunded'; partial leaves status, records amount.
+async function recordRefund(charge: Stripe.Charge) {
+  const pi = typeof charge.payment_intent === 'string' ? charge.payment_intent : (charge.payment_intent as any)?.id;
+  if (!pi) { console.log('refund: charge has no payment_intent'); return; }
+  const refunded = charge.amount_refunded ?? 0;
+  const { data: order } = await supabase.from('orders').select('id, total_minor').eq('stripe_payment_intent', pi).is('deleted_at', null).maybeSingle();
+  if (!order) { console.log('refund: no matching order for payment_intent', pi); return; }
+  const patch: any = { refunded_minor: refunded };
+  if (refunded >= order.total_minor && refunded > 0) patch.status = 'refunded';
+  const { error } = await supabase.from('orders').update(patch).eq('id', order.id);
+  if (error) throw error;
+  console.log('refund recorded · order', order.id, '· refunded', refunded, refunded >= order.total_minor ? '(full)' : '(partial)');
 }
 
 // Transactional-ish order confirmation via Resend (HTTP). No-ops cleanly if RESEND_API_KEY is unset,

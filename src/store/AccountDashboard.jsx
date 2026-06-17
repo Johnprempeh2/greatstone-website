@@ -118,7 +118,7 @@ function Dashboard({ session, profile, onProfile }) {
   const loadOrders = useCallback(() => {
     setLoadingOrders(true); setOrdersErr(null);
     supabase.from('orders')
-      .select('id, reference, status, currency, subtotal_minor, total_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor, variant_id)')
+      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor, variant_id)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(100)
       .then(({ data, error }) => { setOrdersErr(error || null); setOrders(data || []); setLoadingOrders(false); });
   }, []);
@@ -193,7 +193,7 @@ function Dashboard({ session, profile, onProfile }) {
                           <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code></td>
                           <td data-label="Items">{(o.order_items || []).length}</td>
                           <td data-label="Total" className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
-                          <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span></td>
+                          <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                           <td className="ca-ord-actions acct-ord-cell-actions">
                             <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
                             <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
@@ -211,6 +211,7 @@ function Dashboard({ session, profile, onProfile }) {
                               ))}
                               <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
                               <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
+                              {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
                               <div className="acct-keys">Licence keys are issued by our team and appear here once delivered.</div>
                             </div>
                           </td></tr>

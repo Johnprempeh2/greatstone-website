@@ -15,7 +15,7 @@ export default function OrdersManager({ staff }) {
   const load = useCallback(() => {
     setLoading(true);
     supabase.from('orders')
-      .select('id, reference, status, currency, subtotal_minor, total_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor)')
+      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(200)
@@ -28,6 +28,12 @@ export default function OrdersManager({ staff }) {
     const { error } = await supabase.from('orders').update({ status: 'fulfilled' }).eq('id', id);
     if (error) { flash('Could not update — ' + error.message); return; }
     flash('Order marked fulfilled.'); load();
+  };
+  const cancelOrder = async (id) => {
+    if (typeof confirm === 'function' && !confirm('Mark this order cancelled? This records the status only — issue any refund in Stripe (it will reconcile back here automatically).')) return;
+    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
+    if (error) { flash('Could not update — ' + error.message); return; }
+    flash('Order cancelled.'); load();
   };
 
   const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
@@ -52,10 +58,11 @@ export default function OrdersManager({ staff }) {
                       <td className="ca-name"><code className="ca-ref">{(o.reference || '').replace(/^cs_(test|live)_/, '').slice(0, 14)}…</code></td>
                       <td>{(o.order_items || []).length}</td>
                       <td className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
-                      <td><span className={'ca-status ca-ord-' + o.status}>{o.status}</span></td>
+                      <td><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                       <td className="ca-ord-actions">
                         <button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>{expanded === o.id ? 'Hide' : 'View'}</button>
                         {o.status === 'confirmed' && <button className="gs-btn ghost sm" onClick={() => markFulfilled(o.id)}>Mark fulfilled</button>}
+                        {(o.status === 'confirmed' || o.status === 'fulfilled') && <button className="gs-btn ghost sm" onClick={() => cancelOrder(o.id)}>Cancel</button>}
                       </td>
                     </tr>
                     {expanded === o.id && (
@@ -71,6 +78,7 @@ export default function OrdersManager({ staff }) {
                           {!(o.order_items || []).length && <div className="ca-muted" style={{ padding: 8 }}>No line items recorded.</div>}
                           <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
                           <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
+                          {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
                           <div className="ca-ord-ref">Stripe session: <code>{o.reference}</code></div>
                         </div>
                       </td></tr>
