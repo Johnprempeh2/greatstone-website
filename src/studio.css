@@ -545,6 +545,7 @@
 .ac-supadot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;margin-top:5px;background:var(--gs-faint)}
 .ac-supachip.is-on .ac-supadot{background:var(--gs-success)}
 .ac-supachip.is-warn .ac-supadot{background:var(--gs-warning)}
+.ac-railhint{margin:0 8px 4px;font-size:.68rem;line-height:1.4;color:var(--gs-faint)}
 .ac-railitems{list-style:none;display:flex;flex-direction:column;gap:1px}
 .ac-railitem{width:100%;display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:9px;cursor:pointer;
   font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:600;color:var(--gs-muted);text-align:left;

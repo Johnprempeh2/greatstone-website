@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { Search } from './blocks/icons.jsx';
-import { ROLES } from './cms/auth.js';
+import { ROLE_LABEL } from './cms/staffRoles.mjs';
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 // the view-mode 3D switcher flips to its light-surface variant when a light scene (tide family) sits
@@ -109,7 +109,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                 <button className="gs-btn primary" onClick={onEdit}>Edit page</button>
               </>
             )}
-            <span className="gs-userchip" title={user.email}>{user.name} · {ROLES[user.role] ? ROLES[user.role].label : user.role}</span>
+            <span className="gs-userchip" title={user.email}>{user.name} · {ROLE_LABEL[user.role] || user.role}</span>
             <button className="gs-signout" onClick={onSignOut} title="Sign out">Sign out</button>
           </>
         ) : null}

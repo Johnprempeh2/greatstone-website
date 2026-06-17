@@ -8,7 +8,7 @@
 // Per-page surfaces (SEO, 3D background, version history, activity) carry an explicit page picker so
 // they never silently act on a hidden "current" page. Commerce items deep-link to the Supabase
 // catalogue (#catalogue/<tab>), which has its own sign-in — the rail shows that connection's status.
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 // adminAuth (and its @supabase/supabase-js dependency) is imported DYNAMICALLY inside the session
 // effect below, so the heavy Supabase client stays out of the eager bundle the public homepage loads.
 
@@ -60,26 +60,6 @@ export default function AdminConsole({
   const nav = buildNav(attention);
   const groupOf = (id) => nav.find((g) => g.items.some((it) => it.id === id))?.group || 'Content';
 
-  // Supabase catalogue session status — the Commerce destinations sign in separately. Loaded lazily
-  // (dynamic import) so the public bundle never pays for the Supabase client.
-  const [supa, setSupa] = useState({ state: 'checking' });
-  useEffect(() => {
-    let alive = true;
-    import('../store/adminAuth.mjs').then(async ({ getSession, getStaffUser }) => {
-      const s = await getSession();
-      if (!alive) return;
-      if (!s) { setSupa({ state: 'out' }); return; }
-      const staff = await getStaffUser().catch(() => null);
-      if (alive) setSupa({ state: staff ? 'in' : 'notstaff', email: s.user?.email, role: staff?.role });
-    }).catch(() => { if (alive) setSupa({ state: 'out' }); });
-    return () => { alive = false; };
-  }, []);
-  const supaChip = supa.state === 'in' ? `Signed in as ${supa.email} · ${supa.role}`
-    : supa.state === 'notstaff' ? 'Signed in, but not a staff account'
-    : supa.state === 'out' ? 'Separate sign-in — opens when you pick a destination'
-    : 'Checking…';
-  const supaDot = supa.state === 'in' ? 'is-on' : supa.state === 'notstaff' ? 'is-warn' : '';
-
   // move focus to the main region when you SWITCH destinations (not on first mount — landing on
   // #admin should leave focus at the top so the skip link + rail come first, mirroring the public side)
   const mainRef = useRef(null);
@@ -126,11 +106,7 @@ export default function AdminConsole({
           {nav.map((g) => (
             <div className="ac-railgroup" key={g.group}>
               <div className="ac-raillabel">{g.group}{g.note ? <span className="ac-railnote"> · {g.note}</span> : null}</div>
-              {g.commerce && (
-                <div className={'ac-supachip ' + supaDot} title="Catalogue sign-in status">
-                  <span className="ac-supadot" aria-hidden="true" />{supaChip}
-                </div>
-              )}
+              {g.commerce && <div className="ac-railhint">Same sign-in · opens the live catalogue &amp; store</div>}
               <ul className="ac-railitems">
                 {g.items.map((it) => {
                   const locked = it.need && !allowed(it.need);

@@ -5,7 +5,7 @@
 // `badges` shows an attention count on a tab (e.g. pages needing release action, pending invites).
 const GROUPS = [
   { label: '', tabs: [['home', 'Home']] },
-  { label: 'Content', tabs: [['pages', 'Pages'], ['products', 'Products']] },
+  { label: 'Content', tabs: [['pages', 'Pages']] },
   { label: 'Page', tabs: [['background', 'Background'], ['seo', 'SEO'], ['history', 'History']] },
   { label: 'Governance', tabs: [['releases', 'Releases'], ['activity', 'Activity']] },
   { label: 'Org', tabs: [['team', 'Team']] },

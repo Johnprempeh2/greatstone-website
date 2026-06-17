@@ -42,7 +42,8 @@ import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
-import { currentUser, can, ROLES, signOut as authSignOut } from './cms/auth.js';
+import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
+import { staffCan, ROLE_LABEL } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
 import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
@@ -171,7 +172,9 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [puckKey, setPuckKey] = useState(0);        // bump to force Puck to re-read data
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
-  const [user, setUser] = useState(currentUser);    // prototype session (real auth is server-side)
+  const [user, setUser] = useState(null);           // signed-in Supabase staff { email, name, role } (null = public)
+  const [authChecked, setAuthChecked] = useState(false); // resolved the Supabase session yet (lazy, on #admin)
+  const authSubRef = useRef(null);                  // the onAuthStateChange subscription (set up once)
   const [adminNav, setAdminNav] = useState(readAdminHash); // { section, slug } | null — the one admin-route source
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
@@ -193,9 +196,9 @@ export default function App() {
   const adminSlug = adminNav ? adminNav.slug : null;
   const editorReturn = useRef('overview');             // the console section to return to from ◇ Hub
   const authed = !!user;
-  const canEdit = can(user, 'edit');
-  const canPublish = can(user, 'publish');
-  const canManageUsers = can(user, 'manageUsers'); // admins only — gates the Team panel
+  const canEdit = staffCan(user, 'edit');
+  const canPublish = staffCan(user, 'publish');
+  const canManageUsers = staffCan(user, 'manageUsers'); // owners/admins — gates the Team panel
 
   // persist() now trims old version snapshots and retries before failing; a failure here means the
   // store is genuinely full, so raise a STICKY banner (not a 2.6s toast) — those edits won't survive a reload
@@ -248,6 +251,27 @@ export default function App() {
       setCurrent(adminNav.slug);
     }
   }, [adminNav]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Resolve the signed-in Greatstone staff user LAZILY — only once you enter the admin area (#admin),
+  // so a public visitor never loads the Supabase client (it stays out of the eager bundle). The same
+  // account controls the console, the editor and the catalogue. We resolve once, then stay subscribed
+  // to sign-in/out so the chrome updates live.
+  useEffect(() => {
+    if (!onAdmin || authChecked) return;
+    let alive = true;
+    import('./store/adminAuth.mjs').then(async (m) => {
+      const resolve = async () => {
+        const s = await m.getSession().catch(() => null);
+        if (!s) { if (alive) setUser(null); return; }
+        const staff = await m.getStaffUser().catch(() => null);
+        if (alive) setUser(staff && m.isStaff(staff) ? { email: staff.email, name: staff.full_name || staff.email, role: staff.role } : null);
+      };
+      await resolve();
+      if (alive) setAuthChecked(true);
+      if (!authSubRef.current) { const { data } = m.onAuth(() => resolve()); authSubRef.current = data ? data.subscription : null; }
+    }).catch(() => { if (alive) setAuthChecked(true); });
+    return () => { alive = false; };
+  }, [onAdmin, authChecked]);
+  useEffect(() => () => { if (authSubRef.current) try { authSubRef.current.unsubscribe(); } catch { /* noop */ } }, []);
   // keep the document <head> in sync — a product detail route gets its own per-product SEO
   // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
@@ -307,9 +331,9 @@ export default function App() {
       return !eq(p.data, p.published) || p.status === 'review' || p.status === 'approved';
     }).length;
     const pendingInvites = canManageUsers ? state.team.filter((m) => m.status === 'invited').length : 0;
-    const catalogue = catalogHasDrift(state) ? 1 : 0; // unpublished catalogue changes need a publish
-    return { releases: pagesNeedingAction, team: pendingInvites, products: catalogue, total: pagesNeedingAction + pendingInvites + catalogue };
-  }, [state.order, state.pages, state.team, state.products, state.categories, state.publishedProducts, state.publishedCategories, canManageUsers]);
+    // (the live product catalogue lives in Supabase and is managed under Commerce, not here)
+    return { releases: pagesNeedingAction, team: pendingInvites, total: pagesNeedingAction + pendingInvites };
+  }, [state.order, state.pages, state.team, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -523,7 +547,7 @@ export default function App() {
   }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
-  function doSignOut() { authSignOut(); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
+  function doSignOut() { import('./store/adminAuth.mjs').then((m) => m.signOut()).catch(() => {}); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
   // restore/discard snapshot the current draft first, so neither is unrecoverable
   async function restoreVersion(v) {
     const ok = await ask({ kind: 'confirm', title: 'Restore snapshot', message: 'Restore this snapshot into the draft? Your current draft is snapshotted first, so nothing is lost.', confirmLabel: 'Restore' });
@@ -584,7 +608,6 @@ export default function App() {
         cmds.push({ id: 'home', group: 'Editor', label: 'Open Studio home', run: () => setPanel('home') });
         cmds.push({ id: 'pages', group: 'Editor', label: 'Open all pages', run: () => setPanel('pages') });
         cmds.push({ id: 'releases', group: 'Editor', label: 'Open release board', run: () => setPanel('releases') });
-        cmds.push({ id: 'products', group: 'Editor', label: 'Open products catalogue', run: () => setPanel('products') });
         if (canManageUsers) cmds.push({ id: 'team', group: 'Editor', label: 'Open team & roles', run: () => setPanel('team') });
         if (canManageUsers) cmds.push({ id: 'export', group: 'Admin', label: 'Export site JSON (for the dev team)', run: exportSiteJson });
         cmds.push({ id: 'bgpanel', group: 'Editor', label: 'Open 3D background editor', run: () => setPanel('background') });
@@ -630,13 +653,24 @@ export default function App() {
     );
   }
 
+  // resolving the Supabase session on first #admin entry — avoid flashing the sign-in over a live session
+  if (onAdmin && !authChecked) {
+    return (
+      <div className="is-view">
+        {styleTag}
+        <Stage background={bg} />
+        <div className="gs-editor-loading" role="status" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Checking your session…</div>
+      </div>
+    );
+  }
+
   if (onAdmin && !authed) {
     return (
       <div className="is-view">
         {styleTag}
         <Stage background={bg} />
         <SignIn
-          onAuthed={(u) => { setUser(u); flash(can(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
+          onAuthed={(u) => { setUser(u); setAuthChecked(true); flash(staffCan(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
           onCancel={() => { location.hash = ''; setAdminNav(null); }} />
       </div>
     );
@@ -650,7 +684,7 @@ export default function App() {
     const section = adminSection || 'overview';
     const onConsoleClose = () => {}; // embedded panels have no close ×; the rail/Back owns navigation
     const consolePanels = {
-      overview: <OverviewPanel embedded onSection={goAdmin} order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} />,
+      overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
       pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} />,
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
@@ -693,11 +727,10 @@ export default function App() {
         {overlays}
         <Stage background={bg} previewP={previewP} />
         {panel && (
-          <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team, products: studioAttention.products }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
-            home: <OverviewPanel embedded order={state.order} pages={state.pages} products={state.products} categories={state.categories} team={state.team} activity={state.activity} org={state.org} catalogDrift={catalogDrift} onClose={() => setPanel(null)} />,
+          <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
+            home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
-            products: <ProductsPanel products={state.products} categories={state.categories} drift={catalogDrift} canPublish={canPublish} onPublish={publishCatalogue} onDiscard={discardCatalogue} onCreate={createProduct} onUpdate={editProduct} onRemove={deleteProduct} onCreateCategory={createCategory} onUpdateCategory={editCategory} onRemoveCategory={deleteCategory} onClose={() => setPanel(null)} embedded />,
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
@@ -747,7 +780,7 @@ export default function App() {
                 <button className="gs-btn ghost sm" onClick={() => setCmdOpen(true)} aria-label="Command palette" title="Command palette (⌘K)">⌘K</button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* account + publish */}
-                <span className="gs-userchip" title={user.email + ' · ' + ROLES[user.role].label}>{user.name}</span>
+                <span className="gs-userchip" title={user.email + ' · ' + (ROLE_LABEL[user.role] || user.role)}>{user.name}</span>
                 <button className="gs-signout" onClick={doSignOut} title="Sign out">Sign out</button>
                 {canPublish ? children : (
                   <button className="gs-btn primary" onClick={() => setStatus('review')} disabled={page.status !== 'draft'}
