@@ -216,3 +216,6 @@
   .gs-header, .sc-fab, .inv-actions, .gs-skip, .gs-toast { display:none !important; }
   .inv-wrap { padding:0; max-width:none; } .inv-sheet { box-shadow:none; border-radius:0; }
 }
+
+/* cart drawer must be opaque (the --gs-bg-card token resolves transparent in this stylesheet) */
+.sc-drawer { background:#21251f; }
