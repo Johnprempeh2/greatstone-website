@@ -86,3 +86,24 @@
 .bk-errn { color:#ff9b9b; }
 .bk-errs { margin:0 0 14px; padding-left:20px; color:#ff9b9b; font-size:.84rem; }
 .bk-chg { font-size:.82rem; color:var(--gs-text-muted); } .bk-chg b { color:var(--gs-text); } .bk-chg s { color:var(--gs-text-faint); }
+
+/* ── Orders ──────────────────────────────────────────────────────────────── */
+.ca-amt { font-variant-numeric:tabular-nums; font-weight:700; }
+.ca-ref { font-size:.78rem; color:var(--gs-text-muted); background:rgba(255,255,255,.05); padding:.15em .45em; border-radius:5px; }
+.ca-ord-actions { display:flex; gap:6px; justify-content:flex-end; }
+.ca-ord-confirmed { background:rgba(78,205,196,.14); color:var(--gs-teal,#4ecdc4); }
+.ca-ord-fulfilled { background:rgba(200,255,0,.12); color:var(--gs-accent); }
+.ca-ord-cancelled { background:rgba(255,255,255,.08); color:var(--gs-text-faint); }
+.ca-ord-refunded { background:rgba(255,107,107,.14); color:var(--gs-danger,#ff6b6b); }
+.ca-ord-pending { background:rgba(255,200,0,.12); color:#ffc800; }
+.ca-ord-detailrow > td { background:rgba(255,255,255,.02); }
+.ca-ord-items { display:flex; flex-direction:column; gap:6px; padding:6px 4px; }
+.ca-ord-item { display:grid; grid-template-columns:1fr auto auto; gap:14px; align-items:center; font-size:.86rem; }
+.ca-ord-item .oi-name { color:var(--gs-text); }
+.ca-ord-item .oi-qty { color:var(--gs-text-faint); font-variant-numeric:tabular-nums; }
+.ca-ord-item .oi-amt { font-variant-numeric:tabular-nums; min-width:90px; text-align:right; }
+.ca-ord-tot { display:flex; justify-content:space-between; font-size:.86rem; color:var(--gs-text-muted); border-top:1px solid var(--gs-border,rgba(200,255,0,.08)); padding-top:8px; margin-top:4px; }
+.ca-ord-tot span:last-child { font-variant-numeric:tabular-nums; }
+.ca-ord-tot.total { font-weight:800; color:var(--gs-text); border-top:none; padding-top:2px; }
+.ca-ord-ref { font-size:.74rem; color:var(--gs-text-faint); margin-top:8px; }
+.ca-ord-ref code { color:var(--gs-text-muted); }

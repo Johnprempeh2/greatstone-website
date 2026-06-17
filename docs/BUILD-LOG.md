@@ -151,3 +151,13 @@ Then: admin sign-in (Supabase Auth) → offerings manager → pricing/discount r
 - **Idempotency**: re-delivering the same event → still exactly 1 order (no duplicate). Test order then deleted (orders table clean: 0 rows).
 
 **Payment loop is now complete and solid.** Remaining: an **orders view in the catalogue admin** (list orders + items), guest→customer linking, and fulfilment status (`confirmed`→`fulfilled`). **Go-live checkpoint for John:** swap Stripe test keys → live keys + re-register the webhook against live, and confirm the licence-key issuing process.
+
+### Phase 3c — orders view in the catalogue admin · verified (build + data + RLS)
+**2026-06-17.** A fourth admin tab so staff can see what's sold.
+
+- **`src/store/OrdersManager.jsx`** + **`#catalogue` "Orders" tab** — lists orders (most recent first) with date, short reference, item count, total, status badge; expand a row for line items + ex/inc-VAT totals + the Stripe session ref. One write action: **Mark fulfilled** (confirmed → fulfilled, for when licence keys are issued). Refund/cancel are recorded-only (money moves in Stripe, not here). Reads/writes via the authenticated client; `staff_all` RLS gates to the signed-in staff org.
+- **`admin.css`** — order status colours (confirmed=teal, fulfilled=lime, cancelled=grey, refunded=coral) + detail-row styling.
+
+**Verified:** production build green (CatalogueAdmin 24.5KB). Against the live DB with a seeded order: the component's exact embedded select returns the order + items (no column/embed typos); **anon read returns 0 rows** (orders are staff-only, not public); the fulfilled update works; seed cleaned up (table back to 0). Per the security boundary I did not sign in as John — the in-admin visual is his to test (same as the pricing/bulk tabs); query validity + RLS are DB-verified.
+
+**Commerce platform status:** catalogue + pricing/discounts + bulk CSV + storefront + cart + Stripe checkout + webhook→orders + orders admin — all built and live-verified on the interim Supabase. Open follow-ups: guest→customer record linking, customer accounts/order history on the storefront, services (type='service') when data exists. **Go-live checkpoint for John unchanged:** test→live Stripe keys + webhook re-register + licence-key fulfilment process.
