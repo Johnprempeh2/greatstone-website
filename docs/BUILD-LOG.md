@@ -138,3 +138,16 @@ Then: admin sign-in (Supabase Auth) → offerings manager → pricing/discount r
 - `#order-confirmed` renders the on-brand "Payment received" panel and clears the basket. **Zero console errors. Production build green** (cart 2.55KB / StoreCart 4.91KB chunks, both lazy — public bundle unchanged).
 
 **Not yet (next):** Stripe **webhook → `orders`** edge function (persist the order on `checkout.session.completed`; create the Stripe webhook endpoint + signing secret via the Stripe API). Then guest/account linking on orders, and an orders view in the admin. **Checkpoint for John before any go-live:** swap test keys → live, and confirm fulfilment (licence-key issuing) process.
+
+### Phase 3b — Stripe webhook → orders (persistence) · LIVE backend, verified
+**2026-06-17.** Completes the payment loop: cart → checkout → Stripe → **webhook → order row**.
+
+- **`supabase/functions/stripe-webhook/index.ts`** (Deno edge function) — **deployed** to `melnjvwmayjukpyngolv`. Verifies the Stripe signature with `constructEventAsync` (Deno SubtleCrypto). On `checkout.session.completed`: lists line items (`expand price.product`), reads the `variant_id` stamped on each product's metadata by `stripe-checkout`, resolves real offering/variant names + `org_id` from the DB (service_role — never trusts Stripe's product names), and writes `orders` + `order_items`. **Idempotent**: `orders.reference = session.id` with `UNIQUE(org_id, reference)` + `ON CONFLICT DO NOTHING`, so a re-delivered event is a no-op. Non-variant lines (VAT) count toward `total_minor` but aren't order items. Always 200s except on bad signatures (400) — no retry storms.
+- **Stripe webhook endpoint** registered via the Stripe API (test mode) → `we_1TjHsp…`, event `checkout.session.completed`. Signing secret captured, set as the `STRIPE_WEBHOOK_SECRET` function secret + persisted to `.env` (gitignored). `APP_ORG_ID` set as a fallback org.
+
+**Verified (real Supabase + Stripe test):**
+- Unsigned POST → **400** ("missing signature") — verification path live.
+- Real test session (£290 variant) → crafted + HMAC-signed `checkout.session.completed` → **200**; order written: `status=confirmed`, `subtotal_minor=29000`, `total_minor=34800` (£290 + £58 VAT), 1 order item with DB-resolved names (Aspose TeX for C++ · Developer, C++).
+- **Idempotency**: re-delivering the same event → still exactly 1 order (no duplicate). Test order then deleted (orders table clean: 0 rows).
+
+**Payment loop is now complete and solid.** Remaining: an **orders view in the catalogue admin** (list orders + items), guest→customer linking, and fulfilment status (`confirmed`→`fulfilled`). **Go-live checkpoint for John:** swap Stripe test keys → live keys + re-register the webhook against live, and confirm the licence-key issuing process.
