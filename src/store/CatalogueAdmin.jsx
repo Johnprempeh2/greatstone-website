@@ -4,12 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { signIn, signOut, getSession, onAuth, getStaffUser, isStaff } from './adminAuth.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
+import PricingRules from './PricingRules.jsx';
 import './store.css';
 import './admin.css';
 
 export default function CatalogueAdmin() {
   const [session, setSession] = useState(undefined); // undefined = checking
   const [staff, setStaff] = useState(null);
+  const [tab, setTab] = useState('offerings');
   useEffect(() => {
     getSession().then(s => setSession(s || null));
     const { data } = onAuth(s => setSession(s || null));
@@ -26,7 +28,22 @@ export default function CatalogueAdmin() {
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
-  return <OfferingsManager staff={staff} />;
+  return (
+    <>
+      <div className="ca-tabbar">
+        <div className="ca-tabs">
+          <button className={tab === 'offerings' ? 'on' : ''} onClick={() => setTab('offerings')}>Offerings</button>
+          <button className={tab === 'pricing' ? 'on' : ''} onClick={() => setTab('pricing')}>Pricing &amp; discounts</button>
+        </div>
+        <div className="ca-tabtools">
+          <span className="ca-who">{staff.full_name || staff.email} · {staff.role}</span>
+          <a className="gs-btn ghost sm" href="#shop">View store</a>
+          <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
+        </div>
+      </div>
+      {tab === 'pricing' ? <PricingRules staff={staff} /> : <OfferingsManager staff={staff} />}
+    </>
+  );
 }
 
 function SignInGate() {
@@ -78,11 +95,6 @@ function OfferingsManager({ staff }) {
     <div className="ca-wrap">
       <header className="ca-head">
         <div><span className="st-kicker">Catalogue admin</span><h1>Offerings</h1></div>
-        <div className="ca-headtools">
-          <span className="ca-who">{staff.full_name || staff.email} · {staff.role}</span>
-          <a className="gs-btn ghost sm" href="#shop">View store</a>
-          <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
-        </div>
       </header>
       <div className="ca-toolbar">
         <input className="ca-search" placeholder="Search offerings…" value={q} onChange={e => setQ(e.target.value)} />
