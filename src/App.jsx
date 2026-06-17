@@ -19,6 +19,7 @@ const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
 // Live storefront — reads Supabase (@supabase/supabase-js); lazy so the public bundle stays lean
 // (the chunk arrives only on the #shop route).
 const LazyStoreBrowse = lazy(() => import('./store/StoreBrowse.jsx'));
+const LazyStoreProduct = lazy(() => import('./store/StoreProduct.jsx'));
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -662,7 +663,7 @@ export default function App() {
           {shopRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
-            ? <ProductDetail product={activeProduct} categoryName={activeProductCat ? activeProductCat.name : ''} related={relatedProducts} onBack={exitProduct} />
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>
             : <PublicRender config={config} data={page.published || page.data} />}
         </EditorBoundary>
       </main>
