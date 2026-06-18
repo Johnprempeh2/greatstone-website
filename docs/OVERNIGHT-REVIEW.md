@@ -99,3 +99,13 @@ A fresh lens (purchase / quote-to-invoice / editor-publish journeys + content vo
 - [ ] **Publish has no confirm + no "nothing to publish" guard.** ⌘S/Publish always fires; discard/restore/delete all confirm. *Proposed:* a no-op guard ("Already live, nothing to publish") + a "Publish this page?" confirm inside publish(). Adds a modal to every publish — a UX call.
 - [ ] **No true "unpublish / take offline".** "Back to draft" leaves the page live (renderer serves `published || data`). A real take-offline needs a renderer change + confirm. Product decision.
 - [ ] Guest quotes are invisible to an account later created with the same email (no email-based backfill on signup). Server/RPC change; low volume.
+
+### Cycle 14 — editor-workflow (#1+#2) + NAA call updates (18 Jun review w/ Naa)
+**Shipped + deployed:**
+- [x] **Editor #1:** editing a live page now reopens draft→review→publish (saveDraft) instead of dead-ending non-admin editors.
+- [x] **Editor #2:** new/duplicated pages are drafts (published:null), hidden from the public nav/footer/render until published (home kept, editors see all); migrate backfill tightened so a reload can't re-publish a draft; discardDraft guarded for never-published pages. Verified: seeded pages still public (no regression), injected draft hidden.
+- [x] **NAA:** storefront renamed "Shop"→"Products" (nav + title); redundant 'products' CMS page delisted from the nav (seed + migrate, page row kept); account Profile lost its redundant read-only Email field, "change email" note moved under Security.
+
+**NAA items queued (need a working preview / John's input):** tab the account settings (Profile/Security/Billing); pillars "Explore"→"Grid" + remove the section's bottom text; pillar-icon tooltips (the competition/gear icon read unclear); reduce homepage sparkles; 3D background editor — add a Back button, reposition the controller so the effect shows, fix the publish flow; "storm→summit" homepage 3D transition. **John to confirm:** which daily Animation-Lab animation to approve into presets; exact storm→summit scope.
+
+**NAA external / not mine:** Stripe → the Greatstone account (currently John's/sandbox); link admin Team to Superbiz; share the sprint codebase with Ben + extract backend; Charlie's (Ben Mensah) written page-copy changes.
