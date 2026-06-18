@@ -7,7 +7,7 @@ export async function signIn(email, password) {
   if (!supabase) return { error: { message: 'Catalogue backend not configured.' } };
   return supabase.auth.signInWithPassword({ email: (email || '').trim(), password });
 }
-export async function signOut() { if (supabase) await supabase.auth.signOut(); }
+export async function signOut() { if (supabase) { const { error } = await supabase.auth.signOut(); if (error) throw error; } }
 export async function getSession() { if (!supabase) return null; const { data } = await supabase.auth.getSession(); return data.session; }
 export function onAuth(cb) { if (!supabase) return { data: { subscription: { unsubscribe() {} } } }; return supabase.auth.onAuthStateChange((_e, s) => cb(s)); }
 

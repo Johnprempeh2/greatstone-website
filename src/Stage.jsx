@@ -39,6 +39,11 @@ export default function Stage({ background = 'stone', previewP = null }) {
       const host = document.createElement('div'); host.className = 'gs-layer'; root.appendChild(host);
       return { kind: s.kind, host, handle: MOUNTERS[s.kind] ? MOUNTERS[s.kind](host) : null };
     });
+    // Honour prefers-reduced-motion continuously, not just at mount: apply() re-activates layers by
+    // opacity on every scroll/resize/visibility change, so the freeze has to be re-checked each time
+    // or a single scroll un-freezes it.
+    const mql = (typeof matchMedia !== 'undefined') ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    const reduce = () => !!(mql && mql.matches);
     const apply = () => {
       const c = cfgRef.current; const n = layers.length;
       const sc = scrollContext();
@@ -63,8 +68,9 @@ export default function Stage({ background = 'stone', previewP = null }) {
         const bandEnd = k < n - 1 ? ats[k] : 1;
         const localClimb = Math.min(Math.max((p - bandStart) / Math.max(bandEnd - bandStart, 1e-4), 0), 1);
         if (l.handle && l.handle.setClimb) l.handle.setClimb(localClimb);
-        // pause a fully faded-out scene's WebGL loop — single-scene pages stay opaque (op=1) so unaffected
-        if (l.handle && l.handle.setActive) l.handle.setActive(op > 0.01);
+        // pause a fully faded-out scene's WebGL loop — single-scene pages stay opaque (op=1) so unaffected.
+        // reduced-motion users never get an active loop (one static frame), whatever the opacity.
+        if (l.handle && l.handle.setActive) l.handle.setActive(!reduce() && op > 0.01);
       });
     };
     applyRef.current = apply;
@@ -78,10 +84,12 @@ export default function Stage({ background = 'stone', previewP = null }) {
     // Pause every layer's WebGL loop when the tab is hidden (battery/CPU); re-apply on return.
     const onVis = () => { if (document.hidden) layers.forEach((l) => { if (l.handle && l.handle.setActive) l.handle.setActive(false); }); else apply(); };
     document.addEventListener('visibilitychange', onVis);
-    apply();
-    // Honour reduced motion: render one frame then freeze (the scrim makes a static frame indistinguishable).
-    if (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) layers.forEach((l) => { if (l.handle && l.handle.setActive) l.handle.setActive(false); });
+    apply(); // apply() now freezes the loops when reduced motion is on (the scrim makes a static frame indistinguishable)
+    // re-apply if the user toggles reduced motion mid-session
+    const onReduceChange = () => apply();
+    if (mql && mql.addEventListener) mql.addEventListener('change', onReduceChange);
     return () => {
+      if (mql && mql.removeEventListener) mql.removeEventListener('change', onReduceChange);
       document.removeEventListener('visibilitychange', onVis);
       removeEventListener('scroll', onScroll, { capture: true }); removeEventListener('resize', onScroll);
       applyRef.current = null;

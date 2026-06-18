@@ -10,6 +10,7 @@ export default class EditorBoundary extends React.Component {
   static getDerivedStateFromError(error) { return { error }; }
   componentDidCatch(error, info) { reportError(error, { where: 'EditorBoundary', label: this.props.label, componentStack: info && info.componentStack }); }
   recover = () => { this.setState({ error: null }); if (this.props.onReset) this.props.onReset(); };
+  goHome = () => { this.setState({ error: null }); if (this.props.onHome) this.props.onHome(); };
 
   render() {
     if (!this.state.error) return this.props.children;
@@ -21,6 +22,7 @@ export default class EditorBoundary extends React.Component {
           <code className="gs-boundary-msg">{String((this.state.error && this.state.error.message) || this.state.error)}</code>
           <div className="gs-boundary-actions">
             {this.props.onReset && <button className="gs-btn primary" onClick={this.recover}>{this.props.resetLabel || 'Recover'}</button>}
+            {this.props.onHome && <button className="gs-btn primary" onClick={this.goHome}>Go to home</button>}
             <button className="gs-btn ghost" onClick={() => location.reload()}>Reload</button>
           </div>
         </div>

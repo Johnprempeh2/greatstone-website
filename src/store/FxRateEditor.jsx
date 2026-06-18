@@ -9,6 +9,7 @@ const MIN_RATE = 0.10, MAX_RATE = 100;
 
 export default function FxRateEditor({ staff }) {
   const [current, setCurrent] = useState(null);   // saved rate
+  const [rowVersion, setRowVersion] = useState(null); // optimistic-lock token captured at load
   const [draft, setDraft] = useState('');          // editable string
   const [sample, setSample] = useState([]);        // ~10 representative products (USD from-price)
   const [history, setHistory] = useState([]);
@@ -17,8 +18,8 @@ export default function FxRateEditor({ staff }) {
   const [toast, setToast] = useState(null);
 
   const load = useCallback(() => {
-    supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle()
-      .then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate) || 1.30; setCurrent(r); setDraft(String(r)); });
+    supabase.from('org_settings').select('usd_to_gbp_display_rate, row_version').limit(1).maybeSingle()
+      .then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate) || 1.30; setCurrent(r); setDraft(String(r)); setRowVersion(data?.row_version ?? null); });
     supabase.from('offerings').select('id,name,from_price_minor').eq('status', 'published')
       .not('from_price_minor', 'is', null).order('from_price_minor', { ascending: false }).limit(10)
       .then(({ data }) => setSample(data || []));
@@ -40,12 +41,26 @@ export default function FxRateEditor({ staff }) {
 
   const save = async () => {
     if (!valid) { setErr(`Rate must be between ${MIN_RATE} and ${MAX_RATE}.`); return; }
+    // Money-critical: this reprices every published price at once. Confirm the before→after first.
+    const ok = typeof confirm !== 'function' || confirm(
+      `Reprice the whole catalogue?\n\nUSD to GBP rate ${current} → ${draftRate}. Every published price changes immediately. To revert, set the rate back.`
+    );
+    if (!ok) return;
     setBusy(true); setErr(null);
-    const { error } = await supabase.from('org_settings')
+    // Optimistic lock: only write if nobody else has changed the rate since we loaded (row_version is
+    // bumped by the touch_row trigger on every update). A 0-row result means a concurrent save won.
+    let q = supabase.from('org_settings')
       .update({ usd_to_gbp_display_rate: draftRate, updated_by: staff.id })
       .eq('org_id', staff.org_id);
+    if (rowVersion != null) q = q.eq('row_version', rowVersion);
+    const { data, error } = await q.select('row_version');
     setBusy(false);
     if (error) { setErr(error.message); return; }
+    if (rowVersion != null && (!data || data.length === 0)) {
+      setErr('Someone else changed the rate since you opened this page. Reloading the latest; review and save again if you still want your change.');
+      load();
+      return;
+    }
     flash('Rate saved. The whole catalogue now prices at ' + draftRate + '.');
     load();
   };

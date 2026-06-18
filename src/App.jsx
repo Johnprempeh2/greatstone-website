@@ -565,7 +565,13 @@ export default function App() {
   }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
   function goSignIn() { location.hash = 'admin'; }
-  function doSignOut() { import('./store/adminAuth.mjs').then((m) => m.signOut()).catch(() => {}); setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.'); }
+  // await the sign-out before clearing local state: if it fails, keep the signed-in chrome so it can't
+  // desync from a still-active Supabase/catalogue session (the user stays signed in, with a clear notice).
+  async function doSignOut() {
+    try { const m = await import('./store/adminAuth.mjs'); await m.signOut(); }
+    catch { flash('Sign-out failed. Check your connection and try again.'); return; }
+    setUser(null); setMode('view'); setPanel(null); flash('Signed out. The site is read-only again.');
+  }
   // restore/discard snapshot the current draft first, so neither is unrecoverable
   async function restoreVersion(v) {
     const ok = await ask({ kind: 'confirm', title: 'Restore snapshot', message: 'Restore this snapshot into the draft? Your current draft is snapshotted first, so nothing is lost.', confirmLabel: 'Restore' });
@@ -851,7 +857,7 @@ export default function App() {
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
       <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page">
+        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !invoiceRoute && !confirmRoute ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : accountRoute

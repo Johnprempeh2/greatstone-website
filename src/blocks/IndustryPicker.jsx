@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { useReveal } from './reveal.js';
 
 // IndustryPicker: industries.html's signature interaction. A role=tablist of sector chips with a
@@ -28,6 +28,9 @@ export function IndustryPicker({
   const ref = useReveal([industries.length]);
   const n = industries.length;
   const [active, setActive] = useState(0);     // chip + underline track this immediately
+  const uid = useId();                         // stable id base for the tab ↔ tabpanel wiring
+  const tabId = (i) => uid + 'tab' + i;
+  const panelId = uid + 'panel';
   const [display, setDisplay] = useState(0);   // the specific card lags by the crossfade
   const [swapping, setSwapping] = useState(false);
   const [bar, setBar] = useState({ left: 0, width: 0 });
@@ -86,6 +89,7 @@ export function IndustryPicker({
               key={i}
               ref={(el) => { chips.current[i] = el; }}
               className="b-ind-chip" type="button" role="tab"
+              id={tabId(i)} aria-controls={panelId}
               aria-selected={i === active ? 'true' : 'false'}
               tabIndex={i === active ? 0 : -1}
               onClick={() => select(i)}
@@ -98,7 +102,8 @@ export function IndustryPicker({
 
         <h2 className="b-ind-headline" aria-live="polite"><Headline text={cur.headline} /></h2>
 
-        <div className={'b-ind-swap' + (swapping ? ' is-swapping' : '')}>
+        <div className={'b-ind-swap' + (swapping ? ' is-swapping' : '')}
+          id={panelId} role="tabpanel" aria-labelledby={tabId(active)} tabIndex={0}>
           <div className="grid cols-2">
 
             <article className="card b-ind-card universal">
