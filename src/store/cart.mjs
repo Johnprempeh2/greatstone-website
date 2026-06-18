@@ -71,7 +71,9 @@ export async function startCheckout({ email } = {}) {
   let data = {};
   try { data = await res.json(); } catch { /* non-JSON error body */ }
   if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout. Please try again or request a quote.');
-  return data.url;
+  // dropped: items the server couldn't sell by card (POA / unpublished / sub-£1). Empty/absent on older
+  // server builds, so callers degrade to the previous "just redirect" behaviour.
+  return { url: data.url, dropped: Array.isArray(data.dropped) ? data.dropped : [] };
 }
 
 // Submit the basket as a B2B quote request (pay on invoice). Server captures indicative prices + the

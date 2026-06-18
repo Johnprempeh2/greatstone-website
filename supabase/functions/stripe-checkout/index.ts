@@ -102,19 +102,23 @@ Deno.serve(async (req) => {
     const rate = Number(fx?.usd_to_gbp_display_rate);
     if (!(rate > 0)) return json({ error: 'FX rate unavailable' }, 400);
 
-    const line_items: any[] = []; let subtotal = 0;
+    const line_items: any[] = []; let subtotal = 0; const dropped: any[] = [];
     for (const it of items) {
       const v = (variants || []).find((x: any) => x.id === it.variantId);
-      if (!v || v.base_price_minor == null || !v.offering || v.offering.status !== 'published') continue; // POA / unknown / unpublished → not card-purchasable
+      if (!v || v.base_price_minor == null || !v.offering || v.offering.status !== 'published') { // POA / unknown / unpublished → not card-purchasable
+        dropped.push({ variantId: it.variantId, name: v?.offering?.name ? `${v.offering.name} — ${v.name}` : null, reason: 'unavailable' }); continue;
+      }
       const gbpBase = usdToGbpMinor(v.base_price_minor, rate); // stored USD → whole-pound GBP, same rounding the storefront showed
-      if (gbpBase == null || gbpBase <= 0) continue; // POA, or rounds below £1 → not card-purchasable (Stripe rejects £0 lines)
+      if (gbpBase == null || gbpBase <= 0) { // POA, or rounds below £1 → not card-purchasable (Stripe rejects £0 lines)
+        dropped.push({ variantId: it.variantId, name: `${v.offering.name} — ${v.name}`, reason: 'price_on_application' }); continue;
+      }
       const qty = Math.max(1, Math.min(100, Number(it.quantity) || 1));
       const fp = finalPrice(gbpBase, 'GBP', v.offering, rules, now); // discounts apply AFTER conversion, on the GBP figure
       const unit = fp.amount;
       subtotal += unit * qty;
       line_items.push({ quantity: qty, price_data: { currency: 'gbp', unit_amount: unit, product_data: { name: `${v.offering.name} — ${v.name}`, metadata: { variant_id: v.id, vendor: v.offering.vendor?.name ?? '', applied_rule_id: fp.ruleId ?? '' } } } });
     }
-    if (!line_items.length) return json({ error: 'No purchasable items (all POA or unavailable — use Request a quote).' }, 400);
+    if (!line_items.length) return json({ error: 'No purchasable items (all POA or unavailable — use Request a quote).', dropped }, 400);
     const vat = Math.round(subtotal * VAT);
     if (vat > 0) line_items.push({ quantity: 1, price_data: { currency: 'gbp', unit_amount: vat, product_data: { name: `UK VAT (${Math.round(VAT * 100)}%)` } } });
 
@@ -138,7 +142,7 @@ Deno.serve(async (req) => {
       params.customer_email = customerEmail || undefined;               // guest
     }
     const session = await stripe.checkout.sessions.create(params);
-    return json({ url: session.url, id: session.id });
+    return json({ url: session.url, id: session.id, dropped }); // dropped: items left out of the card sale (POA/unavailable), surfaced to the buyer
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 400);
   }

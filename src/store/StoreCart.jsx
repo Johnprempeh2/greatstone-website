@@ -29,7 +29,18 @@ export default function StoreCart({ confirmed = false }) {
 
   const checkout = useCallback(async () => {
     setBusy(true); setErr(null);
-    try { const url = await startCheckout({ email: email.trim() || undefined }); window.location.href = url; }
+    try {
+      const { url, dropped } = await startCheckout({ email: email.trim() || undefined });
+      // Some basket lines can't be sold by card (POA / unpublished / sub-£1). Don't slip the buyer
+      // past silently with a smaller order: name them and confirm before redirecting to pay.
+      if (dropped && dropped.length) {
+        const names = dropped.map(d => d && d.name).filter(Boolean);
+        const list = names.length ? names.join(', ') : 'one or more items';
+        const ok = typeof confirm !== 'function' || confirm(`These items can't be bought by card, so they won't be included: ${list}.\n\nContinue and pay for the rest? (Request a quote to buy the excluded items on invoice.)`);
+        if (!ok) { setBusy(false); return; }
+      }
+      window.location.href = url;
+    }
     catch (e) { setErr(e.message || 'Could not start checkout.'); setBusy(false); }
   }, [email]);
 
@@ -140,17 +151,22 @@ function Confirmed() {
   // Stripe redirected back after a successful test payment — clear the basket and thank the buyer.
   useEffect(() => { clearCart(); }, []);
   const sid = (location.hash.match(/session=([^&]+)/) || [])[1] || '';
+  const isTest = /^cs_test_/.test(sid);
+  // Show a clean reference, not the raw Stripe session id: drop the cs_test_/cs_live_ prefix and the
+  // trailing secret segment (after '#'), upper-cased to read like the reference on the receipt email.
+  const ref = sid.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 18).toUpperCase();
   return (
     <>
       <div className="st-scrim" aria-hidden="true" />
       <div className="sc-confirm">
+        {isTest && <div className="sc-testbanner" role="status">Test mode: this was a Stripe test payment. No real money was taken.</div>}
         <div className="sc-tick" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </div>
         <span className="st-kicker">Payment received</span>
         <h1>Thank you. Your order is confirmed.</h1>
         <p>We've emailed your receipt and the licensing team will be in touch shortly with your keys and onboarding details. Most licences are issued within one business day.</p>
-        {sid && <p className="sc-ref">Reference: <code>{sid.slice(0, 24)}</code></p>}
+        {ref && <p className="sc-ref">Reference: <code>{ref}</code></p>}
         <div className="sc-confirm-cta">
           <a className="gs-btn primary" href="#shop">Continue browsing</a>
           <a className="gs-btn ghost" href="#book">Talk to the team</a>

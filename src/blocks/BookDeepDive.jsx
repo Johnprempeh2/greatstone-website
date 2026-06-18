@@ -25,6 +25,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
         <div className="grid b-book-grid" data-reveal>
           <div className="card book-card">
             <span className="form-template-note">Template form</span>
+            {eyebrow && eyebrow !== headline ? <span className="kicker b-book-eyebrow">{eyebrow}</span> : null}
             <h2 className="h3 b-book-card-head">{headline}{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
             {body ? <p className="b-book-card-intro muted">{body}</p> : null}
             {sent ? (
@@ -79,6 +80,7 @@ export const css = `
 .b-book{padding:clamp(56px,9vw,120px) 0;position:relative}
 .b-book-grid{grid-template-columns:1.15fr .85fr;gap:clamp(24px,4vw,56px);align-items:start}
 /* heading + intro now live inside the card (faithful to live: h2.h3 + .muted intro right after the template note) */
+.b-book-eyebrow{display:block;margin:.9rem 0 .35rem}
 .b-book-card-head{font-size:clamp(1.3rem,2.4vw,2rem);font-weight:800;line-height:1.04;letter-spacing:-.02em}
 .b-book-card-intro{margin:.6rem 0 1.8rem;color:var(--gs-text-muted)}
 @media(max-width:860px){.b-book-grid{grid-template-columns:1fr}}

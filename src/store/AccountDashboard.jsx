@@ -148,7 +148,9 @@ function Dashboard({ session, profile, onProfile }) {
       addItem({ variantId: it.variant_id, name: it.offering_name, edition: it.variant_name, unitMinor: it.unit_price_minor, currency: o.currency }, it.qty || 1);
       n += 1;
     }
-    flash(n ? `${n} item${n === 1 ? '' : 's'} added to your basket.` : 'Nothing to re-order.');
+    // The line carries last order's price; the server reprices from the live USD + FX at checkout, so
+    // flag it as indicative rather than letting a stale figure look final.
+    flash(n ? `${n} item${n === 1 ? '' : 's'} added at your last order's price. We'll confirm the current price at checkout.` : 'Nothing to re-order.');
     if (n && typeof location !== 'undefined') location.hash = 'shop';
   };
 
