@@ -343,7 +343,9 @@ export default function App() {
   }, [state.order, state.pages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const page = state.pages[current] || state.pages[state.order[0]];
-  const bg = page.background || state.settings.background || 'stone';
+  // the 3D scene is part of the draft→publish gate: an editor sees their working background live in the
+  // canvas, but the public keeps the published background until the page is published (mirrors data/published).
+  const bg = (canEdit ? page.background : (page.publishedBackground ?? page.background)) || state.settings.background || 'stone';
   // the catalogue has a draft → published gate: the editor (Storefront preview in the Puck canvas, the
   // Products tab) sees the DRAFT; the public site renders the PUBLISHED projection. So an in-progress
   // price or status change never reaches visitors until an admin publishes the catalogue.
@@ -357,7 +359,8 @@ export default function App() {
   const activeProductCat = activeProduct ? pubCategories.find((c) => c.id === activeProduct.category) : null;
   const relatedProducts = activeProduct ? pubProducts.filter((p) => p.id !== activeProduct.id && p.category === activeProduct.category && p.status !== 'draft').slice(0, 3) : [];
   function exitProduct() { if (location.hash) location.hash = ''; setProductSlug(null); navigate(state.pages.products ? 'products' : state.order[0]); }
-  const hasUnpublished = useMemo(() => !eq(page.data, page.published), [page.data, page.published]);
+  // a page is "unpublished" if its content OR its 3D background differs from the published snapshot
+  const hasUnpublished = useMemo(() => !eq(page.data, page.published) || !eq(page.background, page.publishedBackground), [page.data, page.published, page.background, page.publishedBackground]);
   // Attention signals surfaced on the one "Studio" toolbar button + the relevant tabs, so editors see
   // what needs action without opening every panel. A page counts once (drift OR awaiting review).
   const studioAttention = useMemo(() => {
@@ -400,7 +403,8 @@ export default function App() {
       const p = s.pages[current];
       const versions = pushVersion(p.versions, { label: 'Published', data, by: user.email, status: 'published' });
       const statusHistory = [...(p.statusHistory || []), { from: p.status, to: 'published', by: user.email, ts: Date.now() }];
-      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, status: 'published', approvedBy: p.approvedBy || user.email, versions, statusHistory } } };
+      // the 3D background is published alongside the content snapshot, so a scene change reaches the public only on publish (not live).
+      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, publishedBackground: p.background, status: 'published', approvedBy: p.approvedBy || user.email, versions, statusHistory } } };
     });
     setMode('view'); setPanel(null);
     flash('Published. Snapshot saved to history.');
@@ -615,7 +619,7 @@ export default function App() {
     if (page.published == null) return flash('This page has never been published, so there’s nothing to revert to. Delete it from Pages if you don’t want it.');
     const ok = await ask({ kind: 'confirm', title: 'Discard changes', message: 'Discard unpublished changes and revert to the live version? The current draft is snapshotted to history first.', confirmLabel: 'Discard changes', danger: true });
     if (!ok) return;
-    setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: p.published, versions } } }; });
+    setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: p.published, background: p.publishedBackground ?? p.background, versions } } }; });
     setPuckKey((k) => k + 1); flash('Reverted to the published version.');
   }
   function addBlock(type) {

@@ -39,7 +39,7 @@ const blk = (type, props) => {
 
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
-  return { title, background, status, seo: seo || { title: title + ' · Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
+  return { title, background, publishedBackground: background, status, seo: seo || { title: title + ' · Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
 }
 
 // the editorial state machine: who can move where (the future Laravel backend enforces this
@@ -391,6 +391,9 @@ function migrate(state) {
     // backfill the live projection ONLY for already-published pages (legacy rows); a genuine draft keeps
     // published=null so a reload can't silently re-publish it (which would defeat the draft→publish gate).
     if (p.published == null && p.status === 'published') p.published = p.data;
+    // the 3D background is now part of the draft→publish flow (was applied live, bypassing publish).
+    // Backfill the published background = current background for existing pages so nothing changes on the public side until the next publish.
+    if (p.publishedBackground === undefined) p.publishedBackground = p.background;
   });
   // method page (additive): the "interactive breakdown" is now a FULL-SCREEN explorer at #breakdown
   // (not an inline section). On existing saved sites: drop any inline PillarExplorer that an earlier
@@ -520,6 +523,7 @@ export function addPageTo(state, title) {
     blk('Hero', { kicker: 'New page', headline: title, highlight: '', body: 'Start composing. Drag blocks in the editor, set the background, publish.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book' }),
   ], null, 'draft');
   page.published = null; // a brand-new page is a true draft — not public until it's published
+  page.publishedBackground = null; // its 3D scene is likewise unpublished until the first publish
   return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
 }
 
@@ -554,6 +558,7 @@ export function duplicatePage(state, slug) {
   }
   clone.data.root = { props: { title } };
   clone.published = null; // a duplicate is a draft — it must not inherit the source's live (public) projection
+  clone.publishedBackground = null; // nor its source's published 3D scene
   const i = state.order.indexOf(slug);
   const order = [...state.order]; order.splice(i + 1, 0, dup);
   return { ...state, order, pages: { ...state.pages, [dup]: clone }, _goto: dup };

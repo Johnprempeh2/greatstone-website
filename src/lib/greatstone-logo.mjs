@@ -19,7 +19,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarsePointer = matchMedia('(hover:none),(pointer:coarse)').matches; // phones/tablets: render fewer pixels
 
 export function mountGreatstoneLogo(container, opts = {}) {
-  const o = Object.assign({ envUrl:'env-emerald.jpg', bloom:0.78, exposure:1.4, dpr:2,
+  const o = Object.assign({ envUrl:'env-emerald.jpg', bloom:0.52, exposure:1.4, dpr:2,
     transparent:true, proxRadius:0.55, spreadLocal:0.4, idle:true, autoTurn:false,
     keyLo:0.10, keyHi:0.20 }, opts);   /* alpha-key thresholds: near-black empty + faint bloom halo → transparent; mark stays */
 
@@ -162,7 +162,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
       u.tilt.x += (mouseS.y-u.tilt.x)*k; u.tilt.y += (mouseS.x-u.tilt.y)*k;
       g.rotation.set(u.tilt.x*0.06*u.amp*u.prox, u.tilt.y*0.06*u.amp*u.prox, scrollS*(i-2)*0.22);
     });
-    bloom.strength = o.bloom + scrollS*0.5; renderer.toneMappingExposure = o.exposure + scrollS*0.22;
+    bloom.strength = o.bloom + scrollS*0.28; renderer.toneMappingExposure = o.exposure + scrollS*0.22;
     cursorLight.intensity = hoverAny*1.3; cursorLight.position.set(mouseS.x*5.5, -mouseS.y*4.2, 4.5);
     if (sceneRT){ renderer.setRenderTarget(sceneRT); renderer.clear(); renderer.render(scene, camera); renderer.setRenderTarget(null); }
     composer.render();
