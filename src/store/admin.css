@@ -169,6 +169,10 @@
   .acct-orders td.acct-ord-cell-actions { justify-content:flex-end; }
   .acct-orders td.acct-ord-cell-actions::before { content:none; }
   .acct-orders .ca-ord-detailrow td::before { content:none; }
+  /* full-width state rows (loading/error/empty) carry data-label="" — drop the empty pseudo-label and
+     centre the message instead of letting the blank label push it to the card's right edge. */
+  .acct-orders td[data-label=""]::before { content:none; }
+  .acct-orders td[data-label=""] { justify-content:center; text-align:center; }
   .acct-orders .ca-ord-item { grid-template-columns:1fr auto; }
 }
 

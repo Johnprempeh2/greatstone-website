@@ -215,7 +215,7 @@ export const css = `
 .b-sf-media img{width:100%;height:100%;object-fit:cover;display:block}
 .b-sf-badge{position:absolute;top:18px;right:18px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   color:#0e1611;background:var(--gs-accent);border-radius:6px;padding:3px 8px}
-.b-sf-badge.is-legacy{background:var(--gs-text-faint);color:#fff}
+.b-sf-badge.is-legacy{background:var(--gs-text-faint);color:#0e1611}
 .b-sf-cat{display:flex;align-items:center;gap:8px;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
 .b-sf-vlogo{height:16px;width:auto;max-width:74px;object-fit:contain;background:#fff;border-radius:4px;padding:2px 5px;line-height:0}
 .b-sf-name{margin-top:8px;font-size:1.4rem;font-weight:800;letter-spacing:-.02em}

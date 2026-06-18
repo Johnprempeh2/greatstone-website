@@ -17,7 +17,7 @@ export function Spectrum({ kicker, headline, highlight, body, coda, rows = [], c
             {coda ? <p className="b-spectrum-coda">{coda}</p> : null}
           </div>
 
-          <div className="b-spectrum-figure" data-reveal aria-label="Tool selection driven by the problem, not the product">
+          <div className="b-spectrum-figure" role="group" data-reveal aria-label="Tool selection driven by the problem, not the product">
             {rows.map((r, i) => (
               <div className="b-spectrum-row" key={i}>
                 <span className={'b-spectrum-dot ' + (r.tone === 'bad' ? 'bad' : 'good')} aria-hidden="true" />

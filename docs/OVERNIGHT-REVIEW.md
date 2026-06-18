@@ -144,3 +144,17 @@ Reviewed the storefront product detail page and the cart drawer on desktop **and
 **Shipped + deployed (two real a11y fixes in `StoreCart.jsx`):**
 - [x] **Cart dialog title was stale.** The drawer's accessible name (`aria-labelledby="sc-title"`) and visible header always read "Your basket", even on the quote form and the sent-confirmation views. Made the title track the view (Your basket / Request a quote / Quote request sent) and dropped the now-duplicate body heading in the sent view. Verified live: cart→quote flips the title.
 - [x] **Line-item controls were ambiguous with multiple items.** Remove and the ± quantity buttons read generically ("Remove", "Decrease quantity"); a screen-reader user with several lines couldn't tell which item. Now name-aware ("Remove <product> from basket", "Decrease quantity of <product>"), matching the product page's add-button pattern. 51 tests green, 0 console errors.
+
+### Cycle 17 — ultracode audit (content pages / forms / account / chrome): 5 finder agents → adversarial verify → 7 confirmed, 6 shipped
+A fresh-eyes audit workflow (find → skeptically refute each finding). 7 confirmed real; shipped the 6 clean ones, deferred 1 (documented).
+
+**Shipped + deployed [x]:**
+- [x] **Deep Dive form (BookDeepDive.jsx):** submitting unmounted the form (incl. the button just pressed), dropping keyboard focus to `<body>` with no announcement. Now moves focus to the confirmation heading (tabIndex -1 + useEffect on `sent`) and the confirmation carries `role="status"`. **Verified live: focus lands on the "Thanks" heading.**
+- [x] **Account async states (AccountDashboard.jsx):** orders/quotes loading + error + empty cells were plain `<td>`s — a screen-reader user hitting Refresh/Try again heard nothing. Wrapped them in `role="status"` (loading/empty) / `role="alert"` (error), matching the file's existing toast/form pattern.
+- [x] **Account mobile cards:** those same colSpan state cells had no `data-label`, so the card view generated an empty pseudo-label that shoved the message to the right edge. Added `data-label=""` + a `content:none`/centre rule for `.acct-orders` (mirrors the `.ca-cards` opt-out).
+- [x] **Legacy product badge (Storefront.jsx + ProductDetail.jsx):** `.is-legacy` was white-on-grey (2.6:1, AA fail — the cycle-15/Ben contrast-token lift had made it worse). Switched to dark text `#0e1611` on the grey (~7:1), matching the base badge.
+- [x] **Alt-text preflight (App.jsx):** the publish-time `findMissingAlt` Team branch read `p.members`, but the Team block's prop is `items` — so it never checked team photos. Fixed to `p.items`.
+- [x] **Spectrum block (Spectrum.jsx):** an `aria-label` sat on a role-less `<div>` (generic role can't be named, so the label was dropped). Added `role="group"`.
+
+**Deferred (documented, low) [~]:**
+- [~] **Book CTA vanish window:** `.gs-book` is hidden `@media(max-width:760px)` on the assumption the nav has collapsed (so the dropdown carries Book), but collapse is overflow-measured, not breakpoint-tied. A trimmed nav that still fits inline at ≤760px would hide the CTA with no dropdown fallback. The clean "gate on collapsed" fix risks a show/collapse oscillation (the CTA's width feeds the collapse measurement), and it can't manifest with the real 9–10 item nav (which always collapses well above 760px). Left as-is; revisit if the nav is trimmed to very few items.

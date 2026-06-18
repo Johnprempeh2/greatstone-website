@@ -195,7 +195,7 @@ function Dashboard({ session, profile, onProfile }) {
             <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Invoice</span></th></tr></thead>
             <tbody>
               {quotesErr
-                ? <tr><td colSpan="5" className="ca-muted">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></td></tr>
+                ? <tr><td colSpan="5" className="ca-muted" data-label=""><span role="alert">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></span></td></tr>
                 : quotes.map(qt => {
                   const ord = (qt.orders || [])[0];
                   return (
@@ -227,9 +227,9 @@ function Dashboard({ session, profile, onProfile }) {
         <table className="ca-table acct-orders">
           <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
-            {loadingOrders ? <tr><td colSpan="6" className="ca-muted">Loading your orders…</td></tr>
-              : ordersErr ? <tr><td colSpan="6" className="ca-muted">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></td></tr>
-                : !orders.length ? <tr><td colSpan="6" className="ca-muted">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></td></tr>
+            {loadingOrders ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">Loading your orders…</span></td></tr>
+              : ordersErr ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="alert">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></span></td></tr>
+                : !orders.length ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></span></td></tr>
                   : orders.map(o => {
                     const expanded = open === o.id;
                     return (

@@ -156,8 +156,8 @@ function findMissingAlt(content, products) {
     if ((b.type === 'Figure' || b.type === 'FeaturedArticle') && p.image && noAlt(p.alt)) {
       issues.push(b.type === 'Figure' ? 'Figure image' : 'Featured: ' + (p.title || 'article'));
     }
-    if (b.type === 'Team' && Array.isArray(p.members)) {
-      p.members.forEach((m) => { if (m && m.photo && noAlt(m.name)) issues.push('Team photo (no name)'); });
+    if (b.type === 'Team' && Array.isArray(p.items)) {
+      p.items.forEach((m) => { if (m && m.photo && noAlt(m.name)) issues.push('Team photo (no name)'); });
     }
     if (b.type === 'InsightsGrid' && Array.isArray(p.posts)) {
       p.posts.forEach((post) => { if (post && post.image && noAlt(post.alt)) issues.push('Insight: ' + (post.title || 'post')); });

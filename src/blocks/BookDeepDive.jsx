@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
@@ -19,6 +19,11 @@ const ICONS = {
 export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], email = 'dx@greatstonesoftware.co.uk' }) {
   const ref = useReveal([asidePoints.length]);
   const [sent, setSent] = useState(false);
+  // on submit the form is replaced by the confirmation, so the control the user just activated is
+  // unmounted; move focus to the confirmation heading (which is a live region) so keyboard + screen-reader
+  // users are carried to it and the success is announced, instead of focus falling back to <body>.
+  const sentRef = useRef(null);
+  useEffect(() => { if (sent && sentRef.current) sentRef.current.focus(); }, [sent]);
   return (
     <section ref={ref} className="b-book">
       <div className="wrap">
@@ -29,8 +34,8 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
             <h2 className="h3 b-book-card-head">{headline}{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
             {body ? <p className="b-book-card-intro muted">{body}</p> : null}
             {sent ? (
-              <div className="book-sent">
-                <h3>Thanks. One more step.</h3>
+              <div className="book-sent" role="status">
+                <h3 ref={sentRef} tabIndex={-1}>Thanks. One more step.</h3>
                 <p>This prototype doesn’t send anything yet. To book your Deep Dive now, email us and we’ll reply with times.</p>
                 <a className="b-cta" href={safeMailto(email)}>{email}</a>
               </div>

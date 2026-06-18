@@ -94,7 +94,7 @@ export const css = `
 .b-pd-top{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(24px,5vw,56px);align-items:start}
 .b-pd-lede{position:relative}
 .b-pd-badge{display:inline-block;font-size:.64rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0e1611;background:var(--gs-accent);border-radius:6px;padding:3px 9px;margin-bottom:14px}
-.b-pd-badge.is-legacy{background:var(--gs-text-faint);color:#fff}
+.b-pd-badge.is-legacy{background:var(--gs-text-faint);color:#0e1611}
 .b-pd-eyebrow{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
 .b-pd-name{margin-top:10px;font-size:clamp(2.1rem,5vw,3.4rem);font-weight:900;letter-spacing:-.03em;line-height:1.03}
 .b-pd-summary{margin-top:16px;color:var(--gs-text-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);line-height:1.65;max-width:54ch}
