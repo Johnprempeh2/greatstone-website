@@ -50,7 +50,11 @@
 .ca-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:90; background:var(--gs-accent); color:#0e1611; font-weight:700; padding:.7em 1.4em; border-radius:100px; font-size:.85rem; }
 
 /* tab bar */
-.ca-tabbar { position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:clamp(80px,11vh,110px) clamp(18px,4vw,48px) 0; max-width:1100px; margin:0 auto; }
+/* the bar is sticky (top:0, under the fixed site header), so it needs an opaque-enough surface to
+   occlude the offerings list as it scrolls beneath it — otherwise rows bleed through the tab row.
+   isolation keeps its stacking context self-contained; the blur matches the app's other frosted chrome. */
+.ca-tabbar { position:sticky; top:0; z-index:30; isolation:isolate; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:clamp(80px,11vh,110px) clamp(18px,4vw,48px) 14px; max-width:1100px; margin:0 auto;
+  background:rgba(12,15,12,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); }
 .ca-tabs { display:flex; gap:4px; background:rgba(255,255,255,.04); border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); border-radius:100px; padding:4px; }
 .ca-tabs button { padding:.5em 1.1em; border-radius:100px; border:0; background:none; color:var(--gs-text-muted); font:inherit; font-weight:700; font-size:.85rem; cursor:pointer; }
 .ca-tabs button.on { background:var(--gs-accent); color:#0e1611; }
