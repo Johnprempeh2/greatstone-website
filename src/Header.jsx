@@ -13,6 +13,10 @@ const firstSceneKind = (bg) => {
   return opt && opt.scenes && opt.scenes[0];
 };
 const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...p}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>);
+// Booking link for the persistent "Book a Deep Dive" CTA. '#book' is caught by App.jsx's CTA interceptor
+// today; swap this one constant to the Calendly URL (e.g. 'https://calendly.com/greatstone/deep-dive') when known.
+const BOOK_URL = '#book';
+const UserIcon = (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...p}><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.8" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>);
 
 // Site chrome (view mode). The page links sit inline while they fit; when they don't, they
 // collapse into a single "Pages" dropdown (measured, not breakpoint-guessed, so it works for
@@ -96,7 +100,8 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                     onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
                 ))}
                 {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
-                {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Account</button>}
+                <a role="menuitem" className="gs-navmenu-item gs-navmenu-book" href={BOOK_URL} onClick={() => setMenuOpen(false)}>Book a Deep Dive</a>
+                {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Your account</button>}
                 {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
             )}
@@ -109,20 +114,27 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
               </button>
             ))}
             {onShop && <button className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Products</button>}
-            {onAccount && <button className={'gs-navlink' + (accountActive ? ' is-active' : '')} onClick={onAccount}>Account</button>}
             {visible.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
           </nav>
         )}
       </div>
 
       <div className="gs-tools">
-        <button className="gs-cmdbtn" onClick={onCommand} title="Command palette (⌘K)" aria-label="Command palette">
+        {/* persistent, always-visible primary CTA + account icon (Ben's 18 Jun review) — outside the
+            signed-in block below so public visitors see them too. The CTA is an <a> so BOOK_URL can become
+            an external Calendly link with no JS change. */}
+        <a className="gs-btn primary gs-book" href={BOOK_URL}>Book a Deep Dive</a>
+        {onAccount && (
+          <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label="Your account" aria-current={accountActive ? 'page' : undefined} title="Your account">
+            <UserIcon />
+          </button>
+        )}
+        {/* the inline page-search input was redundant with the ⌘K command palette (which searches +
+            navigates); removing it frees the row so the reordered nav stays inline on desktop and the
+            header reads cleaner (Ben's 18 Jun review). ⌘K remains the search affordance. */}
+        <button className="gs-cmdbtn" onClick={onCommand} title="Command palette (⌘K)" aria-label="Search and commands">
           <Search /><kbd>⌘K</kbd>
         </button>
-        <div className="gs-search">
-          <Search />
-          <input value={query} onChange={(e) => onSearch(e.target.value)} placeholder="Search pages" aria-label="Search pages" />
-        </div>
 
         {user ? (
           <>

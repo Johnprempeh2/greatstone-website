@@ -22,8 +22,8 @@
   --gs-success:       #4ecdc4;   /* teal — live / healthy */
   --gs-danger:        #ff6b6b;   /* coral — destructive / errors */
   --gs-text:          #f5f5f5;
-  --gs-text-muted:    #b4b8b2;
-  --gs-text-faint:    #8d938c;   /* lifted to clear WCAG AA 4.5:1 on the dark editor panels (#161816/#1a1c1a) */
+  --gs-text-muted:    #c4c8c1;   /* primary body-copy grey; lifted from #b4b8b2 (~9.3:1) to ~11:1 on #121212 (Ben's contrast flag) */
+  --gs-text-faint:    #9ca29b;   /* secondary labels/hints; lifted from #8d938c (bare ~5.5:1 on the darkest panels) to ~6.6:1+. Keep small body on --gs-text-muted */
   --gs-border:        rgba(200,255,0,0.10);
   --gs-border-soft:   rgba(255,255,255,0.07);
   --gs-border-strong: rgba(200,255,0,0.18);  /* canonical brand token (was missing; .btn--ghost fell back to accent-mid) */

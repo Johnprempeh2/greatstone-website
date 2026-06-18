@@ -3,7 +3,7 @@
    in index.css. */
 
 /* ---------- view-mode site header ---------- */
-.gs-header{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:18px;
+.gs-header{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:14px;
   padding:14px clamp(16px,3vw,30px);background:linear-gradient(to bottom,rgba(16,18,16,.86),rgba(16,18,16,0));backdrop-filter:blur(2px)}
 .gs-logo img{width:138px;height:auto;display:block}
 .gs-logo{flex:none}
@@ -11,9 +11,9 @@
 .gs-navwrap{flex:1;min-width:0;display:flex;overflow:hidden}
 /* once collapsed we no longer measure inline overflow, so let the dropdown escape the clip */
 .gs-navwrap.is-collapsed{overflow:visible}
-.gs-nav{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}
+.gs-nav{display:flex;align-items:center;gap:2px;flex-wrap:nowrap;white-space:nowrap}
 .gs-navlink{background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;
-  letter-spacing:.02em;color:var(--gs-muted);padding:8px 12px;border-radius:8px;transition:color .2s,background .2s;white-space:nowrap}
+  letter-spacing:.02em;color:var(--gs-muted);padding:8px 10px;border-radius:8px;transition:color .2s,background .2s;white-space:nowrap}
 .gs-navlink:hover{color:var(--gs-text);background:rgba(255,255,255,.04)}
 .gs-navlink.is-active{color:var(--gs-accent)}
 .gs-nomatch{font-size:.78rem;color:var(--gs-faint)}
@@ -34,6 +34,13 @@
 .gs-navmenu-empty{padding:10px 12px;font-size:.8rem;color:var(--gs-faint)}
 
 .gs-tools{display:flex;align-items:center;gap:10px}
+/* persistent navbar CTA + account icon (Ben's 18 Jun review) */
+.gs-book{flex:none;white-space:nowrap}
+.gs-accountbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:100px;color:var(--gs-muted);cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.gs-accountbtn:hover{color:var(--gs-text);border-color:var(--gs-border)}
+.gs-accountbtn.is-active{color:var(--gs-accent);border-color:var(--gs-border)}
+/* the booking CTA reads as the lime primary even in the collapsed dropdown */
+.gs-navmenu-book{color:var(--gs-accent)}
 .gs-cmdbtn{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
   border-radius:100px;padding:7px 12px;color:var(--gs-faint);cursor:pointer;transition:color .2s,border-color .2s}
 .gs-cmdbtn:hover{color:var(--gs-text);border-color:var(--gs-border)}
@@ -70,6 +77,9 @@
 @media(max-width:760px){
   .gs-header{gap:10px}
   .gs-search{display:none}
+  /* the persistent CTA would crowd the collapsed nav on phones — it stays reachable as the lime
+     "Book a Deep Dive" item at the top of the Pages dropdown. The account icon + ⌘K stay visible. */
+  .gs-book{display:none}
 }
 
 /* ---------- editor: dark, brand-themed chrome ---------- */

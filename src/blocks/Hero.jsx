@@ -1,4 +1,5 @@
 import { useReveal } from './reveal.js';
+import { useEffect, useState } from 'react';
 import { Arrow } from './icons.jsx';
 import { safeHref } from '../lib/safe-url.js';
 
@@ -9,8 +10,18 @@ import { safeHref } from '../lib/safe-url.js';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false }) {
+export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false }) {
   const ref = useReveal();
+  // home-hero only (opt-in): hide the scroll indicator once the visitor scrolls past the fold so it
+  // doesn't linger over the content below. Passive listener, removed on unmount; inert unless scrollCue.
+  const [cueHidden, setCueHidden] = useState(false);
+  useEffect(() => {
+    if (!scrollCue || typeof window === 'undefined') return undefined;
+    const onScroll = () => setCueHidden((window.scrollY || 0) > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [scrollCue]);
   // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
   // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
   const stacked = Array.isArray(lines) && lines.length > 0;
@@ -46,6 +57,12 @@ export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, p
             : <span className="b-hero-prompt" data-reveal>{prompt}</span>
         ) : null}
       </div>
+      {scrollCue ? (
+        <span className={'b-hero-scrollcue' + (cueHidden ? ' is-gone' : '')} aria-hidden="true">
+          <span className="b-hero-scrollcue-label">Scroll down to start the climb</span>
+          <span className="b-hero-scrollcue-chevron" />
+        </span>
+      ) : null}
     </section>
   );
 }
@@ -89,6 +106,17 @@ export const css = `
   border-radius:3px;background:var(--gs-accent);animation:bHeroCueDrop 1.9s var(--gs-ease) infinite}
 @keyframes bHeroCueDrop{0%,15%{transform:translateY(0);opacity:1}70%,100%{transform:translateY(12px);opacity:0}}
 @media (prefers-reduced-motion: reduce){.b-hero-capsule::after{animation:none}}
+/* home-hero scroll indicator (opt-in via scrollCue): a lime chevron that bounces at the foot of the
+   full-height hero and fades out once the visitor scrolls. Decorative (aria-hidden). */
+.b-hero-scrollcue{position:absolute;left:50%;bottom:clamp(20px,4vh,38px);transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:9px;z-index:2;pointer-events:none;
+  opacity:1;transition:opacity .5s var(--gs-ease),transform .5s var(--gs-ease)}
+.b-hero-scrollcue.is-gone{opacity:0;transform:translateX(-50%) translateY(8px)}
+.b-hero-scrollcue-label{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--gs-text-faint)}
+.b-hero-scrollcue-chevron{width:13px;height:13px;border-right:2px solid var(--gs-accent);border-bottom:2px solid var(--gs-accent);
+  transform:rotate(45deg);animation:bHeroScrollBounce 1.8s var(--gs-ease) infinite}
+@keyframes bHeroScrollBounce{0%,100%{transform:rotate(45deg) translate(0,0);opacity:.55}50%{transform:rotate(45deg) translate(3px,3px);opacity:1}}
+@media (prefers-reduced-motion: reduce){.b-hero-scrollcue-chevron{animation:none;opacity:.7}}
 /* opt-in engineered grid backdrop — faithful to the live .svc-hero::before (services only) */
 .b-hero.has-grid::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;opacity:.5;
   background-image:linear-gradient(var(--gs-border-soft) 1px,transparent 1px),linear-gradient(90deg,var(--gs-border-soft) 1px,transparent 1px);
@@ -109,6 +137,9 @@ export const puck = {
     prompt: { type: 'text', label: 'Cursor prompt (optional)', contentEditable: true },
     cueStyle: { type: 'radio', label: 'Cue style', options: [
       { label: 'Text line', value: 'text' }, { label: 'Mouse capsule (scroll)', value: 'mouse' },
+    ]},
+    scrollCue: { type: 'radio', label: 'Scroll indicator (home hero)', options: [
+      { label: 'Off', value: false }, { label: 'On (bouncing chevron)', value: true },
     ]},
     align: { type: 'radio', label: 'Alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
@@ -150,7 +181,7 @@ export const puck = {
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
     headlineSuffix: '',
-    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false,
+    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false,
   },
   render: (props) => <Hero {...props} />,
 };

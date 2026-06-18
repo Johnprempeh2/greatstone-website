@@ -1,5 +1,20 @@
 # Overnight site review — backlog
 
+## Ben meeting (18 Jun) — frontend batch [shipped + deployed]
+Recon workflow (5 agents) → implement → adversarial review workflow (4 agents, passed, 3 low findings fixed) → ship.
+- [x] **Nav: Method → Process** (display title only; slug stays `method`, so `#go/method`, `#breakdown`, canonical URLs untouched). Seed + idempotent migrate (renames only if still the old default).
+- [x] **Nav reorder**, Contact last: Home → About → Process → The Climb → Services → Industries → Proof → Insights → Contact. Seed + guarded migrate (only reorders a store still on the exact old default; products-stripped compare so a legacy shape reorders first-load).
+- [x] **Persistent "Book a Deep Dive" CTA** in the navbar (BOOK_URL constant, default `#book`, one-line swap to Calendly). Hidden on phones where it lives as the lime top item of the Pages dropdown.
+- [x] **Account icon** in the navbar (`aria-label="Your account"`, routes to #account signed-in or out). Replaces the inline "Account" text link.
+- [x] **Homepage scroll cue** — "Scroll down to start the climb" + bouncing chevron at the foot of the home hero (reduced-motion safe, fades on scroll). New opt-in `scrollCue` Hero prop; seed + migrate enable it on the home hero only; the redundant cursor prompt was cleared so they don't collide.
+- [x] **Grey-text contrast** → WCAG AA: `--gs-text-muted` #b4b8b2→#c4c8c1, `--gs-text-faint` #8d938c→#9ca29b.
+- [x] **SEO** titles/descriptions improved across all 9 pages (into length range, British English, `·` separator). Seed (store.js + seed-pages.json) + idempotent migrate that only overwrites old-default/empty values (never John's hand-edits).
+- [x] **Header declutter to fit it all:** removed the inline page-search input (redundant with ⌘K) and tightened nav density, so the reordered 10-item nav stays inline on desktop (it had collapsed to a dropdown once the CTA+icon were added) and the CTA no longer overlaps the collapsed nav on mobile.
+- Verified: build clean, 51 tests green, 0 console errors, migrate confirmed live (order/Process/cue), header clean at mobile + 1280. **Calendly URL still needed from John** to point the CTA.
+
+**Ben — bigger builds (next cycles):** account page → full e-commerce (order history, receipts, delivery/status, licence keys, DX dashboard); dedicated page per core service with CTAs tied to the 3 revenue streams; legal pages (T&Cs/GDPR/anti-slavery — need John's copy).
+**Ben — external / John-owned:** Calendly link, Google Analytics + hosting, Pipedrive post-purchase flow, marketing + cybersecurity hires. (See [[ben-website-review-18jun]].)
+
 A self-paced review loop: each cycle reviews part of the site, fixes real bugs + UX/UI gaps, verifies (build + tests + preview, 0 console errors), commits + deploys, and ticks items here so cycles don't repeat. Sourced from a 3-agent parallel review (public pages / commerce / admin+3D) on 18 Jun 2026.
 
 Legend: [ ] open · [x] done (commit) · [~] deferred (needs a product/content decision or a bigger build)

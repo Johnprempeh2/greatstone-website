@@ -240,7 +240,7 @@ export function seedState() {
           kicker: 'Greatstone International',
           headline: 'The Foundation of', highlight: 'Digital Excellence.',
           body: 'We don’t decorate businesses with technology. We build what holds everything up.',
-          prompt: 'Move your cursor. The stone responds', align: 'center', size: 'full', ctaLabel: '', ctaHref: '#',
+          prompt: '', align: 'center', size: 'full', ctaLabel: '', ctaHref: '#', scrollCue: true,
         }),
         blk('Chapter', {
           index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner. Not a software house.', highlight: '',
@@ -287,9 +287,9 @@ export function seedState() {
           body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
           ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk', variant: 'band',
         }),
-      ], { title: 'Greatstone International · The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
+      ], { title: 'Greatstone International · Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, embedding alongside your team with AI as the accelerator.', ogImage: '' }),
 
-      method: seedPage('Method', 'stone', [
+      method: seedPage('Process', 'stone', [
         blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
           body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
           prompt: '', align: 'center', size: 'full',
@@ -306,7 +306,7 @@ export function seedState() {
         blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
           body: 'A Deep Dive scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
           ctaLabel: 'Book a Deep Dive', ctaHref: '#book', variant: 'framed' }),
-      ], { title: 'Method · Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
+      ], { title: 'Process · Eight Pillars · Greatstone International', description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
         blk('TimeCounter', {}),
@@ -334,14 +334,14 @@ export function seedState() {
           cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The deep dive picks up exactly where it leaves off.',
           cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
         }),
-      ], { title: 'Book a Deep Dive · Greatstone International', description: 'You still can’t buy time. Let’s save yours. Book a Deep Dive: the first step costs nothing.', ogImage: '' }),
+      ], { title: 'Book a Deep Dive · Greatstone International', description: 'You still cannot buy time, so let us save yours. Book a Deep Dive and we map where your week goes across eight pillars. The first step costs nothing.', ogImage: '' }),
   };
   // fold in the rest of the site, converted from the live pages into editable blocks
   seedPages.forEach((p) => {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
-  const order = ['home', 'method', 'services', 'industries', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
+  const order = ['home', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact'].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
@@ -395,6 +395,30 @@ function migrate(state) {
     // Backfill the published background = current background for existing pages so nothing changes on the public side until the next publish.
     if (p.publishedBackground === undefined) p.publishedBackground = p.background;
   });
+  // SEO meta refresh (additive, Ben's 18 Jun review; NO SEED_VERSION bump): push improved per-page
+  // titles/descriptions onto saved sites, but ONLY where the stored value still matches the OLD seeded
+  // default or is empty, so meta John has hand-edited in the studio is never overwritten. Idempotent:
+  // once a value equals the new copy it no longer matches any OLD key and is left alone.
+  {
+    const SEO_UPDATES = {
+      home: { oldTitles: ['Greatstone International · The Foundation of Digital Excellence'], title: 'Greatstone International · Foundation of Digital Excellence', oldDescs: ['', 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.'], description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, embedding alongside your team with AI as the accelerator.' },
+      method: { oldTitles: ['Method · Greatstone International'], title: 'Process · Eight Pillars · Greatstone International', oldDescs: ['', 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.'], description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.' },
+      contact: { oldTitles: ['Book a Deep Dive · Greatstone International'], title: 'Book a Deep Dive · Greatstone International', oldDescs: ['', 'You still can’t buy time. Let’s save yours. Book a Deep Dive: the first step costs nothing.'], description: 'You still cannot buy time, so let us save yours. Book a Deep Dive and we map where your week goes across eight pillars. The first step costs nothing.' },
+      services: { oldTitles: ['Services · Greatstone International'], title: 'Services · Greatstone International', oldDescs: ['', "We don't advise, we become your foundation. One team, three moves: find the drains, build the systems, embed and scale. Full-spectrum digital excellence, problem first."], description: 'We do not advise, we become your foundation. One team, three moves: find the hours you are losing, build the systems that buy them back, then embed and scale.' },
+      industries: { oldTitles: ['Industries · Greatstone International'], title: 'Industries · Greatstone International', oldDescs: ['', 'Pick your world and the rest adjusts: your drains, your numbers. The same foundation, shaped to the way your sector actually works.'], description: 'Pick your sector and the rest adjusts to your drains and your numbers. The same eight-pillar foundation, shaped to the way your industry actually works.' },
+      proof: { oldTitles: ['Proof · Greatstone International'], title: 'Proof · Real Results · Greatstone International', oldDescs: ['', 'Real results from real engagements: hours given back, first-year ROI, payback inside a quarter. Anonymised case studies in real estate, healthcare and logistics.'], description: 'Real results from real engagements: hours given back, first-year ROI and payback inside a quarter. Anonymised studies in property, healthcare and logistics.' },
+      about: { oldTitles: ['About · Greatstone International'], title: 'About Greatstone · Twenty Years Embedded', oldDescs: ['', 'Twenty years embedded, not advisory. Greatstone finds the hours a business is quietly losing and wins them back, becoming the foundation you build the next twenty years on.'], description: 'Twenty years embedded, not advisory. We find the hours a business is quietly losing and win them back, becoming the foundation you build the next decades on.' },
+      insights: { oldTitles: ['Insights · Greatstone International'], title: 'Insights · Field Notes · Greatstone International', oldDescs: ['', 'Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle.'], description: 'Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No filler.' },
+      climb: { oldTitles: ['The Climb · Greatstone International'], title: 'The Climb · Maturity Model · Greatstone International', oldDescs: ['', 'Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up across all eight pillars of the method.'], description: 'Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up.' },
+    };
+    Object.entries(SEO_UPDATES).forEach(([slug, u]) => {
+      const p = state.pages && state.pages[slug];
+      if (!p) return;
+      if (!p.seo) p.seo = { title: '', description: '', ogImage: '' };
+      if (u.oldTitles.includes(p.seo.title)) p.seo.title = u.title;
+      if (u.oldDescs.includes(p.seo.description || '')) p.seo.description = u.description;
+    });
+  }
   // method page (additive): the "interactive breakdown" is now a FULL-SCREEN explorer at #breakdown
   // (not an inline section). On existing saved sites: drop any inline PillarExplorer that an earlier
   // build auto-inserted, and repoint the Hero "Open the interactive breakdown" CTA to #breakdown.
@@ -444,6 +468,48 @@ function migrate(state) {
     }
     return m;
   });
+  // nav (additive, Ben's 18 Jun review): the Method page now reads "Process" in the nav. Rename the
+  // DISPLAY title only (slug stays 'method' — the routing key for #go/method and the #breakdown CTA),
+  // and only when it's still the old seed default, so a manual rename by John is never clobbered.
+  {
+    const mp = state.pages && state.pages.method;
+    if (mp) {
+      if (mp.title === 'Method') mp.title = 'Process';
+      if (mp.data && mp.data.root && mp.data.root.props && mp.data.root.props.title === 'Method') mp.data.root.props.title = 'Process';
+      if (mp.published && mp.published.root && mp.published.root.props && mp.published.root.props.title === 'Method') mp.published.root.props.title = 'Process';
+    }
+  }
+  // nav (additive): new running order with Contact last (Home → About → Process → Climb → Services …).
+  // Apply ONLY if state.order still matches the previous seed default exactly, so a manual reorder is kept.
+  {
+    const prevDefault = ['home', 'method', 'services', 'industries', 'proof', 'about', 'insights', 'climb', 'contact'];
+    const newDefault = ['home', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact'];
+    // compare against the products-stripped order so a legacy store that still carries 'products' in
+    // its order reorders on the FIRST load too (the products-delist below then no-ops).
+    const ord = Array.isArray(state.order) ? state.order.filter((s) => s !== 'products') : [];
+    if (ord.length === prevDefault.length && ord.every((s, i) => s === prevDefault[i])) {
+      state.order = newDefault.filter((s) => state.pages[s]);
+    }
+  }
+  // home scroll cue (additive): turn the bouncing "Scroll down to start the climb" indicator ON for the
+  // existing home hero (draft + published) so returning visitors get it. Idempotent — only sets the flag
+  // when it isn't already set, so it never re-flips a hero an editor deliberately switched off.
+  {
+    const hp = state.pages && state.pages.home;
+    const enableFirstHero = (content) => {
+      if (!Array.isArray(content)) return;
+      const hero = content.find((b) => b && b.type === 'Hero');
+      if (!hero || !hero.props) return;
+      // set only when the prop has never been written, so an editor who turns the cue OFF (explicit
+      // false) keeps it off on the next load. Existing home heroes predate the prop, so this enables it once.
+      if (hero.props.scrollCue === undefined) hero.props.scrollCue = true;
+      // the dedicated scroll cue replaces the old cursor prompt on the home hero (two cues collide).
+      // Only clear the prompt if it's still the old default, so a hand-edited prompt is left alone.
+      if (hero.props.prompt === 'Move your cursor. The stone responds') hero.props.prompt = '';
+    };
+    if (hp && hp.data) enableFirstHero(hp.data.content);
+    if (hp && hp.published) enableFirstHero(hp.published.content);
+  }
   // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
   // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.
   state.order = state.order.filter((s) => s !== 'products');
