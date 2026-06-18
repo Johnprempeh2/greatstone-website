@@ -25,7 +25,7 @@
 .st-layout { display:grid; grid-template-columns:230px 1fr; gap:clamp(18px,3vw,36px); align-items:start; }
 @media (max-width:880px){ .st-layout { grid-template-columns:1fr; } .st-facets { display:none; } .st-facets.open { display:flex; } }
 .st-facets { display:flex; flex-direction:column; gap:20px; position:sticky; top:88px; }
-.st-facet h4 { font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--gs-text-faint); margin-bottom:10px; }
+.st-facet h2 { font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--gs-text-faint); margin-bottom:10px; }
 .st-pills { display:flex; flex-wrap:wrap; gap:6px; }
 .st-pill { font-size:.78rem; padding:.4em .85em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.03); color:var(--gs-text-muted); cursor:pointer; }
 .st-pill:hover { border-color:var(--gs-accent-mid); color:var(--gs-text); }

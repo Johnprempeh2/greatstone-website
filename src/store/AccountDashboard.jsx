@@ -165,7 +165,7 @@ function Dashboard({ session, profile, onProfile }) {
         <div className="acct-avatar" aria-hidden="true">{initialsOf(company || profile?.full_name || profile?.email)}</div>
         <div className="acct-id-text">
           <span className="st-kicker">Your account</span>
-          <div className="acct-id-name">{company || 'Welcome back'}</div>
+          <h1 className="acct-id-name">{company || 'Welcome back'}</h1>
           <div className="acct-id-sub">{profile?.full_name ? profile.full_name + ' · ' : ''}{profile?.email || session.user?.email}{tier && <span className="acct-tier">{tier}</span>}</div>
         </div>
         <div className="acct-id-actions">

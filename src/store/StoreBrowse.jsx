@@ -84,19 +84,19 @@ export default function StoreBrowse({ initialVendor = '' }) {
       <div className="st-layout">
         <aside className={'st-facets' + (facetsOpen ? ' open' : '')} aria-label="Filters">
           <div className="st-facet">
-            <h4>Vendor {active && <button className="st-clear" onClick={clearAll}>Clear all</button>}</h4>
+            <h2>Vendor {active && <button className="st-clear" onClick={clearAll}>Clear all</button>}</h2>
             <div className="st-pills">
               {vendors.map(v => <button key={v.id} className={'st-pill' + (vendor === v.slug ? ' on' : '')} onClick={() => setVendor(vendor === v.slug ? '' : v.slug)}>{v.name}</button>)}
             </div>
           </div>
           <div className="st-facet">
-            <h4>Platform</h4>
+            <h2>Platform</h2>
             <div className="st-pills">
               {PLATFORMS.map(p => <button key={p} className={'st-pill' + (platform === p ? ' on' : '')} onClick={() => setPlatform(platform === p ? '' : p)}>{p}</button>)}
             </div>
           </div>
           <div className="st-facet">
-            <h4>Category</h4>
+            <h2>Category</h2>
             <div className="st-pills">
               {categories.map(c => <button key={c.id} className={'st-pill' + (category === c.slug ? ' on' : '')} onClick={() => setCategory(category === c.slug ? '' : c.slug)}>{c.name}</button>)}
             </div>
@@ -104,6 +104,7 @@ export default function StoreBrowse({ initialVendor = '' }) {
         </aside>
 
         <div className="st-grid">
+          <h2 className="gs-sr-only">Products</h2>
           {err ? <div className="st-empty"><h3>{err}</h3></div>
             : loading && !items.length ? Array.from({ length: 8 }).map((_, i) => <div key={i} className="st-card st-skel" aria-hidden="true" />)
               : !items.length ? <div className="st-empty"><h3>No products match those filters</h3><button className="st-clear" onClick={clearAll}>Clear all filters</button></div>
