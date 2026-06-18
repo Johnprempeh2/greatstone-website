@@ -34,10 +34,27 @@ export function MediaPicker({ current, onPick, onClose }) {
   const [url, setUrl] = useState('');
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
+  const panelRef = useRef(null);
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const restore = document.activeElement;                          // the control that opened the picker
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';                         // lock background scroll while open
+    const t = setTimeout(() => { const el = panelRef.current; if (el) el.focus(); }, 20); // move focus in
+    const onKey = (e) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const f = Array.from(panelRef.current.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter((el) => el.offsetParent !== null);
+      if (!f.length) return;
+      const lo = f[0], hi = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === lo) { e.preventDefault(); hi.focus(); }
+      else if (!e.shiftKey && document.activeElement === hi) { e.preventDefault(); lo.focus(); }
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t); document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      if (restore && restore.focus) restore.focus();                 // restore focus to the trigger (WCAG 2.4.3)
+    };
   }, [onClose]);
 
   const choose = (u, alt) => { if (!u) return; addAsset({ url: u, alt: alt || '' }); onPick(u); };
@@ -53,7 +70,7 @@ export function MediaPicker({ current, onPick, onClose }) {
 
   return (
     <div className="gs-mp-backdrop" onMouseDown={onClose}>
-      <div className="gs-mp" role="dialog" aria-label="Choose image" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="gs-mp" role="dialog" aria-modal="true" aria-label="Choose image" tabIndex={-1} ref={panelRef} onMouseDown={(e) => e.stopPropagation()}>
         <div className="gs-mp-head"><h3>Media library</h3><button className="gs-x" onClick={onClose} aria-label="Close">×</button></div>
         <div className="gs-mp-body">
           <div className="gs-mp-add">

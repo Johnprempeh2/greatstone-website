@@ -9,7 +9,19 @@ export default function CommandPalette({ open, onClose, commands }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  useEffect(() => { if (open) { setQ(''); setSel(0); const t = setTimeout(() => inputRef.current && inputRef.current.focus(), 20); return () => clearTimeout(t); } }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    setQ(''); setSel(0);
+    const restore = document.activeElement;                          // the trigger (toolbar button / Cmd-K)
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';                         // lock background scroll while open
+    const t = setTimeout(() => inputRef.current && inputRef.current.focus(), 20);
+    return () => {
+      clearTimeout(t);
+      document.body.style.overflow = prevOverflow;
+      if (restore && restore.focus) restore.focus();                 // restore focus to the trigger (WCAG 2.4.3)
+    };
+  }, [open]);
 
   const filtered = useMemo(() => {
     const s = (q || '').trim().toLowerCase();

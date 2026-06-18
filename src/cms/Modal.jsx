@@ -15,6 +15,9 @@ export default function Modal({ modal, onResolve }) {
   useEffect(() => { setVal((modal && modal.defaultValue) || ''); }, [modal]);
   useEffect(() => {
     if (!modal) return;
+    const restore = document.activeElement;                          // the control that opened the dialog
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';                         // lock background scroll while open
     const t = setTimeout(() => {
       if (modal.kind === 'prompt' && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }
       else if (cancelRef.current) cancelRef.current.focus();
@@ -31,7 +34,11 @@ export default function Modal({ modal, onResolve }) {
       }
     };
     addEventListener('keydown', onKey);
-    return () => { clearTimeout(t); removeEventListener('keydown', onKey); };
+    return () => {
+      clearTimeout(t); removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      if (restore && restore.focus) restore.focus();                 // restore focus to the trigger (WCAG 2.4.3)
+    };
   }, [modal, onResolve]);
 
   if (!modal) return null;
