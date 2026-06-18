@@ -116,19 +116,19 @@ function OfferingsManager({ staff }) {
         <span className="ca-count">{items.length} shown</span>
       </div>
       <div className="ca-table-wrap">
-        <table className="ca-table">
+        <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Name</th><th scope="col">Vendor</th><th scope="col">Type</th><th scope="col">From</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
               : !items.length ? <tr><td colSpan="6" className="ca-muted">No offerings match.</td></tr>
                 : items.map(o => (
                   <tr key={o.id}>
-                    <td className="ca-name">{o.name}{o.featured && <span className="ca-star" title="Featured">★</span>}</td>
-                    <td>{o.vendor?.name}</td>
-                    <td>{o.type}</td>
-                    <td>{o.from_price_minor != null ? fmtMoney(usdToGbpMinor(o.from_price_minor, rate)) : 'POA'}</td>
-                    <td><span className={'ca-status ca-' + o.status}>{o.status}</span></td>
-                    <td><button className="gs-btn ghost sm" onClick={() => setEditing(o)}>Edit</button></td>
+                    <td data-label="Name" className="ca-name">{o.name}{o.featured && <span className="ca-star" title="Featured">★</span>}</td>
+                    <td data-label="Vendor">{o.vendor?.name}</td>
+                    <td data-label="Type">{o.type}</td>
+                    <td data-label="From">{o.from_price_minor != null ? fmtMoney(usdToGbpMinor(o.from_price_minor, rate)) : 'POA'}</td>
+                    <td data-label="Status"><span className={'ca-status ca-' + o.status}>{o.status}</span></td>
+                    <td data-label=""><button className="gs-btn ghost sm" onClick={() => setEditing(o)}>Edit</button></td>
                   </tr>
                 ))}
           </tbody>

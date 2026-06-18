@@ -41,23 +41,33 @@ export function mountCairn(container, opts = {}) {
   const RW = 64;                     // width of the travelling ring (px)
   const inv2RW = 1 / (2 * RW * RW);
 
+  let active = true;   // declared early so the pointer handler can skip work when faded out
   let W, H, DPR, cx, cy, scaleBase, maxR;
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : o.dpr);
-    W = innerWidth; H = innerHeight;
+    // size to the CONTAINER, not the viewport, so this is safe in any layout (not just a full-screen Stage layer)
+    const rect = container.getBoundingClientRect();
+    W = Math.max(1, rect.width); H = Math.max(1, rect.height);
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     cx = W * 0.5; cy = H * 0.5;
     maxR = Math.min(W, H) * 0.47;
     scaleBase = maxR / SQN;          // c such that the outermost seed sits at maxR
   }
-  addEventListener('resize', resize, { passive: true });
+  // observe the container's own box (catches layout changes a window 'resize' would miss); fall back to window resize
+  const ro = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(() => resize()) : null;
+  if (ro) ro.observe(container); else addEventListener('resize', resize, { passive: true });
 
-  // pointer — the cursor gathers nearby seeds toward it (fine pointers only)
+  // pointer — the cursor gathers nearby seeds toward it (fine pointers only), measured RELATIVE to the
+  // container so the influence lands correctly even when the canvas isn't the full viewport.
   const mouse = { x: -1e4, y: -1e4, on: false };
   let onPointer = null, onLeave = null;
   if (!coarse && !reduce) {
-    onPointer = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true; };
+    onPointer = (e) => {
+      if (!active) return;                 // don't track while the layer is faded out
+      const rect = container.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top; mouse.on = true;
+    };
     onLeave = () => { mouse.on = false; };
     addEventListener('pointermove', onPointer, { passive: true });
     addEventListener('pointerleave', onLeave, { passive: true });
@@ -131,7 +141,7 @@ export function mountCairn(container, opts = {}) {
   if (reduce) { climb.cur = climb.tgt = 0.75; }   // reduced motion settles at a grown cairn
   paint(T);
 
-  let raf = 0, active = true;   // Stage pauses faded-out layers (opacity ~0) in a multi-scene track
+  let raf = 0;   // active (declared above) is toggled by setActive; Stage pauses faded-out layers (opacity ~0)
   if (!reduce) {
     const nowFn = (typeof performance !== 'undefined' && performance.now) ? () => performance.now() : () => Date.now();
     let last = nowFn();
@@ -152,7 +162,7 @@ export function mountCairn(container, opts = {}) {
     resize,
     destroy() {
       if (raf) cancelAnimationFrame(raf);
-      removeEventListener('resize', resize);
+      if (ro) ro.disconnect(); else removeEventListener('resize', resize);
       if (onPointer) removeEventListener('pointermove', onPointer);
       if (onLeave) removeEventListener('pointerleave', onLeave);
       if (cv.parentNode) cv.parentNode.removeChild(cv);

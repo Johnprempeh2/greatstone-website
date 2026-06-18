@@ -92,16 +92,16 @@ export default function BulkImport({ staff }) {
           </p>
           {!!plan.invalid.length && <ul className="bk-errs">{plan.invalid.slice(0, 12).map((e, i) => <li key={i}>row {e.rowIndex + 2} {e.sku ? '(' + e.sku + ')' : ''}: {e.reason}</li>)}</ul>}
           {!!plan.duplicates.length && <ul className="bk-errs">{plan.duplicates.slice(0, 8).map((d, i) => <li key={i}>SKU <b>{d.sku}</b> appears {d.rowIndexes.length}× in the file, skipped.</li>)}</ul>}
-          <div className="ca-table-wrap"><table className="ca-table">
+          <div className="ca-table-wrap"><table className="ca-table ca-cards">
             <thead><tr><th scope="col">SKU</th><th scope="col">Action</th><th scope="col">Detail</th></tr></thead>
             <tbody>
               {plan.creates.slice(0, 60).map(c2 => (
-                <tr key={'c' + c2.sku}><td className="ca-name">{c2.sku}</td><td><span className="ca-status ca-published">create</span></td>
-                  <td>{c2.offeringName || c2.offeringSlug || '(standalone)'} · {c2.variant.name} · {usd(c2.variant.base_price_minor)}</td></tr>
+                <tr key={'c' + c2.sku}><td data-label="SKU" className="ca-name">{c2.sku}</td><td data-label="Action"><span className="ca-status ca-published">create</span></td>
+                  <td data-label="Detail">{c2.offeringName || c2.offeringSlug || '(standalone)'} · {c2.variant.name} · {usd(c2.variant.base_price_minor)}</td></tr>
               ))}
               {plan.updates.slice(0, 60).map(u => (
-                <tr key={'u' + u.sku}><td className="ca-name">{u.sku}</td><td><span className="ca-status ca-draft">update</span></td>
-                  <td>{Object.entries(u.changes).map(([f, ch]) => <div key={f} className="bk-chg"><b>{f === 'base_price_minor' ? 'price (USD)' : f}</b>: <s>{f === 'base_price_minor' ? usd(ch.from) : String(ch.from)}</s> → {f === 'base_price_minor' ? usd(ch.to) : String(ch.to)}</div>)}</td></tr>
+                <tr key={'u' + u.sku}><td data-label="SKU" className="ca-name">{u.sku}</td><td data-label="Action"><span className="ca-status ca-draft">update</span></td>
+                  <td data-label="Detail">{Object.entries(u.changes).map(([f, ch]) => <div key={f} className="bk-chg"><b>{f === 'base_price_minor' ? 'price (USD)' : f}</b>: <s>{f === 'base_price_minor' ? usd(ch.from) : String(ch.from)}</s> → {f === 'base_price_minor' ? usd(ch.to) : String(ch.to)}</div>)}</td></tr>
               ))}
               {!plan.creates.length && !plan.updates.length && <tr><td colSpan="3" className="ca-muted">No changes to apply.</td></tr>}
             </tbody>

@@ -123,17 +123,17 @@ export default function PricingRules({ staff }) {
 
       <h2 className="pr-listh">Existing rules</h2>
       <div className="ca-table-wrap">
-        <table className="ca-table">
+        <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Name</th><th scope="col">Scope</th><th scope="col">Discount</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {!rules.length ? <tr><td colSpan="5" className="ca-muted">No rules yet.</td></tr>
               : rules.map(r => (
                 <tr key={r.id}>
-                  <td className="ca-name">{r.name}{r.label && <span className="pr-badge">{r.label}</span>}</td>
-                  <td>{scopeLabel(r)}</td>
-                  <td className="pr-val">{valueLabel(r)}</td>
-                  <td><span className={'ca-status ' + (r.active ? 'ca-published' : 'ca-draft')}>{r.active ? 'Live' : 'Inactive'}</span></td>
-                  <td className="pr-actions">
+                  <td data-label="Name" className="ca-name">{r.name}{r.label && <span className="pr-badge">{r.label}</span>}</td>
+                  <td data-label="Scope">{scopeLabel(r)}</td>
+                  <td data-label="Discount" className="pr-val">{valueLabel(r)}</td>
+                  <td data-label="Status"><span className={'ca-status ' + (r.active ? 'ca-published' : 'ca-draft')}>{r.active ? 'Live' : 'Inactive'}</span></td>
+                  <td data-label="" className="pr-actions">
                     <button className="gs-btn ghost sm" onClick={() => toggleActive(r)}>{r.active ? 'Turn off' : 'Make live'}</button>
                     <button className="gs-btn ghost sm" onClick={() => remove(r)}>Delete</button>
                   </td>

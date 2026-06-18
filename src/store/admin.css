@@ -168,6 +168,19 @@
   .acct-orders .ca-ord-item { grid-template-columns:1fr auto; }
 }
 
+/* ── Reusable mobile card-collapse for flat admin tables (opt in with class "ca-cards") ──────────
+   Generalises the account pattern above: each row becomes a labelled card so a wide admin grid stays
+   readable on a phone instead of forcing a horizontal scroll. Every <td> needs a data-label. */
+@media (max-width:640px){
+  .ca-table.ca-cards { min-width:0; }
+  .ca-table.ca-cards thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .ca-table.ca-cards tbody tr { display:block; border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:12px; margin:10px 0; padding:8px 12px; }
+  .ca-table.ca-cards td { display:flex; justify-content:space-between; align-items:center; gap:14px; border:0 !important; padding:6px 2px; font-size:.9rem; text-align:left; }
+  .ca-table.ca-cards td::before { content:attr(data-label); color:var(--gs-text-faint); font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; flex:0 0 auto; }
+  .ca-table.ca-cards td:empty { display:none; }                 /* a blank actions cell adds no card row */
+  .ca-table.ca-cards td[data-label=""]::before { content:none; } /* action cells opt out of the label */
+}
+
 /* ── Touch targets on coarse pointers (phones/tablets) ───────────────────── */
 @media (pointer:coarse){
   .gs-btn.sm { padding:.7em 1.1em; }
