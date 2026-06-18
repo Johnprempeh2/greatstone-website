@@ -95,7 +95,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                   <button key={slug} role="menuitem" className={'gs-navmenu-item' + (slug === current && !shopActive ? ' is-active' : '')}
                     onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
                 ))}
-                {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Shop</button>}
+                {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
                 {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Account</button>}
                 {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
@@ -108,7 +108,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                 {pages[slug].title}
               </button>
             ))}
-            {onShop && <button className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Shop</button>}
+            {onShop && <button className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Products</button>}
             {onAccount && <button className={'gs-navlink' + (accountActive ? ' is-active' : '')} onClick={onAccount}>Account</button>}
             {visible.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
           </nav>

@@ -299,8 +299,6 @@ function ProfileCard({ profile, onProfile, flash }) {
       <label>Company<input value={company} onChange={e => setCompany(e.target.value)} autoComplete="organization" /></label>
       <label>Your name<input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
       <label>Phone<input value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" /></label>
-      <label>Email<input value={profile?.email || ''} readOnly disabled /></label>
-      <p className="ca-note">Contact us to change your account email.</p>
       <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
     </div>
   );
@@ -325,7 +323,7 @@ function SecurityCard({ email, flash }) {
       <label>Confirm new password<input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} minLength={8} autoComplete="new-password" /></label>
       {err && <div className="ca-err" role="alert">{err}</div>}
       <button className="gs-btn primary" type="submit" disabled={busy || !pw}>{busy ? 'Updating…' : 'Update password'}</button>
-      <p className="ca-note">Signed in as {email}. We'll never ask for your password by email.</p>
+      <p className="ca-note">Signed in as <b>{email}</b>. To change your account email, contact us. We'll never ask for your password by email.</p>
     </form>
   );
 }

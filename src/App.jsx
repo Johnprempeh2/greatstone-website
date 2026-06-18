@@ -309,7 +309,7 @@ export default function App() {
     if (accountRoute) { utility('Your account', 'home'); return; }
     if (confirmRoute) { utility('Order confirmed', 'home'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home'); return; }
-    if (shopRoute) { utility('Software store', 'shop'); return; }
+    if (shopRoute) { utility('Products', 'shop'); return; }
     if (productSlug) {
       const pr = findProductBySlug(state.publishedProducts, productSlug);
       if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'product/' + (pr.slug || productSlug)); return; }

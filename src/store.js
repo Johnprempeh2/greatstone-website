@@ -340,8 +340,8 @@ export function seedState() {
   seedPages.forEach((p) => {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
-  pages.products = productsPage();
-  const order = ['home', 'method', 'services', 'industries', 'products', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
+  pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
+  const order = ['home', 'method', 'services', 'industries', 'proof', 'about', 'insights', 'climb', 'contact'].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
@@ -441,13 +441,9 @@ function migrate(state) {
     }
     return m;
   });
-  if (!state.pages.products) {
-    state.pages.products = productsPage();
-    if (!state.order.includes('products')) {
-      const at = state.order.indexOf('industries');
-      state.order.splice(at >= 0 ? at + 1 : state.order.length, 0, 'products');
-    }
-  }
+  // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
+  // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.
+  state.order = state.order.filter((s) => s !== 'products');
   state.schema = SCHEMA;
   return state;
 }
