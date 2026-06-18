@@ -21,11 +21,18 @@ export default function StoreCart({ confirmed = false }) {
   const count = cartCount();
 
   const drawerRef = useRef(null);
-  const closeCart = useCallback(() => { setOpen(false); setView('cart'); }, []);
+  // reset the drawer to the basket view + clear any stale error on every close, so reopening the FAB
+  // never resurfaces the quote form or a stale "sent"/error state from a previous session.
+  const closeCart = useCallback(() => { setOpen(false); setView('cart'); setErr(null); }, []);
   useModal(drawerRef, open, closeCart); // focus-in, Tab-trap, scroll-lock, Escape, focus-restore
 
-  // prefill the quote contact email from the signed-in account, if any
-  useEffect(() => { if (view === 'quote' && !q.email) getSession().then(s => { const e = s?.user?.email; if (e) setQ(v => ({ ...v, email: e })); }); }, [view]); // eslint-disable-line
+  // prefill the quote contact email from the signed-in account, if any (guard against setState after unmount)
+  useEffect(() => {
+    if (view !== 'quote' || q.email) return;
+    let alive = true;
+    getSession().then(s => { const e = s?.user?.email; if (alive && e) setQ(v => ({ ...v, email: e })); });
+    return () => { alive = false; };
+  }, [view]); // eslint-disable-line
 
   const checkout = useCallback(async () => {
     setBusy(true); setErr(null);
@@ -69,11 +76,11 @@ export default function StoreCart({ confirmed = false }) {
       <div className="gs-sr-only" aria-live="polite" aria-atomic="true">{count > 0 ? count + ' item' + (count === 1 ? '' : 's') + ' in your basket' : 'Basket empty'}</div>
 
       {open && (
-        <div className="sc-scrim" onClick={() => setOpen(false)}>
+        <div className="sc-scrim" onClick={closeCart}>
           <aside ref={drawerRef} tabIndex={-1} className="sc-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="sc-title">
             <header className="sc-head">
               <h2 id="sc-title">Your basket{count ? ' · ' + count : ''}</h2>
-              <button className="sc-x" onClick={() => setOpen(false)} aria-label="Close basket">✕</button>
+              <button className="sc-x" onClick={closeCart} aria-label="Close basket">✕</button>
             </header>
 
             {view === 'sent' ? (

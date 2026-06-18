@@ -86,7 +86,7 @@ export default function BackgroundPanel({ value, onChange, onPreview, onClose, b
           <input className="gs-track-scrub" type="range" min="0" max="1" step="0.005" value={scrub == null ? 0 : scrub} onChange={(e) => doScrub(e.target.value)} aria-label="Preview scroll position" />
           <span className="gs-track-cap">Bottom</span>
         </div>
-        <p className="gs-track-hint">{scrub == null ? 'Drag to preview the scroll and watch the background hand off at each point.' : `Previewing at ${Math.round(scrub * 100)}% — `}{scrub != null && <button className="gs-link" onClick={() => doScrub('')}>stop</button>}</p>
+        <p className="gs-track-hint">{scrub == null ? 'Drag to preview the scroll and watch the background hand off at each point.' : `Previewing at ${Math.round(scrub * 100)}%. `}{scrub != null && <button className="gs-link" onClick={() => doScrub('')}>stop</button>}</p>
 
         <div className="gs-preview-label">Start from a preset</div>
         <div className="gs-bgpresets">{STAGE_OPTIONS.map((o) => <button key={o.id} className="gs-bgpreset" onClick={() => applyPreset(o.id)}>{o.label}</button>)}</div>

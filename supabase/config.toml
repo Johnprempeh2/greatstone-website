@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.stripe-portal]
 verify_jwt = false
+
+[functions.request-quote]
+verify_jwt = false

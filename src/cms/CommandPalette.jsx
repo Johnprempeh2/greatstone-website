@@ -40,11 +40,13 @@ export default function CommandPalette({ open, onClose, commands }) {
     else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => Math.max(s - 1, 0)); }
     else if (e.key === 'Enter') { e.preventDefault(); run(filtered[sel]); }
     else if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    // the search input is the only focusable control — trap Tab on it so focus can't slip behind the open palette
+    else if (e.key === 'Tab') { e.preventDefault(); inputRef.current && inputRef.current.focus(); }
   };
 
   return (
     <div className="gs-cmd-backdrop" onMouseDown={onClose}>
-      <div className="gs-cmd" role="dialog" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKey}>
+      <div className="gs-cmd" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKey}>
         <div className="gs-cmd-search">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.6"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
           <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a command or search pages…"

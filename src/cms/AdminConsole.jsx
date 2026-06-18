@@ -122,7 +122,7 @@ export default function AdminConsole({
                         title={locked ? 'Your role doesn’t have access' : undefined}
                       >
                         <span className="ac-railitem-l">{it.label}</span>
-                        {it.badge ? <span className="ac-railbadge" aria-label={it.badge + ' need attention'}>{it.badge}</span> : null}
+                        {it.badge ? <span className="ac-railbadge" aria-label={it.badge + ' needing attention'}>{it.badge}</span> : null}
                         {it.type === 'editor' ? <span className="ac-railitem-go" aria-hidden="true">✎</span>
                           : it.type === 'commerce' || it.type === 'link' ? <span className="ac-railitem-go" aria-hidden="true">↗</span> : null}
                       </button>

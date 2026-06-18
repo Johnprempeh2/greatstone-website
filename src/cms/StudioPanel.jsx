@@ -13,7 +13,7 @@ const GROUPS = [
 
 export default function StudioPanel({ tab, onTab, onClose, panels, badges = {} }) {
   return (
-    <aside className="gs-panel gs-studio" role="dialog" aria-label="Studio">
+    <aside className="gs-panel gs-studio" aria-label="Studio">
       <div className="gs-studio-tabs">
         {/* plain buttons with aria-current, not a role="tablist" — we don't implement the full ARIA
             tabs keyboard contract (arrow keys / roving tabindex), so we don't claim it. */}
@@ -27,7 +27,7 @@ export default function StudioPanel({ tab, onTab, onClose, panels, badges = {} }
                 {tabs.map(([id, label]) => (
                   <button key={id} aria-current={tab === id ? 'true' : undefined}
                     className={'gs-studio-tab' + (tab === id ? ' is-active' : '')} onClick={() => onTab(id)}>
-                    {label}{badges[id] ? <span className="gs-studio-tabbadge" aria-label={badges[id] + ' need attention'}>{badges[id]}</span> : null}
+                    {label}{badges[id] ? <span className="gs-studio-tabbadge" aria-label={badges[id] + ' needing attention'}>{badges[id]}</span> : null}
                   </button>
                 ))}
               </div>

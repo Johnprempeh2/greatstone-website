@@ -7,8 +7,8 @@ export function Quote({ text, attr, align = 'center' }) {
   return (
     <section ref={ref} className={`b-quote align-${align}`}>
       <div className="wrap quote-wrap">
-        <blockquote className="quote" data-reveal><span className="mark">“</span>{text}<span className="mark">”</span></blockquote>
-        {attr ? <div className="quote-attr" data-reveal>{attr}</div> : null}
+        <blockquote className="quote" data-reveal><span className="mark" aria-hidden="true">“</span>{text}<span className="mark" aria-hidden="true">”</span></blockquote>
+        {attr ? <cite className="quote-attr" data-reveal>{attr}</cite> : null}
       </div>
     </section>
   );
@@ -20,7 +20,7 @@ export const css = `
 .b-quote .quote{font-weight:800;font-size:clamp(1.6rem,3.6vw,3rem);line-height:1.18;letter-spacing:-.02em;max-width:22ch}
 .b-quote.align-center .quote{margin-inline:auto}
 .b-quote .quote .mark{color:var(--gs-accent);font-size:1.1em;line-height:0}
-.b-quote .quote-attr{margin-top:28px;font-size:.86rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-muted)}
+.b-quote .quote-attr{display:block;margin-top:28px;font-size:.86rem;font-weight:700;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-muted)}
 `;
 
 export const puck = {

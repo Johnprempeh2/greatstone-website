@@ -135,6 +135,7 @@ function applyHead(seo, pageTitle, slug) {
   // open graph
   upsertMeta('property', 'og:type', 'website');
   upsertMeta('property', 'og:site_name', SITE_NAME);
+  upsertMeta('property', 'og:locale', 'en_GB');
   upsertMeta('property', 'og:title', title);
   upsertMeta('property', 'og:url', url);
   upsertMeta('name', 'twitter:title', title);
@@ -184,6 +185,7 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false); // resolved the Supabase session yet (lazy, on #admin)
   const [authNotice, setAuthNotice] = useState(null); // why an authenticated session can't use the CMS (no/read-only role)
   const authSubRef = useRef(null);                  // the onAuthStateChange subscription (set up once)
+  const mountedRef = useRef(true);                  // App lifetime — the long-lived auth subscription guards on this, not a per-run flag
   const [adminNav, setAdminNav] = useState(readAdminHash); // { section, slug } | null — the one admin-route source
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
@@ -203,6 +205,9 @@ export default function App() {
 
   const onAdmin = !!adminNav;                          // anywhere under #admin (console or editor)
   const adminSection = adminNav ? adminNav.section : 'overview';
+  // skip the decorative 561KB three.js stage on data-saver / 2g connections — the .gs-scrim + CSS
+  // background leave the page visually complete without it (the brand 3D is a progressive enhancement).
+  const saveData = typeof navigator !== 'undefined' && navigator.connection && (navigator.connection.saveData || /(^|-)2g$/.test(navigator.connection.effectiveType || ''));
   const adminSlug = adminNav ? adminNav.slug : null;
   const editorReturn = useRef('overview');             // the console section to return to from ◇ Hub
   const authed = !!user;
@@ -269,11 +274,14 @@ export default function App() {
     if (!onAdmin || authChecked) return;
     let alive = true;
     import('./store/adminAuth.mjs').then(async (m) => {
+      // guard on mountedRef (App lifetime), NOT the per-run `alive`: the onAuth subscription below is
+      // long-lived, and `alive` flips false as soon as setAuthChecked(true) re-runs this effect — which
+      // would otherwise leave every later sign-in/out/expiry event unable to update the chrome.
       const resolve = async () => {
         const s = await m.getSession().catch(() => null);
-        if (!s) { if (alive) { setUser(null); setAuthNotice(null); } return; }
+        if (!s) { if (mountedRef.current) { setUser(null); setAuthNotice(null); } return; }
         const staff = await m.getStaffUser().catch(() => null);
-        if (!alive) return;
+        if (!mountedRef.current) return;
         if (staff && m.isStaff(staff)) { setUser({ email: staff.email, name: staff.full_name || staff.email, role: staff.role }); setAuthNotice(null); }
         else {
           // authenticated, but no usable CMS role — surface why instead of a blank sign-in form
@@ -287,7 +295,7 @@ export default function App() {
     }).catch(() => { if (alive) setAuthChecked(true); });
     return () => { alive = false; };
   }, [onAdmin, authChecked]);
-  useEffect(() => () => { if (authSubRef.current) try { authSubRef.current.unsubscribe(); } catch { /* noop */ } }, []);
+  useEffect(() => () => { mountedRef.current = false; if (authSubRef.current) try { authSubRef.current.unsubscribe(); } catch { /* noop */ } }, []);
   // keep the document <head> in sync — a product detail route gets its own per-product SEO
   // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
@@ -304,7 +312,7 @@ export default function App() {
     if (shopRoute) { utility('Software store', 'shop'); return; }
     if (productSlug) {
       const pr = findProductBySlug(state.publishedProducts, productSlug);
-      if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'products/' + (pr.slug || productSlug)); return; }
+      if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'product/' + (pr.slug || productSlug)); return; }
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
@@ -466,7 +474,7 @@ export default function App() {
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       flash('Exported site JSON for the dev team.');
-    } catch (e) { flash('Couldn’t export — the data may be too large for the browser.'); }
+    } catch (e) { flash('Couldn’t export. The data may be too large for the browser.'); }
   }
   // product catalogue management (admin): add/edit/remove products + categories. Mutates the store
   // through the same CRUD the future Laravel API will mirror; the Storefront reads the result live.
@@ -489,7 +497,7 @@ export default function App() {
   // the draft to what's live. Mirrors page publish; the public storefront/product pages only ever read published.
   function publishCatalogue() {
     if (!canPublish) return;
-    setState((s) => logActivity(publishCatalog(s), 'Published the catalogue', actor())); flash('Catalogue published — live on the site.');
+    setState((s) => logActivity(publishCatalog(s), 'Published the catalogue', actor())); flash('Catalogue published. Live on the site.');
   }
   async function discardCatalogue() {
     const ok = await ask({ kind: 'confirm', title: 'Discard catalogue changes', message: 'Revert all unpublished catalogue edits back to what’s live? This can’t be undone.', confirmLabel: 'Discard changes', danger: true });
@@ -503,7 +511,7 @@ export default function App() {
     const email = (member.email || '').trim().toLowerCase();
     if (email && (state.team || []).some((m) => (m.email || '').trim().toLowerCase() === email)) return flash('That email is already on the team.');
     setState((s) => logActivity(inviteTeamMember(s, { ...member, invitedBy: actor() }), 'Invited ' + (member.email || 'a teammate') + ' as ' + ((ROLES[member.role] || {}).label || member.role || 'editor'), actor()));
-    flash('Invitation recorded. Copy its link to share (prototype — no email sent).');
+    flash('Invitation recorded. Copy its link to share (prototype, no email sent).');
   }
   // accept a #join/<token> invite (prototype: flips the roster status to active; no account/sign-in)
   function acceptInviteToken(token) {
@@ -514,7 +522,7 @@ export default function App() {
   function editTeammate(id, patch) {
     const m = (state.team || []).find((x) => x.id === id);
     if (patch.role && patch.role !== 'admin') {
-      if (m && m.role === 'admin' && m.status !== 'invited' && activeAdmins(state.team).length <= 1) return flash('There must be at least one administrator — promote someone else first.');
+      if (m && m.role === 'admin' && m.status !== 'invited' && activeAdmins(state.team).length <= 1) return flash('There must be at least one administrator. Promote someone else first.');
     }
     setState((s) => {
       const next = updateTeamMember(s, id, patch);
@@ -537,7 +545,7 @@ export default function App() {
   function renameSlug(slug, next) {
     const n = (next || '').trim();
     if (!n || n === slug) return;
-    if (RESERVED_SLUGS.includes(slug)) return flash('The “' + slug + '” page URL is fixed — other parts of the site link to it.');
+    if (RESERVED_SLUGS.includes(slug)) return flash('The “' + slug + '” page URL is fixed; other parts of the site link to it.');
     setState((s) => { const r = setSlug(s, slug, n); if (current === slug && r._goto) setCurrent(r._goto); return r; });
     flash('URL updated. The old path will redirect.');
   }
@@ -813,7 +821,7 @@ export default function App() {
                 </label>
                 <button className={'gs-btn ghost sm gs-studio-btn' + (panel ? ' is-on' : '')} onClick={() => setPanel(panel ? null : 'home')}
                   aria-expanded={!!panel} title="Open the Studio (pages, products, team, releases, background, SEO, history, activity)">
-                  Studio{studioAttention.total ? <span className="gs-studio-btnbadge" aria-label={studioAttention.total + ' items need attention'}>{studioAttention.total}</span> : null}
+                  Studio{studioAttention.total ? <span className="gs-studio-btnbadge" aria-label={studioAttention.total + (studioAttention.total === 1 ? ' item needing attention' : ' items needing attention')}>{studioAttention.total}</span> : null}
                 </button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* state */}
@@ -859,7 +867,7 @@ export default function App() {
       <SiteChrome />
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) render on a solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || catalogueAdmin || confirmRoute || invoiceRoute) && <Stage background={bg} />}
+      {!(accountRoute || catalogueAdmin || confirmRoute || invoiceRoute) && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
@@ -867,8 +875,8 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !invoiceRoute && !confirmRoute ? undefined : () => navigate(state.order[0])}>
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
+        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : accountRoute

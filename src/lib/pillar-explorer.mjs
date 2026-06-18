@@ -53,6 +53,8 @@ export function mountPillarExplorer(container, opts = {}) {
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100); camera.position.set(0, 0, 9.4);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
+  let envRT = null;     // PMREM render target — keep a handle so we can dispose its framebuffer on swap + teardown
+  let disposed = false; // set in destroy(); a late env TextureLoader callback must not touch a disposed PMREM / lost context
   (function env() {
     const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g = c.getContext('2d');
     const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#06140d'); gr.addColorStop(.45, '#16432f'); gr.addColorStop(.55, '#1d5a3e'); gr.addColorStop(1, '#04100a');
@@ -60,11 +62,13 @@ export function mountPillarExplorer(container, opts = {}) {
     const s = (x, y, w, h, col, a) => { g.fillStyle = col; g.globalAlpha = a; g.fillRect(x, y, w, h); };
     s(40, 28, 360, 10, '#dfffe8', .55); s(120, 86, 300, 6, '#c8ff00', .38); s(20, 150, 430, 16, '#fff', .16); g.globalAlpha = 1;
     const t = new THREE.CanvasTexture(c); t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace;
-    scene.environment = pmrem.fromEquirectangular(t).texture; t.dispose();
+    envRT = pmrem.fromEquirectangular(t); scene.environment = envRT.texture; t.dispose();
   })();
   if (o.envUrl) new THREE.TextureLoader().load(o.envUrl, (tex) => {
+    if (disposed) { tex.dispose(); return; }   // explorer was torn down before the env image decoded
     tex.mapping = THREE.EquirectangularReflectionMapping; tex.colorSpace = THREE.SRGBColorSpace;
-    scene.environment = pmrem.fromEquirectangular(tex).texture;
+    const next = pmrem.fromEquirectangular(tex); if (envRT) envRT.dispose(); envRT = next;
+    scene.environment = envRT.texture; tex.dispose();
   }, undefined, () => {});
 
   scene.add(new THREE.AmbientLight(0x141c17, 0.4));
@@ -228,10 +232,11 @@ export function mountPillarExplorer(container, opts = {}) {
   return {
     setSelected(i) { selected = i; },
     destroy() {
+      disposed = true;
       cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
       container.removeEventListener('pointermove', onMove); container.removeEventListener('pointerleave', onLeave); container.removeEventListener('click', onClick);
       geos.forEach((g) => g.dispose()); mats.forEach((m) => m.dispose());
-      Object.values(texCache).forEach((tx) => tx.dispose()); GLOW.dispose(); pmrem.dispose();
+      Object.values(texCache).forEach((tx) => tx.dispose()); GLOW.dispose(); if (envRT) envRT.dispose(); scene.environment = null; pmrem.dispose();
       renderer.forceContextLoss(); renderer.dispose(); canvas.remove();
     },
   };

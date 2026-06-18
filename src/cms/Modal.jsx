@@ -26,7 +26,7 @@ export default function Modal({ modal, onResolve }) {
       if (e.key === 'Escape') { e.preventDefault(); onResolve(modal.kind === 'prompt' ? null : false); }
       else if (e.key === 'Tab') {
         // simple focus trap: keep Tab within the dialog
-        const f = panelRef.current ? panelRef.current.querySelectorAll('button, input, [href], select, textarea') : [];
+        const f = panelRef.current ? Array.from(panelRef.current.querySelectorAll('button:not([disabled]),input:not([disabled]),[href],select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter((el) => el.offsetParent !== null) : [];
         if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }

@@ -131,6 +131,7 @@
     const sm = { x: 0, y: 0 }; // exp-smoothed pointer ("Greatstone reaching into time")
 
     function onMove(e) {
+      if (document.hidden) return;                 // skip the layout read while the tab is backgrounded
       const rect = container.getBoundingClientRect();
       mouse.x = e.clientX - rect.left;
       mouse.y = e.clientY - rect.top;
@@ -243,8 +244,9 @@
 
     // --- loop / lifecycle ------------------------------------------------------
     let raf = 0;
+    let active = true; // Stage pauses faded-out layers (multi-scene tracks) via setActive — skip the draw then
     function loop(now) {
-      if (!document.hidden) draw(now);
+      if (active && !document.hidden) draw(now);
       if (!reduce) raf = requestAnimationFrame(loop);
     }
 
@@ -257,7 +259,7 @@
 
     const onResize = () => resize();
     global.addEventListener('resize', onResize, { passive: true });
-    if (!coarse) {
+    if (!coarse && !reduce) {                      // under reduced motion the warp/well are off, so the pointer listener is dead work
       global.addEventListener('pointermove', onMove, { passive: true });
       global.addEventListener('pointerleave', onLeave, { passive: true });
     }
@@ -266,6 +268,7 @@
     if (!reduce) raf = requestAnimationFrame(loop);
 
     return {
+      setActive(v) { active = v !== false; },      // Stage pauses this layer when faded out behind another scene
       destroy() {
         if (raf) cancelAnimationFrame(raf);
         global.removeEventListener('resize', onResize);

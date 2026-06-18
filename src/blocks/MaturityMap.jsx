@@ -65,6 +65,7 @@ export function MaturityMap({ tiers = [] }) {
 
   return (
     <section className="b-map map-stage" ref={rootRef} aria-label="The digital maturity map">
+      <h2 className="gs-sr-only">Digital maturity tiers</h2>
       <div className="map-sticky">
         <div className="map-sky" aria-hidden="true" />
         <svg className="map-svg" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" role="img"

@@ -78,8 +78,12 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
         <button type="button" style={S.back} onClick={onCancel}>← Back to site</button>
 
         <p style={S.note}>
-          Demo staff (password <b style={{ color: 'var(--gs-text-muted)' }}>stone</b>):<br />
-          admin@greatstone.dev · editor@greatstone.dev<br /><br />
+          {/* Demo credentials are dev-only — Vite strips this block from the production build so working
+              staff logins never ship to the live sign-in screen. */}
+          {import.meta.env.DEV && (<>
+            Demo staff (password <b style={{ color: 'var(--gs-text-muted)' }}>stone</b>):<br />
+            admin@greatstone.dev · editor@greatstone.dev<br /><br />
+          </>)}
           The same account signs you into the live catalogue. Editing rights are enforced by role on the server (Supabase RLS).
         </p>
       </form>

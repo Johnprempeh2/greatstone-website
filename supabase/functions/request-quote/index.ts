@@ -76,7 +76,9 @@ Deno.serve(async (req) => {
     const { data: ruleRows } = await supabase.from('pricing_rules').select('*, pricing_rule_targets(vendor_id,category_id,offering_id,tier_id)').eq('active', true).eq('status', 'published').is('deleted_at', null);
     const rules = (ruleRows || []).map(toRule);
     const { data: fx } = await supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle();
-    const rate = Number(fx?.usd_to_gbp_display_rate) || 1.30;
+    // Fail CLOSED like stripe-checkout: never capture a quote at a phantom hardcoded rate if the FX read fails.
+    const rate = Number(fx?.usd_to_gbp_display_rate);
+    if (!(rate > 0)) return json({ error: 'Pricing temporarily unavailable, please try again.' }, 400);
     const now = new Date();
     const buyer = await resolveBuyer(req);
 

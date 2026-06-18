@@ -54,7 +54,7 @@
 .st-more { display:block; margin:24px auto 0; padding:.8em 1.8em; border-radius:100px; border:1px solid var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; cursor:pointer; }
 .st-loading { grid-column:1/-1; text-align:center; padding:60px; color:var(--gs-text-faint); }
 .st-filterbtn { display:none; }
-@media (max-width:880px){ .st-filterbtn { display:inline-flex; align-items:center; gap:.5em; padding:.7em 1.2em; border-radius:100px; border:1px solid var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; font-size:.85rem; cursor:pointer; } }
+@media (max-width:880px){ .st-filterbtn { display:inline-flex; align-items:center; gap:.5em; min-height:44px; padding:.7em 1.2em; border-radius:100px; border:1px solid var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; font-size:.85rem; cursor:pointer; } }
 
 /* ---- product detail (sp-) ---- */
 .sp-wrap { position:relative; z-index:1; max-width:var(--gs-maxw,1180px); margin:0 auto; padding:clamp(96px,14vh,150px) clamp(20px,5vw,64px) clamp(60px,9vh,120px); }
@@ -168,7 +168,7 @@
 @media (max-width:640px){
   .st-wrap, .sp-wrap { padding-top:clamp(72px,11vh,96px); }
   .sp-gallery { position:static; }       /* nothing to stay sticky against once .sp-top is one column */
-  .st-pill { padding:.6em 1.1em; }        /* lift toward a 44px touch target */
+  .st-pill { padding:.6em 1.1em; min-height:44px; display:inline-flex; align-items:center; }   /* 44px touch target */
   .sc-x { padding:10px; font-size:1.25rem; }
   .sp-nav { width:44px; height:44px; }
 }

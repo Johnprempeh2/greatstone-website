@@ -61,7 +61,7 @@ export default function StoreBrowse({ initialVendor = '' }) {
         <h1 className="st-h1">Developer software,<br /><span className="accent">licensed and supported.</span></h1>
         <p className="st-lead">The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the vendors who make them, licensed and supported by us in the UK.</p>
         <div className="st-stats">
-          <span className="st-stat"><b>{total || '–'}</b> products</span>
+          <span className="st-stat"><b>{loading && !items.length ? '–' : total}</b> products</span>
           <span className="st-stat"><b>{vendors.length || '–'}</b> vendors</span>
           <span className="st-stat"><b>{categories.length || '–'}</b> categories</span>
         </div>

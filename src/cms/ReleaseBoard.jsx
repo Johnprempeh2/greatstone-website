@@ -39,7 +39,7 @@ export default function ReleaseBoard({ order, pages, current, onOpen, onClose, e
           <div className="gs-rel-stat"><b>{counts.draft || 0}</b><span>Draft</span></div>
         </div>
         <p className={'gs-rel-note' + (driftCount ? '' : ' gs-rel-clean')}>
-          {driftCount ? (driftCount + (driftCount > 1 ? ' pages have' : ' page has') + ' unpublished changes.') : 'Every page is up to date — no unpublished changes.'}
+          {driftCount ? (driftCount + (driftCount > 1 ? ' pages have' : ' page has') + ' unpublished changes.') : 'Every page is up to date. No unpublished changes.'}
         </p>
         <ul className="gs-rel-list">
           {sorted.map((r) => (
