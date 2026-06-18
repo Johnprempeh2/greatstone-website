@@ -405,7 +405,20 @@ export default function App() {
     setMode('view'); setPanel(null);
     flash('Published. Snapshot saved to history.');
   }
-  function saveDraft(data) { patchPage(current, { data }); setSavedAt(Date.now()); }
+  function saveDraft(data) {
+    setState((s) => {
+      const p = s.pages[current];
+      // Editing a LIVE page (published/approved) reopens the draft→review→publish path on the first real
+      // change, so a non-admin editor's "Request review" is reachable instead of dead-ended. Guarded by
+      // !eq so the status flip + history entry happen once, not on every Puck keystroke.
+      const reopen = (p.status === 'published' || p.status === 'approved') && p.published != null && !eq(data, p.published);
+      const patch = reopen
+        ? { data, status: 'draft', statusHistory: [...(p.statusHistory || []), { from: p.status, to: 'draft', by: user ? user.email : null, ts: Date.now(), note: 'Reopened for editing' }] }
+        : { data };
+      return { ...s, pages: { ...s.pages, [current]: { ...p, ...patch } } };
+    });
+    setSavedAt(Date.now());
+  }
   function setBg(kind) { patchPage(current, { background: kind }); }
   function setBgModel(v) { patchPage(current, { background: v }); } // granular scene-track or preset id
   // enforced status machine + audit trail; approving needs publish rights. Each collaboration
@@ -598,6 +611,8 @@ export default function App() {
     setPuckKey((k) => k + 1); setPanel(null); flash('Restored into the draft. Request review to publish it.');
   }
   async function discardDraft() {
+    // a never-published page has no live version to revert to — discarding would blank it; offer delete instead
+    if (page.published == null) return flash('This page has never been published, so there’s nothing to revert to. Delete it from Pages if you don’t want it.');
     const ok = await ask({ kind: 'confirm', title: 'Discard changes', message: 'Discard unpublished changes and revert to the live version? The current draft is snapshotted to history first.', confirmLabel: 'Discard changes', danger: true });
     if (!ok) return;
     setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: p.published, versions } } }; });
@@ -889,11 +904,11 @@ export default function App() {
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>
-            : <PublicRender config={config} data={page.published || page.data} />}
+            : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}
         </EditorBoundary>
       </main>
       {(shopRoute || productSlug) && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
-      <Footer order={state.order} pages={state.pages} onNavigate={navigate} />
+      <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} />
     </div>
     </CatalogContext.Provider>
   );

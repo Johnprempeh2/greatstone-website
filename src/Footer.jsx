@@ -2,8 +2,10 @@ const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png
 
 // The real site footer (uses site.css .site-footer classes verbatim), so the studio closes
 // the page exactly like the live site. Global chrome, shown in view mode only.
-export default function Footer({ order, pages, onNavigate }) {
+export default function Footer({ order, pages, onNavigate, canEdit }) {
   const year = new Date().getFullYear();
+  // public visitors only see published pages; editors see all (so they can reach drafts). Home always kept.
+  const navOrder = canEdit ? order : order.filter((s, i) => i === 0 || pages[s].status === 'published' || pages[s].published);
   return (
     <footer className="site-footer">
       <svg className="foot-wave" viewBox="0 0 500 500" fill="none" aria-hidden="true">
@@ -17,7 +19,7 @@ export default function Footer({ order, pages, onNavigate }) {
       <div className="logo"><img src={LOGO} alt="Greatstone International" width="800" height="160" loading="lazy" decoding="async" /></div>
       <div className="tagline">The Foundation of Digital Excellence</div>
       <nav className="foot-links">
-        {order.map((slug) => (
+        {navOrder.map((slug) => (
           <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title}</a>
         ))}
       </nav>

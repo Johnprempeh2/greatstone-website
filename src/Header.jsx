@@ -19,7 +19,10 @@ const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="no
 // any number of pages). Editing affordances appear only for a signed-in user with edit rights.
 export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut }) {
   const q = (query || '').trim().toLowerCase();
-  const visible = q ? order.filter((s) => (pages[s].title || s).toLowerCase().includes(q) || s.includes(q)) : order;
+  // public visitors only see published pages (a never-published draft is hidden); editors see everything
+  // so they can navigate to their own drafts. The home page (order[0]) is always kept.
+  const navOrder = canEdit ? order : order.filter((s, i) => i === 0 || pages[s].status === 'published' || pages[s].published);
+  const visible = q ? navOrder.filter((s) => (pages[s].title || s).toLowerCase().includes(q) || s.includes(q)) : navOrder;
 
   const wrapRef = useRef(null);
   const neededRef = useRef(0);

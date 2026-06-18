@@ -388,7 +388,9 @@ function migrate(state) {
     if (!Array.isArray(p.versions)) p.versions = [];
     if (!Array.isArray(p.statusHistory)) p.statusHistory = [];
     if (p.approvedBy === undefined) p.approvedBy = null;
-    if (p.published == null) p.published = p.data; // never strand a page with no renderable live content
+    // backfill the live projection ONLY for already-published pages (legacy rows); a genuine draft keeps
+    // published=null so a reload can't silently re-publish it (which would defeat the draft→publish gate).
+    if (p.published == null && p.status === 'published') p.published = p.data;
   });
   // method page (additive): the "interactive breakdown" is now a FULL-SCREEN explorer at #breakdown
   // (not an inline section). On existing saved sites: drop any inline PillarExplorer that an earlier
@@ -521,6 +523,7 @@ export function addPageTo(state, title) {
   const page = seedPage(title, bg, [
     blk('Hero', { kicker: 'New page', headline: title, highlight: '', body: 'Start composing. Drag blocks in the editor, set the background, publish.', prompt: '', align: 'left', size: 'full', ctaLabel: '', ctaHref: '#book' }),
   ], null, 'draft');
+  page.published = null; // a brand-new page is a true draft — not public until it's published
   return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
 }
 
@@ -554,7 +557,7 @@ export function duplicatePage(state, slug) {
     clone.background.transitions = clone.background.transitions.map((tr) => (tr.anchor && tr.anchor.type === 'block' && idMap[tr.anchor.blockId]) ? { ...tr, anchor: { ...tr.anchor, blockId: idMap[tr.anchor.blockId] } } : tr);
   }
   clone.data.root = { props: { title } };
-  clone.published = clone.data;
+  clone.published = null; // a duplicate is a draft — it must not inherit the source's live (public) projection
   const i = state.order.indexOf(slug);
   const order = [...state.order]; order.splice(i + 1, 0, dup);
   return { ...state, order, pages: { ...state.pages, [dup]: clone }, _goto: dup };
