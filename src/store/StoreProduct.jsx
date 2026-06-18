@@ -52,7 +52,7 @@ export default function StoreProduct({ slug, onBack }) {
             </>}
             {gallery.length > 1 && <span className="gs-sr-only" aria-live="polite">{'Image ' + (gi + 1) + ' of ' + gallery.length}</span>}
           </div>
-          {gallery.length > 1 && <div className="sp-thumbs" role="group" aria-label="Product images">{gallery.map((src, i) => <button key={i} className={'sp-thumb' + (i === gi ? ' on' : '')} onClick={() => setGi(i)} aria-label={'Image ' + (i + 1) + ' of ' + gallery.length} aria-current={i === gi ? 'true' : undefined}><img src={src} alt="" /></button>)}</div>}
+          {gallery.length > 1 && <div className="sp-thumbs" role="group" aria-label="Product images">{gallery.map((src, i) => <button key={i} className={'sp-thumb' + (i === gi ? ' on' : '')} onClick={() => setGi(i)} aria-label={'Image ' + (i + 1) + ' of ' + gallery.length} aria-current={i === gi ? 'true' : undefined}><img src={src} alt="" onError={e => { const b = e.currentTarget.closest('.sp-thumb'); if (b) b.style.display = 'none'; }} /></button>)}</div>}
         </div>
 
         <div className="sp-info">

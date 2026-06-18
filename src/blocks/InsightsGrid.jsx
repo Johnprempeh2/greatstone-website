@@ -48,7 +48,7 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
               <article key={i} className={'card b-ins-post' + (matches(p) ? '' : ' is-hidden')} data-reveal>
                 <div className="b-ins-media">
                   {p.image
-                    ? <div className="b-ins-ink"><img src={p.image} alt={p.alt || ''} loading="lazy" /></div>
+                    ? <div className="b-ins-ink"><img src={p.image} alt={p.alt || ''} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /></div>
                     : <div className={'b-ins-ink b-ins-g' + n} />}
                   {catLabel ? <span className="b-ins-tag">{catLabel}</span> : null}
                 </div>

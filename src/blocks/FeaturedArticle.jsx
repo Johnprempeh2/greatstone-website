@@ -15,7 +15,7 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
             <path d="M170 94 A76 76 0 0 0 94 170" /><path d="M170 126 A44 44 0 0 0 126 170" />
           </svg>
           <div className="featured__media" aria-hidden={image ? undefined : 'true'}>
-            {image ? <img className="featured__img" src={image} alt={alt || ''} loading="lazy" /> : <span className="featured__glyph">{glyph}</span>}
+            {image ? <img className="featured__img" src={image} alt={alt || ''} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <span className="featured__glyph">{glyph}</span>}
           </div>
           <div className="featured__body">
             {label ? <span className="pill">{label}</span> : null}

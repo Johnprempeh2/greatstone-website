@@ -13,7 +13,7 @@ export function Figure({ image, alt, caption, width = 'standard', aspect = '16:9
       <div className="wrap">
         <figure className="b-figure-inner" data-reveal>
           {image
-            ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" decoding="async" style={imgStyle} />
+            ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" decoding="async" style={imgStyle} onError={e => { e.currentTarget.style.display = 'none'; }} />
             : <div className="b-figure-ph">Choose an image in the panel →</div>}
           {caption ? <figcaption className="b-figure-cap">{caption}</figcaption> : null}
         </figure>

@@ -1,7 +1,16 @@
+import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
 
 const initials = (name) => (name || '').trim().split(/\s+/).map((w) => w[0] || '').slice(0, 2).join('').toUpperCase();
+
+// A headshot that falls back to the initials badge if the photo is missing OR fails to load (a 404'd
+// or moved URL), so a broken editor image never shows the browser's broken-image glyph.
+function TeamAvatar({ photo, name }) {
+  const [broken, setBroken] = useState(false);
+  if (!photo || broken) return <span className="avatar" aria-hidden="true">{initials(name)}</span>;
+  return <img className="avatar avatar-img" src={photo} alt={name || ''} loading="lazy" onError={() => setBroken(true)} />;
+}
 
 // The people strip: senior hands, named. A real photo if one is set, otherwise an initials
 // badge derived from the name (so it always reads, even before headshots are added).
@@ -16,9 +25,7 @@ export function Team({ kicker, heading, body, items = [] }) {
         <div className="team-grid">
           {items.map((m, i) => (
             <div className="card team-card" data-reveal style={{ transitionDelay: `${i * 55}ms` }} key={i}>
-              {m.photo
-                ? <img className="avatar avatar-img" src={m.photo} alt={m.name || ''} loading="lazy" />
-                : <span className="avatar" aria-hidden="true">{initials(m.name)}</span>}
+              <TeamAvatar photo={m.photo} name={m.name} />
               <div><div className="t-name">{m.name}</div><div className="t-role">{m.role}</div></div>
             </div>
           ))}
