@@ -39,14 +39,40 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
     return () => ro.disconnect();
   }, [collapsed, order.length, q]);
 
-  // close the dropdown on outside click / Escape
+  const menuBtnRef = useRef(null);
+  const menuPopRef = useRef(null);
+
+  // close the dropdown on outside click / Escape; Escape returns focus to the toggle (menu-button pattern)
   useEffect(() => {
     if (!menuOpen) return;
     const onDoc = (e) => { if (!e.target.closest || !e.target.closest('.gs-navmenu')) setMenuOpen(false); };
-    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') { setMenuOpen(false); if (menuBtnRef.current) menuBtnRef.current.focus(); } };
     document.addEventListener('mousedown', onDoc); document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
   }, [menuOpen]);
+
+  // when the menu opens, move focus to the active item (or the first) so arrow keys take over
+  useEffect(() => {
+    if (!menuOpen || !menuPopRef.current) return;
+    const items = menuPopRef.current.querySelectorAll('.gs-navmenu-item');
+    if (!items.length) return;
+    const active = menuPopRef.current.querySelector('.gs-navmenu-item.is-active');
+    const t = setTimeout(() => (active || items[0]).focus(), 20);
+    return () => clearTimeout(t);
+  }, [menuOpen]);
+
+  // roving arrow-key navigation within the open menu (ARIA menu pattern)
+  const onMenuKey = (e) => {
+    const items = menuPopRef.current ? Array.from(menuPopRef.current.querySelectorAll('.gs-navmenu-item')) : [];
+    if (!items.length) return;
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); items[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus(); }
+  };
+  // ArrowDown on the closed toggle opens the menu (Enter/Space already toggle via the button's onClick)
+  const onMenuBtnKey = (e) => { if (e.key === 'ArrowDown' && !menuOpen) { e.preventDefault(); setMenuOpen(true); } };
 
   return (
     <header className="gs-header">
@@ -57,11 +83,11 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
       <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>
         {collapsed ? (
           <div className="gs-navmenu">
-            <button className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="true">
+            <button ref={menuBtnRef} className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} onKeyDown={onMenuBtnKey} aria-expanded={menuOpen} aria-haspopup="menu">
               <span>{(pages[current] && pages[current].title) || 'Pages'}</span><Chevron />
             </button>
             {menuOpen && (
-              <div className="gs-navmenu-pop" role="menu">
+              <div className="gs-navmenu-pop" role="menu" ref={menuPopRef} onKeyDown={onMenuKey}>
                 {visible.map((slug) => (
                   <button key={slug} role="menuitem" className={'gs-navmenu-item' + (slug === current && !shopActive ? ' is-active' : '')}
                     onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
