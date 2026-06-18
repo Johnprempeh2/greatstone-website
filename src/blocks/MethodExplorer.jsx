@@ -76,7 +76,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
   }, [open, close, step, onClose]);
 
   return (
-    <div className={'me' + (open ? ' is-open' : '')} ref={rootRef} role="dialog" aria-modal="true" aria-label="The eight pillars — interactive breakdown">
+    <div className={'me' + (open ? ' is-open' : '')} ref={rootRef} role="dialog" aria-modal="true" aria-label="The eight pillars, interactive breakdown">
       <style>{CSS}</style>
       <div className="me-top">
         <img className="me-logo" src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />

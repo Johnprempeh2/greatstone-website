@@ -382,6 +382,9 @@ function migrate(state) {
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
     if (!p.seo) p.seo = { title: (p.title || 'Page') + ' · Greatstone International', description: '', ogImage: '' };
+    // voice: the em dash is a banned AI tell. Repair any meta title persisted by an earlier seed
+    // (e.g. "Greatstone International — The Foundation…") so saved sites match the current voice.
+    else if (typeof p.seo.title === 'string' && / [—–] /.test(p.seo.title)) p.seo.title = p.seo.title.replace(/ [—–] /g, ' · ');
     if (!Array.isArray(p.versions)) p.versions = [];
     if (!Array.isArray(p.statusHistory)) p.statusHistory = [];
     if (p.approvedBy === undefined) p.approvedBy = null;
