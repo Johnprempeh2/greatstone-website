@@ -4,6 +4,8 @@ A self-paced review loop: each cycle reviews part of the site, fixes real bugs +
 
 Legend: [ ] open · [x] done (commit) · [~] deferred (needs a product/content decision or a bigger build)
 
+> **Pending non-Netlify deploy (cycle 4):** the checkout dropped-items fix touches `supabase/functions/stripe-checkout/index.ts`. The client half is live, but the server half only activates after `supabase functions deploy stripe-checkout --no-verify-jwt --project-ref melnjvwmayjukpyngolv` (per GO-LIVE-RUNBOOK). Until then, partial-drop checkouts behave as before (no regression).
+
 ## Cycle 1 — method-explorer hardening + quick safety wins
 - [x] MethodExplorer builds exactly `items.length` gems (was always 8 from PILLAR_SVG); clicking a gem past the pillar count opened an empty detail panel. Clamp + build N.
 - [x] MethodExplorer a11y: full-screen `#breakdown` overlay now `role="dialog" aria-modal aria-label`, focus moves in on open + restores on close + Tab trap; `me-picks` downgraded from a half-built tablist to `aria-pressed` buttons.
@@ -29,8 +31,8 @@ _Cycle 1 verified: build clean, 51/51 tests, preview spot-check (home title, bre
 - [~] Admin tables (Orders/Quotes/Pricing/Offerings) aren't SR/mobile-safe. **[cycle 2]** `scope="col"` added to every store/admin table header (+ sr-only text for the empty actions `th`). Still open: the `data-label` card-collapse pattern for the admin manager tables (only `.acct-orders` has it) — wants responsive testing, next cycle.
 - [x] FX editor: lost-update race on the global rate + no confirm dialog (mis-prices the whole catalogue). **[cycle 3]** Added a current→new confirm before the write + an optimistic-lock guard on `row_version` (bumped by touch_row); a concurrent save now reloads + warns instead of clobbering. No migration needed (column + trigger already existed).
 - [ ] ContactBand "Run the time-savings calculator → #go/services" promises a calculator the services page doesn't have. Relabel or build a real calculator (content decision).
-- [ ] Checkout drops POA/unpublished/sub-£1 items silently — return a `droppedItems` array + tell the buyer.
-- [ ] Re-order ("Buy again") adds at the historical price (stale vs current FX) — re-fetch current pricing or label "indicative".
+- [x] Checkout drops POA/unpublished/sub-£1 items silently — return a `droppedItems` array + tell the buyer. **[cycle 4]** stripe-checkout edge fn now returns `dropped[]` (name + reason); startCheckout returns `{ url, dropped }` and the basket names the excluded items + asks the buyer to confirm before paying. ⚠️ **needs `supabase functions deploy stripe-checkout` to activate** (client change is backward-compatible, so safe to ship ahead of the deploy).
+- [x] Re-order ("Buy again") adds at the historical price (stale vs current FX) — re-fetch current pricing or label "indicative". **[cycle 4]** Re-order flash now says the line is at the last order's price and the current price is confirmed at checkout.
 - [x] applyHead stamps the last page's title/canonical on `#shop`/`#account`/`#invoice` — set a generic title for utility routes. **[cycle 2]** Each app route (breakdown/admin/invoice/account/confirm/catalogue/shop) now gets its own title + canonical.
 - [x] IndustryPicker + me-picks: complete or downgrade the half-built ARIA tabs (tabpanel/aria-controls). **[cycle 1 + 3]** me-picks downgraded to aria-pressed buttons (cycle 1); IndustryPicker completed as real tabs — tabs carry id + aria-controls, content is a role="tabpanel" with aria-labelledby tracking the active tab (verified live).
 - [ ] Cairn bg: sizes to the viewport + binds global pointer/resize listeners (should scope to its container via ResizeObserver) + reacts when faded out. Dormant (no page uses it) — fix before it's used.
@@ -40,6 +42,6 @@ _Cycle 1 verified: build clean, 51/51 tests, preview spot-check (home title, bre
 - [x] Stage visibilitychange re-activates loops without re-checking prefers-reduced-motion. **[cycle 3]** apply() now re-checks a persistent reduced-motion MediaQueryList every call (was defeated by any scroll/resize/visibility) + re-applies live on toggle.
 - [x] Product gallery: add aria-current to the active thumb + an aria-live "Image N of M". **[cycle 2]** Both done + thumb group labelled.
 - [ ] FeaturedArticle/InsightsGrid/Team: make `alt` required (or warn inline) when an image is set.
-- [ ] Confirmation page exposes the raw `cs_test_…` session id as the "Reference" — strip the prefix + match the email format. Add a "Test mode" banner gated on the test key.
+- [x] Confirmation page exposes the raw `cs_test_…` session id as the "Reference" — strip the prefix + match the email format. Add a "Test mode" banner gated on the test key. **[cycle 4]** Reference stripped of the cs_test_/cs_live_ prefix + secret + upper-cased; test-mode banner added. (Verified live.)
 - [x] Replace remaining em-dashes in user-facing store copy (StoreCart, ca-notes, request-quote errors). **[cycle 2]** Swept StoreCart/Orders/Quotes/Pricing/BulkImport/bulkCsv copy + en-dashed the "no value" cell glyphs; only source comments retain dashes.
-- [ ] BookDeepDive `eyebrow` field is editable but never rendered — render it or remove the field.
+- [x] BookDeepDive `eyebrow` field is editable but never rendered — render it or remove the field. **[cycle 4]** Now rendered as a kicker above the headline, guarded so it can't echo the headline (the seed had set eyebrow === headline); seed's contact-page eyebrow fixed to "The first step".
