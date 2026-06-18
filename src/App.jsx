@@ -44,7 +44,7 @@ import AdminConsole from './cms/AdminConsole.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
-import { staffCan, ROLE_LABEL } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
+import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
 import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
@@ -158,6 +158,9 @@ function findMissingAlt(content, products) {
     if (b.type === 'Team' && Array.isArray(p.members)) {
       p.members.forEach((m) => { if (m && m.photo && noAlt(m.name)) issues.push('Team photo (no name)'); });
     }
+    if (b.type === 'InsightsGrid' && Array.isArray(p.posts)) {
+      p.posts.forEach((post) => { if (post && post.image && noAlt(post.alt)) issues.push('Insight: ' + (post.title || 'post')); });
+    }
   });
   // a page that shows the storefront also surfaces every product image — flag any with no alt text
   if (list.some((b) => b.type === 'Storefront')) {
@@ -179,6 +182,7 @@ export default function App() {
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(null);           // signed-in Supabase staff { email, name, role } (null = public)
   const [authChecked, setAuthChecked] = useState(false); // resolved the Supabase session yet (lazy, on #admin)
+  const [authNotice, setAuthNotice] = useState(null); // why an authenticated session can't use the CMS (no/read-only role)
   const authSubRef = useRef(null);                  // the onAuthStateChange subscription (set up once)
   const [adminNav, setAdminNav] = useState(readAdminHash); // { section, slug } | null — the one admin-route source
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
@@ -267,9 +271,15 @@ export default function App() {
     import('./store/adminAuth.mjs').then(async (m) => {
       const resolve = async () => {
         const s = await m.getSession().catch(() => null);
-        if (!s) { if (alive) setUser(null); return; }
+        if (!s) { if (alive) { setUser(null); setAuthNotice(null); } return; }
         const staff = await m.getStaffUser().catch(() => null);
-        if (alive) setUser(staff && m.isStaff(staff) ? { email: staff.email, name: staff.full_name || staff.email, role: staff.role } : null);
+        if (!alive) return;
+        if (staff && m.isStaff(staff)) { setUser({ email: staff.email, name: staff.full_name || staff.email, role: staff.role }); setAuthNotice(null); }
+        else {
+          // authenticated, but no usable CMS role — surface why instead of a blank sign-in form
+          setUser(null);
+          setAuthNotice(staff ? roleNotice(staff.role) : 'You’re signed in, but this account isn’t set up for the Greatstone admin. Ask an owner or admin to add you.');
+        }
       };
       await resolve();
       if (alive) setAuthChecked(true);
@@ -712,8 +722,9 @@ export default function App() {
         {styleTag}
         <Stage background={bg} />
         <SignIn
-          onAuthed={(u) => { setUser(u); setAuthChecked(true); flash(staffCan(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
-          onCancel={() => { location.hash = ''; setAdminNav(null); }} />
+          notice={authNotice}
+          onAuthed={(u) => { setUser(u); setAuthNotice(null); setAuthChecked(true); flash(staffCan(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
+          onCancel={() => { location.hash = ''; setAdminNav(null); setAuthNotice(null); }} />
       </div>
     );
   }

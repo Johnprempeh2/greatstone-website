@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { roleNotice } from './staffRoles.mjs'; // pure (no Supabase) — keeps the client out of this bundle
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 
@@ -7,7 +8,7 @@ const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png
 // sign-in the Catalogue uses), not the old prototype session. On success it resolves the staff profile
 // (role) and hands a { email, name, role } user back to App. adminAuth (and the Supabase client) is
 // dynamically imported so a public visitor never loads it.
-export default function SignIn({ onAuthed, onCancel }) {
+export default function SignIn({ onAuthed, onCancel, notice }) {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [err, setErr] = useState('');
@@ -23,9 +24,15 @@ export default function SignIn({ onAuthed, onCancel }) {
       const { error } = await m.signIn(email, pass);
       if (error) { setErr(error.message || 'Those details are not recognised.'); setBusy(false); return; }
       const staff = await m.getStaffUser().catch(() => null);
-      if (!staff || !m.isStaff(staff)) {
+      if (!staff) {
         await m.signOut().catch(() => {});
-        setErr('That account isn’t a Greatstone staff member.');
+        setErr('This account isn’t set up for the Greatstone admin. Ask an owner or admin to add you.');
+        setBusy(false); return;
+      }
+      if (!m.isStaff(staff)) {
+        // authenticated, but a read-only / no-role / unrecognised account — explain instead of a flat reject
+        await m.signOut().catch(() => {});
+        setErr(roleNotice(staff.role));
         setBusy(false); return;
       }
       onAuthed({ email: staff.email, name: staff.full_name || staff.email, role: staff.role });
@@ -44,6 +51,7 @@ export default function SignIn({ onAuthed, onCancel }) {
     label: { display: 'block', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--gs-text-faint)', margin: '18px 0 8px' },
     input: { width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid var(--gs-border-soft)', borderRadius: '10px', padding: '12px 14px', color: 'var(--gs-text)', fontFamily: 'Montserrat,sans-serif', fontSize: '.92rem', outline: 'none' },
     err: { marginTop: '14px', color: '#ff6b6b', fontSize: '.82rem', fontWeight: 600 },
+    notice: { marginTop: '16px', padding: '10px 14px', borderRadius: '10px', color: 'var(--gs-warning,#ffc800)', background: 'rgba(255,200,0,.08)', border: '1px solid rgba(255,200,0,.28)', fontSize: '.82rem', fontWeight: 600, lineHeight: 1.5 },
     btn: { width: '100%', marginTop: '22px', background: 'var(--gs-accent)', color: '#0e1611', border: 0, borderRadius: '100px', padding: '13px', fontFamily: 'Montserrat,sans-serif', fontWeight: 800, fontSize: '.92rem', cursor: 'pointer', opacity: busy ? 0.7 : 1 },
     back: { display: 'inline-block', marginTop: '18px', color: 'var(--gs-text-faint)', fontSize: '.82rem', fontWeight: 700, background: 'none', border: 0, cursor: 'pointer' },
     note: { marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--gs-border-soft)', color: 'var(--gs-text-faint)', fontSize: '.72rem', lineHeight: 1.6 },
@@ -55,6 +63,7 @@ export default function SignIn({ onAuthed, onCancel }) {
         <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" style={S.logo} />
         <h1 style={S.h1}>Admin sign in</h1>
         <p style={S.sub}>One sign-in for the whole admin — website content, the page editor and the catalogue. Greatstone staff only.</p>
+        {notice && <div style={S.notice} role="status">{notice}</div>}
 
         <label style={S.label} htmlFor="gs-user">Email</label>
         <input id="gs-user" ref={ref} style={S.input} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErr(''); }} autoComplete="username" placeholder="you@greatstone.dev"
