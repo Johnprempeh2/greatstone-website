@@ -75,10 +75,10 @@ export const puck = {
   },
   defaultProps: {
     kicker: 'Where your organisation sits',
-    headline: 'Lagger to', highlight: 'Pioneer.',
+    headline: 'Laggard to', highlight: 'Pioneer.',
     body: 'Altitude isn’t a verdict, it’s a starting line. The same climb, read as a posture, dim to lime.',
     items: [
-      P('Phase 01', 'Lagger', 'Score under 3', 'Behind the field and feeling it. The basics aren’t in place, so every day leaks time to work that should run itself.'),
+      P('Phase 01', 'Laggard', 'Score under 3', 'Behind the field and feeling it. The basics aren’t in place, so every day leaks time to work that should run itself.'),
       P('Phase 02', 'Follower', 'Score 3–5', 'Keeping pace by watching others. Capable, but reactive: reacting to the market instead of shaping your own move.'),
       P('Phase 03', 'Leader', 'Score 6–8', 'Out in front in your category. Systems compound, decisions move fast, and the hours you bought back fund the next gain.'),
       P('Phase 04', 'Pioneer', 'Score 9–10', 'Setting the standard others chase. Intelligent by default: the foundation is so deep that growth feels inevitable.'),

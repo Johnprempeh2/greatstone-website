@@ -4,7 +4,7 @@ import { safeHref } from '../lib/safe-url.js';
 
 // MaturityModel: method.html's "We meet you where you are." section — a row of three graduated tier
 // cards (Surviving / Organised / Compounding, lime tint deepening) over a four-up band of score
-// phases (Lagger..Pioneer), closing on a ghost link to the climb. Faithful port of .tier-row + .phases.
+// phases (Laggard..Pioneer), closing on a ghost link to the climb. Faithful port of .tier-row + .phases.
 const clampN = (i, n) => Math.min(i + 1, n);
 
 export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], ctaLabel, ctaHref = '#' }) {
@@ -102,10 +102,10 @@ export const puck = {
       { range: 'SCORE 8–10 · PEAK', label: 'Compounding', body: 'Intelligent, ahead of the market, where every improvement makes the next one easier.' },
     ],
     phases: [
-      { score: 'Under 3', label: 'Lagger', body: 'Falling behind the pace of the field.' },
-      { score: '3 – 5', label: 'Follower', body: 'Keeping up, but rarely setting the terms.' },
-      { score: '6 – 8', label: 'Leader', body: 'Out in front, with room still to press.' },
-      { score: '9 – 10', label: 'Pioneer', body: 'Defining what the rest of the field chases.' },
+      { score: 'Under 3', label: 'Laggard', body: 'Falling behind the pace of the field.' },
+      { score: '3–5', label: 'Follower', body: 'Keeping up, but rarely setting the terms.' },
+      { score: '6–8', label: 'Leader', body: 'Out in front, with room still to press.' },
+      { score: '9–10', label: 'Pioneer', body: 'Defining what the rest of the field chases.' },
     ],
     ctaLabel: 'See the full climb', ctaHref: '#go/climb',
   },

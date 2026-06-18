@@ -11,6 +11,10 @@ import './admin.css';
 
 const isResetMode = () => typeof location !== 'undefined' && /reset=1/.test(location.hash);
 const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
+// Customer-facing quote status labels: the raw enum is the internal sales pipeline (new/contacted/quoted/
+// won/lost/cancelled); customers should see plain-English states, not "Lost"/"Cancelled".
+const QUOTE_LABEL = { new: 'In review', contacted: 'In review', quoted: 'Quote ready', won: 'Accepted', lost: 'Closed', cancelled: 'Closed' };
+const quoteLabel = (s) => QUOTE_LABEL[s] || (String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1));
 
 export default function AccountDashboard() {
   const [session, setSession] = useState(undefined); // undefined = checking
@@ -127,7 +131,7 @@ function Dashboard({ session, profile, onProfile }) {
   const [quotesErr, setQuotesErr] = useState(null);
   const loadQuotes = useCallback(() => {
     setQuotesErr(null);
-    supabase.from('quotes').select('id, reference, status, currency, indicative_total_minor, quoted_total_minor, created_at')
+    supabase.from('quotes').select('id, reference, status, currency, indicative_total_minor, quoted_total_minor, valid_until, created_at, orders(id, invoice_number)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(50)
       .then(({ data, error }) => { setQuotesErr(error || null); setQuotes(data || []); });
   }, []);
@@ -188,18 +192,28 @@ function Dashboard({ session, profile, onProfile }) {
         <div className="acct-ordhead"><h2>Quotes</h2></div>
         <div className="ca-table-wrap">
           <table className="ca-table acct-orders">
-            <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Indicative</th><th scope="col">Status</th></tr></thead>
+            <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Invoice</span></th></tr></thead>
             <tbody>
               {quotesErr
-                ? <tr><td colSpan="4" className="ca-muted">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></td></tr>
-                : quotes.map(qt => (
+                ? <tr><td colSpan="5" className="ca-muted">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></td></tr>
+                : quotes.map(qt => {
+                  const ord = (qt.orders || [])[0];
+                  return (
                 <tr key={qt.id}>
                   <td data-label="Date">{fmtDate(qt.created_at)}</td>
                   <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
-                  <td data-label="Indicative" className="ca-amt">{qt.quoted_total_minor != null ? fmtMoney(qt.quoted_total_minor, qt.currency) : qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '–'}</td>
-                  <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{qt.status}</span></td>
+                  <td data-label="Total" className="ca-amt">
+                    {qt.quoted_total_minor != null
+                      ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}</>
+                      : qt.indicative_total_minor != null
+                        ? <>{fmtMoney(qt.indicative_total_minor, qt.currency)} <span className="ca-muted">(indicative, ex VAT)</span></>
+                        : '–'}
+                  </td>
+                  <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{quoteLabel(qt.status)}</span></td>
+                  <td data-label="Invoice">{ord ? <a className="ca-link" href={'#invoice/' + ord.id}>View invoice{ord.invoice_number ? ' ' + ord.invoice_number : ''}</a> : '–'}</td>
                 </tr>
-              ))}
+                  );
+                })}
             </tbody>
           </table>
         </div>

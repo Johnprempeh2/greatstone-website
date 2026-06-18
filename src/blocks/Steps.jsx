@@ -17,12 +17,12 @@ export function Steps({ index, eyebrow, headline, highlight, body, items = [], a
           {items.map((it, i) => {
             const num = String(i + 1).padStart(2, '0');
             // Text mode reads the number as a label line, so fold the phase into it
-            // ("01 — Within 24 hours", matching the live contact page). Badge mode can't
+            // ("01 · Within 24 hours", matching the live contact page). Badge mode can't
             // hold a phrase in its tile, so it keeps the separate uppercase phase label.
             const textMode = numberStyle === 'text';
             return (
               <li className="b-step" data-reveal style={{ transitionDelay: `${i * 90}ms` }} key={i}>
-                <span className={textMode ? 'b-step-n is-text' : 'b-step-n'}>{textMode && it.phase ? `${num} — ${it.phase}` : num}</span>
+                <span className={textMode ? 'b-step-n is-text' : 'b-step-n'}>{textMode && it.phase ? `${num} · ${it.phase}` : num}</span>
                 {it.phase && !textMode ? <span className="b-step-phase">{it.phase}</span> : null}
                 <h3>{it.title}</h3>
                 <p>{it.text}</p>

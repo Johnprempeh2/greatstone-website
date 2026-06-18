@@ -845,7 +845,7 @@ export default function App() {
                 <button className="gs-signout" onClick={doSignOut} title="Sign out">Sign out</button>
                 {canPublish ? children : (
                   <button className="gs-btn primary" onClick={() => setStatus('review')} disabled={page.status !== 'draft'}
-                    title={page.status !== 'draft' ? 'Already submitted for review' : 'Send to an admin for review'}>Request review</button>
+                    title={page.status === 'draft' ? 'Send to an admin for review' : ({ review: 'In review with an admin', approved: 'Approved; an admin can publish it', published: 'This page is live. Reopen it as a draft to request changes' }[page.status] || 'Already submitted for review')}>Request review</button>
                 )}
               </div>
             ),

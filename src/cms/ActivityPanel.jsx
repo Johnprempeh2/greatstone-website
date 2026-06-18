@@ -19,7 +19,7 @@ function eventLabel(from, to) {
   if (to === 'review') return 'Submitted for review';
   if (to === 'approved') return 'Approved';
   if (to === 'published') return 'Published';
-  if (to === 'draft') return from === 'published' ? 'Unpublished, back to draft' : 'Returned to draft';
+  if (to === 'draft') return from === 'published' ? 'Reopened for editing (still live)' : 'Returned to draft';
   return (STATUS_LABEL[from] || from) + ' → ' + (STATUS_LABEL[to] || to);
 }
 

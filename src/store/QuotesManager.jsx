@@ -54,7 +54,7 @@ export default function QuotesManager({ staff }) {
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table">
-          <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Company</th><th scope="col">Indicative</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+          <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Company</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
               : !quotes.length ? <tr><td colSpan="6" className="ca-muted">No quote requests yet. They arrive from the storefront "Request a quote" flow.</td></tr>
@@ -66,7 +66,11 @@ export default function QuotesManager({ staff }) {
                         <td>{fmtDate(qt.created_at)}</td>
                         <td className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
                         <td>{qt.contact_company || qt.contact_name || qt.contact_email}</td>
-                        <td className="ca-amt">{qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '–'}</td>
+                        <td className="ca-amt">
+                          {qt.quoted_total_minor != null
+                            ? <><b>{fmtMoney(qt.quoted_total_minor, qt.currency)}</b> <span className="ca-muted">inc VAT</span>{qt.valid_until ? <><br /><span className="ca-muted">valid until {fmtDate(qt.valid_until)}</span></> : ''}</>
+                            : qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '–'}
+                        </td>
                         <td><span className={'ca-status ca-q-' + qt.status}>{qt.status}</span></td>
                         <td className="ca-ord-actions">
                           <button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === qt.id ? null : qt.id)}>{expanded === qt.id ? 'Hide' : 'Open'}</button>

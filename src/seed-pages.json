@@ -562,13 +562,13 @@
         "type": "Ladder",
         "props": {
           "kicker": "Where your organisation sits",
-          "headline": "Lagger to",
+          "headline": "Laggard to",
           "highlight": "Pioneer.",
           "body": "Altitude isn’t a verdict, it’s a starting line. The same climb, read as a posture, dim to lime.",
           "items": [
             {
               "rank": "Phase 01",
-              "name": "Lagger",
+              "name": "Laggard",
               "range": "Score under 3",
               "text": "Behind the field and feeling it. The basics aren’t in place, so every day leaks time to work that should run itself."
             },

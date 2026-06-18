@@ -159,9 +159,10 @@ function Confirmed() {
   useEffect(() => { clearCart(); }, []);
   const sid = (location.hash.match(/session=([^&]+)/) || [])[1] || '';
   const isTest = /^cs_test_/.test(sid);
-  // Show a clean reference, not the raw Stripe session id: drop the cs_test_/cs_live_ prefix and the
-  // trailing secret segment (after '#'), upper-cased to read like the reference on the receipt email.
-  const ref = sid.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 18).toUpperCase();
+  // Show a clean reference, not the raw Stripe session id: drop the cs_test_/cs_live_ prefix + the
+  // trailing secret segment. 12-char lowercase so it matches the account history + the receipt-email
+  // subject byte-for-byte (was 18-char upper, which matched neither).
+  const ref = sid.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 12);
   return (
     <>
       <div className="st-scrim" aria-hidden="true" />
@@ -172,10 +173,11 @@ function Confirmed() {
         </div>
         <span className="st-kicker">Payment received</span>
         <h1>Thank you. Your order is confirmed.</h1>
-        <p>We've emailed your receipt and the licensing team will be in touch shortly with your keys and onboarding details. Most licences are issued within one business day.</p>
+        <p>Our licensing team will be in touch shortly with your receipt, keys and onboarding details. Most licences are issued within one business day. Your order is now in your account.</p>
         {ref && <p className="sc-ref">Reference: <code>{ref}</code></p>}
         <div className="sc-confirm-cta">
-          <a className="gs-btn primary" href="#shop">Continue browsing</a>
+          <a className="gs-btn primary" href="#account">Go to your account</a>
+          <a className="gs-btn ghost" href="#shop">Continue browsing</a>
           <a className="gs-btn ghost" href="#book">Talk to the team</a>
         </div>
       </div>
