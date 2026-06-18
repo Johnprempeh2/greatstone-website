@@ -56,6 +56,20 @@ export default function MethodExplorer({ pillars = [], onClose }) {
     return () => { clearTimeout(t); if (opener && opener.focus) try { opener.focus(); } catch { /* opener gone */ } };
   }, []);
 
+  // closing a detail (Escape or the close button) unmounts the control that held focus, which would drop
+  // focus to <body> and let the next Tab escape the modal. On detail→ring, re-home focus inside the dialog:
+  // the pill of the pillar just closed (still mounted in ring view), else the Back button.
+  const prevSelRef = useRef(selected);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (prevSelRef.current >= 0 && selected < 0 && root) {
+      const pills = root.querySelectorAll('.me-pick');
+      const target = pills[prevSelRef.current] || root.querySelector('.me-back');
+      if (target) target.focus();
+    }
+    prevSelRef.current = selected;
+  }, [selected]);
+
   // keyboard: Escape closes the detail then the explorer; arrows page through pillars when open; Tab is trapped
   useEffect(() => {
     const onKey = (e) => {
@@ -207,6 +221,6 @@ const CSS = `
   .me-orb{width:92px;height:92px}
 }
 @media (prefers-reduced-motion: reduce){
-  .me,.me-orb,.me-detail,.me-head{animation:none !important;transition:none !important}
+  .me,.me-orb,.me-detail,.me-head,.me-hovername{animation:none !important;transition:none !important}
 }
 `;

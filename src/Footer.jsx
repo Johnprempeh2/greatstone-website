@@ -1,3 +1,5 @@
+import { publicNavOrder } from './lib/nav-order.js';
+
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 
 // The real site footer (uses site.css .site-footer classes verbatim), so the studio closes
@@ -5,7 +7,7 @@ const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png
 export default function Footer({ order, pages, onNavigate, canEdit }) {
   const year = new Date().getFullYear();
   // public visitors only see published pages; editors see all (so they can reach drafts). Home always kept.
-  const navOrder = canEdit ? order : order.filter((s, i) => i === 0 || pages[s].status === 'published' || pages[s].published);
+  const navOrder = publicNavOrder(order, pages, canEdit);
   return (
     <footer className="site-footer">
       <svg className="foot-wave" viewBox="0 0 500 500" fill="none" aria-hidden="true">

@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { Search } from './blocks/icons.jsx';
 import { ROLE_LABEL } from './cms/staffRoles.mjs';
+import { publicNavOrder } from './lib/nav-order.js';
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 // the view-mode 3D switcher flips to its light-surface variant when a light scene (tide family) sits
@@ -25,7 +26,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
   const q = (query || '').trim().toLowerCase();
   // public visitors only see published pages (a never-published draft is hidden); editors see everything
   // so they can navigate to their own drafts. The home page (order[0]) is always kept.
-  const navOrder = canEdit ? order : order.filter((s, i) => i === 0 || pages[s].status === 'published' || pages[s].published);
+  const navOrder = publicNavOrder(order, pages, canEdit);
   const visible = q ? navOrder.filter((s) => (pages[s].title || s).toLowerCase().includes(q) || s.includes(q)) : navOrder;
 
   const wrapRef = useRef(null);

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { config, blockCss } from './puck.config.jsx';
 import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
+import { publicNavOrder } from './lib/nav-order.js';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
 // first paint. Lazy-load it behind Suspense (transparent fallback): the page content renders
@@ -651,7 +652,15 @@ export default function App() {
   const commands = useMemo(() => {
     if (!cmdOpen) return []; // the palette is the only consumer; don't rebuild this list on every edit keystroke
     const cmds = [];
-    state.order.forEach((slug) => cmds.push({ id: 'go-' + slug, group: mode === 'edit' ? 'Edit page' : 'Go to', label: state.pages[slug].title, hint: slug === current ? 'current' : '', run: () => (mode === 'edit' ? switchPage(slug) : navigate(slug)) }));
+    // the palette is the site's search, so a signed-out visitor must NOT see (or be able to navigate to)
+    // unpublished drafts — filter to the same published-only surface the Header + Footer use.
+    publicNavOrder(state.order, state.pages, canEdit).forEach((slug) => cmds.push({ id: 'go-' + slug, group: mode === 'edit' ? 'Edit page' : 'Go to', label: state.pages[slug].title, hint: slug === current ? 'current' : '', run: () => (mode === 'edit' ? switchPage(slug) : navigate(slug)) }));
+    // the storefront + account are nav destinations but not pages — surface them in the palette too, so
+    // it works as the site's search (a visitor typing "products"/"account" should find them). View mode only.
+    if (mode !== 'edit') {
+      cmds.push({ id: 'go-shop', group: 'Go to', label: 'Products', hint: 'storefront', run: goShop });
+      cmds.push({ id: 'go-account', group: 'Go to', label: 'Your account', run: () => { if (typeof location !== 'undefined') location.hash = 'account'; } });
+    }
     // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
     // but read-only). The admin login is NOT surfaced on the public site — it lives at the
     // separate #admin URL — so a signed-out visitor's palette is navigation only.

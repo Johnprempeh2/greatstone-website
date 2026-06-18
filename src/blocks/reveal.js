@@ -19,8 +19,8 @@ export function useReveal(deps = []) {
     const toObserve = [];
     nodes.forEach((n) => {
       const r = n.getBoundingClientRect();
-      if (r.top < vh * 0.92 && r.bottom > -1) n.classList.add('is-in'); // already in view → reveal now
-      else toObserve.push(n);
+      if (r.top < vh * 0.92) n.classList.add('is-in'); // in view, OR scrolled past above the fold (mid-page refresh) → reveal now
+      else toObserve.push(n);                          // only genuinely below-the-fold nodes wait on the observer
     });
     if (!toObserve.length) return;
     const obs = new IntersectionObserver((entries) => {

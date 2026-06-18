@@ -604,6 +604,6 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
 
 /* honour the OS reduced-motion preference across the whole studio (panels, modals, console) */
 @media (prefers-reduced-motion: reduce){
-  .gs-panel,.gs-studio,.gs-cart,.gs-cart-scrim,.gs-cart-fab,.gs-modal,.gs-modal-scrim,.gs-cmd,.gs-cmd-scrim{animation:none !important}
+  .gs-panel,.gs-studio,.gs-cart,.gs-cart-scrim,.gs-cart-fab,.gs-modal,.gs-modal-scrim,.gs-cmd,.gs-cmd-backdrop{animation:none !important}
   .ac-railitem,.gs-btn{transition:none !important}
 }

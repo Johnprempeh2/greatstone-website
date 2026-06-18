@@ -37,7 +37,13 @@ export default function Stage({ background = 'stone', previewP = null }) {
     if (!root || !cfg.scenes.length) { applyRef.current = null; return undefined; }
     const layers = cfg.scenes.map((s) => {
       const host = document.createElement('div'); host.className = 'gs-layer'; root.appendChild(host);
-      return { kind: s.kind, host, handle: MOUNTERS[s.kind] ? MOUNTERS[s.kind](host) : null };
+      // mounting constructs a WebGL renderer, which THROWS when WebGL is unavailable (blocklisted GPU,
+      // hardened/privacy browser, some VMs, a crashed GPU process). Guard it so the page degrades to a
+      // solid surface instead of an uncaught commit-phase throw tearing down the whole React root.
+      let handle = null;
+      try { if (MOUNTERS[s.kind]) handle = MOUNTERS[s.kind](host); }
+      catch (e) { handle = null; } // apply() already null-guards every handle, so a missing layer is harmless
+      return { kind: s.kind, host, handle };
     });
     // Honour prefers-reduced-motion continuously, not just at mount: apply() re-activates layers by
     // opacity on every scroll/resize/visibility change, so the freeze has to be re-checked each time
