@@ -47,3 +47,11 @@ _Cycle 1 verified: build clean, 51/51 tests, preview spot-check (home title, bre
 - [x] Confirmation page exposes the raw `cs_test_…` session id as the "Reference" — strip the prefix + match the email format. Add a "Test mode" banner gated on the test key. **[cycle 4]** Reference stripped of the cs_test_/cs_live_ prefix + secret + upper-cased; test-mode banner added. (Verified live.)
 - [x] Replace remaining em-dashes in user-facing store copy (StoreCart, ca-notes, request-quote errors). **[cycle 2]** Swept StoreCart/Orders/Quotes/Pricing/BulkImport/bulkCsv copy + en-dashed the "no value" cell glyphs; only source comments retain dashes.
 - [x] BookDeepDive `eyebrow` field is editable but never rendered — render it or remove the field. **[cycle 4]** Now rendered as a kicker above the headline, guarded so it can't echo the headline (the seed had set eyebrow === headline); seed's contact-page eyebrow fixed to "The first step".
+
+## Fresh sweeps (after the original backlog cleared)
+
+New findings from re-reviewing areas the original 3-agent pass didn't deeply cover.
+
+### Cycle 7 — interactive-overlay focus management
+- [x] CommandPalette / Modal / MediaField had focus-in + Escape but no focus-restore on close (WCAG 2.4.3) and no background scroll-lock — unlike the shared `useModal` the cart/admin drawers use. Added trigger-capture + restore + scroll-lock to all three (MediaField also gained aria-modal + a Tab-trap). Cart drawer's full cycle (focus-in → Escape → restore) verified live.
+- [ ] Collapsed (mobile) nav menu (Header.jsx) is a `role="menu"` with `aria-expanded` + Escape + outside-click close and real `<button>` menuitems, but doesn't move focus into the menu on open, restore focus to the toggle on close, or support arrow-key navigation (Up/Down/Home/End) the menu role implies. Implement the full ARIA menu keyboard pattern (or downgrade the roles), tested at a narrow viewport. **Queued for cycle 8.**
