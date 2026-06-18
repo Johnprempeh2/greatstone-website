@@ -79,14 +79,15 @@ export default function StoreCart({ confirmed = false }) {
         <div className="sc-scrim" onClick={closeCart}>
           <aside ref={drawerRef} tabIndex={-1} className="sc-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="sc-title">
             <header className="sc-head">
-              <h2 id="sc-title">Your basket{count ? ' · ' + count : ''}</h2>
+              {/* the title tracks the active view, so the dialog's accessible name (aria-labelledby) and the
+                  visible header both reflect where you are — not a stale "Your basket" over the quote form. */}
+              <h2 id="sc-title">{view === 'quote' ? 'Request a quote' : view === 'sent' ? 'Quote request sent' : 'Your basket' + (count ? ' · ' + count : '')}</h2>
               <button className="sc-x" onClick={closeCart} aria-label="Close basket">✕</button>
             </header>
 
             {view === 'sent' ? (
               <div className="sc-empty">
                 <div className="sc-tick" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></div>
-                <h3>Quote request sent</h3>
                 <p>Reference <b>{quoteRef}</b>. Our team will price it (volume discounts, bespoke terms) and send your quote, normally within one business day.</p>
                 <button className="gs-btn primary" onClick={() => { setView('cart'); setOpen(false); }}>Done</button>
               </div>
@@ -120,11 +121,11 @@ export default function StoreCart({ confirmed = false }) {
                       <div className="sc-it-side">
                         <div className="sc-it-price">{fmtMoney((it.unitMinor || 0) * it.qty, it.currency)}</div>
                         <div className="sc-qty">
-                          <button onClick={() => setQty(it.variantId, it.qty - 1)} aria-label="Decrease quantity" disabled={it.qty <= 1}>−</button>
+                          <button onClick={() => setQty(it.variantId, it.qty - 1)} aria-label={'Decrease quantity of ' + it.name} disabled={it.qty <= 1}>−</button>
                           <span>{it.qty}</span>
-                          <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label="Increase quantity" disabled={it.qty >= MAX_QTY} title={it.qty >= MAX_QTY ? 'Maximum ' + MAX_QTY + ' per line. Request a quote for larger volumes.' : undefined}>+</button>
+                          <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label={'Increase quantity of ' + it.name} disabled={it.qty >= MAX_QTY} title={it.qty >= MAX_QTY ? 'Maximum ' + MAX_QTY + ' per line. Request a quote for larger volumes.' : undefined}>+</button>
                         </div>
-                        <button className="sc-rm" onClick={() => removeItem(it.variantId)}>Remove</button>
+                        <button className="sc-rm" onClick={() => removeItem(it.variantId)} aria-label={'Remove ' + it.name + ' from basket'}>Remove</button>
                       </div>
                     </li>
                   ))}
