@@ -50,8 +50,9 @@ export default function StoreProduct({ slug, onBack }) {
               <button className="sp-nav prev" onClick={() => setGi(g => (g - 1 + gallery.length) % gallery.length)} aria-label="Previous image">‹</button>
               <button className="sp-nav next" onClick={() => setGi(g => (g + 1) % gallery.length)} aria-label="Next image">›</button>
             </>}
+            {gallery.length > 1 && <span className="gs-sr-only" aria-live="polite">{'Image ' + (gi + 1) + ' of ' + gallery.length}</span>}
           </div>
-          {gallery.length > 1 && <div className="sp-thumbs">{gallery.map((src, i) => <button key={i} className={'sp-thumb' + (i === gi ? ' on' : '')} onClick={() => setGi(i)} aria-label={'Image ' + (i + 1)}><img src={src} alt="" /></button>)}</div>}
+          {gallery.length > 1 && <div className="sp-thumbs" role="group" aria-label="Product images">{gallery.map((src, i) => <button key={i} className={'sp-thumb' + (i === gi ? ' on' : '')} onClick={() => setGi(i)} aria-label={'Image ' + (i + 1) + ' of ' + gallery.length} aria-current={i === gi ? 'true' : undefined}><img src={src} alt="" /></button>)}</div>}
         </div>
 
         <div className="sp-info">
@@ -80,7 +81,7 @@ export default function StoreProduct({ slug, onBack }) {
         <div className="sp-specs">{o.specs.map((s, i) => <div key={i} className="sp-spec"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>{s.label}</div>)}</div></section>}
 
       {!!(o.variants && o.variants.length) && <section className="sp-section" id="sp-editions"><h2>Editions &amp; licensing</h2>
-        <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th>Edition</th><th>Licence</th><th>Price</th><th></th></tr></thead>
+        <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th scope="col">Edition</th><th scope="col">Licence</th><th scope="col">Price</th><th scope="col"><span className="gs-sr-only">Add to basket</span></th></tr></thead>
           <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td>{v.pricing && v.pricing.final != null ? <AddToBasket offering={o} variant={v} /> : <a className="sp-q" href="#book">Request quote ›</a>}</td></tr>)}</tbody></table></div>
         <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p></section>}
 

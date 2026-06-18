@@ -124,11 +124,14 @@ function Dashboard({ session, profile, onProfile }) {
   }, []);
   useEffect(() => { loadOrders(); }, [loadOrders]);
   const [quotes, setQuotes] = useState([]);
-  useEffect(() => {
+  const [quotesErr, setQuotesErr] = useState(null);
+  const loadQuotes = useCallback(() => {
+    setQuotesErr(null);
     supabase.from('quotes').select('id, reference, status, currency, indicative_total_minor, quoted_total_minor, created_at')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(50)
-      .then(({ data }) => setQuotes(data || []));
+      .then(({ data, error }) => { setQuotesErr(error || null); setQuotes(data || []); });
   }, []);
+  useEffect(() => { loadQuotes(); }, [loadQuotes]);
 
   const openPortal = async () => {
     setPortalBusy(true);
@@ -179,17 +182,19 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
       </div>
 
-      {!!quotes.length && <>
+      {(quotes.length > 0 || quotesErr) && <>
         <div className="acct-ordhead"><h2>Quotes</h2></div>
         <div className="ca-table-wrap">
           <table className="ca-table acct-orders">
-            <thead><tr><th>Date</th><th>Reference</th><th>Indicative</th><th>Status</th></tr></thead>
+            <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Indicative</th><th scope="col">Status</th></tr></thead>
             <tbody>
-              {quotes.map(qt => (
+              {quotesErr
+                ? <tr><td colSpan="4" className="ca-muted">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></td></tr>
+                : quotes.map(qt => (
                 <tr key={qt.id}>
                   <td data-label="Date">{fmtDate(qt.created_at)}</td>
                   <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
-                  <td data-label="Indicative" className="ca-amt">{qt.quoted_total_minor != null ? fmtMoney(qt.quoted_total_minor, qt.currency) : qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '—'}</td>
+                  <td data-label="Indicative" className="ca-amt">{qt.quoted_total_minor != null ? fmtMoney(qt.quoted_total_minor, qt.currency) : qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '–'}</td>
                   <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{qt.status}</span></td>
                 </tr>
               ))}
@@ -204,7 +209,7 @@ function Dashboard({ session, profile, onProfile }) {
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table acct-orders">
-          <thead><tr><th>Date</th><th>Reference</th><th>Items</th><th>Total</th><th>Status</th><th><span className="gs-sr-only">Actions</span></th></tr></thead>
+          <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loadingOrders ? <tr><td colSpan="6" className="ca-muted">Loading your orders…</td></tr>
               : ordersErr ? <tr><td colSpan="6" className="ca-muted">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></td></tr>

@@ -25,19 +25,19 @@ export default function QuotesManager({ staff }) {
 
   const setStatus = async (id, status) => {
     const { error } = await supabase.from('quotes').update({ status }).eq('id', id);
-    if (error) { flash('Could not update — ' + error.message); return; }
+    if (error) { flash('Could not update. ' + error.message); return; }
     flash('Status → ' + status); load();
   };
   const saveTerms = async (id, totalPounds, validUntil) => {
     const patch = { quoted_total_minor: totalPounds === '' ? null : Math.round(Number(totalPounds) * 100), valid_until: validUntil || null };
     const { error } = await supabase.from('quotes').update(patch).eq('id', id);
-    if (error) { flash('Could not save — ' + error.message); return; }
+    if (error) { flash('Could not save. ' + error.message); return; }
     flash('Quote terms saved.'); load();
   };
   const convert = async (id) => {
     if (typeof confirm === 'function' && !confirm('Convert this quote to an order and raise an invoice?')) return;
     const { data, error } = await supabase.rpc('convert_quote_to_order', { p_quote_id: id });
-    if (error) { flash('Could not convert — ' + error.message); return; }
+    if (error) { flash('Could not convert. ' + error.message); return; }
     flash('Converted → ' + (data?.invoice_number || 'order created'));
     load();
     if (data?.order_id && typeof location !== 'undefined') location.hash = 'invoice/' + data.order_id;
@@ -54,7 +54,7 @@ export default function QuotesManager({ staff }) {
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table">
-          <thead><tr><th>Date</th><th>Reference</th><th>Company</th><th>Indicative</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Company</th><th scope="col">Indicative</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
               : !quotes.length ? <tr><td colSpan="6" className="ca-muted">No quote requests yet. They arrive from the storefront "Request a quote" flow.</td></tr>
@@ -66,7 +66,7 @@ export default function QuotesManager({ staff }) {
                         <td>{fmtDate(qt.created_at)}</td>
                         <td className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
                         <td>{qt.contact_company || qt.contact_name || qt.contact_email}</td>
-                        <td className="ca-amt">{qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '—'}</td>
+                        <td className="ca-amt">{qt.indicative_total_minor != null ? fmtMoney(qt.indicative_total_minor, qt.currency) : '–'}</td>
                         <td><span className={'ca-status ca-q-' + qt.status}>{qt.status}</span></td>
                         <td className="ca-ord-actions">
                           <button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === qt.id ? null : qt.id)}>{expanded === qt.id ? 'Hide' : 'Open'}</button>
@@ -76,7 +76,7 @@ export default function QuotesManager({ staff }) {
                         <tr className="ca-ord-detailrow"><td colSpan="6">
                           <div className="ca-ord-items">
                             <div className="q-contact">
-                              <b>{qt.contact_name || '—'}</b> · {qt.contact_email}{qt.contact_phone ? ' · ' + qt.contact_phone : ''}
+                              <b>{qt.contact_name || '–'}</b> · {qt.contact_email}{qt.contact_phone ? ' · ' + qt.contact_phone : ''}
                               {qt.po_reference && <> · PO <b>{qt.po_reference}</b></>}
                             </div>
                             {(qt.quote_items || []).map(it => (

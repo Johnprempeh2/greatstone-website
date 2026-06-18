@@ -77,7 +77,7 @@ export default function BulkImport({ staff }) {
         </div>
         <div className="pr-form">
           <h2>Import / update</h2>
-          <p className="ca-note">Upload an edited CSV. New SKUs are created, existing SKUs updated — all matched by SKU. You'll see a full dry-run before anything is saved.</p>
+          <p className="ca-note">Upload an edited CSV. New SKUs are created, existing SKUs updated, all matched by SKU. You'll see a full dry-run before anything is saved.</p>
           <label className="bk-file"><input type="file" accept=".csv,text/csv" onChange={onFile} disabled={!maps} /><span>{fileName || (maps ? 'Choose CSV…' : 'Loading…')}</span></label>
         </div>
       </div>
@@ -91,9 +91,9 @@ export default function BulkImport({ staff }) {
             <span className={c.duplicate ? 'bk-errn' : ''}> {c.duplicate} duplicate</span> · {c.unchanged} unchanged
           </p>
           {!!plan.invalid.length && <ul className="bk-errs">{plan.invalid.slice(0, 12).map((e, i) => <li key={i}>row {e.rowIndex + 2} {e.sku ? '(' + e.sku + ')' : ''}: {e.reason}</li>)}</ul>}
-          {!!plan.duplicates.length && <ul className="bk-errs">{plan.duplicates.slice(0, 8).map((d, i) => <li key={i}>SKU <b>{d.sku}</b> appears {d.rowIndexes.length}× in the file — skipped.</li>)}</ul>}
+          {!!plan.duplicates.length && <ul className="bk-errs">{plan.duplicates.slice(0, 8).map((d, i) => <li key={i}>SKU <b>{d.sku}</b> appears {d.rowIndexes.length}× in the file, skipped.</li>)}</ul>}
           <div className="ca-table-wrap"><table className="ca-table">
-            <thead><tr><th>SKU</th><th>Action</th><th>Detail</th></tr></thead>
+            <thead><tr><th scope="col">SKU</th><th scope="col">Action</th><th scope="col">Detail</th></tr></thead>
             <tbody>
               {plan.creates.slice(0, 60).map(c2 => (
                 <tr key={'c' + c2.sku}><td className="ca-name">{c2.sku}</td><td><span className="ca-status ca-published">create</span></td>

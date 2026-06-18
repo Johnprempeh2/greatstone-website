@@ -74,7 +74,7 @@ export default function StoreCart({ confirmed = false }) {
               </div>
             ) : view === 'quote' ? (
               <form className="sc-quote" onSubmit={submitQuote}>
-                <p className="sc-note">Tell us where to send the quote. We'll price it and invoice on a purchase order — no card needed.</p>
+                <p className="sc-note">Tell us where to send the quote. We'll price it and invoice on a purchase order. No card needed.</p>
                 <label>Company<input value={q.company} onChange={(e) => setQf('company', e.target.value)} autoComplete="organization" /></label>
                 <label>Your name<input value={q.name} onChange={(e) => setQf('name', e.target.value)} autoComplete="name" /></label>
                 <label>Email<input type="email" required value={q.email} onChange={(e) => setQf('email', e.target.value)} autoComplete="email" /></label>
@@ -104,7 +104,7 @@ export default function StoreCart({ confirmed = false }) {
                         <div className="sc-qty">
                           <button onClick={() => setQty(it.variantId, it.qty - 1)} aria-label="Decrease quantity" disabled={it.qty <= 1}>−</button>
                           <span>{it.qty}</span>
-                          <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label="Increase quantity" disabled={it.qty >= MAX_QTY} title={it.qty >= MAX_QTY ? 'Maximum ' + MAX_QTY + ' per line — request a quote for more' : undefined}>+</button>
+                          <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label="Increase quantity" disabled={it.qty >= MAX_QTY} title={it.qty >= MAX_QTY ? 'Maximum ' + MAX_QTY + ' per line. Request a quote for larger volumes.' : undefined}>+</button>
                         </div>
                         <button className="sc-rm" onClick={() => removeItem(it.variantId)}>Remove</button>
                       </div>
@@ -148,7 +148,7 @@ function Confirmed() {
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </div>
         <span className="st-kicker">Payment received</span>
-        <h1>Thank you — your order is confirmed.</h1>
+        <h1>Thank you. Your order is confirmed.</h1>
         <p>We've emailed your receipt and the licensing team will be in touch shortly with your keys and onboarding details. Most licences are issued within one business day.</p>
         {sid && <p className="sc-ref">Reference: <code>{sid.slice(0, 24)}</code></p>}
         <div className="sc-confirm-cta">

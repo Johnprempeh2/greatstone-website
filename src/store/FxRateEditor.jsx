@@ -85,13 +85,13 @@ export default function FxRateEditor({ staff }) {
       <h2 className="pr-listh">Rate history</h2>
       <div className="ca-table-wrap">
         <table className="ca-table">
-          <thead><tr><th>When</th><th>From</th><th>To</th></tr></thead>
+          <thead><tr><th scope="col">When</th><th scope="col">From</th><th scope="col">To</th></tr></thead>
           <tbody>
             {!history.length ? <tr><td colSpan="3" className="ca-muted">No changes yet.</td></tr>
               : history.map((h, i) => (
                 <tr key={i}>
                   <td>{fmtDate(h.changed_at)}</td>
-                  <td>{h.old_rate != null ? Number(h.old_rate).toFixed(4) : '—'}</td>
+                  <td>{h.old_rate != null ? Number(h.old_rate).toFixed(4) : '–'}</td>
                   <td className="ca-name">{Number(h.new_rate).toFixed(4)}</td>
                 </tr>
               ))}

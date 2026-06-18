@@ -154,11 +154,11 @@ export function buildSkuPlan(objects, current) {
       const offeringName = (row.offering_name || '').trim() || null;
       // The slug the importer will actually use (mirror of apply()): explicit, else derived from name/sku.
       const effectiveSlug = offeringSlug || slugify(offeringName || sku);
-      if (!effectiveSlug) { invalid.push({ rowIndex, sku, reason: 'cannot derive a product slug — set offering_slug' }); return; }
+      if (!effectiveSlug) { invalid.push({ rowIndex, sku, reason: 'cannot derive a product slug; set offering_slug' }); return; }
       const parentExists = offeringsBySlug.has(effectiveSlug);
       // Attaching to an existing offering must be EXPLICIT (offering_slug). A derived slug that happens to
       // collide with an unrelated product would silently graft onto it — reject so it shows in the preview.
-      if (!offeringSlug && parentExists) { invalid.push({ rowIndex, sku, reason: 'product name matches an existing product — set offering_slug to attach, or rename' }); return; }
+      if (!offeringSlug && parentExists) { invalid.push({ rowIndex, sku, reason: 'product name matches an existing product; set offering_slug to attach, or rename' }); return; }
       // A new product offering requires a vendor (chk_product_has_vendor); attaching to an existing one doesn't.
       if (!parentExists && !vendor) { invalid.push({ rowIndex, sku, reason: 'new product needs a vendor' }); return; }
       creates.push({

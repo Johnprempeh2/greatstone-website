@@ -71,7 +71,7 @@ export default function PricingRules({ staff }) {
       const { error: e2 } = await supabase.from('pricing_rule_targets').insert(form.targetIds.map(tid => ({ org_id: staff.org_id, rule_id: rule.id, [col]: tid })));
       if (e2) { setBusy(false); setErr('Rule saved but targets failed: ' + e2.message); loadRules(); return; }
     }
-    setBusy(false); setForm(blankForm); flash('Discount rule saved' + (form.active ? ' and live.' : ' (inactive — toggle on when ready).')); loadRules();
+    setBusy(false); setForm(blankForm); flash('Discount rule saved' + (form.active ? ' and live.' : ' (inactive, toggle on when ready).')); loadRules();
   };
   const toggleActive = async (r) => { await supabase.from('pricing_rules').update({ active: !r.active }).eq('id', r.id); loadRules(); };
   const remove = async (r) => { await supabase.from('pricing_rules').update({ deleted_at: new Date().toISOString(), active: false }).eq('id', r.id); loadRules(); flash('Rule removed.'); };
@@ -112,19 +112,19 @@ export default function PricingRules({ staff }) {
 
         <div className="pr-preview">
           <h2>Live preview</h2>
-          <p className="pr-affects"><b>{preview.length}</b> product{preview.length === 1 ? '' : 's'} affected{form.scopeType !== 'all' && !form.targetIds.length ? ' — pick targets above' : ''}.</p>
+          <p className="pr-affects"><b>{preview.length}</b> product{preview.length === 1 ? '' : 's'} affected{form.scopeType !== 'all' && !form.targetIds.length ? ', pick targets above' : ''}.</p>
           <div className="pr-examples">
             {preview.slice(0, 8).map((h, i) => <div key={i} className="pr-ex"><span className="pr-exname">{h.name}</span><span className="pr-exprice"><s>{fmtMoney(h.base)}</s> → <b>{fmtMoney(h.final)}</b></span></div>)}
             {!preview.length && <div className="ca-muted">No products match yet.</div>}
           </div>
-          <p className="ca-note">Quote-framed: discounts show as the offer price on the store and in quotes. Rules don't stack — the single best eligible rule applies.</p>
+          <p className="ca-note">Quote-framed: discounts show as the offer price on the store and in quotes. Rules don't stack. The single best eligible rule applies.</p>
         </div>
       </div>
 
       <h2 className="pr-listh">Existing rules</h2>
       <div className="ca-table-wrap">
         <table className="ca-table">
-          <thead><tr><th>Name</th><th>Scope</th><th>Discount</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th scope="col">Name</th><th scope="col">Scope</th><th scope="col">Discount</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {!rules.length ? <tr><td colSpan="5" className="ca-muted">No rules yet.</td></tr>
               : rules.map(r => (

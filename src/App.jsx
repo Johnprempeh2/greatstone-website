@@ -281,13 +281,24 @@ export default function App() {
   // keep the document <head> in sync — a product detail route gets its own per-product SEO
   // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
+    // utility / app routes have no CMS page behind them. Give each a clear, self-describing title +
+    // canonical instead of leaving the previous page's SEO stamped on the tab. Order mirrors the
+    // render precedence below (breakdown > admin > invoice > account > confirm > catalogue > shop > product).
+    const utility = (t, slug) => applyHead({ title: t + ' · ' + SITE_NAME }, t, slug);
+    if (breakdownRoute) { utility('The eight pillars', 'method'); return; }
+    if (adminNav) { utility('Studio admin', 'home'); return; }
+    if (invoiceRoute) { utility('Invoice', 'home'); return; }
+    if (accountRoute) { utility('Your account', 'home'); return; }
+    if (confirmRoute) { utility('Order confirmed', 'home'); return; }
+    if (catalogueAdmin) { utility('Catalogue admin', 'home'); return; }
+    if (shopRoute) { utility('Software store', 'shop'); return; }
     if (productSlug) {
       const pr = findProductBySlug(state.publishedProducts, productSlug);
       if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'products/' + (pr.slug || productSlug)); return; }
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.publishedProducts]);
+  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, adminNav, invoiceRoute, accountRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first

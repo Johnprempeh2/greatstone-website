@@ -51,7 +51,7 @@ export default function InvoiceView({ orderId }) {
         </section>
 
         <table className="inv-table">
-          <thead><tr><th>Description</th><th>Qty</th><th>Unit (ex VAT)</th><th>Amount</th></tr></thead>
+          <thead><tr><th scope="col">Description</th><th scope="col">Qty</th><th scope="col">Unit (ex VAT)</th><th scope="col">Amount</th></tr></thead>
           <tbody>
             {(order.order_items || []).map(it => (
               <tr key={it.id}>

@@ -26,13 +26,13 @@ export default function OrdersManager({ staff }) {
 
   const markFulfilled = async (id) => {
     const { error } = await supabase.from('orders').update({ status: 'fulfilled' }).eq('id', id);
-    if (error) { flash('Could not update — ' + error.message); return; }
+    if (error) { flash('Could not update. ' + error.message); return; }
     flash('Order marked fulfilled.'); load();
   };
   const cancelOrder = async (id) => {
-    if (typeof confirm === 'function' && !confirm('Mark this order cancelled? This records the status only — issue any refund in Stripe (it will reconcile back here automatically).')) return;
+    if (typeof confirm === 'function' && !confirm('Mark this order cancelled? This records the status only. Issue any refund in Stripe (it will reconcile back here automatically).')) return;
     const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
-    if (error) { flash('Could not update — ' + error.message); return; }
+    if (error) { flash('Could not update. ' + error.message); return; }
     flash('Order cancelled.'); load();
   };
 
@@ -47,7 +47,7 @@ export default function OrdersManager({ staff }) {
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table">
-          <thead><tr><th>Date</th><th>Reference</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
               : !orders.length ? <tr><td colSpan="6" className="ca-muted">No orders yet. Completed checkouts appear here automatically.</td></tr>

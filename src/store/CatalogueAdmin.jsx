@@ -117,7 +117,7 @@ function OfferingsManager({ staff }) {
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table">
-          <thead><tr><th>Name</th><th>Vendor</th><th>Type</th><th>From</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th scope="col">Name</th><th scope="col">Vendor</th><th scope="col">Type</th><th scope="col">From</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
               : !items.length ? <tr><td colSpan="6" className="ca-muted">No offerings match.</td></tr>
