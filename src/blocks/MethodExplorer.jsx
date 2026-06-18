@@ -16,6 +16,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
   const hostRef = useRef(null);
   const stageRef = useRef(null);
   const handleRef = useRef(null);
+  const rootRef = useRef(null);
   const [selected, setSelected] = useState(-1); // -1 = ring view; >=0 = a pillar's detail is open
   const [hover, setHover] = useState(-1);        // pillar under the cursor (-1 = none) — drives the floating name
   const [cursor, setCursor] = useState(null);    // {x,y} for the floating name label
@@ -32,9 +33,9 @@ export default function MethodExplorer({ pillars = [], onClose }) {
       try {
         handle = mountPillarExplorer(host, {
           envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
-          layout: 'ring', bloom: 0.85, initial: -1,
-          onSelect: (i) => setSelected(i),
-          onHover: (i) => setHover(i),
+          layout: 'ring', initial: -1, count: items.length, // build exactly as many gems as there are pillars
+          onSelect: (i) => { if (i < items.length) setSelected(i); },
+          onHover: (i) => setHover(i < items.length ? i : -1),
         });
         handleRef.current = handle;
       } catch (e) { /* no WebGL → the pillar list below still drives the detail panel */ }
@@ -48,19 +49,34 @@ export default function MethodExplorer({ pillars = [], onClose }) {
   const close = useCallback(() => setSelected(-1), []);
   const step = useCallback((d) => { if (!items.length) return; const n = (selected + d + items.length) % items.length; choose(n); }, [selected, items.length, choose]);
 
-  // keyboard: Escape closes the detail then the explorer; arrows page through pillars when open
+  // a11y: it's a full-screen modal surface — move focus in on open, restore to the opener on close
+  useEffect(() => {
+    const opener = document.activeElement;
+    const t = setTimeout(() => { const el = rootRef.current && rootRef.current.querySelector('.me-back'); if (el) el.focus(); }, 40);
+    return () => { clearTimeout(t); if (opener && opener.focus) try { opener.focus(); } catch { /* opener gone */ } };
+  }, []);
+
+  // keyboard: Escape closes the detail then the explorer; arrows page through pillars when open; Tab is trapped
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); if (open) close(); else onClose && onClose(); }
       else if (open && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) { e.preventDefault(); step(1); }
       else if (open && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) { e.preventDefault(); step(-1); }
+      else if (e.key === 'Tab') {
+        const root = rootRef.current; if (!root) return;
+        const f = [...root.querySelectorAll('button, a[href], select, input, [tabindex]:not([tabindex="-1"])')].filter((el) => !el.disabled && el.offsetParent !== null);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, [open, close, step, onClose]);
 
   return (
-    <div className={'me' + (open ? ' is-open' : '')}>
+    <div className={'me' + (open ? ' is-open' : '')} ref={rootRef} role="dialog" aria-modal="true" aria-label="The eight pillars — interactive breakdown">
       <style>{CSS}</style>
       <div className="me-top">
         <img className="me-logo" src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
@@ -70,7 +86,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
       <header className="me-head">
         <div className="me-kicker">The Digital Transformation Playbook</div>
         <h2 className="me-title">Eight pillars. <span className="accent">No stone unturned.</span></h2>
-        <p className="me-sub">We break your business into eight facets — hover to feel each one, click to look inside.</p>
+        <p className="me-sub">We break your business into eight facets. Hover to feel each one, click to look inside.</p>
       </header>
 
       <div className="me-stage" ref={stageRef}
@@ -82,10 +98,10 @@ export default function MethodExplorer({ pillars = [], onClose }) {
         {hoverName && cursor ? (
           <div className="me-hovername" style={{ left: cursor.x, top: cursor.y }} aria-hidden="true">{hoverName}</div>
         ) : null}
-        {/* keyboard + touch fallback (no hover on touch): pick any pillar by name */}
-        <div className="me-picks" role="tablist" aria-label="Pillars">
+        {/* keyboard + touch path (no hover on touch): pick any pillar by name */}
+        <div className="me-picks" role="group" aria-label="Pillars">
           {items.map((p, i) => (
-            <button key={i} role="tab" aria-selected={i === selected}
+            <button key={i} type="button" aria-pressed={i === selected}
               className={'me-pick' + (i === selected ? ' is-active' : '') + (i === hover ? ' is-hover' : '')}
               onClick={() => choose(i)} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(-1)}>
               {p.name || ('Pillar ' + (i + 1))}

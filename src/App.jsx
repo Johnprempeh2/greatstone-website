@@ -121,7 +121,7 @@ function upsertMeta(attr, key, content) {
 function dropMeta(attr, key) { const el = document.head.querySelector(`meta[${attr}="${key}"]`); if (el) el.remove(); }
 function applyHead(seo, pageTitle, slug) {
   const s = seo || {};
-  const title = s.title || `${pageTitle} — ${SITE_NAME}`;
+  const title = s.title || `${pageTitle} · ${SITE_NAME}`;
   const desc = (s.description || '').trim();
   const url = SITE_ORIGIN + (slug === 'home' ? '' : '/' + slug);
   document.title = title;
@@ -524,8 +524,9 @@ export default function App() {
   // should start at its hero, not wherever the last one was scrolled to). The .gs-public remount
   // (key={current}) gives the brief fade — see gsPageIn in index.css.
   function navigate(slug) {
-    if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product
+    if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product / #admin / #breakdown
     setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false); setInvoiceRoute(null);
+    setAdminNav(null); setBreakdownRoute(false); // clear admin/breakdown routes synchronously so the page renders without a flash
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }

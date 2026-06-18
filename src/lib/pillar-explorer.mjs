@@ -33,8 +33,10 @@ function addRim(mat) {
 }
 
 export function mountPillarExplorer(container, opts = {}) {
-  const o = Object.assign({ envUrl: 'env-emerald.jpg', bloom: 0.85, exposure: 1.35, keys: Object.keys(PILLAR_SVG),
+  const o = Object.assign({ envUrl: 'env-emerald.jpg', exposure: 1.35, keys: Object.keys(PILLAR_SVG), count: 0,
     onSelect: null, onHover: null, layout: 'ring', ringRadius: 2.55, camZ: null, cols: 4 }, opts);
+  // build exactly `count` gems when given (so the ring matches the editable pillar count), else all icons
+  if (o.count > 0 && o.count < o.keys.length) o.keys = o.keys.slice(0, o.count);
   // when a pillar is selected it floats to the front-left (beside the detail panel); the rest recede
   const SEL_ANCHOR = new THREE.Vector3(-1.7, 0.25, 2.3);
   const baseDir = o.envUrl.slice(0, o.envUrl.lastIndexOf('/') + 1);

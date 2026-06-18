@@ -84,7 +84,7 @@ export const puck = {
     title: 'The hours your business is quietly losing, and how to get them back.',
     excerpt: 'A field-level look at where time actually leaks: the manual handoffs, the duplicated tools, the approvals that wait on a single inbox.',
     meta: 'AI & Automation', readTime: '8 min read',
-    ctaLabel: 'Read the piece', ctaHref: '#',
+    ctaLabel: '', ctaHref: '', // no button until a real link is set (avoids a dead "#" CTA)
   },
   render: (props) => <FeaturedArticle {...props} />,
 };

@@ -3,7 +3,7 @@
 // server-side before charging. TEST MODE — uses Stripe test keys; no real money moves.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useModal } from './useModal.mjs';
-import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout, requestQuote } from './cart.mjs';
+import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout, requestQuote, MAX_QTY } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { getSession } from './customerAuth.mjs';
 
@@ -104,7 +104,7 @@ export default function StoreCart({ confirmed = false }) {
                         <div className="sc-qty">
                           <button onClick={() => setQty(it.variantId, it.qty - 1)} aria-label="Decrease quantity" disabled={it.qty <= 1}>−</button>
                           <span>{it.qty}</span>
-                          <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label="Increase quantity">+</button>
+                          <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label="Increase quantity" disabled={it.qty >= MAX_QTY} title={it.qty >= MAX_QTY ? 'Maximum ' + MAX_QTY + ' per line — request a quote for more' : undefined}>+</button>
                         </div>
                         <button className="sc-rm" onClick={() => removeItem(it.variantId)}>Remove</button>
                       </div>

@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 
 const KEY = 'gs_store_cart_v1';
-const MAX_QTY = 100;
+export const MAX_QTY = 100;
 const subs = new Set();
 
 function read() {

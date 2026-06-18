@@ -13,7 +13,7 @@ function meter(len, lo, hi) {
 export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugLocked, onClose, embedded }) {
   const title = seo.title || '';
   const desc = seo.description || '';
-  const shownTitle = title || (pageTitle + ' — Greatstone International');
+  const shownTitle = title || (pageTitle + ' · Greatstone International');
   const shownDesc = desc || 'Add a description so search and social show the right summary.';
   const url = 'greatstone.com' + (slug === 'home' ? '' : '/' + slug);
   const tm = meter(title.length, 40, 60);
@@ -37,7 +37,7 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugL
         </label>
         <label className="gs-field">
           <span className="gs-field-label">Meta title <em className={'gs-meter ' + tm.cls}>{title.length} · {tm.note}</em></span>
-          <input value={title} onChange={(e) => set('title', e.target.value)} placeholder={pageTitle + ' — Greatstone International'} />
+          <input value={title} onChange={(e) => set('title', e.target.value)} placeholder={pageTitle + ' · Greatstone International'} />
         </label>
         <label className="gs-field">
           <span className="gs-field-label">Meta description <em className={'gs-meter ' + dm.cls}>{desc.length} · {dm.note}</em></span>

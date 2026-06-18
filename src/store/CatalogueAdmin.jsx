@@ -21,7 +21,7 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
   useEffect(() => {
     getSession().then(s => setSession(s || null));
     const { data } = onAuth(s => setSession(s || null));
-    return () => data.subscription.unsubscribe();
+    return () => data?.subscription?.unsubscribe?.();
   }, []);
   useEffect(() => { if (session) getStaffUser().then(setStaff); else setStaff(null); }, [session]);
 

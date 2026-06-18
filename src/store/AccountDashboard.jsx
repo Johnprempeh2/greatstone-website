@@ -18,7 +18,7 @@ export default function AccountDashboard() {
   useEffect(() => {
     getSession().then(s => setSession(s || null));
     const { data } = onAuth(s => setSession(s || null));
-    return () => data.subscription.unsubscribe();
+    return () => data?.subscription?.unsubscribe?.();
   }, []);
   useEffect(() => { if (session) getCustomerProfile().then(setProfile); else setProfile(null); }, [session]);
 

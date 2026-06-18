@@ -39,7 +39,7 @@ const blk = (type, props) => {
 
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
-  return { title, background, status, seo: seo || { title: title + ' — Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
+  return { title, background, status, seo: seo || { title: title + ' · Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
 }
 
 // the editorial state machine: who can move where (the future Laravel backend enforces this
@@ -287,7 +287,7 @@ export function seedState() {
           body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
           ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk', variant: 'band',
         }),
-      ], { title: 'Greatstone International — The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
+      ], { title: 'Greatstone International · The Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, with AI as the accelerator.', ogImage: '' }),
 
       method: seedPage('Method', 'stone', [
         blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
@@ -306,7 +306,7 @@ export function seedState() {
         blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
           body: 'A Deep Dive scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
           ctaLabel: 'Book a Deep Dive', ctaHref: '#book', variant: 'framed' }),
-      ], { title: 'Method — Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
+      ], { title: 'Method · Greatstone International', description: 'The Digital Transformation Playbook: a scored read across eight pillars. We benchmark you against your peers and climb the lowest first.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
         blk('TimeCounter', {}),
@@ -334,7 +334,7 @@ export function seedState() {
           cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The deep dive picks up exactly where it leaves off.',
           cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
         }),
-      ], { title: 'Book a Deep Dive — Greatstone International', description: 'You still can’t buy time. Let’s save yours. Book a Deep Dive: the first step costs nothing.', ogImage: '' }),
+      ], { title: 'Book a Deep Dive · Greatstone International', description: 'You still can’t buy time. Let’s save yours. Book a Deep Dive: the first step costs nothing.', ogImage: '' }),
   };
   // fold in the rest of the site, converted from the live pages into editable blocks
   seedPages.forEach((p) => {
@@ -355,7 +355,7 @@ function productsPage() {
   return seedPage('Products', 'stone', [
     blk('Hero', { kicker: 'Software Catalogue', headline: 'Hand-picked developer software,', highlight: 'licensed and supported.', body: 'The document, PDF and developer tools your teams rely on, from the vendors who make them best. Trusted licensing, UK support, and a partner who knows the whole stack.', align: 'center', size: 'standard', ctaLabel: 'Talk to us about licensing', ctaHref: '#book' }),
     blk('Storefront', { heading: 'Browse by vendor', body: 'Hundreds of products across the vendors you already trust. Every licence includes support; prices are a guide, talk to us for volume and multi-year terms.' }),
-  ], { title: 'Software Catalogue — Greatstone International', description: 'Hand-picked third-party developer software, licensed and supported by Greatstone: Aspose, DevExpress, GroupDocs, Iron Software, Apryse and more.', ogImage: '' });
+  ], { title: 'Software Catalogue · Greatstone International', description: 'Hand-picked third-party developer software, licensed and supported by Greatstone: Aspose, DevExpress, GroupDocs, Iron Software, Apryse and more.', ogImage: '' });
 }
 
 export function load() {
@@ -381,7 +381,7 @@ function migrate(state) {
   if (!state || !state.pages) return seedState();
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
-    if (!p.seo) p.seo = { title: (p.title || 'Page') + ' — Greatstone International', description: '', ogImage: '' };
+    if (!p.seo) p.seo = { title: (p.title || 'Page') + ' · Greatstone International', description: '', ogImage: '' };
     if (!Array.isArray(p.versions)) p.versions = [];
     if (!Array.isArray(p.statusHistory)) p.statusHistory = [];
     if (p.approvedBy === undefined) p.approvedBy = null;
