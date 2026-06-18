@@ -86,19 +86,19 @@ export default function StoreBrowse({ initialVendor = '' }) {
           <div className="st-facet">
             <h2>Vendor {active && <button className="st-clear" onClick={clearAll}>Clear all</button>}</h2>
             <div className="st-pills">
-              {vendors.map(v => <button key={v.id} className={'st-pill' + (vendor === v.slug ? ' on' : '')} onClick={() => setVendor(vendor === v.slug ? '' : v.slug)}>{v.name}</button>)}
+              {vendors.map(v => <button key={v.id} aria-pressed={vendor === v.slug} className={'st-pill' + (vendor === v.slug ? ' on' : '')} onClick={() => setVendor(vendor === v.slug ? '' : v.slug)}>{v.name}</button>)}
             </div>
           </div>
           <div className="st-facet">
             <h2>Platform</h2>
             <div className="st-pills">
-              {PLATFORMS.map(p => <button key={p} className={'st-pill' + (platform === p ? ' on' : '')} onClick={() => setPlatform(platform === p ? '' : p)}>{p}</button>)}
+              {PLATFORMS.map(p => <button key={p} aria-pressed={platform === p} className={'st-pill' + (platform === p ? ' on' : '')} onClick={() => setPlatform(platform === p ? '' : p)}>{p}</button>)}
             </div>
           </div>
           <div className="st-facet">
             <h2>Category</h2>
             <div className="st-pills">
-              {categories.map(c => <button key={c.id} className={'st-pill' + (category === c.slug ? ' on' : '')} onClick={() => setCategory(category === c.slug ? '' : c.slug)}>{c.name}</button>)}
+              {categories.map(c => <button key={c.id} aria-pressed={category === c.slug} className={'st-pill' + (category === c.slug ? ' on' : '')} onClick={() => setCategory(category === c.slug ? '' : c.slug)}>{c.name}</button>)}
             </div>
           </div>
         </aside>

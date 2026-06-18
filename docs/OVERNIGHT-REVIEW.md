@@ -171,3 +171,7 @@ Audited the under-reviewed interactive surfaces (3D Stage/engines, the ⌘K pale
 - [x] **(low) palette backdrop reduced-motion** (studio.css): the reset targeted a dead `.gs-cmd-scrim`; the real element is `.gs-cmd-backdrop`, so its fade still played under reduced-motion. Fixed the selector.
 - [x] **(low) reveal lost content on a mid-page refresh** (reveal.js): a node scrolled past *above* the viewport on mount was handed to the IntersectionObserver (which never fires for above-viewport nodes), so it stayed `opacity:0`. Now anything not below the fold reveals immediately; only below-the-fold nodes wait on the observer.
 - Build clean, 51 tests green, 0 console errors. Two of these (palette draft leak, WebGL crash class) are go-live-relevant.
+
+### Cycle 19 — storefront listing filters (hands-on, solo): facet toggle a11y
+Hands-on test of the `#shop` listing filters (vendor / platform / category facets, sort, result count, load-more). Filtering works and the result count is correctly `aria-live="polite"` (159 → 86 announces). One real a11y gap found + fixed:
+- [x] **Facet filter pills had no `aria-pressed`** (StoreBrowse.jsx): the vendor/platform/category pills are toggle buttons that get a visual `.on` state, but exposed no pressed state to assistive tech, so a screen-reader user couldn't tell which filters were active (WCAG 4.1.2). Added `aria-pressed={active}` to all three facet groups. **Verified live: toggles false→true with the active state.** Build clean, 51 tests green, 0 console errors.
