@@ -15,6 +15,12 @@ Legend: [ ] open · [x] done (commit) · [~] deferred (needs a product/content d
 - [x] `navigate()` left `adminNav`/`breakdownRoute` to the async hashchange (one-render desync flash) — cleared synchronously.
 - [x] AdminConsole Commerce rail badges (`attention.orders`/`quotes`) can never light up (App only passes releases/team) — dropped the misleading badge refs.
 
+### Cycle 1 follow-ups (found during the live preview spot-check)
+- [x] Persisted meta titles: the em-dash sweep fixed the seed default but not titles already saved in a user's localStorage (the live home `document.title` still read "Greatstone International — The Foundation…"). Added a `migrate()` pass that rewrites ` — `/` – ` → ` · ` in every page `seo.title`. Verified live.
+- [x] MethodExplorer dialog `aria-label` carried an em dash a screen reader announces verbatim ("…pillars — interactive breakdown") → comma.
+
+_Cycle 1 verified: build clean, 51/51 tests, preview spot-check (home title, breakdown explorer render+select, shop) 0 console errors, deployed to greatstone-home.netlify.app/puck-proof/ and bundle hashes return 200._
+
 ## Deferred / needs decision (next cycles or John)
 - [~] Quote VAT contract (CRITICAL, money): server stores `indicative_total_minor` EX-VAT but the admin treats it as the customer figure; `convert_quote_to_order` may run with a null `quoted_total`. Needs the edge fn/RPC to store inc-VAT (or both) + require a non-null quoted total pre-filled to `round(indicative*1.2)`. (request-quote/index.ts, QuotesManager.jsx)
 - [~] Checkout price drift (CRITICAL): cart shows storefront GBP; server re-derives from USD at the *current* FX rate/rules. If FX/rules change between load and pay, the charge differs with no "price updated" reconfirm. Have startCheckout return the server total + confirm if it differs >1p.
