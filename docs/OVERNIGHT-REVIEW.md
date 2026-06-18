@@ -27,17 +27,17 @@ _Cycle 1 verified: build clean, 51/51 tests, preview spot-check (home title, bre
 - [~] Invoice VAT number is a literal `[add VAT no.]` placeholder — production blocker; pull from org_settings + hide if absent. (John: provide the VAT number.)
 - [x] Account: quotes query has no error handling (silent empty on RLS/network fail) — surface the error like orders does. (AccountDashboard.jsx) **[cycle 2]** quotesErr + loadQuotes + "Try again" row.
 - [~] Admin tables (Orders/Quotes/Pricing/Offerings) aren't SR/mobile-safe. **[cycle 2]** `scope="col"` added to every store/admin table header (+ sr-only text for the empty actions `th`). Still open: the `data-label` card-collapse pattern for the admin manager tables (only `.acct-orders` has it) — wants responsive testing, next cycle.
-- [ ] FX editor: lost-update race on the global rate + no confirm dialog (mis-prices the whole catalogue). Add a before/after confirm + an `updated_at` version guard.
+- [x] FX editor: lost-update race on the global rate + no confirm dialog (mis-prices the whole catalogue). **[cycle 3]** Added a current→new confirm before the write + an optimistic-lock guard on `row_version` (bumped by touch_row); a concurrent save now reloads + warns instead of clobbering. No migration needed (column + trigger already existed).
 - [ ] ContactBand "Run the time-savings calculator → #go/services" promises a calculator the services page doesn't have. Relabel or build a real calculator (content decision).
 - [ ] Checkout drops POA/unpublished/sub-£1 items silently — return a `droppedItems` array + tell the buyer.
 - [ ] Re-order ("Buy again") adds at the historical price (stale vs current FX) — re-fetch current pricing or label "indicative".
 - [x] applyHead stamps the last page's title/canonical on `#shop`/`#account`/`#invoice` — set a generic title for utility routes. **[cycle 2]** Each app route (breakdown/admin/invoice/account/confirm/catalogue/shop) now gets its own title + canonical.
-- [ ] IndustryPicker + me-picks: complete or downgrade the half-built ARIA tabs (tabpanel/aria-controls).
+- [x] IndustryPicker + me-picks: complete or downgrade the half-built ARIA tabs (tabpanel/aria-controls). **[cycle 1 + 3]** me-picks downgraded to aria-pressed buttons (cycle 1); IndustryPicker completed as real tabs — tabs carry id + aria-controls, content is a role="tabpanel" with aria-labelledby tracking the active tab (verified live).
 - [ ] Cairn bg: sizes to the viewport + binds global pointer/resize listeners (should scope to its container via ResizeObserver) + reacts when faded out. Dormant (no page uses it) — fix before it's used.
-- [ ] Sign-out optimistic: await signOut() before clearing local state (or reset authChecked) so a failed sign-out doesn't desync chrome vs the catalogue session.
+- [x] Sign-out optimistic: await signOut() before clearing local state. **[cycle 3]** adminAuth.signOut() throws on error; doSignOut() awaits + keeps the signed-in chrome on failure. (Customer dashboard already reactive via onAuth.)
 - [ ] getStaffUser null-role staff bounces to sign-in with no message + unknown future role locks the body — add a distinct "no role assigned" state.
-- [ ] Public EditorBoundary has no onReset → a malformed published block loops on Reload; offer "Go to home".
-- [ ] Stage visibilitychange re-activates loops without re-checking prefers-reduced-motion.
+- [x] Public EditorBoundary has no onReset → a malformed published block loops on Reload; offer "Go to home". **[cycle 3]** Added a "Go to home" action (any non-home route) that navigates to the first page.
+- [x] Stage visibilitychange re-activates loops without re-checking prefers-reduced-motion. **[cycle 3]** apply() now re-checks a persistent reduced-motion MediaQueryList every call (was defeated by any scroll/resize/visibility) + re-applies live on toggle.
 - [x] Product gallery: add aria-current to the active thumb + an aria-live "Image N of M". **[cycle 2]** Both done + thumb group labelled.
 - [ ] FeaturedArticle/InsightsGrid/Team: make `alt` required (or warn inline) when an image is set.
 - [ ] Confirmation page exposes the raw `cs_test_…` session id as the "Reference" — strip the prefix + match the email format. Add a "Test mode" banner gated on the test key.
