@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { mountGreatstoneLogo } from './lib/greatstone-logo.mjs';
 import { mountSummit } from './lib/summit-bg.mjs';
+import { mountCairn } from './lib/cairn-bg.mjs';
 import { mountTide } from './lib/tideMount.js';
 import { smoothstep, scrollContext, resolveTransitionAt } from './stage-presets.js';
 import { normalizeBackground } from './store.js';
@@ -9,6 +10,7 @@ import { normalizeBackground } from './store.js';
 const MOUNTERS = {
   stone: (host) => mountGreatstoneLogo(host, { envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg', bloom: 0.9, exposure: 1.4, idle: true, autoTurn: true }),
   summit: (host) => mountSummit(host, {}),
+  cairn: (host) => mountCairn(host, {}),
   tide: (host) => mountTide(host, {}),
   tideRadial: (host) => mountTide(host, { focalPoint: { x: 0.5, y: 0.5 }, sweep: [0, Math.PI * 2], arcs: 44, warpStrength: 50 }),
   tideCalm: (host) => mountTide(host, { arcs: 30, flowSpeed: 0.10, crest: false, warpStrength: 28 }),

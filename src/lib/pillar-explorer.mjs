@@ -5,11 +5,6 @@
    family + fresnel lime rim + bloom as the logo. Gems fan out from the centre into a ring on mount,
    then rock and breathe on their own axes; hover pops one, click selects (onSelect(index)). */
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import { PILLAR_SVG } from './pillar-svg.js';
 
@@ -39,7 +34,9 @@ function addRim(mat) {
 
 export function mountPillarExplorer(container, opts = {}) {
   const o = Object.assign({ envUrl: 'env-emerald.jpg', bloom: 0.85, exposure: 1.35, keys: Object.keys(PILLAR_SVG),
-    onSelect: null, layout: 'ring', ringRadius: 2.55, camZ: null, cols: 4 }, opts);
+    onSelect: null, onHover: null, layout: 'ring', ringRadius: 2.55, camZ: null, cols: 4 }, opts);
+  // when a pillar is selected it floats to the front-left (beside the detail panel); the rest recede
+  const SEL_ANCHOR = new THREE.Vector3(-1.7, 0.25, 2.3);
   const baseDir = o.envUrl.slice(0, o.envUrl.lastIndexOf('/') + 1);
 
   const canvas = document.createElement('canvas'); canvas.style.cssText = 'width:100%;height:100%;display:block';
@@ -132,8 +129,8 @@ export function mountPillarExplorer(container, opts = {}) {
       displacementMap: isCoarse ? null : reliefTex(kkey + '_height.webp', false), displacementScale: isCoarse ? 0 : fx.disp,
       transparent: true, alphaTest: 0.4, opacity: 0, emissive: new THREE.Color(BASE.emissive), emissiveIntensity: 0.16, side: THREE.DoubleSide });
     addRim(faceMat); mats.push(faceMat);
-    const front = new THREE.Mesh(faceGeo, faceMat); front.renderOrder = 3; front.position.z = PILLAR_DEPTH / 2 + 0.004; grp.add(front); pickables.push(front);
-    const back = new THREE.Mesh(faceGeo, faceMat); back.renderOrder = 3; back.position.z = -(PILLAR_DEPTH / 2 + 0.004); back.rotation.y = Math.PI; grp.add(back); pickables.push(back);
+    const front = new THREE.Mesh(faceGeo, faceMat); front.renderOrder = 3; front.position.z = PILLAR_DEPTH / 2 + 0.004; front.userData.i = i; grp.add(front); pickables.push(front);
+    const back = new THREE.Mesh(faceGeo, faceMat); back.renderOrder = 3; back.position.z = -(PILLAR_DEPTH / 2 + 0.004); back.rotation.y = Math.PI; back.userData.i = i; grp.add(back); pickables.push(back);
 
     // aura
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xc8ff00, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, opacity: 0 }));
@@ -151,17 +148,6 @@ export function mountPillarExplorer(container, opts = {}) {
   });
   root.scale.setScalar(o.layout === 'ring' ? 0.92 : 0.86);
 
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), o.bloom, 0.6, 0.62); composer.addPass(bloom);
-  composer.addPass(new OutputPass());
-  composer.addPass(new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, uLo: { value: 0.05 }, uHi: { value: 0.14 } },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-    fragmentShader: 'precision highp float; varying vec2 vUv; uniform sampler2D tDiffuse; uniform float uLo,uHi;\n' +
-      'void main(){ vec4 c=texture2D(tDiffuse,vUv); float v=max(c.r,max(c.g,c.b)); float a=smoothstep(uLo,uHi,v); gl_FragColor=vec4(c.rgb*a,a); }',
-  }));
-
   // pointer hover + click
   const ray = new THREE.Raycaster(); const ptr = new THREE.Vector2(-2, -2);
   let hovered = -1, selected = opts.initial != null ? opts.initial : -1;
@@ -177,54 +163,62 @@ export function mountPillarExplorer(container, opts = {}) {
 
   function resize() {
     const w = container.clientWidth || 600, h = container.clientHeight || 500;
-    renderer.setSize(w, h, false); composer.setSize(w, h); bloom.setSize(w, h);
+    renderer.setSize(w, h, false);
     const baseZ = o.camZ != null ? o.camZ : (o.layout === 'ring' ? 9.4 : 8.6);
     camera.aspect = w / h; camera.position.z = baseZ / Math.min(camera.aspect, 1.4); camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize); ro.observe(container); resize();
 
-  const clock = new THREE.Clock(); let raf = 0, vis = true, born = 0; const v = new THREE.Vector3();
+  const clock = new THREE.Clock(); let raf = 0, vis = true, born = 0, recede = 0, lastHover = -2; const v = new THREE.Vector3();
   const io = new IntersectionObserver((es) => { vis = es[0].isIntersecting; }, { threshold: 0 }); io.observe(container);
 
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime; born += dt;
+    // hover pick (every mesh — body + both faces — carries its pillar index)
     ray.setFromCamera(ptr, camera);
     const hit = ray.intersectObjects(pickables, false);
-    hovered = hit.length ? hit[0].object.userData.i : -1;
-    // raycast hits faces (no .i) sometimes → walk to the body's i via the group
-    if (hovered < 0 && hit.length) { let p = hit[0].object; while (p && p.userData.i == null) p = p.parent; hovered = p ? p.userData.i : -1; }
+    let hv = -1;
+    if (hit.length) { let p = hit[0].object; while (p && p.userData.i == null) p = p.parent; hv = p ? p.userData.i : -1; }
+    hovered = hv;
     container.style.cursor = hovered >= 0 ? 'pointer' : 'default';
+    if (hovered !== lastHover) { lastHover = hovered; if (o.onHover) o.onHover(hovered); }
+    // global recede: the unselected gems fall back while one is focused
+    recede += ((selected >= 0 ? 1 : 0) - recede) * (1 - Math.exp(-7 * dt));
 
     pillars.forEach((s) => {
       const u = s.userData;
-      // entrance: fan out from centre into the ring (staggered), then hold
-      const stag = clamp(born * 1.5 - u.i * 0.07, 0, 1);
-      v.lerpVectors(u.fused, u.ring, easeOutQuart(stag));
       const isSel = (u.i === selected);
       u.sel += ((isSel ? 1 : 0) - u.sel) * (1 - Math.exp(-7 * dt));
       u.prox += (((u.i === hovered) ? 1 : 0) - u.prox) * (1 - Math.exp(-12 * dt));
+      // entrance: fan out from centre into the ring (staggered), then hold
+      const stag = clamp(born * 1.5 - u.i * 0.07, 0, 1);
+      v.lerpVectors(u.fused, u.ring, easeOutQuart(stag));
+      // focus the selected gem to the front; push the rest outward/back
+      if (u.sel > 0.001) v.lerp(SEL_ANCHOR, u.sel);
+      else if (recede > 0.001) { v.multiplyScalar(1 + recede * 0.5); v.z -= recede * 1.1; }
       if (!reduceMotion) { v.y += Math.sin(t * 0.9 + u.phase) * 0.06 * (1 - u.sel * 0.7); v.x += Math.cos(t * 0.6 + u.phase) * 0.03 * (1 - u.sel); }
       s.position.copy(v);
-      let sc = 1 + u.prox * 0.16 + u.sel * 0.3;
+      // scale: hover pop + focus grow + breathing; the other 7 shrink back
+      let sc = 1 + u.prox * 0.16 + u.sel * 0.34;
       if (!reduceMotion) sc *= 1 + Math.sin(t * 1.3 + u.phase) * 0.018;
-      if (selected >= 0 && !isSel) sc *= 0.7;
+      if (selected >= 0 && !isSel) sc *= (0.62 + 0.38 * (1 - recede));
       s.scale.setScalar(Math.max(0.001, sc));
-      // each gem rocks on its own axes to reveal depth + facets (relief face stays toward you)
+      // each gem rocks on its own axes to reveal depth + facets (wider on hover; gentle present when focused)
       if (!reduceMotion) {
         const amp = 0.34 + u.prox * 0.5;
         s.rotation.y = Math.sin(t * (0.5 + u.spinRate) + u.phase) * amp * (1 - u.sel) + Math.sin(t * 0.7 + u.phase) * 0.22 * u.sel;
         s.rotation.x = Math.sin(t * 0.6 + u.phase) * (0.12 + u.prox * 0.13) * (1 - u.sel * 0.5);
         s.rotation.z = Math.cos(t * 0.5 + u.phase) * 0.03 * (1 - u.sel);
-      }
-      const op = stag * (selected >= 0 && !isSel ? 0.32 : 1);
+      } else { s.rotation.set(0, 0, 0); }
+      const op = stag * (isSel ? 1 : (selected >= 0 ? 0.28 + 0.72 * (1 - recede) : 1));
       u.mat.forEach((m) => { m.opacity = op; });
-      u.glow.material.opacity = Math.min(0.5, 0.025 + u.prox * 0.24 + u.sel * 0.26) * stag;
-      const gsc = 2.0 + u.prox * 0.55 + u.sel * 0.9; u.glow.scale.set(gsc, gsc, 1);
+      // each gem carries a soft additive aura (stands in for post-process bloom); brightens on hover/focus
+      u.glow.material.opacity = Math.min(0.62, 0.07 + u.prox * 0.28 + u.sel * 0.3) * stag;
+      const gsc = 2.4 + u.prox * 0.6 + u.sel * 1.0; u.glow.scale.set(gsc, gsc, 1);
     });
-    root.rotation.y = reduceMotion ? 0 : Math.sin(t * 0.2) * 0.05;
-    centerGlow.material.opacity = 0.05 + (hovered >= 0 ? 0.03 : 0);
-    bloom.strength = o.bloom + (hovered >= 0 || selected >= 0 ? 0.25 : 0);
-    composer.render();
+    root.rotation.y = reduceMotion ? 0 : Math.sin(t * 0.2) * 0.05 * (1 - recede);
+    centerGlow.material.opacity = 0.07 + (hovered >= 0 ? 0.03 : 0);
+    renderer.render(scene, camera);
   }
   function loop() { if (vis && !document.hidden) frame(); raf = requestAnimationFrame(loop); }
   loop();

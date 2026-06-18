@@ -6,6 +6,7 @@
 export const STAGE_OPTIONS = [
   { id: 'stone', label: 'Stone (logo)', scenes: ['stone'] },
   { id: 'summit', label: 'Summit (terrain)', scenes: ['summit'] },
+  { id: 'cairn', label: 'Cairn (spiral)', scenes: ['cairn'] },
   { id: 'tide', label: 'Tide — waves', scenes: ['tide'] },
   { id: 'tide-radial', label: 'Tide — radial waves', scenes: ['tideRadial'] },
   { id: 'tide-calm', label: 'Tide — calm waves', scenes: ['tideCalm'] },
@@ -20,6 +21,7 @@ export const STAGE_OPTIONS = [
 export const SCENE_KINDS = [
   { id: 'stone', label: 'Stone', color: '#1b5039', ink: '#ffffff' },
   { id: 'summit', label: 'Summit', color: '#2a6e8f', ink: '#ffffff' },
+  { id: 'cairn', label: 'Cairn', color: '#3c966e', ink: '#ffffff' },
   { id: 'tide', label: 'Tide — waves', color: '#c8ff00', ink: '#0e1611' },
   { id: 'tideRadial', label: 'Tide — radial', color: '#9bd64a', ink: '#0e1611' },
   { id: 'tideCalm', label: 'Tide — calm', color: '#4ecdc4', ink: '#0e1611' },

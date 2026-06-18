@@ -14,10 +14,14 @@ const pad2 = (n) => String(n).padStart(2, '0');
 export default function MethodExplorer({ pillars = [], onClose }) {
   const items = pillars.slice(0, 8);
   const hostRef = useRef(null);
+  const stageRef = useRef(null);
   const handleRef = useRef(null);
   const [selected, setSelected] = useState(-1); // -1 = ring view; >=0 = a pillar's detail is open
+  const [hover, setHover] = useState(-1);        // pillar under the cursor (-1 = none) — drives the floating name
+  const [cursor, setCursor] = useState(null);    // {x,y} for the floating name label
   const open = selected >= 0;
   const active = open ? items[selected] : null;
+  const hoverName = hover >= 0 && hover < items.length && !open ? (items[hover].name || '') : '';
 
   // mount the 3D ring (dynamic import keeps three.js off the critical path); onSelect opens the detail
   useEffect(() => {
@@ -30,6 +34,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
           envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
           layout: 'ring', bloom: 0.85, initial: -1,
           onSelect: (i) => setSelected(i),
+          onHover: (i) => setHover(i),
         });
         handleRef.current = handle;
       } catch (e) { /* no WebGL → the pillar list below still drives the detail panel */ }
@@ -37,8 +42,10 @@ export default function MethodExplorer({ pillars = [], onClose }) {
     return () => { alive = false; if (handle && handle.destroy) handle.destroy(); };
   }, []);
 
-  const choose = useCallback((i) => { setSelected(i); if (handleRef.current) handleRef.current.setSelected(i); }, []);
-  const close = useCallback(() => { setSelected(-1); if (handleRef.current) handleRef.current.setSelected(-1); }, []);
+  // keep the 3D focus in sync with the selection however it changed — clicking a gem, a pill, or Prev/Next
+  useEffect(() => { if (handleRef.current) handleRef.current.setSelected(selected); }, [selected]);
+  const choose = useCallback((i) => setSelected(i), []);
+  const close = useCallback(() => setSelected(-1), []);
   const step = useCallback((d) => { if (!items.length) return; const n = (selected + d + items.length) % items.length; choose(n); }, [selected, items.length, choose]);
 
   // keyboard: Escape closes the detail then the explorer; arrows page through pillars when open
@@ -66,14 +73,21 @@ export default function MethodExplorer({ pillars = [], onClose }) {
         <p className="me-sub">We break your business into eight facets — hover to feel each one, click to look inside.</p>
       </header>
 
-      <div className="me-stage">
+      <div className="me-stage" ref={stageRef}
+        onPointerMove={(e) => { const r = stageRef.current.getBoundingClientRect(); setCursor({ x: e.clientX - r.left, y: e.clientY - r.top }); }}
+        onPointerLeave={() => setCursor(null)}>
         <div className="me-canvas" ref={hostRef} aria-hidden="true" />
-        <div className="me-orb" aria-hidden="true"><span>EXPLORE</span></div>
-        {/* accessible / no-WebGL fallback: pick any pillar by name */}
+        <div className={'me-orb' + (hover >= 0 ? ' is-dim' : '')} aria-hidden="true"><span>EXPLORE</span></div>
+        {/* the hovered pillar's name follows the cursor, like the live site */}
+        {hoverName && cursor ? (
+          <div className="me-hovername" style={{ left: cursor.x, top: cursor.y }} aria-hidden="true">{hoverName}</div>
+        ) : null}
+        {/* keyboard + touch fallback (no hover on touch): pick any pillar by name */}
         <div className="me-picks" role="tablist" aria-label="Pillars">
           {items.map((p, i) => (
             <button key={i} role="tab" aria-selected={i === selected}
-              className={'me-pick' + (i === selected ? ' is-active' : '')} onClick={() => choose(i)}>
+              className={'me-pick' + (i === selected ? ' is-active' : '') + (i === hover ? ' is-hover' : '')}
+              onClick={() => choose(i)} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(-1)}>
               {p.name || ('Pillar ' + (i + 1))}
             </button>
           ))}
@@ -140,6 +154,13 @@ const CSS = `
   padding:7px 14px;color:var(--gs-text-muted,#b0b0b0);font:700 .76rem/1 Montserrat,sans-serif;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
 .me-pick:hover{color:var(--gs-text,#fff);border-color:var(--gs-border,rgba(200,255,0,.3))}
 .me-pick.is-active{color:#0e1611;background:var(--gs-accent,#c8ff00);border-color:var(--gs-accent,#c8ff00)}
+.me-pick.is-hover{color:var(--gs-text,#fff);border-color:var(--gs-accent-mid,rgba(200,255,0,.4))}
+.me-orb.is-dim{opacity:.35;transition:opacity .3s}
+/* the hovered pillar's name, following the cursor */
+.me-hovername{position:absolute;z-index:6;transform:translate(16px,-50%);pointer-events:none;white-space:nowrap;
+  font:900 .9rem/1 Montserrat,sans-serif;letter-spacing:.01em;color:var(--gs-accent,#c8ff00);
+  text-shadow:0 2px 18px rgba(0,0,0,.7);animation:meTag .18s var(--gs-ease,ease)}
+@keyframes meTag{from{opacity:0;transform:translate(8px,-50%)}to{opacity:1;transform:translate(16px,-50%)}}
 .me-detail{position:absolute;top:0;right:0;bottom:0;width:min(440px,92vw);z-index:5;
   background:linear-gradient(200deg,rgba(16,32,24,.96),rgba(8,18,12,.98));border-left:1px solid var(--gs-border,rgba(200,255,0,.18));
   backdrop-filter:blur(10px);box-shadow:-40px 0 90px -40px rgba(0,0,0,.8);padding:clamp(24px,3vw,40px);overflow-y:auto;
