@@ -25,7 +25,7 @@ export default function StoreProduct({ slug, onBack }) {
 
   useEffect(() => { if (o) document.title = (o.seo && o.seo.metaTitle) || (o.name + ' · Greatstone International'); }, [o]);
 
-  if (o === undefined) return <><div className="st-scrim" aria-hidden="true" /><div className="sp-wrap"><div className="st-loading">Loading…</div></div></>;
+  if (o === undefined) return <><div className="st-scrim" aria-hidden="true" /><div className="sp-wrap"><div className="st-loading" role="status">Loading…</div></div></>;
   if (o === null) return <><div className="st-scrim" aria-hidden="true" /><div className="sp-wrap"><div className="st-empty"><h3>Product not found</h3><p>It may have moved or the link is out of date.</p><button className="st-more" onClick={onBack}>Back to the catalogue</button></div></div></>;
 
   const gallery = [...new Set([o.attributes && o.attributes.icon, o.attributes && o.attributes.mainImage, ...((o.attributes && o.attributes.gallery) || [])].filter(Boolean))].map(img);
@@ -37,8 +37,8 @@ export default function StoreProduct({ slug, onBack }) {
     <div className="st-scrim" aria-hidden="true" />
     <div className="sp-wrap">
       <nav className="sp-crumb" aria-label="Breadcrumb">
-        <a href="#shop">Catalogue</a><span className="sep">›</span>
-        <a href={'#shop/' + (o.vendor ? o.vendor.slug : '')}>{o.vendor && o.vendor.name}</a><span className="sep">›</span>
+        <a href="#shop">Catalogue</a><span className="sep" aria-hidden="true">›</span>
+        <a href={'#shop/' + (o.vendor ? o.vendor.slug : '')}>{o.vendor && o.vendor.name}</a><span className="sep" aria-hidden="true">›</span>
         <span className="here">{o.name}</span>
       </nav>
 
