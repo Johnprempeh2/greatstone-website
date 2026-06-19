@@ -49,8 +49,8 @@ export default function OrdersManager({ staff }) {
         <table className="ca-table">
           <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
-              : !orders.length ? <tr><td colSpan="6" className="ca-muted">No orders yet. Completed checkouts appear here automatically.</td></tr>
+            {loading ? <tr><td colSpan="6" className="ca-muted"><span role="status">Loading…</span></td></tr>
+              : !orders.length ? <tr><td colSpan="6" className="ca-muted"><span role="status">No orders yet. Completed checkouts appear here automatically.</span></td></tr>
                 : orders.map(o => (
                   <React.Fragment key={o.id}>
                     <tr>
@@ -60,14 +60,14 @@ export default function OrdersManager({ staff }) {
                       <td className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
                       <td><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                       <td className="ca-ord-actions">
-                        <button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === o.id ? null : o.id)}>{expanded === o.id ? 'Hide' : 'View'}</button>
+                        <button className="gs-btn ghost sm" aria-expanded={expanded === o.id} aria-controls={'omgr-ord-' + o.id} onClick={() => setExpanded(expanded === o.id ? null : o.id)}>{expanded === o.id ? 'Hide' : 'View'}</button>
                         {o.invoice_number && <a className="gs-btn ghost sm" href={'#invoice/' + o.id}>Invoice</a>}
                         {o.status === 'confirmed' && <button className="gs-btn ghost sm" onClick={() => markFulfilled(o.id)}>Mark fulfilled</button>}
                         {(o.status === 'confirmed' || o.status === 'fulfilled') && <button className="gs-btn ghost sm" onClick={() => cancelOrder(o.id)}>Cancel</button>}
                       </td>
                     </tr>
                     {expanded === o.id && (
-                      <tr className="ca-ord-detailrow"><td colSpan="6">
+                      <tr className="ca-ord-detailrow" id={'omgr-ord-' + o.id}><td colSpan="6">
                         <div className="ca-ord-items">
                           {(o.order_items || []).map(it => (
                             <div key={it.id} className="ca-ord-item">
