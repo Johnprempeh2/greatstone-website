@@ -79,8 +79,8 @@ Recommend starting on the seed JSON, moving to Supabase when the engine lands (p
 
 A **daily scheduled job** drafts; **a human publishes**. Nothing customer-facing goes live unchecked.
 
-- **The job** (a durable scheduled task, same pattern as the nightly review): once a day it works the
-  fixed source roster via web search, curates ~6–10 briefings, recomputes leaderboard scores against a
+- **The job** (a durable scheduled task, same pattern as the nightly review): once a day it pulls the
+  source roster (see Sourcing below), curates ~6–10 briefings, recomputes leaderboard scores against a
   documented methodology, drafts each "For Greatstone" take, and writes the result as the **draft**
   intel dataset (never straight to published).
 - **Review + publish** in the studio: an admin opens the Intel draft, sees what changed vs published
@@ -88,6 +88,27 @@ A **daily scheduled job** drafts; **a human publishes**. Nothing customer-facing
   is what clients see. This is the exact draft→publish gate the pages + catalogue already use.
 - **Methodology** is fixed and shown in "how this is sourced": the weighting per board, the source
   roster, the "rebuilt daily" cadence, and that the takes are Greatstone's view.
+
+### Sourcing — three layers, three sources (decided)
+A **news API + RSS** for the facts, the LLM only for the analysis, **benchmarks** for the rankings. A
+news API beats raw web-search for the news layer: structured (headline, source, date, link),
+deduplicated, reliable, properly attributable, and it moves the *facts* off the model (the LLM never
+invents a headline or date). It does NOT replace the LLM or the leaderboards — it's the news layer only.
+
+1. **Briefing / news feed → news API + RSS.** A news API for the newswires; RSS for the company
+   newsrooms (OpenAI / Anthropic / Google blogs — free, first-party). This is the factual backbone; the
+   reference's "11 newswires + 12 company newsrooms" maps onto exactly this split.
+2. **"For Greatstone" take + summaries → the LLM**, confined to opinion + synthesis over the sourced
+   items, never fact generation. The low-risk, on-brand use of a model.
+3. **Leaderboards / scores → published benchmarks** (Artificial Analysis, LMArena/Chatbot Arena,
+   vendor-stated specs) + Greatstone's weighting methodology, refreshed less often, human-reviewed. No
+   news API or LLM provides these.
+
+The daily job: fetch (news API + RSS) → filter to the AI roster + dedupe → LLM drafts summary + take per
+item → assemble the draft → human publishes. The API key is a server-side Supabase secret, never in the
+browser. **John's calls:** the news-API choice + paid tier (NewsAPI.org / GNews / NewsData.io / Bing News
+/ Mediastack; check the commercial ToS re snippet length + storage), and the benchmark set for scoring.
+Display is summaries + links only (copyright), which the paid tiers generally require anyway.
 
 ### Guardrails (non-negotiable, since it's customer-facing intel)
 - **Accuracy is human-gated.** The job only ever writes a draft; a person publishes. No auto-publish.
@@ -134,6 +155,8 @@ sign-off on the methodology/roster. C rides the analytics/CRM credentials.
 - Confirm the **surface** (launch-from-Insights, or also a top-level nav entry).
 - Sign off the **source roster** + the **scoring methodology** (the weightings per board) — these are
   editorial/credibility calls, and they're shown publicly.
+- Pick the **news API** + paid tier for the briefing layer (see Sourcing in part 4), and the **benchmark
+  set** for the leaderboards.
 - Whether this **client-facing hub replaces or complements** the standalone greatstone-ai-intel site
   (do they share one engine/dataset, or stay separate?).
 - For Phase C: the GTM id + Pipedrive token (already on the analytics list).
