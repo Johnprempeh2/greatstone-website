@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReveal } from './reveal.js';
+import { track } from '../lib/analytics.js';
 
 // NewsletterBand: insights.html's closing ".signup" — a contained glass card (lime radial glow, blur)
 // with a kicker, headline, lead, an email pill + Subscribe, and a legal note. Honest prototype: the
@@ -8,10 +9,15 @@ export function NewsletterBand({ kicker, heading, highlight, body, placeholder, 
   const ref = useReveal();
   const [done, setDone] = useState(false);
   const [email, setEmail] = useState('');
+  // on submit the form (incl. the button just pressed) is replaced by the confirmation, so move focus to
+  // it rather than letting focus fall to <body> — and it's a live region, so the success is announced.
+  const confirmRef = useRef(null);
+  useEffect(() => { if (done && confirmRef.current) confirmRef.current.focus(); }, [done]);
 
   const onSubmit = (e) => {
     e.preventDefault();
     if (!email.trim()) return;
+    track('generate_lead', { form: 'newsletter' });
     setDone(true); // prototype only — nothing leaves the browser
   };
 
@@ -26,7 +32,7 @@ export function NewsletterBand({ kicker, heading, highlight, body, placeholder, 
           {body ? <p className="lead b-news-lead">{body}</p> : null}
 
           {done ? (
-            <p className="b-news-confirm" role="status">{confirm}</p>
+            <p className="b-news-confirm" role="status" ref={confirmRef} tabIndex={-1}>{confirm}</p>
           ) : (
             <form className="b-news-form" onSubmit={onSubmit} aria-label="Newsletter sign-up (prototype)">
               <input
