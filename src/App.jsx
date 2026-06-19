@@ -314,6 +314,7 @@ export default function App() {
     if (productSlug) {
       const pr = findProductBySlug(state.publishedProducts, productSlug);
       if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'product/' + (pr.slug || productSlug)); return; }
+      utility('Product not found', 'shop'); return; // a broken/old product link shows the not-found page; don't leave the home title stamped on the tab
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
