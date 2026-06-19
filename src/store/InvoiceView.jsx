@@ -5,6 +5,15 @@ import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import './store.css';
 
+// Card orders store the raw Stripe session id (cs_test_/cs_live_…) as their reference; the email
+// subject, account history and confirmation page all show a clean 12-char form. Match it here so the
+// formal invoice carries the same reference the customer sees everywhere else — but ONLY strip a
+// Stripe id, leaving human refs (quote-converted 'Q-YYYY-…-ORD', invoice numbers) untouched.
+const cleanRef = (s) => {
+  const r = String(s || '');
+  return /^cs_(test|live)_/.test(r) ? r.replace(/^cs_(test|live)_/, '').slice(0, 12) : r;
+};
+
 export default function InvoiceView({ orderId }) {
   const [order, setOrder] = useState(undefined); // undefined = loading
 
@@ -38,7 +47,7 @@ export default function InvoiceView({ orderId }) {
           </div>
           <div className="inv-meta">
             <h1>{order.status === 'refunded' ? 'Credit / Invoice' : 'VAT Invoice'}</h1>
-            <div><b>{order.invoice_number || order.reference}</b></div>
+            <div><b>{order.invoice_number || cleanRef(order.reference)}</b></div>
             <div>{date}</div>
             {order.po_reference && <div>PO: <b>{order.po_reference}</b></div>}
           </div>
@@ -72,7 +81,7 @@ export default function InvoiceView({ orderId }) {
 
         <footer className="inv-foot">
           <p>{order.po_reference ? 'Payable on the above purchase order per agreed terms.' : 'Paid by card via Stripe.'} Licence keys are issued separately by our licensing team.</p>
-          <p className="inv-contact">Queries: DX@greatstoneinternational.co.uk · Order reference {order.reference}</p>
+          <p className="inv-contact">Queries: DX@greatstoneinternational.co.uk · Order reference {cleanRef(order.reference)}</p>
         </footer>
       </article>
     </div>
