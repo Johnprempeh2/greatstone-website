@@ -119,6 +119,10 @@
 .ca-link { background:none; border:none; color:var(--gs-accent); cursor:pointer; font:inherit; padding:0; text-decoration:underline; }
 .acct-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:8px; }
 @media (max-width:720px){ .acct-grid { grid-template-columns:1fr; } }
+/* WT-14: account settings as tabs */
+.acct-settings { margin-bottom:8px; }
+.acct-tabs { display:inline-flex; margin-bottom:14px; max-width:100%; }
+@media (max-width:480px){ .acct-tabs { display:flex; } }
 .acct-keys { font-size:.78rem; color:var(--gs-text-faint); border-top:1px dashed var(--gs-border,rgba(200,255,0,.08)); padding-top:8px; margin-top:4px; }
 
 /* ── Accessibility: visible keyboard focus (WCAG 2.4.7) ──────────────────── */

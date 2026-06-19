@@ -15,6 +15,8 @@ const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).s
 // won/lost/cancelled); customers should see plain-English states, not "Lost"/"Cancelled".
 const QUOTE_LABEL = { new: 'In review', contacted: 'In review', quoted: 'Quote ready', won: 'Accepted', lost: 'Closed', cancelled: 'Closed' };
 const quoteLabel = (s) => QUOTE_LABEL[s] || (String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1));
+// Account settings tabs (WT-14): Profile / Security / Billing as a conformant ARIA tablist.
+const SETTINGS_TABS = [{ id: 'profile', label: 'Profile' }, { id: 'security', label: 'Security' }, { id: 'billing', label: 'Billing' }];
 
 export default function AccountDashboard() {
   const [session, setSession] = useState(undefined); // undefined = checking
@@ -122,6 +124,18 @@ function Dashboard({ session, profile, onProfile }) {
   const [toast, setToast] = useState(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
+  const [settingsTab, setSettingsTab] = useState('profile');
+  const onSettingsTabKey = (e, i) => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const last = SETTINGS_TABS.length - 1;
+    const n = e.key === 'ArrowRight' ? (i === last ? 0 : i + 1)
+      : e.key === 'ArrowLeft' ? (i === 0 ? last : i - 1)
+        : e.key === 'Home' ? 0 : last;
+    setSettingsTab(SETTINGS_TABS[n].id);
+    const el = document.getElementById('acct-tab-' + SETTINGS_TABS[n].id);
+    if (el) el.focus();
+  };
 
   const loadOrders = useCallback(() => {
     setLoadingOrders(true); setOrdersErr(null);
@@ -182,13 +196,28 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
       </header>
 
-      <div className="acct-grid">
-        <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
-        <SecurityCard email={profile?.email} flash={flash} />
-        <div className="pr-form">
-          <h2>Billing &amp; cards</h2>
-          <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal.</p>
-          <button className="gs-btn ghost" onClick={openPortal} disabled={portalBusy}>{portalBusy ? 'Opening…' : 'Manage billing & cards →'}</button>
+      <div className="acct-settings">
+        <div className="ca-tabs acct-tabs" role="tablist" aria-label="Account settings">
+          {SETTINGS_TABS.map((t, i) => (
+            <button key={t.id} id={'acct-tab-' + t.id} role="tab" type="button"
+              aria-selected={settingsTab === t.id} aria-controls={'acct-panel-' + t.id}
+              tabIndex={settingsTab === t.id ? 0 : -1}
+              className={settingsTab === t.id ? 'on' : ''}
+              onClick={() => setSettingsTab(t.id)} onKeyDown={(e) => onSettingsTabKey(e, i)}>{t.label}</button>
+          ))}
+        </div>
+        <div role="tabpanel" id="acct-panel-profile" aria-labelledby="acct-tab-profile" hidden={settingsTab !== 'profile'}>
+          <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
+        </div>
+        <div role="tabpanel" id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={settingsTab !== 'security'}>
+          <SecurityCard email={profile?.email} flash={flash} />
+        </div>
+        <div role="tabpanel" id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={settingsTab !== 'billing'}>
+          <div className="pr-form">
+            <h2>Billing &amp; cards</h2>
+            <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal.</p>
+            <button className="gs-btn ghost" onClick={openPortal} disabled={portalBusy}>{portalBusy ? 'Opening…' : 'Manage billing & cards →'}</button>
+          </div>
         </div>
       </div>
 
