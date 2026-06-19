@@ -58,8 +58,11 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
             {stats.map((s, i) => (
               <div className="b-stat" data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
                 <div className="b-stat-fig">
-                  <span className="b-stat-num" data-target={s.value} data-prefix={s.prefix || ''} data-dec={s.dec || 0}>{(s.prefix || '') + (plain ? fmt(s.value, s.dec || 0) : '0')}</span>
-                  {s.suffix ? <span className="b-stat-suffix">{s.suffix}</span> : null}
+                  {/* the count-up animates the visible figure from 0; hide that from assistive tech and expose the
+                      final value as static text, so a screen reader always reads the real number (not the in-flight "0"). */}
+                  <span className="b-stat-num" aria-hidden="true" data-target={s.value} data-prefix={s.prefix || ''} data-dec={s.dec || 0}>{(s.prefix || '') + (plain ? fmt(s.value, s.dec || 0) : '0')}</span>
+                  {s.suffix ? <span className="b-stat-suffix" aria-hidden="true">{s.suffix}</span> : null}
+                  <span className="gs-sr-only">{(s.prefix || '') + fmt(s.value, s.dec || 0) + (s.suffix ? ' ' + s.suffix : '')}</span>
                 </div>
                 <div className="b-stat-l">{s.label}</div>
                 {s.note ? <div className="b-stat-n">{s.note}</div> : null}
