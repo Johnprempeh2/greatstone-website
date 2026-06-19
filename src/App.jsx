@@ -147,6 +147,39 @@ function applyHead(seo, pageTitle, slug) {
   else { dropMeta('property', 'og:image'); dropMeta('name', 'twitter:image'); upsertMeta('name', 'twitter:card', 'summary'); }
 }
 
+// Site-level structured data (schema.org): Organization + WebSite, injected once. Makes the site
+// eligible for richer search results / knowledge-panel signals. Reuses SITE_ORIGIN so it tracks the
+// canonical domain the dev team sets (same source as the canonical link + og:url). WT-27.
+function injectStructuredData() {
+  if (typeof document === 'undefined' || document.getElementById('gs-ld-org')) return;
+  const data = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': SITE_ORIGIN + '/#organization',
+        name: SITE_NAME,
+        url: SITE_ORIGIN,
+        slogan: 'The Foundation of Digital Excellence',
+        description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, embedding alongside your team with AI as the accelerator.',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': SITE_ORIGIN + '/#website',
+        name: SITE_NAME,
+        url: SITE_ORIGIN,
+        inLanguage: 'en-GB',
+        publisher: { '@id': SITE_ORIGIN + '/#organization' },
+      },
+    ],
+  };
+  const el = document.createElement('script');
+  el.type = 'application/ld+json';
+  el.id = 'gs-ld-org';
+  el.textContent = JSON.stringify(data);
+  document.head.appendChild(el);
+}
+
 // Pre-publish accessibility/SEO check: find images on the page that have no alt text. Figure and
 // FeaturedArticle carry an explicit alt field; Team avatars use the member's name as alt (so a photo
 // with no name is the gap). Returns a short human-readable list, used to warn before publishing.
@@ -323,7 +356,7 @@ export default function App() {
   }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, adminNav, invoiceRoute, accountRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
-  useEffect(() => { initAnalytics(); }, []);
+  useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
   useEffect(() => {
     if (typeof location === 'undefined') return;
     pageview(location.pathname + location.hash, document.title);
