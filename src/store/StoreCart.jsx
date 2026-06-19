@@ -48,6 +48,9 @@ export default function StoreCart({ confirmed = false }) {
         const ok = typeof confirm !== 'function' || confirm(`These items can't be bought by card, so they won't be included: ${list}.\n\nContinue and pay for the rest? (Request a quote to buy the excluded items on invoice.)`);
         if (!ok) { setBusy(false); return; }
       }
+      // stash the indicative order value so the confirmation page (a fresh page load after the Stripe
+      // redirect, where the basket is already cleared) can fire the funnel-completing purchase event.
+      try { sessionStorage.setItem('gs-pending-purchase', JSON.stringify({ value_minor: cartSubtotalMinor(), currency: (items[0] && items[0].currency) || 'GBP', items: cartCount() })); } catch (e) { /* ignore */ }
       window.location.href = url;
     }
     catch (e) { setErr(e.message || 'Could not start checkout.'); setBusy(false); }
@@ -159,14 +162,23 @@ export default function StoreCart({ confirmed = false }) {
 }
 
 function Confirmed() {
-  // Stripe redirected back after a successful test payment — clear the basket and thank the buyer.
-  useEffect(() => { clearCart(); }, []);
+  // Stripe redirected back after a successful test payment.
   const sid = (location.hash.match(/session=([^&]+)/) || [])[1] || '';
   const isTest = /^cs_test_/.test(sid);
   // Show a clean reference, not the raw Stripe session id: drop the cs_test_/cs_live_ prefix + the
   // trailing secret segment. 12-char lowercase so it matches the account history + the receipt-email
   // subject byte-for-byte (was 18-char upper, which matched neither).
   const ref = sid.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 12);
+  // Clear the basket and fire the funnel-completing purchase event. checkout() stashed the order
+  // value/currency before the Stripe redirect; read + remove it here so a refresh of this page can't
+  // double-fire the value (transaction_id lets GA4 dedupe the conversion regardless). Dormant until
+  // GTM is configured, like every other track() call.
+  useEffect(() => {
+    clearCart();
+    let order = null;
+    try { order = JSON.parse(sessionStorage.getItem('gs-pending-purchase') || 'null'); sessionStorage.removeItem('gs-pending-purchase'); } catch (e) { /* ignore */ }
+    track('purchase', { transaction_id: ref, ...(order || {}) });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       <div className="st-scrim" aria-hidden="true" />
