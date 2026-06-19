@@ -3,6 +3,8 @@ import { config, blockCss } from './puck.config.jsx';
 import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { publicNavOrder } from './lib/nav-order.js';
+import { initAnalytics, pageview } from './lib/analytics.js';
+import ConsentBanner from './ConsentBanner.jsx';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
 // first paint. Lazy-load it behind Suspense (transparent fallback): the page content renders
@@ -319,6 +321,13 @@ export default function App() {
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
   }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, adminNav, invoiceRoute, accountRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
+  // defined AFTER applyHead so document.title is already the new route's title when we report the view.
+  useEffect(() => { initAnalytics(); }, []);
+  useEffect(() => {
+    if (typeof location === 'undefined') return;
+    pageview(location.pathname + location.hash, document.title);
+  }, [current, productSlug, shopRoute, accountRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, adminNav]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -700,6 +709,7 @@ export default function App() {
   const overlays = (
     <>
       {styleTag}
+      <ConsentBanner />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={commands} />
       {storageError && (
         <div className="gs-banner gs-banner-warn" role="alert">

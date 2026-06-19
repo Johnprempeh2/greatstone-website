@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useModal } from './useModal.mjs';
 import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout, requestQuote, MAX_QTY } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
+import { track } from '../lib/analytics.js';
 import { getSession } from './customerAuth.mjs';
 
 const VAT_RATE = Number((typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_VAT_RATE) || 0.20);
@@ -36,6 +37,7 @@ export default function StoreCart({ confirmed = false }) {
 
   const checkout = useCallback(async () => {
     setBusy(true); setErr(null);
+    track('begin_checkout', { value_minor: cartSubtotalMinor(), items: cartCount() });
     try {
       const { url, dropped } = await startCheckout({ email: email.trim() || undefined });
       // Some basket lines can't be sold by card (POA / unpublished / sub-£1). Don't slip the buyer
@@ -55,6 +57,7 @@ export default function StoreCart({ confirmed = false }) {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
       const ref = await requestQuote({ contact: { name: q.name.trim(), email: q.email.trim(), company: q.company.trim(), phone: q.phone.trim() }, poReference: q.po.trim() || undefined, message: q.message.trim() || undefined });
+      track('generate_lead', { form: 'quote' });
       setQuoteRef(ref); setView('sent'); clearCart();
     } catch (e2) { setErr(e2.message || 'Could not submit the quote.'); }
     setBusy(false);

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
+import { track } from '../lib/analytics.js';
 
 const SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
@@ -40,7 +41,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
                 <a className="b-cta" href={safeMailto(email)}>{email}</a>
               </div>
             ) : (
-              <form onSubmit={(e) => { e.preventDefault(); setSent(true); }} noValidate>
+              <form onSubmit={(e) => { e.preventDefault(); track('generate_lead', { form: 'deep_dive' }); setSent(true); }} noValidate>
                 <div className="field-row">
                   <div className="field"><label htmlFor="f-name">Your name</label><input className="fld" id="f-name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
                   <div className="field"><label htmlFor="f-company">Company</label><input className="fld" id="f-company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>

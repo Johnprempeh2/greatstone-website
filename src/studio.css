@@ -41,6 +41,15 @@
 .gs-accountbtn.is-active{color:var(--gs-accent);border-color:var(--gs-border)}
 /* the booking CTA reads as the lime primary even in the collapsed dropdown */
 .gs-navmenu-book{color:var(--gs-accent)}
+
+/* GDPR consent banner (analytics). Fixed foot bar, shown only when analytics is configured + undecided. */
+.gs-consent{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;
+  padding:14px clamp(16px,4vw,32px);background:rgba(16,18,16,.96);backdrop-filter:blur(8px);border-top:1px solid var(--gs-border-soft);
+  animation:gsConsentUp .3s var(--gs-ease)}
+.gs-consent-text{margin:0;font-size:.82rem;line-height:1.5;color:var(--gs-text-muted);max-width:64ch}
+.gs-consent-actions{display:flex;gap:10px;flex:none}
+@keyframes gsConsentUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion: reduce){.gs-consent{animation:none}}
 .gs-cmdbtn{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
   border-radius:100px;padding:7px 12px;color:var(--gs-faint);cursor:pointer;transition:color .2s,border-color .2s}
 .gs-cmdbtn:hover{color:var(--gs-text);border-color:var(--gs-border)}

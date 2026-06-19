@@ -205,6 +205,25 @@ Phases 1 and 2 are quick and unlock the analytics John asked about. Phase 3 is t
 value and depends on the Pipedrive account + token. Phase 4 is optimisation, do it once volume
 justifies it.
 
+### Build status (19 Jun)
+
+**Phase 1 + 2 foundation: BUILT and shipped, dormant.** In `src/lib/analytics.js` + `src/ConsentBanner.jsx`,
+wired in App.jsx (init + page_view per route + the consent banner) with events on the Book CTA
+(`cta_click`), both lead forms (`generate_lead`), and checkout (`begin_checkout`). It is DORMANT until
+the `VITE_GTM_ID` build env var is set: with no id, no tag loads and no cookies are set, but first-touch
++ last-touch UTM capture still runs locally (verified) so attribution is ready for the CRM. Consent Mode
+v2 defaults analytics to denied; the banner only appears once a GTM id is configured. Verified in the
+dormant state: UTM capture (first + last), `page_view` on navigation, `cta_click` on the Book CTA, no
+banner while dormant, 0 console errors.
+
+**To go live (your side):** add `VITE_GTM_ID=GTM-XXXXXXX` to the build env and rebuild. Then configure
+GA4 + the funnel inside GTM. Smoke-test per the launch checklist (an event in GA4 real-time).
+
+**Still to build:** the `user_id` stitching on customer sign-in/up (Layer 4 — pairs naturally with Phase 3),
+the Pipedrive sync in the edge functions (Phase 3, needs the API token), and the server-side
+Measurement Protocol + offline conversions (Phase 4). Event coverage can extend to `view_item` /
+`add_to_cart` / `purchase` (some covered by GA4 Enhanced Measurement) as a follow-up.
+
 ---
 
 ## Key decisions + recommendations
