@@ -33,22 +33,22 @@ export function Terrace({ index, eyebrow, headline, highlight, body, slabs = [] 
         <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-chapter-body" data-reveal>{body}</p> : null}
 
-        <div ref={stackRef} className={'b-terrace-stack' + (settled ? ' is-settled' : '')}>
+        <ol ref={stackRef} className={'b-terrace-stack' + (settled ? ' is-settled' : '')}>
           {slabs.map((s, i) => (
-            <div className="b-terrace-slab" style={{ '--i': i }} key={i}>
+            <li className="b-terrace-slab" style={{ '--i': i }} key={i}>
               <span className="b-terrace-n">{s.n}</span>
               <span className="b-terrace-h">{s.title}</span>
               <span className="b-terrace-d">{s.body}</span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );
 }
 
 export const css = `
-.b-terrace-stack{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:600px;margin:36px auto 0}
+.b-terrace-stack{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:600px;margin:36px auto 0;list-style:none;padding:0}
 .b-terrace-slab{width:calc(70% + var(--i) * 15%);display:grid;grid-template-columns:auto 1fr;column-gap:18px;align-items:center;
   padding:16px 26px;text-align:left;border:1px solid var(--gs-border-strong);border-radius:14px;
   background:linear-gradient(180deg,rgba(200,255,0,.055),rgba(255,255,255,.015));
