@@ -226,3 +226,48 @@ justifies it.
 - What people do on the site and which step they drop off at, per campaign.
 - For each lead: who they are, where they came from, what they looked at, and what to do next.
 - The whole thread per account, from first anonymous touch to signed-in customer.
+
+---
+
+## Launch / domain-migration checklist
+
+The tracking + CRM code is host-independent: the GA4/GTM tags, the event instrumentation, and the
+Supabase + Pipedrive + Stripe-webhook backend all run identically wherever the front end is served.
+Moving from the interim host (`greatstone-home.netlify.app/puck-proof/`) to the production domain does
+NOT break any of it. What changes is a short list of domain-specific values, swapped once at cutover.
+Nothing here is rework.
+
+**Front-end / build**
+- [ ] **Base path.** The app currently builds with Vite `base: '/puck-proof/'` (served in a subfolder).
+  On a dedicated domain at root, set `base: '/'` (one line in `vite.config`), rebuild, redeploy. This
+  affects asset URLs and any absolute internal links.
+- [ ] **Canonical + `og:url`.** `applyHead()` writes canonical/OG URLs; point its base at the new domain.
+- [ ] **`robots` / sitemap.** Allow indexing on the production domain (the interim build may be noindex);
+  add a sitemap if wanted.
+
+**Google Analytics / GTM** (settings, not code)
+- [ ] **GA4 data stream URL** → set to the production domain.
+- [ ] **Referrer exclusions / cross-domain** → add the production domain (and the Stripe/checkout domain
+  so a checkout round-trip isn't counted as a new session).
+- [ ] **Internal-traffic / dev filter** → exclude our own + sandbox traffic so production reports start
+  clean (this is the data-hygiene step: stand the property up now, filter the test runs).
+- [ ] GTM container id and GA4 Measurement id themselves do NOT change.
+
+**Stripe**
+- [ ] **Checkout success / cancel URLs** → the production domain (these reference the front end).
+- [ ] **Webhook endpoint** points at the Supabase edge function, NOT the front end, so it is unaffected
+  by the host move — but verify it once, and switch TEST → LIVE keys at go-live (separate from the move).
+
+**Supabase**
+- [ ] **Auth → URL configuration:** set the Site URL + add the production domain to the redirect allow-list
+  (otherwise email confirmations / magic links bounce).
+- [ ] **Allowed origins / CORS** on the edge functions → add the production domain.
+
+**After cutover**
+- [ ] Rebuild + redeploy, then smoke-test: a page loads, an event reaches GA4 (real-time view), a test
+  lead reaches Pipedrive, a test checkout completes and the webhook fires.
+- [ ] Note: first-touch attribution cookies are per-domain, so they reset at the move (expected; only
+  affects visitors mid-journey at the exact cutover).
+
+Whoever does the cutover can work straight down this list. The code does not need to be rebuilt for the
+move; these are configuration values.
