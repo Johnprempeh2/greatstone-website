@@ -63,9 +63,13 @@ function AuthGate() {
       <h1>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Sign in'}</h1>
       <p className="ca-sub">Order history, saved cards and faster checkout for the Greatstone software store.</p>
       {mode !== 'forgot' && (
-        <div className="ca-tabs" role="tablist" style={{ marginBottom: 14 }}>
-          <button role="tab" aria-selected={mode === 'signin'} className={mode === 'signin' ? 'on' : ''} onClick={() => { setMode('signin'); setErr(null); setMsg(null); }}>Sign in</button>
-          <button role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'on' : ''} onClick={() => { setMode('signup'); setErr(null); setMsg(null); }}>Create account</button>
+        // A segmented toggle, not an ARIA tablist: role="tab" without aria-controls, a tabpanel and
+        // arrow-key navigation sets up a broken expectation (a screen reader announces "tab, 1 of 2"
+        // and arrow keys do nothing). aria-pressed toggle buttons are the honest, conformant pattern
+        // for a two-option mode switch — operated with Enter/Space, no false affordance.
+        <div className="ca-tabs" role="group" aria-label="Sign in or create an account" style={{ marginBottom: 14 }}>
+          <button type="button" aria-pressed={mode === 'signin'} className={mode === 'signin' ? 'on' : ''} onClick={() => { setMode('signin'); setErr(null); setMsg(null); }}>Sign in</button>
+          <button type="button" aria-pressed={mode === 'signup'} className={mode === 'signup' ? 'on' : ''} onClick={() => { setMode('signup'); setErr(null); setMsg(null); }}>Create account</button>
         </div>
       )}
       <form onSubmit={submit}>
