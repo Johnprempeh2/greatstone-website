@@ -164,14 +164,25 @@ export const css = `
   .tier-card{opacity:1;transform:none}
   .map-progress{display:none}
 }
-/* editor: unpin and settle so the block is editable without the giant scroll runway */
+/* editor + reduced-motion: unpin and settle. The JS settles the climber at the summit and skips
+   the scroll listeners for both .is-edit and prefers-reduced-motion, so the layout must collapse
+   for both too — otherwise reduced-motion users get a 320vh empty scroll runway with two of the
+   three tier cards stuck dim at the frozen summit (only the peak card lights). */
 .is-edit .b-map.map-stage{height:auto}
 .is-edit .map-sticky{height:auto;position:static;display:block;padding:8px 0 32px}
 .is-edit .map-svg{height:auto;aspect-ratio:16/10}
 .is-edit .tier-rail{position:static;transform:none;width:auto;margin:18px var(--gs-gutter) 0}
 .is-edit .tier-card{opacity:1;transform:none}
 .is-edit .map-progress{display:none}
-@media(prefers-reduced-motion:reduce){.climber .pulse{animation:none}}
+@media(prefers-reduced-motion:reduce){
+  .climber .pulse{animation:none}
+  .b-map.map-stage{height:auto}
+  .map-sticky{height:auto;position:static;display:block;padding:8px 0 32px}
+  .map-svg{height:auto;aspect-ratio:16/10}
+  .tier-rail{position:static;transform:none;width:auto;margin:18px var(--gs-gutter) 0}
+  .tier-card{opacity:1;transform:none}
+  .map-progress{display:none}
+}
 `;
 
 const TIER = (tag, range, title, desc, traits) => ({ tag, range, title, desc, traits });
