@@ -4,7 +4,7 @@ import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { publicNavOrder } from './lib/nav-order.js';
 import { initAnalytics, pageview, track } from './lib/analytics.js';
-import { BOOKING_URL } from './lib/booking.js';
+import { openBooking } from './lib/booking.js';
 import ConsentBanner from './ConsentBanner.jsx';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
@@ -379,9 +379,10 @@ export default function App() {
       const a = e.target.closest && e.target.closest('a[href^="#"]');
       if (!a) return;
       const href = a.getAttribute('href') || '';
-      // every in-content "Book a Deep Dive" CTA opens John's Calendly in a new tab (the header links to
-      // it directly); the contact page + its form stay reachable via the "Contact" nav for a note instead.
-      if (href === '#book') { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'content' }); window.open(BOOKING_URL, '_blank', 'noopener,noreferrer'); return; }
+      // every in-content "Book a Deep Dive" CTA opens the on-brand Calendly popup (openBooking lazy-loads
+      // the widget, themed dark + lime, and falls back to a new tab). The contact page + its form stay
+      // reachable via the "Contact" nav for a note instead.
+      if (href === '#book') { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'content' }); openBooking(); return; }
       const m = href.match(/^#go\/([\w-]+)$/);
       if (m && state.pages[m[1]]) { e.preventDefault(); navigate(m[1]); }
     };

@@ -4,7 +4,7 @@ import { Search } from './blocks/icons.jsx';
 import { ROLE_LABEL } from './cms/staffRoles.mjs';
 import { publicNavOrder } from './lib/nav-order.js';
 import { track } from './lib/analytics.js';
-import { BOOKING_URL } from './lib/booking.js';
+import { BOOKING_URL, openBooking } from './lib/booking.js';
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 // the view-mode 3D switcher flips to its light-surface variant when a light scene (tide family) sits
@@ -103,7 +103,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                     onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
                 ))}
                 {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
-                <a role="menuitem" className="gs-navmenu-item gs-navmenu-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={() => { track('cta_click', { cta: 'book_deep_dive', cta_location: 'menu' }); setMenuOpen(false); }}>Book a Deep Dive</a>
+                <a role="menuitem" className="gs-navmenu-item gs-navmenu-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'menu' }); setMenuOpen(false); openBooking(); }}>Book a Deep Dive</a>
                 {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Your account</button>}
                 {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
@@ -126,7 +126,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
         {/* persistent, always-visible primary CTA + account icon (Ben's 18 Jun review) — outside the
             signed-in block below so public visitors see them too. The CTA is an <a> so BOOK_URL can become
             an external Calendly link with no JS change. */}
-        <a className="gs-btn primary gs-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={() => track('cta_click', { cta: 'book_deep_dive', cta_location: 'header' })}>Book a Deep Dive</a>
+        <a className="gs-btn primary gs-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'header' }); openBooking(); }}>Book a Deep Dive</a>
         {onAccount && (
           <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label="Your account" aria-current={accountActive ? 'page' : undefined} title="Your account">
             <UserIcon />
