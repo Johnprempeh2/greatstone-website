@@ -25,7 +25,11 @@ function loadCalendly() {
     }
     const s = document.createElement('script');
     s.src = 'https://assets.calendly.com/assets/external/widget.js'; s.async = true;
-    s.onload = () => resolve(); s.onerror = () => reject(new Error('calendly failed to load'));
+    s.onload = () => resolve();
+    // On a transient load failure (network blip, a blocker that's later disabled) clear the memo so
+    // the next click retries the themed popup, instead of being stuck on the new-tab fallback for the
+    // whole session because `loader` still holds the rejected promise.
+    s.onerror = () => { loader = null; reject(new Error('calendly failed to load')); };
     document.head.appendChild(s);
   });
   return loader;
