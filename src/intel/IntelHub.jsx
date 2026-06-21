@@ -6,7 +6,10 @@ import buildIntel, { TOPIC_LABEL, TOPIC_HUE, TOPICS, WEIGHTS, BOARD_META } from 
 import { recordOpen, recordTab, recordRead, recordDwell, recordTopicFocus, recordVendor, recordCompare, rankForYou, topInterests, getProfile, hasInterestSignal } from './interest.js';
 import './intel.css';
 
-const LOGO = (d) => 'https://logo.clearbit.com/' + d;
+// Logo resolution: Clearbit's free logo API was retired, so use Google's favicon service (reliable, no key)
+// and fall back to an on-brand monogram tile so a missing logo never renders as a blank/white box.
+const LOGO = (d) => 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=128';
+const monogram = (s) => (s || '?').replace(/^(the|a|an)\s+/i, '').replace(/^www\./i, '').trim().charAt(0).toUpperCase() || '?';
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); } catch { return s; } };
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -23,10 +26,11 @@ const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) 
 const Spark = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 2l2.2 6.3L21 10l-5 4.2L17.5 21 12 17.3 6.5 21 8 14.2 3 10l6.8-1.7L12 2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>);
 const X = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>);
 
-function Logo({ domain }) {
+function Logo({ domain, name, className }) {
   const [bad, setBad] = useState(false);
-  if (bad || !domain) return <span className="ih-logo blank" aria-hidden="true" />;
-  return <img className="ih-logo" src={LOGO(domain)} alt="" loading="lazy" onError={() => setBad(true)} />;
+  const cls = 'ih-logo' + (className ? ' ' + className : '');
+  if (bad || !domain) return <span className={cls + ' mono'} aria-hidden="true">{monogram(name || domain)}</span>;
+  return <img className={cls} src={LOGO(domain)} alt="" loading="lazy" onError={() => setBad(true)} />;
 }
 
 // The interest radar: a canvas that plots the visitor's own topic interests, with a slow sweep. It
@@ -164,7 +168,7 @@ function BriefingCard({ b, forYou, expanded, onToggle }) {
   return (
     <article className={'ih-brief' + (forYou ? ' foryou' : '')}>
       <div className="ih-brief-top">
-        <Logo domain={b.vendorDomain} />
+        <Logo domain={b.vendorDomain} name={b.vendor} />
         <span className="ih-brief-vendor">{b.vendor}</span>
         <span className="ih-brief-date">{fmtDate(b.date)}</span>
       </div>
@@ -442,6 +446,7 @@ export default function IntelHub({ onClose }) {
                       <div className="ih-row-top">
                         <button className="ih-row-head" aria-expanded={open} onClick={() => setOpenId(open ? null : board + ':' + r.name)}>
                           <span className="ih-rank">{r.rank}</span>
+                          <Logo domain={r.domain} name={r.company} className="ih-row-logo" />
                           <span className="ih-row-name"><b>{r.name}</b><span>{r.company}</span></span>
                           <span className={'ih-row-delta ' + deltaClass(r.delta)}>{r.delta}</span>
                           <span className="ih-scorewrap"><ScoreBar score={r.score} /><span className="ih-score">{r.score}</span></span>

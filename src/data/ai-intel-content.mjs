@@ -180,23 +180,6 @@ export const BRIEFINGS = [
     "importance": "medium"
   },
   {
-    "id": "anthropic-us-export-control-directive-forces-anthr",
-    "vendor": "Anthropic",
-    "vendorDomain": "anthropic.com",
-    "date": "2026-06-12",
-    "headline": "US export-control directive forces Anthropic to suspend its top-scoring Fable 5 and Mythos 5 models for all users",
-    "summary": "Anthropic stated that on 12 June 2026 the US government issued an export-control directive requiring it to suspend all access to Fable 5 and Mythos 5 for every user, including foreign-national employees, citing national-security concerns over a possible jailbreak related to cybersecurity tasks. Fable 5, released 9 June and the strongest model Anthropic had made generally available, sits at or near the top of both Artificial Analysis and LMArena, but is now unavailable. Anthropic disputed the action and said all other models are unaffected.",
-    "take": "A leaderboard's nominal number-one has been pulled from the market by government order rather than by a newer release, which breaks the quiet assumption that the best model on a board is the model you can actually deploy. The lesson is concentration risk: a roadmap pinned to a single named model from a single provider is exposed to regulatory disruption as well as commercial. Treat the model as a swappable component in your contracts and architecture, and know how fast your stack could fail over to a comparable alternative.",
-    "topics": [
-      "regulation",
-      "frontier-models",
-      "ai-security"
-    ],
-    "sourceName": "Anthropic",
-    "sourceUrl": "https://www.anthropic.com/news/fable-mythos-access",
-    "importance": "high"
-  },
-  {
     "id": "anthropic-anthropic-deepens-regulated-industry-pus",
     "vendor": "Anthropic",
     "vendorDomain": "anthropic.com",
