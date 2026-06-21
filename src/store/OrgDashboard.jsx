@@ -174,6 +174,8 @@ function Org({ profile, session, onProfile }) {
 
       <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} />
 
+      <OrgAnalytics orders={orders} engagements={engagements} />
+
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
 
       <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
@@ -231,6 +233,45 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
   );
 }
 
+// Lightweight relationship analytics — last touchpoint, total touchpoints, a monthly spend sparkline.
+// All from data already loaded; hidden for a brand-new company with no history.
+function OrgAnalytics({ orders, engagements }) {
+  if (orders === null || engagements === null) return null;
+  const today = todayISO();
+  const pastEng = engagements.filter(e => e.occurred_on <= today);
+  const live = orders.filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
+  if (!live.length && !pastEng.length) return null;
+
+  let lastTouch = null;
+  if (pastEng.length) {
+    const latest = pastEng.reduce((a, b) => (a.occurred_on > b.occurred_on ? a : b));
+    lastTouch = Math.max(0, Math.round((Date.now() - new Date(latest.occurred_on).getTime()) / 86400000));
+  }
+  const byMonth = {};
+  for (const o of live) { const d = new Date(o.placed_at || o.created_at); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); byMonth[k] = (byMonth[k] || 0) + (o.total_minor || 0); }
+  const months = Object.keys(byMonth).sort().slice(-6);
+  const max = Math.max(1, ...months.map(m => byMonth[m]));
+  const curr = live[0]?.currency || 'GBP';
+
+  return (
+    <section className="org-analytics" aria-labelledby="org-an-h">
+      <h2 id="org-an-h" className="ci-sub" style={{ fontSize: '1rem' }}>Relationship pulse</h2>
+      <div className="org-an-grid">
+        {lastTouch !== null && <div className="org-an-tile"><div className="org-stat-v">{lastTouch === 0 ? 'Today' : lastTouch + 'd'}</div><div className="org-stat-l">Last touchpoint</div></div>}
+        <div className="org-an-tile"><div className="org-stat-v">{pastEng.length}</div><div className="org-stat-l">Touchpoints</div></div>
+        {months.length > 0 && (
+          <div className="org-an-tile org-an-spark">
+            <div className="org-an-bars" role="img" aria-label={'Spend over the last ' + months.length + ' month' + (months.length === 1 ? '' : 's') + ', total ' + fmtMoney(live.reduce((s, o) => s + (o.total_minor || 0), 0), curr)}>
+              {months.map(m => <span key={m} className="org-an-bar" style={{ height: Math.max(10, Math.round(byMonth[m] / max * 100)) + '%' }} title={m + ': ' + fmtMoney(byMonth[m], curr)} />)}
+            </div>
+            <div className="org-stat-l">Spend trend</div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── DX engagement timeline ────────────────────────────────────────────────────
 function EngagementTimeline({ engagements, companyId, companyName, memberName }) {
   const [filter, setFilter] = useState('all');
@@ -241,6 +282,15 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   const [lastSeen] = useState(() => { try { return localStorage.getItem(seenKey); } catch { return null; } });
   // mark "seen" only when LEAVING the view, so the "new" treatment survives the whole visit
   useEffect(() => () => { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch { /* ignore */ } }, [seenKey]);
+  // deep link: #org/e/<id> opens + scrolls to that engagement (shareable per-item permalink)
+  useEffect(() => {
+    if (!engagements) return;
+    const m = (typeof location !== 'undefined' ? location.hash : '').match(/#\/?org\/e\/([\w-]+)/i);
+    if (!m) return;
+    setOpenId(m[1]); setFilter('all'); setQ('');
+    const t = setTimeout(() => document.getElementById('dx-item-' + m[1])?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 140);
+    return () => clearTimeout(t);
+  }, [engagements]);
 
   if (engagements === null) return (
     <section className="dx-section" aria-busy="true">
@@ -373,7 +423,13 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
 
 function Item({ e, isNew, open, onToggle }) {
   const anchor = ANCHOR_KINDS.has(e.kind);
+  const [copied, setCopied] = useState(false);
   const cleanBody = useMemo(() => (open && e.body_html ? sanitizeHtml(e.body_html) : ''), [open, e.body_html]);
+  const copyLink = async () => {
+    const url = location.origin + location.pathname + '#org/e/' + e.id;
+    try { await navigator.clipboard.writeText(url); } catch { /* clipboard blocked */ }
+    setCopied(true); setTimeout(() => setCopied(false), 1800);
+  };
   return (
     <li className={'dx-item' + (anchor ? ' is-anchor' : '') + (isNew ? ' is-new' : '')} id={'dx-item-' + e.id}>
       <span className="dx-marker" aria-hidden="true" />
@@ -394,21 +450,20 @@ function Item({ e, isNew, open, onToggle }) {
           )}
         </div>
         {e.summary && <p className="dx-summary">{e.summary}</p>}
-        {(e.body_html || e.external_url) && (
-          <div className="dx-actions">
-            {e.body_html && (
-              <button className="gs-btn ghost sm" aria-expanded={open} aria-controls={'dx-body-' + e.id} onClick={onToggle}>
-                {open ? 'Hide recap' : 'Read recap'}
-              </button>
-            )}
-            {e.external_url && (
-              <a className="gs-btn ghost sm dx-ext" href={e.external_url} target="_blank" rel="noopener noreferrer"
-                 aria-label={(e.kind === 'deliverable' ? 'Open deliverable' : 'Open') + ' (opens in a new tab)'}>
-                {e.kind === 'deliverable' ? 'Open deliverable' : 'Open'} ↗ <span className="dx-host">{hostOf(e.external_url)}</span>
-              </a>
-            )}
-          </div>
-        )}
+        <div className="dx-actions">
+          {e.body_html && (
+            <button className="gs-btn ghost sm" aria-expanded={open} aria-controls={'dx-body-' + e.id} onClick={onToggle}>
+              {open ? 'Hide recap' : 'Read recap'}
+            </button>
+          )}
+          {e.external_url && (
+            <a className="gs-btn ghost sm dx-ext" href={e.external_url} target="_blank" rel="noopener noreferrer"
+               aria-label={(e.kind === 'deliverable' ? 'Open deliverable' : 'Open') + ' (opens in a new tab)'}>
+              {e.kind === 'deliverable' ? 'Open deliverable' : 'Open'} ↗ <span className="dx-host">{hostOf(e.external_url)}</span>
+            </a>
+          )}
+          <button type="button" className="dx-copy" onClick={copyLink} aria-label={'Copy a link to “' + e.title + '”'}>{copied ? 'Copied ✓' : 'Copy link'}</button>
+        </div>
         {open && e.body_html && (
           <div className="dx-body" id={'dx-body-' + e.id} dangerouslySetInnerHTML={{ __html: cleanBody }} />
         )}
