@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
+import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
 import './store.css';
 import './admin.css';
@@ -274,6 +275,8 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
       </>}
 
+      <LicenceKeys />
+
       <div className="acct-ordhead">
         <h2>Order history</h2>
         {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
@@ -314,7 +317,6 @@ function Dashboard({ session, profile, onProfile }) {
                               <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
                               <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
                               {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
-                              <div className="acct-keys">Licence keys are issued by our team and appear here once delivered.</div>
                             </div>
                           </td></tr>
                         )}
