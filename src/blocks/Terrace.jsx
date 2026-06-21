@@ -49,7 +49,7 @@ export function Terrace({ index, eyebrow, headline, highlight, body, slabs = [] 
 
 export const css = `
 .b-terrace-stack{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:600px;margin:36px auto 0;list-style:none;padding:0}
-.b-terrace-slab{width:calc(70% + var(--i) * 15%);display:grid;grid-template-columns:auto 1fr;column-gap:18px;align-items:center;
+.b-terrace-slab{width:min(100%, calc(70% + var(--i) * 15%));display:grid;grid-template-columns:auto 1fr;column-gap:18px;align-items:center;
   padding:16px 26px;text-align:left;border:1px solid var(--gs-border-strong);border-radius:14px;
   background:linear-gradient(180deg,rgba(200,255,0,.055),rgba(255,255,255,.015));
   clip-path:polygon(2.5% 0,100% 0,97.5% 100%,0 100%);

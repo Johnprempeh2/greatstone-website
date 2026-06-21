@@ -556,6 +556,33 @@ function migrate(state) {
   // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
   // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.
   state.order = state.order.filter((s) => s !== 'products');
+  // Services FAQ (additive, Excellence-loop cycle 2; NO SEED_VERSION bump): insert the editable FAQ
+  // accordion on the services page of existing saved sites, ONCE (flagged), placed just before the
+  // closing Invite CTA. Idempotent + respects a later hand-removal (the flag is not re-run). Full props
+  // are inlined because PublicRender renders stored props verbatim (it does not merge block defaults).
+  if (!state._faqSeeded) {
+    const sp = state.pages && state.pages.services;
+    const FAQ_PROPS = {
+      kicker: 'Common questions', heading: 'The questions buyers ask first.',
+      intro: 'Straight answers to what most teams want to know before they book. If yours is not here, the Deep Dive is the fastest way to get it.',
+      items: [
+        { q: 'What actually happens in a Deep Dive?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
+        { q: 'Are you a software house or consultants?', a: 'Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside.' },
+        { q: 'How long before we see results?', a: 'The Deep Dive gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
+        { q: 'What about our data and security?', a: 'We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment.' },
+        { q: 'Do you replace our team?', a: 'No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do.' },
+        { q: 'Is this just AI hype?', a: 'Digital transformation first, AI as the accelerator. We automate the boring before the brilliant, and only deploy AI where it pays back in hours returned, not headlines.' },
+      ],
+    };
+    const addFaq = (content) => {
+      if (!Array.isArray(content) || content.some((b) => b && b.type === 'Faq')) return;
+      const inviteIdx = content.findIndex((b) => b && b.type === 'Invite');
+      content.splice(inviteIdx >= 0 ? inviteIdx : content.length, 0, blk('Faq', FAQ_PROPS));
+    };
+    if (sp && sp.data) addFaq(sp.data.content);
+    if (sp && sp.published && sp.published !== sp.data) addFaq(sp.published.content);
+    state._faqSeeded = true;
+  }
   // Copy unification (additive, Excellence-loop cycle 1, 2026-06-21; NO SEED_VERSION bump): align the
   // Deep Dive duration to the real 30-min booking slot, drop the "Placeholder names" framing above the
   // real founders, and give the home hero a primary CTA — but ONLY where the stored value still equals

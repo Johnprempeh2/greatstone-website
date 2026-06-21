@@ -98,7 +98,12 @@ export default function MethodExplorer({ pillars = [], onClose }) {
       <style>{CSS}</style>
       <div className="me-top">
         <img className="me-logo" src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
-        <button className="me-back" onClick={onClose}><span>← Back</span></button>
+        <div className="me-top-actions">
+          {/* book from inside the explorer — the global #book handler opens the Calendly popup over it,
+              so a visitor at peak interest never has to leave to convert (the popup overlays the explorer). */}
+          <a className="me-book" href="#book" onClick={onClose}>Book a Deep Dive</a>
+          <button className="me-back" onClick={onClose}><span>← Back</span></button>
+        </div>
       </div>
 
       <header className="me-head">
@@ -143,9 +148,15 @@ export default function MethodExplorer({ pillars = [], onClose }) {
                 <ul>{active.chips.map((c, j) => <li key={j}>{c.text || c}</li>)}</ul>
               </div>
             ) : null}
-            {active.href && active.href !== '#' ? (
-              <a className="me-detail-cta" href={safeHref(active.href)} onClick={onClose}>Inspect this pillar<Arrow /></a>
-            ) : null}
+            {/* peak-interest conversion: a guaranteed booking CTA in the open pillar panel (the detail
+                panel covers the screen on mobile, so the top-bar CTA alone would be hidden here). The
+                optional per-pillar link stays as a secondary, hidden when it would just duplicate #book. */}
+            <div className="me-detail-actions">
+              <a className="me-detail-book" href="#book" onClick={onClose}>Book a Deep Dive<Arrow /></a>
+              {active.href && active.href !== '#' && active.href !== '#book' ? (
+                <a className="me-detail-cta" href={safeHref(active.href)} onClick={onClose}>Inspect this pillar<Arrow /></a>
+              ) : null}
+            </div>
             <nav className="me-pager">
               <button onClick={() => step(-1)} aria-label="Previous pillar"><span>← Prev</span></button>
               <button onClick={() => step(1)} aria-label="Next pillar"><span>Next →</span></button>
@@ -191,7 +202,7 @@ const CSS = `
 .me-pick.is-hover{color:var(--gs-text,#fff);border-color:var(--gs-accent-mid,rgba(200,255,0,.4))}
 /* the pick pills are the only touch interaction on #breakdown — give them a 44px tap height on
    coarse-pointer devices (WCAG 2.5.8). Wrapping rows already absorb the extra height. */
-@media (pointer:coarse){.me-pick{min-height:44px;padding-top:0;padding-bottom:0;display:inline-flex;align-items:center}.me-back{min-height:44px;display:inline-flex;align-items:center}}
+@media (pointer:coarse){.me-pick{min-height:44px;padding-top:0;padding-bottom:0;display:inline-flex;align-items:center}.me-back,.me-book,.me-detail-book{min-height:44px;display:inline-flex;align-items:center}}
 .me-orb.is-dim{opacity:.35;transition:opacity .3s}
 /* the hovered pillar's name, following the cursor */
 .me-hovername{position:absolute;z-index:6;transform:translate(16px,-50%);pointer-events:none;white-space:nowrap;
@@ -217,6 +228,22 @@ const CSS = `
 .me-detail-cta{margin-top:22px;display:inline-flex;align-items:center;gap:7px;font-size:.84rem;font-weight:800;color:var(--gs-accent,#c8ff00);text-decoration:none}
 .me-detail-cta svg{transition:transform .25s var(--gs-ease,ease)}
 .me-detail-cta:hover svg{transform:translateX(4px)}
+/* in-explorer booking CTAs (peak-interest conversion) */
+.me-top-actions{display:flex;align-items:center;gap:10px}
+.me-book{background:var(--gs-accent,#c8ff00);color:#0e1611;border:1px solid var(--gs-accent,#c8ff00);border-radius:100px;
+  font-family:inherit;font-weight:800;font-size:.8rem;padding:9px 16px;cursor:pointer;white-space:nowrap;text-decoration:none;
+  transition:transform .2s var(--gs-ease,ease),box-shadow .2s var(--gs-ease,ease)}
+.me-book:hover{transform:translateY(-1px);box-shadow:0 8px 24px -8px rgba(200,255,0,.5)}
+/* narrow screens: the wide top-bar Book CTA would crowd the logo + push Back off-screen. Hide it there;
+   the detail panel's Book CTA (always shown when a pillar is open) covers peak-interest conversion on mobile. */
+@media (max-width:600px){.me-book{display:none}}
+.me-detail-actions{margin-top:22px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.me-detail-actions .me-detail-cta{margin-top:0}
+.me-detail-book{display:inline-flex;align-items:center;gap:7px;background:var(--gs-accent,#c8ff00);color:#0e1611;border-radius:100px;
+  font-weight:800;font-size:.84rem;padding:11px 18px;text-decoration:none;transition:transform .2s var(--gs-ease,ease)}
+.me-detail-book:hover{transform:translateY(-1px)}
+.me-detail-book svg{transition:transform .25s var(--gs-ease,ease)}
+.me-detail-book:hover svg{transform:translateX(4px)}
 .me-pager{margin-top:auto;padding-top:24px;display:flex;gap:10px}
 .me-pager button{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft,rgba(255,255,255,.14));border-radius:100px;
   padding:11px;color:var(--gs-text,#f5f5f5);font:700 .8rem/1 Montserrat,sans-serif;cursor:pointer;transition:border-color .2s,background .2s}

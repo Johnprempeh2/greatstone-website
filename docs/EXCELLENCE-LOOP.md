@@ -46,3 +46,24 @@ Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` unt
 - **Site Settings panel** (footer/invoice VAT-number/Intel-hub editability) — larger build; invoice still prints `[add VAT no.]` (John's VAT number is a known production blocker).
 
 **New-section ideas (future cycles):** Trust layer (client/heritage logo strip + attributed testimonials, reframe the Deloitte/Lloyds/NHS line as leadership heritage); engagement-model/pricing-shape band; Intel-Hub retention layer (save/follow/"new since last visit"); briefing search + per-row freshness; Services FAQ + FAQPage schema.
+
+---
+
+## Cycle 2 — 2026-06-22 — new section + deepest-surface conversion + AEO
+
+**Cycle 1 went LIVE** (production bundle `index-MR1Z-Ke0.js` confirmed at greatstone-home.netlify.app/puck-proof/). Cycle 2 audit: 4 specialist agents at a higher bar (CMS-editability completeness, under-covered surfaces, next conversion friction, new-section feasibility) + synthesis → 22 findings → plan.
+
+**Shipped (verified: 58/58 tests, clean build, live-preview on seed + migrate + responsive desktop/mobile):**
+1. **NEW SECTION — Services FAQ block** (`src/blocks/Faq.jsx`): accessible accordion (button `aria-expanded`/`aria-controls` → region), fully Puck-editable (kicker/heading/intro + Q/A array), 6 objection-handling Q&As in house voice, **+ FAQPage JSON-LD** (escaped, dormant under noindex, ready for cutover). Registered in `puck.config.jsx` (Proof category), seeded on the Services page (between StatStrip and Invite) + guarded `_faqSeeded` migrate for existing stores. Verified: renders, toggles, FAQPage schema emits, inserts on migrate.
+2. **#breakdown in-explorer booking CTA** (the cycle-1 prospect-agent gap — the deepest engagement couldn't convert): persistent "Book a Deep Dive" in the explorer top bar (desktop) + a guaranteed one in the open-pillar detail panel (covers mobile, where the detail panel overlays the top bar). `#book` routes through App's global interceptor → Calendly popup. Top-bar CTA hidden <600px (it crowded the logo / pushed Back off-screen — caught + fixed in preview). Per-pillar "Inspect this pillar" deduped when it would just be `#book`.
+3. **`public/llms.txt`** — AEO brief for AI answer engines (house-voice summary + page index). Not gated on the domain cutover (unlike robots/sitemap); served 200 text/plain.
+4. **Terrace slab width clamp** — `min(100%, calc(70% + i*15%))` so editor-added slabs (4+) can't overflow the 600px rail.
+
+**Status:** adversarial review (2 lenses) running before commit/stage-deploy.
+
+**Skipped this cycle (flagged, NOT mine to touch / dead code / larger):**
+- ⚠️ **`#org` OrgDashboard silently swallows orders/quotes load errors** (HIGH — a paying company can be shown £0/0 on a transient failure; `OrgDashboard.jsx:122-126` destructure only `{data}` and resolve to `[]`). This is the **DX-hub loop's hot file** (6 recent commits) — leaving it for that loop. Fix: destructure `{data,error}`, `setErr(error)`, keep prior state; align "Invested" currency to `liveOrders[0]?.currency`.
+- **ProductsPanel category logo/blurb/count not editable** — but `ProductsPanel` is imported and **not rendered** (dead code); the live category editor is the Supabase `CatalogueAdmin`. Real fix belongs there (commerce domain), or retire ProductsPanel.
+- **MaturityMap tiers hardcoded to 3** (4th tier never activates; removing one orphans an SVG label) — needs deriving `trig`/label anchors from `tiers.length` (M). Deferred.
+
+**Cycle-3 candidates (audit-ranked):** **Global Site-Settings panel** (highest-leverage editability gap — logo/siteName/footer-tagline/header-CTA are hardcoded across Header+Footer+AdminConsole; wire to `state.settings`); "How we work" engagement band on Services; contextual #book bridges (IntelArticle — Intel-loop domain — + commerce empty-states); StatStrip editor count-up replay polish; MaturityMap tier-count robustness.
