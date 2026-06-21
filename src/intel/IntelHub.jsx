@@ -32,7 +32,7 @@ function Logo({ domain }) {
 // The interest radar: a canvas that plots the visitor's own topic interests, with a slow sweep. It
 // literally visualises "what you care about". Canvas is sized once per run (not per frame); reduced
 // motion draws a static frame and labels are rendered as positioned HTML so they never clip.
-function IntelRadar({ profile, tick }) {
+function IntelRadar({ profile, tick, onTopic }) {
   const ref = useRef(null);
   const axes = useMemo(() => TOPICS.slice(0, 8), []);
   useEffect(() => {
@@ -86,9 +86,11 @@ function IntelRadar({ profile, tick }) {
         const a = (i / axes.length) * Math.PI * 2 - Math.PI / 2;
         const x = 50 + Math.cos(a) * 44, y = 50 + Math.sin(a) * 44;
         const align = Math.cos(a) > 0.3 ? 'left' : Math.cos(a) < -0.3 ? 'right' : 'center';
-        return <span key={t.id} className="ih-radar-lbl" style={{ left: x + '%', top: y + '%', textAlign: align, transform: `translate(${align === 'left' ? '0' : align === 'right' ? '-100%' : '-50%'}, -50%)` }}>{SHORT[t.id] || t.label}</span>;
+        return <button key={t.id} type="button" className="ih-radar-lbl" aria-label={'See ' + (TOPIC_LABEL[t.id] || t.label) + ' briefings'}
+          style={{ left: x + '%', top: y + '%', textAlign: align, transform: `translate(${align === 'left' ? '0' : align === 'right' ? '-100%' : '-50%'}, -50%)` }}
+          onClick={() => onTopic && onTopic(t.id)}>{SHORT[t.id] || t.label}</button>;
       })}
-      <span className="ih-radar-cap">Your intelligence radar</span>
+      <span className="ih-radar-cap">Your radar · tap a theme</span>
     </div>
   );
 }
@@ -336,7 +338,7 @@ export default function IntelHub({ onClose }) {
                     <div className="ih-stat"><b>{(boardsData.models || []).length}</b><span>Models ranked</span></div>
                   </div>
                 </div>
-                <IntelRadar profile={profile} tick={radarTick} />
+                <IntelRadar profile={profile} tick={radarTick} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
               </div>
 
               <h2 className="gs-sr-only">Today&rsquo;s intelligence, in brief</h2>
