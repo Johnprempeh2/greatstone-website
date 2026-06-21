@@ -33,7 +33,10 @@
 6. **CMS editability** — `InsightsGrid` gained a per-post **Link** field (linked posts become focusable card-links with a "Read →"; unlinked stay plain previews, killing the "clicks nowhere" feel); `BookDeepDive` industry dropdown is now an **editable Puck array** (was a hardcoded SECTORS const) with the old list as default + safe fallback.
 7. **Intel Hub bugs** — radar axes were a blind `TOPICS.slice(0,8)` (dropped open-source + multimodal regardless of interest) → now ranked by the visitor's own interest with briefing-count tiebreak; topic chips + theme count derived from topics actually present on briefings → the **dead "Hardware" chip (0 briefings) is gone** (11→10). Code-only; `data/ai-intel.mjs` untouched (other loop's).
 
-**Status:** adversarial review of the diff running before commit/deploy. Commit will be scoped to these 12 files (shared-repo hazard).
+**Status:** ✅ committed `35c756f` (scoped, 13 files; tree was clean of other-loop WIP). Adversarial review (3 lenses) returned 2 minor voice/consistency fixes (card "ex VAT"→"+ VAT" to match the product page; em-dash removed from a new Puck field label) — both applied + reverified.
+⚠️ **Deploy staged but BLOCKED on Netlify auth.** Fresh build (`index-MR1Z-Ke0.js`) mirrored into `../greatstone-homepage-deploy/puck-proof/`, but the Netlify CLI in this session is "Not logged in" (no `NETLIFY_AUTH_TOKEN`, no stored config). One command finishes it once authed:
+`cd ../greatstone-homepage-deploy && netlify deploy --prod --dir=. --site=3b1e97e6-e184-4251-badd-deed532be3ab`
+Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` until that runs. The commit is the durable record; whoever next deploys from main carries these changes forward.
 
 **Deferred / needs-John (logged, not shipped this cycle):**
 - **Footer legitimacy** (company no. / registered office / Privacy+Terms) — needs John's real Companies House data + actual legal pages; fabricating a company number on a live B2B site is a credibility/legal risk, so parked.
