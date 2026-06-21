@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
@@ -20,6 +20,7 @@ const ICONS = {
 export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], email = 'dx@greatstonesoftware.co.uk' }) {
   const ref = useReveal([asidePoints.length]);
   const [sent, setSent] = useState(false);
+  const uid = useId(); // per-instance id prefix so two BookDeepDive blocks on one page never collide
   // on submit the form is replaced by the confirmation, so the control the user just activated is
   // unmounted; move focus to the confirmation heading (which is a live region) so keyboard + screen-reader
   // users are carried to it and the success is announced, instead of focus falling back to <body>.
@@ -43,15 +44,15 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
             ) : (
               <form onSubmit={(e) => { e.preventDefault(); track('generate_lead', { form: 'deep_dive' }); setSent(true); }} noValidate>
                 <div className="field-row">
-                  <div className="field"><label htmlFor="f-name">Your name</label><input className="fld" id="f-name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
-                  <div className="field"><label htmlFor="f-company">Company</label><input className="fld" id="f-company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
+                  <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
+                  <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
                 </div>
-                <div className="field"><label htmlFor="f-email">Work email</label><input className="fld" id="f-email" type="email" placeholder="jane@stonewell.co" autoComplete="email" /></div>
-                <div className="field"><label htmlFor="f-industry">Industry</label>
-                  <select className="fld" id="f-industry" defaultValue=""><option value="" disabled>Choose your sector…</option>{SECTORS.map((s) => <option key={s}>{s}</option>)}</select>
+                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} type="email" placeholder="jane@stonewell.co" autoComplete="email" /></div>
+                <div className="field"><label htmlFor={uid + 'industry'}>Industry</label>
+                  <select className="fld" id={uid + 'industry'} defaultValue=""><option value="" disabled>Choose your sector…</option>{SECTORS.map((s) => <option key={s}>{s}</option>)}</select>
                 </div>
-                <div className="field"><label htmlFor="f-week">Where does your week go?</label>
-                  <textarea className="fld" id="f-week" placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />
+                <div className="field"><label htmlFor={uid + 'week'}>Where does your week go?</label>
+                  <textarea className="fld" id={uid + 'week'} placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />
                 </div>
                 <button className="b-cta book-submit" type="submit">{submitLabel}<Arrow /></button>
                 <p className="book-fine">A template form, submissions aren’t wired up yet. For now, email us direct below.</p>

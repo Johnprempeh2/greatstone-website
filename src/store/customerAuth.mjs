@@ -35,6 +35,8 @@ export async function signIn(email, password) {
 }
 
 export async function signOut() { if (supabase) await supabase.auth.signOut(); }
+/** Sign out of every device/session for this account (revokes all refresh tokens), not just this browser. */
+export async function signOutAll() { if (!supabase) return { error: { message: 'Not configured.' } }; return supabase.auth.signOut({ scope: 'global' }); }
 export async function getSession() { if (!supabase) return null; const { data } = await supabase.auth.getSession(); return data.session; }
 export function onAuth(cb) { if (!supabase) return { data: { subscription: { unsubscribe() {} } } }; return supabase.auth.onAuthStateChange((_e, s) => cb(s)); }
 

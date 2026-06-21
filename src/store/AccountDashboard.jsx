@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { signIn, signUp, signOut, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
+import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
 import './store.css';
 import './admin.css';
@@ -181,6 +181,11 @@ function Dashboard({ session, profile, onProfile }) {
   const tier = profile?.customer?.tier?.name;
   const admin = isCompanyAdmin(profile);
   const ref = (s) => (s || '').replace(/^cs_(test|live)_/, '').slice(0, 12) + '…';
+  // at-a-glance, from data already fetched
+  const liveOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
+  const totalSpent = liveOrders.reduce((s, o) => s + (o.total_minor || 0), 0);
+  const openQuotes = quotes.filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
+  const curr = orders[0]?.currency || 'GBP';
 
   return (
     <div className="ca-wrap">
@@ -202,6 +207,12 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
       </header>
 
+      <div className="org-stats" style={{ marginBottom: 20 }}>
+        <div className="org-stat"><div className="org-stat-v">{loadingOrders ? '…' : fmtMoney(totalSpent, curr)}</div><div className="org-stat-l">Invested</div></div>
+        <div className="org-stat"><div className="org-stat-v">{loadingOrders ? '…' : orders.length}</div><div className="org-stat-l">Orders</div></div>
+        <div className="org-stat"><div className="org-stat-v">{openQuotes}</div><div className="org-stat-l">Open quotes</div></div>
+      </div>
+
       <div className="acct-settings">
         <div className="ca-tabs acct-tabs" role="tablist" aria-label="Account settings">
           {SETTINGS_TABS.map((t, i) => (
@@ -216,7 +227,7 @@ function Dashboard({ session, profile, onProfile }) {
           <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
         </div>
         <div role="tabpanel" id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={settingsTab !== 'security'}>
-          <SecurityCard email={profile?.email} flash={flash} />
+          <SecurityCard email={profile?.email} lastSignIn={session.user?.last_sign_in_at} flash={flash} />
         </div>
         <div role="tabpanel" id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={settingsTab !== 'billing'}>
           <div className="pr-form">
@@ -342,26 +353,45 @@ function ProfileCard({ profile, onProfile, flash }) {
   );
 }
 
-function SecurityCard({ email, flash }) {
-  const [pw, setPw] = useState(''); const [confirm, setConfirm] = useState('');
+function SecurityCard({ email, lastSignIn, flash }) {
+  const [pw, setPw] = useState(''); const [confirmPw, setConfirmPw] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const fmtWhen = (s) => { try { return new Date(s).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return s; } };
   const save = async (e) => {
     e.preventDefault(); setErr(null);
     if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
-    if (pw !== confirm) { setErr('Passwords do not match.'); return; }
+    if (pw !== confirmPw) { setErr('Passwords do not match.'); return; }
     setBusy(true);
     const { error } = await updatePassword(pw); setBusy(false);
     if (error) { setErr(error.message); return; }
-    setPw(''); setConfirm(''); flash('Password updated.');
+    setPw(''); setConfirmPw(''); flash('Password updated.');
+  };
+  const signOutEverywhere = async () => {
+    if (typeof window !== 'undefined' && !window.confirm('Sign out of Greatstone on all your devices?')) return;
+    setSigningOut(true);
+    const { error } = await signOutAll(); setSigningOut(false);
+    if (error) flash('Could not sign out everywhere.'); // onAuth flips the session → AuthGate on success
   };
   return (
     <form className="pr-form" onSubmit={save}>
       <h2>Security</h2>
+      {lastSignIn && <p className="ca-note" style={{ marginTop: -4 }}>Last signed in {fmtWhen(lastSignIn)}.</p>}
       <label>New password<input type="password" value={pw} onChange={e => setPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
-      <label>Confirm new password<input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} minLength={8} autoComplete="new-password" /></label>
+      <label>Confirm new password<input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
       {err && <div className="ca-err" role="alert">{err}</div>}
       <button className="gs-btn primary" type="submit" disabled={busy || !pw}>{busy ? 'Updating…' : 'Update password'}</button>
-      <p className="ca-note">Signed in as <b>{email}</b>. To change your account email, contact us. We'll never ask for your password by email.</p>
+      <div className="acct-seclist">
+        <div className="acct-secrow">
+          <div className="acct-secinfo"><b>Two-factor authentication</b><span>Add a second step at sign-in for extra protection.</span></div>
+          <a className="gs-btn ghost sm" href="#contact">Ask us to enable</a>
+        </div>
+        <div className="acct-secrow">
+          <div className="acct-secinfo"><b>Active sessions</b><span>Signed in as {email}. Use this if you've signed in on a shared or lost device.</span></div>
+          <button type="button" className="gs-btn ghost sm" onClick={signOutEverywhere} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign out everywhere'}</button>
+        </div>
+      </div>
+      <p className="ca-note">To change your account email, contact us. We'll never ask for your password by email.</p>
     </form>
   );
 }

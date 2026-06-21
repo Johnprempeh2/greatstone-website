@@ -93,7 +93,7 @@ import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
-import { ProductDetail, css as productDetailCss } from './blocks/ProductDetail.jsx';
+import { css as productDetailCss } from './blocks/ProductDetail.jsx';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -456,10 +456,6 @@ export default function App() {
   const pubCategories = state.publishedCategories || [];
   const publishedCatalog = { products: pubProducts, categories: pubCategories };
   const catalogDrift = catalogHasDrift(state);
-  // public product detail route (#product/<slug>): resolve from the PUBLISHED catalogue + same-category siblings
-  const activeProduct = productSlug ? findProductBySlug(pubProducts, productSlug) : null;
-  const activeProductCat = activeProduct ? pubCategories.find((c) => c.id === activeProduct.category) : null;
-  const relatedProducts = activeProduct ? pubProducts.filter((p) => p.id !== activeProduct.id && p.category === activeProduct.category && p.status !== 'draft').slice(0, 3) : [];
   function exitProduct() { if (location.hash) location.hash = ''; setProductSlug(null); navigate(state.pages.products ? 'products' : state.order[0]); }
   // a page is "unpublished" if its content OR its 3D background differs from the published snapshot
   const hasUnpublished = useMemo(() => !eq(page.data, page.published) || !eq(page.background, page.publishedBackground), [page.data, page.published, page.background, page.publishedBackground]);

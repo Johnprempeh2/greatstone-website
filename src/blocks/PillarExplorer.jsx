@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeHref } from '../lib/safe-url.js';
@@ -12,7 +12,11 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
   const reveal = useReveal();
   const hostRef = useRef(null);
   const handleRef = useRef(null);
+  const tabRefs = useRef([]);
   const [selected, setSelected] = useState(0);
+  const uid = useId();                 // stable id base for the tab ↔ tabpanel wiring
+  const tabId = (i) => uid + 'tab' + i;
+  const panelId = uid + 'panel';
 
   useEffect(() => {
     const host = hostRef.current; if (!host) return undefined;
@@ -32,6 +36,16 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
   }, []);
 
   const choose = (i) => { setSelected(i); if (handleRef.current) handleRef.current.setSelected(i); };
+  // roving-tabindex keyboard nav across the tablist; routes through choose() so the 3D gem stays in sync
+  const onKey = (e) => {
+    const n = items.length; if (!n) return;
+    let next = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (selected + 1) % n;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (selected - 1 + n) % n;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = n - 1;
+    if (next != null) { e.preventDefault(); choose(next); tabRefs.current[next] && tabRefs.current[next].focus(); }
+  };
   const active = items[selected] || items[0] || {};
 
   return (
@@ -46,7 +60,7 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
 
         <div className="b-pillarx-stage" data-reveal>
           <div className="b-pillarx-canvas" ref={hostRef} aria-hidden="true" />
-          <aside className="b-pillarx-detail">
+          <aside className="b-pillarx-detail" id={panelId} role="tabpanel" aria-labelledby={tabId(selected)} tabIndex={0}>
             <span className="b-pillarx-n">{String(selected + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span>
             <h3>{active.title}</h3>
             <p>{active.text}</p>
@@ -54,10 +68,11 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
           </aside>
         </div>
 
-        <div className="b-pillarx-tabs" role="tablist">
+        <div className="b-pillarx-tabs" role="tablist" aria-label="Choose a pillar">
           {items.map((it, i) => (
-            <button key={i} role="tab" aria-selected={i === selected}
-              className={'b-pillarx-tab' + (i === selected ? ' is-active' : '')} onClick={() => choose(i)}>
+            <button key={i} ref={(el) => { tabRefs.current[i] = el; }} role="tab"
+              id={tabId(i)} aria-controls={panelId} aria-selected={i === selected} tabIndex={i === selected ? 0 : -1}
+              className={'b-pillarx-tab' + (i === selected ? ' is-active' : '')} onClick={() => choose(i)} onKeyDown={onKey}>
               {it.title}
             </button>
           ))}

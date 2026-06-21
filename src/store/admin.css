@@ -124,6 +124,14 @@
 .acct-tabs { display:inline-flex; margin-bottom:14px; max-width:100%; }
 @media (max-width:480px){ .acct-tabs { display:flex; } }
 .acct-keys { font-size:.78rem; color:var(--gs-text-faint); border-top:1px dashed var(--gs-border,rgba(200,255,0,.08)); padding-top:8px; margin-top:4px; }
+/* Security & sessions rows (account → Security tab) */
+.acct-seclist { display:flex; flex-direction:column; border-top:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); margin-top:6px; }
+.acct-secrow { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.06)); }
+.acct-secrow:last-child { border-bottom:0; }
+.acct-secinfo { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.acct-secinfo b { color:var(--gs-text); font-size:.9rem; font-weight:700; }
+.acct-secinfo span { color:var(--gs-text-faint); font-size:.78rem; }
+@media (max-width:520px){ .acct-secrow { flex-direction:column; align-items:flex-start; } }
 
 /* ── Accessibility: visible keyboard focus (WCAG 2.4.7) ──────────────────── */
 .st-wrap :focus-visible, .sp-wrap :focus-visible, .sc-drawer :focus-visible,

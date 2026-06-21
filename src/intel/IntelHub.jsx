@@ -265,12 +265,16 @@ export default function IntelHub({ onClose }) {
   const rows = boardsData[board] || [];
   const weightStr = Object.entries(WEIGHTS[board] || {}).map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(' · ');
 
-  const toggleCompare = (name) => setCompare((c) => {
-    const exists = c.find((x) => x.board === board && x.name === name);
-    if (exists) return c.filter((x) => !(x.board === board && x.name === name));
-    if (c.length >= 3) return c;
-    const next = [...c, { board, name }]; recordCompare(next.map((x) => x.name)); return next;
-  });
+  // compute the next set from the closed-over state and keep the analytics side-effect OUT of the
+  // setState updater (updaters must be pure; StrictMode double-invokes them) — mirrors switchTab/toggleBrief
+  const toggleCompare = (name) => {
+    const exists = compare.find((x) => x.board === board && x.name === name);
+    if (exists) { setCompare(compare.filter((x) => !(x.board === board && x.name === name))); return; }
+    if (compare.length >= 3) return;
+    const next = [...compare, { board, name }];
+    recordCompare(next.map((x) => x.name));
+    setCompare(next);
+  };
   // keep the board on each row: a name can legitimately exist on two boards, so identity is board+name
   const cmpRows = compare.map((c) => { const r = (boardsData[c.board] || []).find((x) => x.name === c.name); return r ? { ...r, _board: c.board } : null; }).filter(Boolean);
   const cmpPillars = [...new Set(cmpRows.flatMap((r) => Object.keys(r.pillars || {})))];
@@ -478,7 +482,7 @@ export default function IntelHub({ onClose }) {
                               return (
                                 <td key={r._board + '|' + r.name} className={v === lead && cmpRows.length > 1 ? 'lead' : ''}>
                                   <span className="ih-cmp-bar" aria-hidden="true"><i style={{ width: v + '%' }} /></span>
-                                  <span className="ih-cmp-val">{v}</span>
+                                  <span className="ih-cmp-val">{v}{v === lead && cmpRows.length > 1 && <span className="ih-cmp-lead" aria-label="leads">★</span>}</span>
                                 </td>
                               );
                             })}

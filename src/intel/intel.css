@@ -241,6 +241,6 @@
 @media (prefers-reduced-motion: reduce) {
   .ih-root, .ih-panel { animation: none; }
   .ih-live { animation: none; }
-  .ih-scorebar i, .ih-pillar .pb i, .ih-brief, .ih-row, .ih-chip { transition: none; }
+  .ih-scorebar i, .ih-pillar .pb i, .ih-cmp-bar i, .ih-brief, .ih-row, .ih-chip { transition: none; }
   .ih-body { scroll-behavior: auto; }
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
 
@@ -14,6 +14,7 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
   const [filter, setFilter] = useState('all');      // applied to the posts — lags by the crossfade
   const [fading, setFading] = useState(false);
   const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []); // clear the crossfade timer on unmount
 
   const chips = [{ label: 'All', value: 'all' }, ...categories.map((c) => ({ label: c.label, value: c.value }))];
 
@@ -39,6 +40,7 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
               onClick={() => select(c.value)}>{c.label}</button>
           ))}
         </div>
+        <p className="gs-sr-only" role="status" aria-live="polite">{shown === 0 && emptyNote ? emptyNote : `${shown} ${shown === 1 ? 'article' : 'articles'}`}</p>
 
         <div className={'grid cols-3 b-ins-grid' + (fading ? ' is-fade' : '')}>
           {posts.map((p, i) => {
