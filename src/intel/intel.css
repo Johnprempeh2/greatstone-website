@@ -79,9 +79,12 @@
 
 /* radar */
 .ih-radar { position: relative; aspect-ratio: 1; max-width: 380px; margin: 0 auto 26px; width: 100%; }
+/* on narrow screens the full-width radar pushes its horizontal axis labels off the edge; cap it so the
+   labels (e.g. Funding / Coding) keep their breathing room */
+@media (max-width: 560px) { .ih-radar { max-width: 300px; } }
 .ih-radar canvas { width: 100%; height: 100%; display: block; }
 .ih-radar-lbl { position: absolute; font: inherit; font-size: .6rem; font-weight: 700; color: var(--gs-text-faint, #9ca29b);
-  white-space: nowrap; letter-spacing: .02em; background: none; border: 0; padding: 3px 5px; margin: 0; cursor: pointer; border-radius: 6px;
+  white-space: nowrap; letter-spacing: .02em; background: none; border: 0; padding: 6px 8px; margin: 0; cursor: pointer; border-radius: 6px;
   transition: color .2s var(--gs-ease), background .2s var(--gs-ease); }
 .ih-radar-lbl:hover { color: var(--gs-accent, #c8ff00); background: rgba(200,255,0,.08); }
 .ih-radar-lbl:focus-visible { outline: 2px solid var(--gs-accent, #c8ff00); outline-offset: 1px; color: var(--gs-accent, #c8ff00); }

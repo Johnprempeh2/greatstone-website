@@ -346,3 +346,10 @@ Ran a 5-lens adversarial review workflow (17 agents: hub a11y, hub correctness, 
 - **Made the radar interactive instead** (a safe, genuinely-additive "make it incredible" win): the signature personalisation visual's eight topic labels are now buttons. Tapping one filters the briefing feed to that theme and switches to the Briefing tab (exact parity with the "Themes in play" chips), with a descriptive aria-label ("See Frontier models briefings"), hover + focus-visible states, and a caption hint ("Your radar · tap a theme"). The radar goes from display-only to navigation, reinforcing "your radar is your way in".
 - **Verified live:** 8 label buttons, correct aria-labels, tapping "Security" filtered briefings to AI security + switched tab; build clean, 51 tests, 0 console errors. Adversarial-reviewed.
 - **Tickets:** directions queue empty.
+
+## Overnight loop — 2026-06-21 — Intel Hub mobile-ergonomics pass (pass 7)
+Ran a mobile audit of the hub at 390px. Mostly clean (no horizontal document overflow, nothing exceeds the viewport, tabs scroll horizontally as intended, close button passes WCAG 2.5.8 AA). Two real touch issues found + fixed, both in `intel.css` only:
+- **Radar horizontal axis labels clipped** at narrow widths: on a full-width radar the leftmost/rightmost labels ("Funding" rendered as "unding", "Coding" ran off the right edge by 10px). Capped the radar to `max-width: 300px` below 560px so the labels keep edge room. Verified: 0 labels clip at 390px; desktop unchanged (radar stays 380px).
+- **Radar label tap targets too small**: the labels (made interactive in pass 6) were 21px tall, under the 24px AA minimum and fiddly on touch. Bumped padding 3px 5px → 6px 8px, now 27px tall on every device, with no re-clipping.
+- **Verified by measurement on both viewports** (390px + 1280px): no clipping, 27px label height, radar-label tap still filters + switches tab, 0 console errors; build clean, 51 tests. (CSS-only responsive fix, verified empirically rather than via a review agent.)
+- **Tickets:** directions queue empty.
