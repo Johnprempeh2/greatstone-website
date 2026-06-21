@@ -32,7 +32,7 @@ const LazyAccount = lazy(() => import('./store/AccountDashboard.jsx')); // #acco
 const LazyOrg = lazy(() => import('./store/OrgDashboard.jsx'));         // #org — customer organization dashboard
 const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
 const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
-const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // #intel — full-screen AI Intelligence Hub (Insights)
+const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // the AI Intelligence section — renders inline as the body of the "Intelligence" page (the renamed Insights)
 
 // Branded loading state for the lazy Intel Hub chunk. Self-contained (inline styles + scoped
 // keyframes) because intel.css ships *inside* that chunk and isn't available while it loads.
@@ -134,7 +134,8 @@ function readAdminHash() {
 function readBreakdownHash() {
   return /^#\/?breakdown\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
-// #intel → the full-screen AI Intelligence Hub, opened from Insights
+// #intel → legacy hash for the old full-screen hub. The hub now lives inline on the Intelligence page,
+// so this only triggers a redirect onto that page (see the effect below); kept so old links still resolve.
 function readIntelHash() {
   return /^#\/?intel\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
@@ -292,7 +293,7 @@ export default function App() {
   const [orgRoute, setOrgRoute] = useState(readOrgHash); // #org → organization dashboard
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
-  const [intelRoute, setIntelRoute] = useState(readIntelHash); // #intel → full-screen AI Intelligence Hub
+  const [intelRoute, setIntelRoute] = useState(readIntelHash); // legacy #intel → redirect to the Intelligence page
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
@@ -333,6 +334,15 @@ export default function App() {
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
+  // Legacy redirect: the AI Intelligence hub used to be a full-screen #intel takeover. It now lives in
+  // the site nav as the "Intelligence" page (the renamed Insights), rendered inside the normal chrome.
+  // Send any old #intel bookmark/link onto that page so shared links still land somewhere sensible.
+  useEffect(() => {
+    if (!intelRoute) return;
+    if (typeof location !== 'undefined' && location.hash) location.hash = '';
+    setIntelRoute(false);
+    navigate(state.pages.insights ? 'insights' : state.order[0]);
+  }, [intelRoute]); // eslint-disable-line react-hooks/exhaustive-deps
   // Editing is URL-addressable. (A) A #admin/editor/<slug> URL — refresh, a shared link, Back/Forward
   // — restores the editor on the right page. (B) While editing under the admin area, mirror the page
   // in the hash so a refresh keeps you in the editor and Back leaves it cleanly. (C) Per-page console
@@ -402,7 +412,6 @@ export default function App() {
     // render precedence below (breakdown > admin > invoice > account > confirm > catalogue > shop > product).
     const utility = (t, slug) => applyHead({ title: t + ' · ' + SITE_NAME }, t, slug);
     if (breakdownRoute) { utility('The eight pillars', 'method'); return; }
-    if (intelRoute) { utility('AI Intelligence', 'insights'); return; }
     if (adminNav) { utility('Studio admin', 'home'); return; }
     if (invoiceRoute) { utility('Invoice', 'home'); return; }
     if (accountRoute || authLanding) { utility('Your account', 'home'); return; }
@@ -417,14 +426,14 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, intelRoute, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
   useEffect(() => {
     if (typeof location === 'undefined') return;
     pageview(location.pathname + location.hash, document.title);
-  }, [current, productSlug, shopRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelRoute, adminNav]);
+  }, [current, productSlug, shopRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, adminNav]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -860,18 +869,6 @@ export default function App() {
     );
   }
 
-  // #intel — the full-screen AI Intelligence Hub, opened from Insights. Public, renders over everything.
-  if (intelRoute) {
-    return (
-      <div className="is-view">
-        {styleTag}
-        <Suspense fallback={<IntelBoot />}>
-          <LazyIntelHub onClose={() => { setIntelRoute(false); navigate(state.pages.insights ? 'insights' : state.order[0]); }} />
-        </Suspense>
-      </div>
-    );
-  }
-
   if (onAdmin && !authed) {
     return (
       <div className="is-view">
@@ -1014,8 +1011,9 @@ export default function App() {
       <a className="gs-skip" href="#gs-main">Skip to content</a>
       <SiteChrome />
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
-          (account, catalogue admin, order confirmation) render on a solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute) && !saveData && <Stage background={bg} />}
+          (account, catalogue admin, order confirmation) and the Intelligence section render on their
+          own solid surface — no bleed-through, no WebGL cost. */}
+      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute || current === 'insights') && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
@@ -1039,6 +1037,8 @@ export default function App() {
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>
+            : current === 'insights'
+            ? <Suspense fallback={<IntelBoot />}><LazyIntelHub /></Suspense>
             : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}
         </EditorBoundary>
       </main>

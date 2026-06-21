@@ -250,7 +250,7 @@ function ScoreBar({ score }) {
 
 const deltaClass = (d) => (/^\+|up/i.test(d) ? 'up' : /new/i.test(d) ? 'new' : 'flat');
 
-export default function IntelHub({ onClose }) {
+export default function IntelHub() {
   const intel = useMemo(() => buildIntel(), []);
   const briefings = intel.briefings || [];
   const boardsData = intel.boards || { models: [], products: [], tools: [] };
@@ -261,36 +261,21 @@ export default function IntelHub({ onClose }) {
   const [compare, setCompare] = useState([]);
   const [profile, setProfile] = useState(() => getProfile());
   const [radarTick, setRadarTick] = useState(0);
-  const rootRef = useRef(null);
   const tablistRef = useRef(null);
   const dwellRef = useRef({ id: null, at: 0 });
 
   useEffect(() => { recordOpen(); }, []);
-  useEffect(() => { const el = rootRef.current; if (el) el.focus(); }, []);
 
-  // flush any open card's dwell to analytics (called on close/switch/unmount) without re-counting the read
+  // flush any open card's dwell to analytics (called on switch/unmount) without re-counting the read
   const flushDwell = useCallback(() => {
     const d = dwellRef.current;
     if (d.id) { recordDwell(d.id, Date.now() - d.at); dwellRef.current = { id: null, at: 0 }; }
   }, []);
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); flushDwell(); onClose(); return; }
-      // focus trap: a full-screen takeover, so keep Tab inside it
-      if (e.key === 'Tab') {
-        const f = rootRef.current ? rootRef.current.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])') : [];
-        if (!f.length) return;
-        const list = [...f].filter((el) => el.offsetParent !== null);
-        const first = list[0], last = list[list.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; flushDwell(); };
-  }, [onClose, flushDwell]);
+  // The hub is now a normal in-page surface inside the site chrome (the Header nav sits above it),
+  // not a modal takeover — so no focus trap, no body-scroll lock, no Escape-to-close. We only flush
+  // the open card's dwell when the visitor leaves the page (unmount).
+  useEffect(() => () => flushDwell(), [flushDwell]);
 
   const switchTab = (id) => { flushDwell(); setTab(id); recordTab(id); setOpenId(null); };
   const onTabKey = (e, i) => {
@@ -354,27 +339,28 @@ export default function IntelHub({ onClose }) {
   const cmpMultiBoard = new Set(compare.map((c) => c.board)).size > 1;
 
   return (
-    <section className="ih-root" ref={rootRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Greatstone AI Intelligence">
+    <div className="ih-root">
       <div className="ih-grain" aria-hidden="true" />
-      <header className="ih-head">
+      <div className="ih-masthead">
         <div className="ih-brand">
           <span className="ih-mark"><Spark style={{ color: 'var(--gs-accent)' }} /></span>
           <span className="ih-title"><span>Greatstone Intelligence</span><b>{intel.meta.edition}</b></span>
         </div>
         <div className="ih-updated"><span className="ih-live" aria-hidden="true" />Updated {fmtDate(intel.meta.updatedAt)} · {intel.meta.updatesToday} today</div>
-        <button className="ih-close" onClick={() => { flushDwell(); onClose(); }} aria-label="Close the Intelligence Hub"><X /></button>
-      </header>
+      </div>
 
-      <div className="ih-tabs" role="tablist" aria-label="Intelligence sections" ref={tablistRef}>
-        {TABS.map((t, i) => (
-          // no aria-controls: only the active tabpanel is mounted, so an IDREF to the others would dangle
-          <button key={t.id} id={'ih-tab-' + t.id} role="tab" aria-selected={tab === t.id}
-            tabIndex={tab === t.id ? 0 : -1} className="ih-tab" onClick={() => switchTab(t.id)} onKeyDown={(e) => onTabKey(e, i)}>
-            {t.label}
-            {t.id === 'overview' && signal && <span className="ih-tabdot" aria-hidden="true" />}
-            {t.id === 'compare' && compare.length > 0 && <span className="ih-tabcount">{compare.length}</span>}
-          </button>
-        ))}
+      <div className="ih-tabs">
+        <div className="ih-tabs-inner" role="tablist" aria-label="Intelligence sections" ref={tablistRef}>
+          {TABS.map((t, i) => (
+            // no aria-controls: only the active tabpanel is mounted, so an IDREF to the others would dangle
+            <button key={t.id} id={'ih-tab-' + t.id} role="tab" aria-selected={tab === t.id}
+              tabIndex={tab === t.id ? 0 : -1} className="ih-tab" onClick={() => switchTab(t.id)} onKeyDown={(e) => onTabKey(e, i)}>
+              {t.label}
+              {t.id === 'overview' && signal && <span className="ih-tabdot" aria-hidden="true" />}
+              {t.id === 'compare' && compare.length > 0 && <span className="ih-tabcount">{compare.length}</span>}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="ih-body" id="ih-scroll">
@@ -643,6 +629,6 @@ export default function IntelHub({ onClose }) {
 
         </div>
       </div>
-    </section>
+    </div>
   );
 }

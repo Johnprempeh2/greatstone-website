@@ -408,7 +408,7 @@ function migrate(state) {
       industries: { oldTitles: ['Industries · Greatstone International'], title: 'Industries · Greatstone International', oldDescs: ['', 'Pick your world and the rest adjusts: your drains, your numbers. The same foundation, shaped to the way your sector actually works.'], description: 'Pick your sector and the rest adjusts to your drains and your numbers. The same eight-pillar foundation, shaped to the way your industry actually works.' },
       proof: { oldTitles: ['Proof · Greatstone International'], title: 'Proof · Real Results · Greatstone International', oldDescs: ['', 'Real results from real engagements: hours given back, first-year ROI, payback inside a quarter. Anonymised case studies in real estate, healthcare and logistics.'], description: 'Real results from real engagements: hours given back, first-year ROI and payback inside a quarter. Anonymised studies in property, healthcare and logistics.' },
       about: { oldTitles: ['About · Greatstone International'], title: 'About Greatstone · Twenty Years Embedded', oldDescs: ['', 'Twenty years embedded, not advisory. Greatstone finds the hours a business is quietly losing and wins them back, becoming the foundation you build the next twenty years on.'], description: 'Twenty years embedded, not advisory. We find the hours a business is quietly losing and win them back, becoming the foundation you build the next decades on.' },
-      insights: { oldTitles: ['Insights · Greatstone International'], title: 'Insights · Field Notes · Greatstone International', oldDescs: ['', 'Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle.'], description: 'Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No filler.' },
+      insights: { oldTitles: ['Insights · Greatstone International', 'Insights · Field Notes · Greatstone International'], title: 'AI Intelligence · Greatstone International', oldDescs: ['', 'Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle.', 'Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No filler.'], description: "Greatstone's standing AI intelligence briefing: every meaningful move in AI, with our own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown." },
       climb: { oldTitles: ['The Climb · Greatstone International'], title: 'The Climb · Maturity Model · Greatstone International', oldDescs: ['', 'Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up across all eight pillars of the method.'], description: 'Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up.' },
     };
     Object.entries(SEO_UPDATES).forEach(([slug, u]) => {
@@ -541,6 +541,17 @@ function migrate(state) {
     if (ip && ip.data) addIntelBand(ip.data.content);
     if (ip && ip.published && ip.published !== ip.data) addIntelBand(ip.published.content);
     state._intelBandSeeded = true;
+  }
+  // Insights → Intelligence (additive, John 21 Jun): the Insights page IS the AI Intelligence section
+  // now (the hub renders as its body). Rename the DISPLAY title only — the slug stays 'insights', the
+  // routing key the hub renders on — and only while it's still the old seed default, so a hand-rename sticks.
+  {
+    const ip = state.pages && state.pages.insights;
+    if (ip) {
+      if (ip.title === 'Insights') ip.title = 'Intelligence';
+      if (ip.data && ip.data.root && ip.data.root.props && ip.data.root.props.title === 'Insights') ip.data.root.props.title = 'Intelligence';
+      if (ip.published && ip.published.root && ip.published.root.props && ip.published.root.props.title === 'Insights') ip.published.root.props.title = 'Intelligence';
+    }
   }
   // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
   // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.

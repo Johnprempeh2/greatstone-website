@@ -453,11 +453,11 @@
   },
   {
     "slug": "insights",
-    "title": "Insights",
+    "title": "Intelligence",
     "background": "tide",
     "seo": {
-      "title": "Insights · Field Notes · Greatstone International",
-      "description": "Field notes from inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No filler.",
+      "title": "AI Intelligence · Greatstone International",
+      "description": "Greatstone's standing AI intelligence briefing: every meaningful move in AI, with our own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
       "ogImage": ""
     },
     "blocks": [
