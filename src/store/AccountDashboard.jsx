@@ -241,7 +241,7 @@ function Dashboard({ session, profile, onProfile }) {
           <h1 className="acct-id-name">{profile?.full_name || 'Welcome back'}</h1>
           <div className="acct-id-sub">
             {profile?.email || session.user?.email}
-            {admin && <span className="org-rolechip is-admin" style={{ marginLeft: 8 }}>Company admin</span>}
+            {admin && <span className="org-rolechip is-admin" style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Company admin</span>}
             {company && <> · <a className="ca-link" href="#org">{company}</a>{tier && <span className="acct-tier">{tier}</span>}</>}
           </div>
         </div>

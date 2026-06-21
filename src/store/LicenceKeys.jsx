@@ -56,7 +56,7 @@ export default function LicenceKeys() {
                 <span className="lk-prod">{kk.offering_name}{kk.variant_name ? <span className="lk-variant"> · {kk.variant_name}</span> : ''}</span>
                 <span className={'ca-status ' + statusClass(kk.status)}>{kk.status}</span>
               </div>
-              <div className="lk-keyrow">
+              <div className="lk-keyrow" style={{ flexWrap: 'wrap' }}>
                 <code className="lk-key" aria-label="Licence key">{kk.licence_key}</code>
                 <button type="button" className="gs-btn ghost sm" onClick={(e) => copy(kk, e.currentTarget.previousElementSibling)}
                   aria-label={(copied === kk.id ? 'Copied' : copied === 'fail:' + kk.id ? 'Selected — press Cmd or Ctrl and C to copy' : 'Copy') + ' licence key for ' + kk.offering_name}>
