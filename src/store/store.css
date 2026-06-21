@@ -102,6 +102,11 @@
 .sp-add { font:inherit; font-size:.82rem; font-weight:700; padding:.5em 1.1em; border-radius:100px; border:1px solid var(--gs-accent); background:var(--gs-accent); color:#1f1f1f; cursor:pointer; transition:transform var(--gs-dur-micro,150ms) var(--gs-ease,ease), background var(--gs-dur-micro,150ms); white-space:nowrap; }
 .sp-add:hover { transform:translateY(-1px); }
 .sp-add.done { background:transparent; color:var(--gs-accent); }
+/* "view basket" affordance below the editions table — shown once the basket has items */
+.sp-basketbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:14px; padding:11px 14px; border:1px solid var(--gs-accent); border-radius:12px; background:rgba(200,255,0,.06); }
+.sp-basketbar-txt { font-size:.84rem; font-weight:700; }
+.sp-basketbar-btn { font:inherit; font-size:.82rem; font-weight:800; padding:.5em 1.2em; border-radius:100px; border:1px solid var(--gs-accent); background:var(--gs-accent); color:#1f1f1f; cursor:pointer; white-space:nowrap; transition:transform var(--gs-dur-micro,150ms) var(--gs-ease,ease); }
+.sp-basketbar-btn:hover { transform:translateY(-1px); }
 
 /* ── Live basket: floating button ────────────────────────────────────────── */
 .sc-fab { position:fixed; right:clamp(16px,3vw,32px); bottom:clamp(16px,3vw,32px); z-index:40; width:56px; height:56px; border-radius:50%; border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); background:var(--gs-accent); color:#1f1f1f; cursor:pointer; display:grid; place-items:center; box-shadow:0 10px 30px rgba(0,0,0,.4); transition:transform var(--gs-dur-micro,150ms) var(--gs-ease,ease); }
@@ -162,7 +167,7 @@
 .sc-drawer { width:min(420px,100%); }   /* 100% of the inset:0 scrim — avoids the 100vw scrollbar gutter */
 
 @media (prefers-reduced-motion:reduce){
-  .st-card:hover, .sp-rel:hover, .sc-fab:hover, .sp-add:hover { transform:none !important; }
+  .st-card:hover, .sp-rel:hover, .sc-fab:hover, .sp-add:hover, .sp-basketbar-btn:hover { transform:none !important; }
 }
 
 @media (max-width:640px){

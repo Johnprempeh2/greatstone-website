@@ -44,6 +44,13 @@ export function clearCart() { if (items.length) commit([]); }
 export function cartCount() { return items.reduce((n, x) => n + x.qty, 0); }
 export function cartSubtotalMinor() { return items.reduce((s, x) => s + (x.unitMinor || 0) * x.qty, 0); }
 
+// Drawer-open signal: lets "View basket" affordances on other store pages (e.g. the product page) open
+// the cart drawer, which owns its own open state. Decoupled from the items store so opening the drawer
+// never touches the basket contents.
+const openSubs = new Set();
+export function openCart() { openSubs.forEach((f) => f()); }
+export function onOpenCart(f) { openSubs.add(f); return () => openSubs.delete(f); }
+
 const SUPA_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || '';
 const ANON = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || '';
 

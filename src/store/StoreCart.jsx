@@ -3,7 +3,7 @@
 // server-side before charging. TEST MODE — uses Stripe test keys; no real money moves.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useModal } from './useModal.mjs';
-import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout, requestQuote, MAX_QTY } from './cart.mjs';
+import { useCart, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, startCheckout, requestQuote, onOpenCart, MAX_QTY } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { track } from '../lib/analytics.js';
 import { getSession } from './customerAuth.mjs';
@@ -26,6 +26,9 @@ export default function StoreCart({ confirmed = false }) {
   // never resurfaces the quote form or a stale "sent"/error state from a previous session.
   const closeCart = useCallback(() => { setOpen(false); setView('cart'); setErr(null); }, []);
   useModal(drawerRef, open, closeCart); // focus-in, Tab-trap, scroll-lock, Escape, focus-restore
+
+  // let a "View basket" affordance elsewhere (e.g. the product page) open this drawer
+  useEffect(() => onOpenCart(() => setOpen(true)), []);
 
   // prefill the quote contact email from the signed-in account, if any (guard against setState after unmount)
   useEffect(() => {

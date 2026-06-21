@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { getOffering, relatedOfferings } from '../data/catalog.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { addItem } from './cart.mjs';
+import { addItem, useCart, openCart } from './cart.mjs';
 import './store.css';
 
 const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || '/';
@@ -83,7 +83,7 @@ export default function StoreProduct({ slug, onBack }) {
       {!!(o.variants && o.variants.length) && <section className="sp-section" id="sp-editions"><h2>Editions &amp; licensing</h2>
         <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th scope="col">Edition</th><th scope="col">Licence</th><th scope="col">Price</th><th scope="col"><span className="gs-sr-only">Add to basket</span></th></tr></thead>
           <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td>{v.pricing && v.pricing.final != null ? <AddToBasket offering={o} variant={v} /> : <a className="sp-q" href="#book">Request quote ›</a>}</td></tr>)}</tbody></table></div>
-        <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p></section>}
+        <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p><BasketBar /></section>}
 
       {!!related.length && <section className="sp-section"><h2>Related products</h2>
         <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={'#product/' + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.pricing && r.pricing.final != null ? 'from ' + fmtMoney(r.pricing.final) : 'Request a quote'} ›</div></a>)}</div></section>}
@@ -91,6 +91,21 @@ export default function StoreProduct({ slug, onBack }) {
       <div className="sp-back"><button className="st-more" onClick={onBack}>← Back to the catalogue</button></div>
     </div>
     </>
+  );
+}
+
+// A single "what next" affordance under the editions table: once anything is in the basket it gives a
+// clear path to review + check out (the floating basket button alone is easy to miss, especially on
+// mobile). Subscribes to the same cart singleton, so it appears the moment an edition is added.
+function BasketBar() {
+  const items = useCart();
+  const count = items.reduce((n, x) => n + x.qty, 0);
+  if (!count) return null;
+  return (
+    <div className="sp-basketbar">
+      <span className="sp-basketbar-txt">{count} item{count === 1 ? '' : 's'} in your basket</span>
+      <button type="button" className="sp-basketbar-btn" onClick={openCart} aria-label={'View basket, ' + count + ' item' + (count === 1 ? '' : 's')}>View basket →</button>
+    </div>
   );
 }
 
