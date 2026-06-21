@@ -469,7 +469,9 @@
           "highlight": "the foundation.",
           "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No theory for theory's sake. We leave no stone unturned.",
           "align": "left",
-          "size": "compact"
+          "size": "compact",
+          "ctaLabel": "Open the AI Intelligence Hub",
+          "ctaHref": "#intel"
         }
       },
       {

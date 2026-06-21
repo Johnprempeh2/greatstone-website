@@ -41,7 +41,7 @@ export default function AccountDashboard() {
   return <Dashboard session={session} profile={profile} onProfile={setProfile} />;
 }
 
-function AuthGate() {
+export function AuthGate() {
   const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState(''); const [pw, setPw] = useState('');
   const [company, setCompany] = useState(''); const [name, setName] = useState('');

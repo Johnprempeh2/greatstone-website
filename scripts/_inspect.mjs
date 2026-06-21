@@ -1,0 +1,14 @@
+import { createClient } from '@supabase/supabase-js';
+const a = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+const { data: customers } = await a.from('customers').select('id, name, slug, domain, tier_id, created_at, metadata').is('deleted_at', null).order('created_at');
+console.log('CUSTOMERS:', (customers||[]).length);
+for (const c of customers||[]) console.log(`  ${c.id}  "${c.name}"  slug=${c.slug}  domain=${c.domain||'-'}  ${JSON.stringify(c.metadata)}`);
+const { data: cu } = await a.from('customer_users').select('id, customer_id, email, full_name, is_primary, auth_subject, created_at').is('deleted_at', null).order('created_at');
+console.log('\nCUSTOMER_USERS:', (cu||[]).length);
+for (const u of cu||[]) console.log(`  ${u.id}  cust=${u.customer_id}  ${u.email}  name=${u.full_name||'-'}  primary=${u.is_primary}  hasLogin=${!!u.auth_subject}`);
+const { data: tiers } = await a.from('customer_tiers').select('id,name,slug,rank').is('deleted_at', null);
+console.log('\nTIERS:', JSON.stringify(tiers));
+const { error: engErr } = await a.from('engagements').select('id').limit(1);
+console.log('\nengagements table exists?', engErr ? ('NO ('+engErr.message+')') : 'YES');
+const { data: orders } = await a.from('orders').select('id, customer_id, total_minor, status').is('deleted_at', null).limit(20);
+console.log('ORDERS:', (orders||[]).length, 'with customer_id:', (orders||[]).filter(o=>o.customer_id).length);

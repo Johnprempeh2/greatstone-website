@@ -171,3 +171,34 @@ sign-off on the methodology/roster. C rides the analytics/CRM credentials.
   nightly-task pattern + the "updated <date>" honesty banner cover this.
 - **Duplication:** decide the relationship to the existing standalone site so we don't maintain two
   divergent datasets.
+
+---
+
+## BUILT — Phase A v1 (2026-06-21, overnight)
+
+John greenlit the build with the agent (not an API) as the content engine for now. Shipped a working,
+on-brand AI Intelligence Hub at route `#intel`, launched from the Insights Hero CTA.
+
+- **Content engine = the agent.** A research workflow (5 parallel analysts) curates real, dated,
+  source-linked AI-landscape items from the roster → `src/data/ai-intel-content.mjs` (29 briefings + 3
+  leaderboards). Regenerated each loop pass. The same shape accepts a news API later.
+- **The experience** (`src/intel/IntelHub.jsx` + `intel.css`): full-screen dark/lime hub, tabs
+  Overview / Briefing / Leaderboards / Compare / How-sourced; a canvas "intelligence radar" that
+  visualises the visitor's own interest profile; the frontier podium; expandable briefing cards with
+  the "Greatstone read"; composite-scored leaderboards with pillar breakdowns; compare; full sourcing
+  transparency. role=dialog, tablist, reduced-motion gated.
+- **Engagement → interest → recommendation** (`src/intel/interest.js`): every read/topic/vendor is
+  weighted into a decaying per-visitor profile (localStorage `gs-intel-profile`); `rankForYou` powers a
+  personalised "For you" feed; the same signal is pushed to the analytics dataLayer (`intel_read`,
+  `intel_open`, `intel_tab`, …) ready to attach to a CRM lead. No PII — topic ids, vendor domains, ids only.
+- **Structure** (`src/data/ai-intel.mjs`): topic taxonomy, board weightings (shown publicly), source
+  roster, vendor directory.
+- Wired into App.jsx (`readIntelHash` → `intelRoute` → `LazyIntelHub`, full-screen, Esc/close → Insights).
+  Additive migration gives the Insights Hero the `#intel` CTA on existing stores.
+
+**Verified:** build clean, 51 tests, 0 console errors; the hub renders with real content, the radar +
+personalisation work live (opening a briefing re-ranks the feed + spikes the radar).
+
+**Loop roadmap:** adversarial-review fixes; deepen content each pass; radar label polish; a 3D accent
+(three.js constellation); a Radar/trends tab; richer compare; the CRM/Pipedrive roll-up of the interest
+profile when analytics goes live.

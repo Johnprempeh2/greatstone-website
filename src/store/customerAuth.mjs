@@ -53,10 +53,12 @@ export async function getCustomerProfile() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data, error } = await supabase.from('customer_users')
-    .select('id, email, full_name, phone, is_primary, customer:customers(id, name, slug, domain, tier:customer_tiers(name, rank))')
+    .select('id, email, full_name, phone, is_primary, role, customer:customers(id, name, slug, domain, notes, created_at, tier:customer_tiers(name, rank))')
     .eq('auth_subject', user.id).maybeSingle();
   if (error) { console.warn('getCustomerProfile', error.message); return null; }
   return data;
 }
 
 export const isCustomer = (profile) => !!profile && !!profile.customer;
+/** The signed-in buyer is their company's admin (primary contact / explicit admin role). */
+export const isCompanyAdmin = (profile) => !!profile && (profile.is_primary === true || profile.role === 'admin');

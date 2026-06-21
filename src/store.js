@@ -510,6 +510,18 @@ function migrate(state) {
     if (hp && hp.data) enableFirstHero(hp.data.content);
     if (hp && hp.published) enableFirstHero(hp.published.content);
   }
+  // Insights → AI Intelligence Hub launch (additive): give the insights Hero a CTA that opens the #intel
+  // hub on stores that predate it. Only when the hero has no CTA yet, so a hand-edited CTA is respected.
+  {
+    const ip = state.pages && state.pages.insights;
+    const addIntelCta = (content) => {
+      if (!Array.isArray(content)) return;
+      const hero = content.find((b) => b && b.type === 'Hero');
+      if (hero && hero.props && !hero.props.ctaLabel) { hero.props.ctaLabel = 'Open the AI Intelligence Hub'; hero.props.ctaHref = '#intel'; }
+    };
+    if (ip && ip.data) addIntelCta(ip.data.content);
+    if (ip && ip.published) addIntelCta(ip.published.content);
+  }
   // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
   // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.
   state.order = state.order.filter((s) => s !== 'products');

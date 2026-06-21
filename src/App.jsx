@@ -31,6 +31,7 @@ const LazyStoreCart = lazy(() => import('./store/StoreCart.jsx'));
 const LazyAccount = lazy(() => import('./store/AccountDashboard.jsx')); // #account — customer self-serve portal
 const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
 const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
+const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // #intel — full-screen AI Intelligence Hub (Insights)
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -91,6 +92,10 @@ function readAdminHash() {
 // #breakdown → the full-screen interactive methodology explorer (the method Hero's "interactive breakdown")
 function readBreakdownHash() {
   return /^#\/?breakdown\b/i.test(typeof location !== 'undefined' ? location.hash : '');
+}
+// #intel → the full-screen AI Intelligence Hub, opened from Insights
+function readIntelHash() {
+  return /^#\/?intel\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
 // #shop or #shop/<vendor-slug> → the live storefront (reads Supabase)
 function readShopHash() {
@@ -232,6 +237,7 @@ export default function App() {
   const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
+  const [intelRoute, setIntelRoute] = useState(readIntelHash); // #intel → full-screen AI Intelligence Hub
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
@@ -268,7 +274,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -341,6 +347,7 @@ export default function App() {
     // render precedence below (breakdown > admin > invoice > account > confirm > catalogue > shop > product).
     const utility = (t, slug) => applyHead({ title: t + ' · ' + SITE_NAME }, t, slug);
     if (breakdownRoute) { utility('The eight pillars', 'method'); return; }
+    if (intelRoute) { utility('AI Intelligence', 'insights'); return; }
     if (adminNav) { utility('Studio admin', 'home'); return; }
     if (invoiceRoute) { utility('Invoice', 'home'); return; }
     if (accountRoute) { utility('Your account', 'home'); return; }
@@ -354,14 +361,14 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, adminNav, invoiceRoute, accountRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, intelRoute, adminNav, invoiceRoute, accountRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
   useEffect(() => {
     if (typeof location === 'undefined') return;
     pageview(location.pathname + location.hash, document.title);
-  }, [current, productSlug, shopRoute, accountRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, adminNav]);
+  }, [current, productSlug, shopRoute, accountRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelRoute, adminNav]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -795,6 +802,18 @@ export default function App() {
         {styleTag}
         <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#06100b' }} />}>
           <LazyMethodExplorer pillars={pillars} onClose={() => { setBreakdownRoute(false); navigate(state.pages.method ? 'method' : state.order[0]); }} />
+        </Suspense>
+      </div>
+    );
+  }
+
+  // #intel — the full-screen AI Intelligence Hub, opened from Insights. Public, renders over everything.
+  if (intelRoute) {
+    return (
+      <div className="is-view">
+        {styleTag}
+        <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#090b08' }} />}>
+          <LazyIntelHub onClose={() => { setIntelRoute(false); navigate(state.pages.insights ? 'insights' : state.order[0]); }} />
         </Suspense>
       </div>
     );
