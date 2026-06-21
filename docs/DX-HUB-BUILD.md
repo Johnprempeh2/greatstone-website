@@ -25,7 +25,10 @@
 - **Cycle 3+:** adversarial review (RLS/security, a11y, correctness, UX) via a Workflow → fix; polish; more best-practice features (security trust panel, what's-next, pinned highlights, filters/search, spend analytics).
 
 ## Status
-- [ ] Cycle 1 in progress.
+- [x] **Cycle 1 SHIPPED + browser-verified (21 Jun 2026).** Migration `0013` applied to Supabase (engagements + `customer_users.role`, RLS verified: buyer reads scoped to own company's shared items, buyer writes BLOCKED, no self-promotion). New `#org` route + `OrgDashboard.jsx`: identity, company-admin banner, at-a-glance stats, the **DX engagement timeline** (period-grouped vertical `<ol>`, what's-next, highlights, type filters, search, inline sanitized recap expand + safe external links with host label), members directory (admin chip + "You"), admin-gated company profile, company orders rollup. `AccountDashboard.jsx` upgraded: H1 = the person (not the company), company→`#org` link, "Company admin" chip, fixed the dead-`aria-expanded`-on-`<tr>` a11y bug. Demo client "Ethical Quest" seeded (10 engagements, 2 members, 2 orders, 1 quote). 51 tests green, build clean (OrgDashboard = 19 KB lazy chunk, eager bundle unchanged), 0 console errors, mobile no-overflow.
+  - NOTE: a parallel session's `git add -A` swept the foundation files (0013/seed/customerAuth/this doc) into commit `84c6cf3`; the rest committed separately. Functionally intact.
+- [ ] **Cycle 2 (next):** staff authoring UI in the admin console — create/edit/share engagements per customer (paste a Netlify recap URL or inline HTML, set kind/date/attendees/pin/status). Then adversarial review workflow (RLS/security, a11y, correctness, UX) → fixes.
+- Known follow-ups: company-profile RLS currently lets ANY member UPDATE name/domain/notes (UI gates to admin only) — harden RLS to admin-only in a later migration. "New since last visit" is per-browser localStorage. NOT deployed to Netlify (awaiting John).
 
 ## Demo creds (to hand John in the morning)
 - Demo CLIENT (buyer): `demo-client@greatstone.dev` / `stone` → company **Ethical Quest**, primary contact (company admin). A second member `demo-member@greatstone.dev` / `stone`.

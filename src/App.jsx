@@ -29,9 +29,50 @@ const LazyCatalogueAdmin = lazy(() => import('./store/CatalogueAdmin.jsx'));
 // routes pull it (and the cart singleton it depends on) into the bundle.
 const LazyStoreCart = lazy(() => import('./store/StoreCart.jsx'));
 const LazyAccount = lazy(() => import('./store/AccountDashboard.jsx')); // #account — customer self-serve portal
+const LazyOrg = lazy(() => import('./store/OrgDashboard.jsx'));         // #org — customer organization dashboard
 const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
 const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
 const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // #intel — full-screen AI Intelligence Hub (Insights)
+
+// Branded loading state for the lazy Intel Hub chunk. Self-contained (inline styles + scoped
+// keyframes) because intel.css ships *inside* that chunk and isn't available while it loads.
+function IntelBoot() {
+  return (
+    <div role="status" aria-live="polite" style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 36%, #11160f 0%, #090b08 72%)' }}>
+      <style>{`
+        @keyframes ihBootSpin { to { transform: rotate(360deg); } }
+        @keyframes ihBootPulse { 0%,100% { opacity:.4; transform:scale(.93); } 50% { opacity:1; transform:scale(1); } }
+        @keyframes ihBootDraw { from { stroke-dashoffset: 184; } to { stroke-dashoffset: 0; } }
+        @keyframes ihBootBar { 0% { transform: translateX(-120%); } 100% { transform: translateX(360%); } }
+        .ihb-ring { transform-origin: 50% 50%; animation: ihBootSpin 9s linear infinite; }
+        .ihb-mark { animation: ihBootPulse 2.4s cubic-bezier(.16,1,.3,1) infinite; }
+        .ihb-stroke { stroke-dasharray: 184; animation: ihBootDraw 1.7s cubic-bezier(.16,1,.3,1) forwards; }
+        .ihb-track { position: relative; width: 168px; height: 3px; border-radius: 3px; background: rgba(200,255,0,.12); overflow: hidden; }
+        .ihb-track::after { content:''; position:absolute; top:0; left:0; bottom:0; width:38%; border-radius:3px; background: linear-gradient(90deg, transparent, #c8ff00, transparent); animation: ihBootBar 1.5s cubic-bezier(.65,0,.35,1) infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .ihb-ring, .ihb-mark, .ihb-stroke { animation: none !important; }
+          .ihb-track::after { animation: none !important; transform: none; width: 100%; opacity:.55; }
+        }
+      `}</style>
+      <div style={{ display: 'grid', placeItems: 'center', gap: '28px' }}>
+        <div style={{ position: 'relative', width: 92, height: 92, display: 'grid', placeItems: 'center' }}>
+          <svg className="ihb-ring" width="92" height="92" viewBox="0 0 92 92" aria-hidden="true" style={{ position: 'absolute', inset: 0 }}>
+            <circle cx="46" cy="46" r="43" fill="none" stroke="rgba(200,255,0,.13)" strokeWidth="1" />
+            <circle cx="46" cy="46" r="43" fill="none" stroke="#c8ff00" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="22 250" />
+          </svg>
+          <svg className="ihb-mark" width="46" height="46" viewBox="0 0 64 64" aria-hidden="true">
+            <path className="ihb-stroke" d="M32 10 L50 24 L44 50 L20 50 L14 24 Z" fill="none" stroke="#c8ff00" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div style={{ display: 'grid', placeItems: 'center', gap: '11px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Montserrat',system-ui,sans-serif", fontSize: '.72rem', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: '#c8ff00' }}>Greatstone Intelligence</div>
+          <div style={{ fontFamily: "'Montserrat',system-ui,sans-serif", fontSize: '.86rem', color: '#b0b6ac' }}>Assembling today&rsquo;s briefing</div>
+          <div className="ihb-track" />
+        </div>
+      </div>
+    </div>
+  );
+}
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
@@ -115,6 +156,10 @@ function readConfirmHash() {
 // #account → customer self-serve portal (sign in / orders / billing)
 function readAccountHash() {
   return /^#\/?account\b/i.test(typeof location !== 'undefined' ? location.hash : '');
+}
+// #org → customer organization dashboard (company hub, members, DX engagement timeline)
+function readOrgHash() {
+  return /^#\/?org\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
 // #invoice/<orderId> → printable VAT invoice
 function readInvoiceHash() {
@@ -235,6 +280,7 @@ export default function App() {
   const [catalogueAdmin, setCatalogueAdmin] = useState(readCatalogueHash); // #catalogue → live catalogue admin (Supabase auth)
   const [confirmRoute, setConfirmRoute] = useState(readConfirmHash); // #order-confirmed → Stripe success page
   const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
+  const [orgRoute, setOrgRoute] = useState(readOrgHash); // #org → organization dashboard
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
   const [intelRoute, setIntelRoute] = useState(readIntelHash); // #intel → full-screen AI Intelligence Hub
@@ -274,7 +320,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -351,6 +397,7 @@ export default function App() {
     if (adminNav) { utility('Studio admin', 'home'); return; }
     if (invoiceRoute) { utility('Invoice', 'home'); return; }
     if (accountRoute) { utility('Your account', 'home'); return; }
+    if (orgRoute) { utility('Your organization', 'home'); return; }
     if (confirmRoute) { utility('Order confirmed', 'home'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home'); return; }
     if (shopRoute) { utility('Products', 'shop'); return; }
@@ -361,14 +408,14 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, intelRoute, adminNav, invoiceRoute, accountRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, intelRoute, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
   useEffect(() => {
     if (typeof location === 'undefined') return;
     pageview(location.pathname + location.hash, document.title);
-  }, [current, productSlug, shopRoute, accountRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelRoute, adminNav]);
+  }, [current, productSlug, shopRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelRoute, adminNav]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -378,7 +425,7 @@ export default function App() {
     if (mode !== 'view') return;
     const m = document.getElementById('gs-main');
     if (m && typeof m.focus === 'function') m.focus({ preventScroll: true });
-  }, [current, shopRoute, productSlug, accountRoute, catalogueAdmin, confirmRoute, invoiceRoute]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [current, shopRoute, productSlug, accountRoute, orgRoute, catalogueAdmin, confirmRoute, invoiceRoute]); // eslint-disable-line react-hooks/exhaustive-deps
   // in-app CTA links: "#book" → contact page; "#go/<slug>" → that page (so cross-page ghost CTAs
   // navigate within the SPA instead of hitting a dead .html href). preventDefault keeps the hash clean.
   useEffect(() => {
@@ -626,7 +673,7 @@ export default function App() {
   // (key={current}) gives the brief fade — see gsPageIn in index.css.
   function navigate(slug) {
     if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product / #admin / #breakdown
-    setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false); setInvoiceRoute(null);
+    setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false); setOrgRoute(false); setInvoiceRoute(null);
     setAdminNav(null); setBreakdownRoute(false); // clear admin/breakdown routes synchronously so the page renders without a flash
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -714,6 +761,7 @@ export default function App() {
     if (mode !== 'edit') {
       cmds.push({ id: 'go-shop', group: 'Go to', label: 'Products', hint: 'storefront', run: goShop });
       cmds.push({ id: 'go-account', group: 'Go to', label: 'Your account', run: () => { if (typeof location !== 'undefined') location.hash = 'account'; } });
+      cmds.push({ id: 'go-org', group: 'Go to', label: 'Your organization', run: () => { if (typeof location !== 'undefined') location.hash = 'org'; } });
     }
     // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
     // but read-only). The admin login is NOT surfaced on the public site — it lives at the
@@ -812,7 +860,7 @@ export default function App() {
     return (
       <div className="is-view">
         {styleTag}
-        <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#090b08' }} />}>
+        <Suspense fallback={<IntelBoot />}>
           <LazyIntelHub onClose={() => { setIntelRoute(false); navigate(state.pages.insights ? 'insights' : state.order[0]); }} />
         </Suspense>
       </div>
@@ -962,7 +1010,7 @@ export default function App() {
       <SiteChrome />
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) render on a solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || catalogueAdmin || confirmRoute || invoiceRoute) && !saveData && <Stage background={bg} />}
+      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute) && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
@@ -970,12 +1018,14 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
+        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : accountRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount /></Suspense>
+            : orgRoute
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyOrg /></Suspense>
             : confirmRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreCart confirmed /></Suspense>
             : catalogueAdmin

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { signIn, signUp, signOut, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer } from './customerAuth.mjs';
+import { signIn, signUp, signOut, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
 import './store.css';
 import './admin.css';
@@ -179,18 +179,24 @@ function Dashboard({ session, profile, onProfile }) {
   const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
   const company = profile?.customer?.name || '';
   const tier = profile?.customer?.tier?.name;
+  const admin = isCompanyAdmin(profile);
   const ref = (s) => (s || '').replace(/^cs_(test|live)_/, '').slice(0, 12) + '…';
 
   return (
     <div className="ca-wrap">
       <header className="acct-id">
-        <div className="acct-avatar" aria-hidden="true">{initialsOf(company || profile?.full_name || profile?.email)}</div>
+        <div className="acct-avatar" aria-hidden="true">{initialsOf(profile?.full_name || profile?.email || company)}</div>
         <div className="acct-id-text">
           <span className="st-kicker">Your account</span>
-          <h1 className="acct-id-name">{company || 'Welcome back'}</h1>
-          <div className="acct-id-sub">{profile?.full_name ? profile.full_name + ' · ' : ''}{profile?.email || session.user?.email}{tier && <span className="acct-tier">{tier}</span>}</div>
+          <h1 className="acct-id-name">{profile?.full_name || 'Welcome back'}</h1>
+          <div className="acct-id-sub">
+            {profile?.email || session.user?.email}
+            {admin && <span className="org-rolechip is-admin" style={{ marginLeft: 8 }}>Company admin</span>}
+            {company && <> · <a className="ca-link" href="#org">{company}</a>{tier && <span className="acct-tier">{tier}</span>}</>}
+          </div>
         </div>
         <div className="acct-id-actions">
+          {profile?.customer && <a className="gs-btn ghost sm" href="#org">Your organization →</a>}
           <a className="gs-btn ghost sm" href="#shop">Continue shopping</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
@@ -267,7 +273,7 @@ function Dashboard({ session, profile, onProfile }) {
                     const expanded = open === o.id;
                     return (
                       <React.Fragment key={o.id}>
-                        <tr className="acct-ordrow" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : o.id)}>
+                        <tr className="acct-ordrow" onClick={() => setOpen(expanded ? null : o.id)}>
                           <td data-label="Date">{fmtDate(o.placed_at || o.created_at)}</td>
                           <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code></td>
                           <td data-label="Items">{(o.order_items || []).length}</td>
