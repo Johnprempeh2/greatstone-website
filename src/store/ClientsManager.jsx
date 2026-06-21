@@ -68,7 +68,9 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [members, setMembers] = useState([]);
   const [items, setItems] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [keys, setKeys] = useState(null);
   const [editing, setEditing] = useState(null); // engagement object or {} for new
+  const [keyEditing, setKeyEditing] = useState(null); // licence-key object or {} for new
   const load = useCallback(() => {
     supabase.from('customer_users').select('id, email, full_name, is_primary, role').is('deleted_at', null).eq('customer_id', customer.id).order('is_primary', { ascending: false })
       .then(({ data }) => setMembers(data || []));
@@ -76,6 +78,8 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
+    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
+      .then(({ data, error }) => { if (!error) setKeys(data || []); });
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
 
@@ -98,6 +102,14 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
     const { data, error } = await supabase.from('engagements').update({ deleted_at: new Date().toISOString() }).eq('id', e.id).select('id');
     if (error || !data?.length) { flash(error ? 'Could not delete.' : 'That item was already removed.'); load(); return; }
     flash('Deleted.'); load();
+  };
+
+  const revokeKey = async (k) => {
+    const next = k.status === 'revoked' ? 'issued' : 'revoked';
+    if (next === 'revoked' && !confirm(`Revoke the key for “${k.offering_name}”? The client will see it marked revoked.`)) return;
+    const { data, error } = await supabase.from('licence_keys').update({ status: next }).eq('id', k.id).select('id');
+    if (error || !data?.length) { flash(error ? 'Could not update key.' : 'Key not found.'); load(); return; }
+    flash(next === 'revoked' ? 'Key revoked.' : 'Key re-issued.'); load();
   };
 
   const admin = members.find(m => m.is_primary || m.role === 'admin');
@@ -162,8 +174,102 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
           </tbody>
         </table>
       </div>
+      <div className="acct-ordhead" style={{ marginTop: 30 }}>
+        <h2 className="ci-sub" style={{ margin: 0 }}>Licence keys</h2>
+        <button className="gs-btn primary sm" onClick={() => setKeyEditing({})}>+ Issue key</button>
+      </div>
+      <div className="ca-table-wrap">
+        <table className="ca-table ca-cards">
+          <thead><tr><th scope="col">Product</th><th scope="col">Key</th><th scope="col">Seats</th><th scope="col">Status</th><th scope="col">Delivered</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            {keys === null ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
+              : !keys.length ? <tr><td colSpan="6" className="ca-muted">No licence keys yet. Issue one when you fulfil an order — the client sees it on their account.</td></tr>
+                : keys.map(k => (
+                  <tr key={k.id}>
+                    <td data-label="Product" className="ca-name">{k.offering_name}{k.variant_name ? ' · ' + k.variant_name : ''}</td>
+                    <td data-label="Key"><code className="ca-ref">{k.licence_key}</code></td>
+                    <td data-label="Seats">{k.seats || '—'}</td>
+                    <td data-label="Status"><span className={'ca-status ' + (k.status === 'issued' ? 'ca-published' : k.status === 'revoked' ? 'ca-ord-refunded' : 'ca-draft')}>{k.status}</span></td>
+                    <td data-label="Delivered">{fmtDate(k.delivered_at)}</td>
+                    <td data-label="" className="ca-ord-actions">
+                      <button className="gs-btn ghost sm" onClick={() => setKeyEditing(k)}>Edit</button>
+                      <button className="gs-btn ghost sm" onClick={() => revokeKey(k)}>{k.status === 'revoked' ? 'Re-issue' : 'Revoke'}</button>
+                    </td>
+                  </tr>
+                ))}
+          </tbody>
+        </table>
+      </div>
+
       {editing && <EngagementEditor engagement={editing} customer={customer} staff={staff} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); flash(m); load(); }} />}
+      {keyEditing && <KeyEditor lkey={keyEditing} customer={customer} staff={staff} onClose={() => setKeyEditing(null)} onSaved={(m) => { setKeyEditing(null); flash(m); load(); }} />}
       {toast && <div className="ca-toast" role="status">{toast}</div>}
+    </div>
+  );
+}
+
+function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
+  const isNew = !lkey.id;
+  const [offering, setOffering] = useState(lkey.offering_name || '');
+  const [variant, setVariant] = useState(lkey.variant_name || '');
+  const [key, setKey] = useState(lkey.licence_key || '');
+  const [seats, setSeats] = useState(lkey.seats != null ? String(lkey.seats) : '');
+  const [expires, setExpires] = useState(lkey.expires_at ? String(lkey.expires_at).slice(0, 10) : '');
+  const [status, setStatus] = useState(lkey.status || 'issued');
+  const [notes, setNotes] = useState(lkey.notes || '');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const ref = useRef(null);
+  useModal(ref, true, onClose);
+
+  const save = async () => {
+    setErr(null);
+    if (!offering.trim()) { setErr('Which product is this key for?'); return; }
+    if (!key.trim()) { setErr('Paste the licence key.'); return; }
+    const seatsN = seats.trim() === '' ? null : parseInt(seats, 10);
+    if (seatsN !== null && (!Number.isInteger(seatsN) || seatsN < 1)) { setErr('Seats must be a whole number of 1 or more, or left blank.'); return; }
+    setBusy(true);
+    const payload = {
+      offering_name: offering.trim(), variant_name: variant.trim() || null, licence_key: key.trim(),
+      seats: seatsN, status, notes: notes.trim() || null,
+      expires_at: expires ? new Date(expires + 'T00:00:00').toISOString() : null,
+    };
+    let error;
+    if (isNew) ({ error } = await supabase.from('licence_keys').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
+    else ({ error } = await supabase.from('licence_keys').update(payload).eq('id', lkey.id));
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    onSaved(isNew ? 'Licence key issued — the client can see it on their account now.' : 'Licence key saved.');
+  };
+
+  return (
+    <div className="ca-drawer-scrim" onClick={onClose}>
+      <div ref={ref} tabIndex={-1} className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={isNew ? 'Issue licence key' : 'Edit licence key'}>
+        <h2>{isNew ? 'Issue a licence key' : 'Edit licence key'}</h2>
+        <p className="ca-note" style={{ marginTop: -2 }}>Delivered to {customer.name} — they'll see it on their account → Licence keys.</p>
+        <label>Product<input value={offering} onChange={e => setOffering(e.target.value)} placeholder="e.g. Aspose.Total for .NET" /></label>
+        <label>Edition / licence type <span style={{ fontWeight: 400 }}>(optional)</span><input value={variant} onChange={e => setVariant(e.target.value)} placeholder="e.g. Developer Small Business" /></label>
+        <label>Licence key<textarea rows="2" value={key} onChange={e => setKey(e.target.value)} placeholder="Paste the activation code" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.86rem' }} /></label>
+        <div className="pr-row">
+          <label>Seats <span style={{ fontWeight: 400 }}>(optional)</span><input type="number" min="1" value={seats} onChange={e => setSeats(e.target.value)} placeholder="e.g. 5" /></label>
+          <label>Expires <span style={{ fontWeight: 400 }}>(optional)</span><input type="date" value={expires} onChange={e => setExpires(e.target.value)} /></label>
+        </div>
+        <div className="pr-row">
+          <label>Status
+            <select value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="issued">Issued (active)</option>
+              <option value="revoked">Revoked</option>
+              <option value="expired">Expired</option>
+            </select>
+          </label>
+          <label>Internal note <span style={{ fontWeight: 400 }}>(optional)</span><input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Not shown to the client" /></label>
+        </div>
+        {err && <div className="ca-err" role="alert">{err}</div>}
+        <div className="ca-drawer-foot">
+          <button className="gs-btn ghost" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : isNew ? 'Issue key' : 'Save'}</button>
+        </div>
+      </div>
     </div>
   );
 }
