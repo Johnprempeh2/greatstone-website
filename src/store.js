@@ -522,6 +522,26 @@ function migrate(state) {
     if (ip && ip.data) addIntelCta(ip.data.content);
     if (ip && ip.published) addIntelCta(ip.published.content);
   }
+  // Insights: insert the prominent AI Intelligence Hub entry band on stores that predate it, right after
+  // the Hero. Runs ONCE (flagged) so a later hand-removal is respected and it is not re-added every load.
+  if (!state._intelBandSeeded) {
+    const ip = state.pages && state.pages.insights;
+    const addIntelBand = (content) => {
+      if (!Array.isArray(content) || content.some((b) => b && b.type === 'IntelBand')) return;
+      const band = blk('IntelBand', {
+        kicker: 'Live · rebuilt each working day', heading: 'The AI landscape,', highlight: 'read for you.',
+        body: "Our standing intelligence briefing: every meaningful move in AI, with Greatstone's own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
+        ctaLabel: 'Open the AI Intelligence Briefing', ctaHref: '#intel',
+        themes: [{ label: 'Frontier models' }, { label: 'Agents' }, { label: 'AI security' }, { label: 'Regulation' }, { label: 'Enterprise' }],
+        stat1: { value: '26', label: 'live developments' }, stat2: { value: '8', label: 'models ranked' },
+      });
+      const heroIdx = content.findIndex((b) => b && b.type === 'Hero');
+      content.splice(heroIdx >= 0 ? heroIdx + 1 : 0, 0, band);
+    };
+    if (ip && ip.data) addIntelBand(ip.data.content);
+    if (ip && ip.published && ip.published !== ip.data) addIntelBand(ip.published.content);
+    state._intelBandSeeded = true;
+  }
   // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
   // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.
   state.order = state.order.filter((s) => s !== 'products');

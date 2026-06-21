@@ -475,6 +475,20 @@
         }
       },
       {
+        "type": "IntelBand",
+        "props": {
+          "kicker": "Live · rebuilt each working day",
+          "heading": "The AI landscape,",
+          "highlight": "read for you.",
+          "body": "Our standing intelligence briefing: every meaningful move in AI, with Greatstone's own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
+          "ctaLabel": "Open the AI Intelligence Briefing",
+          "ctaHref": "#intel",
+          "themes": [{ "label": "Frontier models" }, { "label": "Agents" }, { "label": "AI security" }, { "label": "Regulation" }, { "label": "Enterprise" }],
+          "stat1": { "value": "26", "label": "live developments" },
+          "stat2": { "value": "8", "label": "models ranked" }
+        }
+      },
+      {
         "type": "FeaturedArticle",
         "props": {
           "label": "Featured · AI & Automation",

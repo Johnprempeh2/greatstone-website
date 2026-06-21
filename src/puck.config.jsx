@@ -28,12 +28,13 @@ import * as InsightsGrid from './blocks/InsightsGrid.jsx';
 import * as NewsletterBand from './blocks/NewsletterBand.jsx';
 import * as Terrace from './blocks/Terrace.jsx';
 import * as MethodTieIn from './blocks/MethodTieIn.jsx';
+import * as IntelBand from './blocks/IntelBand.jsx';
 import * as PillarCards from './blocks/PillarCards.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Chapter, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand };
+const MODULES = { Hero, Chapter, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand };
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
@@ -47,7 +48,7 @@ export const config = {
     page: { title: 'Page', components: ['Hero', 'Invite', 'NewsletterBand'] },
     story: { title: 'Story', components: ['Chapter', 'Pillars', 'PillarCards', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'Terrace', 'Spectrum', 'Timeline', 'Ladder', 'MethodTieIn'] },
     proof: { title: 'Proof', components: ['StatStrip', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid'] },
-    editorial: { title: 'Editorial', components: ['FeaturedArticle', 'InsightsGrid', 'Figure'] },
+    editorial: { title: 'Editorial', components: ['IntelBand', 'FeaturedArticle', 'InsightsGrid', 'Figure'] },
     commerce: { title: 'Commerce', components: ['Storefront'] },
     contact: { title: 'Contact', components: ['TimeCounter', 'BookDeepDive', 'ContactBand'] },
   },
