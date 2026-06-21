@@ -356,3 +356,22 @@ Ran a mobile audit of the hub at 390px. Mostly clean (no horizontal document ove
 
 ## Overnight loop — 2026-06-21 — public-page mobile audit (pass 8): CLEAN, nothing shipped
 Audited the public marketing pages at phone width (home, insights, contact). All clean: no horizontal scroll on any page, layouts hold, 0 console errors; the mobile nav collapses to the compact "Home ▾" dropdown as intended. These pages went through a dedicated responsiveness pass + the pass-3 a11y fixes and remain solid, so there was nothing genuine to fix. Recording this as an honest clean cycle rather than manufacturing churn. (Note: the preview viewport doesn't cleanly resize to 390px — innerWidth stayed ~452 while the media-query width was 390 — so I verified via the real signal, `horizontallyScrollable`, plus a visual check, not raw pixel offsets.) No code change, no deploy. Directions queue empty.
+
+## Morning handoff — 2026-06-21 — AI Intelligence Hub overnight loop
+Eight build passes plus a review-workflow pass took the Intel Hub (#intel) from Phase-A prototype to a comprehensively built, polished feature. All shipped through the build + 51 tests + preview (0 console errors) + adversarial-review gate, deployed live to greatstone-home.netlify.app/puck-proof/#intel, each commit scoped so it never collided with the parallel DX-hub loop.
+
+**Shipped + live:**
+- Pass 1 (`b1165b9`): rewrote all 27 "takes" for genuine voice variety (the formulaic "question to explore" close went from ~24/27 to 0); baked a durable content-generation contract into docs/AI-INTEL-HUB-PLAN.md; fixed the "AI security" radar label + caption overlap; added a tasteful three.js constellation accent behind the hero; a branded loading state; and made Compare discoverable.
+- Pass 2 (`9bcb19d`): rebuilt Compare from three stacked cards into a real side-by-side comparison matrix (semantic table, leader-per-pillar highlighted, cross-board honesty note, board+name identity).
+- Pass 3 (in `4378d3d`, absorbed by the DX loop's concurrent commit): a 17-agent, 5-lens adversarial review workflow over the hub AND the wider public site; 8 confirmed objective defects fixed (Compare a11y + a StrictMode bug; BookDeepDive form ids; PillarExplorer keyboard tablist; InsightsGrid live region + timer leak; App.jsx dead code).
+- Pass 4 (`2704fd2`): a "What's moving" momentum section on Overview (new entrants + risers from the vetted delta data) + 2 held a11y fixes (Overview heading order, dangling tab aria-controls).
+- Pass 5 (`6fee3fe`): briefing cards refactored from an invalid `<button>`-wrapping-heading-and-link into valid `<article>` + stretched toggle (whole-card click preserved).
+- Pass 6 (`9834db7`): the radar's topic labels became buttons; tapping one filters the briefing feed (the personalisation visual is now navigation).
+- Pass 7 (`b5e8fa7`): mobile fixes (radar horizontal-label clipping + 27px tap targets).
+- Pass 8 (`354a168`): public-page mobile audit (home/insights/contact) came up clean; recorded honestly, nothing shipped.
+
+**Needs John (parked, not autonomous):**
+- "Deepen the curated content": the hub content is a curated simulated-2026 landscape, so regenerating from real sources would fabricate client-facing claims or break the narrative. It needs a real news API or your sign-off on the simulated-content approach + source roster.
+- The Invite block's hardcoded `id="invite"` (possible intentional anchor) and a handful of earlier-filed content/claims tickets (Proof substantiation, Deep-Dive duration mismatch, Deloitte/Lloyds/NHS framing) remain your calls.
+
+**Now:** the loop is in a watching posture at a 30-minute cadence. Directions + ready-for-nightly queues are empty; it checks them each wake and will pick up + ship anything you add through the usual gate.
