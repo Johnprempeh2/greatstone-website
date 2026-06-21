@@ -17,8 +17,8 @@ const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).s
 // won/lost/cancelled); customers should see plain-English states, not "Lost"/"Cancelled".
 const QUOTE_LABEL = { new: 'In review', contacted: 'In review', quoted: 'Quote ready', won: 'Accepted', lost: 'Closed', cancelled: 'Closed' };
 const quoteLabel = (s) => QUOTE_LABEL[s] || (String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1));
-// Account settings tabs (WT-14): Profile / Security / Billing as a conformant ARIA tablist.
-const SETTINGS_TABS = [{ id: 'profile', label: 'Profile' }, { id: 'security', label: 'Security' }, { id: 'billing', label: 'Billing' }];
+// One tab per account area — each panel shows ONLY its own content (purchases, keys, then settings).
+const ACCOUNT_TABS = [{ id: 'orders', label: 'Purchases' }, { id: 'keys', label: 'Licence keys' }, { id: 'profile', label: 'Profile' }, { id: 'security', label: 'Security' }, { id: 'billing', label: 'Billing' }];
 
 export default function AccountDashboard({ recovery = false, onRecoveryDone, onLanded } = {}) {
   const [session, setSession] = useState(undefined); // undefined = checking
@@ -130,16 +130,16 @@ function Dashboard({ session, profile, onProfile }) {
   const [toast, setToast] = useState(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
-  const [settingsTab, setSettingsTab] = useState('profile');
-  const onSettingsTabKey = (e, i) => {
+  const [tab, setTab] = useState('orders');
+  const onTabKey = (e, i) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
-    const last = SETTINGS_TABS.length - 1;
+    const last = ACCOUNT_TABS.length - 1;
     const n = e.key === 'ArrowRight' ? (i === last ? 0 : i + 1)
       : e.key === 'ArrowLeft' ? (i === 0 ? last : i - 1)
         : e.key === 'Home' ? 0 : last;
-    setSettingsTab(SETTINGS_TABS[n].id);
-    const el = document.getElementById('acct-tab-' + SETTINGS_TABS[n].id);
+    setTab(ACCOUNT_TABS[n].id);
+    const el = document.getElementById('acct-tab-' + ACCOUNT_TABS[n].id);
     if (el) el.focus();
   };
 
@@ -220,111 +220,117 @@ function Dashboard({ session, profile, onProfile }) {
       </div>
 
       <div className="acct-settings">
-        <div className="ca-tabs acct-tabs" role="tablist" aria-label="Account settings">
-          {SETTINGS_TABS.map((t, i) => (
+        <div className="ca-tabs acct-tabs" role="tablist" aria-label="Your account">
+          {ACCOUNT_TABS.map((t, i) => (
             <button key={t.id} id={'acct-tab-' + t.id} role="tab" type="button"
-              aria-selected={settingsTab === t.id} aria-controls={'acct-panel-' + t.id}
-              tabIndex={settingsTab === t.id ? 0 : -1}
-              className={settingsTab === t.id ? 'on' : ''}
-              onClick={() => setSettingsTab(t.id)} onKeyDown={(e) => onSettingsTabKey(e, i)}>{t.label}</button>
+              aria-selected={tab === t.id} aria-controls={'acct-panel-' + t.id}
+              tabIndex={tab === t.id ? 0 : -1}
+              className={tab === t.id ? 'on' : ''}
+              onClick={() => setTab(t.id)} onKeyDown={(e) => onTabKey(e, i)}>{t.label}</button>
           ))}
         </div>
-        <div role="tabpanel" id="acct-panel-profile" aria-labelledby="acct-tab-profile" hidden={settingsTab !== 'profile'}>
+
+        {/* Purchases — order history + quotes */}
+        <div role="tabpanel" id="acct-panel-orders" aria-labelledby="acct-tab-orders" hidden={tab !== 'orders'}>
+          <div className="acct-ordhead">
+            <h2>Order history</h2>
+            {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
+          </div>
+          <div className="ca-table-wrap">
+            <table className="ca-table acct-orders">
+              <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                {loadingOrders ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">Loading your orders…</span></td></tr>
+                  : ordersErr ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="alert">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></span></td></tr>
+                    : !orders.length ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></span></td></tr>
+                      : orders.map(o => {
+                        const expanded = open === o.id;
+                        return (
+                          <React.Fragment key={o.id}>
+                            <tr className="acct-ordrow" onClick={() => setOpen(expanded ? null : o.id)}>
+                              <td data-label="Date">{fmtDate(o.placed_at || o.created_at)}</td>
+                              <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code></td>
+                              <td data-label="Items">{(o.order_items || []).length}</td>
+                              <td data-label="Total" className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
+                              <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
+                              <td className="ca-ord-actions acct-ord-cell-actions">
+                                <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
+                                {o.invoice_number && <a className="gs-btn ghost sm" href={'#invoice/' + o.id} onClick={(e) => e.stopPropagation()}>Invoice</a>}
+                                <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
+                              </td>
+                            </tr>
+                            {expanded && (
+                              <tr className="ca-ord-detailrow" id={'ord-' + o.id}><td colSpan="6">
+                                <div className="ca-ord-items">
+                                  {(o.order_items || []).map(it => (
+                                    <div key={it.id} className="ca-ord-item">
+                                      <span className="oi-name">{it.offering_name}{it.variant_name ? ' · ' + it.variant_name : ''}</span>
+                                      <span className="oi-qty">×{it.qty}</span>
+                                      <span className="oi-amt">{fmtMoney(it.line_total_minor, o.currency)}</span>
+                                    </div>
+                                  ))}
+                                  <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
+                                  <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
+                                  {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
+                                </div>
+                              </td></tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+              </tbody>
+            </table>
+          </div>
+          {(quotes.length > 0 || quotesErr) && <>
+            <div className="acct-ordhead" style={{ marginTop: 28 }}><h2>Quotes</h2></div>
+            <div className="ca-table-wrap">
+              <table className="ca-table acct-orders">
+                <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Invoice</span></th></tr></thead>
+                <tbody>
+                  {quotesErr
+                    ? <tr><td colSpan="5" className="ca-muted" data-label=""><span role="alert">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></span></td></tr>
+                    : quotes.map(qt => {
+                      const ord = (qt.orders || [])[0];
+                      return (
+                    <tr key={qt.id}>
+                      <td data-label="Date">{fmtDate(qt.created_at)}</td>
+                      <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
+                      <td data-label="Total" className="ca-amt">
+                        {qt.quoted_total_minor != null
+                          ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}</>
+                          : qt.indicative_total_minor != null
+                            ? <>{fmtMoney(qt.indicative_total_minor, qt.currency)} <span className="ca-muted">(indicative, ex VAT)</span></>
+                            : '–'}
+                      </td>
+                      <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{quoteLabel(qt.status)}</span></td>
+                      <td data-label="Invoice">{ord ? <a className="ca-link" href={'#invoice/' + ord.id}>View invoice{ord.invoice_number ? ' ' + ord.invoice_number : ''}</a> : '–'}</td>
+                    </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </>}
+        </div>
+
+        {/* Licence keys */}
+        <div role="tabpanel" id="acct-panel-keys" aria-labelledby="acct-tab-keys" hidden={tab !== 'keys'}>
+          <LicenceKeys />
+        </div>
+
+        <div role="tabpanel" id="acct-panel-profile" aria-labelledby="acct-tab-profile" hidden={tab !== 'profile'}>
           <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
         </div>
-        <div role="tabpanel" id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={settingsTab !== 'security'}>
+        <div role="tabpanel" id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={tab !== 'security'}>
           <SecurityCard email={profile?.email} lastSignIn={session.user?.last_sign_in_at} flash={flash} />
         </div>
-        <div role="tabpanel" id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={settingsTab !== 'billing'}>
+        <div role="tabpanel" id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={tab !== 'billing'}>
           <div className="pr-form">
             <h2>Billing &amp; cards</h2>
             <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal.</p>
             <button className="gs-btn ghost" onClick={openPortal} disabled={portalBusy}>{portalBusy ? 'Opening…' : 'Manage billing & cards →'}</button>
           </div>
         </div>
-      </div>
-
-      {(quotes.length > 0 || quotesErr) && <>
-        <div className="acct-ordhead"><h2>Quotes</h2></div>
-        <div className="ca-table-wrap">
-          <table className="ca-table acct-orders">
-            <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Invoice</span></th></tr></thead>
-            <tbody>
-              {quotesErr
-                ? <tr><td colSpan="5" className="ca-muted" data-label=""><span role="alert">Couldn't load your quotes. <button className="ca-link" onClick={loadQuotes}>Try again</button></span></td></tr>
-                : quotes.map(qt => {
-                  const ord = (qt.orders || [])[0];
-                  return (
-                <tr key={qt.id}>
-                  <td data-label="Date">{fmtDate(qt.created_at)}</td>
-                  <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
-                  <td data-label="Total" className="ca-amt">
-                    {qt.quoted_total_minor != null
-                      ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}</>
-                      : qt.indicative_total_minor != null
-                        ? <>{fmtMoney(qt.indicative_total_minor, qt.currency)} <span className="ca-muted">(indicative, ex VAT)</span></>
-                        : '–'}
-                  </td>
-                  <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{quoteLabel(qt.status)}</span></td>
-                  <td data-label="Invoice">{ord ? <a className="ca-link" href={'#invoice/' + ord.id}>View invoice{ord.invoice_number ? ' ' + ord.invoice_number : ''}</a> : '–'}</td>
-                </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
-      </>}
-
-      <LicenceKeys />
-
-      <div className="acct-ordhead">
-        <h2>Order history</h2>
-        {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
-      </div>
-      <div className="ca-table-wrap">
-        <table className="ca-table acct-orders">
-          <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
-          <tbody>
-            {loadingOrders ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">Loading your orders…</span></td></tr>
-              : ordersErr ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="alert">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></span></td></tr>
-                : !orders.length ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></span></td></tr>
-                  : orders.map(o => {
-                    const expanded = open === o.id;
-                    return (
-                      <React.Fragment key={o.id}>
-                        <tr className="acct-ordrow" onClick={() => setOpen(expanded ? null : o.id)}>
-                          <td data-label="Date">{fmtDate(o.placed_at || o.created_at)}</td>
-                          <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code></td>
-                          <td data-label="Items">{(o.order_items || []).length}</td>
-                          <td data-label="Total" className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
-                          <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
-                          <td className="ca-ord-actions acct-ord-cell-actions">
-                            <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
-                            {o.invoice_number && <a className="gs-btn ghost sm" href={'#invoice/' + o.id} onClick={(e) => e.stopPropagation()}>Invoice</a>}
-                            <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
-                          </td>
-                        </tr>
-                        {expanded && (
-                          <tr className="ca-ord-detailrow" id={'ord-' + o.id}><td colSpan="6">
-                            <div className="ca-ord-items">
-                              {(o.order_items || []).map(it => (
-                                <div key={it.id} className="ca-ord-item">
-                                  <span className="oi-name">{it.offering_name}{it.variant_name ? ' · ' + it.variant_name : ''}</span>
-                                  <span className="oi-qty">×{it.qty}</span>
-                                  <span className="oi-amt">{fmtMoney(it.line_total_minor, o.currency)}</span>
-                                </div>
-                              ))}
-                              <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
-                              <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
-                              {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
-                            </div>
-                          </td></tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-          </tbody>
-        </table>
       </div>
       {toast && <div className="ca-toast" role="status">{toast}</div>}
     </div>
