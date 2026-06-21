@@ -18,6 +18,8 @@ const TABS = [
 
 // short radar-axis labels (the full topic labels are too long / "AI security" would read as just "AI")
 const SHORT = { 'frontier-models': 'Frontier', 'ai-security': 'Security', infrastructure: 'Infra', 'open-source': 'Open', multimodal: 'Multimodal' };
+// camelCase pillar keys → readable labels (codeQuality → "Code quality")
+const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
 const Spark = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 2l2.2 6.3L21 10l-5 4.2L17.5 21 12 17.3 6.5 21 8 14.2 3 10l6.8-1.7L12 2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>);
 const X = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>);
 
@@ -269,7 +271,11 @@ export default function IntelHub({ onClose }) {
     if (c.length >= 3) return c;
     const next = [...c, { board, name }]; recordCompare(next.map((x) => x.name)); return next;
   });
-  const cmpRows = compare.map((c) => (boardsData[c.board] || []).find((r) => r.name === c.name)).filter(Boolean);
+  // keep the board on each row: a name can legitimately exist on two boards, so identity is board+name
+  const cmpRows = compare.map((c) => { const r = (boardsData[c.board] || []).find((x) => x.name === c.name); return r ? { ...r, _board: c.board } : null; }).filter(Boolean);
+  const cmpPillars = [...new Set(cmpRows.flatMap((r) => Object.keys(r.pillars || {})))];
+  const cmpMaxScore = cmpRows.length ? Math.max(...cmpRows.map((r) => r.score)) : 0;
+  const cmpMultiBoard = new Set(compare.map((c) => c.board)).size > 1;
 
   return (
     <section className="ih-root" ref={rootRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Greatstone AI Intelligence">
@@ -433,22 +439,55 @@ export default function IntelHub({ onClose }) {
             <div className="ih-panel" role="tabpanel" id="ih-panel-compare" aria-labelledby="ih-tab-compare" tabIndex={0}>
               <span className="ih-eyebrow">Side by side</span>
               <h2 className="ih-h2">Compare</h2>
-              <p className="ih-sub">Add up to three entries from any leaderboard (open a row and "Add to compare"), then read them head to head.</p>
+              <p className="ih-sub">Add up to three entries from any leaderboard (hit "Compare" on a row), then read them head to head. The leader in each pillar is highlighted.</p>
               {cmpRows.length ? (
-                <div className="ih-cmp-grid" style={{ marginTop: 22 }}>
-                  {cmpRows.map((r) => (
-                    <div className="ih-cmp-card" key={r.name}>
-                      <div className="ih-pod-name">{r.name}</div>
-                      <div className="ih-pod-co">{r.company}</div>
-                      <div className="ih-pod-score"><b>{r.score}</b><span>/ 100</span></div>
-                      <div className="ih-pillars" style={{ marginTop: 14 }}>
-                        {Object.entries(r.pillars || {}).map(([k, v]) => (
-                          <div className="ih-pillar" key={k}><span className="pn">{k}</span><span className="pb" aria-hidden="true"><i style={{ width: v + '%' }} /></span><span className="pv">{v}</span></div>
+                <div className="ih-cmp-wrap" style={{ marginTop: 22 }}>
+                  <table className="ih-cmp-table">
+                    <caption className="gs-sr-only">Comparison of {cmpRows.map((r) => r.name).join(', ')}. The leader in each row is marked.</caption>
+                    <thead>
+                      <tr>
+                        <td className="ih-cmp-corner" />
+                        {cmpRows.map((r) => (
+                          <th scope="col" key={r._board + '|' + r.name}>
+                            <div className="ih-cmp-name">{r.name}</div>
+                            <div className="ih-cmp-co">{r.company}</div>
+                            <button className="ih-cmp-x" aria-label={'Remove ' + r.name + ' from compare'} onClick={() => setCompare((c) => c.filter((x) => !(x.board === r._board && x.name === r.name)))}><X /></button>
+                          </th>
                         ))}
-                      </div>
-                      <button className="ih-cmp-btn" style={{ marginTop: 14 }} onClick={() => setCompare((c) => c.filter((x) => x.name !== r.name))}>Remove</button>
-                    </div>
-                  ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="ih-cmp-scorerow">
+                        <th scope="row">Score</th>
+                        {cmpRows.map((r) => (
+                          <td key={r._board + '|' + r.name} className={r.score === cmpMaxScore ? 'lead' : ''}>
+                            <b>{r.score}</b><span className="u">/100</span>
+                            {r.score === cmpMaxScore && cmpRows.length > 1 && <span className="ih-cmp-lead" aria-label="leads">★</span>}
+                          </td>
+                        ))}
+                      </tr>
+                      {cmpPillars.map((k) => {
+                        const vals = cmpRows.map((r) => (r.pillars && r.pillars[k] != null ? r.pillars[k] : -1));
+                        const lead = Math.max(...vals);
+                        return (
+                          <tr key={k}>
+                            <th scope="row">{humanize(k)}</th>
+                            {cmpRows.map((r) => {
+                              const v = r.pillars && r.pillars[k];
+                              if (v == null) return <td key={r._board + '|' + r.name} className="na" aria-label="not rated">·</td>;
+                              return (
+                                <td key={r._board + '|' + r.name} className={v === lead && cmpRows.length > 1 ? 'lead' : ''}>
+                                  <span className="ih-cmp-bar" aria-hidden="true"><i style={{ width: v + '%' }} /></span>
+                                  <span className="ih-cmp-val">{v}</span>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {cmpMultiBoard && <p className="ih-cmp-note">You are comparing across different boards, so only the composite score lines up directly; the pillars differ by category.</p>}
                 </div>
               ) : (
                 <div className="ih-cmp-empty" style={{ marginTop: 22 }}>
