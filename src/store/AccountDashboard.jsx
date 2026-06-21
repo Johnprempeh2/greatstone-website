@@ -239,8 +239,9 @@ function Dashboard({ session, profile, onProfile }) {
 
       <div className="org-stats" style={{ marginBottom: 20 }}>
         <div className="org-stat"><div className="org-stat-v">{loadingOrders ? '…' : fmtMoney(totalSpent, curr)}</div><div className="org-stat-l">Invested</div></div>
-        <div className="org-stat"><div className="org-stat-v">{loadingOrders ? '…' : orders.length}</div><div className="org-stat-l">Orders</div></div>
-        <div className="org-stat"><div className="org-stat-v">{openQuotes}</div><div className="org-stat-l">Open quotes</div></div>
+        {/* count + spend both exclude cancelled/refunded, so the two tiles can't disagree; tiles jump to the Purchases tab */}
+        <button type="button" className="org-stat" onClick={() => setTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your orders"><div className="org-stat-v">{loadingOrders ? '…' : liveOrders.length}</div><div className="org-stat-l">Orders</div></button>
+        <button type="button" className="org-stat" onClick={() => setTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your quotes"><div className="org-stat-v">{openQuotes}</div><div className="org-stat-l">Open quotes</div></button>
       </div>
 
       <div className="acct-settings">
