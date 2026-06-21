@@ -256,6 +256,25 @@
 .ci-sub { font-size:1.1rem; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:10px; }
 .ci-reqs { margin-bottom:8px; }
 
+/* first-run onboarding checklist (#org) */
+.org-onboard { margin:8px 0 24px; padding:20px 22px; border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); border-radius:16px; background:var(--gs-accent-soft); }
+.org-onboard-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.org-onboard-head h2 { font-size:1.25rem; font-weight:900; letter-spacing:-.02em; margin-top:.15em; }
+.org-onboard-x { background:none; border:0; color:var(--gs-text-faint); font-size:1.5rem; line-height:1; cursor:pointer; padding:2px 6px; }
+.org-onboard-x:hover { color:var(--gs-text); }
+.org-onboard-prog { height:6px; border-radius:100px; background:rgba(255,255,255,.08); overflow:hidden; margin:14px 0 6px; }
+.org-onboard-bar { height:100%; background:var(--gs-accent); border-radius:100px; transition:width var(--gs-dur,300ms) ease; }
+.org-onboard-count { font-size:.78rem; color:var(--gs-text-muted); margin-bottom:12px; }
+.org-onboard-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.org-onboard-step { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.07)); }
+.org-onboard-check { flex:0 0 auto; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:.8rem; font-weight:900; border:2px solid var(--gs-border,rgba(200,255,0,.2)); color:var(--gs-accent); }
+.org-onboard-step.done .org-onboard-check { background:var(--gs-accent); border-color:var(--gs-accent); color:#0e1611; }
+.org-onboard-step.done .org-onboard-label b { color:var(--gs-text-muted); text-decoration:line-through; }
+.org-onboard-label { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.org-onboard-label b { color:var(--gs-text); font-size:.92rem; }
+.org-onboard-label span { color:var(--gs-text-faint); font-size:.78rem; }
+@media (max-width:520px){ .org-onboard-step { flex-wrap:wrap; } }
+
 /* ── DX engagement timeline ──────────────────────────────────────────────────── */
 .dx-section { margin-top:36px; }
 .dx-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }

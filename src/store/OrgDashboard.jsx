@@ -172,6 +172,8 @@ function Org({ profile, session, onProfile }) {
 
       {err && <div className="ca-err" role="alert" style={{ marginBottom: 16 }}>Some data couldn't load. <button className="ca-link" onClick={load}>Try again</button></div>}
 
+      <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} />
+
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
 
       <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
@@ -187,6 +189,46 @@ function Org({ profile, session, onProfile }) {
 
 function Stat({ label, value }) {
   return <div className="org-stat"><div className="org-stat-v">{value}</div><div className="org-stat-l">{label}</div></div>;
+}
+
+// First-run setup checklist — shown until the company is set up (or dismissed). Steps derive from data
+// already loaded, so it self-completes; admins get the action buttons, members see progress.
+function OnboardingChecklist({ company, admin, members, engagements, orders }) {
+  const key = 'gs-org-onboard:' + company.id;
+  const [dismissed, setDismissed] = useState(() => { try { return localStorage.getItem(key) === '1'; } catch { return false; } });
+  if (members === null || engagements === null || orders === null) return null; // wait for data
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const steps = [
+    { id: 'profile', label: 'Complete your company profile', hint: 'Add your website and a note about your goals.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => scrollTo('org-co-h') } : null },
+    { id: 'team', label: 'Invite your team', hint: 'Bring your colleagues into the portal.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => scrollTo('org-mem-h') } : null },
+    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a deep dive', href: '#contact' } },
+    { id: 'order', label: 'Place your first order', hint: 'Explore the Greatstone software catalogue.', done: (orders || []).length > 0, cta: { label: 'Browse the store', href: '#shop' } },
+  ];
+  const doneCount = steps.filter(s => s.done).length;
+  if (dismissed || doneCount === steps.length) return null; // fully set up or dismissed → hide
+  const dismiss = () => { try { localStorage.setItem(key, '1'); } catch { /* ignore */ } setDismissed(true); };
+  const pct = Math.round((doneCount / steps.length) * 100);
+  return (
+    <section className="org-onboard" aria-labelledby="org-ob-h">
+      <div className="org-onboard-head">
+        <div><span className="st-kicker">Get started</span><h2 id="org-ob-h">Set up your organization</h2></div>
+        <button type="button" className="org-onboard-x" onClick={dismiss} aria-label="Dismiss setup checklist">×</button>
+      </div>
+      <div className="org-onboard-prog"><div className="org-onboard-bar" style={{ width: pct + '%' }} role="progressbar" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length} aria-label="Setup progress" /></div>
+      <p className="org-onboard-count">{doneCount} of {steps.length} complete</p>
+      <ul className="org-onboard-list">
+        {steps.map(s => (
+          <li key={s.id} className={'org-onboard-step' + (s.done ? ' done' : '')}>
+            <span className="org-onboard-check" aria-hidden="true">{s.done ? '✓' : ''}</span>
+            <span className="org-onboard-label"><b>{s.label}</b><span>{s.done ? 'Done' : s.hint}</span></span>
+            {!s.done && s.cta && (s.cta.href
+              ? <a className="gs-btn ghost sm" href={s.cta.href}>{s.cta.label}</a>
+              : <button type="button" className="gs-btn ghost sm" onClick={s.cta.onClick}>{s.cta.label}</button>)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 // ── DX engagement timeline ────────────────────────────────────────────────────

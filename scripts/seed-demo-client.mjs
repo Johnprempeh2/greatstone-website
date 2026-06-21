@@ -47,6 +47,15 @@ async function ensureCustomer(slug, name, domain, tier_id) {
   if (error) throw new Error(`customer ${slug}: ${error.message}`); return data.id;
 }
 
+// 2b) A fresh company — no domain/notes/tier, so the #org onboarding checklist shows as incomplete.
+async function ensureCustomerFresh(slug, name) {
+  const { data: existing } = await a.from('customers').select('id').eq('org_id', ORG_ID).eq('slug', slug).maybeSingle();
+  const fields = { name, domain: null, notes: null, tier_id: null, metadata: { demo: true, self_signup: true } };
+  if (existing) { await a.from('customers').update(fields).eq('id', existing.id); return existing.id; }
+  const { data, error } = await a.from('customers').insert({ org_id: ORG_ID, slug, ...fields }).select('id').single();
+  if (error) throw new Error(`fresh customer ${slug}: ${error.message}`); return data.id;
+}
+
 // 3) Member (customer_user + linked auth) ---------------------------------------------------------------
 async function ensureMember(customer_id, email, full_name, { is_primary = false, role = 'member', phone = null } = {}) {
   const auth_subject = await ensureAuthUser(email, full_name);
@@ -164,8 +173,14 @@ async function run() {
   });
   if (qe) console.log(`quote (non-fatal): ${qe.message}`); else console.log('quote seeded: 1');
 
+  // 7) A fresh, just-signed-up client to show the first-run onboarding + empty states -----------------
+  const fresh = await ensureCustomerFresh('northwind', 'Northwind Logistics');
+  const freshAdmin = await ensureMember(fresh, 'demo-fresh@greatstone.dev', 'Yaw Boateng', { is_primary: true, role: 'admin' });
+  console.log(`fresh company Northwind Logistics = ${fresh}\n  admin = ${freshAdmin} (demo-fresh@greatstone.dev) — no engagements/orders, shows onboarding`);
+
   console.log('\n✅ done. Sign in at #account as:');
-  console.log('   demo-client@greatstone.dev / stone   (company admin — Ethical Quest)');
-  console.log('   demo-member@greatstone.dev / stone   (member)');
+  console.log('   demo-client@greatstone.dev / stone   (company admin — Ethical Quest, full DX journey)');
+  console.log('   demo-member@greatstone.dev / stone   (member of Ethical Quest)');
+  console.log('   demo-fresh@greatstone.dev  / stone   (admin — Northwind, brand-new: onboarding + empty states)');
 }
 run().catch((e) => { console.error('\n❌', e.message); process.exit(1); });
