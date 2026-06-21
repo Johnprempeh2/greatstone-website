@@ -12,38 +12,61 @@ import './store.css';
 import './admin.css';
 
 const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// the viewer's LOCAL calendar date (occurred_on is a local DATE) — a UTC date flips past/upcoming at the day boundary
+const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
 const periodOf = (iso) => { try { const d = new Date(iso); return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); } catch { return 'Earlier'; } };
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };
 const KIND_PLURAL = { recap: 'Recaps', milestone: 'Milestones', deliverable: 'Deliverables', kickoff: 'Kickoffs', review: 'Reviews', note: 'Notes' };
 const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled markers — the journey anchors
 
-// Minimal allowlist sanitiser for staff-authored inline recap HTML. Strips scripts/handlers/unknown tags
-// and forces safe links — defence-in-depth even though authors are staff. Browser-only (DOMParser).
-const ALLOWED = new Set(['P', 'H3', 'H4', 'H5', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'A', 'BR', 'BLOCKQUOTE', 'CODE', 'PRE', 'SPAN', 'HR']);
-function sanitizeHtml(html) {
-  if (!html || typeof window === 'undefined') return '';
+// Allowlist sanitiser for staff-authored inline recap HTML — defence-in-depth even though authors are
+// staff. Browser-only (DOMParser). The output is re-parsed by React (dangerouslySetInnerHTML), so this
+// must survive the round-trip: (a) foreign-content / rawtext containers (svg/math/style/noscript/…) are
+// DROPPED ENTIRELY rather than unwrapped — unwrapping them is the classic mutation-XSS vector; (b) any
+// heading is demoted to <h5> so a recap can't break the page heading order (card title is <h4>); (c) the
+// whole pass runs to a fixpoint so a string that re-parses differently can't smuggle live nodes through.
+const ALLOWED = new Set(['P', 'H5', 'H6', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'A', 'BR', 'BLOCKQUOTE', 'CODE', 'PRE', 'SPAN', 'HR']);
+const DROP_ENTIRELY = new Set(['SCRIPT', 'STYLE', 'SVG', 'MATH', 'NOSCRIPT', 'TEMPLATE', 'TEXTAREA', 'TITLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'HEAD', 'FRAME', 'FRAMESET', 'XMP']);
+const DEMOTE = new Set(['H1', 'H2', 'H3', 'H4']); // any body heading sits below the <h4> card title
+
+function sanitizeOnce(html) {
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
   const root = doc.body.firstChild;
   const walk = (node) => {
     for (const el of Array.from(node.children || [])) {
-      if (!ALLOWED.has(el.tagName)) { el.replaceWith(...Array.from(el.childNodes)); continue; }
+      const tag = el.tagName;
+      if (DROP_ENTIRELY.has(tag)) { el.remove(); continue; }                 // drop the whole subtree
+      if (DEMOTE.has(tag)) {                                                  // rename heading → h5
+        const h = doc.createElement('h5');
+        while (el.firstChild) h.appendChild(el.firstChild);
+        el.replaceWith(h); walk(h); continue;
+      }
+      if (!ALLOWED.has(tag)) { el.replaceWith(...Array.from(el.childNodes)); continue; } // unwrap benign unknown (fixpoint re-cleans promoted children)
       for (const attr of Array.from(el.attributes)) {
         const n = attr.name.toLowerCase();
-        if (n.startsWith('on')) { el.removeAttribute(attr.name); continue; }
         if (el.tagName === 'A' && n === 'href') {
           if (!/^(https?:|mailto:)/i.test(attr.value.trim())) el.removeAttribute('href');
-          else { el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
           continue;
         }
-        if (n !== 'class') el.removeAttribute(attr.name);
+        if (n !== 'class') el.removeAttribute(attr.name);                     // strips on* handlers + everything else
+      }
+      if (el.tagName === 'A' && el.getAttribute('href')) {
+        el.setAttribute('target', '_blank');
+        el.setAttribute('rel', 'noopener noreferrer');
+        el.setAttribute('aria-label', (el.textContent || 'link').trim() + ' (opens in a new tab)');
       }
       walk(el);
     }
   };
   walk(root);
   return root.innerHTML;
+}
+function sanitizeHtml(html) {
+  if (!html || typeof window === 'undefined') return '';
+  let out = String(html);
+  for (let i = 0; i < 6; i++) { const next = sanitizeOnce(out); if (next === out) break; out = next; } // fixpoint
+  return out;
 }
 const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'link'; } };
 
@@ -85,13 +108,15 @@ function Org({ profile, session, onProfile }) {
 
   const load = useCallback(() => {
     setErr(null);
-    supabase.from('customer_users').select('id, email, full_name, phone, is_primary, role, created_at')
+    supabase.from('customer_users').select('id, email, full_name, is_primary, role, created_at')
       .is('deleted_at', null).eq('customer_id', company.id)
       .order('is_primary', { ascending: false }).order('created_at', { ascending: true })
       .then(({ data, error }) => { if (error) setErr(error); setMembers(data || []); });
+    // RLS (customer_self, 0013) already scopes to this company's shared, live items; the explicit
+    // filters are belt-and-braces so a future RLS regression fails closed (empty) instead of leaking.
     supabase.from('engagements')
       .select('id, kind, status, title, summary, body_html, external_url, occurred_on, phase, owner_name, attendees, tags, pinned, created_at')
-      .is('deleted_at', null).order('occurred_on', { ascending: false })
+      .is('deleted_at', null).eq('customer_id', company.id).eq('status', 'shared').order('occurred_on', { ascending: false })
       .then(({ data, error }) => { if (error) setErr(error); setEngagements(data || []); });
     supabase.from('orders').select('id, reference, status, currency, total_minor, placed_at, created_at, customer_user_id, invoice_number')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(50)
@@ -171,7 +196,8 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   const seenKey = 'gs-dx-seen:' + companyId;
   // baseline last-visit: first ever visit establishes "now" (so nothing floods as new); thereafter compare.
   const [lastSeen] = useState(() => { try { return localStorage.getItem(seenKey); } catch { return null; } });
-  useEffect(() => { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch { /* ignore */ } }, [seenKey]);
+  // mark "seen" only when LEAVING the view, so the "new" treatment survives the whole visit
+  useEffect(() => () => { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch { /* ignore */ } }, [seenKey]);
 
   if (engagements === null) return (
     <section className="dx-section" aria-busy="true">
@@ -188,6 +214,12 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   const pinned = past.filter(e => e.pinned);
   const kindsPresent = [...new Set(past.map(e => e.kind))];
 
+  const scrollToNewest = () => {
+    const n = past.find((e) => isNew(e));
+    setFilter('all'); setQ('');
+    if (n) { setOpenId(n.id); setTimeout(() => document.getElementById('dx-item-' + n.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }
+    else document.getElementById('dx-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   const matchQ = (e) => {
     if (!q.trim()) return true;
     const hay = [e.title, e.summary, e.phase, e.owner_name, (e.tags || []).join(' '), (e.attendees || []).join(' ')].join(' ').toLowerCase();
@@ -208,9 +240,15 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
       <div className="dx-head">
         <div>
           <span className="st-kicker">Digital experience</span>
-          <h2 id="dx-h">Your DX engagement{newCount > 0 && <span className="dx-newcount" title="Added since your last visit">{newCount} new</span>}</h2>
+          <h2 id="dx-h">Your DX engagement</h2>
           <p className="dx-sub">Your journey with Greatstone — recaps, milestones and deliverables, newest first.</p>
         </div>
+        {newCount > 0 && (
+          <button type="button" className="dx-newcount" onClick={scrollToNewest}
+            aria-label={`${newCount} ${newCount === 1 ? 'item' : 'items'} added since your last visit — jump to the newest`}>
+            {newCount} new
+          </button>
+        )}
       </div>
 
       {engagements.length === 0 ? (
@@ -252,31 +290,37 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
             </div>
           )}
 
-          <div className="dx-controls">
-            <div className="dx-chips" role="group" aria-label="Filter by type">
-              <button className={'dx-chip' + (filter === 'all' ? ' on' : '')} aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>All</button>
-              {kindsPresent.map(k => (
-                <button key={k} className={'dx-chip' + (filter === k ? ' on' : '')} aria-pressed={filter === k} onClick={() => setFilter(k)}>{KIND_PLURAL[k]}</button>
-              ))}
-            </div>
-            <input className="dx-search" type="search" placeholder="Search the timeline…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search engagements" />
-          </div>
-
-          {visible.length === 0 ? (
-            <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setQ(''); }}>Clear filters</button></p>
+          {past.length === 0 ? (
+            <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>Your timeline fills in after your first session — see “What's next” above.</p>
           ) : (
-            <div className="dx-timeline">
-              {groups.map(g => (
-                <div key={g.period} className="dx-group">
-                  <h3 className="dx-period">{g.period}</h3>
-                  <ol className="dx-list">
-                    {g.items.map(e => (
-                      <Item key={e.id} e={e} isNew={isNew(e)} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
-                    ))}
-                  </ol>
+            <>
+              <div className="dx-controls">
+                <div className="dx-chips" role="group" aria-label="Filter by type">
+                  <button className={'dx-chip' + (filter === 'all' ? ' on' : '')} aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>All</button>
+                  {kindsPresent.map(k => (
+                    <button key={k} className={'dx-chip' + (filter === k ? ' on' : '')} aria-pressed={filter === k} onClick={() => setFilter(k)}>{KIND_PLURAL[k]}</button>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <input className="dx-search" type="search" placeholder="Search the timeline…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search engagements" />
+              </div>
+
+              {visible.length === 0 ? (
+                <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setQ(''); }}>Clear filters</button></p>
+              ) : (
+                <div className="dx-timeline">
+                  {groups.map(g => (
+                    <div key={g.period} className="dx-group">
+                      <h3 className="dx-period">{g.period}</h3>
+                      <ol className="dx-list">
+                        {g.items.map(e => (
+                          <Item key={e.id} e={e} isNew={isNew(e)} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
+                        ))}
+                      </ol>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
       )}

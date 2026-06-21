@@ -314,20 +314,19 @@ function Dashboard({ session, profile, onProfile }) {
 }
 
 function ProfileCard({ profile, onProfile, flash }) {
-  const [company, setCompany] = useState(profile?.customer?.name || '');
+  // Personal page edits the PERSON only (name, phone). Company details live on the org dashboard,
+  // where editing is admin-gated (DB-enforced since migration 0014) — so this no longer writes customers.
   const [name, setName] = useState(profile?.full_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setCompany(profile?.customer?.name || ''); setName(profile?.full_name || ''); setPhone(profile?.phone || ''); }, [profile]);
+  useEffect(() => { setName(profile?.full_name || ''); setPhone(profile?.phone || ''); }, [profile]);
 
   const save = async () => {
+    if (!profile?.id) return;
     setBusy(true);
-    const tasks = [];
-    if (profile?.customer?.id) tasks.push(supabase.from('customers').update({ name: company.trim() }).eq('id', profile.customer.id));
-    if (profile?.id) tasks.push(supabase.from('customer_users').update({ full_name: name.trim() || null, phone: phone.trim() || null }).eq('id', profile.id));
-    const results = await Promise.all(tasks);
+    const { error } = await supabase.from('customer_users').update({ full_name: name.trim() || null, phone: phone.trim() || null }).eq('id', profile.id);
     setBusy(false);
-    if (results.some(r => r.error)) { flash('Could not save profile.'); return; }
+    if (error) { flash('Could not save profile.'); return; }
     flash('Profile saved.');
     getCustomerProfile().then(onProfile);
   };
@@ -335,9 +334,9 @@ function ProfileCard({ profile, onProfile, flash }) {
   return (
     <div className="pr-form">
       <h2>Profile</h2>
-      <label>Company<input value={company} onChange={e => setCompany(e.target.value)} autoComplete="organization" /></label>
       <label>Your name<input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
       <label>Phone<input value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" /></label>
+      {profile?.customer && <p className="ca-note">Company: <b>{profile.customer.name}</b> — manage company details in <a className="ca-link" href="#org">your organization</a>.</p>}
       <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
     </div>
   );

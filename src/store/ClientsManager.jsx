@@ -38,7 +38,7 @@ export default function ClientsManager({ staff }) {
       <header className="ca-head"><div><span className="st-kicker">Clients</span><h1>Clients &amp; DX engagements</h1></div></header>
       <p className="ca-note" style={{ marginBottom: 14 }}>Pick a client company to curate its digital-experience timeline — upload meeting recaps (inline or a link), milestones and deliverables they'll see on their organization dashboard.</p>
       <div className="ca-toolbar">
-        <input className="ca-search" placeholder="Search clients…" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="ca-search" placeholder="Search clients…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search clients" />
         <span className="ca-count">{customers.length} shown</span>
       </div>
       <div className="ca-table-wrap">
@@ -78,15 +78,15 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
 
   const toggleShare = async (e) => {
     const next = e.status === 'shared' ? 'draft' : 'shared';
-    const { error } = await supabase.from('engagements').update({ status: next }).eq('id', e.id);
-    if (error) { flash('Could not update.'); return; }
+    const { data, error } = await supabase.from('engagements').update({ status: next }).eq('id', e.id).select('id');
+    if (error || !data?.length) { flash(error ? 'Could not update.' : 'That item was not found — it may have been removed.'); load(); return; }
     flash(next === 'shared' ? 'Shared with the client.' : 'Hidden from the client (draft).');
     load();
   };
   const del = async (e) => {
     if (!confirm(`Delete “${e.title}”? This removes it from the client's timeline.`)) return;
-    const { error } = await supabase.from('engagements').update({ deleted_at: new Date().toISOString() }).eq('id', e.id);
-    if (error) { flash('Could not delete.'); return; }
+    const { data, error } = await supabase.from('engagements').update({ deleted_at: new Date().toISOString() }).eq('id', e.id).select('id');
+    if (error || !data?.length) { flash(error ? 'Could not delete.' : 'That item was already removed.'); load(); return; }
     flash('Deleted.'); load();
   };
 
@@ -113,9 +113,9 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
                   <tr key={e.id}>
                     <td data-label="Date">{fmtDate(e.occurred_on)}</td>
                     <td data-label="Type"><span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span></td>
-                    <td data-label="Title" className="ca-name">{e.title}{e.pinned && <span className="ca-star" title="Pinned">★</span>}</td>
+                    <td data-label="Title" className="ca-name">{e.title}{e.pinned && <><span className="ca-star" aria-hidden="true">★</span><span className="gs-sr-only"> Pinned</span></>}</td>
                     <td data-label="Content">{e.external_url ? <span className="ca-status ca-ord-confirmed">Link</span> : e.body_html ? <span className="ca-status ca-published">Inline</span> : <span className="ca-status ca-archived">—</span>}</td>
-                    <td data-label="Visibility">{e.status === 'shared' ? <span className="ca-status ca-published">Shared</span> : <span className="ca-status ca-draft">Draft</span>}</td>
+                    <td data-label="Visibility">{e.status === 'shared' ? <span className="ca-status ca-published">Shared</span> : e.status === 'archived' ? <span className="ca-status ca-archived">Archived</span> : <span className="ca-status ca-draft">Draft</span>}</td>
                     <td data-label="" className="ca-ord-actions">
                       <button className="gs-btn ghost sm" onClick={() => toggleShare(e)}>{e.status === 'shared' ? 'Unshare' : 'Share'}</button>
                       <button className="gs-btn ghost sm" onClick={() => setEditing(e)}>Edit</button>

@@ -242,9 +242,11 @@
 
 /* ── DX engagement timeline ──────────────────────────────────────────────────── */
 .dx-section { margin-top:36px; }
+.dx-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .dx-head h2 { font-size:clamp(1.3rem,2.6vw,1.7rem); font-weight:900; letter-spacing:-.02em; margin-top:.15em; }
 .dx-sub { color:var(--gs-text-muted); font-size:.88rem; margin-top:4px; }
-.dx-newcount { margin-left:.6em; font-size:.66rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:.28em .6em; border-radius:100px; background:var(--gs-accent); color:#0e1611; vertical-align:middle; }
+.dx-newcount { flex:0 0 auto; margin-top:.3em; border:0; cursor:pointer; font:inherit; font-size:.66rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:.4em .8em; border-radius:100px; background:var(--gs-accent); color:#0e1611; }
+.dx-newcount:hover { filter:brightness(1.08); }
 
 .dx-empty { text-align:center; padding:46px 24px; border:1px dashed var(--gs-border,rgba(200,255,0,.18)); border-radius:16px; background:rgba(255,255,255,.02); margin-top:14px; }
 .dx-empty-mark { font-size:2rem; color:var(--gs-accent); opacity:.7; }
@@ -280,7 +282,7 @@
   padding:8px 0 8px 28px; background:linear-gradient(rgba(12,14,12,.94),rgba(12,14,12,.82)); backdrop-filter:blur(4px); }
 .dx-list { list-style:none; margin:0; padding:0 0 0 8px; position:relative; }
 .dx-list::before { content:''; position:absolute; left:8px; top:6px; bottom:6px; width:2px; background:var(--gs-border,rgba(200,255,0,.16)); }
-.dx-item { position:relative; padding:0 0 16px 28px; }
+.dx-item { position:relative; padding:0 0 16px 28px; scroll-margin-top:96px; } /* clear the fixed header + sticky period label when focus/scroll lands here */
 .dx-marker { position:absolute; left:1px; top:6px; width:14px; height:14px; border-radius:50%; background:var(--gs-bg,#121212); border:2px solid var(--gs-accent-mid,rgba(200,255,0,.4)); box-shadow:0 0 0 4px rgba(12,14,12,.9); }
 .dx-item.is-anchor .dx-marker { background:var(--gs-accent); border-color:var(--gs-accent); width:16px; height:16px; left:0; }
 .dx-card { background:rgba(255,255,255,.025); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:14px; padding:16px 18px; transition:border-color var(--gs-dur-micro,150ms) ease; }
@@ -308,7 +310,7 @@
 .dx-host { font-size:.7rem; color:var(--gs-text-faint); font-weight:600; }
 .dx-body { margin-top:14px; padding-top:14px; border-top:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); font-size:.9rem; color:var(--gs-text-muted); line-height:1.6; }
 .dx-body .dx-lead { color:var(--gs-text); font-weight:600; }
-.dx-body h4 { font-size:.72rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--gs-text-faint); margin:14px 0 6px; }
+.dx-body h4, .dx-body h5, .dx-body h6 { font-size:.72rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--gs-text-faint); margin:14px 0 6px; }
 .dx-body ul { margin:0 0 4px; padding-left:20px; }
 .dx-body li { margin:3px 0; }
 .dx-body a { color:var(--gs-accent); }
