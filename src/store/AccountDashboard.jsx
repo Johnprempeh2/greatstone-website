@@ -182,6 +182,21 @@ function Dashboard({ session, profile, onProfile }) {
   }, []);
   useEffect(() => { loadQuotes(); }, [loadQuotes]);
 
+  // Licence keys grouped by the order they fulfil, so a buyer sees their keys in the context of the
+  // purchase. RLS (customer_self, 0017) already scopes this to the buyer's own company.
+  const [keysByOrder, setKeysByOrder] = useState({});
+  const loadKeyLinks = useCallback(() => {
+    supabase.from('licence_keys').select('id, offering_name, variant_name, status, order_id')
+      .is('deleted_at', null).not('order_id', 'is', null)
+      .then(({ data, error }) => {
+        if (error) return; // non-critical enrichment — leave the order detail as-is on a read error
+        const m = {};
+        for (const k of data || []) (m[k.order_id] ??= []).push(k);
+        setKeysByOrder(m);
+      });
+  }, []);
+  useEffect(() => { loadKeyLinks(); }, [loadKeyLinks]);
+
   const openPortal = async () => {
     setPortalBusy(true);
     const { data, error } = await supabase.functions.invoke('stripe-portal', { body: { returnUrl: location.origin + location.pathname + '#account' } });
@@ -297,6 +312,17 @@ function Dashboard({ session, profile, onProfile }) {
                                   <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
                                   <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
                                   {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
+                                  {keysByOrder[o.id]?.length > 0 && (
+                                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                                      <span style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.05em', opacity: .65 }}>Licence keys for this order</span>
+                                      {keysByOrder[o.id].map(k => (
+                                        <span key={k.id} style={{ fontSize: '.82rem', padding: '2px 9px', borderRadius: 999, background: 'rgba(190,242,100,.12)', border: '1px solid rgba(190,242,100,.28)' }}>
+                                          {k.offering_name}{k.variant_name ? ' · ' + k.variant_name : ''}{k.status !== 'issued' ? ` (${k.status})` : ''}
+                                        </span>
+                                      ))}
+                                      <button type="button" className="gs-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={(e) => { e.stopPropagation(); setTab('keys'); }}>View &amp; copy →</button>
+                                    </div>
+                                  )}
                                 </div>
                               </td></tr>
                             )}
