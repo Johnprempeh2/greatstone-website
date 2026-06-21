@@ -16,23 +16,19 @@ const hueOf = (b) => { const t = (b.topics || [])[0]; return t != null && TOPIC_
 
 // A compact related-story card (reuses the feed card styling); the heading link stretches over the card.
 function RelatedCard({ b }) {
-  const k = (b.topics || [])[0];
-  const hue = hueOf(b);
   return (
     <article className="ih-brief">
       <div className="ih-brief-media">
         <BriefingArt brief={b} className="card" />
-        {k && <span className="ih-art-kicker" style={kickerStyle(hue)}>{TOPIC_LABEL[k] || k}</span>}
       </div>
       <div className="ih-brief-body">
         <div className="ih-brief-top">
           <Logo domain={b.vendorDomain} name={b.vendor} />
           <span className="ih-brief-vendor">{b.vendor}</span>
-          <span className="ih-brief-date">{fmtShort(b.date)}</span>
+          <span className="ih-brief-date">{fmtShort(b.date)} · {readTime(b)} min</span>
         </div>
         <h3 className="ih-brief-h"><a className="ih-brief-link" href={briefHref(b.id)}>{b.headline}</a></h3>
         <p>{b.summary}</p>
-        <span className="ih-readmore" aria-hidden="true">{readTime(b)} min read<span className="ih-arrow">→</span></span>
       </div>
     </article>
   );

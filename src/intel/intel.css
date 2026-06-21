@@ -130,35 +130,37 @@
 
 /* a briefing card — cover on top, byline + headline + dek below; the whole card links to the article */
 .ih-brief { position: relative; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;
-  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)); border: 1px solid rgba(255,255,255,.1);
-  box-shadow: 0 14px 40px -28px rgba(0,0,0,.8); transition: border-color .25s var(--gs-ease), transform .25s var(--gs-ease), box-shadow .25s var(--gs-ease); }
-.ih-brief:hover { border-color: var(--gs-border-strong, rgba(200,255,0,.3)); transform: translateY(-4px); box-shadow: 0 22px 50px -26px rgba(0,0,0,.85); }
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.09);
+  box-shadow: none; transition: border-color .24s var(--gs-ease), transform .24s var(--gs-ease), box-shadow .24s var(--gs-ease); }
+.ih-brief:hover { border-color: var(--gs-border-strong, rgba(200,255,0,.3)); transform: translateY(-2px); box-shadow: 0 12px 32px -20px rgba(0,0,0,.7); }
 .ih-brief-media { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #0a0d08; }
-.ih-brief-media .ih-art { transition: transform .5s var(--gs-ease); }
-.ih-brief:hover .ih-brief-media .ih-art { transform: scale(1.05); }
+.ih-brief-media .ih-art { transition: transform .4s var(--gs-ease); }
+.ih-brief:hover .ih-brief-media .ih-art { transform: scale(1.03); }
 .ih-brief-body { display: flex; flex-direction: column; flex: 1; padding: 15px 17px 16px; }
 .ih-brief-top { display: flex; align-items: center; gap: 9px; }
 .ih-brief-top .ih-logo { width: 24px; height: 24px; border-radius: 7px; }
 .ih-brief-vendor { font-size: .76rem; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ih-brief-date { margin-left: auto; font-size: .66rem; color: var(--gs-text-faint, #9ca29b); font-weight: 700; white-space: nowrap; }
-.ih-brief-h { font-size: 1.02rem; font-weight: 800; line-height: 1.26; letter-spacing: -.015em; margin: 11px 0 0; }
+.ih-brief-h { font-size: 1.12rem; font-weight: 800; line-height: 1.22; letter-spacing: -.02em; margin: 11px 0 0; }
 .ih-brief-link { color: inherit; text-decoration: none; }
 .ih-brief-link::after { content: ''; position: absolute; inset: 0; border-radius: 16px; } /* stretches the link over the whole card */
 .ih-brief-link:focus-visible { outline: none; }
 .ih-brief-link:focus-visible::after { outline: 2px solid var(--gs-accent, #c8ff00); outline-offset: -2px; }
-.ih-brief p { color: var(--gs-text-muted, #c4c8c1); font-size: .85rem; line-height: 1.55; margin: 8px 0 0;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ih-brief p { color: var(--gs-text-muted, #c4c8c1); font-size: .84rem; line-height: 1.5; margin: 8px 0 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ih-readmore { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 13px; font-size: .72rem; font-weight: 800; color: var(--gs-accent, #c8ff00); }
 .ih-readmore .ih-arrow { transition: transform .2s var(--gs-ease); }
 .ih-brief:hover .ih-readmore .ih-arrow, .ih-lead:hover .ih-readmore .ih-arrow { transform: translateX(3px); }
-.ih-brief.foryou .ih-brief-media::after, .ih-lead.foryou .ih-lead-media::after { content: 'For you'; position: absolute; top: 10px; right: 10px; z-index: 2;
-  font-size: .56rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #0e1611; background: var(--gs-accent, #c8ff00); padding: 4px 9px; border-radius: 100px; }
+/* "For you" — now a rare, quiet glass chip (shown only on the lead), not a loud solid block on every card */
+.ih-brief.foryou .ih-brief-media::after, .ih-lead.foryou .ih-lead-media::after { content: 'For you'; position: absolute; top: 12px; right: 12px; z-index: 2;
+  font-size: .56rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gs-accent, #c8ff00);
+  background: rgba(7,10,7,.55); backdrop-filter: blur(6px); border: 1px solid var(--gs-border-strong, rgba(200,255,0,.4)); padding: 4px 10px; border-radius: 100px; }
 
 /* the lead story — a wide cover beside an oversized headline + standfirst; links to its article */
 .ih-lead { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; border-radius: 20px; overflow: hidden; margin-top: 4px;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.13);
-  box-shadow: 0 28px 72px -42px rgba(0,0,0,.85); transition: border-color .25s var(--gs-ease), transform .25s var(--gs-ease), box-shadow .25s var(--gs-ease); }
-.ih-lead:hover { border-color: var(--gs-border-strong, rgba(200,255,0,.3)); transform: translateY(-3px); box-shadow: 0 34px 80px -40px rgba(0,0,0,.9); }
+  background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 16px 44px -34px rgba(0,0,0,.8); transition: border-color .25s var(--gs-ease), transform .25s var(--gs-ease), box-shadow .25s var(--gs-ease); }
+.ih-lead:hover { border-color: var(--gs-border-strong, rgba(200,255,0,.3)); transform: translateY(-2px); box-shadow: 0 20px 52px -30px rgba(0,0,0,.85); }
 .ih-lead-media { position: relative; overflow: hidden; min-height: 232px; background: #0a0d08; }
 .ih-lead-media .ih-art { transition: transform .5s var(--gs-ease); }
 .ih-lead:hover .ih-lead-media .ih-art { transform: scale(1.04); }
@@ -208,6 +210,12 @@
 .ih-board { display: grid; gap: 8px; }
 .ih-row { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; transition: border-color .2s var(--gs-ease); }
 .ih-row:hover { border-color: rgba(255,255,255,.18); }
+/* keyboard focus ring for the leaderboard + compare controls (were visually unreachable). Inset so the
+   row's overflow:hidden never clips it. */
+.ih-row-head:focus-visible, .ih-row-cmp:focus-visible, .ih-boardswitch button:focus-visible,
+.ih-cmp-jump:focus-visible, .ih-move-card:focus-visible, .ih-cmp-x:focus-visible {
+  outline: 2px solid var(--gs-accent, #c8ff00); outline-offset: -2px; }
+.ih-row-head:focus-visible { outline-offset: -3px; }
 .ih-row-head { display: grid; grid-template-columns: 26px 28px 1fr auto auto; gap: 13px; align-items: center; width: 100%; padding: 14px 18px;
   background: none; border: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
 .ih-rank { font-size: 1rem; font-weight: 900; color: var(--gs-text-faint, #9ca29b); font-variant-numeric: tabular-nums; }

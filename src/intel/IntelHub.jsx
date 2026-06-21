@@ -6,7 +6,7 @@ import buildIntel, { TOPIC_LABEL, TOPIC_HUE, TOPICS, WEIGHTS, BOARD_META } from 
 import { recordOpen, recordTab, recordTopicFocus, recordCompare, rankForYou, topInterests, getProfile, hasInterestSignal } from './interest.js';
 import Logo from './Logo.jsx';
 import BriefingArt from './BriefingArt.jsx';
-import { readTime, briefHref, kickerStyle } from './articleMeta.js';
+import { readTime, briefHref } from './articleMeta.js';
 import './intel.css';
 
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); } catch { return s; } };
@@ -160,18 +160,15 @@ const sortTiers = (list) => {
   return { lead: sorted[0] || null, subs: sorted.slice(1, 3), river: sorted.slice(3) };
 };
 // the lead topic, as a coloured caps kicker (topic hue as "section ink", never a fill)
-const topicKicker = (b) => { const t = (b.topics || [])[0]; return t ? { label: TOPIC_LABEL[t] || t, hue: TOPIC_HUE[t] || 84 } : null; };
 
 // The lead story: a front-page splash. A wide generative cover, then the byline, an oversized headline
 // and the standfirst. The whole card is a link to the briefing's own article (the heading link is
 // stretched over the card via ::after, so the accessible name stays the headline).
 function LeadCard({ b, forYou }) {
-  const k = topicKicker(b);
   return (
     <article className={'ih-lead' + (forYou ? ' foryou' : '')}>
       <div className="ih-lead-media">
         <BriefingArt brief={b} className="lead" />
-        {k && <span className="ih-art-kicker" style={kickerStyle(k.hue)}>{k.label}</span>}
       </div>
       <div className="ih-lead-body">
         <div className="ih-brief-top">
@@ -192,24 +189,21 @@ function LeadCard({ b, forYou }) {
 // the briefing's own article page (heading link stretched via ::after). No inline expand — opening a
 // story no longer shoves the rest of the grid around.
 function BriefingCard({ b, forYou, variant }) {
-  const k = topicKicker(b);
   const high = b.importance === 'high';
   return (
     <article className={'ih-brief' + (variant ? ' ' + variant : '') + (forYou ? ' foryou' : '')}>
       <div className="ih-brief-media">
         <BriefingArt brief={b} className="card" />
-        {k && <span className="ih-art-kicker" style={kickerStyle(k.hue)}>{k.label}</span>}
       </div>
       <div className="ih-brief-body">
         <div className="ih-brief-top">
           <Logo domain={b.vendorDomain} name={b.vendor} />
           <span className="ih-brief-vendor">{b.vendor}</span>
           {high && <i className="ih-hi" aria-hidden="true" title="High importance" />}
-          <span className="ih-brief-date">{fmtDate(b.date)}</span>
+          <span className="ih-brief-date">{fmtDate(b.date)} · {readTime(b)} min</span>
         </div>
         <h4 className="ih-brief-h"><a className="ih-brief-link" href={briefHref(b.id)}>{b.headline}</a></h4>
         <p>{b.summary}</p>
-        <span className="ih-readmore" aria-hidden="true">{readTime(b)} min read<span className="ih-arrow">→</span></span>
       </div>
     </article>
   );
@@ -337,7 +331,7 @@ export default function IntelHub() {
                   // include the sub-leads (ranks 2-3) then the river — they were dropped before, so the
                   // overview jumped from the lead straight to the 4th item
                   <div className="ih-grid" style={{ marginTop: 16 }}>
-                    {[...forYouTiers.subs, ...forYouTiers.river].slice(0, 4).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} />)}
+                    {[...forYouTiers.subs, ...forYouTiers.river].slice(0, 3).map((b) => <BriefingCard key={b.id} b={b} />)}
                   </div>
                 )}
               </div>
@@ -407,7 +401,7 @@ export default function IntelHub() {
                     <>
                       <div className="ih-tier-div" aria-hidden="true"><span>More from the desk</span></div>
                       <div className="ih-grid">
-                        {[...briefingTiers.subs, ...briefingTiers.river].map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} />)}
+                        {[...briefingTiers.subs, ...briefingTiers.river].map((b) => <BriefingCard key={b.id} b={b} />)}
                       </div>
                     </>
                   )}
