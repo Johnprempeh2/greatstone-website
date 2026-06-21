@@ -69,6 +69,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [items, setItems] = useState(null);
   const [requests, setRequests] = useState([]);
   const [keys, setKeys] = useState(null);
+  const [orders, setOrders] = useState([]); // for linking a key to the purchase it fulfils
   const [editing, setEditing] = useState(null); // engagement object or {} for new
   const [keyEditing, setKeyEditing] = useState(null); // licence-key object or {} for new
   const load = useCallback(() => {
@@ -78,8 +79,10 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
-    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
+    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url, order_id').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setKeys(data || []); });
+    supabase.from('orders').select('id, reference, placed_at, created_at').is('deleted_at', null).eq('customer_id', customer.id).order('created_at', { ascending: false })
+      .then(({ data, error }) => { if (!error) setOrders(data || []); });
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
 
@@ -202,13 +205,13 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       </div>
 
       {editing && <EngagementEditor engagement={editing} customer={customer} staff={staff} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); flash(m); load(); }} />}
-      {keyEditing && <KeyEditor lkey={keyEditing} customer={customer} staff={staff} onClose={() => setKeyEditing(null)} onSaved={(m) => { setKeyEditing(null); flash(m); load(); }} />}
+      {keyEditing && <KeyEditor lkey={keyEditing} customer={customer} staff={staff} orders={orders} onClose={() => setKeyEditing(null)} onSaved={(m) => { setKeyEditing(null); flash(m); load(); }} />}
       {toast && <div className="ca-toast" role="status">{toast}</div>}
     </div>
   );
 }
 
-function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
+function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved }) {
   const isNew = !lkey.id;
   const [offering, setOffering] = useState(lkey.offering_name || '');
   const [variant, setVariant] = useState(lkey.variant_name || '');
@@ -217,6 +220,7 @@ function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
   const [expires, setExpires] = useState(lkey.expires_at ? String(lkey.expires_at).slice(0, 10) : '');
   const [status, setStatus] = useState(lkey.status || 'issued');
   const [download, setDownload] = useState(lkey.download_url || '');
+  const [orderId, setOrderId] = useState(lkey.order_id || '');
   const [notes, setNotes] = useState(lkey.notes || '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -234,6 +238,7 @@ function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
     const payload = {
       offering_name: offering.trim(), variant_name: variant.trim() || null, licence_key: key.trim(),
       seats: seatsN, status, notes: notes.trim() || null, download_url: download.trim() || null,
+      order_id: orderId || null,
       expires_at: expires ? new Date(expires + 'T00:00:00').toISOString() : null,
     };
     let error;
@@ -253,6 +258,14 @@ function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
         <label>Edition / licence type <span style={{ fontWeight: 400 }}>(optional)</span><input value={variant} onChange={e => setVariant(e.target.value)} placeholder="e.g. Developer Small Business" /></label>
         <label>Licence key<textarea rows="2" value={key} onChange={e => setKey(e.target.value)} placeholder="Paste the activation code" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.86rem' }} /></label>
         <label>Download link <span style={{ fontWeight: 400 }}>(optional — where the client gets the software)</span><input type="url" value={download} onChange={e => setDownload(e.target.value)} placeholder="https://…" /></label>
+        {orders.length > 0 && (
+          <label>Purchase this fulfils <span style={{ fontWeight: 400 }}>(optional — links the key to an order)</span>
+            <select value={orderId} onChange={e => setOrderId(e.target.value)}>
+              <option value="">— not linked to an order —</option>
+              {orders.map(o => <option key={o.id} value={o.id}>{o.reference || 'Order'} · {fmtDate(o.placed_at || o.created_at)}</option>)}
+            </select>
+          </label>
+        )}
         <div className="pr-row">
           <label>Seats <span style={{ fontWeight: 400 }}>(optional)</span><input type="number" min="1" value={seats} onChange={e => setSeats(e.target.value)} placeholder="e.g. 5" /></label>
           <label>Expires <span style={{ fontWeight: 400 }}>(optional)</span><input type="date" value={expires} onChange={e => setExpires(e.target.value)} /></label>
