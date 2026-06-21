@@ -326,3 +326,12 @@ Ran a 5-lens adversarial review workflow (17 agents: hub a11y, hub correctness, 
 - **Verified:** build clean, 51 tests, 0 console errors; Compare ★ (6 markers), InsightsGrid live region updates + pluralises, BookDeepDive ids now per-instance and labels resolve, all live. PillarExplorer verified by build + pattern-parity (editor-placed block, not on a seed page).
 - **Held for John** (real, fix not mechanical): briefing-card interactive-in-button, Overview h1→h3 skip, tab aria-controls to unmounted panels, Invite block hardcoded id.
 - **Tickets:** directions + ready queues empty.
+
+## Overnight loop — 2026-06-21 — Intel Hub: "What's moving" + 2 held a11y fixes (pass 4)
+- **Applied the two safe alternatives the pass-3 review held for John** (both verified-real, the safe fix is mechanical):
+  - Overview heading skip (h1→h3): added a visually-hidden `<h2>` so the order is h1 (hero) → h2 → h3 (sections).
+  - Tab `aria-controls` dangled (only the active tabpanel is mounted, so 4 of 5 IDREFs pointed at nothing): dropped aria-controls, kept aria-labelledby on each panel (the WAI-ARIA-acceptable pattern for conditionally-rendered panels).
+- **Added a "What's moving" momentum block to Overview**: new entrants + risers across all three boards, derived from the existing published `delta` field (vetted data, no new claims), risers-first. Each is an on-brand card that jumps to that board's leaderboard, with a descriptive aria-label and an aria-hidden tag (New / ▲N). Deepens the hub without touching content accuracy.
+- **Verified live:** 6 momentum cards render with correct labels, card jumps to the right board, sr-only h2 present, no tab carries aria-controls; build clean, 51 tests, 0 console errors. Adversarial-reviewed.
+- **Note:** committed with scoped `git add <paths>` (not -A) per the [[concurrent-loops-git-hazard]] memo, since the DX-hub loop shares this repo.
+- **Tickets:** directions queue empty.

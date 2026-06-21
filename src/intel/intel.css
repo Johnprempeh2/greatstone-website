@@ -136,6 +136,19 @@
 .ih-pod-score b { font-size: 2rem; font-weight: 900; color: var(--gs-accent, #c8ff00); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
 .ih-pod-score span { font-size: .72rem; color: var(--gs-text-faint, #9ca29b); }
 
+/* "What's moving": compact momentum cards (new entrants + risers), each jumps to that board */
+.ih-move { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.ih-move-card { display: grid; gap: 3px; text-align: left; padding: 14px 16px; border-radius: 14px; cursor: pointer;
+  background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.08); font: inherit; color: inherit;
+  transition: border-color .2s var(--gs-ease), background .2s var(--gs-ease), transform .2s var(--gs-ease); }
+.ih-move-card:hover { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.045); transform: translateY(-2px); }
+.ih-move-tag { justify-self: start; font-size: .64rem; font-weight: 800; letter-spacing: .04em; padding: .25em .6em; border-radius: 100px; margin-bottom: 4px; }
+.ih-move-tag.new { color: var(--gs-teal, #4ecdc4); background: rgba(78,205,196,.12); }
+.ih-move-tag.up { color: var(--gs-accent, #c8ff00); background: rgba(200,255,0,.12); font-variant-numeric: tabular-nums; }
+.ih-move-name { font-size: .96rem; font-weight: 800; letter-spacing: -.01em; }
+.ih-move-meta { font-size: .72rem; color: var(--gs-text-faint, #9ca29b); }
+@media (prefers-reduced-motion: reduce) { .ih-move-card { transition: none; } }
+
 /* leaderboard */
 .ih-board { display: grid; gap: 8px; }
 .ih-row { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; transition: border-color .2s var(--gs-ease); }

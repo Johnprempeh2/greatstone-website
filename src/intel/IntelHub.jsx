@@ -262,6 +262,17 @@ export default function IntelHub({ onClose }) {
   const tuningTo = interests.topics.map((t) => TOPIC_LABEL[t.id] || t.id).slice(0, 3).join(', ');
 
   const podium = (boardsData.models || []).slice(0, 3);
+  // "What's moving": new entrants + risers across every board, from the published delta field (vetted data,
+  // no new claims). Risers first (by amount), then new entrants.
+  const movement = useMemo(() => {
+    const out = [];
+    ['models', 'products', 'tools'].forEach((b) => (boardsData[b] || []).forEach((r) => {
+      const d = (r.delta || '').trim();
+      if (/^\+/.test(d)) out.push({ name: r.name, company: r.company, board: b, kind: 'up', amt: parseInt(d.slice(1), 10) || 0 });
+      else if (/new/i.test(d)) out.push({ name: r.name, company: r.company, board: b, kind: 'new', amt: 0 });
+    }));
+    return out.sort((a, b) => (a.kind === b.kind ? b.amt - a.amt : a.kind === 'up' ? -1 : 1));
+  }, [boardsData]);
   const rows = boardsData[board] || [];
   const weightStr = Object.entries(WEIGHTS[board] || {}).map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(' · ');
 
@@ -295,7 +306,8 @@ export default function IntelHub({ onClose }) {
 
       <div className="ih-tabs" role="tablist" aria-label="Intelligence sections" ref={tablistRef}>
         {TABS.map((t, i) => (
-          <button key={t.id} id={'ih-tab-' + t.id} role="tab" aria-selected={tab === t.id} aria-controls={'ih-panel-' + t.id}
+          // no aria-controls: only the active tabpanel is mounted, so an IDREF to the others would dangle
+          <button key={t.id} id={'ih-tab-' + t.id} role="tab" aria-selected={tab === t.id}
             tabIndex={tab === t.id ? 0 : -1} className="ih-tab" onClick={() => switchTab(t.id)} onKeyDown={(e) => onTabKey(e, i)}>
             {t.label}
             {t.id === 'overview' && signal && <span className="ih-tabdot" aria-hidden="true" />}
@@ -324,6 +336,7 @@ export default function IntelHub({ onClose }) {
                 <IntelRadar profile={profile} tick={radarTick} />
               </div>
 
+              <h2 className="gs-sr-only">Today&rsquo;s intelligence, in brief</h2>
               <div className="ih-section">
                 <div className="ih-section-head"><h3>{signal ? 'For you' : 'Most important now'}</h3>
                   <span className="ih-count">{signal ? (tuningTo ? 'Tuned to ' + tuningTo : 'Tuned to what you read') : 'Read a few to personalise'}</span></div>
@@ -345,6 +358,23 @@ export default function IntelHub({ onClose }) {
                   ))}
                 </div>
               </div>
+
+              {movement.length > 0 && (
+                <div className="ih-section">
+                  <div className="ih-section-head"><h3>What&rsquo;s moving</h3><span className="ih-count">New entrants and risers across the boards</span></div>
+                  <div className="ih-move">
+                    {movement.slice(0, 6).map((m) => (
+                      <button className="ih-move-card" key={m.board + ':' + m.name}
+                        aria-label={m.name + (m.kind === 'new' ? ' is new on the ' : ' has risen ' + m.amt + ' on the ') + BOARD_META[m.board].label + ' board'}
+                        onClick={() => { setBoard(m.board); switchTab('leaderboards'); }}>
+                        <span className={'ih-move-tag ' + m.kind} aria-hidden="true">{m.kind === 'new' ? 'New' : '▲ ' + m.amt}</span>
+                        <span className="ih-move-name">{m.name}</span>
+                        <span className="ih-move-meta">{m.company} · {BOARD_META[m.board].label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="ih-section">
                 <div className="ih-section-head"><h3>Themes in play</h3></div>
