@@ -73,7 +73,13 @@ function IntelRadar({ profile, onTopic }) {
     size(); draw();
     const onResize = () => { size(); if (reduce) draw(); };
     window.addEventListener('resize', onResize);
-    return () => { if (raf) cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); };
+    // pause the sweep loop while the radar is scrolled off-screen (perf only; identical when visible)
+    let io;
+    if (!reduce && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { if (!raf) draw(); } else if (raf) { cancelAnimationFrame(raf); raf = 0; } });
+      io.observe(cv);
+    }
+    return () => { if (raf) cancelAnimationFrame(raf); if (io) io.disconnect(); window.removeEventListener('resize', onResize); };
   }, [profile, axes]);
   return (
     <div className="ih-radar">
@@ -135,8 +141,16 @@ function IntelConstellation() {
       const onResize = () => { camera.aspect = W() / H(); camera.updateProjectionMatrix(); renderer.setSize(W(), H()); render(); };
       window.addEventListener('resize', onResize);
       if (reduce) { pts.rotation.set(0.3, 0.5, 0); core.rotation.set(0.4, 0.2, 0); render(); } else tick();
+      // pause the WebGL render loop while the hero is scrolled off-screen (saves a continuous GPU/CPU
+      // draw behind the feed; no visual change when it is on screen)
+      let io;
+      if (!reduce && typeof IntersectionObserver !== 'undefined') {
+        io = new IntersectionObserver(([e]) => { if (state.dead) return; if (e.isIntersecting) { if (!state.raf) tick(); } else if (state.raf) { cancelAnimationFrame(state.raf); state.raf = 0; } });
+        io.observe(host);
+      }
       state.cleanup = () => {
         if (state.raf) cancelAnimationFrame(state.raf);
+        if (io) io.disconnect();
         window.removeEventListener('resize', onResize);
         g.dispose(); m.dispose(); ig.dispose(); im.dispose(); renderer.dispose();
         if (cv.parentNode) cv.parentNode.removeChild(cv);
