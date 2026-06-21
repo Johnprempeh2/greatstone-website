@@ -87,8 +87,11 @@
   .gs-header{gap:10px}
   .gs-search{display:none}
   /* the persistent CTA would crowd the collapsed nav on phones — it stays reachable as the lime
-     "Book a Deep Dive" item at the top of the Pages dropdown. The account icon + ⌘K stay visible. */
+     "Book a Deep Dive" item at the top of the Pages dropdown. The account icon + ⌘K button stay visible. */
   .gs-book{display:none}
+  /* there is no Cmd key on a phone — drop the ⌘K keycap (a desktop instruction) but keep the
+     tappable search button + icon, which is the only on-screen search on mobile. */
+  .gs-cmdbtn kbd{display:none}
 }
 
 /* ---------- editor: dark, brand-themed chrome ---------- */

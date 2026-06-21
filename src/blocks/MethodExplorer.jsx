@@ -78,7 +78,11 @@ export default function MethodExplorer({ pillars = [], onClose }) {
       else if (open && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) { e.preventDefault(); step(-1); }
       else if (e.key === 'Tab') {
         const root = rootRef.current; if (!root) return;
-        const f = [...root.querySelectorAll('button, a[href], select, input, [tabindex]:not([tabindex="-1"])')].filter((el) => !el.disabled && el.offsetParent !== null);
+        // when a pillar detail is open, trap focus WITHIN the panel — the ring controls behind it
+        // (the Back button and the eight pillar pills) stay in the DOM and visible, so without this
+        // scope Tab would cycle through controls hidden behind the open panel.
+        const scope = (open && root.querySelector('.me-detail.is-open')) || root;
+        const f = [...scope.querySelectorAll('button, a[href], select, input, [tabindex]:not([tabindex="-1"])')].filter((el) => !el.disabled && el.offsetParent !== null);
         if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
