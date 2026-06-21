@@ -202,3 +202,38 @@ personalisation work live (opening a briefing re-ranks the feed + spikes the rad
 **Loop roadmap:** adversarial-review fixes; deepen content each pass; radar label polish; a 3D accent
 (three.js constellation); a Radar/trends tab; richer compare; the CRM/Pipedrive roll-up of the interest
 profile when analytics goes live.
+
+---
+
+## Content-generation contract (read this before every regen of `ai-intel-content.mjs`)
+
+The research workflow is authored inline each loop pass, so it has no permanent home. These rules are the
+permanent home. Apply them when generating briefings and leaderboards so the content stays on-voice and the
+output never regresses.
+
+**Voice (per the greatstone-voice skill, non-negotiable):**
+- **No em dashes anywhere.** Use commas, full stops, parentheses, semicolons or colons. This is the single
+  most reliable AI tell and is a hard ban. Strip them mechanically after generation as a backstop.
+- **British English** throughout (organisation, optimise, programme, analyse, defence).
+- **No banned words:** delve, leverage, robust, holistic, synergy, paradigm, streamline, unlock, empower,
+  navigate (as metaphor), journey (as metaphor), landscape (as "the AI landscape"), cutting-edge,
+  best-in-class, world-class, game-changer, transformative, revolutionary, seamless(ly), tapestry, fabric,
+  "X is real". Coach, not preacher. State the claim cleanly.
+
+**Takes ("The Greatstone read") — the reviewer flagged these as formulaic. Enforce variety:**
+- 2 to 4 sentences. Lead with the implication for a mid-market operator, not a restatement of the headline.
+- **Rotate the opening.** No more than a couple of takes may open the same way. Do not start every take with
+  "This", "The", "If", or "For". Vary structure: some open with the consequence, some with a number, some
+  with the trade-off, some with who should act.
+- **Cap rhetorical questions:** at most 6 takes across the whole set may end on a "question to explore". The
+  rest must land on a concrete read or recommendation.
+- Name the specific thing, the number, the trade-off. No decorative sentences.
+
+**Data integrity:**
+- **Dedupe** briefings by `sourceUrl` and by headline prefix before writing.
+- **Keep the analyst's holistic composite `score`** for leaderboard rows. Do **not** recompute score from
+  `pillars × WEIGHTS` at write time; that distorts ranking (it once put a small fast model above the frontier
+  set). WEIGHTS are shown to the visitor as the stated methodology, not used to recompute the published score.
+- Every briefing needs a real, dated, reachable `sourceUrl` from the roster in `src/data/ai-intel.mjs`.
+- Never bump `SEED_VERSION` as part of a content regen (it wipes visitor edits); content lives in its own
+  module and is imported, not seeded.
