@@ -203,7 +203,7 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
   const steps = [
     { id: 'profile', label: 'Complete your company profile', hint: 'Add your website and a note about your goals.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => scrollTo('org-co-h') } : null },
     { id: 'team', label: 'Invite your team', hint: 'Bring your colleagues into the portal.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => scrollTo('org-mem-h') } : null },
-    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a deep dive', href: '#contact' } },
+    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a deep dive', href: '#go/contact' } },
     { id: 'order', label: 'Place your first order', hint: 'Explore the Greatstone software catalogue.', done: (orders || []).length > 0, cta: { label: 'Browse the store', href: '#shop' } },
   ];
   const doneCount = steps.filter(s => s.done).length;
@@ -441,12 +441,21 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
 
 function Item({ e, isNew, open, onToggle }) {
   const anchor = ANCHOR_KINDS.has(e.kind);
-  const [copied, setCopied] = useState(false);
+  const url = location.origin + location.pathname + '#org/e/' + e.id;
+  const [copyMsg, setCopyMsg] = useState('');
+  const linkRef = useRef(null);
   const cleanBody = useMemo(() => (open && e.body_html ? sanitizeHtml(e.body_html) : ''), [open, e.body_html]);
+  const copied = copyMsg === 'Link copied to clipboard';
+  const needsManual = copyMsg === 'Press Cmd or Ctrl + C to copy';
   const copyLink = async () => {
-    const url = location.origin + location.pathname + '#org/e/' + e.id;
-    try { await navigator.clipboard.writeText(url); } catch { /* clipboard blocked */ }
-    setCopied(true); setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyMsg('Link copied to clipboard'); // only declare success once the write actually resolved
+    } catch { // navigator.clipboard is undefined on non-secure origins, or writeText was denied
+      if (linkRef.current) { linkRef.current.focus(); linkRef.current.select(); }
+      setCopyMsg('Press Cmd or Ctrl + C to copy');
+    }
+    setTimeout(() => setCopyMsg(''), 2400);
   };
   return (
     <li className={'dx-item' + (anchor ? ' is-anchor' : '') + (isNew ? ' is-new' : '')} id={'dx-item-' + e.id}>
@@ -481,7 +490,8 @@ function Item({ e, isNew, open, onToggle }) {
             </a>
           )}
           <button type="button" className="dx-copy" onClick={copyLink} aria-label={copied ? 'Link copied to clipboard' : 'Copy a link to “' + e.title + '”'}>{copied ? 'Copied ✓' : 'Copy link'}</button>
-          <span className="gs-sr-only" role="status" aria-live="polite">{copied ? 'Link copied to clipboard' : ''}</span>
+          <input type="text" className={'dx-copy-src' + (needsManual ? ' is-shown' : '')} ref={linkRef} value={url} readOnly tabIndex={-1} aria-hidden={!needsManual} aria-label={'Link to “' + e.title + '”'} onFocus={(ev) => ev.target.select()} />
+          <span className="gs-sr-only" role="status" aria-live="polite">{copyMsg}</span>
         </div>
         {open && e.body_html && (
           <div className="dx-body" id={'dx-body-' + e.id} dangerouslySetInnerHTML={{ __html: cleanBody }} />
@@ -548,7 +558,7 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
       <p className="ca-note">{admin
         ? <>Invite a teammate above and we'll provision their portal access and email them. To remove a member or change the company admin, </>
         : <>To add or remove teammates, or change who's the company admin, </>}
-        <a className="ca-link" href="#contact">contact your Greatstone team</a>.</p>
+        <a className="ca-link" href="#go/contact">contact your Greatstone team</a>.</p>
     </section>
   );
 }

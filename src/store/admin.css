@@ -358,6 +358,9 @@
 .dx-host { font-size:.7rem; color:var(--gs-text-faint); font-weight:600; }
 .dx-copy { margin-left:auto; background:none; border:0; color:var(--gs-text-faint); font:inherit; font-size:.76rem; font-weight:600; cursor:pointer; padding:.4em .2em; }
 .dx-copy:hover { color:var(--gs-accent); }
+/* manual-copy fallback: hidden until the clipboard API is unavailable (non-secure origin) or denied, then revealed + selected */
+.dx-copy-src { position:absolute; width:1px; height:1px; padding:0; border:0; clip:rect(0,0,0,0); overflow:hidden; }
+.dx-copy-src.is-shown { position:static; flex-basis:100%; width:100%; height:auto; clip:auto; overflow:visible; margin-top:6px; padding:.4em .6em; border:1px solid var(--gs-accent); border-radius:8px; background:rgba(0,0,0,.2); color:var(--gs-text); font:inherit; font-size:.78rem; }
 
 /* relationship pulse (#org analytics) */
 .org-analytics { margin-top:30px; }
