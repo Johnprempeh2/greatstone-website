@@ -1,8 +1,12 @@
-# OrgDashboard (#org) — pending functional fixes
+# OrgDashboard (#org) — functional fixes
 
-These three items came out of the functional audit of the customer org hub. They are **blocked**
-only because `src/store/OrgDashboard.jsx` has been carrying another session's uncommitted changes —
-editing it would sweep their work. Apply these the moment the file is clean/committed.
+> **STATUS (21 Jun):** Items **#1 and #2 APPLIED** in commit `0c2ee23` (browser-verified on `#org` as the
+> Ethical Quest company admin). Item **#3 remains — intentionally deferred** (latent, low-priority). The
+> blocking parallel-session WIP was committed (`78616ba`), unblocking the file.
+
+These three items came out of the functional audit of the customer org hub. They had been **blocked**
+only because `src/store/OrgDashboard.jsx` was carrying another session's uncommitted changes —
+editing it would have swept their work.
 
 Anchored to **code strings** (not line numbers) so they survive line shifts. Verified still-open
 against the working tree on 2026-06-21.
