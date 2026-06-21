@@ -18,7 +18,7 @@ export const BRIEFINGS = [
     "date": "2026-06-21",
     "headline": "EU AI Act: Commission's GPAI enforcement powers, including fines, take effect on 2 August 2026",
     "summary": "From 2 August 2026 the European Commission gains its full supervision and enforcement powers over providers of general-purpose AI (GPAI) models, one year after the underlying obligations began. The Commission can request documentation, conduct model evaluations, demand compliance and risk-mitigation measures or market restrictions, and impose fines of up to 3% of worldwide annual turnover or EUR 15 million, whichever is higher (Article 101). GPAI models placed on the market before 2 August 2025 must reach full compliance by 2 August 2027.",
-    "take": "Obligations that have been live for a year grow teeth on 2 August, and the fine ceiling is set against global turnover, not AI revenue. Most mid-market organisations are not GPAI providers, so direct exposure is limited; the real exposure runs through the supply chain, where a market restriction on a foundation-model vendor flows straight downstream to whoever builds on it. Treat continuity of model access as a contract and architecture question now, on the assumption that the model you depend on may not always be available in its current form.",
+    "take": "Rules that have been live for a year grow teeth on 2 August, and the fine ceiling bites against global turnover, not AI revenue. Few mid-market organisations are GPAI providers themselves, so direct exposure is thin. The exposure that matters runs through the supply chain: a market restriction on a foundation-model vendor flows straight downstream to whoever builds on it. So the live question is whether the model you depend on will still be available, in its current form, a year from now.",
     "topics": [
       "regulation",
       "frontier-models",
@@ -35,7 +35,7 @@ export const BRIEFINGS = [
     "date": "2026-06-18",
     "headline": "OpenAI adds usage analytics and spend controls to ChatGPT Enterprise",
     "summary": "OpenAI rolled out enhanced admin tooling for ChatGPT Enterprise: the Global Admin Console now consolidates ChatGPT and Codex credit usage with a granular breakdown by user, product and model, and admins can set a default spend limit for the whole workspace, configure team-level limits, or create individual overrides for power users. The update follows the global enterprise rollout of ChatGPT for Excel and Google Sheets earlier in the month.",
-    "take": "Quietly, the bigger story is billing: these controls exist because consumption has become unpredictable enough to need governing, as seat-based pricing gives way to credit-and-usage. A mid-market AI budget that used to be a fixed line item is becoming a variable one, and without admin visibility a runaway agent or an enthusiastic power user shows up first on the invoice. Model cost per active user before you scale any pilot to the whole organisation.",
+    "take": "The headline is admin tooling; the real story is billing. These controls exist because consumption has become unpredictable enough to need governing, as seat-based pricing gives way to credit-and-usage. A mid-market AI budget that used to be a fixed line item is now a variable one, and without admin visibility a runaway agent or an eager power user shows up first on the invoice. Worth knowing your cost per active user before any pilot reaches the whole organisation.",
     "topics": [
       "enterprise",
       "agents"
@@ -51,7 +51,7 @@ export const BRIEFINGS = [
     "date": "2026-06-18",
     "headline": "SWE-bench Pro hardens as the frontier coding benchmark after contamination and saturation retire the original SWE-bench",
     "summary": "As frontier models clustered near 80% on SWE-bench Verified, OpenAI deprecated the original SWE-bench in February 2026 over contamination, and Scale AI's contamination-resistant SWE-bench Pro, 1,865 tasks across 41 private repositories, has become the reference. On the public standardized leaderboard, GPT-5.4 (xHigh) leads at 59.1%, with Muse Spark (Meta) at 55.0% and Claude Opus 4.6 (thinking) at 51.9%; vendor-reported runs place Opus 4.8 higher at around 69%.",
-    "take": "Ten points separate the standardised public score (about 59%) from vendor-reported figures (near 69%) on the same benchmark, and the difference is all harness, effort level and cost caps. A single headline percentage tells you almost nothing on its own. Distrust any vendor coding claim that omits the harness and conditions, and anchor your own model selection on a reproducible, contamination-resistant evaluation against your codebase rather than marketing numbers run under undisclosed settings.",
+    "take": "Ten points separate the standardised public score (about 59%) from vendor-reported figures (near 69%) on the same benchmark, and every one of those points is harness, effort level and cost caps. Which is to say a single headline percentage tells you almost nothing. Any vendor coding claim that omits the harness and conditions deserves the same trust you'd give a quoted price with the currency left off.",
     "topics": [
       "coding",
       "frontier-models",
@@ -68,7 +68,7 @@ export const BRIEFINGS = [
     "date": "2026-06-17",
     "headline": "Artificial Analysis confirms GLM-5.2 as the new open-weights Intelligence Index leader, level with GPT-5.5 on real-world agentic tasks",
     "summary": "In its own analysis, Artificial Analysis put GLM-5.2 at 51 on Intelligence Index v4.1, ahead of MiniMax-M3 and DeepSeek V4 Pro (both 44). On its GDPval-AA v2 agentic measure GLM-5.2 scored 1524, effectively level with GPT-5.5 at 1514. The biggest jumps over the prior generation came in scientific reasoning: HLE +12 to 40%, GPQA Diamond +3 to 89%, and TerminalBench v2.1 +16 to 78%, at roughly $0.46 per task.",
-    "take": "An independent benchmark house corroborating a vendor's coding claims, on a contamination-resistant agentic measure rather than a saturated academic test, is the part that earns weight. The open and closed tiers are now close enough that procurement can reasonably shortlist both. What separates them is no longer raw score but operational maturity: tooling, support, latency under load and governance. Run a like-for-like pilot on your own representative tasks before trusting the headline index number.",
+    "take": "An independent benchmark house corroborating a vendor's coding claims, on a contamination-resistant agentic measure rather than a saturated academic test, is the part that earns weight. The open and closed tiers now sit close enough that procurement can reasonably shortlist both. What separates them is no longer raw score: it is operational maturity, tooling, support, latency under load and governance. The index tells you who to consider, not who to pick.",
     "topics": [
       "open-source",
       "frontier-models",
@@ -85,7 +85,7 @@ export const BRIEFINGS = [
     "date": "2026-06-17",
     "headline": "Agent finder lands in GitHub Copilot on the new open ARD discovery standard",
     "summary": "GitHub shipped Agent finder, which lets Copilot search an indexed registry of AI resources and pull the right tools and MCP servers in on demand rather than having developers wire them up by hand. It implements the open Agentic Resource Discovery (ARD) specification, co-developed with Google, GoDaddy, Hugging Face and Microsoft, and is available across all Copilot plans with no auto-installation and enterprise governance respected.",
-    "take": "Look past the feature to the standard beneath it. If discovery of agent tools settles into a shared spec across GitHub, Google and Microsoft rather than a per-vendor registry, the lock-in question moves from which assistant you use to which registry your tools live in. Before picking a coding assistant, get your internal tooling and data sources described in a way an agent could actually discover and govern; that is the part that will still matter in two years.",
+    "take": "Look past the feature to the standard beneath it. If discovery of agent tools settles into a shared spec across GitHub, Google and Microsoft rather than a per-vendor registry, the lock-in question shifts from which assistant you use to which registry your tools live in. The durable work here is getting your internal tooling and data sources described in a way an agent could actually discover and govern. That part still matters in two years; the choice of assistant probably does not.",
     "topics": [
       "agents",
       "coding",
@@ -102,7 +102,7 @@ export const BRIEFINGS = [
     "date": "2026-06-16",
     "headline": "Salesforce and Databricks build a shared data foundation for human and AI-agent work",
     "summary": "On 16 June at the Databricks Data + AI Summit, Salesforce announced an expanded partnership with Databricks to connect governed enterprise data with the permissions, approvals and workflows that Agentforce agents need. New bidirectional Federated Search makes business context and organisational knowledge reachable from a single experience across both platforms. It lands alongside the Summer '26 release (generally available 15 June), which adds multi-agent orchestration, Slack-first workflows and Data Cloud triggered agents.",
-    "take": "Read this as plumbing, not agents: the deal's entire premise is keeping sensitive data governed and in place while agents reason over it. For anyone already on Salesforce or Databricks, agentic value now hinges on data foundations many have not yet consolidated, so the choice is between buying outcomes and buying yourself a new integration programme. Map where your customer data actually lives before scoping any agent pilot.",
+    "take": "This is plumbing dressed as agents. The whole premise of the deal is keeping sensitive data governed and in place while agents reason over it. For anyone already on Salesforce or Databricks, agentic value now rests on data foundations many have not yet consolidated, which turns one decision into two: buy the outcome, or buy yourself a new integration programme to reach it. Either way, the first thing to pin down is where your customer data actually lives.",
     "topics": [
       "agents",
       "enterprise"
@@ -118,7 +118,7 @@ export const BRIEFINGS = [
     "date": "2026-06-16",
     "headline": "Microsoft pushes Agent 365 governance and Copilot Cowork as KPMG rolls agents to 276,000",
     "summary": "Microsoft's June release is governance-heavy: Agent 365 (generally available since 1 May) gained policy-based controls, runtime blocking and alerts via Intune and Defender public preview, plus registry sync to discover and inventory agents across AWS Bedrock and Google Cloud. On 16 June Microsoft launched Copilot Cowork for multi-step task automation with partner plugins and built-in security controls. KPMG has deployed Agent 365 to roughly 276,000 of its people.",
-    "take": "Microsoft is selling the control plane, not just the assistant: discover, inventory and govern agents wherever they run, a rival's cloud included. Most organisations already have shadow agents spreading across teams and clouds, and the honest first response to that sprawl is a governance layer, not more agents. KPMG's 276,000-person deployment is a useful reference for what at-scale really looks like, and for the change-management weight that comes with it.",
+    "take": "Microsoft is selling the control plane, not just the assistant: discover, inventory and govern agents wherever they run, a rival's cloud included. Most organisations already have shadow agents spreading across teams and clouds, and the honest first response to that sprawl is a governance layer, not more agents. KPMG's 276,000-person deployment is a useful yardstick for what at-scale really looks like, change-management weight included.",
     "topics": [
       "agents",
       "enterprise",
@@ -135,7 +135,7 @@ export const BRIEFINGS = [
     "date": "2026-06-16",
     "headline": "GLM-5.2 becomes the leading open-weights model on the Artificial Analysis Intelligence Index, beating GPT-5.5 on coding at a fraction of the cost",
     "summary": "Z.ai released GLM-5.2, a 744B-parameter MoE model with MIT-licensed weights, scoring 51 on the Artificial Analysis Intelligence Index v4.1, the highest of any open-weights model to date. It tops GPT-5.5 on SWE-bench Pro (62.1 vs 58.6) and on FrontierSWE (74.4% vs 72.6%), coming within a point of Claude Opus 4.8, while its API runs at roughly one-sixth of GPT-5.5's blended cost. Weights are on Hugging Face at zai-org/GLM-5.2.",
-    "take": "Open-weights models have closed most of the coding gap to the closed flagships, and at a sixth of the price that genuinely shifts the build-versus-buy maths for high-volume agentic work. The real decision is placement, not whether GLM-5.2 is impressive: self-hosted weights remove the data-residency objection, while the hosted API reintroduces the China data-governance question several commentators flagged. Scope which workloads are commodity enough for an open model and which still need a closed frontier provider, rather than treating it as one decision.",
+    "take": "Open-weights models have closed most of the coding gap to the closed flagships, and at a sixth of the price that genuinely shifts the build-versus-buy maths for high-volume agentic work. Whether GLM-5.2 impresses is beside the point; the real decision is placement. Self-hosted weights remove the data-residency objection, while the hosted API reintroduces the China data-governance question several commentators flagged. Treat it as a per-workload call, not a single yes or no: some jobs are commodity enough for an open model, some still want a closed frontier provider.",
     "topics": [
       "open-source",
       "coding",
@@ -152,7 +152,7 @@ export const BRIEFINGS = [
     "date": "2026-06-12",
     "headline": "US government orders Anthropic to suspend global access to Fable 5 and Mythos 5 over a claimed jailbreak",
     "summary": "The US government issued an export-control directive instructing Anthropic to disable worldwide access to two of its most capable models, Claude Fable 5 and Claude Mythos 5, citing national security. The underlying concern was a 'potential narrow, non-universal jailbreak' that prompted the model to identify exploitable software flaws in a codebase. Anthropic publicly disagreed that a narrow jailbreak finding should justify recalling a commercial model used by hundreds of millions, noting the same capability exists in rival public models such as OpenAI's GPT-5.5.",
-    "take": "For the first time a government has reached past policy and into a live model's deployment, and it lands on exactly the capability mid-market firms are starting to lean on: AI that reads a codebase and finds the holes. The uncomfortable lesson is that the same tool sharpening your security testing is the one a regulator may decide is too sharp to leave running. Concentration risk now includes the state, not just the vendor, so a continuity plan for a model that can be switched off by forces outside your contract is no longer paranoia.",
+    "take": "For the first time a government has reached past policy and into a live model's deployment, and it landed on exactly the capability mid-market firms are starting to lean on: AI that reads a codebase and finds the holes. The uncomfortable lesson is that the same tool sharpening your security testing is the one a regulator may decide is too sharp to leave running. Concentration risk now includes the state, not just the vendor. A continuity plan for a model that can be switched off by forces outside your contract is no longer paranoia.",
     "topics": [
       "ai-security",
       "regulation",
@@ -169,7 +169,7 @@ export const BRIEFINGS = [
     "date": "2026-06-12",
     "headline": "Mistral reported to be raising around EUR 3B at a EUR 20B valuation",
     "summary": "Mistral, the French AI lab positioning itself as a sovereign European alternative to US labs, is reported by Bloomberg (via TechCrunch) to be in early discussions to raise roughly EUR 3 billion (about $3.5 billion) at a valuation near EUR 20 billion. That would nearly double the EUR 11.7 billion post-money valuation from its September 2025 Series C. No specific investors are named in the reporting, which cites anonymous sources, and the round is described as early-stage discussions rather than closed.",
-    "take": "Geography matters more than the number here: a EUR 20 billion European champion gives organisations a credible non-US frontier option just as US models get tangled in export controls and IPO pressure. For a mid-market firm with data-residency or sovereignty constraints, especially in Europe, that widens the genuinely viable shortlist beyond the American labs. The raise is still rumoured rather than closed, so let it inform direction, not a decision today.",
+    "take": "Geography matters more than the number here. A EUR 20 billion European champion gives organisations a credible non-US frontier option just as US models get tangled in export controls and IPO pressure. For a mid-market firm with data-residency or sovereignty constraints, especially in Europe, that widens the genuinely viable shortlist beyond the American labs. One caveat keeps it in proportion: the raise is still rumoured rather than closed, so let it inform direction, not today's decision.",
     "topics": [
       "funding",
       "frontier-models",
@@ -186,7 +186,7 @@ export const BRIEFINGS = [
     "date": "2026-06-11",
     "headline": "Anthropic deepens regulated-industry push with DXC and TCS global alliances",
     "summary": "On 11 June Anthropic and DXC Technology announced a multi-year global alliance to embed Claude into mission-critical systems for banks, airlines, insurers and government, training tens of thousands of Claude-certified engineers and making Claude the default model in DXC's OASIS platform. The following day TCS announced a global premier partnership, equipping 50,000 associates with Claude under enterprise-wide licensing and going to market jointly across financial services, public services and healthcare.",
-    "take": "Two systems-integrator alliances in two days says the route into regulated enterprises increasingly runs through the integrators who already operate their core systems, not direct. Your existing IT services partner may quietly be becoming an AI-delivery channel, which reshapes who owns the model choice, the governance posture and the eventual switching costs. Convenient if that integrator is one of these names; read the lock-in carefully if it is not.",
+    "take": "Two systems-integrator alliances in two days, and the pattern is plain: the route into regulated enterprises increasingly runs through the integrators who already operate their core systems, not direct. Your existing IT services partner may quietly be turning into an AI-delivery channel, which reshapes who owns the model choice, the governance posture and the eventual switching costs. Convenient if that integrator is one of these names. Read the lock-in carefully if it is not.",
     "topics": [
       "enterprise",
       "agents",
@@ -203,7 +203,7 @@ export const BRIEFINGS = [
     "date": "2026-06-09",
     "headline": "Anthropic ships Claude Fable 5, its first generally available Mythos-class model",
     "summary": "On 9 June 2026 Anthropic released Claude Fable 5, the first model from its new Mythos class that sits above the Opus tier, alongside the more permissive Mythos 5 reserved for a small group of cyber defenders. Fable 5 hits 80.3% on SWE-Bench Pro and is described as state-of-the-art on nearly all tested capability benchmarks; Stripe reported it compressed roughly five months of engineering work into days. Pricing is $10 per million input tokens and $50 per million output, and it was included free on Pro, Max, Team and Enterprise seats only until 22 June.",
-    "take": "A new tier above Opus at twice the Opus 4.8 rate tells you the frontier is splitting again into a premium agentic band and a workhorse band. The useful work is not admiring that Fable 5 tops the charts but finding where in a workflow a model this capable actually earns its cost, and noticing that the time-limited free window on existing seats may have tempted teams into a dependency that becomes a line item on 23 June. Map which tasks genuinely need Mythos-class reasoning against those Opus or Sonnet already handle.",
+    "take": "A new tier above Opus, at twice the Opus 4.8 rate, says the frontier is splitting again into a premium agentic band and a workhorse band. The useful work is not admiring that Fable 5 tops the charts; it is finding where in a workflow a model this capable actually earns its cost. And notice the timing: the free window on existing seats closed on 22 June, so any dependency a team built during it became a line item the next morning. Match which tasks genuinely need Mythos-class reasoning against those Opus or Sonnet already handle.",
     "topics": [
       "frontier-models",
       "coding",
@@ -220,7 +220,7 @@ export const BRIEFINGS = [
     "date": "2026-06-09",
     "headline": "OpenAI named a Leader in Gartner's Magic Quadrant for enterprise AI coding agents",
     "summary": "OpenAI announced it was placed as a Leader in the Gartner Magic Quadrant for Enterprise AI Coding Agents, citing Codex usage of more than four million people each week. Codex now runs across VS Code, Cursor and Windsurf plus a macOS and Windows desktop app for managing multiple agents and supervising long-running work, and can schedule future work for itself and resume long-term tasks autonomously.",
-    "take": "A Leader placement and four million weekly users put Codex past experiment and into default infrastructure for a large cohort, which is a procurement signal worth logging. The more useful framing is that analyst quadrants reward breadth of enterprise controls and roadmap, not fit for your particular stack. Before the self-scheduling agents and unattended long-running tasks that make the demos impressive become your problem, check that your review and security processes are actually ready to supervise them.",
+    "take": "A Leader placement and four million weekly users put Codex past experiment and into default infrastructure for a large cohort, which is a procurement signal worth logging. The more useful framing is that analyst quadrants reward breadth of enterprise controls and roadmap, not fit for your particular stack. The self-scheduling agents and unattended long-running tasks that make the demos impressive become your problem the moment you adopt them, and the honest question is whether your review and security processes are actually ready to supervise that.",
     "topics": [
       "agents",
       "coding",
@@ -237,7 +237,7 @@ export const BRIEFINGS = [
     "date": "2026-06-08",
     "headline": "Gemini Enterprise adds Workspace canvas actions as Gemini 3.5 Flash becomes default",
     "summary": "Google continued building out Gemini Enterprise as its unified agent platform (the evolution of Vertex AI), with tighter Workspace integration: users will soon schedule Calendar meetings and create, view and edit Docs and Slides directly from the app's canvas mode, backed by a Workspace Intelligence semantic layer. From 8 June, Gemini 3.5 Flash is enabled by default for Gemini Enterprise users. Google reported 40% quarter-over-quarter growth in paid monthly active users in Q1.",
-    "take": "Google's pitch is consolidation: one platform across models, a no-code Agent Designer and the Workspace surfaces people already use. For an organisation on Google Workspace, embedding agents where work already happens lowers the adoption barrier, but default-on model changes you cannot turn off bring their own governance and change-control questions. Check who controls the model roster and the data boundaries before treating it as the default.",
+    "take": "Google's pitch is consolidation: one platform across models, a no-code Agent Designer, and the Workspace surfaces people already use. For an organisation on Google Workspace, embedding agents where work already happens lowers the adoption barrier. The catch sits in the default-on model changes you cannot turn off, which carry their own governance and change-control weight. Before treating it as the default, the question to answer is who controls the model roster and the data boundaries.",
     "topics": [
       "agents",
       "enterprise",
@@ -254,7 +254,7 @@ export const BRIEFINGS = [
     "date": "2026-06-08",
     "headline": "OpenAI confirms confidential S-1 filing with the SEC, first formal step toward a landmark IPO",
     "summary": "OpenAI confirmed on 8 June 2026 that it had confidentially submitted a draft Form S-1 registration statement to the SEC, the first formal step toward a public listing, with Goldman Sachs, Morgan Stanley and JPMorgan reported to be leading the offering. The move follows a financing round earlier in 2026 that valued the company at roughly $852 billion, with analysts widely expecting a public listing to exceed $1 trillion. OpenAI has not committed to timing and said it disclosed the filing publicly because it expected the news to leak.",
-    "take": "An OpenAI IPO would be the clearest sign yet that frontier AI has moved from venture experiment to public-market infrastructure, and that shifts the incentives a customer should watch. Public companies answer to quarterly earnings, which tends to sharpen pricing, tighten free tiers and accelerate monetisation of yesterday's loss-leaders. If your AI strategy sits on OpenAI's stack, pressure-test how your unit economics hold up when the cost curve stops falling and starts being managed for margin, and keep at least one credible alternative model warm.",
+    "take": "An OpenAI IPO would be the clearest sign yet that frontier AI has moved from venture experiment to public-market infrastructure, and that shift changes the incentives a customer should watch. Public companies answer to quarterly earnings, which tends to sharpen pricing, tighten free tiers and accelerate monetisation of yesterday's loss-leaders. If your AI strategy sits on OpenAI's stack, the prudent move is to pressure-test how your unit economics hold up when the cost curve stops falling and starts being managed for margin, and to keep at least one credible alternative warm.",
     "topics": [
       "funding",
       "frontier-models",
@@ -271,7 +271,7 @@ export const BRIEFINGS = [
     "date": "2026-06-03",
     "headline": "Anthropic maps a year of AI-enabled cyber threats: autonomy, not phishing, is the rising danger signal",
     "summary": "Anthropic analysed 832 accounts banned for malicious cyber activity between March 2025 and March 2026 and mapped them to the MITRE ATT&CK framework. It found 67.3% of studied accounts used AI to help write malware, AI-assisted account discovery rose while AI-assisted phishing actually fell, and the share of actors its risk system rated medium-or-higher jumped from 33% to 56% across the study period. The firm argues the most useful danger signal is now how much autonomy an attacker hands the model, which existing security frameworks do not capture.",
-    "take": "AI-assisted phishing actually fell while AI-written malware rose: the real threat is amateurs renting a professional's skill set from a model and handing it the wheel, not better-worded emails. That moves defensive attention away from awareness training alone and toward detecting autonomous, AI-driven activity inside a network that is already compromised. Point your monitoring at how much an attacker has delegated to a machine, not just how human-like they look, because Anthropic's data suggests those are drifting apart.",
+    "take": "AI-assisted phishing actually fell while AI-written malware rose. The threat that grew is not better-worded emails; it is amateurs renting a professional's skill set from a model and handing it the wheel. That moves defensive attention away from awareness training alone and toward detecting autonomous, AI-driven activity inside a network that is already compromised. Anthropic's data suggests how human-like an attacker looks and how much they have delegated to a machine are drifting apart, and the second signal is now the one to watch.",
     "topics": [
       "ai-security",
       "agents",
@@ -288,7 +288,7 @@ export const BRIEFINGS = [
     "date": "2026-06-02",
     "headline": "GitHub adds Copilot CLI agent picker, remote control and a desktop orchestration app",
     "summary": "Announced at Microsoft Build 2026, the Copilot CLI gained an agent picker for Agent, Ask, custom and Plan modes, plus slash commands including /remote to drive sessions from github.com or mobile and /compact to compress context. Alongside it GitHub introduced a standalone Copilot desktop app for Windows, macOS and Linux that orchestrates multiple agent sessions in parallel, each in its own isolated git worktree, with bidirectional 'canvases' for humans and agents to share plans, pull requests and terminal state.",
-    "take": "What is on display is a shift from single-developer assistant to a control plane for many agents working one repository at once. Isolated worktrees per agent are a sensible answer to the obvious collision problem, but parallel autonomous agents enlarge the review and merge surface rather than shrink it. Running several in parallel only becomes a throughput gain, not a new source of hard-to-trace regressions, if your CI, review and branch-protection discipline is genuinely strong; harden that first.",
+    "take": "What is on display is a shift from single-developer assistant to a control plane for many agents working one repository at once. Isolated worktrees per agent are a sensible answer to the obvious collision problem, yet parallel autonomous agents enlarge the review and merge surface rather than shrink it. Running several at once becomes a throughput gain only where CI, review and branch-protection discipline is genuinely strong. Where it is not, it quietly becomes a new source of hard-to-trace regressions.",
     "topics": [
       "agents",
       "coding",
@@ -305,7 +305,7 @@ export const BRIEFINGS = [
     "date": "2026-06-02",
     "headline": "Anthropic expands Project Glasswing to roughly 200 organisations as AI-found vulnerabilities outpace patching",
     "summary": "Anthropic expanded Project Glasswing, its programme using the Claude Mythos Preview model to find and triage software vulnerabilities, to around 200 organisations across more than 15 countries, up from about 50 at its April launch. Partners have collectively reported over 10,000 high- and critical-severity flaws in under two months; Cloudflare alone identified roughly 2,000 bugs, 400 rated high or critical, with a false-positive rate it described as better than human testers. A joint report from the Cloud Security Alliance, SANS Institute and OWASP warned organisations are likely to be overwhelmed by attackers using AI to find and exploit flaws faster than defenders can patch.",
-    "take": "Glasswing is the optimistic mirror image of the cyber-threat story: the same model that can weaponise a vulnerability is, in friendly hands, surfacing them at industrial scale. The catch the SANS and OWASP report names is the one that actually bites mid-market teams: 10,000 flaws are only useful if you can patch them, and most pipelines are sized for a human rate of discovery. Adopting AI-assisted discovery without expanding remediation capacity just hands your team a backlog it cannot clear; the bottleneck is moving from detection to fixing.",
+    "take": "Glasswing is the optimistic mirror image of the cyber-threat story: the same model that can weaponise a vulnerability is, in friendly hands, surfacing them at industrial scale. The catch the SANS and OWASP report names is the one that actually bites mid-market teams. Ten thousand flaws are only useful if you can patch them, and most pipelines are sized for a human rate of discovery. Adopt AI-assisted discovery without expanding remediation capacity and you have simply handed your team a backlog it cannot clear; the bottleneck moves from detection to fixing.",
     "topics": [
       "ai-security",
       "enterprise",
@@ -322,7 +322,7 @@ export const BRIEFINGS = [
     "date": "2026-06-01",
     "headline": "Snowflake and Anthropic deepen governed-AI partnership at Snowflake Summit 26",
     "summary": "At Snowflake Summit on 1 June, Snowflake and Anthropic reported momentum in integrating Claude directly into Snowflake Cortex AI, letting enterprises run production agents on governed data without moving sensitive information outside their systems. Snowflake highlighted Cortex Code (its fastest-growing product ever, 7,100-plus users), Snowflake Intelligence and Cortex Agents, with customers including Block, Carvana, Indeed and Notion. Snowflake also joined the Claude Marketplace as a launch partner.",
-    "take": "Here is the recurring 2026 theme again: bring the model to the governed data rather than export the data to the model. For a mid-market organisation, the analytics warehouse is quietly becoming the natural home for AI agents, which can consolidate governance helpfully or simply concentrate dependency on one data platform. Weigh the convenience of agents-on-your-warehouse against the portability you give up by wiring reasoning into a single vendor's stack.",
+    "take": "The recurring 2026 theme shows up again: bring the model to the governed data rather than export the data to the model. For a mid-market organisation, the analytics warehouse is quietly becoming the natural home for AI agents, which can consolidate governance helpfully or simply concentrate dependency on one data platform. The trade is convenience now against the portability you give up by wiring reasoning into a single vendor's stack.",
     "topics": [
       "enterprise",
       "agents",
@@ -339,7 +339,7 @@ export const BRIEFINGS = [
     "date": "2026-05-28",
     "headline": "Claude Opus 4.8 leans into honesty and reliability over raw capability gains",
     "summary": "Anthropic released Claude Opus 4.8 on 28 May 2026, emphasising honesty and reliability: the company reports it is roughly four times less likely than Opus 4.7 to let flaws in its own generated code pass unremarked. It is the only model to complete every case end-to-end on Anthropic's Super-Agent benchmark, scores 84% on Online-Mind2Web, and runs at 2.5x speed in fast mode. Pricing held at $5/$25 per million input/output tokens, with a fast mode at $10/$50.",
-    "take": "What counts as progress just shifted: fewer silently-wrong outputs rather than another benchmark record. For teams putting models into real workflows, a measurable drop in undetected coding errors is worth more than a few leaderboard points, because it changes how much human review each output needs. Check whether your evaluation harness even measures self-caught error rates, or whether you are still selecting purely on capability scores that say little about production reliability.",
+    "take": "What counts as progress just shifted: fewer silently-wrong outputs rather than another benchmark record. For teams putting models into real workflows, a measurable drop in undetected coding errors is worth more than a few leaderboard points, because it changes how much human review each output needs. The awkward question this raises about your own process is whether your evaluation harness even measures self-caught error rates, or whether you are still selecting purely on capability scores that say little about production reliability.",
     "topics": [
       "frontier-models",
       "coding",
@@ -356,7 +356,7 @@ export const BRIEFINGS = [
     "date": "2026-05-28",
     "headline": "Claude Opus 4.8 takes the top usable spot on the Artificial Analysis Intelligence Index with a focus on reliability over raw scores",
     "summary": "Anthropic released Claude Opus 4.8 on 28 May 2026, describing it as a modest but tangible improvement on Opus 4.7. It became the leading generally available model on the Artificial Analysis Intelligence Index and ranks #1 on LMArena's overall board among shipping models. Anthropic emphasised reliability gains, around four times less likely to let flaws in its own generated code pass unremarked, and alignment improvements, with pricing held flat at $5/$25 per million tokens.",
-    "take": "Notice the framing: Anthropic led with honesty and self-checking rather than a headline benchmark jump, tracking a wider move from peak-score chasing to dependability. For a mid-market org modernising with AI, a model that catches its own coding errors more often is worth more in production than a point or two on an academic test, because the cost lives in the failures, not the averages. Weight reliability and error rates on your own tasks when you evaluate models, not just public index position.",
+    "take": "Notice the framing. Anthropic led with honesty and self-checking rather than a headline benchmark jump, tracking a wider move from peak-score chasing to dependability. For a mid-market org modernising with AI, a model that catches its own coding errors more often is worth more in production than a point or two on an academic test, because the cost lives in the failures, not the averages. The index position is the least informative thing about it; reliability on your own tasks is where the value actually sits.",
     "topics": [
       "frontier-models",
       "coding",
@@ -373,7 +373,7 @@ export const BRIEFINGS = [
     "date": "2026-05-19",
     "headline": "Google opens the Gemini 3.5 family with the cost-efficient 3.5 Flash",
     "summary": "On 19 May 2026 Google released Gemini 3.5 Flash, the first public model in the 3.5 family, following the December 2025 Gemini 3 Flash. The Flash line targets frontier-level reasoning at low latency and cost: the prior Gemini 3 Flash posted 90.4% on GPQA Diamond and 78% on SWE-bench Verified at $0.50/$3 per million input/output tokens while running about 3x faster than 2.5 Pro and using roughly 30% fewer tokens. The 3.5 family marks Google's next iteration on that efficiency-first positioning.",
-    "take": "Flash-class models are where most production volume actually lands, because the economics work at scale in a way premium tiers do not. The real lever is portfolio design: which jobs route to a cheap, fast Flash model and which genuinely need a Fable, Opus or GPT-5.5-Pro. Getting that routing right usually moves your AI bill more than any single model choice, so build it before committing volume to a premium tier.",
+    "take": "Flash-class models are where most production volume actually lands, because the economics work at scale in a way premium tiers do not. The real lever is portfolio design: which jobs route to a cheap, fast Flash model and which genuinely need a Fable, Opus or GPT-5.5-Pro. Get that routing right and it usually moves your AI bill more than any single model choice does. Worth building before you commit volume to a premium tier.",
     "topics": [
       "frontier-models",
       "multimodal",
@@ -390,7 +390,7 @@ export const BRIEFINGS = [
     "date": "2026-05-19",
     "headline": "Google retires Gemini CLI and moves everyone to Antigravity CLI on 18 June",
     "summary": "Google announced that on 18 June 2026 Gemini CLI and the Gemini Code Assist IDE extensions stop serving requests for free, Pro and Ultra users, with paid Enterprise licences retained. From the same date Antigravity CLI, a Go-built terminal interface for its agent-first platform, becomes available to everyone, carrying over Agent Skills, Hooks, Subagents and Extensions (now Antigravity plugins) and sharing the agent system behind Antigravity 2.0's desktop app.",
-    "take": "A forced migration with a hard cutover date, and one that reportedly broke developer setups when Antigravity 2.0 shipped. The pattern is worth filing: vendors are folding multiple coding-tool brands into single agent platforms and retiring the older entry points fast. If your automation or onboarding is pinned to a specific tool name and command surface, assume the vendor may rename or retire it on a few weeks' notice, and keep that coupling loose.",
+    "take": "A forced migration with a hard cutover date, and one that reportedly broke developer setups when Antigravity 2.0 shipped. The pattern is worth filing: vendors are folding multiple coding-tool brands into single agent platforms and retiring the older entry points fast. If your automation or onboarding is pinned to a specific tool name and command surface, the safe assumption is that the vendor may rename or retire it on a few weeks' notice. Keep that coupling loose.",
     "topics": [
       "agents",
       "coding",
@@ -407,7 +407,7 @@ export const BRIEFINGS = [
     "date": "2026-04-29",
     "headline": "Cursor ships a TypeScript SDK that turns its coding agent into deployable infrastructure",
     "summary": "Cursor released a TypeScript SDK exposing the same agent runtime, harness and models behind the IDE, so teams can run programmatic agents locally or in Cursor's cloud with each cloud agent getting a dedicated VM and the repository pre-cloned. It bundles codebase indexing and semantic search, MCP server support, reusable skill definitions and loop hooks, and is in public beta with token-based pricing, aimed at embedding agents in CI/CD pipelines and backend services.",
-    "take": "This reframes a coding assistant from something developers open into a service other systems call, which is where both the real automation value and the real operational risk live. An agent that reads a failing pipeline, writes a fix and opens a pull request unattended is genuinely useful and genuinely able to commit a confident mistake at scale. Decide the guardrails, blast-radius limits and human checkpoints before letting a programmatic agent act inside your delivery pipeline rather than beside a developer.",
+    "take": "This reframes a coding assistant from something developers open into a service other systems call, which is where both the real automation value and the real operational risk live. An agent that reads a failing pipeline, writes a fix and opens a pull request unattended is genuinely useful, and genuinely able to commit a confident mistake at scale. The two arrive together. Settle the guardrails, blast-radius limits and human checkpoints before a programmatic agent acts inside your delivery pipeline rather than beside a developer.",
     "topics": [
       "agents",
       "coding",
@@ -441,7 +441,7 @@ export const BRIEFINGS = [
     "date": "2026-04-23",
     "headline": "OpenAI releases GPT-5.5 with a 1M context window and a step up in agentic coding",
     "summary": "OpenAI released GPT-5.5 on 23 April 2026, with API access following on 24 April. The model carries a 1M-token context window and reported scores of 82.7% on Terminal-Bench 2.0, 51.7% on FrontierMath Tier 1-3, and 74.0% on the MRCR long-context test. API pricing is $5 per million input and $30 per million output tokens, with GPT-5.5 Pro at $30/$180. TechCrunch framed the launch as a step toward OpenAI's 'super app' ambitions.",
-    "take": "Pricing is the notable move: GPT-5.5 output roughly doubles the prior generation's rate, with OpenAI arguing that fewer output tokens offset much of the rise. For a buyer that nets out to a real cost question rather than a clear saving, so test your own token economics on representative tasks instead of trusting the 'effectively cheaper' framing. The 1M context window is genuinely useful for document-heavy and agentic work, but only if your retrieval and orchestration are built to exploit it rather than just stuff the window.",
+    "take": "Pricing is the move to watch: GPT-5.5 output roughly doubles the prior generation's rate, with OpenAI arguing that fewer output tokens offset much of the rise. For a buyer that nets out to an open cost question rather than a clear saving, which is reason enough to test your own token economics on representative tasks rather than trust the 'effectively cheaper' framing. The 1M context window is genuinely useful for document-heavy and agentic work, but only where your retrieval and orchestration are built to exploit it rather than just stuff the window.",
     "topics": [
       "frontier-models",
       "agents",

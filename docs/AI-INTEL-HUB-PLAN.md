@@ -227,6 +227,14 @@ output never regresses.
   with the trade-off, some with who should act.
 - **Cap rhetorical questions:** at most 6 takes across the whole set may end on a "question to explore". The
   rest must land on a concrete read or recommendation.
+- **Vary the closing move (21 Jun: the actual formula the reviewer caught).** The takes had drifted into
+  ending almost every read with the same imperative due-diligence command ("map where your data lives",
+  "check your evaluation harness", "weigh the convenience", "run a like-for-like pilot on your own tasks
+  before you scale"), with the closing verbs clustering on Map / Check / Weigh / Run. That sameness is the
+  formula. **No more than ~5 of the set may end on a direct imperative command**, and those must use distinct
+  verbs and shapes. The rest should close on a consequence, a reframe of what the news signals, a flat
+  statement of the overlooked angle, a wry aside, or a question. Rotate the closing deliberately, the same way
+  you rotate the opening; "do your own due diligence before adopting" is the closer to ration, not default to.
 - Name the specific thing, the number, the trade-off. No decorative sentences.
 
 **Data integrity:**
