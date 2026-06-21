@@ -33,6 +33,7 @@ const LazyOrg = lazy(() => import('./store/OrgDashboard.jsx'));         // #org 
 const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
 const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
 const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // the AI Intelligence section — renders inline as the body of the "Intelligence" page (the renamed Insights)
+const LazyIntelArticle = lazy(() => import('./intel/IntelArticle.jsx')); // #intel/<id> — a single briefing's own article page
 
 // Branded loading state for the lazy Intel Hub chunk. Self-contained (inline styles + scoped
 // keyframes) because intel.css ships *inside* that chunk and isn't available while it loads.
@@ -134,10 +135,15 @@ function readAdminHash() {
 function readBreakdownHash() {
   return /^#\/?breakdown\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
-// #intel → legacy hash for the old full-screen hub. The hub now lives inline on the Intelligence page,
-// so this only triggers a redirect onto that page (see the effect below); kept so old links still resolve.
+// #intel/<id> → a single briefing's own article page (rendered inside the chrome).
+function readIntelArticle() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?intel\/([\w-]+)/i);
+  return m ? m[1] : null;
+}
+// bare #intel (or #intel/) → legacy hash for the old full-screen hub. The hub now lives inline on the
+// Intelligence page, so this only triggers a redirect onto that page (see the effect below).
 function readIntelHash() {
-  return /^#\/?intel\b/i.test(typeof location !== 'undefined' ? location.hash : '');
+  return /^#\/?intel\/?$/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
 // #shop or #shop/<vendor-slug> → the live storefront (reads Supabase)
 function readShopHash() {
@@ -159,12 +165,19 @@ function readAccountHash() {
   return /^#\/?account\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
 // A Supabase auth email link (signup confirmation, password recovery, magic link, email change) lands
-// on a bare URL with the session in the fragment (#access_token=…&type=…) — no #account route to match
-// on. Capture that intent ONCE at module load, before the lazy account chunk pulls in supabase-js (which
-// consumes + scrubs these tokens from the URL). AUTH_LANDING routes the landing to the account portal so
-// the visitor arrives signed in; RECOVERY_LANDING additionally tells it to show the set-a-new-password form.
-const AUTH_LANDING = typeof location !== 'undefined' && /[#&]access_token=/.test(location.hash);
-const RECOVERY_LANDING = AUTH_LANDING && /type=recovery/.test(location.hash);
+// on a bare URL with the result in the fragment — EITHER success (#access_token=…&type=…) OR failure
+// (#error=…&error_code=otp_expired&… when the link expired, was already used, or got consumed by an email
+// scanner/prefetch). Either way there's no #account route to match on, so without this both would dump the
+// visitor silently on the homepage. Captured ONCE at module load, before the lazy account chunk pulls in
+// supabase-js (which consumes + scrubs the tokens). AUTH_LANDING mounts the account portal; RECOVERY_LANDING
+// shows the set-a-new-password form; AUTH_ERROR_MSG surfaces a readable reason so the visitor isn't lost.
+const _authHash = typeof location !== 'undefined' ? location.hash : '';
+const AUTH_LANDING = /[#&](?:access_token|error)=/.test(_authHash) || /error_code=/.test(_authHash);
+const RECOVERY_LANDING = /[#&]access_token=/.test(_authHash) && /type=recovery/.test(_authHash);
+const AUTH_ERROR_MSG = (/[#&]error/.test(_authHash) && !/[#&]access_token=/.test(_authHash))
+  ? ((() => { try { return decodeURIComponent((/error_description=([^&]+)/.exec(_authHash) || [])[1] || '').replace(/\+/g, ' '); } catch { return ''; } })()
+     || 'That link is invalid or has expired.')
+  : null;
 // #org → customer organization dashboard (company hub, members, DX engagement timeline)
 function readOrgHash() {
   return /^#\/?org\b/i.test(typeof location !== 'undefined' ? location.hash : '');
@@ -290,10 +303,12 @@ export default function App() {
   const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
   const [authLanding, setAuthLanding] = useState(AUTH_LANDING); // arrived via a Supabase auth email link → mount the account portal
   const [recovery, setRecovery] = useState(RECOVERY_LANDING);  // …and if it was a password-reset link, show the reset form
+  const [authError, setAuthError] = useState(AUTH_ERROR_MSG);  // …or if the link was bad, the reason to show on the sign-in screen
   const [orgRoute, setOrgRoute] = useState(readOrgHash); // #org → organization dashboard
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
-  const [intelRoute, setIntelRoute] = useState(readIntelHash); // legacy #intel → redirect to the Intelligence page
+  const [intelRoute, setIntelRoute] = useState(readIntelHash); // legacy bare #intel → redirect to the Intelligence page
+  const [intelArticle, setIntelArticle] = useState(readIntelArticle); // #intel/<id> → a briefing's own article page
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
@@ -330,7 +345,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setAuthLanding(false); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -412,6 +427,7 @@ export default function App() {
     // render precedence below (breakdown > admin > invoice > account > confirm > catalogue > shop > product).
     const utility = (t, slug) => applyHead({ title: t + ' · ' + SITE_NAME }, t, slug);
     if (breakdownRoute) { utility('The eight pillars', 'method'); return; }
+    if (intelArticle) { utility('Briefing', 'insights'); return; } // the article component refines this to the headline on mount
     if (adminNav) { utility('Studio admin', 'home'); return; }
     if (invoiceRoute) { utility('Invoice', 'home'); return; }
     if (accountRoute || authLanding) { utility('Your account', 'home'); return; }
@@ -426,14 +442,14 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
   useEffect(() => {
     if (typeof location === 'undefined') return;
     pageview(location.pathname + location.hash, document.title);
-  }, [current, productSlug, shopRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, adminNav]);
+  }, [current, productSlug, shopRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelArticle, adminNav]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -688,7 +704,7 @@ export default function App() {
   function navigate(slug) {
     if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product / #admin / #breakdown
     setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false); setOrgRoute(false); setInvoiceRoute(null);
-    setAdminNav(null); setBreakdownRoute(false); // clear admin/breakdown routes synchronously so the page renders without a flash
+    setAdminNav(null); setBreakdownRoute(false); setIntelArticle(null); // clear admin/breakdown/article routes synchronously so the page renders without a flash
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
@@ -1013,7 +1029,7 @@ export default function App() {
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) and the Intelligence section render on their
           own solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute || current === 'insights') && !saveData && <Stage background={bg} />}
+      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'insights') && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
@@ -1021,12 +1037,12 @@ export default function App() {
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
+        <EditorBoundary key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : (accountRoute || authLanding)
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount recovery={recovery} onRecoveryDone={() => setRecovery(false)} onLanded={() => { if (!/^#\/?account\b/i.test(location.hash)) location.hash = 'account'; }} /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount recovery={recovery} authError={authError} onRecoveryDone={() => setRecovery(false)} onLanded={() => { if (!/^#\/?account\b/i.test(location.hash)) location.hash = 'account'; }} /></Suspense>
             : orgRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyOrg /></Suspense>
             : confirmRoute
@@ -1037,6 +1053,8 @@ export default function App() {
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>
+            : intelArticle
+            ? <Suspense fallback={<IntelBoot />}><LazyIntelArticle id={intelArticle} onBack={() => navigate(state.pages.insights ? 'insights' : state.order[0])} /></Suspense>
             : current === 'insights'
             ? <Suspense fallback={<IntelBoot />}><LazyIntelHub /></Suspense>
             : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}

@@ -1,15 +1,14 @@
 // AI Intelligence Hub — the full-screen intelligence surface opened from Insights (#intel).
 // Agent-curated AI-landscape intel, on-brand, with a per-visitor interest engine driving a "For you"
 // feed. A full-screen route takeover (Escape / close returns to Insights).
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import buildIntel, { TOPIC_LABEL, TOPIC_HUE, TOPICS, WEIGHTS, BOARD_META } from '../data/ai-intel.mjs';
-import { recordOpen, recordTab, recordRead, recordDwell, recordTopicFocus, recordVendor, recordCompare, rankForYou, topInterests, getProfile, hasInterestSignal } from './interest.js';
+import { recordOpen, recordTab, recordTopicFocus, recordCompare, rankForYou, topInterests, getProfile, hasInterestSignal } from './interest.js';
+import Logo from './Logo.jsx';
+import BriefingArt from './BriefingArt.jsx';
+import { readTime, briefHref } from './articleMeta.js';
 import './intel.css';
 
-// Logo resolution: Clearbit's free logo API was retired, so use Google's favicon service (reliable, no key)
-// and fall back to an on-brand monogram tile so a missing logo never renders as a blank/white box.
-const LOGO = (d) => 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=128';
-const monogram = (s) => (s || '?').replace(/^(the|a|an)\s+/i, '').replace(/^www\./i, '').trim().charAt(0).toUpperCase() || '?';
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); } catch { return s; } };
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -25,13 +24,6 @@ const SHORT = { 'frontier-models': 'Frontier', 'ai-security': 'Security', infras
 const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
 const Spark = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M12 2l2.2 6.3L21 10l-5 4.2L17.5 21 12 17.3 6.5 21 8 14.2 3 10l6.8-1.7L12 2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>);
 const X = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>);
-
-function Logo({ domain, name, className }) {
-  const [bad, setBad] = useState(false);
-  const cls = 'ih-logo' + (className ? ' ' + className : '');
-  if (bad || !domain) return <span className={cls + ' mono'} aria-hidden="true">{monogram(name || domain)}</span>;
-  return <img className={cls} src={LOGO(domain)} alt="" loading="lazy" onError={() => setBad(true)} />;
-}
 
 // The interest radar: a canvas that plots the visitor's own topic interests, with a slow sweep. It
 // literally visualises "what you care about". Canvas is sized once per run (not per frame); reduced
@@ -155,12 +147,6 @@ function IntelConstellation() {
   return <div className="ih-constellation" ref={hostRef} aria-hidden="true" />;
 }
 
-function TopicDots({ topics }) {
-  return (topics || []).slice(0, 3).map((t) => (
-    <span key={t} className="ih-dot" title={TOPIC_LABEL[t] || t} style={{ background: `hsl(${TOPIC_HUE[t] || 84} 80% 60%)` }} />
-  ));
-}
-
 // editorial tiering: sort by importance (high first) then date desc then id, and split a list into the
 // lead story (1), two sub-leads, and the river (the rest). The whole feed reads like a front page.
 const sortTiers = (list) => {
@@ -176,68 +162,55 @@ const sortTiers = (list) => {
 // the lead topic, as a coloured caps kicker (topic hue as "section ink", never a fill)
 const topicKicker = (b) => { const t = (b.topics || [])[0]; return t ? { label: TOPIC_LABEL[t] || t, hue: TOPIC_HUE[t] || 84 } : null; };
 
-// The lead story: the front-page splash. Logo + ruled byline, an oversized headline, the full standfirst,
-// and the Greatstone read shown OPEN as a true pull-quote. Glass + elevation mark it as the lead.
+// The lead story: a front-page splash. A wide generative cover, then the byline, an oversized headline
+// and the standfirst. The whole card is a link to the briefing's own article (the heading link is
+// stretched over the card via ::after, so the accessible name stays the headline).
 function LeadCard({ b, forYou }) {
   const k = topicKicker(b);
   return (
     <article className={'ih-lead' + (forYou ? ' foryou' : '')}>
-      {k && <span className="ih-lead-rule" aria-hidden="true" style={{ background: `hsl(${k.hue} 70% 56%)` }} />}
-      <div className="ih-lead-grid">
-        <div className="ih-lead-main">
-          <div className="ih-brief-top">
-            <Logo domain={b.vendorDomain} name={b.vendor} className="ih-lead-logo" />
-            <span className="ih-brief-vendor">{b.vendor}</span>
-            {k && <span className="ih-kicker" style={{ color: `hsl(${k.hue} 72% 64%)` }}>{k.label}</span>}
-            <span className="ih-brief-date">{fmtDate(b.date)}</span>
-          </div>
-          <h3 className="ih-lead-h">{b.headline}</h3>
-          <p className="ih-lead-stand">{b.summary}</p>
-          <div className="ih-lead-foot">
-            {(b.topics || []).map((t) => <span key={t} className="ih-tag">{TOPIC_LABEL[t] || t}</span>)}
-            {b.sourceUrl && <a className="ih-src" href={b.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => recordVendor(b.vendorDomain)}>{b.sourceName} ↗</a>}
-          </div>
+      <div className="ih-lead-media">
+        <BriefingArt brief={b} className="lead" />
+        {k && <span className="ih-art-kicker" style={{ background: `hsl(${k.hue} 64% 48%)` }}>{k.label}</span>}
+      </div>
+      <div className="ih-lead-body">
+        <div className="ih-brief-top">
+          <Logo domain={b.vendorDomain} name={b.vendor} className="ih-lead-logo" />
+          <span className="ih-brief-vendor">{b.vendor}</span>
+          {b.importance === 'high' && <i className="ih-hi" aria-hidden="true" title="High importance" />}
+          <span className="ih-brief-date">{fmtDate(b.date)} · {readTime(b)} min read</span>
         </div>
-        <aside className="ih-lead-read" style={k ? { borderColor: `hsl(${k.hue} 60% 50% / .5)` } : null}>
-          <span className="ih-lead-qmark" aria-hidden="true">&ldquo;</span>
-          <span className="lbl">The Greatstone read</span>
-          <p>{b.take}</p>
-        </aside>
+        <h3 className="ih-lead-h"><a className="ih-brief-link" href={briefHref(b.id)}>{b.headline}</a></h3>
+        <p className="ih-lead-stand">{b.summary}</p>
+        <span className="ih-readmore" aria-hidden="true">Read the briefing<span className="ih-arrow">→</span></span>
       </div>
     </article>
   );
 }
 
-// The card is an <article>, not a <button> (a button may not contain a heading or the source <a>).
-// The headline is the toggle button, stretched via ::after to keep the whole card clickable; the source
-// link sits above the stretch with its own z-index so it stays independently clickable.
-function BriefingCard({ b, forYou, expanded, onToggle, variant }) {
+// A briefing card: generative cover on top, byline, headline and a short dek. The whole card links to
+// the briefing's own article page (heading link stretched via ::after). No inline expand — opening a
+// story no longer shoves the rest of the grid around.
+function BriefingCard({ b, forYou, variant }) {
   const k = topicKicker(b);
   const high = b.importance === 'high';
   return (
     <article className={'ih-brief' + (variant ? ' ' + variant : '') + (forYou ? ' foryou' : '')}>
-      <div className="ih-brief-top">
-        <Logo domain={b.vendorDomain} name={b.vendor} />
-        <span className="ih-brief-vendor">{b.vendor}</span>
-        {k && <span className="ih-kicker">{high && <i className="ih-hi" aria-hidden="true" />}<span style={{ color: `hsl(${k.hue} 72% 64%)` }}>{k.label}</span></span>}
-        <span className="ih-brief-date">{fmtDate(b.date)}</span>
+      <div className="ih-brief-media">
+        <BriefingArt brief={b} className="card" />
+        {k && <span className="ih-art-kicker" style={{ background: `hsl(${k.hue} 64% 48%)` }}>{k.label}</span>}
       </div>
-      <h4><button type="button" className="ih-brief-btn" aria-expanded={expanded} onClick={() => onToggle(b)}>{b.headline}</button></h4>
-      <p style={expanded ? null : { display: '-webkit-box', WebkitLineClamp: variant === 'river' ? 1 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.summary}</p>
-      {expanded ? (
-        <>
-          <div className="ih-take" style={k ? { borderColor: `hsl(${k.hue} 60% 50%)` } : null}>
-            <span className="lbl">The Greatstone read</span>
-            <p>{b.take}</p>
-          </div>
-          <div className="ih-brief-foot">
-            {(b.topics || []).map((t) => <span key={t} className="ih-tag">{TOPIC_LABEL[t] || t}</span>)}
-            {b.sourceUrl && <a className="ih-src" href={b.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); recordVendor(b.vendorDomain); }}>{b.sourceName} ↗</a>}
-          </div>
-        </>
-      ) : (
-        <div className="ih-brief-foot"><span className="ih-src" aria-hidden="true">Read the read ›</span></div>
-      )}
+      <div className="ih-brief-body">
+        <div className="ih-brief-top">
+          <Logo domain={b.vendorDomain} name={b.vendor} />
+          <span className="ih-brief-vendor">{b.vendor}</span>
+          {high && <i className="ih-hi" aria-hidden="true" title="High importance" />}
+          <span className="ih-brief-date">{fmtDate(b.date)}</span>
+        </div>
+        <h4 className="ih-brief-h"><a className="ih-brief-link" href={briefHref(b.id)}>{b.headline}</a></h4>
+        <p>{b.summary}</p>
+        <span className="ih-readmore" aria-hidden="true">{readTime(b)} min read<span className="ih-arrow">→</span></span>
+      </div>
     </article>
   );
 }
@@ -260,24 +233,14 @@ export default function IntelHub() {
   const [board, setBoard] = useState('models');
   const [compare, setCompare] = useState([]);
   const [profile, setProfile] = useState(() => getProfile());
-  const [radarTick, setRadarTick] = useState(0);
   const tablistRef = useRef(null);
-  const dwellRef = useRef({ id: null, at: 0 });
 
   useEffect(() => { recordOpen(); }, []);
 
-  // flush any open card's dwell to analytics (called on switch/unmount) without re-counting the read
-  const flushDwell = useCallback(() => {
-    const d = dwellRef.current;
-    if (d.id) { recordDwell(d.id, Date.now() - d.at); dwellRef.current = { id: null, at: 0 }; }
-  }, []);
-
-  // The hub is now a normal in-page surface inside the site chrome (the Header nav sits above it),
-  // not a modal takeover — so no focus trap, no body-scroll lock, no Escape-to-close. We only flush
-  // the open card's dwell when the visitor leaves the page (unmount).
-  useEffect(() => () => flushDwell(), [flushDwell]);
-
-  const switchTab = (id) => { flushDwell(); setTab(id); recordTab(id); setOpenId(null); };
+  // The hub is a normal in-page surface inside the site chrome (the Header nav sits above it), not a
+  // modal — so no focus trap, no body-scroll lock, no Escape-to-close. Briefings now open as their own
+  // article page (the read/dwell is recorded there), so there is no inline expand to track here.
+  const switchTab = (id) => { setTab(id); recordTab(id); setOpenId(null); };
   const onTabKey = (e, i) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
@@ -286,18 +249,6 @@ export default function IntelHub() {
     switchTab(TABS[n].id);
     requestAnimationFrame(() => { const t = tablistRef.current && tablistRef.current.querySelector('#ih-tab-' + TABS[n].id); if (t) t.focus(); });
   };
-
-  // open/close a briefing. Record the read ONCE on open (topic/vendor weight); on close push only dwell.
-  // Side effects live outside the state updater so StrictMode's double-invoke can't double-count.
-  const toggleBrief = useCallback((b) => {
-    const closing = openId === b.id;
-    if (closing) { flushDwell(); setOpenId(null); return; }
-    flushDwell();
-    recordRead(b, 0);
-    dwellRef.current = { id: b.id, at: Date.now() };
-    setProfile(getProfile()); setRadarTick((t) => t + 1);
-    setOpenId(b.id);
-  }, [openId, flushDwell]);
 
   const forYou = useMemo(() => rankForYou(briefings, profile), [briefings, profile]);
   const filtered = useMemo(() => (topic ? briefings.filter((b) => (b.topics || []).includes(topic)) : forYou), [briefings, forYou, topic]);
@@ -380,7 +331,7 @@ export default function IntelHub() {
                     <div className="ih-stat"><b>{(boardsData.models || []).length}</b><span>Models ranked</span></div>
                   </div>
                 </div>
-                <IntelRadar profile={profile} tick={radarTick} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
+                <IntelRadar profile={profile} tick={0} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
               </div>
 
               <h2 className="gs-sr-only">Today&rsquo;s intelligence, in brief</h2>
@@ -389,8 +340,8 @@ export default function IntelHub() {
                   <span className="ih-count">{signal ? (tuningTo ? 'Tuned to ' + tuningTo : 'Tuned to what you read') : 'Read a few to personalise'}</span></div>
                 {forYouTiers.lead && <LeadCard b={forYouTiers.lead} forYou={signal} />}
                 {forYouTiers.river.length > 0 && (
-                  <div className="ih-feed river" style={{ marginTop: 14 }}>
-                    {forYouTiers.river.slice(0, 3).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} variant="river" expanded={openId === b.id} onToggle={toggleBrief} />)}
+                  <div className="ih-grid" style={{ marginTop: 16 }}>
+                    {forYouTiers.river.slice(0, 3).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} />)}
                   </div>
                 )}
               </div>
@@ -443,7 +394,7 @@ export default function IntelHub() {
             <div className="ih-panel" role="tabpanel" id="ih-panel-briefing" aria-labelledby="ih-tab-briefing" tabIndex={0}>
               <span className="ih-eyebrow">The feed</span>
               <h2 className="ih-h2">Today's briefing</h2>
-              <p className="ih-sub">{topic ? `Filtered to ${TOPIC_LABEL[topic]}.` : signal ? 'Ordered by what you have been reading.' : 'Ordered by what matters most right now.'} Every item links to its source.</p>
+              <p className="ih-sub">{topic ? `Filtered to ${TOPIC_LABEL[topic]}.` : signal ? 'Ordered by what you have been reading.' : 'Ordered by what matters most right now.'} Open any story for the full read.</p>
               <div className="ih-chips" style={{ margin: '20px 0 8px' }}>
                 <button className={'ih-chip' + (!topic ? ' on' : '')} aria-pressed={!topic} onClick={() => setTopic(null)}>All</button>
                 {intel.topics.map((t) => (
@@ -456,21 +407,16 @@ export default function IntelHub() {
               {filtered.length ? (
                 <div style={{ marginTop: 18 }}>
                   {briefingTiers.lead && <LeadCard b={briefingTiers.lead} forYou={signal && !topic} />}
-                  {briefingTiers.subs.length > 0 && (
-                    <div className="ih-feed sub">
-                      {briefingTiers.subs.map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} variant="sub" expanded={openId === b.id} onToggle={toggleBrief} />)}
-                    </div>
-                  )}
-                  {briefingTiers.river.length > 0 && (
+                  {(briefingTiers.subs.length > 0 || briefingTiers.river.length > 0) && (
                     <>
                       <div className="ih-tier-div" aria-hidden="true"><span>More from the desk</span></div>
-                      <div className="ih-feed river">
-                        {briefingTiers.river.map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} variant="river" expanded={openId === b.id} onToggle={toggleBrief} />)}
+                      <div className="ih-grid">
+                        {[...briefingTiers.subs, ...briefingTiers.river].map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} />)}
                       </div>
                     </>
                   )}
                 </div>
-              ) : <div className="ih-feed cols" style={{ marginTop: 16 }}><div className="ih-empty"><b>Nothing here yet</b>No items under this theme in the current briefing.</div></div>}
+              ) : <div className="ih-grid" style={{ marginTop: 16 }}><div className="ih-empty"><b>Nothing here yet</b>No items under this theme in the current briefing.</div></div>}
             </div>
           )}
 
