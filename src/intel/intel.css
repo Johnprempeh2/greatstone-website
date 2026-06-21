@@ -80,7 +80,7 @@
 .ih-stat span { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gs-text-faint, #9ca29b); }
 
 /* radar */
-.ih-radar { position: relative; aspect-ratio: 1; max-width: 330px; margin: 0 auto 22px; width: 100%; }
+.ih-radar { position: relative; aspect-ratio: 1; max-width: 330px; margin: 30px auto 10px; width: 100%; }
 /* on narrow screens the full-width radar pushes its horizontal axis labels off the edge; cap it so the
    labels (e.g. Funding / Coding) keep their breathing room */
 @media (max-width: 560px) { .ih-radar { max-width: 300px; } }
@@ -90,7 +90,8 @@
   transition: color .2s var(--gs-ease), background .2s var(--gs-ease); }
 .ih-radar-lbl:hover { color: var(--gs-accent, #c8ff00); background: rgba(200,255,0,.08); }
 .ih-radar-lbl:focus-visible { outline: 2px solid var(--gs-accent, #c8ff00); outline-offset: 1px; color: var(--gs-accent, #c8ff00); }
-.ih-radar-cap { position: absolute; left: 50%; bottom: -20px; transform: translateX(-50%); font-size: .66rem; font-weight: 700;
+/* caption sits ABOVE the radar (was below, where it collided with the bottom "Security" axis label) */
+.ih-radar-cap { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font-size: .66rem; font-weight: 700;
   letter-spacing: .12em; text-transform: uppercase; color: var(--gs-text-faint, #9ca29b); white-space: nowrap; }
 .ih-tabcount { display: inline-grid; place-items: center; min-width: 17px; height: 17px; margin-left: 7px; padding: 0 4px;
   border-radius: 100px; background: var(--gs-accent, #c8ff00); color: #0e1611; font-size: .62rem; font-weight: 800; vertical-align: middle; }
@@ -255,8 +256,17 @@
   color: var(--gs-accent, #c8ff00); font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; transition: all .2s var(--gs-ease); }
 .ih-cmp-jump:hover { background: var(--gs-accent-glow, rgba(200,255,0,.22)); }
 .ih-cmp-jump .ih-tabcount { margin-left: 0; }
-@media (max-width: 560px) { .ih-row-cmp .ih-row-cmp-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .ih-row-cmp { padding: 0 13px; } }
+/* persistent Compare hint (shown until something is selected) so the feature is discoverable */
+.ih-cmp-hint { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: .76rem; font-weight: 700;
+  color: var(--gs-text-faint, #9ca29b); }
+.ih-cmp-hint b { color: var(--gs-text-muted, #c4c8c1); font-weight: 800; }
+.ih-cmp-hint-i { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 100px; flex: 0 0 auto;
+  border: 1px solid var(--gs-border-strong, rgba(200,255,0,.3)); color: var(--gs-accent, #c8ff00); font-size: .8rem; line-height: 1; }
+@media (max-width: 560px) {
+  .ih-row-cmp .ih-row-cmp-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ih-row-cmp { padding: 0 13px; }
+  .ih-cmp-hint { display: none; } /* the board bar is tight on phones; the per-row + button carries it */
+}
 
 /* board switch */
 .ih-boardswitch { display: inline-flex; gap: 4px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 100px; padding: 4px; margin-bottom: 18px; }

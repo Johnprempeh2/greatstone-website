@@ -431,10 +431,13 @@ export default function IntelHub() {
                     <button key={k} className={board === k ? 'on' : ''} aria-pressed={board === k} onClick={() => { setBoard(k); setOpenId(null); }}>{BOARD_META[k].label}</button>
                   ))}
                 </div>
-                {compare.length > 0 && (
+                {compare.length > 0 ? (
                   <button className="ih-cmp-jump" onClick={() => switchTab('compare')}>
-                    Compare<span className="ih-tabcount">{compare.length}</span><span aria-hidden="true">→</span>
+                    {compare.length < 2 ? 'Add 1 more to compare' : 'Compare'}<span className="ih-tabcount">{compare.length}</span><span aria-hidden="true">→</span>
                   </button>
+                ) : (
+                  // persistent affordance so Compare is discoverable before anything is selected
+                  <span className="ih-cmp-hint"><span className="ih-cmp-hint-i" aria-hidden="true">+</span>Hit <b>Compare</b> on any row to line entries up side by side</span>
                 )}
               </div>
               <div className="ih-board">
