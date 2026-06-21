@@ -319,7 +319,7 @@
 .ih-article-root { min-height: 100vh; }
 .ih-article { position: relative; z-index: 2; }
 /* full-bleed cover hero; the fixed site header floats over its top, so content is bottom-aligned + top-padded */
-.ih-art-hero { position: relative; min-height: clamp(360px, 56vh, 560px); display: flex; align-items: flex-end; overflow: hidden; }
+.ih-art-hero { position: relative; min-height: clamp(320px, 48vh, 480px); display: flex; align-items: flex-end; overflow: hidden; }
 .ih-art-hero .ih-art { position: absolute; inset: 0; }
 .ih-art-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, #070a07 2%, rgba(7,10,7,.82) 26%, rgba(7,10,7,.35) 56%, rgba(7,10,7,.12) 100%); }
 .ih-art-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 920px; margin: 0 auto;
@@ -360,8 +360,9 @@
 @media (prefers-reduced-motion: reduce) {
   .ih-root, .ih-panel { animation: none; }
   .ih-live { animation: none; }
-  .ih-scorebar i, .ih-pillar .pb i, .ih-cmp-bar i, .ih-brief, .ih-lead, .ih-row, .ih-chip, .ih-art, .ih-readmore .ih-arrow { transition: none; }
-  .ih-brief:hover, .ih-lead:hover { transform: none; }
+  .ih-scorebar i, .ih-pillar .pb i, .ih-cmp-bar i, .ih-brief, .ih-lead, .ih-row, .ih-chip, .ih-art, .ih-readmore .ih-arrow,
+  .ih-cmp-jump, .ih-srccard, .ih-cmp-x, .ih-radar-lbl, .ih-move-card, .ih-back { transition: none; }
+  .ih-brief:hover, .ih-lead:hover, .ih-move-card:hover { transform: none; }
   .ih-brief:hover .ih-art, .ih-lead:hover .ih-art { transform: none; }
   .ih-body { scroll-behavior: auto; }
 }

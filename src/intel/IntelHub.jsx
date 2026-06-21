@@ -6,7 +6,7 @@ import buildIntel, { TOPIC_LABEL, TOPIC_HUE, TOPICS, WEIGHTS, BOARD_META } from 
 import { recordOpen, recordTab, recordTopicFocus, recordCompare, rankForYou, topInterests, getProfile, hasInterestSignal } from './interest.js';
 import Logo from './Logo.jsx';
 import BriefingArt from './BriefingArt.jsx';
-import { readTime, briefHref } from './articleMeta.js';
+import { readTime, briefHref, kickerStyle } from './articleMeta.js';
 import './intel.css';
 
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); } catch { return s; } };
@@ -28,7 +28,7 @@ const X = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M6 6l12 1
 // The interest radar: a canvas that plots the visitor's own topic interests, with a slow sweep. It
 // literally visualises "what you care about". Canvas is sized once per run (not per frame); reduced
 // motion draws a static frame and labels are rendered as positioned HTML so they never clip.
-function IntelRadar({ profile, tick, onTopic }) {
+function IntelRadar({ profile, onTopic }) {
   const ref = useRef(null);
   const axes = useMemo(() => TOPICS.slice(0, 8), []);
   useEffect(() => {
@@ -74,7 +74,7 @@ function IntelRadar({ profile, tick, onTopic }) {
     const onResize = () => { size(); if (reduce) draw(); };
     window.addEventListener('resize', onResize);
     return () => { if (raf) cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); };
-  }, [profile, tick, axes]);
+  }, [profile, axes]);
   return (
     <div className="ih-radar">
       <canvas ref={ref} aria-hidden="true" />
@@ -171,7 +171,7 @@ function LeadCard({ b, forYou }) {
     <article className={'ih-lead' + (forYou ? ' foryou' : '')}>
       <div className="ih-lead-media">
         <BriefingArt brief={b} className="lead" />
-        {k && <span className="ih-art-kicker" style={{ background: `hsl(${k.hue} 64% 48%)` }}>{k.label}</span>}
+        {k && <span className="ih-art-kicker" style={kickerStyle(k.hue)}>{k.label}</span>}
       </div>
       <div className="ih-lead-body">
         <div className="ih-brief-top">
@@ -198,7 +198,7 @@ function BriefingCard({ b, forYou, variant }) {
     <article className={'ih-brief' + (variant ? ' ' + variant : '') + (forYou ? ' foryou' : '')}>
       <div className="ih-brief-media">
         <BriefingArt brief={b} className="card" />
-        {k && <span className="ih-art-kicker" style={{ background: `hsl(${k.hue} 64% 48%)` }}>{k.label}</span>}
+        {k && <span className="ih-art-kicker" style={kickerStyle(k.hue)}>{k.label}</span>}
       </div>
       <div className="ih-brief-body">
         <div className="ih-brief-top">
@@ -331,7 +331,7 @@ export default function IntelHub() {
                     <div className="ih-stat"><b>{(boardsData.models || []).length}</b><span>Models ranked</span></div>
                   </div>
                 </div>
-                <IntelRadar profile={profile} tick={0} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
+                <IntelRadar profile={profile} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
               </div>
 
               <h2 className="gs-sr-only">Today&rsquo;s intelligence, in brief</h2>
@@ -339,9 +339,11 @@ export default function IntelHub() {
                 <div className="ih-section-head"><h3>{signal ? 'For you' : 'Most important now'}</h3>
                   <span className="ih-count">{signal ? (tuningTo ? 'Tuned to ' + tuningTo : 'Tuned to what you read') : 'Read a few to personalise'}</span></div>
                 {forYouTiers.lead && <LeadCard b={forYouTiers.lead} forYou={signal} />}
-                {forYouTiers.river.length > 0 && (
+                {(forYouTiers.subs.length > 0 || forYouTiers.river.length > 0) && (
+                  // include the sub-leads (ranks 2-3) then the river — they were dropped before, so the
+                  // overview jumped from the lead straight to the 4th item
                   <div className="ih-grid" style={{ marginTop: 16 }}>
-                    {forYouTiers.river.slice(0, 3).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} />)}
+                    {[...forYouTiers.subs, ...forYouTiers.river].slice(0, 4).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} />)}
                   </div>
                 )}
               </div>
@@ -393,7 +395,7 @@ export default function IntelHub() {
           {tab === 'briefing' && (
             <div className="ih-panel" role="tabpanel" id="ih-panel-briefing" aria-labelledby="ih-tab-briefing" tabIndex={0}>
               <span className="ih-eyebrow">The feed</span>
-              <h2 className="ih-h2">Today's briefing</h2>
+              <h1 className="ih-h2">Today's briefing</h1>
               <p className="ih-sub">{topic ? `Filtered to ${TOPIC_LABEL[topic]}.` : signal ? 'Ordered by what you have been reading.' : 'Ordered by what matters most right now.'} Open any story for the full read.</p>
               <div className="ih-chips" style={{ margin: '20px 0 8px' }}>
                 <button className={'ih-chip' + (!topic ? ' on' : '')} aria-pressed={!topic} onClick={() => setTopic(null)}>All</button>
@@ -423,7 +425,7 @@ export default function IntelHub() {
           {tab === 'leaderboards' && (
             <div className="ih-panel" role="tabpanel" id="ih-panel-leaderboards" aria-labelledby="ih-tab-leaderboards" tabIndex={0}>
               <span className="ih-eyebrow">The boards</span>
-              <h2 className="ih-h2">{BOARD_META[board].label}</h2>
+              <h1 className="ih-h2">{BOARD_META[board].label}</h1>
               <p className="ih-sub">Composite scores, our emphasis: {weightStr}. Open a row for the full breakdown, or hit <b>Compare</b> on any row to line entries up side by side.</p>
               <div className="ih-boardbar">
                 <div className="ih-boardswitch" role="group" aria-label="Choose a leaderboard">
@@ -486,7 +488,7 @@ export default function IntelHub() {
           {tab === 'compare' && (
             <div className="ih-panel" role="tabpanel" id="ih-panel-compare" aria-labelledby="ih-tab-compare" tabIndex={0}>
               <span className="ih-eyebrow">Side by side</span>
-              <h2 className="ih-h2">Compare</h2>
+              <h1 className="ih-h2">Compare</h1>
               <p className="ih-sub">Add up to three entries from any leaderboard (hit "Compare" on a row), then read them head to head. The leader in each pillar is highlighted.</p>
               {cmpRows.length ? (
                 <div className="ih-cmp-wrap" style={{ marginTop: 22 }}>
@@ -550,7 +552,7 @@ export default function IntelHub() {
           {tab === 'sourcing' && (
             <div className="ih-panel" role="tabpanel" id="ih-panel-sourcing" aria-labelledby="ih-tab-sourcing" tabIndex={0}>
               <span className="ih-eyebrow">Transparency</span>
-              <h2 className="ih-h2">How this is sourced</h2>
+              <h1 className="ih-h2">How this is sourced</h1>
               <p className="ih-sub">{intel.meta.cadence} {intel.meta.note} The "Greatstone read" on each item is our own analysis, framed as the questions worth exploring rather than advice.</p>
               <div className="ih-section">
                 <div className="ih-section-head"><h3>The roster</h3><span className="ih-count">{intel.sources.length} sources</span></div>

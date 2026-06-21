@@ -4,10 +4,10 @@
 // here (instead of expanding it inline in the feed) is what John asked for: each report gets its page.
 import React, { useMemo, useEffect, useRef } from 'react';
 import buildIntel, { TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
-import { recordRead, recordVendor } from './interest.js';
+import { recordRead, recordVendor, recordDwell } from './interest.js';
 import Logo from './Logo.jsx';
 import BriefingArt from './BriefingArt.jsx';
-import { readTime, briefHref } from './articleMeta.js';
+import { readTime, briefHref, kickerStyle } from './articleMeta.js';
 import './intel.css';
 
 const fmtLong = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return s; } };
@@ -22,7 +22,7 @@ function RelatedCard({ b }) {
     <article className="ih-brief">
       <div className="ih-brief-media">
         <BriefingArt brief={b} className="card" />
-        {k && <span className="ih-art-kicker" style={{ background: `hsl(${hue} 64% 48%)` }}>{TOPIC_LABEL[k] || k}</span>}
+        {k && <span className="ih-art-kicker" style={kickerStyle(hue)}>{TOPIC_LABEL[k] || k}</span>}
       </div>
       <div className="ih-brief-body">
         <div className="ih-brief-top">
@@ -54,6 +54,13 @@ export default function IntelArticle({ id, onBack }) {
   // keep the tab title on the headline (separate, un-guarded: App's head effect can re-assert a generic
   // "Briefing" title on an unrelated re-render while parked here, so re-set it whenever the briefing resolves)
   useEffect(() => { if (b) document.title = b.headline + ' · Greatstone Intelligence'; }, [b]);
+  // dwell as a sales signal: how long the visitor stayed on this briefing (fires on leave / id change).
+  // recordDwell ignores sub-400ms bounces, and StrictMode's immediate cleanup records ~0ms (ignored).
+  useEffect(() => {
+    if (!b) return undefined;
+    const at = Date.now();
+    return () => recordDwell(b.id, Date.now() - at);
+  }, [b]);
 
   if (!b) {
     return (
@@ -86,7 +93,7 @@ export default function IntelArticle({ id, onBack }) {
           <div className="ih-art-hero-grad" aria-hidden="true" />
           <div className="ih-art-hero-inner">
             <a className="ih-back" href={briefHref('')} onClick={(e) => { e.preventDefault(); onBack(); }}>&larr; Intelligence</a>
-            {lead && <span className="ih-art-kicker big" style={{ background: `hsl(${hue} 64% 48%)` }}>{TOPIC_LABEL[lead] || lead}</span>}
+            {lead && <span className="ih-art-kicker big" style={kickerStyle(hue)}>{TOPIC_LABEL[lead] || lead}</span>}
             <h1 className="ih-art-h">{b.headline}</h1>
             <div className="ih-art-byline">
               <Logo domain={b.vendorDomain} name={b.vendor} className="ih-art-logo" />
