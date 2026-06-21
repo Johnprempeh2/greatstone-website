@@ -141,6 +141,51 @@
 .ih-src:hover { text-decoration: underline; }
 .ih-brief a.ih-src { position: relative; z-index: 1; } /* keep the source link clickable above the stretched toggle */
 
+/* editorial tiering: a lead splash, two sub-leads, then a dense flat "river" (elevation = importance) */
+.ih-lead { position: relative; border-radius: 20px; overflow: hidden; margin-top: 4px; padding: clamp(20px,2.6vw,30px);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.13);
+  box-shadow: 0 28px 72px -42px rgba(0,0,0,.85); }
+.ih-lead-rule { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.ih-lead.foryou::before { content: 'For you'; position: absolute; top: 0; right: 0; z-index: 2; font-size: .58rem; font-weight: 800;
+  letter-spacing: .12em; text-transform: uppercase; color: #0e1611; background: var(--gs-accent, #c8ff00); padding: 4px 11px; border-radius: 0 20px 0 11px; }
+.ih-lead-grid { display: grid; grid-template-columns: 1.5fr .9fr; gap: clamp(18px,2.6vw,38px); align-items: start; }
+@media (max-width: 760px) { .ih-lead-grid { grid-template-columns: 1fr; } }
+.ih-lead-logo { width: 38px; height: 38px; }
+.ih-lead-h { font-size: clamp(1.35rem,2.5vw,2rem); font-weight: 900; letter-spacing: -.025em; line-height: 1.07; margin: 14px 0 0; }
+.ih-lead-stand { color: var(--gs-text-muted, #c4c8c1); font-size: 1rem; line-height: 1.6; margin-top: 12px; }
+.ih-lead-foot { display: flex; align-items: center; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+.ih-lead-read { position: relative; border-left: 3px solid var(--gs-accent-mid, rgba(200,255,0,.4)); padding: 2px 0 2px 18px;
+  background: linear-gradient(90deg, rgba(200,255,0,.05), transparent 80%); border-radius: 0 10px 10px 0; }
+.ih-lead-qmark { position: absolute; top: 6px; left: 10px; font-size: 3rem; line-height: 1; color: var(--gs-accent, #c8ff00); opacity: .45; font-family: Georgia, 'Times New Roman', serif; pointer-events: none; }
+.ih-lead-read .lbl { display: block; font-size: .6rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gs-accent, #c8ff00); padding-top: 4px; }
+.ih-lead-read p { color: var(--gs-text, #eaf1e0); font-size: .96rem; line-height: 1.62; margin-top: 9px; }
+
+/* topic-colour kicker = "section ink" (caps label in the topic hue; lime diamond marks high-importance) */
+.ih-kicker { display: inline-flex; align-items: center; gap: 5px; margin-left: 2px; font-size: .6rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.ih-kicker .ih-hi { width: 6px; height: 6px; background: var(--gs-accent, #c8ff00); transform: rotate(45deg); display: inline-block; flex: 0 0 auto; }
+
+/* sub-leads: two glass cards side by side */
+.ih-feed.sub { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 680px) { .ih-feed.sub { grid-template-columns: 1fr; } }
+
+/* the river: dense, flat, hairline-separated paper (no glass, no shadow) */
+.ih-feed.river { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 1px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.07); border-radius: 14px; overflow: hidden; }
+.ih-brief.river { border: 0; border-radius: 0; box-shadow: none; background: rgba(11,14,10,.72); padding: 15px 17px; }
+.ih-brief.river:hover { transform: none; background: rgba(200,255,0,.045); border-color: transparent; }
+.ih-brief.river .ih-logo { width: 24px; height: 24px; border-radius: 7px; }
+.ih-brief.river .ih-brief-vendor { font-size: .74rem; }
+.ih-brief.river h4 { font-size: .94rem; margin-top: 9px; line-height: 1.22; }
+.ih-brief.river p { font-size: .82rem; margin-top: 6px; }
+.ih-brief.river .ih-brief-foot { margin-top: 11px; }
+.ih-brief.river.foryou::before { border-radius: 0; }
+.ih-brief.river .ih-brief-btn::after { border-radius: 0; }
+
+/* tier divider rule */
+.ih-tier-div { display: flex; align-items: center; gap: 14px; margin: clamp(22px,3vw,32px) 0 12px; }
+.ih-tier-div::before, .ih-tier-div::after { content: ''; height: 1px; flex: 1; background: rgba(255,255,255,.1); }
+.ih-tier-div span { font-size: .62rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--gs-text-faint, #9ca29b); }
+
 /* podium */
 .ih-podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 @media (max-width: 620px) { .ih-podium { grid-template-columns: 1fr; } }

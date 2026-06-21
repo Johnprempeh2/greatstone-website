@@ -161,22 +161,72 @@ function TopicDots({ topics }) {
   ));
 }
 
+// editorial tiering: sort by importance (high first) then date desc then id, and split a list into the
+// lead story (1), two sub-leads, and the river (the rest). The whole feed reads like a front page.
+const sortTiers = (list) => {
+  const sorted = [...(list || [])].sort((a, b) => {
+    const ia = a.importance === 'high' ? 0 : 1, ib = b.importance === 'high' ? 0 : 1;
+    if (ia !== ib) return ia - ib;
+    const da = +new Date(a.date) || 0, db = +new Date(b.date) || 0;
+    if (db !== da) return db - da;
+    return a.id < b.id ? -1 : 1;
+  });
+  return { lead: sorted[0] || null, subs: sorted.slice(1, 3), river: sorted.slice(3) };
+};
+// the lead topic, as a coloured caps kicker (topic hue as "section ink", never a fill)
+const topicKicker = (b) => { const t = (b.topics || [])[0]; return t ? { label: TOPIC_LABEL[t] || t, hue: TOPIC_HUE[t] || 84 } : null; };
+
+// The lead story: the front-page splash. Logo + ruled byline, an oversized headline, the full standfirst,
+// and the Greatstone read shown OPEN as a true pull-quote. Glass + elevation mark it as the lead.
+function LeadCard({ b, forYou }) {
+  const k = topicKicker(b);
+  return (
+    <article className={'ih-lead' + (forYou ? ' foryou' : '')}>
+      {k && <span className="ih-lead-rule" aria-hidden="true" style={{ background: `hsl(${k.hue} 70% 56%)` }} />}
+      <div className="ih-lead-grid">
+        <div className="ih-lead-main">
+          <div className="ih-brief-top">
+            <Logo domain={b.vendorDomain} name={b.vendor} className="ih-lead-logo" />
+            <span className="ih-brief-vendor">{b.vendor}</span>
+            {k && <span className="ih-kicker" style={{ color: `hsl(${k.hue} 72% 64%)` }}>{k.label}</span>}
+            <span className="ih-brief-date">{fmtDate(b.date)}</span>
+          </div>
+          <h3 className="ih-lead-h">{b.headline}</h3>
+          <p className="ih-lead-stand">{b.summary}</p>
+          <div className="ih-lead-foot">
+            {(b.topics || []).map((t) => <span key={t} className="ih-tag">{TOPIC_LABEL[t] || t}</span>)}
+            {b.sourceUrl && <a className="ih-src" href={b.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => recordVendor(b.vendorDomain)}>{b.sourceName} ↗</a>}
+          </div>
+        </div>
+        <aside className="ih-lead-read" style={k ? { borderColor: `hsl(${k.hue} 60% 50% / .5)` } : null}>
+          <span className="ih-lead-qmark" aria-hidden="true">&ldquo;</span>
+          <span className="lbl">The Greatstone read</span>
+          <p>{b.take}</p>
+        </aside>
+      </div>
+    </article>
+  );
+}
+
 // The card is an <article>, not a <button> (a button may not contain a heading or the source <a>).
 // The headline is the toggle button, stretched via ::after to keep the whole card clickable; the source
 // link sits above the stretch with its own z-index so it stays independently clickable.
-function BriefingCard({ b, forYou, expanded, onToggle }) {
+function BriefingCard({ b, forYou, expanded, onToggle, variant }) {
+  const k = topicKicker(b);
+  const high = b.importance === 'high';
   return (
-    <article className={'ih-brief' + (forYou ? ' foryou' : '')}>
+    <article className={'ih-brief' + (variant ? ' ' + variant : '') + (forYou ? ' foryou' : '')}>
       <div className="ih-brief-top">
         <Logo domain={b.vendorDomain} name={b.vendor} />
         <span className="ih-brief-vendor">{b.vendor}</span>
+        {k && <span className="ih-kicker">{high && <i className="ih-hi" aria-hidden="true" />}<span style={{ color: `hsl(${k.hue} 72% 64%)` }}>{k.label}</span></span>}
         <span className="ih-brief-date">{fmtDate(b.date)}</span>
       </div>
       <h4><button type="button" className="ih-brief-btn" aria-expanded={expanded} onClick={() => onToggle(b)}>{b.headline}</button></h4>
-      <p style={expanded ? null : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.summary}</p>
+      <p style={expanded ? null : { display: '-webkit-box', WebkitLineClamp: variant === 'river' ? 1 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.summary}</p>
       {expanded ? (
         <>
-          <div className="ih-take">
+          <div className="ih-take" style={k ? { borderColor: `hsl(${k.hue} 60% 50%)` } : null}>
             <span className="lbl">The Greatstone read</span>
             <p>{b.take}</p>
           </div>
@@ -186,7 +236,7 @@ function BriefingCard({ b, forYou, expanded, onToggle }) {
           </div>
         </>
       ) : (
-        <div className="ih-brief-foot"><span style={{ display: 'inline-flex', gap: 5 }}><TopicDots topics={b.topics} /></span><span className="ih-src" style={{ marginLeft: 'auto' }} aria-hidden="true">Read ›</span></div>
+        <div className="ih-brief-foot"><span className="ih-src" aria-hidden="true">Read the read ›</span></div>
       )}
     </article>
   );
@@ -266,6 +316,8 @@ export default function IntelHub({ onClose }) {
 
   const forYou = useMemo(() => rankForYou(briefings, profile), [briefings, profile]);
   const filtered = useMemo(() => (topic ? briefings.filter((b) => (b.topics || []).includes(topic)) : forYou), [briefings, forYou, topic]);
+  const briefingTiers = useMemo(() => sortTiers(filtered), [filtered]);
+  const forYouTiers = useMemo(() => sortTiers(forYou), [forYou]);
   const interests = useMemo(() => topInterests(profile), [profile]);
   const signal = hasInterestSignal(profile);
   const tuningTo = interests.topics.map((t) => TOPIC_LABEL[t.id] || t.id).slice(0, 3).join(', ');
@@ -349,9 +401,12 @@ export default function IntelHub({ onClose }) {
               <div className="ih-section">
                 <div className="ih-section-head"><h3>{signal ? 'For you' : 'Most important now'}</h3>
                   <span className="ih-count">{signal ? (tuningTo ? 'Tuned to ' + tuningTo : 'Tuned to what you read') : 'Read a few to personalise'}</span></div>
-                <div className="ih-feed cols">
-                  {forYou.slice(0, 4).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} expanded={openId === b.id} onToggle={toggleBrief} />)}
-                </div>
+                {forYouTiers.lead && <LeadCard b={forYouTiers.lead} forYou={signal} />}
+                {forYouTiers.river.length > 0 && (
+                  <div className="ih-feed river" style={{ marginTop: 14 }}>
+                    {forYouTiers.river.slice(0, 3).map((b) => <BriefingCard key={b.id} b={b} forYou={signal} variant="river" expanded={openId === b.id} onToggle={toggleBrief} />)}
+                  </div>
+                )}
               </div>
 
               <div className="ih-section">
@@ -412,10 +467,24 @@ export default function IntelHub({ onClose }) {
                 ))}
               </div>
               <div className="gs-sr-only" aria-live="polite">{filtered.length} item{filtered.length === 1 ? '' : 's'}{topic ? ' in ' + TOPIC_LABEL[topic] : ''}</div>
-              <div className="ih-feed cols" style={{ marginTop: 16 }}>
-                {filtered.length ? filtered.map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} expanded={openId === b.id} onToggle={toggleBrief} />)
-                  : <div className="ih-empty"><b>Nothing here yet</b>No items under this theme in the current briefing.</div>}
-              </div>
+              {filtered.length ? (
+                <div style={{ marginTop: 18 }}>
+                  {briefingTiers.lead && <LeadCard b={briefingTiers.lead} forYou={signal && !topic} />}
+                  {briefingTiers.subs.length > 0 && (
+                    <div className="ih-feed sub">
+                      {briefingTiers.subs.map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} variant="sub" expanded={openId === b.id} onToggle={toggleBrief} />)}
+                    </div>
+                  )}
+                  {briefingTiers.river.length > 0 && (
+                    <>
+                      <div className="ih-tier-div" aria-hidden="true"><span>More from the desk</span></div>
+                      <div className="ih-feed river">
+                        {briefingTiers.river.map((b) => <BriefingCard key={b.id} b={b} forYou={signal && !topic} variant="river" expanded={openId === b.id} onToggle={toggleBrief} />)}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : <div className="ih-feed cols" style={{ marginTop: 16 }}><div className="ih-empty"><b>Nothing here yet</b>No items under this theme in the current briefing.</div></div>}
             </div>
           )}
 
