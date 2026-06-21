@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
+import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
@@ -20,7 +20,7 @@ const quoteLabel = (s) => QUOTE_LABEL[s] || (String(s || '').charAt(0).toUpperCa
 // One tab per account area — each panel shows ONLY its own content (purchases, keys, then settings).
 const ACCOUNT_TABS = [{ id: 'orders', label: 'Purchases' }, { id: 'keys', label: 'Licence keys' }, { id: 'profile', label: 'Profile' }, { id: 'security', label: 'Security' }, { id: 'billing', label: 'Billing' }];
 
-export default function AccountDashboard({ recovery = false, onRecoveryDone, onLanded } = {}) {
+export default function AccountDashboard({ recovery = false, authError = null, onRecoveryDone, onLanded } = {}) {
   const [session, setSession] = useState(undefined); // undefined = checking
   const [profile, setProfile] = useState(null);
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function AccountDashboard({ recovery = false, onRecoveryDone, onL
   // A reset link (recovery prop, set by App from the landing URL) — or a legacy ?reset=1 hash — drops the
   // buyer here with a live recovery session; show the new-password form, not their dashboard.
   if (session && (recovery || isResetMode())) return <SetNewPassword onDone={onRecoveryDone} />;
-  if (!session) return <AuthGate />;
+  if (!session) return <AuthGate initialError={authError} />;
   if (profile && !isCustomer(profile)) return (
     <div className="ca-wrap"><div className="ca-center">
       <h2>This is a staff account</h2>
@@ -47,11 +47,14 @@ export default function AccountDashboard({ recovery = false, onRecoveryDone, onL
   return <Dashboard session={session} profile={profile} onProfile={setProfile} />;
 }
 
-export function AuthGate() {
+export function AuthGate({ initialError = null } = {}) {
   const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState(''); const [pw, setPw] = useState('');
   const [company, setCompany] = useState(''); const [name, setName] = useState('');
-  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(null); const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(null); const [err, setErr] = useState(initialError);
+  // A bad email-link landing (expired / already-used / scanner-consumed confirm or reset link) drops the
+  // visitor here. Keep an offer to send a fresh confirmation link visible so it's a recoverable dead-end.
+  const [linkFailed] = useState(!!initialError);
 
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErr(null); setMsg(null);
@@ -63,6 +66,15 @@ export function AuthGate() {
     if (res?.error) { setErr(res.error.message || 'Something went wrong.'); return; }
     if (mode === 'signup') setMsg(res?.data?.session ? null : 'Account created. Check your email to confirm, then sign in.');
     if (mode === 'forgot') setMsg('If that email has an account, a reset link is on its way.');
+  };
+
+  const resend = async () => {
+    if (!email.trim()) { setErr('Enter your email above first, then resend.'); return; }
+    setBusy(true); setErr(null); setMsg(null);
+    const { error } = await resendConfirmation(email);
+    setBusy(false);
+    if (error) { setErr(error.message || 'Could not resend just now.'); return; }
+    setMsg('A fresh confirmation link is on its way — check your email (and spam).');
   };
 
   return (
@@ -91,6 +103,12 @@ export function AuthGate() {
         {msg && <div className="ca-ok" role="status">{msg}</div>}
         <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Working…' : mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}</button>
       </form>
+      {linkFailed && mode === 'signin' && (
+        <p className="ca-note" style={{ marginTop: 12 }}>
+          Confirmation links are single-use and expire. Enter your email above and we'll send a fresh one.{' '}
+          <button className="ca-link" type="button" onClick={resend} disabled={busy}>Resend confirmation email</button>
+        </p>
+      )}
       <p className="ca-note" style={{ marginTop: 12 }}>
         {mode === 'forgot'
           ? <button className="ca-link" onClick={() => { setMode('signin'); setErr(null); setMsg(null); }}>Back to sign in</button>

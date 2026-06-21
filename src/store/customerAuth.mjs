@@ -40,6 +40,13 @@ export async function signIn(email, password) {
   return res;
 }
 
+/** Re-send the signup confirmation email — the recovery path when a confirm link expired, was already
+ * used, or got consumed by an email scanner/prefetch (Supabase confirm links are single-use). */
+export async function resendConfirmation(email) {
+  if (!supabase) return { error: { message: 'Store backend not configured.' } };
+  return supabase.auth.resend({ type: 'signup', email: (email || '').trim(), options: { emailRedirectTo: authRedirect() } });
+}
+
 export async function signOut() { if (supabase) await supabase.auth.signOut(); }
 /** Sign out of every device/session for this account (revokes all refresh tokens), not just this browser. */
 export async function signOutAll() { if (!supabase) return { error: { message: 'Not configured.' } }; return supabase.auth.signOut({ scope: 'global' }); }
