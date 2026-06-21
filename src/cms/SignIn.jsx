@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { roleNotice } from './staffRoles.mjs'; // pure (no Supabase) — keeps the client out of this bundle
+import PasswordInput from '../store/PasswordInput.jsx'; // pure (no Supabase) — show/hide toggle, shared with the storefront
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 
@@ -82,8 +83,8 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
 
         {mode !== 'forgot' && <>
           <label style={S.label} htmlFor="gs-pass">Password</label>
-          <input id="gs-pass" style={S.input} type="password" value={pass} onChange={(e) => { setPass(e.target.value); setErr(''); }} autoComplete="current-password" placeholder="••••••••"
-            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'gs-signin-err' : undefined} />
+          <PasswordInput id="gs-pass" inputStyle={S.input} value={pass} onChange={(e) => { setPass(e.target.value); setErr(''); }} autoComplete="current-password" placeholder="••••••••"
+            ariaInvalid={err ? 'true' : undefined} ariaDescribedby={err ? 'gs-signin-err' : undefined} />
         </>}
 
         {err && <div id="gs-signin-err" style={S.err} role="alert">{err}</div>}

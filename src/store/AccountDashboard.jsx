@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
+import PasswordInput from './PasswordInput.jsx';
 import './store.css';
 import './admin.css';
 
@@ -84,7 +85,7 @@ export function AuthGate() {
           <label>Your name<input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
         </>}
         <label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" required /></label>
-        {mode !== 'forgot' && <label>Password<input type="password" value={pw} onChange={e => setPw(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} /></label>}
+        {mode !== 'forgot' && <label>Password<PasswordInput value={pw} onChange={e => setPw(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} showStrength={mode === 'signup'} /></label>}
         {err && <div className="ca-err" role="alert">{err}</div>}
         {msg && <div className="ca-ok" role="status">{msg}</div>}
         <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Working…' : mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}</button>
@@ -111,7 +112,7 @@ function SetNewPassword({ onDone }) {
       <span className="st-kicker">Your account</span><h1>Set a new password</h1>
       {done ? <p className="ca-ok">Password updated. You're signed in.</p> : (
         <form onSubmit={submit}>
-          <label>New password<input type="password" value={pw} onChange={e => setPw(e.target.value)} required minLength={8} autoComplete="new-password" /></label>
+          <label>New password<PasswordInput value={pw} onChange={e => setPw(e.target.value)} required minLength={8} autoComplete="new-password" showStrength /></label>
           {err && <div className="ca-err" role="alert">{err}</div>}
           <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Update password'}</button>
         </form>
@@ -381,8 +382,8 @@ function SecurityCard({ email, lastSignIn, flash }) {
     <form className="pr-form" onSubmit={save}>
       <h2>Security</h2>
       {lastSignIn && <p className="ca-note" style={{ marginTop: -4 }}>Last signed in {fmtWhen(lastSignIn)}.</p>}
-      <label>New password<input type="password" value={pw} onChange={e => setPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
-      <label>Confirm new password<input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
+      <label>New password<PasswordInput value={pw} onChange={e => setPw(e.target.value)} minLength={8} autoComplete="new-password" showStrength /></label>
+      <label>Confirm new password<PasswordInput value={confirmPw} onChange={e => setConfirmPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
       {err && <div className="ca-err" role="alert">{err}</div>}
       <button className="gs-btn primary" type="submit" disabled={busy || !pw}>{busy ? 'Updating…' : 'Update password'}</button>
       <div className="acct-seclist">
