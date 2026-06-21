@@ -400,9 +400,11 @@ function ProfileCard({ profile, onProfile, flash }) {
   const [phone, setPhone] = useState(profile?.phone || '');
   const [busy, setBusy] = useState(false);
   useEffect(() => { setName(profile?.full_name || ''); setPhone(profile?.phone || ''); }, [profile]);
+  // only let Save write when something actually changed — a no-op save that flashes "saved" is misleading
+  const dirty = name.trim() !== (profile?.full_name || '').trim() || phone.trim() !== (profile?.phone || '').trim();
 
   const save = async () => {
-    if (!profile?.id) return;
+    if (!profile?.id || !dirty) return;
     setBusy(true);
     const { error } = await supabase.from('customer_users').update({ full_name: name.trim() || null, phone: phone.trim() || null }).eq('id', profile.id);
     setBusy(false);
@@ -417,7 +419,7 @@ function ProfileCard({ profile, onProfile, flash }) {
       <label>Your name<input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
       <label>Phone<input value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" /></label>
       {profile?.customer && <p className="ca-note">Company: <b>{profile.customer.name}</b> — manage company details in <a className="ca-link" href="#org">your organization</a>.</p>}
-      <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
+      <button className="gs-btn primary" onClick={save} disabled={busy || !dirty}>{busy ? 'Saving…' : dirty ? 'Save profile' : 'Saved ✓'}</button>
     </div>
   );
 }
