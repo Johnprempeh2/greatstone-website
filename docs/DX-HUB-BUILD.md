@@ -37,6 +37,14 @@
 - [ ] **Cycle 5 (next):** #org onboarding checklist for a brand-new company (data-derived, dismissible) + in-product member-invite request (admin → small form → request-quote-style edge fn / requests table). Then spend/cadence analytics, per-item permalink + "preview as client" for staff, #org from the header account menu.
 - Known follow-ups: company-profile RLS currently lets ANY member UPDATE name/domain/notes (UI gates to admin only) — harden RLS to admin-only in a later migration. "New since last visit" is per-browser localStorage. NOT deployed to Netlify (awaiting John).
 
+## ⚠️ Parallel-session git hygiene (learned cycle 4)
+The repo's git index is SHARED with the parallel Intel Hub session. `git add <files> && git commit`
+captures whatever ELSE that session has staged. Commit 4378d3d accidentally swept their staged
+App.jsx/blocks/intel changes under a DX message (harmless — builds + 51 tests green, nothing lost — but
+mixed). **Going forward, commit with the pathspec form `git commit -- <file1> <file2>` (= `--only`),
+which commits ONLY the named paths regardless of the shared index.** Never `git add -A`. Never `git reset`
+while the other session is live.
+
 ## Demo creds (to hand John in the morning)
 - Demo CLIENT (buyer): `demo-client@greatstone.dev` / `stone` → company **Ethical Quest**, primary contact (company admin). A second member `demo-member@greatstone.dev` / `stone`.
 - Sign in at `#account`, then open **Your organization** (`#org`) to see the DX timeline.
