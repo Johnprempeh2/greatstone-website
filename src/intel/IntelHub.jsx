@@ -215,12 +215,6 @@ function BriefingCard({ b, forYou, variant }) {
   );
 }
 
-function ScoreBar({ score }) {
-  const [w, setW] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setW(score), 60); return () => clearTimeout(t); }, [score]);
-  return <div className="ih-scorebar" aria-hidden="true"><i style={{ width: w + '%' }} /></div>;
-}
-
 const deltaClass = (d) => (/^\+|up/i.test(d) ? 'up' : /new/i.test(d) ? 'new' : 'flat');
 
 export default function IntelHub() {
@@ -448,14 +442,14 @@ export default function IntelHub() {
                   const inCmp = !!compare.find((x) => x.board === board && x.name === r.name);
                   const cmpFull = compare.length >= 3 && !inCmp;
                   return (
-                    <div className="ih-row" data-rank={r.rank} key={r.name}>
+                    <div className="ih-row" data-rank={r.rank} key={r.name} style={{ '--score': r.score }}>
                       <div className="ih-row-top">
                         <button className="ih-row-head" aria-expanded={open} onClick={() => setOpenId(open ? null : board + ':' + r.name)}>
                           <span className="ih-rank">{r.rank}</span>
                           <Logo domain={r.domain} name={r.company} className="ih-row-logo" />
                           <span className="ih-row-name"><b>{r.name}</b><span>{r.company}</span></span>
                           <span className={'ih-row-delta ' + deltaClass(r.delta)}>{r.delta}</span>
-                          <span className="ih-scorewrap"><ScoreBar score={r.score} /><span className="ih-score">{r.score}</span></span>
+                          <span className="ih-scorewrap"><span className="ih-score">{r.score}</span><span className="ih-score-u" aria-hidden="true">/100</span></span>
                         </button>
                         <button className={'ih-row-cmp' + (inCmp ? ' on' : '')} aria-pressed={inCmp} disabled={cmpFull}
                           aria-label={(inCmp ? 'Remove ' : 'Add ') + r.name + (inCmp ? ' from compare' : ' to compare')}
