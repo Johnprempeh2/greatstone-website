@@ -260,7 +260,7 @@ function Dashboard({ session, profile, onProfile }) {
       </div>
 
       <div className="acct-settings">
-        <div className="ca-tabs acct-tabs" role="tablist" aria-label="Your account">
+        <div className="ca-tabs acct-tabs" role="tablist" aria-label="Your account" style={{ flexWrap: 'wrap' }}>
           {ACCOUNT_TABS.map((t, i) => (
             <button key={t.id} id={'acct-tab-' + t.id} role="tab" type="button"
               aria-selected={tab === t.id} aria-controls={'acct-panel-' + t.id}
