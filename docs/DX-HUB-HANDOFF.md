@@ -4,7 +4,8 @@ Built overnight on 21 Jun 2026 from your `/loop` brief: critically upgrade the c
 state-of-the-art, give the **organization its own hub** (separate but linked), make the **company admin
 evident**, and add **DX engagement tracking** (a per-company history of meeting recaps — inline or a
 Netlify/Notion link — so a client can track their digital-experience journey). 8 cycles, twice
-adversarially reviewed, all on the interim Supabase + Stripe-test backend. **Not yet deployed — your call.**
+adversarially reviewed, all on the interim Supabase + Stripe-test backend. **★ DEPLOYED LIVE 21 Jun** at
+**greatstone-home.netlify.app/puck-proof/** (Netlify deploy `6a37a939`) — verified cycle-8 live, homepage intact.
 
 ## See it in 60 seconds (3 demo logins, all password `stone`)
 Run locally (`npm run dev` in `greatstone-puck-proof`), then sign in at **`#account`**:
@@ -34,7 +35,7 @@ pick a client → upload recaps (inline HTML or a link), share/unshare, and acti
   or forge an invite).
 
 ## Your action items (none block the demo)
-1. **Deploy** — I did NOT deploy (awaiting you). The repo is shared with the live Intel Hub loop; coordinate the build/deploy.
+1. **Deploy — DONE.** Live at greatstone-home.netlify.app/puck-proof/ (deploy `6a37a939`, 21 Jun). The delta deploy touched only the `/puck-proof/` studio; the marketing homepage at the root is untouched. (Note: local commits are NOT pushed to GitHub `origin/greatstone-cms` — the deploy ships the built folder, not git.)
 2. **Stripe Customer Portal** (test + live) — the Billing "Manage billing & cards" button needs it configured in the Stripe dashboard.
 3. **Invite emails** — the invite flow files a *request* that staff provision; wiring real invitation emails (Supabase invite / an edge fn) is a follow-up.
 4. **2FA** — the Security panel offers an honest "ask us to enable"; turning on TOTP needs Supabase Auth config.
