@@ -247,6 +247,14 @@
 .org-field:last-child { border-bottom:0; }
 .org-field-l { color:var(--gs-text-faint); font-weight:700; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; }
 .org-field-v { color:var(--gs-text); text-align:right; }
+/* member invite requests (#org admin form + pending list; staff ClientsManager) */
+.org-inviteform { margin:8px 0 16px; }
+.org-pending { margin-top:16px; }
+.org-pendrow { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.06)); font-size:.86rem; }
+.org-pendrow:last-child { border-bottom:0; }
+.org-pendstatus { margin-left:auto; font-size:.74rem; color:var(--gs-warning,#ffc800); }
+.ci-sub { font-size:1.1rem; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:10px; }
+.ci-reqs { margin-bottom:8px; }
 
 /* ── DX engagement timeline ──────────────────────────────────────────────────── */
 .dx-section { margin-top:36px; }

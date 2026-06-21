@@ -67,14 +67,24 @@ export default function ClientsManager({ staff }) {
 function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [members, setMembers] = useState([]);
   const [items, setItems] = useState(null);
+  const [requests, setRequests] = useState([]);
   const [editing, setEditing] = useState(null); // engagement object or {} for new
   const load = useCallback(() => {
     supabase.from('customer_users').select('id, email, full_name, is_primary, role').is('deleted_at', null).eq('customer_id', customer.id).order('is_primary', { ascending: false })
       .then(({ data }) => setMembers(data || []));
     supabase.from('engagements').select('*').is('deleted_at', null).eq('customer_id', customer.id).order('occurred_on', { ascending: false })
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
+    supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
+      .then(({ data }) => setRequests(data || []));
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
+
+  const handleReq = async (r, status) => {
+    const { data, error } = await supabase.from('member_invite_requests').update({ status, handled_at: new Date().toISOString(), handled_by: staff.id }).eq('id', r.id).select('id');
+    if (error || !data?.length) { flash(error ? 'Could not update.' : 'Request not found.'); load(); return; }
+    flash(status === 'provisioned' ? 'Marked provisioned.' : 'Request declined.'); load();
+  };
+  const pendingReqs = requests.filter(r => r.status === 'pending');
 
   const toggleShare = async (e) => {
     const next = e.status === 'shared' ? 'draft' : 'shared';
@@ -103,6 +113,32 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
         <div className="ca-headtools"><button className="gs-btn primary sm" onClick={() => setEditing({})}>+ New engagement</button></div>
       </header>
 
+      {pendingReqs.length > 0 && (
+        <section className="ci-reqs" aria-label="Invite requests">
+          <h2 className="ci-sub">Invite requests <span className="ca-status ca-draft">{pendingReqs.length} pending</span></h2>
+          <div className="ca-table-wrap">
+            <table className="ca-table ca-cards">
+              <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Requested</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                {pendingReqs.map(r => (
+                  <tr key={r.id}>
+                    <td data-label="Name" className="ca-name">{r.full_name || '—'}{r.note ? <span className="ca-muted"> · {r.note}</span> : ''}</td>
+                    <td data-label="Email">{r.email}</td>
+                    <td data-label="Role">{r.role === 'admin' ? 'Company admin' : 'Member'}</td>
+                    <td data-label="Requested">{fmtDate(r.created_at)}</td>
+                    <td data-label="" className="ca-ord-actions">
+                      <button className="gs-btn ghost sm" onClick={() => handleReq(r, 'provisioned')}>Mark provisioned</button>
+                      <button className="gs-btn ghost sm" onClick={() => handleReq(r, 'declined')}>Decline</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      <h2 className="ci-sub" style={{ marginTop: pendingReqs.length ? 26 : 0 }}>Engagement timeline</h2>
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Title</th><th scope="col">Content</th><th scope="col">Visibility</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>

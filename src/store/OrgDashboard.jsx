@@ -11,6 +11,7 @@ import { AuthGate } from './AccountDashboard.jsx';
 import './store.css';
 import './admin.css';
 
+const ORG_ID = '11111111-1111-4111-8111-111111111111'; // single live org (matches ensure_customer_account)
 const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
 // the viewer's LOCAL calendar date (occurred_on is a local DATE) — a UTC date flips past/upcoming at the day boundary
 const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
@@ -173,7 +174,7 @@ function Org({ profile, session, onProfile }) {
 
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
 
-      <Members members={members} meId={profile.id} />
+      <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
 
       <CompanyProfile company={company} admin={admin} onProfile={onProfile} flash={flash} />
 
@@ -374,11 +375,25 @@ function Item({ e, isNew, open, onToggle }) {
   );
 }
 
-// ── members directory ─────────────────────────────────────────────────────────
-function Members({ members, meId }) {
+// ── members directory + invite requests ───────────────────────────────────────
+function Members({ members, meId, admin, customerId, requestedBy, flash }) {
+  const [requests, setRequests] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const loadReqs = useCallback(() => {
+    supabase.from('member_invite_requests').select('id, full_name, email, role, status, created_at')
+      .eq('customer_id', customerId).order('created_at', { ascending: false })
+      .then(({ data }) => setRequests(data || []));
+  }, [customerId]);
+  useEffect(() => { loadReqs(); }, [loadReqs]);
+  const pending = requests.filter(r => r.status === 'pending');
+
   return (
     <section className="org-sec" aria-labelledby="org-mem-h">
-      <div className="acct-ordhead"><h2 id="org-mem-h">Members &amp; access</h2></div>
+      <div className="acct-ordhead">
+        <h2 id="org-mem-h">Members &amp; access</h2>
+        {admin && <button className="gs-btn ghost sm" aria-expanded={showForm} onClick={() => setShowForm(s => !s)}>{showForm ? 'Close' : '+ Invite a teammate'}</button>}
+      </div>
+      {showForm && <InviteForm customerId={customerId} requestedBy={requestedBy} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Joined</th></tr></thead>
@@ -396,8 +411,55 @@ function Members({ members, meId }) {
           </tbody>
         </table>
       </div>
-      <p className="ca-note">To add or remove teammates, or change who's the company admin, <a className="ca-link" href="#contact">contact your Greatstone team</a>. We provision portal access so your company data stays secure.</p>
+      {pending.length > 0 && (
+        <div className="org-pending">
+          <h3 className="dx-pins-h">Pending invitations</h3>
+          {pending.map(r => (
+            <div key={r.id} className="org-pendrow">
+              <span className="ca-name">{r.full_name || r.email}</span>
+              <span className="ca-muted">{r.email} · {r.role === 'admin' ? 'Company admin' : 'Member'}</span>
+              <span className="org-pendstatus">Requested {fmtDate(r.created_at)} · we'll provision soon</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="ca-note">{admin
+        ? <>Invite a teammate above and we'll provision their portal access and email them. To remove a member or change the company admin, </>
+        : <>To add or remove teammates, or change who's the company admin, </>}
+        <a className="ca-link" href="#contact">contact your Greatstone team</a>.</p>
     </section>
+  );
+}
+
+function InviteForm({ customerId, requestedBy, onDone }) {
+  const [name, setName] = useState(''); const [email, setEmail] = useState('');
+  const [role, setRole] = useState('member'); const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const submit = async (e) => {
+    e.preventDefault(); setErr(null);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { setErr('Enter a valid email address.'); return; }
+    setBusy(true);
+    const { error } = await supabase.from('member_invite_requests').insert({
+      org_id: ORG_ID, customer_id: customerId, requested_by: requestedBy,
+      full_name: name.trim() || null, email: email.trim(), role, note: note.trim() || null,
+    });
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    onDone("Invitation requested — we'll provision access and email them.");
+  };
+  return (
+    <form className="pr-form org-inviteform" onSubmit={submit}>
+      <div className="pr-row">
+        <label>Their name<input value={name} onChange={e => setName(e.target.value)} autoComplete="off" placeholder="Optional" /></label>
+        <label>Their email<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" required /></label>
+      </div>
+      <div className="pr-row">
+        <label>Role<select value={role} onChange={e => setRole(e.target.value)}><option value="member">Member</option><option value="admin">Company admin</option></select></label>
+        <label>Note <span style={{ fontWeight: 400 }}>(optional)</span><input value={note} onChange={e => setNote(e.target.value)} placeholder="Anything we should know" /></label>
+      </div>
+      {err && <div className="ca-err" role="alert">{err}</div>}
+      <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Requesting…' : 'Request access'}</button>
+    </form>
   );
 }
 
