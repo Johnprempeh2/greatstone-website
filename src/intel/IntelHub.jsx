@@ -28,9 +28,19 @@ const X = (p) => (<svg viewBox="0 0 24 24" fill="none" {...p}><path d="M6 6l12 1
 // The interest radar: a canvas that plots the visitor's own topic interests, with a slow sweep. It
 // literally visualises "what you care about". Canvas is sized once per run (not per frame); reduced
 // motion draws a static frame and labels are rendered as positioned HTML so they never clip.
-function IntelRadar({ profile, onTopic }) {
+function IntelRadar({ profile, topics, counts = {}, onTopic }) {
   const ref = useRef(null);
-  const axes = useMemo(() => TOPICS.slice(0, 8), []);
+  // Axes = topics that actually appear on briefings, ranked by THIS visitor's interest (briefing count
+  // as tiebreak), capped at 8 for legibility. So a topic the visitor reads (open source, multimodal) is
+  // guaranteed an axis and an empty topic (hardware) never gets one. (Was a blind TOPICS.slice(0,8),
+  // which dropped open-source + multimodal regardless of what the visitor actually cared about.)
+  const axes = useMemo(() => {
+    const base = (topics && topics.length ? topics : TOPICS);
+    return [...base].sort((a, b) =>
+      ((profile.topics[b.id] || 0) - (profile.topics[a.id] || 0)) ||
+      ((counts[b.id] || 0) - (counts[a.id] || 0))
+    ).slice(0, 8);
+  }, [topics, counts, profile]);
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const ctx = cv.getContext('2d'); if (!ctx) return;
@@ -229,6 +239,13 @@ export default function IntelHub() {
   const intel = useMemo(() => buildIntel(), []);
   const briefings = intel.briefings || [];
   const boardsData = intel.boards || { models: [], products: [], tools: [] };
+  // Topics actually present on a briefing — drops the dead "Hardware" chip (0 briefings) from every
+  // topic list, and feeds the radar a real axis set. counts[id] = briefings carrying each topic.
+  const present = useMemo(() => {
+    const counts = {};
+    briefings.forEach((b) => (b.topics || []).forEach((id) => { counts[id] = (counts[id] || 0) + 1; }));
+    return { list: (intel.topics || []).filter((t) => counts[t.id] > 0), counts };
+  }, [intel.topics, briefings]);
   const [tab, setTab] = useState('overview');
   const [topic, setTopic] = useState(null);
   const [openId, setOpenId] = useState(null);
@@ -326,14 +343,14 @@ export default function IntelHub() {
                 <div>
                   <span className="ih-eyebrow">The briefing room</span>
                   <h1 className="ih-hero-line">The AI landscape, <span className="accent">read for you.</span></h1>
-                  <p className="ih-sub">{intel.meta.cadence} We track {briefings.length} live developments across {intel.topics.length} themes, each with our own read on what it means for a business modernising with AI.</p>
+                  <p className="ih-sub">{intel.meta.cadence} We track {briefings.length} live developments across {present.list.length} themes, each with our own read on what it means for a business modernising with AI.</p>
                   <div className="ih-hero-meta">
                     <div className="ih-stat"><b>{briefings.length}</b><span>Live items</span></div>
                     <div className="ih-stat"><b>{intel.meta.updatesToday}</b><span>New today</span></div>
                     <div className="ih-stat"><b>{(boardsData.models || []).length}</b><span>Models ranked</span></div>
                   </div>
                 </div>
-                <IntelRadar profile={profile} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
+                <IntelRadar profile={profile} topics={present.list} counts={present.counts} onTopic={(id) => { setTopic(id); recordTopicFocus(id); setProfile(getProfile()); switchTab('briefing'); }} />
               </div>
 
               <h2 className="gs-sr-only">Today&rsquo;s intelligence, in brief</h2>
@@ -384,7 +401,7 @@ export default function IntelHub() {
               <div className="ih-section">
                 <div className="ih-section-head"><h3>Themes in play</h3></div>
                 <div className="ih-chips">
-                  {intel.topics.map((t) => (
+                  {present.list.map((t) => (
                     <button key={t.id} className="ih-chip" onClick={() => { setTopic(t.id); recordTopicFocus(t.id); setProfile(getProfile()); switchTab('briefing'); }}>
                       <span className="ih-dot" style={{ background: `hsl(${t.hue} 80% 60%)` }} />{t.label}
                     </button>
@@ -401,7 +418,7 @@ export default function IntelHub() {
               <p className="ih-sub">{topic ? `Filtered to ${TOPIC_LABEL[topic]}.` : signal ? 'Ordered by what you have been reading.' : 'Ordered by what matters most right now.'} Open any story for the full read.</p>
               <div className="ih-chips" style={{ margin: '20px 0 8px' }}>
                 <button className={'ih-chip' + (!topic ? ' on' : '')} aria-pressed={!topic} onClick={() => setTopic(null)}>All</button>
-                {intel.topics.map((t) => (
+                {present.list.map((t) => (
                   <button key={t.id} className={'ih-chip' + (topic === t.id ? ' on' : '')} aria-pressed={topic === t.id} onClick={() => { setTopic(t.id); recordTopicFocus(t.id); setProfile(getProfile()); }}>
                     <span className="ih-dot" style={{ background: `hsl(${t.hue} 80% 60%)` }} />{t.label}
                   </button>

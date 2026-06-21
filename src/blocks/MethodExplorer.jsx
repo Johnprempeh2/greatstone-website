@@ -189,6 +189,9 @@ const CSS = `
 .me-pick:hover{color:var(--gs-text,#fff);border-color:var(--gs-border,rgba(200,255,0,.3))}
 .me-pick.is-active{color:#0e1611;background:var(--gs-accent,#c8ff00);border-color:var(--gs-accent,#c8ff00)}
 .me-pick.is-hover{color:var(--gs-text,#fff);border-color:var(--gs-accent-mid,rgba(200,255,0,.4))}
+/* the pick pills are the only touch interaction on #breakdown — give them a 44px tap height on
+   coarse-pointer devices (WCAG 2.5.8). Wrapping rows already absorb the extra height. */
+@media (pointer:coarse){.me-pick{min-height:44px;padding-top:0;padding-bottom:0;display:inline-flex;align-items:center}.me-back{min-height:44px;display:inline-flex;align-items:center}}
 .me-orb.is-dim{opacity:.35;transition:opacity .3s}
 /* the hovered pillar's name, following the cursor */
 .me-hovername{position:absolute;z-index:6;transform:translate(16px,-50%);pointer-events:none;white-space:nowrap;

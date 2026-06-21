@@ -405,7 +405,7 @@
         "props": {
           "kicker": "The People",
           "heading": "Senior hands, on the floor with you.",
-          "body": "Placeholder names and roles. The real strip lands here once we confirm who is on your engagement.",
+          "body": "The senior people who do the work, not a sales team between you and them. Your founders are on it from day one; the rest of your engagement team is named at kickoff.",
           "items": [
             {
               "name": "Ben Mensah",
@@ -440,7 +440,7 @@
           "eyebrow": "Start Here",
           "headline": "Let us find the hours you are",
           "highlight": "quietly losing.",
-          "body": "A deep dive is two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
+          "body": "A deep dive is thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
           "ctaLabel": "Book a Deep Dive",
           "ctaHref": "#book",
           "email": "",

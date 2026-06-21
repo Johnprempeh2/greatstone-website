@@ -4,7 +4,7 @@ import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { track } from '../lib/analytics.js';
 
-const SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
+const DEFAULT_SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
 // small inline icon set for the "Why a deep dive" assure rows (lime stroke, set in CSS)
 const ico = (children) => <svg viewBox="0 0 24 24">{children}</svg>;
@@ -17,7 +17,11 @@ const ICONS = {
 // The "Book a Deep Dive" page: the booking form beside a short framing aside. PROTOTYPE — the
 // form never transmits anything; submit shows a confirmation and points to email. The real
 // build POSTs to Laravel (validated + stored server-side); this is the page design + UX only.
-export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], email = 'dx@greatstonesoftware.co.uk' }) {
+export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk' }) {
+  // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
+  // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
+  const sectorList = (Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS)
+    .map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
   const ref = useReveal([asidePoints.length]);
   const [sent, setSent] = useState(false);
   const uid = useId(); // per-instance id prefix so two BookDeepDive blocks on one page never collide
@@ -49,7 +53,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
                 </div>
                 <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} type="email" placeholder="jane@stonewell.co" autoComplete="email" /></div>
                 <div className="field"><label htmlFor={uid + 'industry'}>Industry</label>
-                  <select className="fld" id={uid + 'industry'} defaultValue=""><option value="" disabled>Choose your sector…</option>{SECTORS.map((s) => <option key={s}>{s}</option>)}</select>
+                  <select className="fld" id={uid + 'industry'} defaultValue=""><option value="" disabled>Choose your sector…</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
                 </div>
                 <div className="field"><label htmlFor={uid + 'week'}>Where does your week go?</label>
                   <textarea className="fld" id={uid + 'week'} placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />
@@ -145,12 +149,18 @@ export const puck = {
       defaultItemProps: { icon: 'check', title: 'A point', text: 'detail.' },
       getItemSummary: (item) => item.title || 'Point',
     },
+    sectors: {
+      type: 'array', label: 'Industry options (dropdown)',
+      arrayFields: { label: { type: 'text', label: 'Sector' } },
+      defaultItemProps: { label: 'Sector' },
+      getItemSummary: (item) => item.label || 'Sector',
+    },
     email: { type: 'text', label: 'Contact email' },
   },
   defaultProps: {
     eyebrow: 'Tell us where the week goes',
     headline: 'Book a', highlight: 'Deep Dive.',
-    body: 'Two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
+    body: 'Thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
     submitLabel: 'Book a Deep Dive',
     asideKicker: 'Why a deep dive',
     asideHeading: 'We don’t advise. We become your foundation.',
@@ -160,6 +170,7 @@ export const puck = {
       { icon: 'clock', title: 'Hours quantified, not promised', text: 'You leave knowing exactly where the time goes, and where it comes back.' },
       { icon: 'scan', title: 'No stone unturned', text: 'We look everywhere the hours hide, even the places you’ve stopped checking.' },
     ],
+    sectors: DEFAULT_SECTORS.map((label) => ({ label })),
     email: 'dx@greatstonesoftware.co.uk',
   },
   render: (props) => <BookDeepDive {...props} />,

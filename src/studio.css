@@ -94,6 +94,17 @@
   .gs-cmdbtn kbd{display:none}
 }
 
+/* Touch ergonomics (Excellence-loop C1): on coarse-pointer devices the persistent header + chrome
+   controls meet the 44px minimum tap target (WCAG 2.5.8). Additive — keyed on pointer:coarse so a
+   mouse desktop is unchanged. Covers the Pages dropdown, its rows, the account icon, the ⌘K/search
+   button, and every .gs-btn (incl. the customer #account sign-in submit, which is .gs-btn primary). */
+@media (pointer:coarse){
+  .gs-navmenu-btn,.gs-cmdbtn,.gs-btn{min-height:44px}
+  .gs-btn{display:inline-flex;align-items:center;justify-content:center}
+  .gs-accountbtn{width:44px;height:44px}
+  .gs-navmenu-item{min-height:44px;display:flex;align-items:center}
+}
+
 /* ---------- editor: dark, brand-themed chrome ---------- */
 .is-edit{min-height:100vh;background:
   radial-gradient(1100px 760px at 80% -8%,rgba(27,80,57,.22),transparent 60%),

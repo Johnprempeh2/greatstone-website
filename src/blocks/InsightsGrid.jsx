@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
+import { safeHref } from '../lib/safe-url.js';
 
 // InsightsGrid: insights.html's filtered article wall. A row of category chips (aria-pressed, "All"
 // auto-prepended) crossfades the grid of post cards by data-cat; each card is a gradient-ink (or image)
@@ -46,8 +47,9 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
           {posts.map((p, i) => {
             const n = (i % 6) + 1;
             const catLabel = (categories.find((c) => c.value === p.cat) || {}).label || p.cat || '';
-            return (
-              <article key={i} className={'card b-ins-post' + (matches(p) ? '' : ' is-hidden')} data-reveal>
+            const cls = 'card b-ins-post' + (matches(p) ? '' : ' is-hidden');
+            const inner = (
+              <>
                 <div className="b-ins-media">
                   {p.image
                     ? <div className="b-ins-ink"><img src={p.image} alt={p.alt || ''} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /></div>
@@ -57,8 +59,13 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
                 {p.title ? <h3>{p.title}</h3> : null}
                 {p.excerpt ? <p className="b-ins-excerpt">{p.excerpt}</p> : null}
                 {p.readTime ? <span className="b-ins-readtime">{p.readTime}</span> : null}
-              </article>
+              </>
             );
+            // A post with a link becomes a real, focusable card-link (with a "Read" affordance); one
+            // without a link stays a plain preview card, exactly as before. No nested interactive els.
+            return p.href
+              ? <a key={i} className={cls + ' is-link'} href={safeHref(p.href)} data-reveal>{inner}<span className="b-ins-more" aria-hidden="true">Read &rarr;</span></a>
+              : <article key={i} className={cls} data-reveal>{inner}</article>;
           })}
         </div>
 
@@ -97,6 +104,9 @@ export const css = `
 .b-ins-excerpt{font-size:.92rem;color:var(--gs-text-muted)}
 .b-ins-readtime{margin-top:auto;padding-top:6px;color:var(--gs-text-faint);font-weight:600;letter-spacing:.04em;font-size:.78rem}
 .b-ins-readtime::before{content:'•';margin-right:10px;color:var(--gs-accent)}
+.b-ins-post.is-link{text-decoration:none;color:inherit;cursor:pointer;transition:transform var(--gs-dur) var(--gs-ease),border-color var(--gs-dur)}
+.b-ins-post.is-link:hover{transform:translateY(-3px);border-color:var(--gs-accent-mid)}
+.b-ins-more{margin-top:4px;color:var(--gs-accent);font-weight:700;font-size:.82rem}
 .b-ins-empty{margin-top:28px;text-align:center;color:var(--gs-text-faint);font-size:.92rem}
 @media(prefers-reduced-motion:reduce){
   .b-ins-grid{transition:none}
@@ -123,10 +133,11 @@ export const puck = {
         title: { type: 'text', label: 'Title' },
         excerpt: { type: 'textarea', label: 'Excerpt' },
         readTime: { type: 'text', label: 'Read time' },
+        href: { type: 'text', label: 'Link (optional, makes the card clickable)' },
         image: { type: 'custom', label: 'Image (optional)', render: (props) => <MediaField {...props} /> },
         alt: { type: 'text', label: 'Image alt' },
       },
-      defaultItemProps: { cat: 'category', title: 'A field note', excerpt: 'A short standfirst.', readTime: '5 min read', image: '', alt: '' },
+      defaultItemProps: { cat: 'category', title: 'A field note', excerpt: 'A short standfirst.', readTime: '5 min read', href: '', image: '', alt: '' },
       getItemSummary: (i) => i.title || 'Post',
     },
     emptyNote: { type: 'text', label: 'Empty-state note' },

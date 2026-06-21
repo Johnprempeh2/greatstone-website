@@ -77,6 +77,7 @@ export default function StoreBrowse({ initialVendor = '' }) {
           <option value="featured">Featured</option>
           <option value="az">Name A–Z</option>
           <option value="price">Price: low to high</option>
+          <option value="price-desc">Price: high to low</option>
         </select>
         <span className="st-count" aria-live="polite"><b>{total}</b> result{total === 1 ? '' : 's'}</span>
       </div>
@@ -131,7 +132,7 @@ function Card({ o }) {
         <span className="st-price">
           {(p.poa || p.final == null)
             ? <span className="poa">Price on application</span>
-            : <><span className="lbl">from</span>{p.hasDiscount && <s>{fmtMoney(p.base)}</s>}<b>{fmtMoney(p.final)}</b></>}
+            : <><span className="lbl">from</span>{p.hasDiscount && <s>{fmtMoney(p.base)}</s>}<b>{fmtMoney(p.final)}</b><small className="st-vat">+ VAT</small></>}
         </span>
         <span className="st-go">View →</span>
       </div>

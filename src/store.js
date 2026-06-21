@@ -240,7 +240,7 @@ export function seedState() {
           kicker: 'Greatstone International',
           headline: 'The Foundation of', highlight: 'Digital Excellence.',
           body: 'We don’t decorate businesses with technology. We build what holds everything up.',
-          prompt: '', align: 'center', size: 'full', ctaLabel: '', ctaHref: '#', scrollCue: true,
+          prompt: '', align: 'center', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', scrollCue: true,
         }),
         blk('Chapter', {
           index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner. Not a software house.', highlight: '',
@@ -321,7 +321,7 @@ export function seedState() {
           body: 'From the moment you book to the moment you see the hours, the path is short and plainly worth your time.',
           items: [
             { phase: 'Within 24 hours', title: 'We read your week', text: 'We take what you’ve told us and map it against the eight pillars before we ever speak, so the call starts where most engagements end.', timing: 'A short reply, a held slot' },
-            { phase: 'The deep dive', title: '45 focused minutes', text: 'We sit with you, pull on the threads, and surface where the hours are draining. You’ll feel the difference between advice and a foundation being laid.', timing: 'One session, real findings' },
+            { phase: 'The deep dive', title: '30 focused minutes', text: 'We sit with you, pull on the threads, and surface where the hours are draining. You’ll feel the difference between advice and a foundation being laid.', timing: 'One session, real findings' },
             { phase: 'The hours, costed', title: 'A picture you can act on', text: 'You leave with a clear read on what your week is quietly costing you, and exactly where Greatstone buys it back. No deck. No fluff.', timing: 'Yours to keep, pressure-free' },
           ],
         }),
@@ -556,6 +556,40 @@ function migrate(state) {
   // the redundant 'products' CMS page is delisted from the nav (the live storefront #shop, labelled
   // "Products", is the catalogue now). Keep the page row for any deep links, just drop it from the order.
   state.order = state.order.filter((s) => s !== 'products');
+  // Copy unification (additive, Excellence-loop cycle 1, 2026-06-21; NO SEED_VERSION bump): align the
+  // Deep Dive duration to the real 30-min booking slot, drop the "Placeholder names" framing above the
+  // real founders, and give the home hero a primary CTA — but ONLY where the stored value still equals
+  // the OLD seed default, so any hand-edit by John is preserved. Idempotent (once rewritten it no longer
+  // matches an old key). Applied to BOTH the draft (data) and the live projection (published).
+  {
+    const editBlocks = (page, fn) => {
+      if (!page) return;
+      [page.data, page.published].forEach((proj) => {
+        if (proj && Array.isArray(proj.content)) proj.content.forEach((b) => { if (b && b.props) fn(b); });
+      });
+    };
+    // home hero: fill the empty primary CTA so the first viewport has an action
+    editBlocks(state.pages && state.pages.home, (b) => {
+      if (b.type === 'Hero' && !b.props.ctaLabel && (b.props.ctaHref === '#' || b.props.ctaHref == null)) {
+        b.props.ctaLabel = 'Book a Deep Dive'; b.props.ctaHref = '#book';
+      }
+    });
+    // contact: Deep Dive step duration 45 → 30 (matches the live Calendly slot)
+    editBlocks(state.pages && state.pages.contact, (b) => {
+      if (b.type === 'Steps' && Array.isArray(b.props.items)) {
+        b.props.items = b.props.items.map((it) => (it && it.title === '45 focused minutes' ? { ...it, title: '30 focused minutes' } : it));
+      }
+    });
+    // about: Invite "two hours" → "thirty focused minutes"; Team drop the "Placeholder names" framing
+    editBlocks(state.pages && state.pages.about, (b) => {
+      if (b.type === 'Invite' && b.props.body === 'A deep dive is two hours of our time and a sharper picture of yours. No deck to sit through, no obligation after.') {
+        b.props.body = 'A deep dive is thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.';
+      }
+      if (b.type === 'Team' && b.props.body === 'Placeholder names and roles. The real strip lands here once we confirm who is on your engagement.') {
+        b.props.body = 'The senior people who do the work, not a sales team between you and them. Your founders are on it from day one; the rest of your engagement team is named at kickoff.';
+      }
+    });
+  }
   state.schema = SCHEMA;
   return state;
 }

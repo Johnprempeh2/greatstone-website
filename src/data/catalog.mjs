@@ -67,6 +67,7 @@ export async function listOfferings(sb, params = {}) {
   }
   if (sort === 'az') query = query.order('name');
   else if (sort === 'price') query = query.order('from_price_minor', { nullsFirst: false });
+  else if (sort === 'price-desc') query = query.order('from_price_minor', { ascending: false, nullsFirst: false });
   else query = query.order('featured', { ascending: false }).order('name'); // featured
   const from = (page - 1) * pageSize;
   query = query.range(from, from + pageSize - 1);

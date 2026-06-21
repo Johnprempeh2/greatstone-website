@@ -49,6 +49,8 @@
 .st-price s { color:var(--gs-text-faint); font-size:.78rem; margin-right:.4em; }
 .st-price .poa { font-size:.82rem; font-weight:700; color:var(--gs-text-muted); }
 .st-price .lbl { display:block; font-size:.68rem; color:var(--gs-text-faint); }
+/* listing cards echo the product page's "+ VAT" qualifier so the price reads the same on both */
+.st-price .st-vat { font-size:.64rem; font-weight:600; color:var(--gs-text-faint); margin-left:.4em; }
 .st-go { font-size:.78rem; font-weight:700; color:var(--gs-accent); white-space:nowrap; }
 .st-empty { grid-column:1/-1; text-align:center; padding:60px 20px; border:1px dashed var(--gs-border); border-radius:16px; color:var(--gs-text-muted); }
 .st-more { display:block; margin:24px auto 0; padding:.8em 1.8em; border-radius:100px; border:1px solid var(--gs-accent-mid); background:var(--gs-accent-soft); color:var(--gs-text); font-weight:700; cursor:pointer; }

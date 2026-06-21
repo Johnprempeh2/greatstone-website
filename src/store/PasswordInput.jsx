@@ -6,10 +6,14 @@ import React, { useId, useState } from 'react';
 import { scorePassword } from './passwordStrength.mjs';
 
 const TOGGLE = {
-  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+  position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)',
   background: 'none', border: 0, color: 'var(--gs-text-faint,#8a8f8a)', font: 'inherit',
   fontSize: '.7rem', fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase',
-  cursor: 'pointer', padding: '4px 6px', lineHeight: 1,
+  cursor: 'pointer', lineHeight: 1,
+  // 44x44 tap target (WCAG 2.5.8) without enlarging the visible "Show"/"Hide" text — the label is
+  // centred in a transparent hit-area, so it looks identical but is comfortably tappable on a phone.
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  minWidth: '44px', minHeight: '44px', padding: '0 8px',
 };
 const BAR_COLOR = { 1: '#ff6b6b', 2: '#ffb020', 3: '#c8ff00', 4: '#9be36b' };
 
@@ -44,7 +48,7 @@ export default function PasswordInput({
           id={inputId} type={show ? 'text' : 'password'} value={value} onChange={onChange}
           autoComplete={autoComplete} placeholder={placeholder} required={required} minLength={minLength}
           aria-invalid={ariaInvalid} aria-describedby={ariaDescribedby}
-          style={{ ...(inputStyle || {}), width: '100%', boxSizing: 'border-box', paddingRight: '3.4em' }}
+          style={{ ...(inputStyle || {}), width: '100%', boxSizing: 'border-box', paddingRight: '3.7em' }}
         />
         <button type="button" onClick={() => setShow((v) => !v)} style={TOGGLE}
           aria-pressed={show} aria-label={show ? 'Hide password' : 'Show password'} aria-controls={inputId} tabIndex={-1}>
