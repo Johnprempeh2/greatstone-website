@@ -22,7 +22,7 @@ const ACCOUNT_TABS = [{ id: 'orders', label: 'Purchases' }, { id: 'keys', label:
 
 export default function AccountDashboard({ recovery = false, authError = null, onRecoveryDone, onLanded } = {}) {
   const [session, setSession] = useState(undefined); // undefined = checking
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(undefined); // undefined = not yet fetched (vs null = fetched, no customer row)
   useEffect(() => {
     // The first resolution settles a Supabase auth-email landing: supabase-js has now read the session
     // from (and scrubbed) the URL, so tell App to normalise the bare landing URL back to #account.
@@ -37,10 +37,13 @@ export default function AccountDashboard({ recovery = false, authError = null, o
   // buyer here with a live recovery session; show the new-password form, not their dashboard.
   if (session && (recovery || isResetMode())) return <SetNewPassword onDone={onRecoveryDone} />;
   if (!session) return <AuthGate initialError={authError} />;
-  if (profile && !isCustomer(profile)) return (
+  if (profile === undefined) return <div className="ca-wrap"><div className="ca-center">Loading your account…</div></div>;
+  // resolved to no customer row → a staff member, or someone not yet set up as a customer. Either way
+  // the buyer dashboard is wrong; show a real explanation instead of an empty "Welcome back" with £0.
+  if (!isCustomer(profile)) return (
     <div className="ca-wrap"><div className="ca-center">
-      <h2>This is a staff account</h2>
-      <p>{session.user?.email} manages the catalogue. Use the <a className="ca-link" href="#catalogue">catalogue admin</a> instead.</p>
+      <h2>No customer account here</h2>
+      <p>{session.user?.email} isn't set up as a customer. If you manage the Greatstone catalogue, use the <a className="ca-link" href="#catalogue">catalogue admin</a>. Otherwise <a className="ca-link" href="#go/contact">contact us</a> and we'll get you set up.</p>
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
@@ -188,15 +191,18 @@ function Dashboard({ session, profile, onProfile }) {
   };
 
   const reorder = (o) => {
-    let n = 0;
+    let n = 0, skipped = 0;
     for (const it of o.order_items || []) {
-      if (!it.variant_id) continue;
+      if (!it.variant_id) { skipped += 1; continue; } // no live variant to add (e.g. a retired product) — count it, don't silently drop
       addItem({ variantId: it.variant_id, name: it.offering_name, edition: it.variant_name, unitMinor: it.unit_price_minor, currency: o.currency }, it.qty || 1);
       n += 1;
     }
     // The line carries last order's price; the server reprices from the live USD + FX at checkout, so
-    // flag it as indicative rather than letting a stale figure look final.
-    flash(n ? `${n} item${n === 1 ? '' : 's'} added at your last order's price. We'll confirm the current price at checkout.` : 'Nothing to re-order.');
+    // flag it as indicative rather than letting a stale figure look final. Surface any skipped lines so
+    // the buyer never silently loses an item or sees "Nothing to re-order" on an order that has products.
+    if (n && skipped) flash(`${n} item${n === 1 ? '' : 's'} added (your last price; we'll confirm at checkout). ${skipped} item${skipped === 1 ? " couldn't" : "s couldn't"} be re-ordered online — get in touch and we'll sort it.`);
+    else if (n) flash(`${n} item${n === 1 ? '' : 's'} added at your last order's price. We'll confirm the current price at checkout.`);
+    else flash("These items can't be re-ordered online — get in touch and we'll sort it for you.");
     if (n && typeof location !== 'undefined') location.hash = 'shop';
   };
 
@@ -273,7 +279,7 @@ function Dashboard({ session, profile, onProfile }) {
                               <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                               <td className="ca-ord-actions acct-ord-cell-actions">
                                 <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
-                                {o.invoice_number && <a className="gs-btn ghost sm" href={'#invoice/' + o.id} onClick={(e) => e.stopPropagation()}>Invoice</a>}
+                                <a className="gs-btn ghost sm" href={'#invoice/' + o.id} onClick={(e) => e.stopPropagation()}>Invoice</a>
                                 <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
                               </td>
                             </tr>
@@ -345,8 +351,13 @@ function Dashboard({ session, profile, onProfile }) {
         <div role="tabpanel" id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={tab !== 'billing'}>
           <div className="pr-form">
             <h2>Billing &amp; cards</h2>
-            <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal.</p>
-            <button className="gs-btn ghost" onClick={openPortal} disabled={portalBusy}>{portalBusy ? 'Opening…' : 'Manage billing & cards →'}</button>
+            {orders.length === 0 ? (
+              // no purchases yet → don't send them into an empty Stripe portal (and don't create a Stripe customer for nothing)
+              <p className="ca-note">Your saved cards, invoices and receipts will appear here after your first purchase. <a className="ca-link" href="#shop">Browse the store →</a></p>
+            ) : (<>
+              <p className="ca-note">Manage saved cards, download invoices and receipts in the secure Stripe portal.</p>
+              <button className="gs-btn ghost" onClick={openPortal} disabled={portalBusy}>{portalBusy ? 'Opening…' : 'Manage billing & cards →'}</button>
+            </>)}
           </div>
         </div>
       </div>
@@ -415,7 +426,7 @@ function SecurityCard({ email, lastSignIn, flash }) {
       <div className="acct-seclist">
         <div className="acct-secrow">
           <div className="acct-secinfo"><b>Two-factor authentication</b><span>Add a second step at sign-in for extra protection.</span></div>
-          <a className="gs-btn ghost sm" href="#contact" aria-label="Ask us to enable two-factor authentication">Ask us to enable</a>
+          <a className="gs-btn ghost sm" href="#go/contact" aria-label="Ask us to enable two-factor authentication">Ask us to enable</a>
         </div>
         <div className="acct-secrow">
           <div className="acct-secinfo"><b>Active sessions</b><span>Signed in as {email}. Use this if you've signed in on a shared or lost device.</span></div>

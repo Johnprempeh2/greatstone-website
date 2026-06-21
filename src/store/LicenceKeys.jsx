@@ -21,11 +21,18 @@ export default function LicenceKeys() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const copy = async (kk) => {
-    try { await navigator.clipboard.writeText(kk.licence_key); } catch { /* clipboard blocked */ }
-    setCopied(kk.id); setTimeout(() => setCopied(null), 1800);
+  const copy = async (kk, codeEl) => {
+    try {
+      await navigator.clipboard.writeText(kk.licence_key);
+      setCopied(kk.id); setTimeout(() => setCopied(null), 1800);          // only show success when it actually copied
+    } catch {
+      // clipboard API blocked (insecure origin / permission) — select the code so the user can copy it manually
+      try { const r = document.createRange(); r.selectNodeContents(codeEl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch { /* ignore */ }
+      setCopied('fail:' + kk.id); setTimeout(() => setCopied(null), 4000);
+    }
   };
-  const statusClass = (s) => s === 'issued' ? 'ca-published' : s === 'expired' ? 'ca-draft' : 'ca-ord-refunded';
+  // explicit map so an unknown status can't silently render as the red "refunded" chip
+  const statusClass = (s) => ({ issued: 'ca-published', expired: 'ca-draft', revoked: 'ca-ord-refunded' }[s] || 'ca-archived');
 
   return (
     <section className="org-sec" aria-labelledby="acct-keys-h">
@@ -51,7 +58,10 @@ export default function LicenceKeys() {
               </div>
               <div className="lk-keyrow">
                 <code className="lk-key" aria-label="Licence key">{kk.licence_key}</code>
-                <button type="button" className="gs-btn ghost sm" onClick={() => copy(kk)} aria-label={(copied === kk.id ? 'Copied' : 'Copy') + ' licence key for ' + kk.offering_name}>{copied === kk.id ? 'Copied ✓' : 'Copy'}</button>
+                <button type="button" className="gs-btn ghost sm" onClick={(e) => copy(kk, e.currentTarget.previousElementSibling)}
+                  aria-label={(copied === kk.id ? 'Copied' : copied === 'fail:' + kk.id ? 'Selected — press Cmd or Ctrl and C to copy' : 'Copy') + ' licence key for ' + kk.offering_name}>
+                  {copied === kk.id ? 'Copied ✓' : copied === 'fail:' + kk.id ? 'Press ⌘/Ctrl+C' : 'Copy'}
+                </button>
               </div>
               <div className="lk-meta">
                 {kk.seats ? <span>{kk.seats} seat{kk.seats === 1 ? '' : 's'}</span> : null}
@@ -59,6 +69,8 @@ export default function LicenceKeys() {
                 {kk.expires_at ? <span>Expires {fmtDate(kk.expires_at)}</span> : null}
                 {kk.order?.reference ? <span>Order {kk.order.reference}</span> : null}
               </div>
+              {kk.status === 'revoked' && <p className="ca-note" style={{ marginTop: 8 }}>This key has been deactivated. If you think that's a mistake, <a className="ca-link" href="#go/contact">contact us</a>.</p>}
+              {kk.status === 'expired' && <p className="ca-note" style={{ marginTop: 8 }}>This licence has expired. <a className="ca-link" href="#go/contact">Get in touch</a> to renew it.</p>}
             </div>
           ))}
         </div>
