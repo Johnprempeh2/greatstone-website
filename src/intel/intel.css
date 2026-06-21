@@ -112,6 +112,11 @@
 .ih-brief-vendor { font-size: .82rem; font-weight: 800; }
 .ih-brief-date { margin-left: auto; font-size: .68rem; color: var(--gs-text-faint, #9ca29b); font-weight: 700; white-space: nowrap; }
 .ih-brief h4 { font-size: 1.04rem; font-weight: 800; line-height: 1.25; letter-spacing: -.015em; margin: 12px 0 0; }
+/* the headline IS the toggle; ::after stretches it over the whole card so the card stays clickable */
+.ih-brief-btn { display: inline; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ih-brief-btn::after { content: ''; position: absolute; inset: 0; border-radius: 17px; }
+.ih-brief-btn:focus-visible { outline: none; }
+.ih-brief-btn:focus-visible::after { outline: 2px solid var(--gs-accent, #c8ff00); outline-offset: -2px; }
 .ih-brief p { color: var(--gs-text-muted, #c4c8c1); font-size: .88rem; line-height: 1.55; margin: 8px 0 0; }
 .ih-take { margin-top: 13px; border-left: 2px solid var(--gs-accent-mid, rgba(200,255,0,.4)); padding: 9px 0 9px 13px;
   background: linear-gradient(90deg, rgba(200,255,0,.06), transparent); border-radius: 0 8px 8px 0; }
@@ -122,6 +127,7 @@
   border: 1px solid rgba(255,255,255,.14); color: var(--gs-text-muted, #c4c8c1); }
 .ih-src { margin-left: auto; font-size: .72rem; font-weight: 700; color: var(--gs-accent, #c8ff00); text-decoration: none; }
 .ih-src:hover { text-decoration: underline; }
+.ih-brief a.ih-src { position: relative; z-index: 1; } /* keep the source link clickable above the stretched toggle */
 
 /* podium */
 .ih-podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }

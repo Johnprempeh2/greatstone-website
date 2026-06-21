@@ -335,3 +335,8 @@ Ran a 5-lens adversarial review workflow (17 agents: hub a11y, hub correctness, 
 - **Verified live:** 6 momentum cards render with correct labels, card jumps to the right board, sr-only h2 present, no tab carries aria-controls; build clean, 51 tests, 0 console errors. Adversarial-reviewed.
 - **Note:** committed with scoped `git add <paths>` (not -A) per the [[concurrent-loops-git-hazard]] memo, since the DX-hub loop shares this repo.
 - **Tickets:** directions queue empty.
+
+## Overnight loop — 2026-06-21 — Intel Hub: briefing-card interactive-in-button fix (pass 5)
+- **Cleared the last genuine a11y defect the pass-3 review held**: the briefing card was a `<button>` that, when expanded, contained an `<h4>` heading and a real `<a href>` source link (invalid interactive/heading-in-button). Refactored the card to a semantic `<article>`: the headline is now the toggle `<button class="ih-brief-btn">` inside the `<h4>`, stretched via `::after { inset:0 }` so the whole card stays clickable, and the source `<a>` gets `position:relative; z-index:1` to stay independently clickable above the stretch. The decorative "Read ›" affordance is aria-hidden.
+- **Verified live:** card is now an `<article>` with zero nested-interactive; the toggle button carries aria-expanded and flips on click + keyboard (Enter); the stretch covers the whole card body (three hit-tests land on the toggle); the source link sits above the overlay (computed z-index 1); build clean, 51 tests, 0 console errors. Adversarial-reviewed.
+- **Tickets:** directions queue empty.

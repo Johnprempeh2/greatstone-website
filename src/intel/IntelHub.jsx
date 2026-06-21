@@ -155,15 +155,18 @@ function TopicDots({ topics }) {
   ));
 }
 
+// The card is an <article>, not a <button> (a button may not contain a heading or the source <a>).
+// The headline is the toggle button, stretched via ::after to keep the whole card clickable; the source
+// link sits above the stretch with its own z-index so it stays independently clickable.
 function BriefingCard({ b, forYou, expanded, onToggle }) {
   return (
-    <button className={'ih-brief' + (forYou ? ' foryou' : '')} aria-expanded={expanded} onClick={() => onToggle(b)}>
+    <article className={'ih-brief' + (forYou ? ' foryou' : '')}>
       <div className="ih-brief-top">
         <Logo domain={b.vendorDomain} />
         <span className="ih-brief-vendor">{b.vendor}</span>
         <span className="ih-brief-date">{fmtDate(b.date)}</span>
       </div>
-      <h4>{b.headline}</h4>
+      <h4><button type="button" className="ih-brief-btn" aria-expanded={expanded} onClick={() => onToggle(b)}>{b.headline}</button></h4>
       <p style={expanded ? null : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.summary}</p>
       {expanded ? (
         <>
@@ -177,9 +180,9 @@ function BriefingCard({ b, forYou, expanded, onToggle }) {
           </div>
         </>
       ) : (
-        <div className="ih-brief-foot"><span style={{ display: 'inline-flex', gap: 5 }}><TopicDots topics={b.topics} /></span><span className="ih-src" style={{ marginLeft: 'auto' }}>Read ›</span></div>
+        <div className="ih-brief-foot"><span style={{ display: 'inline-flex', gap: 5 }}><TopicDots topics={b.topics} /></span><span className="ih-src" style={{ marginLeft: 'auto' }} aria-hidden="true">Read ›</span></div>
       )}
-    </button>
+    </article>
   );
 }
 
