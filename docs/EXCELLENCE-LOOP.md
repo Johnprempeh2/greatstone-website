@@ -59,7 +59,8 @@ Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` unt
 3. **`public/llms.txt`** — AEO brief for AI answer engines (house-voice summary + page index). Not gated on the domain cutover (unlike robots/sitemap); served 200 text/plain.
 4. **Terrace slab width clamp** — `min(100%, calc(70% + i*15%))` so editor-added slabs (4+) can't overflow the 600px rail.
 
-**Status:** adversarial review (2 lenses) running before commit/stage-deploy.
+**Status:** ✅ committed `3346d7b`. Adversarial review (2 lenses) → 2 fixes applied + verified: (a) corrected a false "Security is one of the eight pillars" FAQ claim (canonical pillars are People/Communication/Innovation/Data/Customer/Competition/Technology/Value — no Security) across seed + block default + migrate; (b) explorer Book CTAs now `onClose` so focus is not trapped behind the Calendly popup. Production correctness of the copy fix confirmed via `grep dist/` (the dev preview showed stale text — a known Vite JSON-import HMR cache quirk that does NOT affect the build).
+⚠️ **Deploy staged but BLOCKED on Netlify auth** (same as C1; CLI "Not logged in"). Build `index-DXOLVs_H.js` mirrored into `../greatstone-homepage-deploy/puck-proof/`. Finish with: `cd ../greatstone-homepage-deploy && netlify deploy --prod --dir=. --site=3b1e97e6-e184-4251-badd-deed532be3ab`. (C1 was deployed live this way — confirmed bundle `index-MR1Z-Ke0.js`.)
 
 **Skipped this cycle (flagged, NOT mine to touch / dead code / larger):**
 - ⚠️ **`#org` OrgDashboard silently swallows orders/quotes load errors** (HIGH — a paying company can be shown £0/0 on a transient failure; `OrgDashboard.jsx:122-126` destructure only `{data}` and resolve to `[]`). This is the **DX-hub loop's hot file** (6 recent commits) — leaving it for that loop. Fix: destructure `{data,error}`, `setErr(error)`, keep prior state; align "Invested" currency to `liveOrders[0]?.currency`.
