@@ -186,7 +186,7 @@ export default function BriefingArt({ brief, className }) {
     const seed = hashStr((brief && brief.id) || 'x');
     const r = mulberry32(seed);
     const hue = briefingHue(brief);
-    const gid = 'ba' + (seed % 1000000);
+    const gid = 'ba' + seed.toString(36); // full seed → no gradient-id collisions across covers on a page
     const topics = (brief && brief.topics) || [];
     const t0 = topics[0] && GLYPH[topics[0]] ? topics[0] : FALLBACK;
     const t1 = topics[1] && GLYPH[topics[1]] && topics[1] !== t0 ? topics[1] : null;
@@ -199,7 +199,7 @@ export default function BriefingArt({ brief, className }) {
     const glowX = 50 + (seed % 8), glowY = 38 + ((seed >> 4) % 10);
     return { seed, hue, gid, t0, t1, gx, gy, stipple, rot, scl, glyph, glowX, glowY,
       mono: monogram(brief && brief.vendor), vendor: (brief && brief.vendor) || '', importance: (brief && brief.importance) || 'medium' };
-  }, [brief.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [brief && brief.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { hue, gid, t0, gx, gy, stipple, rot, scl, glyph, glowX, glowY, mono, vendor, importance, seed } = art;
   const grid = [];

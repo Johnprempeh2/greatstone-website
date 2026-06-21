@@ -333,10 +333,10 @@
 .ih-article-root { min-height: 100vh; }
 .ih-article { position: relative; z-index: 2; }
 /* full-bleed cover hero; the fixed site header floats over its top, so content is bottom-aligned + top-padded */
-.ih-art-hero { position: relative; min-height: clamp(320px, 48vh, 480px); display: flex; align-items: flex-end; overflow: hidden; }
+.ih-art-hero { position: relative; min-height: clamp(280px, 40vh, 420px); display: flex; align-items: flex-end; overflow: hidden; }
 .ih-art-hero .ih-art { position: absolute; inset: 0; }
 .ih-art-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, #070a07 2%, rgba(7,10,7,.82) 26%, rgba(7,10,7,.35) 56%, rgba(7,10,7,.12) 100%); }
-.ih-art-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 920px; margin: 0 auto;
+.ih-art-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 720px; margin: 0 auto;
   padding: clamp(92px,13vh,140px) clamp(16px,4vw,42px) clamp(22px,4vh,40px); }
 .ih-back { display: inline-block; font-size: .76rem; font-weight: 800; letter-spacing: .02em; color: var(--gs-text-muted, #c4c8c1);
   text-decoration: none; margin-bottom: 16px; transition: color .2s var(--gs-ease); }
