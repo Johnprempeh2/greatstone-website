@@ -15,7 +15,7 @@ export default function LicenceKeys() {
   const load = useCallback(() => {
     setErr(null);
     supabase.from('licence_keys')
-      .select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, order:orders(reference)')
+      .select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, download_url, order:orders(reference)')
       .is('deleted_at', null).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { setErr(error || null); setKeys(data || []); });
   }, []);
@@ -62,6 +62,7 @@ export default function LicenceKeys() {
                   aria-label={(copied === kk.id ? 'Copied' : copied === 'fail:' + kk.id ? 'Selected — press Cmd or Ctrl and C to copy' : 'Copy') + ' licence key for ' + kk.offering_name}>
                   {copied === kk.id ? 'Copied ✓' : copied === 'fail:' + kk.id ? 'Press ⌘/Ctrl+C' : 'Copy'}
                 </button>
+                {kk.download_url && kk.status === 'issued' && <a className="gs-btn ghost sm" href={kk.download_url} target="_blank" rel="noopener noreferrer" aria-label={'Download ' + kk.offering_name + ' (opens in a new tab)'}>Download ↗</a>}
               </div>
               <div className="lk-meta">
                 {kk.seats ? <span>{kk.seats} seat{kk.seats === 1 ? '' : 's'}</span> : null}

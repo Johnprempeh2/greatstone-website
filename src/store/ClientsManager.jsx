@@ -78,7 +78,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
-    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
+    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setKeys(data || []); });
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
@@ -216,6 +216,7 @@ function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
   const [seats, setSeats] = useState(lkey.seats != null ? String(lkey.seats) : '');
   const [expires, setExpires] = useState(lkey.expires_at ? String(lkey.expires_at).slice(0, 10) : '');
   const [status, setStatus] = useState(lkey.status || 'issued');
+  const [download, setDownload] = useState(lkey.download_url || '');
   const [notes, setNotes] = useState(lkey.notes || '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -228,10 +229,11 @@ function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
     if (!key.trim()) { setErr('Paste the licence key.'); return; }
     const seatsN = seats.trim() === '' ? null : parseInt(seats, 10);
     if (seatsN !== null && (!Number.isInteger(seatsN) || seatsN < 1)) { setErr('Seats must be a whole number of 1 or more, or left blank.'); return; }
+    if (download.trim() && !/^https?:\/\//i.test(download.trim())) { setErr('The download link must start with http:// or https://'); return; }
     setBusy(true);
     const payload = {
       offering_name: offering.trim(), variant_name: variant.trim() || null, licence_key: key.trim(),
-      seats: seatsN, status, notes: notes.trim() || null,
+      seats: seatsN, status, notes: notes.trim() || null, download_url: download.trim() || null,
       expires_at: expires ? new Date(expires + 'T00:00:00').toISOString() : null,
     };
     let error;
@@ -250,6 +252,7 @@ function KeyEditor({ lkey, customer, staff, onClose, onSaved }) {
         <label>Product<input value={offering} onChange={e => setOffering(e.target.value)} placeholder="e.g. Aspose.Total for .NET" /></label>
         <label>Edition / licence type <span style={{ fontWeight: 400 }}>(optional)</span><input value={variant} onChange={e => setVariant(e.target.value)} placeholder="e.g. Developer Small Business" /></label>
         <label>Licence key<textarea rows="2" value={key} onChange={e => setKey(e.target.value)} placeholder="Paste the activation code" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.86rem' }} /></label>
+        <label>Download link <span style={{ fontWeight: 400 }}>(optional — where the client gets the software)</span><input type="url" value={download} onChange={e => setDownload(e.target.value)} placeholder="https://…" /></label>
         <div className="pr-row">
           <label>Seats <span style={{ fontWeight: 400 }}>(optional)</span><input type="number" min="1" value={seats} onChange={e => setSeats(e.target.value)} placeholder="e.g. 5" /></label>
           <label>Expires <span style={{ fontWeight: 400 }}>(optional)</span><input type="date" value={expires} onChange={e => setExpires(e.target.value)} /></label>
