@@ -3,7 +3,7 @@
 // ENGAGEMENT timeline (the digital-experience journey — staff-curated meeting recaps / milestones /
 // deliverables, each inline OR an external link), the member directory, the company profile, and a
 // company commerce rollup. Reads are RLS-scoped to the buyer's own company (customer_self, 0008/0013).
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { getCustomerProfile, isCustomer, isCompanyAdmin, signOut, getSession, onAuth } from './customerAuth.mjs';
@@ -216,12 +216,13 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
         <div><span className="st-kicker">Get started</span><h2 id="org-ob-h">Set up your organization</h2></div>
         <button type="button" className="org-onboard-x" onClick={dismiss} aria-label="Dismiss setup checklist">×</button>
       </div>
-      <div className="org-onboard-prog"><div className="org-onboard-bar" style={{ width: pct + '%' }} role="progressbar" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length} aria-label="Setup progress" /></div>
+      <div className="org-onboard-prog"><div className="org-onboard-bar" style={{ width: pct + '%' }} role="progressbar" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length} aria-valuetext={`${doneCount} of ${steps.length} steps complete`} aria-label="Setup progress" /></div>
       <p className="org-onboard-count">{doneCount} of {steps.length} complete</p>
       <ul className="org-onboard-list">
         {steps.map(s => (
           <li key={s.id} className={'org-onboard-step' + (s.done ? ' done' : '')}>
             <span className="org-onboard-check" aria-hidden="true">{s.done ? '✓' : ''}</span>
+            <span className="gs-sr-only">{s.done ? 'Completed: ' : 'Not started: '}</span>
             <span className="org-onboard-label"><b>{s.label}</b><span>{s.done ? 'Done' : s.hint}</span></span>
             {!s.done && s.cta && (s.cta.href
               ? <a className="gs-btn ghost sm" href={s.cta.href}>{s.cta.label}</a>
@@ -245,7 +246,8 @@ function OrgAnalytics({ orders, engagements }) {
   let lastTouch = null;
   if (pastEng.length) {
     const latest = pastEng.reduce((a, b) => (a.occurred_on > b.occurred_on ? a : b));
-    lastTouch = Math.max(0, Math.round((Date.now() - new Date(latest.occurred_on).getTime()) / 86400000));
+    // local-calendar diff (occurred_on is a local DATE; matches todayISO so "Today" reports correctly)
+    lastTouch = Math.max(0, Math.round((new Date(today + 'T00:00:00').getTime() - new Date(latest.occurred_on + 'T00:00:00').getTime()) / 86400000));
   }
   const byMonth = {};
   for (const o of live) { const d = new Date(o.placed_at || o.created_at); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); byMonth[k] = (byMonth[k] || 0) + (o.total_minor || 0); }
@@ -261,7 +263,7 @@ function OrgAnalytics({ orders, engagements }) {
         <div className="org-an-tile"><div className="org-stat-v">{pastEng.length}</div><div className="org-stat-l">Touchpoints</div></div>
         {months.length > 0 && (
           <div className="org-an-tile org-an-spark">
-            <div className="org-an-bars" role="img" aria-label={'Spend over the last ' + months.length + ' month' + (months.length === 1 ? '' : 's') + ', total ' + fmtMoney(live.reduce((s, o) => s + (o.total_minor || 0), 0), curr)}>
+            <div className="org-an-bars" role="img" aria-label={'Spend trend, last ' + months.length + ' month' + (months.length === 1 ? '' : 's') + ': ' + months.map(m => m + ' ' + fmtMoney(byMonth[m], curr)).join(', ') + '. Total ' + fmtMoney(live.reduce((s, o) => s + (o.total_minor || 0), 0), curr) + '.'}>
               {months.map(m => <span key={m} className="org-an-bar" style={{ height: Math.max(10, Math.round(byMonth[m] / max * 100)) + '%' }} title={m + ': ' + fmtMoney(byMonth[m], curr)} />)}
             </div>
             <div className="org-stat-l">Spend trend</div>
@@ -282,14 +284,30 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   const [lastSeen] = useState(() => { try { return localStorage.getItem(seenKey); } catch { return null; } });
   // mark "seen" only when LEAVING the view, so the "new" treatment survives the whole visit
   useEffect(() => () => { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch { /* ignore */ } }, [seenKey]);
-  // deep link: #org/e/<id> opens + scrolls to that engagement (shareable per-item permalink)
+  // deep link: #org/e/<id> opens + scrolls to that engagement (shareable per-item permalink).
+  // hashchange-driven so it works in an already-mounted view; an appliedRef stops it re-clobbering the
+  // user's filter/search when data reloads under the same hash. Works for upcoming items too (their
+  // What's-next card carries the same dx-item-<id>); falls back to the section top if the id isn't found.
+  const appliedRef = useRef(null);
   useEffect(() => {
     if (!engagements) return;
-    const m = (typeof location !== 'undefined' ? location.hash : '').match(/#\/?org\/e\/([\w-]+)/i);
-    if (!m) return;
-    setOpenId(m[1]); setFilter('all'); setQ('');
-    const t = setTimeout(() => document.getElementById('dx-item-' + m[1])?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 140);
-    return () => clearTimeout(t);
+    let timer;
+    const apply = () => {
+      const m = (typeof location !== 'undefined' ? location.hash : '').match(/#\/?org\/e\/([\w-]+)/i);
+      if (!m) { appliedRef.current = null; return; }
+      const id = m[1];
+      if (appliedRef.current === id) return; // already consumed this hash → don't wipe filters on reload
+      appliedRef.current = id;
+      setOpenId(id); setFilter('all'); setQ('');
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const el = document.getElementById('dx-item-' + id);
+        (el || document.getElementById('dx-h'))?.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
+      }, 120);
+    };
+    apply();
+    addEventListener('hashchange', apply);
+    return () => { removeEventListener('hashchange', apply); clearTimeout(timer); };
   }, [engagements]);
 
   if (engagements === null) return (
@@ -357,7 +375,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
               <h3 className="dx-next-h">What's next</h3>
               <div className="dx-next-row">
                 {upcoming.slice(0, 3).map(e => (
-                  <div key={e.id} className="dx-next-card">
+                  <div key={e.id} id={'dx-item-' + e.id} className="dx-next-card">
                     <span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span>
                     <div className="dx-next-title">{e.title}</div>
                     <div className="dx-next-date">{fmtDate(e.occurred_on)}{e.owner_name ? ' · ' + e.owner_name : ''}</div>
@@ -373,7 +391,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
               <h3 className="dx-pins-h">Highlights</h3>
               <div className="dx-pins-row">
                 {pinned.map(e => (
-                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setQ(''); setOpenId(e.id); document.getElementById('dx-item-' + e.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>
+                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => document.getElementById('dx-item-' + e.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }}>
                     <span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span>
                     <span className="dx-pin-title">{e.title}</span>
                     <span className="dx-pin-date">{fmtDate(e.occurred_on)}</span>
@@ -462,7 +480,8 @@ function Item({ e, isNew, open, onToggle }) {
               {e.kind === 'deliverable' ? 'Open deliverable' : 'Open'} ↗ <span className="dx-host">{hostOf(e.external_url)}</span>
             </a>
           )}
-          <button type="button" className="dx-copy" onClick={copyLink} aria-label={'Copy a link to “' + e.title + '”'}>{copied ? 'Copied ✓' : 'Copy link'}</button>
+          <button type="button" className="dx-copy" onClick={copyLink} aria-label={copied ? 'Link copied to clipboard' : 'Copy a link to “' + e.title + '”'}>{copied ? 'Copied ✓' : 'Copy link'}</button>
+          <span className="gs-sr-only" role="status" aria-live="polite">{copied ? 'Link copied to clipboard' : ''}</span>
         </div>
         {open && e.body_html && (
           <div className="dx-body" id={'dx-body-' + e.id} dangerouslySetInnerHTML={{ __html: cleanBody }} />
@@ -479,10 +498,16 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
   const loadReqs = useCallback(() => {
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, created_at')
       .eq('customer_id', customerId).order('created_at', { ascending: false })
-      .then(({ data }) => setRequests(data || []));
+      .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
   }, [customerId]);
   useEffect(() => { loadReqs(); }, [loadReqs]);
   const pending = requests.filter(r => r.status === 'pending');
+  const taken = useMemo(() => {
+    const s = new Set();
+    (members || []).forEach(m => m.email && s.add(m.email.toLowerCase()));
+    pending.forEach(r => r.email && s.add(r.email.toLowerCase()));
+    return s;
+  }, [members, requests]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <section className="org-sec" aria-labelledby="org-mem-h">
@@ -490,7 +515,7 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
         <h2 id="org-mem-h">Members &amp; access</h2>
         {admin && <button className="gs-btn ghost sm" aria-expanded={showForm} onClick={() => setShowForm(s => !s)}>{showForm ? 'Close' : '+ Invite a teammate'}</button>}
       </div>
-      {showForm && <InviteForm customerId={customerId} requestedBy={requestedBy} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
+      {showForm && <InviteForm customerId={customerId} requestedBy={requestedBy} taken={taken} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Joined</th></tr></thead>
@@ -528,33 +553,37 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
   );
 }
 
-function InviteForm({ customerId, requestedBy, onDone }) {
+function InviteForm({ customerId, requestedBy, taken, onDone }) {
   const [name, setName] = useState(''); const [email, setEmail] = useState('');
   const [role, setRole] = useState('member'); const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const emailRef = useRef(null);
+  const fail = (msg) => { setErr(msg); emailRef.current?.focus(); };
   const submit = async (e) => {
     e.preventDefault(); setErr(null);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { setErr('Enter a valid email address.'); return; }
+    const em = email.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { fail('Enter a valid email address.'); return; }
+    if (taken?.has(em.toLowerCase())) { fail('That person is already a member or already has a pending invitation.'); return; }
     setBusy(true);
     const { error } = await supabase.from('member_invite_requests').insert({
       org_id: ORG_ID, customer_id: customerId, requested_by: requestedBy,
-      full_name: name.trim() || null, email: email.trim(), role, note: note.trim() || null,
+      full_name: name.trim() || null, email: em, role, note: note.trim() || null,
     });
     setBusy(false);
-    if (error) { setErr(error.message); return; }
+    if (error) { fail(error.code === '23505' ? 'A request for this email is already pending.' : (error.message || 'Could not send the request.')); return; }
     onDone("Invitation requested — we'll provision access and email them.");
   };
   return (
     <form className="pr-form org-inviteform" onSubmit={submit}>
       <div className="pr-row">
         <label>Their name<input value={name} onChange={e => setName(e.target.value)} autoComplete="off" placeholder="Optional" /></label>
-        <label>Their email<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" required /></label>
+        <label htmlFor="invite-email">Their email<input id="invite-email" ref={emailRef} type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" required aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'invite-email-err' : undefined} /></label>
       </div>
       <div className="pr-row">
         <label>Role<select value={role} onChange={e => setRole(e.target.value)}><option value="member">Member</option><option value="admin">Company admin</option></select></label>
         <label>Note <span style={{ fontWeight: 400 }}>(optional)</span><input value={note} onChange={e => setNote(e.target.value)} placeholder="Anything we should know" /></label>
       </div>
-      {err && <div className="ca-err" role="alert">{err}</div>}
+      {err && <div id="invite-email-err" className="ca-err" role="alert">{err}</div>}
       <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Requesting…' : 'Request access'}</button>
     </form>
   );

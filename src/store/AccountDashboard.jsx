@@ -384,11 +384,11 @@ function SecurityCard({ email, lastSignIn, flash }) {
       <div className="acct-seclist">
         <div className="acct-secrow">
           <div className="acct-secinfo"><b>Two-factor authentication</b><span>Add a second step at sign-in for extra protection.</span></div>
-          <a className="gs-btn ghost sm" href="#contact">Ask us to enable</a>
+          <a className="gs-btn ghost sm" href="#contact" aria-label="Ask us to enable two-factor authentication">Ask us to enable</a>
         </div>
         <div className="acct-secrow">
           <div className="acct-secinfo"><b>Active sessions</b><span>Signed in as {email}. Use this if you've signed in on a shared or lost device.</span></div>
-          <button type="button" className="gs-btn ghost sm" onClick={signOutEverywhere} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign out everywhere'}</button>
+          <button type="button" className="gs-btn ghost sm" onClick={signOutEverywhere} disabled={signingOut} aria-label="Sign out everywhere — end all active sessions">{signingOut ? 'Signing out…' : 'Sign out everywhere'}</button>
         </div>
       </div>
       <p className="ca-note">To change your account email, contact us. We'll never ask for your password by email.</p>

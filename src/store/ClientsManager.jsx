@@ -75,7 +75,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
     supabase.from('engagements').select('*').is('deleted_at', null).eq('customer_id', customer.id).order('occurred_on', { ascending: false })
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
-      .then(({ data }) => setRequests(data || []));
+      .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
 
