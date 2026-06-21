@@ -4,8 +4,10 @@
 //
 // Design notes:
 // - Table-based, fully inline-styled, ~560px: the only HTML email layout that survives Gmail/Outlook/Apple Mail.
-// - Brand wordmark is CSS, NOT an embedded <img>: email clients routinely block data-URI/remote images,
-//   so a text wordmark always renders. (The store's order email does the same.)
+// - Brand logo is the real hosted wordmark PNG (greatstone-home.netlify.app/assets/greatstone-logo-web.png)
+//   with alt="Greatstone" so it degrades to the brand name if a client blocks images. (Earlier a CSS text
+//   wordmark was used to dodge image-blocking, but it only approximated the mark; the hosted PNG is the
+//   actual logo and renders identically across clients incl. dark mode.)
 // - Lime button carries DARK text (#0e1611), per the brand rule "never white text on lime".
 // - Every email shows the raw action URL as a fallback for clients that strip the button.
 // - Voice: British English, sentence case, no em-dashes, no banned words.
@@ -46,7 +48,7 @@ const shell = ({ preheader, heading, body, cta, safety }) => `<!doctype html>
 <tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" bgcolor="#1f1f1f" style="width:100%;max-width:560px;background:#1f1f1f;border-radius:16px;border:1px solid #2c2c2c">
 <tr><td style="padding:32px 32px 0">
-<div style="font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:19px;letter-spacing:.04em;color:#f5f5f5">GREATST<span style="color:#c8ff00">O</span>NE</div>
+<a href="https://greatstonesoftware.co.uk" style="text-decoration:none"><img src="https://greatstone-home.netlify.app/assets/greatstone-logo-web.png" alt="Greatstone" width="180" height="36" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:36px"></a>
 </td></tr>
 <tr><td style="padding:18px 32px 0">
 <h1 style="font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.25;font-weight:800;color:#f5f5f5;margin:0 0 10px">${heading}</h1>
