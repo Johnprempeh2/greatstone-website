@@ -131,7 +131,8 @@ function Org({ profile, session, onProfile }) {
     const m = {}; (members || []).forEach(u => { m[u.id] = u.full_name || u.email; }); return m;
   }, [members]);
   const primaryContact = (members || []).find(m => m.is_primary) || (members || []).find(m => m.role === 'admin');
-  const totalSpent = (orders || []).filter(o => o.status !== 'cancelled' && o.status !== 'refunded').reduce((s, o) => s + (o.total_minor || 0), 0);
+  const liveOrders = (orders || []).filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
+  const totalSpent = liveOrders.reduce((s, o) => s + (o.total_minor || 0), 0);
   const openQuotes = (quotes || []).filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
 
   return (
@@ -166,7 +167,7 @@ function Org({ profile, session, onProfile }) {
       <div className="org-stats">
         <Stat label="Members" value={members ? members.length : '…'} />
         <Stat label="Open quotes" value={quotes ? openQuotes : '…'} />
-        <Stat label="Orders" value={orders ? orders.length : '…'} />
+        <Stat label="Orders" value={orders ? liveOrders.length : '…'} />
         <Stat label="Invested" value={orders ? fmtMoney(totalSpent, (orders[0]?.currency) || 'GBP') : '…'} />
       </div>
 
@@ -556,7 +557,7 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
         </div>
       )}
       <p className="ca-note">{admin
-        ? <>Invite a teammate above and we'll provision their portal access and email them. To remove a member or change the company admin, </>
+        ? <>Invite a teammate above and our team will set up their access and be in touch. To remove a member or change the company admin, </>
         : <>To add or remove teammates, or change who's the company admin, </>}
         <a className="ca-link" href="#go/contact">contact your Greatstone team</a>.</p>
     </section>
@@ -581,7 +582,7 @@ function InviteForm({ customerId, requestedBy, taken, onDone }) {
     });
     setBusy(false);
     if (error) { fail(error.code === '23505' ? 'A request for this email is already pending.' : (error.message || 'Could not send the request.')); return; }
-    onDone("Invitation requested — we'll provision access and email them.");
+    onDone("Invitation requested — our team will set up access and be in touch.");
   };
   return (
     <form className="pr-form org-inviteform" onSubmit={submit}>
