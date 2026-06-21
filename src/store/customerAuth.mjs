@@ -3,8 +3,14 @@
 // customer_user rows is the SECURITY DEFINER RPC ensure_customer_account() (idempotent; refuses staff).
 import { supabase } from '../lib/supabase.mjs';
 
-const acctRedirect = () =>
-  (typeof location !== 'undefined' ? location.origin + location.pathname : '') + '#account';
+// Auth-email redirect (signup confirmation + password recovery). It must NOT carry a hash route.
+// Supabase's implicit flow returns the session in the URL *fragment* (#access_token=…&type=…); if
+// redirectTo already has a `#account` fragment the browser collapses the two into one mangled fragment,
+// supabase-js can't parse the token, no session is created, and the visitor lands back on the sign-in
+// screen (for recovery, the reset form never shows). Land on a bare URL so the fragment is clean —
+// App's AUTH_LANDING detection then routes the landing to #account (and shows the reset form for recovery).
+const authRedirect = () =>
+  (typeof location !== 'undefined' ? location.origin + location.pathname : '');
 
 /** Provision (or fetch) the customer + customer_user for the signed-in buyer. Idempotent; safe on
  * every login. No-ops gracefully if there's no session yet (e.g. email confirmation pending). */
@@ -21,7 +27,7 @@ export async function signUp(email, password, { companyName = null, fullName = n
   if (!supabase) return { error: { message: 'Store backend not configured.' } };
   const res = await supabase.auth.signUp({
     email: (email || '').trim(), password,
-    options: { data: { company_name: companyName, full_name: fullName }, emailRedirectTo: acctRedirect() },
+    options: { data: { company_name: companyName, full_name: fullName }, emailRedirectTo: authRedirect() },
   });
   if (!res.error) await ensureAccount(companyName, fullName); // works immediately if confirmation is off
   return res;
@@ -42,7 +48,7 @@ export function onAuth(cb) { if (!supabase) return { data: { subscription: { uns
 
 export async function resetPassword(email) {
   if (!supabase) return { error: { message: 'Store backend not configured.' } };
-  return supabase.auth.resetPasswordForEmail((email || '').trim(), { redirectTo: acctRedirect() + '?reset=1' });
+  return supabase.auth.resetPasswordForEmail((email || '').trim(), { redirectTo: authRedirect() });
 }
 export async function updatePassword(newPassword) {
   if (!supabase) return { error: { message: 'Store backend not configured.' } };

@@ -13,14 +13,21 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
   const [pass, setPass] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState('signin'); // signin | forgot
+  const [msg, setMsg] = useState('');
   const ref = useRef(null);
   useEffect(() => { const t = setTimeout(() => ref.current && ref.current.focus(), 30); return () => clearTimeout(t); }, []);
 
   const submit = async (e) => {
     e.preventDefault();
-    setBusy(true); setErr('');
+    setBusy(true); setErr(''); setMsg('');
     try {
       const m = await import('../store/adminAuth.mjs');
+      if (mode === 'forgot') {
+        const { error } = await m.resetPassword(email);
+        if (error) { setErr(error.message || 'Couldn’t send the reset link.'); setBusy(false); return; }
+        setMsg('If that email has a Greatstone admin account, a reset link is on its way.'); setBusy(false); return;
+      }
       const { error } = await m.signIn(email, pass);
       if (error) { setErr(error.message || 'Those details are not recognised.'); setBusy(false); return; }
       const staff = await m.getStaffUser().catch(() => null);
@@ -51,6 +58,8 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
     label: { display: 'block', fontSize: '.7rem', fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--gs-text-faint)', margin: '18px 0 8px' },
     input: { width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid var(--gs-border-soft)', borderRadius: '10px', padding: '12px 14px', color: 'var(--gs-text)', fontFamily: 'Montserrat,sans-serif', fontSize: '.92rem', outline: 'none' },
     err: { marginTop: '14px', color: '#ff6b6b', fontSize: '.82rem', fontWeight: 600 },
+    ok: { marginTop: '14px', padding: '10px 14px', borderRadius: '10px', color: 'var(--gs-accent)', background: 'rgba(200,255,0,.08)', border: '1px solid rgba(200,255,0,.28)', fontSize: '.82rem', fontWeight: 600, lineHeight: 1.5 },
+    link: { display: 'inline-block', marginTop: '16px', color: 'var(--gs-text-muted)', fontSize: '.8rem', fontWeight: 700, background: 'none', border: 0, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px' },
     notice: { marginTop: '16px', padding: '10px 14px', borderRadius: '10px', color: 'var(--gs-warning,#ffc800)', background: 'rgba(255,200,0,.08)', border: '1px solid rgba(255,200,0,.28)', fontSize: '.82rem', fontWeight: 600, lineHeight: 1.5 },
     btn: { width: '100%', marginTop: '22px', background: 'var(--gs-accent)', color: '#0e1611', border: 0, borderRadius: '100px', padding: '13px', fontFamily: 'Montserrat,sans-serif', fontWeight: 800, fontSize: '.92rem', cursor: 'pointer', opacity: busy ? 0.7 : 1 },
     back: { display: 'inline-block', marginTop: '18px', color: 'var(--gs-text-faint)', fontSize: '.82rem', fontWeight: 700, background: 'none', border: 0, cursor: 'pointer' },
@@ -61,20 +70,30 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
     <div style={S.screen}>
       <form style={S.card} onSubmit={submit} aria-label="Admin sign in">
         <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" style={S.logo} />
-        <h1 style={S.h1}>Admin sign in</h1>
-        <p style={S.sub}>One sign-in for the whole admin — website content, the page editor and the catalogue. Greatstone staff only.</p>
+        <h1 style={S.h1}>{mode === 'forgot' ? 'Reset your password' : 'Admin sign in'}</h1>
+        <p style={S.sub}>{mode === 'forgot'
+          ? 'Enter your Greatstone admin email and we’ll send a link to set a new password.'
+          : 'One sign-in for the whole admin — website content, the page editor and the catalogue. Greatstone staff only.'}</p>
         {notice && <div style={S.notice} role="status">{notice}</div>}
 
         <label style={S.label} htmlFor="gs-user">Email</label>
-        <input id="gs-user" ref={ref} style={S.input} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErr(''); }} autoComplete="username" placeholder="you@greatstone.dev"
+        <input id="gs-user" ref={ref} style={S.input} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErr(''); setMsg(''); }} autoComplete="username" placeholder="you@greatstone.dev"
           aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'gs-signin-err' : undefined} />
 
-        <label style={S.label} htmlFor="gs-pass">Password</label>
-        <input id="gs-pass" style={S.input} type="password" value={pass} onChange={(e) => { setPass(e.target.value); setErr(''); }} autoComplete="current-password" placeholder="••••••••"
-          aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'gs-signin-err' : undefined} />
+        {mode !== 'forgot' && <>
+          <label style={S.label} htmlFor="gs-pass">Password</label>
+          <input id="gs-pass" style={S.input} type="password" value={pass} onChange={(e) => { setPass(e.target.value); setErr(''); }} autoComplete="current-password" placeholder="••••••••"
+            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'gs-signin-err' : undefined} />
+        </>}
 
         {err && <div id="gs-signin-err" style={S.err} role="alert">{err}</div>}
-        <button type="submit" style={S.btn} disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+        {msg && <div style={S.ok} role="status">{msg}</div>}
+        <button type="submit" style={S.btn} disabled={busy}>{busy ? (mode === 'forgot' ? 'Sending…' : 'Signing in…') : (mode === 'forgot' ? 'Send reset link' : 'Sign in')}</button>
+        <div>
+          <button type="button" style={S.link} onClick={() => { setErr(''); setMsg(''); setMode(mode === 'forgot' ? 'signin' : 'forgot'); }}>
+            {mode === 'forgot' ? 'Back to sign in' : 'Forgot your password?'}
+          </button>
+        </div>
         <button type="button" style={S.back} onClick={onCancel}>← Back to site</button>
 
         <p style={S.note}>

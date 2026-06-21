@@ -18,18 +18,22 @@ const quoteLabel = (s) => QUOTE_LABEL[s] || (String(s || '').charAt(0).toUpperCa
 // Account settings tabs (WT-14): Profile / Security / Billing as a conformant ARIA tablist.
 const SETTINGS_TABS = [{ id: 'profile', label: 'Profile' }, { id: 'security', label: 'Security' }, { id: 'billing', label: 'Billing' }];
 
-export default function AccountDashboard() {
+export default function AccountDashboard({ recovery = false, onRecoveryDone, onLanded } = {}) {
   const [session, setSession] = useState(undefined); // undefined = checking
   const [profile, setProfile] = useState(null);
   useEffect(() => {
-    getSession().then(s => setSession(s || null));
+    // The first resolution settles a Supabase auth-email landing: supabase-js has now read the session
+    // from (and scrubbed) the URL, so tell App to normalise the bare landing URL back to #account.
+    getSession().then(s => { setSession(s || null); onLanded?.(); });
     const { data } = onAuth(s => setSession(s || null));
     return () => data?.subscription?.unsubscribe?.();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (session) getCustomerProfile().then(setProfile); else setProfile(null); }, [session]);
 
   if (session === undefined) return <div className="ca-wrap"><div className="ca-center">Checking…</div></div>;
-  if (session && isResetMode()) return <SetNewPassword />;
+  // A reset link (recovery prop, set by App from the landing URL) — or a legacy ?reset=1 hash — drops the
+  // buyer here with a live recovery session; show the new-password form, not their dashboard.
+  if (session && (recovery || isResetMode())) return <SetNewPassword onDone={onRecoveryDone} />;
   if (!session) return <AuthGate />;
   if (profile && !isCustomer(profile)) return (
     <div className="ca-wrap"><div className="ca-center">
@@ -94,13 +98,13 @@ export function AuthGate() {
   );
 }
 
-function SetNewPassword() {
+function SetNewPassword({ onDone }) {
   const [pw, setPw] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null); const [done, setDone] = useState(false);
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErr(null);
     const { error } = await updatePassword(pw); setBusy(false);
     if (error) { setErr(error.message); return; }
-    setDone(true); if (typeof location !== 'undefined') location.hash = 'account';
+    setDone(true); onDone?.(); if (typeof location !== 'undefined') location.hash = 'account';
   };
   return (
     <div className="ca-wrap"><div className="ca-signin">

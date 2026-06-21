@@ -157,6 +157,13 @@ function readConfirmHash() {
 function readAccountHash() {
   return /^#\/?account\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
+// A Supabase auth email link (signup confirmation, password recovery, magic link, email change) lands
+// on a bare URL with the session in the fragment (#access_token=…&type=…) — no #account route to match
+// on. Capture that intent ONCE at module load, before the lazy account chunk pulls in supabase-js (which
+// consumes + scrubs these tokens from the URL). AUTH_LANDING routes the landing to the account portal so
+// the visitor arrives signed in; RECOVERY_LANDING additionally tells it to show the set-a-new-password form.
+const AUTH_LANDING = typeof location !== 'undefined' && /[#&]access_token=/.test(location.hash);
+const RECOVERY_LANDING = AUTH_LANDING && /type=recovery/.test(location.hash);
 // #org → customer organization dashboard (company hub, members, DX engagement timeline)
 function readOrgHash() {
   return /^#\/?org\b/i.test(typeof location !== 'undefined' ? location.hash : '');
@@ -280,6 +287,8 @@ export default function App() {
   const [catalogueAdmin, setCatalogueAdmin] = useState(readCatalogueHash); // #catalogue → live catalogue admin (Supabase auth)
   const [confirmRoute, setConfirmRoute] = useState(readConfirmHash); // #order-confirmed → Stripe success page
   const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
+  const [authLanding, setAuthLanding] = useState(AUTH_LANDING); // arrived via a Supabase auth email link → mount the account portal
+  const [recovery, setRecovery] = useState(RECOVERY_LANDING);  // …and if it was a password-reset link, show the reset form
   const [orgRoute, setOrgRoute] = useState(readOrgHash); // #org → organization dashboard
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
@@ -320,7 +329,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setAuthLanding(false); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -396,7 +405,7 @@ export default function App() {
     if (intelRoute) { utility('AI Intelligence', 'insights'); return; }
     if (adminNav) { utility('Studio admin', 'home'); return; }
     if (invoiceRoute) { utility('Invoice', 'home'); return; }
-    if (accountRoute) { utility('Your account', 'home'); return; }
+    if (accountRoute || authLanding) { utility('Your account', 'home'); return; }
     if (orgRoute) { utility('Your organization', 'home'); return; }
     if (confirmRoute) { utility('Order confirmed', 'home'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home'); return; }
@@ -1015,11 +1024,11 @@ export default function App() {
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
       />
       <main className="gs-public" id="gs-main" tabIndex={-1} key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
+        <EditorBoundary key={invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
-            : accountRoute
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount /></Suspense>
+            : (accountRoute || authLanding)
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount recovery={recovery} onRecoveryDone={() => setRecovery(false)} onLanded={() => { if (!/^#\/?account\b/i.test(location.hash)) location.hash = 'account'; }} /></Suspense>
             : orgRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyOrg /></Suspense>
             : confirmRoute
