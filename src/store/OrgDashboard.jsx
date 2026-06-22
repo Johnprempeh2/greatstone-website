@@ -74,6 +74,9 @@ function sanitizeHtml(html) {
   return out;
 }
 const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'link'; } };
+// honour prefers-reduced-motion on every programmatic scroll (WCAG 2.3.3): jump instantly, don't animate.
+const prefersReducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scrollToEl = (el, block = 'center') => el && el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block });
 
 export default function OrgDashboard() {
   const [session, setSession] = useState(undefined);
@@ -124,9 +127,9 @@ function Org({ profile, session, onProfile }) {
       .is('deleted_at', null).eq('customer_id', company.id).eq('status', 'shared').order('occurred_on', { ascending: false })
       .then(({ data, error }) => { if (error) setErr(error); setEngagements(data || []); });
     supabase.from('orders').select('id, reference, status, currency, total_minor, placed_at, created_at, customer_user_id, invoice_number')
-      .is('deleted_at', null).order('created_at', { ascending: false }).limit(50)
+      .is('deleted_at', null).eq('customer_id', company.id).order('created_at', { ascending: false }).limit(50)
       .then(({ data }) => setOrders(data || []));
-    supabase.from('quotes').select('id, status').is('deleted_at', null)
+    supabase.from('quotes').select('id, status').is('deleted_at', null).eq('customer_id', company.id).limit(200)
       .then(({ data }) => setQuotes(data || []));
   }, [company.id]);
   useEffect(() => { load(); }, [load]);
@@ -136,7 +139,10 @@ function Org({ profile, session, onProfile }) {
   }, [members]);
   const primaryContact = (members || []).find(m => m.is_primary) || (members || []).find(m => m.role === 'admin');
   const liveOrders = (orders || []).filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
-  const totalSpent = liveOrders.reduce((s, o) => s + (o.total_minor || 0), 0);
+  // sum only orders in the display currency — summing minor units across currencies is meaningless and
+  // would mislabel a mixed total under one symbol. Single-currency (the prototype) is unaffected.
+  const investedCurr = (liveOrders[0]?.currency) || ((orders || [])[0]?.currency) || 'GBP';
+  const totalSpent = liveOrders.filter(o => (o.currency || investedCurr) === investedCurr).reduce((s, o) => s + (o.total_minor || 0), 0);
   const openQuotes = (quotes || []).filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
 
   return (
@@ -172,7 +178,7 @@ function Org({ profile, session, onProfile }) {
         <Stat label="Members" value={members ? members.length : '…'} />
         <Stat label="Open quotes" value={quotes ? openQuotes : '…'} />
         <Stat label="Orders" value={orders ? liveOrders.length : '…'} />
-        <Stat label="Invested" value={orders ? fmtMoney(totalSpent, (orders[0]?.currency) || 'GBP') : '…'} />
+        <Stat label="Invested" value={orders ? fmtMoney(totalSpent, investedCurr) : '…'} />
       </div>
 
       {err && <div className="ca-err" role="alert" style={{ marginBottom: 16 }}>Some data couldn't load. <button className="ca-link" onClick={load}>Try again</button></div>}
@@ -206,7 +212,7 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
   const key = 'gs-org-onboard:' + company.id;
   const [dismissed, setDismissed] = useState(() => { try { return localStorage.getItem(key) === '1'; } catch { return false; } });
   if (members === null || engagements === null || orders === null) return null; // wait for data
-  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const scrollTo = (id) => scrollToEl(document.getElementById(id), 'center');
   const steps = [
     { id: 'profile', label: 'Complete your company profile', hint: 'Add your website and a note about your goals.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => scrollTo('org-co-h') } : null },
     { id: 'team', label: 'Invite your team', hint: 'Bring your colleagues into the portal.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => scrollTo('org-mem-h') } : null },
@@ -310,7 +316,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
       clearTimeout(timer);
       timer = setTimeout(() => {
         const el = document.getElementById('dx-item-' + id);
-        (el || document.getElementById('dx-h'))?.scrollIntoView({ behavior: 'smooth', block: el ? 'center' : 'start' });
+        scrollToEl(el || document.getElementById('dx-h'), el ? 'center' : 'start');
       }, 120);
     };
     apply();
@@ -343,8 +349,8 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   const scrollToNewest = () => {
     const n = past.find((e) => isNew(e));
     setFilter('all'); setPhaseFilter('all'); setQ('');
-    if (n) { setOpenId(n.id); setTimeout(() => document.getElementById('dx-item-' + n.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }
-    else document.getElementById('dx-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (n) { setOpenId(n.id); setTimeout(() => scrollToEl(document.getElementById('dx-item-' + n.id), 'center'), 60); }
+    else scrollToEl(document.getElementById('dx-h'), 'start');
   };
   const matchQ = (e) => {
     if (!q.trim()) return true;
@@ -406,7 +412,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
               <h3 className="dx-pins-h">Highlights</h3>
               <div className="dx-pins-row">
                 {pinned.map(e => (
-                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setPhaseFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => document.getElementById('dx-item-' + e.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }}>
+                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setPhaseFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => scrollToEl(document.getElementById('dx-item-' + e.id), 'center'), 60); }}>
                     <span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span>
                     <span className="dx-pin-title">{e.title}</span>
                     <span className="dx-pin-date">{fmtDate(e.occurred_on)}</span>

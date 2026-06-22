@@ -26,8 +26,8 @@ approval — never done autonomously.**
 |---|---|---|---|---|---|
 | 1 | Per-client **maturity radar** (you vs industry vs target, 8 pillars) | #org | L | yes | ✅ shipped |
 | 2 | **Phase Navigator** strip (Discovery→Build→Adoption→Review) above the timeline | #org | M | yes | ✅ shipped |
-| 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | next |
-| 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | |
+| 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | ✅ shipped |
+| 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | next |
 | 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | |
 | 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | |
 | 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | |
@@ -73,3 +73,14 @@ not started). Each node filters the timeline to that phase (composes with the ki
 clear) also clear it. Caught + fixed a class collision: the stepper used `.dx-phase`, which the per-card phase
 badge already owns, so renamed the stepper to `.dx-jstep*`. Verified: build clean, 58 tests, filter both ways,
 no mobile overflow, reduced-motion. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+
+### Cycle 3 — Front-end correctness batch (22 Jun)
+The production-engineer persona's hardening pass, all front-end: (a) every programmatic `scrollIntoView` on #org
+now routes through a `scrollToEl` helper that honours `prefers-reduced-motion` (jumps instead of animating —
+WCAG 2.3.3); (b) belt-and-braces `.eq('customer_id', company.id)` added to the #org orders + quotes reads (they
+relied on RLS alone; now they fail closed like the engagements read if a policy ever regresses) — verified the
+demo orders carry customer_id so the figures are unchanged (Orders 2, Open quotes 1, Invested £20,160); (c) the
+unbounded quotes read now carries `.limit(200)`; (d) the marquee "Invested" total on #org + #account now sums
+only orders in the display currency, so a future mixed-currency account can never show a meaningless cross-currency
+sum under one symbol. Build clean, 58 tests, data loads, 0 new console errors. Edited: `src/store/OrgDashboard.jsx`,
+`src/store/AccountDashboard.jsx`.

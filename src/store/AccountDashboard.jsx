@@ -228,9 +228,11 @@ function Dashboard({ session, profile, onProfile }) {
   const ref = (s) => (s || '').replace(/^cs_(test|live)_/, '').slice(0, 12) + '…';
   // at-a-glance, from data already fetched
   const liveOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
-  const totalSpent = liveOrders.reduce((s, o) => s + (o.total_minor || 0), 0);
+  // sum only orders in the display currency — a cross-currency minor-units sum is meaningless and would
+  // mislabel a mixed total under one symbol. Single-currency (the prototype) is unaffected.
+  const curr = liveOrders[0]?.currency || orders[0]?.currency || 'GBP';
+  const totalSpent = liveOrders.filter(o => (o.currency || curr) === curr).reduce((s, o) => s + (o.total_minor || 0), 0);
   const openQuotes = quotes.filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
-  const curr = orders[0]?.currency || 'GBP';
 
   return (
     <div className="ca-wrap">
