@@ -18,6 +18,8 @@ const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).s
 const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
 const periodOf = (iso) => { try { const d = new Date(iso); return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); } catch { return 'Earlier'; } };
+// whole months between two local DATE strings (for the "N months in" engagement marker)
+const monthsBetween = (aISO, bISO) => { try { const a = new Date(aISO + 'T00:00:00'), b = new Date(bISO + 'T00:00:00'); return Math.max(0, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())); } catch { return 0; } };
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };
 const KIND_PLURAL = { recap: 'Recaps', milestone: 'Milestones', deliverable: 'Deliverables', kickoff: 'Kickoffs', review: 'Reviews', note: 'Notes' };
 const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled markers — the journey anchors
@@ -138,6 +140,16 @@ function Org({ profile, session, onProfile }) {
     const m = {}; (members || []).forEach(u => { m[u.id] = u.full_name || u.email; }); return m;
   }, [members]);
   const primaryContact = (members || []).find(m => m.is_primary) || (members || []).find(m => m.role === 'admin');
+  // "in transformation since …" marker — from the earliest past engagement + the current phase
+  const sinceMarker = useMemo(() => {
+    if (!engagements || !engagements.length) return null;
+    const t = todayISO();
+    const past = engagements.filter(e => e.occurred_on <= t);
+    if (!past.length) return null;
+    const start = past.reduce((a, b) => (a.occurred_on < b.occurred_on ? a : b)).occurred_on;
+    const latestPhased = past.find(e => e.phase && PHASES.includes(e.phase)); // past is newest-first
+    return { since: periodOf(start), months: monthsBetween(start, t), phase: latestPhased ? latestPhased.phase : null };
+  }, [engagements]);
   const liveOrders = (orders || []).filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
   // sum only orders in the display currency — summing minor units across currencies is meaningless and
   // would mislabel a mixed total under one symbol. Single-currency (the prototype) is unaffected.
@@ -157,6 +169,9 @@ function Org({ profile, session, onProfile }) {
             {members ? `${members.length} ${members.length === 1 ? 'member' : 'members'}` : '…'}
             {company.tier?.name && <span className="acct-tier">{company.tier.name}</span>}
           </div>
+          {sinceMarker && (
+            <div className="acct-id-marker">In transformation since {sinceMarker.since}{sinceMarker.months > 0 ? ` · ${sinceMarker.months} month${sinceMarker.months === 1 ? '' : 's'} in` : ''}{sinceMarker.phase ? ` · ${sinceMarker.phase} phase` : ''}</div>
+          )}
         </div>
         <div className="acct-id-actions">
           <a className="gs-btn ghost sm" href="#account">← Your account</a>
@@ -192,6 +207,8 @@ function Org({ profile, session, onProfile }) {
       <MaturityRadar company={company} />
 
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
+
+      <GreatstoneTeam engagements={engagements} />
 
       <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
 
@@ -577,6 +594,31 @@ function Item({ e, isNew, open, onToggle }) {
         )}
       </article>
     </li>
+  );
+}
+
+// ── your Greatstone team ───────────────────────────────────────────────────────
+// The Greatstone leads on this engagement, derived from the distinct owner_name values across the
+// company's shared engagements (most-recently-active first). Zero new data; humanises the relationship.
+function GreatstoneTeam({ engagements }) {
+  if (engagements === null) return null;
+  const seen = [];
+  for (const e of engagements) { const n = (e.owner_name || '').trim(); if (n && !seen.includes(n)) seen.push(n); }
+  if (!seen.length) return null;
+  return (
+    <section className="org-sec" aria-labelledby="org-team-h">
+      <div className="acct-ordhead"><h2 id="org-team-h">Your Greatstone team</h2></div>
+      <p className="ca-note" style={{ marginTop: -4 }}>The people leading your transformation.</p>
+      <div className="org-team-row">
+        {seen.map(n => (
+          <div key={n} className="org-team-card">
+            <div className="org-team-av" aria-hidden="true">{initialsOf(n)}</div>
+            <div className="org-team-info"><span className="org-team-name">{n}</span><span className="org-team-role">Greatstone lead</span></div>
+          </div>
+        ))}
+        <a className="gs-btn ghost sm org-team-cta" href="#go/contact">Book a deep dive</a>
+      </div>
+    </section>
   );
 }
 

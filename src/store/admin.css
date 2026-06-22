@@ -256,6 +256,17 @@
 .org-return-head { margin-bottom:12px; }
 .org-return-head h2 { font-size:1.05rem; margin:2px 0 0; }
 .org-return-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; }
+/* "in transformation since …" marker in the identity band */
+.acct-id-marker { margin-top:6px; font-size:.78rem; font-weight:600; color:var(--gs-teal,#4ecdc4); }
+/* your Greatstone team card */
+.org-team-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:10px; }
+.org-team-card { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); }
+.org-team-av { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.85rem; background:var(--gs-accent-dim,rgba(200,255,0,.12)); color:var(--gs-accent,#c8ff00); border:1px solid var(--gs-accent,#c8ff00); flex:none; }
+.org-team-info { display:flex; flex-direction:column; }
+.org-team-name { font-weight:700; color:var(--gs-text); }
+.org-team-role { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--gs-text-faint); }
+.org-team-cta { margin-left:auto; }
+@media (max-width:520px){ .org-team-cta { margin-left:0; width:100%; } }
 
 .org-sec { margin-top:34px; }
 .org-you { margin-left:.5em; font-size:.62rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:.15em .5em; border-radius:100px; background:var(--gs-accent); color:#0e1611; vertical-align:middle; }

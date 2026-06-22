@@ -28,8 +28,8 @@ approval — never done autonomously.**
 | 2 | **Phase Navigator** strip (Discovery→Build→Adoption→Review) above the timeline | #org | M | yes | ✅ shipped |
 | 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | ✅ shipped |
 | 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | ✅ shipped |
-| 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | next |
-| 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | |
+| 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | ✅ shipped |
+| 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | next |
 | 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | |
 | 8 | Staff authoring throughput (default-to-draft, preview pane, Duplicate, stale badge) | ClientsManager | M | yes | |
 | 9 | Extract shared sanitizeHtml + date helpers module + mXSS regression tests | src/lib + tests | M | yes | |
@@ -92,4 +92,15 @@ deliverables shipped (deliverable engagements), and journey progress (phase N of
 Answers a CFO's "what did the spend buy" without a typed outcomes table (that's the gated cycle 15). Stays
 quiet for a brand-new org with nothing tangible yet. Reuses `.org-stat` tiles in a distinct `.org-return`
 band (no class collision). Verified on Ethical Quest (1 milestone, 2 deliverables, Adoption 3/4), mobile
-clean, build + 58 tests green. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+clean, build + 58 tests green. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Commit b27d45f,
+bundle index-Chy8teZJ, deploy 6a39c01a.
+
+### Cycle 5 — Your Greatstone team card + "in transformation since" marker (23 Jun)
+Two relationship-humanising touches on #org, both from data already loaded. (a) A "Your Greatstone team"
+card lists the engagement leads, derived from the distinct `owner_name` values across the company's shared
+engagements (avatar initials + name + "Greatstone lead"), with a Book-a-deep-dive CTA. (b) An "In transformation
+since <first engagement month> · N months in · <current phase> phase" marker in the identity band, computed from
+the earliest past engagement + the current phase. Both stay quiet when there's no data. Verified on Ethical Quest
+("since February 2026 · 4 months in · Adoption phase"; lead John Prempeh), mobile clean, build + 58 tests green,
+and 0 console errors confirmed on a fresh dev server (clearing the stale mid-edit HMR buffer). Edited:
+`src/store/OrgDashboard.jsx`, `src/store/admin.css`.
