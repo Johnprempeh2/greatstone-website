@@ -149,7 +149,11 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
               <>
                 <label className={'gs-bg' + (LIGHT_KINDS.has(firstSceneKind(bg)) ? ' dark' : '')}>
                   <span>3D</span>
-                  <select value={bg} onChange={(e) => onSetBg(e.target.value)}>
+                  {/* bg can be a preset id (string) or a per-page custom scene track (object). A raw
+                      object value would stringify to "[object Object]", match no option and blank the
+                      control, so show a disabled "Custom" state instead; picking any preset overrides it. */}
+                  <select value={typeof bg === 'string' ? bg : '__custom'} onChange={(e) => onSetBg(e.target.value)}>
+                    {typeof bg !== 'string' && <option value="__custom" disabled>Custom (scene track)</option>}
                     {STAGE_OPTIONS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
                   </select>
                 </label>

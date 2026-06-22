@@ -3,7 +3,7 @@ import { useReveal } from './reveal.js';
 
 // The payback viz: a bar that fills to the break-even point on entry, with the rest of the year
 // read as pure return. The figures are editable; the bar width follows the payback percentage.
-export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct = 29, s1, s2, s3, paybackNum, paybackCap, legendCost, legendReturn }) {
+export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct = 29, markerLabel = 'Payback', s1, s2, s3, paybackNum, paybackCap, legendCost, legendReturn }) {
   const ref = useReveal();
   const roiRef = useRef(null);
   useEffect(() => {
@@ -23,9 +23,9 @@ export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct =
         ) : null}
         <div className="roi" ref={roiRef} style={{ '--roi-w': `${paybackPct}%` }}>
           <div className="roi-track-wrap" data-reveal>
-            <div className="roi-track" role="img" aria-label={`Engagement reaches payback at roughly ${paybackNum}; the rest of the year is return.`}>
+            <div className="roi-track" role="img" aria-label={`Engagement reaches ${(markerLabel || 'payback').toLowerCase()} at roughly ${paybackNum}; the rest of the year is return.`}>
               <div className="roi-fill" />
-              <span className="roi-marker">Payback</span>
+              {markerLabel ? <span className="roi-marker">{markerLabel}</span> : null}
             </div>
             <div className="roi-scale"><span>{s1}</span><span>{s2}</span><span>{s3}</span></div>
           </div>
@@ -78,6 +78,7 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     paybackPct: { type: 'number', label: 'Payback point (%)', min: 5, max: 95 },
+    markerLabel: { type: 'text', label: 'Marker label' },
     s1: { type: 'text', label: 'Scale start' },
     s2: { type: 'text', label: 'Scale middle' },
     s3: { type: 'text', label: 'Scale end' },
@@ -90,7 +91,7 @@ export const puck = {
     index: '03', eyebrow: 'Return on Investment',
     headline: 'Paid back before', highlight: 'the quarter’s out.',
     body: 'On a typical engagement, the investment is recovered in the first few months. Everything after that line is time and money handed back, every week.',
-    paybackPct: 29, s1: 'Day one', s2: 'Month 6', s3: 'Year one',
+    paybackPct: 29, markerLabel: 'Payback', s1: 'Day one', s2: 'Month 6', s3: 'Year one',
     paybackNum: '3.5 months', paybackCap: 'to break even, on average',
     legendCost: 'Recovering the investment', legendReturn: 'Pure return',
   },

@@ -36,8 +36,11 @@ export function Faq({ kicker, heading, intro, items = [] }) {
                     <span className="b-faq-ico" aria-hidden="true" />
                   </button>
                 </h3>
-                <div className="b-faq-a" id={uid + 'a' + i} role="region" aria-labelledby={uid + 'q' + i} hidden={!isOpen}>
-                  <p>{it.a}</p>
+                {/* animated disclosure: the grid 0fr->1fr row + inner overflow:hidden gives a smooth
+                    height transition with no JS measurement; `inert` (not `hidden`) keeps the collapsed
+                    panel out of the focus order and a11y tree while still allowing the open animation. */}
+                <div className="b-faq-a" id={uid + 'a' + i} role="region" aria-labelledby={uid + 'q' + i} inert={!isOpen ? '' : undefined}>
+                  <div className="b-faq-a-inner"><p>{it.a}</p></div>
                 </div>
               </div>
             );
@@ -72,9 +75,11 @@ export const css = `
 .b-faq-ico::before{top:10px;left:3px;right:3px;height:2px}
 .b-faq-ico::after{left:10px;top:3px;bottom:3px;width:2px}
 .b-faq-item.is-open .b-faq-ico::after{transform:scaleY(0);opacity:0}
-.b-faq-a{padding:0 clamp(18px,2.4vw,24px) clamp(18px,2.4vw,22px)}
-.b-faq-a p{color:var(--gs-text-muted);line-height:1.75;max-width:66ch}
-@media (prefers-reduced-motion: reduce){.b-faq-item,.b-faq-ico::before,.b-faq-ico::after{transition:none}}
+.b-faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s var(--gs-ease)}
+.b-faq-item.is-open .b-faq-a{grid-template-rows:1fr}
+.b-faq-a-inner{overflow:hidden}
+.b-faq-a-inner p{margin:0;padding:0 clamp(18px,2.4vw,24px) clamp(18px,2.4vw,22px);color:var(--gs-text-muted);line-height:1.75;max-width:66ch}
+@media (prefers-reduced-motion: reduce){.b-faq-item,.b-faq-a,.b-faq-ico::before,.b-faq-ico::after{transition:none}}
 `;
 
 export const puck = {

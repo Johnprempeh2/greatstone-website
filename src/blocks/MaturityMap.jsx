@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 // walks base → summit, and the three tier cards (pebble/plateau/peak) that light as you reach
 // them. The terrain + trail are code-owned; marketing edits the three tier explainers. Inside
 // the editor (and under reduced-motion) it settles at the summit, unpinned, so it stays editable.
-const SUBS = ['base', 'shelf', 'summit'];
 
 export function MaturityMap({ tiers = [] }) {
   const rootRef = useRef(null);
@@ -100,7 +99,7 @@ export function MaturityMap({ tiers = [] }) {
             return (
               <g className="tier-glow-lbl" key={i} style={{ opacity: 0.45 }}>
                 <text className="tier-tag" x={g.x} y={g.y} fontSize={g.fs} fill={g.c}>{(tr.tag || '').toUpperCase()}</text>
-                <text className="tier-sub" x={g.x} y={g.y + 24} fill={g.sc}>Score {tr.range} · the {SUBS[i]}</text>
+                <text className="tier-sub" x={g.x} y={g.y + 24} fill={g.sc}>{tr.range ? 'Score ' + tr.range : ''}</text>
               </g>
             );
           })}
