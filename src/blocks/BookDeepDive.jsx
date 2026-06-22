@@ -71,7 +71,12 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
                 <a className="b-cta" href={safeMailto(email)}>{email}</a>
               </div>
             ) : (
-              <form onSubmit={onSubmit} noValidate>
+              <>
+                {/* the one-click path the rest of the site uses: #book opens the Calendly popup (App's
+                    global handler), so the booking page itself books instantly; the form stays as "tell us first" */}
+                <a className="b-cta b-book-instant" href="#book">Pick a time now<Arrow /></a>
+                <div className="b-book-or">or tell us first</div>
+                <form onSubmit={onSubmit} noValidate>
                 <div className="field-row">
                   <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} name="name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
                   <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
@@ -86,6 +91,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
                 <button className="b-cta book-submit" type="submit">{submitLabel}<Arrow /></button>
                 <p className="book-fine">Submitting opens your email with these details filled in, ready to send.</p>
               </form>
+              </>
             )}
           </div>
 
@@ -132,6 +138,9 @@ select.fld{appearance:none;-webkit-appearance:none;cursor:pointer;background-ima
 select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .fld:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.4));background:rgba(200,255,0,.04);box-shadow:0 0 0 3px var(--gs-accent-mid,rgba(200,255,0,.4))}
 .book-submit{margin-top:1.8rem;width:100%;justify-content:center}
+.b-book-instant{width:100%;justify-content:center;margin-bottom:18px}
+.b-book-or{display:flex;align-items:center;gap:12px;margin:0 0 18px;color:var(--gs-faint);font-size:.74rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.b-book-or::before,.b-book-or::after{content:"";flex:1;height:1px;background:var(--gs-border-soft)}
 .book-fine{margin-top:1rem;font-size:.74rem;color:var(--gs-faint);text-align:center}
 .book-sent{text-align:center;padding:18px 0}
 .book-sent h3{font-size:1.4rem;font-weight:800}

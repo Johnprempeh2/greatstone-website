@@ -56,13 +56,18 @@ export default function MethodExplorer({ pillars = [], onClose }) {
     return () => { clearTimeout(t); if (opener && opener.focus) try { opener.focus(); } catch { /* opener gone */ } };
   }, []);
 
-  // closing a detail (Escape or the close button) unmounts the control that held focus, which would drop
-  // focus to <body> and let the next Tab escape the modal. On detail→ring, re-home focus inside the dialog:
-  // the pill of the pillar just closed (still mounted in ring view), else the Back button.
+  // keep focus sane as the detail panel opens/closes. Opening (ring→detail): move focus onto the panel
+  // heading so keyboard + screen-reader users land on the new pillar (the heading is a polite live region,
+  // so arrow-key paging between pillars is announced too). Closing (detail→ring) unmounts the control that
+  // held focus, which would drop focus to <body> and let the next Tab escape the modal, so re-home it on the
+  // pill of the pillar just closed (still mounted in ring view), else the Back button.
   const prevSelRef = useRef(selected);
   useEffect(() => {
-    const root = rootRef.current;
-    if (prevSelRef.current >= 0 && selected < 0 && root) {
+    const root = rootRef.current; if (!root) return;
+    if (prevSelRef.current < 0 && selected >= 0) {
+      const h = root.querySelector('.me-detail.is-open .me-detail-name');
+      if (h) h.focus();
+    } else if (prevSelRef.current >= 0 && selected < 0) {
       const pills = root.querySelectorAll('.me-pick');
       const target = pills[prevSelRef.current] || root.querySelector('.me-back');
       if (target) target.focus();
@@ -139,7 +144,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
             <button className="me-detail-close" onClick={close}><span>← All pillars</span></button>
             <div className="me-detail-index">{active.n || ('P·' + pad2(selected + 1))} / {pad2(items.length)}</div>
             <div className="me-detail-label">The Methodology · No stone unturned</div>
-            <h3 className="me-detail-name">{active.name}</h3>
+            <h3 className="me-detail-name" tabIndex={-1} aria-live="polite">{active.name}</h3>
             {active.tag ? <div className="me-detail-tag">{active.tag}</div> : null}
             {active.def ? <p className="me-detail-def">{active.def}</p> : null}
             {Array.isArray(active.chips) && active.chips.length ? (
@@ -249,6 +254,7 @@ const CSS = `
   padding:11px;color:var(--gs-text,#f5f5f5);font:700 .8rem/1 Montserrat,sans-serif;cursor:pointer;transition:border-color .2s,background .2s}
 .me-pager button:hover{border-color:var(--gs-border,rgba(200,255,0,.3));background:rgba(200,255,0,.06)}
 .me :focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:2px;border-radius:8px}
+.me-detail-name:focus{outline:none}/* programmatic focus target on open; keyboard users never Tab to it */
 @media (max-width:760px){
   .me-detail{width:100%;top:auto;bottom:0;height:78vh;border-left:0;border-top:1px solid var(--gs-border,rgba(200,255,0,.18));transform:translateY(100%)}
   .me-detail.is-open{transform:translateY(0)}
