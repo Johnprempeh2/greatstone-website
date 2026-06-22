@@ -19,7 +19,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarsePointer = matchMedia('(hover:none),(pointer:coarse)').matches; // phones/tablets: render fewer pixels
 
 export function mountGreatstoneLogo(container, opts = {}) {
-  const o = Object.assign({ envUrl:'env-emerald.jpg', bloom:0.52, exposure:1.4, dpr:2,
+  const o = Object.assign({ envUrl:'env-emerald.jpg', bloom:0.52, exposure:1.4, dpr:2, samples:4,
     transparent:true, proxRadius:0.55, spreadLocal:0.4, idle:true, autoTurn:false,
     keyLo:0.10, keyHi:0.20 }, opts);   /* alpha-key thresholds: near-black empty + faint bloom halo → transparent; mark stays */
 
@@ -27,7 +27,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
   container.appendChild(canvas);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:o.transparent, powerPreference:'high-performance' });
   renderer.debug.checkShaderErrors = false;   // some backends return null from getProgramInfoLog(); three .trim()s it
-  renderer.setPixelRatio(Math.min(devicePixelRatio, coarsePointer ? 1.5 : o.dpr)); // clamp DPR on mobile
+  renderer.setPixelRatio(Math.min(devicePixelRatio, coarsePointer ? 2 : o.dpr)); // clamp DPR on mobile (MSAA below carries edge quality)
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
 
   const scene = new THREE.Scene();
@@ -91,7 +91,13 @@ export function mountGreatstoneLogo(container, opts = {}) {
   });
 
   /* post: bloom (no grade — transparent overlay must stay clean) */
-  const composer=new EffectComposer(renderer); composer.addPass(new RenderPass(scene,camera));
+  /* MSAA: EffectComposer's default render target is NOT multisampled, so the renderer's antialias flag
+     never takes effect — the mark's bevelled edges render jagged, and that aliasing crawls every frame
+     as the stone turns. On mobile (DPR clamped + ~3x physical density) it reads as flicker + poor
+     quality. A multisampled target antialiases the edges; the resolved (smooth) image also feeds the
+     alpha-key pass below, so the transparency edge stops popping too. setSize() resizes it on mount. */
+  const _msaaRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: o.samples });
+  const composer=new EffectComposer(renderer, _msaaRT); composer.addPass(new RenderPass(scene,camera));
   const bloom=new UnrealBloomPass(new THREE.Vector2(1,1), o.bloom, 0.6, 0.66); composer.addPass(bloom); composer.addPass(new OutputPass());
   /* TRANSPARENT BLEND: the bloom chain forces an opaque (black) frame even on an alpha canvas. Final
      pass re-keys the canvas alpha from pixel brightness — the near-black empty + the faint bloom halo
@@ -178,5 +184,5 @@ export function mountGreatstoneLogo(container, opts = {}) {
     setActive(v){ active = v !== false; },    /* Stage pauses faded-out layers (opacity ~0) */
     destroy(){ cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
       removeEventListener('pointermove', _onPointerMove); removeEventListener('blur', _onPointerLeave);
-      renderer.forceContextLoss(); renderer.dispose(); pmrem.dispose(); canvas.remove(); } };
+      composer.dispose(); renderer.forceContextLoss(); renderer.dispose(); pmrem.dispose(); canvas.remove(); } };
 }
