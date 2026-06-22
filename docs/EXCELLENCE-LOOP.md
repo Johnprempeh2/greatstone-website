@@ -340,3 +340,15 @@ Deploy is unblocked (C18), so the loop now ships live each cycle. C18's Comparis
 **Verified:** valid JSON, 58/58 tests, clean build (`index-C2PTCl4I.js`), live-preview on Services (renders before the FAQ, 5 rows, desktop two-column table + mobile card-stack both confirmed). **Deployed live** via the Netlify MCP path (deploy `6a3989c5837ac826355e68fb`, ready) and verified: greatstone-home.netlify.app/puck-proof/ now serves `index-C2PTCl4I.js` (HTTP 200), with the comparison live on Services. Committed `9dfedc2` (scoped to seed-pages.json + store.js; foreign `App.jsx`/`ProductDetail` re-checked = same safe cleanup, never staged).
 
 **Note on cadence:** with deploy working, each cycle = build → verify → commit → deploy live → verify live. The foreign `ProductDetail` removal is re-checked each deploy (still the safe completed cleanup; `#product` route uses `StoreProduct`). Rollback point: deploy `6a3920778283a625cb3a27aa`.
+
+---
+
+## Cycle 20 — 2026-06-22 — objection-handling FAQ on home + Faq `showSchema` toggle (LIVE)
+
+Found a genuine conversion gap: the home page (primary landing page) had **no FAQ**, so buyer objections (cost/time/"software house or consultants"/"do you replace our team") went unanswered for visitors who never reach Services. Closed it without duplicate-schema or fabrication.
+
+**Shipped + LIVE:**
+- **Faq block: new `showSchema` toggle** (radio, default Emit). Gates the FAQPage JSON-LD so a *secondary* FAQ instance can suppress it and two FAQPage blobs never compete. Existing stored FAQs default to `true` via the destructure default → no migration, schema behaviour unchanged. Also a real CMS-editability win.
+- **Home FAQ**: a focused **3-item** subset (the top objections), placed before the home closing Invite, `showSchema:false`. Pure reuse of the exact Services answers (no fabrication). Implemented as a shared module const `HOME_FAQ` used by BOTH `seedState` (fresh visitors) and a guarded `_homeFaqSeeded` migrate (returning visitors), so the two never drift; idempotent + respects hand-removal.
+
+**Verified:** 58/58 tests, clean build (`index-VkAt5jNe.js`), live-preview — home renders the 3-item FAQ with **0 FAQPage schema**, Services keeps **1 canonical** FAQPage schema (+ the C19 ComparisonMatrix), 0 console errors. Committed `35eee24` (scoped to Faq.jsx + store.js; foreign App.jsx/ProductDetail re-checked = same safe cleanup, never staged). **Deployed live** (deploy `6a3990a6bf1ec83653a19129`, ready) and verified: greatstone-home.netlify.app/puck-proof/ serves `index-VkAt5jNe.js` (HTTP 200), home FAQ live.
