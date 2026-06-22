@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
 import { emphasize } from './emphasis.jsx';
 
-const fmt = (n, dec) => (dec > 0 ? n.toFixed(dec) : Math.round(n).toLocaleString('en-GB'));
+// coerce first: a stat value persisted as a string (legacy store, re-imported export, or a future
+// backend payload) would otherwise throw on .toFixed or render NaN on the static + screen-reader path.
+const fmt = (n, dec) => { n = Number(n) || 0; return dec > 0 ? n.toFixed(dec) : Math.round(n).toLocaleString('en-GB'); };
 
 // Proof, not promises: an intro, a clients line, and a row of stats that count up once on
 // entry (and honour reduced-motion by showing the final figure immediately). The counter

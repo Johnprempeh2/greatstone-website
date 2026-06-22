@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { useCatalog } from '../cms/CatalogContext.js';
+import { ldScript } from '../lib/ld-json.mjs';
 
 const priceFloor = (s) => { const m = String(s || '').replace(/[, ]/g, '').match(/(\d+(?:\.\d+)?)/); return m ? m[1] : ''; };
 function SearchGlyph() {
@@ -98,7 +99,7 @@ export function Storefront({ heading, body, controls = 'show' }) {
 
   return (
     <section ref={ref} className="b-storefront">
-      {ld ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} /> : null}
+      {ld ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldScript(ld) }} /> : null}
       <div className="wrap">
         {heading ? <h2 className="b-sf-head" data-reveal>{heading}</h2> : null}
         {body ? <p className="b-sf-intro" data-reveal>{body}</p> : null}

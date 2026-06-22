@@ -1,4 +1,5 @@
 import { Arrow } from './icons.jsx';
+import { ldScript } from '../lib/ld-json.mjs';
 
 // Product detail: the full view for one licence, reached at #product/<slug> from the storefront. Public,
 // route-rendered (not a Puck block) — the catalogue is managed in the studio's Products tab, so this
@@ -29,7 +30,7 @@ export function ProductDetail({ product, categoryName, related = [], onBack }) {
 
   return (
     <section className="b-pd">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldScript(ld) }} />
       <div className="wrap">
         <nav className="b-pd-crumbs" aria-label="Breadcrumb">
           <button type="button" className="b-pd-crumb" onClick={onBack}>Catalogue</button>

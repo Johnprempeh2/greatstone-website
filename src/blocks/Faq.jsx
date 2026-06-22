@@ -1,5 +1,6 @@
 import { useState, useId } from 'react';
 import { useReveal } from './reveal.js';
+import { ldScript } from '../lib/ld-json.mjs';
 
 // FAQ: an accessible accordion that answers the objections a buyer raises before booking. Each row is
 // a real disclosure (button aria-expanded → region), independently togg*able, keyboard + screen-reader
@@ -12,9 +13,9 @@ export function Faq({ kicker, heading, intro, items = [] }) {
   const uid = useId();
   const toggle = (i) => setOpen((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
   const qa = items.filter((it) => it && it.q && it.a);
-  // escape < so an answer can never break out of the <script> (JSON-LD safety); the rest is JSON-safe.
+  // emit JSON-LD safely via ldScript (escapes <, >, & so a free-text answer can't break out of <script>)
   const schema = qa.length
-    ? JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })) }).replace(/</g, '\\u003c')
+    ? ldScript({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })) })
     : '';
   return (
     <section ref={ref} className="b-faq section--tight">
@@ -57,6 +58,7 @@ export const css = `
 .b-faq-list{display:flex;flex-direction:column;gap:10px}
 .b-faq-item{border:1px solid var(--gs-border-soft);border-radius:14px;background:rgba(255,255,255,.02);overflow:hidden;
   transition:border-color .25s var(--gs-ease),background .25s var(--gs-ease)}
+.b-faq-item:hover{border-color:var(--gs-border)}
 .b-faq-item.is-open{border-color:var(--gs-border);background:rgba(200,255,0,.03)}
 .b-faq-qh{margin:0;font-size:inherit}
 .b-faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;cursor:pointer;

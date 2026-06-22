@@ -19,6 +19,9 @@ export default function InvoiceView({ orderId }) {
 
   useEffect(() => {
     let alive = true;
+    // supabase.mjs returns null when env vars are absent (a build/preview without creds). Guard before the
+    // query: the .catch below only catches promise rejections, not the synchronous throw on a null client.
+    if (!supabase) { setOrder(null); return () => { alive = false; }; }
     supabase.from('orders')
       .select('id, reference, invoice_number, po_reference, status, currency, subtotal_minor, total_minor, refunded_minor, placed_at, created_at, customer:customers(name, domain), order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor)')
       .eq('id', orderId).maybeSingle()
