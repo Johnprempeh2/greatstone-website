@@ -108,7 +108,7 @@ export function MaturityMap({ tiers = [] }) {
         <div className="tier-rail">
           {tiers.map((tr, i) => (
             <article className="tier-card" data-tier={['pebble', 'plateau', 'peak'][i]} key={i}>
-              <div className="score">{tr.tag} · {tr.range}</div>
+              <div className="score">{[tr.tag, tr.range].filter(Boolean).join(' · ')}</div>
               <h3>{tr.title}</h3>
               <p>{tr.desc}</p>
               <div className="traits">{(tr.traits || '').split(',').map((s, j) => s.trim()).filter(Boolean).map((s, j) => <span key={j}>{s}</span>)}</div>

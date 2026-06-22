@@ -19,7 +19,7 @@ const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
 function Card({ p, catName, catLogo }) {
   return (
     <article className="b-sf-card" data-reveal>
-      {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" /></div> : null}
+      {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" decoding="async" onError={hideOnError} /></div> : null}
       {p.badge ? <span className={'b-sf-badge' + (p.status === 'legacy' ? ' is-legacy' : '')}>{p.badge}</span> : null}
       <div className="b-sf-cat">
         {catLogo ? <img className="b-sf-vlogo" src={catLogo} alt="" loading="lazy" onError={hideOnError} /> : null}
@@ -76,7 +76,7 @@ export function Storefront({ heading, body, controls = 'show' }) {
   else if (cat !== 'all') view = view.filter((p) => p.category === cat);
   if (ql) view = view.filter((p) => (p.name + ' ' + (p.summary || '')).toLowerCase().includes(ql));
   const pv = (p) => { const v = parseFloat(priceFloor(p.price)); return isNaN(v) ? null : v; };
-  if (sort === 'name') view = [...view].sort((a, b) => a.name.localeCompare(b.name));
+  if (sort === 'name') view = [...view].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   else if (sort === 'price-asc' || sort === 'price-desc') {
     const dir = sort === 'price-asc' ? 1 : -1;
     view = [...view].sort((a, b) => { const av = pv(a), bv = pv(b); if (av === null && bv === null) return 0; if (av === null) return 1; if (bv === null) return -1; return dir * (av - bv); });
@@ -138,7 +138,7 @@ export function Storefront({ heading, body, controls = 'show' }) {
                 <div className="b-sf-group" key={c.id}>
                   <div className="b-sf-grouphead">
                     <div className="b-sf-grouptitle">
-                      {c.logo ? <span className="b-sf-grouplogo"><img src={c.logo} alt={c.name} loading="lazy" onError={hideOnError} /></span> : null}
+                      {c.logo ? <span className="b-sf-grouplogo"><img src={c.logo} alt="" loading="lazy" decoding="async" onError={hideOnError} /></span> : null}
                       <h3>{c.name}</h3>
                       <span className="b-sf-groupn">{c.count || n} {(c.count || n) === 1 ? 'product' : 'products'}</span>
                     </div>

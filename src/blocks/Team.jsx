@@ -9,7 +9,7 @@ const initials = (name) => (name || '').trim().split(/\s+/).map((w) => w[0] || '
 function TeamAvatar({ photo, name }) {
   const [broken, setBroken] = useState(false);
   if (!photo || broken) return <span className="avatar" aria-hidden="true">{initials(name)}</span>;
-  return <img className="avatar avatar-img" src={photo} alt={name || ''} loading="lazy" onError={() => setBroken(true)} />;
+  return <img className="avatar avatar-img" src={photo} alt={name || ''} loading="lazy" decoding="async" width="52" height="52" onError={() => setBroken(true)} />;
 }
 
 // The people strip: senior hands, named. A real photo if one is set, otherwise an initials

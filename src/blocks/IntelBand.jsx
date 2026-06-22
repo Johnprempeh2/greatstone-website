@@ -21,11 +21,11 @@ export function IntelBand({ kicker, heading, highlight, body, ctaLabel, ctaHref 
                 {themes.map((t, i) => <span className="b-intel-theme" key={i}>{typeof t === 'string' ? t : t.label}</span>)}
               </div>
             ) : null}
-            <span className="b-cta b-intel-cta">{ctaLabel}<Arrow /></span>
-            {(stat1 || stat2) ? (
+            {ctaLabel ? <span className="b-cta b-intel-cta">{ctaLabel}<Arrow /></span> : null}
+            {(stat1?.value || stat2?.value) ? (
               <div className="b-intel-stats">
-                {stat1 ? <span><b>{stat1.value}</b> {stat1.label}</span> : null}
-                {stat2 ? <span><b>{stat2.value}</b> {stat2.label}</span> : null}
+                {stat1?.value ? <span><b>{stat1.value}</b> {stat1.label}</span> : null}
+                {stat2?.value ? <span><b>{stat2.value}</b> {stat2.label}</span> : null}
               </div>
             ) : null}
           </div>

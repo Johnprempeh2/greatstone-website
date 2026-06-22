@@ -14,7 +14,7 @@ function QuoteAvatar({ photo, name }) {
   return (
     <span className="quote-avatar" aria-hidden="true">
       {photo && !broken
-        ? <img src={photo} alt="" onError={() => setBroken(true)} />
+        ? <img src={photo} alt="" loading="lazy" decoding="async" width="52" height="52" onError={() => setBroken(true)} />
         : ini
           ? <span className="quote-initials">{ini}</span>
           : <svg className="quote-initials-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="3.4" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" strokeLinecap="round" /></svg>}

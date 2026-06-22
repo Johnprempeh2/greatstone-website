@@ -52,7 +52,7 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
               <>
                 <div className="b-ins-media">
                   {p.image
-                    ? <div className="b-ins-ink"><img src={p.image} alt={p.alt || ''} loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /></div>
+                    ? <div className="b-ins-ink"><img src={p.image} alt={p.alt || ''} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none'; }} /></div>
                     : <div className={'b-ins-ink b-ins-g' + n} />}
                   {catLabel ? <span className="b-ins-tag">{catLabel}</span> : null}
                 </div>
