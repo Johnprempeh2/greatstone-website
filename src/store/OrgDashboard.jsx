@@ -183,6 +183,8 @@ function Org({ profile, session, onProfile }) {
 
       {err && <div className="ca-err" role="alert" style={{ marginBottom: 16 }}>Some data couldn't load. <button className="ca-link" onClick={load}>Try again</button></div>}
 
+      <ReturnStrip engagements={engagements} />
+
       <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} />
 
       <OrgAnalytics orders={orders} engagements={engagements} />
@@ -243,6 +245,35 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+// Return on transformation — pairs the "Invested" figure with the value the engagement has delivered,
+// from data already loaded (milestones reached, deliverables shipped, journey progress). The honest
+// front-end read; quantified outcomes (hours saved, payback) are the later gated upgrade (cycle 15).
+function ReturnStrip({ engagements }) {
+  if (engagements === null) return null;
+  const today = todayISO();
+  const past = engagements.filter(e => e.occurred_on <= today);
+  if (!past.length) return null;
+  const milestones = past.filter(e => e.kind === 'milestone').length;
+  const deliverables = past.filter(e => e.kind === 'deliverable').length;
+  const latestPhased = past.find(e => e.phase && PHASES.includes(e.phase)); // past is newest-first
+  const curIdx = latestPhased ? PHASES.indexOf(latestPhased.phase) : -1;
+  // nothing tangible yet (no milestones/deliverables and not past the first phase) → stay quiet
+  if (!milestones && !deliverables && curIdx < 1) return null;
+  return (
+    <section className="org-return" aria-labelledby="org-ret-h">
+      <div className="org-return-head">
+        <span className="st-kicker">Return on transformation</span>
+        <h2 id="org-ret-h">What your engagement has delivered</h2>
+      </div>
+      <div className="org-return-grid">
+        <div className="org-stat"><div className="org-stat-v">{milestones}</div><div className="org-stat-l">Milestones reached</div></div>
+        <div className="org-stat"><div className="org-stat-v">{deliverables}</div><div className="org-stat-l">Deliverables shipped</div></div>
+        <div className="org-stat"><div className="org-stat-v">{curIdx >= 0 ? `${curIdx + 1}/${PHASES.length}` : '—'}</div><div className="org-stat-l">{curIdx >= 0 ? 'Phases · ' + PHASES[curIdx] : 'Journey'}</div></div>
+      </div>
     </section>
   );
 }

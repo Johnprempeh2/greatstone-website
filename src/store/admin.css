@@ -251,6 +251,11 @@
 .org-stat { background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:12px; padding:14px 16px; }
 .org-stat-v { font-size:1.5rem; font-weight:900; letter-spacing:-.02em; color:var(--gs-text); font-variant-numeric:tabular-nums; }
 .org-stat-l { font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gs-text-faint); margin-top:2px; }
+/* return-on-transformation band — the value delivered, paired with the Invested figure above */
+.org-return { margin:18px 0 8px; padding:16px 18px; border-radius:16px; background:rgba(78,205,196,.05); border:1px solid rgba(78,205,196,.18); }
+.org-return-head { margin-bottom:12px; }
+.org-return-head h2 { font-size:1.05rem; margin:2px 0 0; }
+.org-return-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; }
 
 .org-sec { margin-top:34px; }
 .org-you { margin-left:.5em; font-size:.62rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:.15em .5em; border-radius:100px; background:var(--gs-accent); color:#0e1611; vertical-align:middle; }

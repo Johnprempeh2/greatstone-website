@@ -27,8 +27,8 @@ approval — never done autonomously.**
 | 1 | Per-client **maturity radar** (you vs industry vs target, 8 pillars) | #org | L | yes | ✅ shipped |
 | 2 | **Phase Navigator** strip (Discovery→Build→Adoption→Review) above the timeline | #org | M | yes | ✅ shipped |
 | 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | ✅ shipped |
-| 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | next |
-| 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | |
+| 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | ✅ shipped |
+| 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | next |
 | 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | |
 | 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | |
 | 8 | Staff authoring throughput (default-to-draft, preview pane, Duplicate, stale badge) | ClientsManager | M | yes | |
@@ -83,4 +83,13 @@ demo orders carry customer_id so the figures are unchanged (Orders 2, Open quote
 unbounded quotes read now carries `.limit(200)`; (d) the marquee "Invested" total on #org + #account now sums
 only orders in the display currency, so a future mixed-currency account can never show a meaningless cross-currency
 sum under one symbol. Build clean, 58 tests, data loads, 0 new console errors. Edited: `src/store/OrgDashboard.jsx`,
-`src/store/AccountDashboard.jsx`.
+`src/store/AccountDashboard.jsx`. Commit de974a4, bundle index-B0CO5-Vo, deploy 6a39bc71.
+
+### Cycle 4 — Return-on-transformation strip on #org (22 Jun)
+A teal-tinted value band right under the at-a-glance stats, pairing the "Invested" figure with what the
+engagement has delivered, all from data already loaded: milestones reached (count of milestone engagements),
+deliverables shipped (deliverable engagements), and journey progress (phase N of 4 + current phase name).
+Answers a CFO's "what did the spend buy" without a typed outcomes table (that's the gated cycle 15). Stays
+quiet for a brand-new org with nothing tangible yet. Reuses `.org-stat` tiles in a distinct `.org-return`
+band (no class collision). Verified on Ethical Quest (1 milestone, 2 deliverables, Adoption 3/4), mobile
+clean, build + 58 tests green. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
