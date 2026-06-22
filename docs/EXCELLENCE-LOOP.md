@@ -265,3 +265,18 @@ Another fresh lens: a read-only **UI-polish / front-end-robustness** audit scope
 **Status:** ✅ committed `1b78016` (scoped to exactly the 7 block files). No separate review agent this cycle: the changes are defensive attribute/guard one-liners with no new logic path on normal data, fully covered by build + tests + live check + the focus-ring verification above (proportionate to the lean/rate-limit steer).
 
 **⚠️ Deploy still NOT staged:** the concurrent loop's `ProductDetail` removal (`App.jsx` M + `ProductDetail.jsx` deleted) remains uncommitted in the tree, so a build still can't be cleanly staged. Unchanged from C12/C13. **Queued + NEEDS-JOHN lists carry over from C13** (the seed+migrate conversion items wait for the tree to clear; the content/strategy items wait for John).
+
+---
+
+## Cycle 15 — 2026-06-22 — new capability: LogoWall ("trusted by") block
+
+The `ProductDetail` WIP has now sat uncommitted for **four cycles** (C12–C15), and `store.js`/`seed-pages.json` stay shared-and-risky while that loop is active — so instead of another deploy-blocked seed+migrate, this cycle **built a new, content-safe block** that directly answers the C13 conversion audit's **#1 trust gap** (marquee clients shown as plain text, no logos). The user's standing brief explicitly invites new sections.
+
+**Shipped (verified: 58/58 tests, clean build, CSS + label + array-field confirmed bundled):**
+- **New `src/blocks/LogoWall.jsx`**: an editable "trusted by" client-logo strip. Fields: `eyebrow` + a `logos` array of `{ image (MediaField), alt, href (optional) }`. The component filters out image-less rows (so empty slots never show a broken glyph), wraps a logo in a safe-href'd new-tab link when a URL is set, and gives every img `loading=lazy`/`decoding=async`/`onError`-hide. Logos sit muted and lift to full strength on hover/focus; reduced-motion guarded; format-agnostic (opacity treatment, no invert/grayscale that would mangle a colour mark).
+- **Registered** in `src/puck.config.jsx` (import + `MODULES` + the **Proof** category, beside StatStrip).
+- **Content-safe + unplaced**: ships with 4 blank slots (so a freshly-added block shows ready-to-fill fields) and is NOT seeded onto any page — John drops it in where he wants once he has real, permissioned logos, so no empty block ever reaches the live site. Same "capability waiting for content" pattern as the C9 Quote card + Media library. **No fabricated client marks.**
+
+**De-risked before trusting it:** the one real uncertainty was whether a `type:'custom'` MediaField works *inside* `arrayFields` — confirmed it does via two existing precedents (`InsightsGrid` post images, `Team` member photos use exactly this). Rest is trivial pattern-matched code, so no separate review agent (proportionate to the lean steer); registry edit was scoped (only `LogoWall.jsx` + `puck.config.jsx` committed, never the foreign `App.jsx`/`ProductDetail`).
+
+**Status:** ✅ committed `cd4e982`. Deploy still NOT staged (same `ProductDetail` WIP block, now 4 cycles old). **Backlog unchanged:** the C13 conversion seed+migrate items (mid-page CTA, surface FAQ/“what happens next” on home/Proof) wait for the tree to clear; NEEDS-JOHN: real logos to drop into this new block + a testimonial for the Quote card + the metric/nav strategy calls; and **deploy** (the single biggest unblock — get the other loop to commit its `ProductDetail` removal, then 15 cycles go live).
