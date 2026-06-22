@@ -615,6 +615,22 @@ function migrate(state) {
     if (sp && sp.published && sp.published !== sp.data) addCalc(sp.published.content);
     state._calcSeeded = true;
   }
+  // Proof Hero CTA (additive, cycle 10; NO SEED_VERSION bump): give the proof page Hero its above-fold
+  // "Book a Deep Dive" CTA on existing saved sites, ONLY when it is still the empty seed default with the
+  // seeded #book href (so a hand-edited label/href is never clobbered). Both draft + published.
+  {
+    const pp = state.pages && state.pages.proof;
+    const fillProofCta = (content) => {
+      if (!Array.isArray(content)) return;
+      const hero = content.find((b) => b && b.type === 'Hero');
+      if (hero && hero.props && !hero.props.ctaLabel && (hero.props.ctaHref === '#book' || hero.props.ctaHref == null)) {
+        hero.props.ctaLabel = 'Book a Deep Dive';
+        if (!hero.props.ctaHref) hero.props.ctaHref = '#book';
+      }
+    };
+    if (pp && pp.data) fillProofCta(pp.data.content);
+    if (pp && pp.published && pp.published !== pp.data) fillProofCta(pp.published.content);
+  }
   // Copy unification (additive, Excellence-loop cycle 1, 2026-06-21; NO SEED_VERSION bump): align the
   // Deep Dive duration to the real 30-min booking slot, drop the "Placeholder names" framing above the
   // real founders, and give the home hero a primary CTA — but ONLY where the stored value still equals

@@ -79,7 +79,7 @@ export default function StoreBrowse({ initialVendor = '' }) {
           <option value="price">Price: low to high</option>
           <option value="price-desc">Price: high to low</option>
         </select>
-        <span className="st-count" aria-live="polite"><b>{total}</b> result{total === 1 ? '' : 's'}</span>
+        <span className="st-count" aria-live="polite">{loading ? 'Loading products…' : <><b>{total}</b> result{total === 1 ? '' : 's'}</>}</span>
       </div>
 
       <div className="st-layout">
@@ -104,7 +104,7 @@ export default function StoreBrowse({ initialVendor = '' }) {
           </div>
         </aside>
 
-        <div className="st-grid">
+        <div className="st-grid" aria-busy={loading}>
           <h2 className="gs-sr-only">Products</h2>
           {err ? <div className="st-empty"><h3>{err}</h3></div>
             : loading && !items.length ? Array.from({ length: 8 }).map((_, i) => <div key={i} className="st-card st-skel" aria-hidden="true" />)

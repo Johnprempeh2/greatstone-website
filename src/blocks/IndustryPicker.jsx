@@ -106,7 +106,7 @@ export function IndustryPicker({
         <h2 className="b-ind-headline" aria-live="polite"><Headline text={cur.headline} /></h2>
 
         <div className={'b-ind-swap' + (swapping ? ' is-swapping' : '')}
-          id={panelId} role="tabpanel" aria-labelledby={tabId(active)} tabIndex={0}>
+          id={panelId} role="tabpanel" aria-labelledby={tabId(active)} tabIndex={ctaLabel ? -1 : 0}>
           <div className="grid cols-2">
 
             <article className="card b-ind-card universal">

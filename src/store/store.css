@@ -134,7 +134,7 @@
 .sc-it-side { text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
 .sc-it-price { font-weight:800; font-variant-numeric:tabular-nums; }
 .sc-qty { display:flex; align-items:center; gap:10px; }
-.sc-qty button { width:24px; height:24px; border-radius:6px; border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); background:transparent; color:var(--gs-text); cursor:pointer; font-size:1rem; line-height:1; display:grid; place-items:center; }
+.sc-qty button { width:32px; height:32px; border-radius:6px; border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); background:transparent; color:var(--gs-text); cursor:pointer; font-size:1rem; line-height:1; display:grid; place-items:center; }
 .sc-qty button:disabled { opacity:.35; cursor:not-allowed; }
 .sc-qty span { min-width:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .sc-rm { background:none; border:none; color:var(--gs-text-faint); font-size:.76rem; cursor:pointer; padding:0; }
@@ -179,7 +179,7 @@
   .sc-x { padding:10px; font-size:1.25rem; }
   .sp-nav { width:44px; height:44px; }
 }
-@media (pointer:coarse){ .sc-qty button { min-width:40px; min-height:40px; } }
+@media (pointer:coarse){ .sc-qty button { min-width:44px; min-height:44px; } }
 
 @media (max-width:480px){
   .st-grid { grid-template-columns:1fr; gap:12px; }

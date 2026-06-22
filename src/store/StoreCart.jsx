@@ -78,7 +78,7 @@ export default function StoreCart({ confirmed = false }) {
 
   return (
     <>
-      <button className="sc-fab" onClick={() => setOpen(true)} aria-label={'Basket' + (count ? ' (' + count + ')' : '')}>
+      <button className="sc-fab" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} aria-label={'Basket' + (count ? ' (' + count + ')' : '')}>
         <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         {count > 0 && <span className="sc-fab-badge">{count}</span>}
       </button>
