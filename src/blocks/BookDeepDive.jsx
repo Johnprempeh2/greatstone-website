@@ -14,9 +14,9 @@ const ICONS = {
   scan: ico(<><path d="M4 7V5a2 2 0 0 1 2-2h2" /><path d="M16 3h2a2 2 0 0 1 2 2v2" /><path d="M20 17v2a2 2 0 0 1-2 2h-2" /><path d="M8 21H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></>),
 };
 
-// The "Book a Deep Dive" page: the booking form beside a short framing aside. PROTOTYPE — the
-// form never transmits anything; submit shows a confirmation and points to email. The real
-// build POSTs to Laravel (validated + stored server-side); this is the page design + UX only.
+// The "Book a Deep Dive" page: the booking form beside a short framing aside. On submit it composes a
+// prefilled mailto to the contact address from the entered fields (client-side, no backend) and shows a
+// confirmation with the address as a fallback. A future build may POST to a backend; that decision is open.
 export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk' }) {
   // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
   // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
@@ -30,36 +30,61 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
   // users are carried to it and the success is announced, instead of focus falling back to <body>.
   const sentRef = useRef(null);
   useEffect(() => { if (sent && sentRef.current) sentRef.current.focus(); }, [sent]);
+  // Submit composes a prefilled email to the team from the entered fields. No backend needed: this is the
+  // same email path the form always pointed to, now filled in for the visitor. encodeURIComponent on the
+  // subject/body keeps it injection-safe. The sent panel still shows the address as a fallback.
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const g = (k) => (fd.get(k) || '').toString().trim();
+    const nm = g('name'), company = g('company');
+    const subject = 'Deep Dive request' + (company ? ' · ' + company : nm ? ' · ' + nm : '');
+    const parts = [];
+    if (nm) parts.push('Name: ' + nm);
+    if (company) parts.push('Company: ' + company);
+    if (g('email')) parts.push('Work email: ' + g('email'));
+    if (g('industry')) parts.push('Industry: ' + g('industry'));
+    parts.push('', 'Where the week goes:', g('week') || '(not specified)');
+    track('generate_lead', { form: 'deep_dive' });
+    // guard the editor-controlled address through safeMailto (same as every other mailto in the codebase),
+    // so a stray ?/&/whitespace in the email prop can't merge params / inject headers. Subject + body are
+    // already encodeURIComponent'd. If the address is implausible, still show the panel (it carries a fallback).
+    const to = safeMailto(email);
+    if (to !== '#') {
+      const href = to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(parts.join('\n'));
+      try { if (typeof window !== 'undefined') window.location.href = href; } catch (err) { /* ignore */ }
+    }
+    setSent(true);
+  };
   return (
     <section ref={ref} className="b-book">
       <div className="wrap">
         <div className="grid b-book-grid" data-reveal>
           <div className="card book-card">
-            <span className="form-template-note">Template form</span>
             {eyebrow && eyebrow !== headline ? <span className="kicker b-book-eyebrow">{eyebrow}</span> : null}
             <h2 className="h3 b-book-card-head">{headline}{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
             {body ? <p className="b-book-card-intro muted">{body}</p> : null}
             {sent ? (
               <div className="book-sent" role="status">
-                <h3 ref={sentRef} tabIndex={-1}>Thanks. One more step.</h3>
-                <p>This prototype doesn’t send anything yet. To book your Deep Dive now, email us and we’ll reply with times.</p>
+                <h3 ref={sentRef} tabIndex={-1}>Thanks. Your email is ready.</h3>
+                <p>We’ve opened your email with these details filled in. Send it and we’ll reply with times. If nothing opened, write to us directly:</p>
                 <a className="b-cta" href={safeMailto(email)}>{email}</a>
               </div>
             ) : (
-              <form onSubmit={(e) => { e.preventDefault(); track('generate_lead', { form: 'deep_dive' }); setSent(true); }} noValidate>
+              <form onSubmit={onSubmit} noValidate>
                 <div className="field-row">
-                  <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
-                  <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
+                  <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} name="name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
+                  <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
                 </div>
-                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} type="email" placeholder="jane@stonewell.co" autoComplete="email" /></div>
+                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" placeholder="jane@stonewell.co" autoComplete="email" /></div>
                 <div className="field"><label htmlFor={uid + 'industry'}>Industry</label>
-                  <select className="fld" id={uid + 'industry'} defaultValue=""><option value="" disabled>Choose your sector…</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
+                  <select className="fld" id={uid + 'industry'} name="industry" defaultValue=""><option value="" disabled>Choose your sector…</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
                 </div>
                 <div className="field"><label htmlFor={uid + 'week'}>Where does your week go?</label>
-                  <textarea className="fld" id={uid + 'week'} placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />
+                  <textarea className="fld" id={uid + 'week'} name="week" placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />
                 </div>
                 <button className="b-cta book-submit" type="submit">{submitLabel}<Arrow /></button>
-                <p className="book-fine">A template form, submissions aren’t wired up yet. For now, email us direct below.</p>
+                <p className="book-fine">Submitting opens your email with these details filled in, ready to send.</p>
               </form>
             )}
           </div>
@@ -96,8 +121,6 @@ export const css = `
 .b-book-card-intro{margin:.6rem 0 1.8rem;color:var(--gs-text-muted)}
 @media(max-width:860px){.b-book-grid{grid-template-columns:1fr}}
 .book-card{padding:clamp(26px,3.4vw,44px)}
-.form-template-note{display:inline-flex;align-items:center;gap:.5em;margin-bottom:1.6rem;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-faint)}
-.form-template-note::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gs-accent);opacity:.7}
 .field{margin-bottom:1.2rem}.field:last-of-type{margin-bottom:0}
 .field label{display:block;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-muted);margin-bottom:.5rem}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
