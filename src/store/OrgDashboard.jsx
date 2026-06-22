@@ -21,6 +21,9 @@ const periodOf = (iso) => { try { const d = new Date(iso); return d.toLocaleDate
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };
 const KIND_PLURAL = { recap: 'Recaps', milestone: 'Milestones', deliverable: 'Deliverables', kickoff: 'Kickoffs', review: 'Reviews', note: 'Notes' };
 const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled markers — the journey anchors
+// the DX engagement journey (matches the 0013 `phase` free-text convention). Drives the Phase Navigator.
+const PHASES = ['Discovery', 'Build', 'Adoption', 'Review'];
+const PHASE_BLURB = { Discovery: 'Mapping the work and the drains.', Build: 'Wiring the systems that buy hours back.', Adoption: 'Embedding it in how you work.', Review: 'Measuring the return, planning the next climb.' };
 
 // Allowlist sanitiser for staff-authored inline recap HTML — defence-in-depth even though authors are
 // staff. Browser-only (DOMParser). The output is re-parsed by React (dangerouslySetInnerHTML), so this
@@ -281,6 +284,7 @@ function OrgAnalytics({ orders, engagements }) {
 // ── DX engagement timeline ────────────────────────────────────────────────────
 function EngagementTimeline({ engagements, companyId, companyName, memberName }) {
   const [filter, setFilter] = useState('all');
+  const [phaseFilter, setPhaseFilter] = useState('all');
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState(null);
   const seenKey = 'gs-dx-seen:' + companyId;
@@ -302,7 +306,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
       const id = m[1];
       if (appliedRef.current === id) return; // already consumed this hash → don't wipe filters on reload
       appliedRef.current = id;
-      setOpenId(id); setFilter('all'); setQ('');
+      setOpenId(id); setFilter('all'); setPhaseFilter('all'); setQ('');
       clearTimeout(timer);
       timer = setTimeout(() => {
         const el = document.getElementById('dx-item-' + id);
@@ -328,10 +332,17 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   let past = engagements.filter(e => e.occurred_on <= today);
   const pinned = past.filter(e => e.pinned);
   const kindsPresent = [...new Set(past.map(e => e.kind))];
+  // phase journey: count per canonical phase, and the CURRENT phase = the phase of the most recent past
+  // engagement that carries one (past is newest-first from the query). Drives the Phase Navigator stepper.
+  const phaseCounts = {};
+  for (const e of past) if (e.phase && PHASES.includes(e.phase)) phaseCounts[e.phase] = (phaseCounts[e.phase] || 0) + 1;
+  const phasesPresent = PHASES.some(p => phaseCounts[p]);
+  const latestPhased = past.find(e => e.phase && PHASES.includes(e.phase));
+  const currentPhaseIdx = latestPhased ? PHASES.indexOf(latestPhased.phase) : -1;
 
   const scrollToNewest = () => {
     const n = past.find((e) => isNew(e));
-    setFilter('all'); setQ('');
+    setFilter('all'); setPhaseFilter('all'); setQ('');
     if (n) { setOpenId(n.id); setTimeout(() => document.getElementById('dx-item-' + n.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }
     else document.getElementById('dx-h')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -340,7 +351,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
     const hay = [e.title, e.summary, e.phase, e.owner_name, (e.tags || []).join(' '), (e.attendees || []).join(' ')].join(' ').toLowerCase();
     return hay.includes(q.trim().toLowerCase());
   };
-  const visible = past.filter(e => (filter === 'all' || e.kind === filter) && matchQ(e));
+  const visible = past.filter(e => (filter === 'all' || e.kind === filter) && (phaseFilter === 'all' || e.phase === phaseFilter) && matchQ(e));
 
   // group by period (newest first)
   const groups = [];
@@ -395,7 +406,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
               <h3 className="dx-pins-h">Highlights</h3>
               <div className="dx-pins-row">
                 {pinned.map(e => (
-                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => document.getElementById('dx-item-' + e.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }}>
+                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setPhaseFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => document.getElementById('dx-item-' + e.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }}>
                     <span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span>
                     <span className="dx-pin-title">{e.title}</span>
                     <span className="dx-pin-date">{fmtDate(e.occurred_on)}</span>
@@ -409,6 +420,33 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
             <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>Your timeline fills in after your first session — see “What's next” above.</p>
           ) : (
             <>
+              {phasesPresent && (
+                <nav className="dx-phasenav" aria-label="Your engagement phases">
+                  <ol className="dx-phaselist">
+                    {PHASES.map((ph, i) => {
+                      const count = phaseCounts[ph] || 0;
+                      const state = currentPhaseIdx < 0 ? 'upcoming' : i < currentPhaseIdx ? 'done' : i === currentPhaseIdx ? 'current' : 'upcoming';
+                      const active = phaseFilter === ph;
+                      return (
+                        <li key={ph} className={'dx-jstep is-' + state + (active ? ' is-active' : '')}>
+                          <button type="button" className="dx-jstep-btn" aria-pressed={active} disabled={count === 0}
+                            onClick={() => setPhaseFilter(active ? 'all' : ph)}
+                            aria-label={`${ph} phase. ${PHASE_BLURB[ph]} ${count} item${count === 1 ? '' : 's'}. ${state === 'current' ? 'Current phase.' : state === 'done' ? 'Completed.' : 'Not started.'}${count ? (active ? ' Showing this phase only; activate to clear.' : ' Activate to filter the timeline to this phase.') : ''}`}>
+                            <span className="dx-jstep-node" aria-hidden="true">{state === 'done' ? '✓' : i + 1}</span>
+                            <span className="dx-jstep-name">{ph}</span>
+                            <span className="dx-jstep-count">{count ? count + (count === 1 ? ' item' : ' items') : '—'}</span>
+                            {state === 'current' && <span className="dx-jstep-here">You are here</span>}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  {phaseFilter !== 'all' && (
+                    <p className="dx-jstep-note" role="status">Showing <b>{phaseFilter}</b> only. <button type="button" className="ca-link" onClick={() => setPhaseFilter('all')}>Show all phases</button></p>
+                  )}
+                </nav>
+              )}
+
               <div className="dx-controls">
                 <div className="dx-chips" role="group" aria-label="Filter by type">
                   <button className={'dx-chip' + (filter === 'all' ? ' on' : '')} aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>All</button>
@@ -420,7 +458,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
               </div>
 
               {visible.length === 0 ? (
-                <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setQ(''); }}>Clear filters</button></p>
+                <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setPhaseFilter('all'); setQ(''); }}>Clear filters</button></p>
               ) : (
                 <div className="dx-timeline">
                   {groups.map(g => (

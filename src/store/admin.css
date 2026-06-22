@@ -322,6 +322,29 @@
 .dx-chip.on { background:var(--gs-accent); color:#0e1611; border-color:var(--gs-accent); }
 .dx-search { flex:1 1 200px; min-width:160px; padding:.55em 1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.86rem; }
 .dx-search:focus { outline:none; border-color:var(--gs-accent-mid); }
+/* Phase Navigator — the engagement journey (Discovery→Build→Adoption→Review) as a stepper above the controls.
+   Classes are dx-jstep* (NOT dx-phase*) to avoid colliding with the per-card .dx-phase badge. */
+.dx-phasenav { margin:20px 0 4px; }
+.dx-phaselist { list-style:none; margin:0; padding:0; display:flex; gap:0; }
+.dx-jstep { flex:1 1 0; position:relative; min-width:0; text-align:center; }
+.dx-jstep + .dx-jstep::before { content:''; position:absolute; top:18px; left:-50%; width:100%; height:2px; background:rgba(255,255,255,.12); z-index:0; }
+.dx-jstep.is-done::before, .dx-jstep.is-current::before { background:linear-gradient(90deg, var(--gs-teal,#4ecdc4), var(--gs-accent,#c8ff00)); }
+.dx-jstep-btn { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; padding:4px 4px 8px; background:none; border:0; color:var(--gs-text-muted); font:inherit; cursor:pointer; border-radius:12px; }
+.dx-jstep-btn:disabled { cursor:default; }
+.dx-jstep-node { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.9rem; background:var(--gs-bg-card,#363636); border:2px solid rgba(255,255,255,.16); color:var(--gs-text-muted); transition:transform .15s ease; }
+.dx-jstep.is-done .dx-jstep-node { background:rgba(78,205,196,.16); border-color:var(--gs-teal,#4ecdc4); color:var(--gs-teal,#4ecdc4); }
+.dx-jstep.is-current .dx-jstep-node { background:var(--gs-accent,#c8ff00); border-color:var(--gs-accent,#c8ff00); color:#0e1611; box-shadow:0 0 0 4px rgba(200,255,0,.18); }
+.dx-jstep-name { font-size:.82rem; font-weight:700; color:var(--gs-text); }
+.dx-jstep.is-upcoming .dx-jstep-name { color:var(--gs-text-faint,#8a8a8a); }
+.dx-jstep-count { font-size:.68rem; color:var(--gs-text-faint,#8a8a8a); }
+.dx-jstep-here { font-size:.6rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gs-accent,#c8ff00); }
+.dx-jstep.is-active .dx-jstep-node { box-shadow:0 0 0 4px rgba(200,255,0,.28); }
+.dx-jstep.is-active .dx-jstep-name { color:var(--gs-accent,#c8ff00); }
+.dx-jstep-btn:not(:disabled):hover .dx-jstep-node { transform:translateY(-2px); }
+.dx-jstep-btn:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
+.dx-jstep-note { margin:8px 0 0; font-size:.82rem; color:var(--gs-text-muted); text-align:center; }
+@media (max-width:520px){ .dx-jstep-node { width:30px; height:30px; font-size:.8rem; } .dx-jstep + .dx-jstep::before { top:14px; } .dx-jstep-name { font-size:.72rem; } }
+@media (prefers-reduced-motion: reduce){ .dx-jstep-node { transition:none; } }
 
 /* the timeline spine */
 .dx-timeline { margin-top:14px; }

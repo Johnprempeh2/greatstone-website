@@ -25,8 +25,8 @@ approval — never done autonomously.**
 | Cycle | Item | Surface | Effort | Ships now | Status |
 |---|---|---|---|---|---|
 | 1 | Per-client **maturity radar** (you vs industry vs target, 8 pillars) | #org | L | yes | ✅ shipped |
-| 2 | **Phase Navigator** strip (Discovery→Build→Adoption→Review) above the timeline | #org | M | yes | next |
-| 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | |
+| 2 | **Phase Navigator** strip (Discovery→Build→Adoption→Review) above the timeline | #org | M | yes | ✅ shipped |
+| 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | next |
 | 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | |
 | 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | |
 | 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | |
@@ -61,3 +61,15 @@ Reads Supabase `maturity_assessments`; with migration 0019 dormant it falls back
 the demo company (Ethical Quest) only and shows a tasteful empty state for everyone else. Reduced-motion
 honoured. New: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`, `src/data/maturity-seed.mjs`,
 `supabase/migrations/0019_maturity_assessments.sql` (DORMANT). Edited: `src/store/OrgDashboard.jsx`.
+Commit cf02859, bundle index-Bjumql4P, deploy 6a39b318.
+
+### Cycle 2 — Phase Navigator on #org (22 Jun)
+The `phase` field (already on every engagement, previously a buried badge) becomes a journey stepper above
+the timeline controls: Discovery → Build → Adoption → Review as connected nodes, each with its past-item
+count and state (done ✓ teal / current lime "you are here" / upcoming dimmed). The current phase is the
+phase of the most recent past engagement; future-dated items don't inflate it (so Review reads as upcoming,
+not started). Each node filters the timeline to that phase (composes with the kind chips + search), with a
+"Showing X only · Show all phases" reset; all the existing filter-reset paths (deep-link, pin, jump-to-newest,
+clear) also clear it. Caught + fixed a class collision: the stepper used `.dx-phase`, which the per-card phase
+badge already owns, so renamed the stepper to `.dx-jstep*`. Verified: build clean, 58 tests, filter both ways,
+no mobile overflow, reduced-motion. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
