@@ -98,7 +98,8 @@ export const css = `
 .b-tsc-input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:1.3rem;font-weight:800;padding:12px 0;font-variant-numeric:tabular-nums}
 .b-tsc-affix{flex:none;font-size:.84rem;font-weight:600;color:var(--gs-text-faint);white-space:nowrap}
 .b-tsc-result{display:flex;flex-direction:column;justify-content:center;gap:8px;padding:clamp(24px,3vw,36px);border-radius:16px;
-  background:linear-gradient(180deg,rgba(200,255,0,.07),rgba(255,255,255,.015));border:1px solid var(--gs-border)}
+  background:linear-gradient(180deg,rgba(200,255,0,.07),rgba(255,255,255,.015));border:1px solid var(--gs-border);
+  box-shadow:0 24px 70px -38px rgba(200,255,0,.22)}
 .b-tsc-rlead{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
 .b-tsc-rbig{line-height:1}
 .b-tsc-rbig b{font-size:clamp(2.6rem,7vw,4rem);font-weight:900;letter-spacing:-.03em;color:var(--gs-accent);font-variant-numeric:tabular-nums}
