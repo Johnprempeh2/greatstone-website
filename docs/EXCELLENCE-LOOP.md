@@ -82,7 +82,8 @@ Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` unt
 4. **Releases "last published" by label, not status** (MEDIUM): restore/discard snapshots copy `status:'published'`, so the board could report a restore/discard as the last publish. Now matches `label==='Published'` (only `publish()` writes it).
 5. **Never-published draft no longer double-counted as "unpublished changes"** (LOW): `!eq(data, null)` is always true; both OverviewPanel + ReleaseBoard now require `published != null` for drift.
 
-**Status:** adversarial review (3 lenses) running before commit/stage-deploy.
+**Status:** ✅ committed `49eda95`. Adversarial review (3 lenses, 18 agents) → 5 findings, all LOW/non-blocking (it positively re-verified the ReleaseBoard label-match assumption). Applied the 3 that complete the new feature: AdminConsole logo alt now tracks `siteName`; the panel previews mirror the real default-logo fallback with decorative `alt=""`. Deferred (pre-existing, reviewer-flagged out-of-scope): seeded pages read "Never published" on the Releases board (status pill says Published) — fix in a later cycle via a `published != null` fallback.
+⚠️ **Deploy staged but BLOCKED on Netlify auth** (same as C1/C2). Build `index-DDlyi-Dv.js` mirrored into `../greatstone-homepage-deploy/puck-proof/`. Finish: `cd ../greatstone-homepage-deploy && netlify deploy --prod --dir=. --site=3b1e97e6-e184-4251-badd-deed532be3ab`. (C1+C2 went live this way.)
 
 **Flagged for the DX-hub loop (their hot files — `Account:` commits):** Billing tab flashes the "no purchases yet" empty-state before `loadingOrders` resolves (AccountDashboard); licence-key state isn't date-aware so an expired key shows a green "issued" chip + live Download (LicenceKeys). Both MEDIUM, both quick.
 
