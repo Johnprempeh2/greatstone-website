@@ -233,6 +233,15 @@ function Dashboard({ session, profile, onProfile }) {
   const curr = liveOrders[0]?.currency || orders[0]?.currency || 'GBP';
   const totalSpent = liveOrders.filter(o => (o.currency || curr) === curr).reduce((s, o) => s + (o.total_minor || 0), 0);
   const openQuotes = quotes.filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
+  // state-adaptive "your next step" band — the most relevant unmet action, from data already fetched
+  const keyCount = Object.values(keysByOrder).reduce((n, arr) => n + (arr?.length || 0), 0);
+  const nextStep = (() => {
+    if (!loadingOrders && orders.length === 0) return { title: 'Start your Greatstone toolkit', body: 'Explore the software catalogue, or book a deep dive to kick off your transformation.', ctas: [{ label: 'Explore the catalogue', href: '#shop', primary: true }, { label: 'Book a deep dive', href: '#go/contact' }] };
+    if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to unlock your seats.', ctas: [{ label: 'View your keys', onClick: () => setTab('keys'), primary: true }] };
+    if (profile?.customer && admin) return { title: 'Set up your organization', body: 'Invite teammates and complete your company profile in your organization dashboard.', ctas: [{ label: 'Go to your organization', href: '#org', primary: true }] };
+    if (profile?.customer) return { title: 'Follow your transformation', body: 'See your maturity, your engagement timeline and what your Greatstone team has delivered.', ctas: [{ label: 'Open your organization', href: '#org', primary: true }] };
+    return null;
+  })();
 
   return (
     <div className="ca-wrap">
@@ -243,7 +252,7 @@ function Dashboard({ session, profile, onProfile }) {
           <h1 className="acct-id-name">{profile?.full_name || 'Welcome back'}</h1>
           <div className="acct-id-sub">
             {profile?.email || session.user?.email}
-            {admin && <span className="org-rolechip is-admin" style={{ marginLeft: 8, whiteSpace: 'nowrap' }}>Company admin</span>}
+            {admin && <a className="org-rolechip is-admin" href="#org" style={{ marginLeft: 8, whiteSpace: 'nowrap', textDecoration: 'none' }} aria-label="Company admin — open your organization">Company admin</a>}
             {company && <> · <a className="ca-link" href="#org">{company}</a>{tier && <span className="acct-tier">{tier}</span>}</>}
           </div>
         </div>
@@ -260,6 +269,21 @@ function Dashboard({ session, profile, onProfile }) {
         <button type="button" className="org-stat" onClick={() => setTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your orders"><div className="org-stat-v">{loadingOrders ? '…' : liveOrders.length}</div><div className="org-stat-l">Orders</div></button>
         <button type="button" className="org-stat" onClick={() => setTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your quotes"><div className="org-stat-v">{openQuotes}</div><div className="org-stat-l">Open quotes</div></button>
       </div>
+
+      {nextStep && (
+        <section className="acct-next" aria-labelledby="acct-next-h">
+          <div className="acct-next-text">
+            <span className="st-kicker">Your next step</span>
+            <h2 id="acct-next-h">{nextStep.title}</h2>
+            <p>{nextStep.body}</p>
+          </div>
+          <div className="acct-next-ctas">
+            {nextStep.ctas.map((c, i) => c.href
+              ? <a key={i} className={'gs-btn ' + (c.primary ? 'primary' : 'ghost') + ' sm'} href={c.href}>{c.label}</a>
+              : <button key={i} type="button" className={'gs-btn ' + (c.primary ? 'primary' : 'ghost') + ' sm'} onClick={c.onClick}>{c.label}</button>)}
+          </div>
+        </section>
+      )}
 
       <div className="acct-settings">
         <div className="ca-tabs acct-tabs" role="tablist" aria-label="Your account" style={{ flexWrap: 'wrap' }}>

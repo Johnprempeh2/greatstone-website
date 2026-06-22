@@ -30,8 +30,8 @@ approval — never done autonomously.**
 | 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | ✅ shipped |
 | 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | ✅ shipped |
 | 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | ✅ shipped |
-| 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | next |
-| 8 | Staff authoring throughput (default-to-draft, preview pane, Duplicate, stale badge) | ClientsManager | M | yes | |
+| 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | ✅ shipped |
+| 8 | Staff authoring throughput (default-to-draft, preview pane, Duplicate, stale badge) | ClientsManager | M | yes | next |
 | 9 | Extract shared sanitizeHtml + date helpers module + mXSS regression tests | src/lib + tests | M | yes | |
 | 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | |
 | 11 | Rules-based **"Your next move"** card + proactive health signals | #org | S | yes | |
@@ -114,4 +114,14 @@ admin will add this / manages who has access" instead of reading like the member
 (c) The LicenceKeys empty state gains activation guidance (copy the key into the product's licence screen;
 contact us if stuck). Verified the member capability card live (signed in as demo-member@greatstone.dev),
 banner icon top-aligned for the two-line variant, mobile clean, build + 58 tests green, 0 console errors.
-Edited: `src/store/OrgDashboard.jsx`, `src/store/LicenceKeys.jsx`, `src/store/admin.css`.
+Edited: `src/store/OrgDashboard.jsx`, `src/store/LicenceKeys.jsx`, `src/store/admin.css`. Commit 972fff6,
+bundle index-DF9_7Ue4, deploy 6a39c7a1.
+
+### Cycle 7 — #account get-started band (23 Jun)
+A state-adaptive "Your next step" band on the #account overview, from session + profile + orders already
+fetched, surfacing the single most relevant unmet action: no orders → explore the catalogue / book a deep
+dive; has licence keys → activate them (jumps to the Keys tab); company admin → set up your organization;
+otherwise → follow your transformation on #org. Also made the "Company admin" badge actionable (now a link
+to #org). Verified both as member (band: "Activate your licences"; no admin badge) and admin (badge is an
+<a href="#org">, aria-labelled), mobile clean, build + 58 tests green, 0 console errors. Edited:
+`src/store/AccountDashboard.jsx`, `src/store/admin.css`.

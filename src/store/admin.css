@@ -274,6 +274,12 @@
 .org-you { margin-left:.5em; font-size:.62rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:.15em .5em; border-radius:100px; background:var(--gs-accent); color:#0e1611; vertical-align:middle; }
 .org-rolechip { font-size:.72rem; font-weight:700; padding:.2em .6em; border-radius:5px; background:rgba(255,255,255,.06); color:var(--gs-text-faint); }
 .org-rolechip.is-admin { background:rgba(200,255,0,.12); color:var(--gs-accent); }
+/* #account state-adaptive "your next step" band */
+.acct-next { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; margin:0 0 20px; padding:18px 20px; border-radius:16px; background:var(--gs-accent-soft,rgba(200,255,0,.05)); border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); }
+.acct-next-text h2 { font-size:1.1rem; margin:2px 0 4px; }
+.acct-next-text p { margin:0; font-size:.9rem; color:var(--gs-text-muted); max-width:54ch; }
+.acct-next-ctas { display:flex; flex-wrap:wrap; gap:8px; }
+@media (max-width:560px){ .acct-next { flex-direction:column; align-items:flex-start; } }
 .org-field { display:flex; justify-content:space-between; gap:14px; padding:.5em 0; border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.06)); font-size:.9rem; }
 .org-field:last-child { border-bottom:0; }
 .org-field-l { color:var(--gs-text-faint); font-weight:700; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; }
