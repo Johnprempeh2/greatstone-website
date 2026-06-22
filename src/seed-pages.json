@@ -93,6 +93,7 @@
           "footnote": "A guide, not a quote. The Deep Dive replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
         }
       },
+      { "type": "ComparisonMatrix", "props": {} },
       {
         "type": "Faq",
         "props": {

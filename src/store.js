@@ -615,6 +615,22 @@ function migrate(state) {
     if (sp && sp.published && sp.published !== sp.data) addCalc(sp.published.content);
     state._calcSeeded = true;
   }
+  // Comparison matrix on Services (additive, Excellence-loop cycle 19; NO SEED_VERSION bump): insert the
+  // "us vs the alternative" positioning block on existing saved sites ONCE (flagged), before the FAQ (the
+  // decision-point cluster), else before the Invite. blk() merges the block's defaultProps so the stored
+  // item carries full content (PublicRender renders it verbatim). Idempotent + respects a hand-removal.
+  if (!state._cmpSeeded) {
+    const sp = state.pages && state.pages.services;
+    const addCmp = (content) => {
+      if (!Array.isArray(content) || content.some((b) => b && b.type === 'ComparisonMatrix')) return;
+      let idx = content.findIndex((b) => b && b.type === 'Faq');
+      if (idx < 0) idx = content.findIndex((b) => b && b.type === 'Invite');
+      content.splice(idx >= 0 ? idx : content.length, 0, blk('ComparisonMatrix', {}));
+    };
+    if (sp && sp.data) addCmp(sp.data.content);
+    if (sp && sp.published && sp.published !== sp.data) addCmp(sp.published.content);
+    state._cmpSeeded = true;
+  }
   // Proof Hero CTA (additive, cycle 10; NO SEED_VERSION bump): give the proof page Hero its above-fold
   // "Book a Deep Dive" CTA on existing saved sites, ONLY when it is still the empty seed default with the
   // seeded #book href (so a hand-edited label/href is never clobbered). Both draft + published.
