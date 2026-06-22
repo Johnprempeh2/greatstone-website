@@ -37,6 +37,18 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
           <input value={s.footerTagline || ''} onChange={(e) => set('footerTagline', e.target.value)} placeholder="The Foundation of Digital Excellence" />
         </label>
 
+        <label className="gs-field">
+          <span className="gs-field-label">Footer contact email</span>
+          <input value={s.footerEmail || ''} onChange={(e) => set('footerEmail', e.target.value)} type="email" placeholder="dx@greatstonesoftware.co.uk" />
+          <span className="gs-field-hint">Shown in the footer as a mailto link across the whole site.</span>
+        </label>
+
+        <label className="gs-field">
+          <span className="gs-field-label">Legal entity name</span>
+          <input value={s.legalName || ''} onChange={(e) => set('legalName', e.target.value)} placeholder="Greatstone International Ltd" />
+          <span className="gs-field-hint">Used in the footer copyright line.</span>
+        </label>
+
         <div className="gs-preview-label">Header preview</div>
         <div className="gs-serp" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', height: 26 }}>

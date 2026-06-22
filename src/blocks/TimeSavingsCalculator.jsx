@@ -1,4 +1,4 @@
-import { useState, useId } from 'react';
+import { useState, useId, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeHref } from '../lib/safe-url.js';
@@ -37,6 +37,12 @@ export function TimeSavingsCalculator({
   const [team, setTeam] = useState(defaultTeam);
   const [hours, setHours] = useState(defaultHours);
   const [cost, setCost] = useState(defaultCost);
+  // Keep the live inputs in step with the editable defaults: in the Puck editor, changing a "Default …"
+  // field re-renders this block WITHOUT remounting (the iframe is disabled), so without this the preview
+  // would keep the stale initial value. For a public visitor the props never change, so this is a no-op.
+  useEffect(() => { setTeam(defaultTeam); }, [defaultTeam]);
+  useEffect(() => { setHours(defaultHours); }, [defaultHours]);
+  useEffect(() => { setCost(defaultCost); }, [defaultCost]);
 
   const t = clampNum(team, 1, 100000);
   const h = clampNum(hours, 0, 80);

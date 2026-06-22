@@ -23,7 +23,7 @@ const SEED_VERSION = 20260617;
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
 // Footer / AdminConsole, so backfilling them onto an existing store changes nothing until an admin edits.
 export const DEFAULT_LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
-const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Deep Dive' };
+const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Deep Dive', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on

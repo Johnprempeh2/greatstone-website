@@ -1075,7 +1075,7 @@ export default function App() {
         </EditorBoundary>
       </main>
       {(shopRoute || productSlug) && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
-      <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} logo={state.settings.logo} tagline={state.settings.footerTagline} siteName={state.settings.siteName} />
+      <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} logo={state.settings.logo} tagline={state.settings.footerTagline} siteName={state.settings.siteName} footerEmail={state.settings.footerEmail} legalName={state.settings.legalName} />
     </div>
     </CatalogContext.Provider>
   );

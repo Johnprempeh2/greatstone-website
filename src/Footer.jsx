@@ -1,14 +1,17 @@
 import { publicNavOrder } from './lib/nav-order.js';
+import { safeMailto } from './lib/safe-url.js';
 
 const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
 
 // The real site footer (uses site.css .site-footer classes verbatim), so the studio closes
 // the page exactly like the live site. Global chrome, shown in view mode only.
-export default function Footer({ order, pages, onNavigate, canEdit, logo, tagline, siteName }) {
+export default function Footer({ order, pages, onNavigate, canEdit, logo, tagline, siteName, footerEmail, legalName }) {
   const year = new Date().getFullYear();
   const logoSrc = logo || LOGO;
   const brandName = siteName || 'Greatstone International';
   const footTagline = tagline || 'The Foundation of Digital Excellence';
+  const mail = footerEmail || 'dx@greatstonesoftware.co.uk';
+  const legal = legalName || 'Greatstone International Ltd';
   // public visitors only see published pages; editors see all (so they can reach drafts). Home always kept.
   const navOrder = publicNavOrder(order, pages, canEdit);
   return (
@@ -28,8 +31,8 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
           <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title}</a>
         ))}
       </nav>
-      <a className="mail" href="mailto:dx@greatstonesoftware.co.uk">dx@greatstonesoftware.co.uk</a>
-      <div className="legal">© {year} Greatstone International Ltd. All rights reserved.</div>
+      <a className="mail" href={safeMailto(mail)}>{mail}</a>
+      <div className="legal">© {year} {legal}. All rights reserved.</div>
     </footer>
   );
 }
