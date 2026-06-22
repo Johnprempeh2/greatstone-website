@@ -239,6 +239,20 @@ export function logActivity(state, label, by) {
   return { ...state, activity: [entry, ...(state.activity || [])].slice(0, 200) };
 }
 
+// Home objection-handling FAQ (cycle 20): a focused 3-item subset of the Services FAQ, surfaced before
+// the home closing CTA so the primary landing page answers the top objections too. Schema suppressed
+// (showSchema:false) so the canonical FAQPage rich-result stays on the Services FAQ only. Pure reuse of
+// existing answers (no fabrication). Shared by seedState + the migrate so the two never drift.
+const HOME_FAQ = {
+  showSchema: false,
+  kicker: 'Common questions', heading: 'The questions buyers ask first.',
+  intro: 'Straight answers to what most teams want to know before they book. The Deep Dive is the fastest way to get the rest.',
+  items: [
+    { q: 'What actually happens in a Deep Dive?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
+    { q: 'Are you a software house or consultants?', a: 'Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside.' },
+    { q: 'How long before we see results?', a: 'The Deep Dive gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
+  ],
+};
 export function seedState() {
   const pages = {
       home: seedPage('Home', 'stone', [
@@ -288,6 +302,7 @@ export function seedState() {
             { n: '03', title: 'Phased Roadmap', body: 'The build, embedded into how you already work, not bolted on.' },
           ],
         }),
+        blk('Faq', HOME_FAQ),
         blk('Invite', {
           eyebrow: 'Start the Conversation', headline: 'The first step', highlight: 'costs nothing.',
           body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
@@ -630,6 +645,21 @@ function migrate(state) {
     if (sp && sp.data) addCmp(sp.data.content);
     if (sp && sp.published && sp.published !== sp.data) addCmp(sp.published.content);
     state._cmpSeeded = true;
+  }
+  // Home FAQ (additive, Excellence-loop cycle 20; NO SEED_VERSION bump): surface the objection-handling
+  // FAQ on the home page of existing saved sites ONCE (flagged), before the closing Invite. Schema is
+  // suppressed (HOME_FAQ.showSchema:false) so it never competes with the canonical Services FAQPage.
+  // Idempotent + respects a later hand-removal; both draft + published.
+  if (!state._homeFaqSeeded) {
+    const hp = state.pages && state.pages.home;
+    const addHomeFaq = (content) => {
+      if (!Array.isArray(content) || content.some((b) => b && b.type === 'Faq')) return;
+      const idx = content.findIndex((b) => b && b.type === 'Invite');
+      content.splice(idx >= 0 ? idx : content.length, 0, blk('Faq', HOME_FAQ));
+    };
+    if (hp && hp.data) addHomeFaq(hp.data.content);
+    if (hp && hp.published && hp.published !== hp.data) addHomeFaq(hp.published.content);
+    state._homeFaqSeeded = true;
   }
   // Proof Hero CTA (additive, cycle 10; NO SEED_VERSION bump): give the proof page Hero its above-fold
   // "Book a Deep Dive" CTA on existing saved sites, ONLY when it is still the empty seed default with the

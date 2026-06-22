@@ -7,14 +7,16 @@ import { ldScript } from '../lib/ld-json.mjs';
 // sound, reduced-motion aware. Questions/answers are fully editable (Puck array field). The block also
 // emits FAQPage JSON-LD built from the same items, so the answers earn rich results once the site is
 // indexable (dormant under the prototype noindex; correct + ready for the domain cutover).
-export function Faq({ kicker, heading, intro, items = [] }) {
+export function Faq({ kicker, heading, intro, items = [], showSchema = true }) {
   const ref = useReveal([items.length]);
   const [open, setOpen] = useState(() => new Set());
   const uid = useId();
   const toggle = (i) => setOpen((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
   const qa = items.filter((it) => it && it.q && it.a);
   // emit JSON-LD safely via ldScript (escapes <, >, & so a free-text answer can't break out of <script>)
-  const schema = qa.length
+  // emit FAQPage schema only when this is the canonical FAQ for the page (showSchema); a secondary
+  // instance (e.g. a recap FAQ on the home page) suppresses it so two FAQPage blobs never compete.
+  const schema = showSchema && qa.length
     ? ldScript({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })) })
     : '';
   return (
@@ -97,8 +99,10 @@ export const puck = {
       defaultItemProps: { q: 'A question buyers ask?', a: 'A straight, concrete answer.' },
       getItemSummary: (it) => it.q || 'Question',
     },
+    showSchema: { type: 'radio', label: 'FAQ rich-result schema (one per page)', options: [{ label: 'Emit', value: true }, { label: 'Suppress', value: false }] },
   },
   defaultProps: {
+    showSchema: true,
     kicker: 'Common questions',
     heading: 'The questions buyers ask first.',
     intro: 'Straight answers to what most teams want to know before they book. If yours is not here, the Deep Dive is the fastest way to get it.',
