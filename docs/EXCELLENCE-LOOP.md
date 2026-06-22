@@ -247,3 +247,21 @@ New perspective per the user mandate ("different types of users"): ran a read-on
 **⚠️ Deploy still NOT staged (concurrent-loop hazard, ongoing):** the other loop committed its logo fix (`606aef8`) but its **ProductDetail removal is still uncommitted** in the tree (`src/App.jsx` M, `src/blocks/ProductDetail.jsx` deleted). A build/rsync would still bundle that unfinished refactor, so deploy staging remains skipped; scoped commit only. Once that loop commits/finishes the ProductDetail removal, a clean deploy build can resume.
 
 **Queued for next cycles (build-safe, from the C13 conversion audit):** mid-page Invite/CTA on the long home page; surface the existing FAQ (or a subset) on home/Proof before the closing CTA; reuse the existing "what happens next" 3-step strip near the primary CTA; surface existing client/heritage proof higher on home (all of these are seed + guarded-migrate work, deferrable while the tree carries foreign WIP). **NEEDS-JOHN (unchanged):** real names/faces/logos + at least one attributable testimonial; reframe or substantiate the "illustrative" metrics; the page-roster/nav-label strategy call (Process vs The Climb; demote Intelligence?); renaming the "Contact" nav item to "Book a Deep Dive". And: **deploy** the staged work.
+
+---
+
+## Cycle 14 — 2026-06-22 — front-end robustness pass (objective polish lens)
+
+Another fresh lens: a read-only **UI-polish / front-end-robustness** audit scoped strictly to `src/blocks/*` (objective defects only — image CLS/perf, missing loading/empty/error states, interaction-state gaps, render robustness, motion guards, editability gaps). Stayed in `src/blocks/*` to avoid the shared data files (`store.js`/`seed-pages.json`) while the concurrent loop's refactor is mid-flight — so the C13 conversion backlog (which needs seed+migrate) stays queued, and this cycle took only the safe block-local robustness wins.
+
+**Shipped — 9 fixes across 7 blocks (verified: 58/58 tests, clean build, MaturityMap live-rendered correct, 0 console errors):**
+- **IntelBand**: the CTA span rendered a lone arrow when `ctaLabel` was blank → gated on `ctaLabel`; the stats row rendered an empty `<b></b>` when a stat object existed with no value (the objects are always truthy once added) → gated on `stat1?.value`/`stat2?.value`.
+- **MaturityMap**: the tier card score printed a bare " · " (or "Pebble · ") when an editor cleared a field → now `[tag, range].filter(Boolean).join(' · ')`.
+- **Storefront**: the product image was the one `<img>` in the file with no `onError` (broken CMS URL → broken-glyph) → added `onError` + `decoding`; the category-group logo used `alt={c.name}`, duplicating the adjacent `<h3>` for screen readers → `alt=""`; the name-sort assumed every product has `.name` → `(a.name||'')` guard.
+- **Image CLS/perf**: `decoding="async"` added to InsightsGrid + FeaturedArticle images; Quote + Team avatars also gained `loading="lazy"`/intrinsic `width=height=52` so they reserve space before load.
+
+**Verified a false-positive before acting:** the audit (scoped to `src/blocks/`, blind to the global stylesheet) flagged card-links as missing `:focus-visible`. Checked `site.css:56` — there's a global `a:focus-visible, button:focus-visible, …` lime ring, so all card-links are already keyboard-focusable. **Did not add redundant per-block rules.** Also skipped the systemic index-key-on-editable-arrays finding (broad, low user-visible value, reconciliation-risk) and the fixed-3-tier MaturityMap contract (intentional).
+
+**Status:** ✅ committed `1b78016` (scoped to exactly the 7 block files). No separate review agent this cycle: the changes are defensive attribute/guard one-liners with no new logic path on normal data, fully covered by build + tests + live check + the focus-ring verification above (proportionate to the lean/rate-limit steer).
+
+**⚠️ Deploy still NOT staged:** the concurrent loop's `ProductDetail` removal (`App.jsx` M + `ProductDetail.jsx` deleted) remains uncommitted in the tree, so a build still can't be cleanly staged. Unchanged from C12/C13. **Queued + NEEDS-JOHN lists carry over from C13** (the seed+migrate conversion items wait for the tree to clear; the content/strategy items wait for John).
