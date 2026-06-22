@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { getCustomerProfile, isCustomer, isCompanyAdmin, signOut, getSession, onAuth } from './customerAuth.mjs';
 import { AuthGate } from './AccountDashboard.jsx';
+import MaturityRadar from './MaturityRadar.jsx';
 import './store.css';
 import './admin.css';
 
@@ -176,6 +177,8 @@ function Org({ profile, session, onProfile }) {
       <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} />
 
       <OrgAnalytics orders={orders} engagements={engagements} />
+
+      <MaturityRadar company={company} />
 
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
 

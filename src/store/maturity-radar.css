@@ -1,0 +1,80 @@
+/* Per-client maturity radar (#org). Brand tokens: --gs-accent (lime) = your maturity,
+   --gs-teal = industry benchmark, --gs-purple = target. Scoped to .org-mat. */
+.org-mat { margin: 0 0 28px; }
+.org-mat-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.org-mat-head h2 { font-size: 1.18rem; margin: 2px 0 0; }
+.org-mat-sub { margin: 6px 0 0; font-size: .9rem; color: var(--gs-text-muted, #b0b0b0); max-width: 46ch; }
+.org-mat-sample {
+  flex: none; align-self: center; font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--gs-text-muted, #b0b0b0); padding: 4px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); white-space: nowrap;
+}
+
+.org-mat-grid {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(220px, 1fr); gap: 22px; align-items: center;
+  background: rgba(255,255,255,.025); border: 1px solid var(--gs-border, rgba(200,255,0,.08));
+  border-radius: 18px; padding: 20px;
+}
+.org-mat-chartwrap { min-width: 0; }
+.org-mat-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.org-mat-axislabel {
+  fill: var(--gs-text-muted, #c4c4c4); font-size: 12.5px; font-weight: 600;
+  font-family: 'Montserrat', system-ui, sans-serif; letter-spacing: .01em;
+}
+
+/* data layer fades + lifts in once; reduced-motion renders it final immediately (see media query) */
+.org-mat-data { opacity: 0; transform: scale(.92); transform-origin: 240px 182px; transition: opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1); }
+.org-mat-data.is-drawn { opacity: 1; transform: scale(1); }
+
+.org-mat-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.org-mat-badge {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.03);
+}
+.org-mat-badge-tier { font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.org-mat-badge-score b { font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.org-mat-badge-score span { font-size: .9rem; color: var(--gs-text-muted, #b0b0b0); }
+.org-mat-badge.t-pebble .org-mat-badge-tier { color: var(--gs-text-muted, #b0b0b0); }
+.org-mat-badge.t-plateau { border-color: rgba(78,205,196,.4); }
+.org-mat-badge.t-plateau .org-mat-badge-tier { color: var(--gs-teal, #4ecdc4); }
+.org-mat-badge.t-peak { border-color: rgba(200,255,0,.4); }
+.org-mat-badge.t-peak .org-mat-badge-tier { color: var(--gs-accent, #c8ff00); }
+
+.org-mat-read { margin: 0; font-size: .9rem; line-height: 1.55; color: var(--gs-text-muted, #cfcfcf); }
+.org-mat-read b { color: var(--gs-text, #f5f5f5); }
+
+.org-mat-legend { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.org-mat-legend li { display: flex; align-items: center; gap: 9px; font-size: .82rem; color: var(--gs-text-muted, #c4c4c4); }
+.org-mat-sw { width: 18px; height: 0; flex: none; border-radius: 2px; }
+.org-mat-sw.sw-current { height: 11px; background: rgba(200,255,0,.18); border: 2px solid var(--gs-accent, #c8ff00); }
+.org-mat-sw.sw-bench { border-top: 2px solid var(--gs-teal, #4ecdc4); }
+.org-mat-sw.sw-target { border-top: 2px dashed var(--gs-purple, #b197fc); }
+
+.org-mat-standouts { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+.org-mat-stand { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.03); }
+.org-mat-stand-l { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gs-text-faint, #8a8a8a); }
+.org-mat-stand-v { font-size: .86rem; font-weight: 600; color: var(--gs-text, #f5f5f5); }
+.org-mat-cta { align-self: flex-start; margin-top: 2px; }
+
+/* Self-contained visually-hidden wrapper for the SR data table. A DIV (not the <table>) does the clipping:
+   on a <table> the CSS `width` is only a minimum, so width:1px lets it grow to content (~465px) and overflow
+   narrow viewports. An absolute 1px div with overflow:hidden clips the table inside and never extends the page. */
+.org-mat-srwrap {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* empty state — never a blank/broken panel */
+.org-mat-empty { text-align: center; padding: 30px 22px; border: 1px dashed rgba(255,255,255,.14); border-radius: 16px; background: rgba(255,255,255,.02); }
+.org-mat-empty-mark { font-size: 2rem; color: var(--gs-teal, #4ecdc4); opacity: .8; }
+.org-mat-empty h3 { margin: 8px 0 6px; font-size: 1.05rem; }
+.org-mat-empty p { margin: 0 auto 16px; max-width: 52ch; font-size: .9rem; color: var(--gs-text-muted, #b0b0b0); }
+
+@media (max-width: 760px) {
+  .org-mat-grid { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
+  .org-mat-side { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .org-mat-data { transition: none; opacity: 1; transform: none; }
+}
