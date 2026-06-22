@@ -26,7 +26,11 @@ export default function ReleaseBoard({ order, pages, current, onOpen, onClose, e
     const lastPub = (p.versions || []).find((v) => v.label === 'Published');
     // a never-published page (published == null) has no real drift — !eq(data, null) is always true, which
     // would wrongly flag a brand-new draft as having "unpublished changes" on top of counting as Draft.
-    return { slug, title: p.title, status: p.status, drift: p.published != null && !eq(p.data, p.published), lastPubTs: lastPub ? lastPub.ts : null, lastPubBy: lastPub ? lastPub.by : null };
+    // seeded/imported pages ship published with versions:[] (no 'Published' snapshot), so lastPub is
+    // undefined; treat a published page (published projection present) as "Published" without a timestamp
+    // rather than the contradictory "Never published" the status pill disagrees with.
+    const everPublished = !!lastPub || (p.status === 'published' && p.published != null);
+    return { slug, title: p.title, status: p.status, drift: p.published != null && !eq(p.data, p.published), everPublished, lastPubTs: lastPub ? lastPub.ts : null, lastPubBy: lastPub ? lastPub.by : null };
   });
   const counts = rows.reduce((m, r) => { m[r.status] = (m[r.status] || 0) + 1; return m; }, {});
   const driftCount = rows.filter((r) => r.drift).length;
@@ -51,7 +55,7 @@ export default function ReleaseBoard({ order, pages, current, onOpen, onClose, e
             <li key={r.slug} className={'gs-rel-row' + (r.slug === current ? ' is-current' : '')}>
               <button className="gs-rel-open" onClick={() => onOpen(r.slug)} title="Open this page">
                 <span className="gs-rel-title">{r.title}{r.drift ? <em className="gs-rel-drift" title="Has unpublished changes">unpublished</em> : null}</span>
-                <span className="gs-rel-meta">{r.lastPubTs ? 'Published ' + when(r.lastPubTs) + (r.lastPubBy ? ' · ' + r.lastPubBy : '') : 'Never published'}</span>
+                <span className="gs-rel-meta">{r.lastPubTs ? 'Published ' + when(r.lastPubTs) + (r.lastPubBy ? ' · ' + r.lastPubBy : '') : r.everPublished ? 'Published' : 'Never published'}</span>
               </button>
               <span className={'gs-page-status gs-st-' + r.status} title={STATUS[r.status] || r.status}>
                 <span className="gs-dot" />{STATUS[r.status] || r.status}

@@ -27,6 +27,7 @@ function buildNav(attention = {}) {
       { id: 'releases', label: 'Releases', type: 'view', need: 'edit', badge: attention.releases },
       { id: 'seo', label: 'SEO & social', type: 'view', need: 'edit' },
       { id: 'background', label: '3D background', type: 'view', need: 'edit' },
+      { id: 'media', label: 'Media library', type: 'view', need: 'edit' },
       { id: 'history', label: 'Version history', type: 'view', need: 'edit' },
       { id: 'activity', label: 'Activity log', type: 'view' },
     ] },
@@ -48,8 +49,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['overview', 'pages', 'releases', 'seo', 'background', 'history', 'activity', 'team', 'settings'];
-const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', seo: 'SEO & social', background: '3D background', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['overview', 'pages', 'releases', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',

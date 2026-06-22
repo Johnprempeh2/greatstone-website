@@ -89,12 +89,13 @@ import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
 import SiteSettingsPanel from './cms/SiteSettingsPanel.jsx';
+import MediaLibraryPanel from './cms/MediaLibraryPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, removeAsset, updateAsset } from './store.js';
 import { css as productDetailCss } from './blocks/ProductDetail.jsx';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
@@ -613,6 +614,13 @@ export default function App() {
   }
   function reorderPage(slug, dir) { setState((s) => movePage(s, slug, dir)); }
   function registerAsset(asset) { setState((s) => addAsset(s, asset)); } // add a picked/uploaded image to the library
+  async function deleteAsset(id) { // Media library: confirm (matches deletePage) then remove
+    const ok = await ask({ kind: 'confirm', title: 'Remove from library', message: 'Remove this image from the media library? Pages already using it keep the image; only the re-pick convenience is lost.', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
+    setState((s) => removeAsset(s, id));
+    flash('Removed from the library.');
+  }
+  function editAssetAlt(id, alt) { setState((s) => updateAsset(s, id, { alt })); } // Media library: fix an image's alt text
   // dev handoff: download the whole authored store as JSON so the dev team can seed Laravel from real
   // content instead of hand-copying. Admin-only; it's the same payload localStorage holds (see DATA-MODEL.md).
   function exportSiteJson() {
@@ -917,6 +925,7 @@ export default function App() {
       activity: <ActivityPanel embedded statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={onConsoleClose} />,
       ...(canManageUsers ? { team: <TeamPanel embedded team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={onConsoleClose} /> } : {}),
       ...(canManageUsers ? { settings: <SiteSettingsPanel embedded settings={state.settings} onChange={setSettings} onClose={onConsoleClose} /> } : {}),
+      media: <MediaLibraryPanel embedded assets={listAssets(state)} onAdd={registerAsset} onUpdateAlt={editAssetAlt} onRemove={deleteAsset} onClose={onConsoleClose} />,
     };
     return (
       <CatalogContext.Provider value={draftCatalog}>

@@ -650,6 +650,12 @@ export function removeAsset(state, id) {
   const assets = { ...(state.assets || {}) }; delete assets[id];
   return { ...state, assets };
 }
+// Patch an asset's metadata (alt text) without changing its id/url/ts. For the Media Library panel.
+export function updateAsset(state, id, patch) {
+  const assets = state.assets || {};
+  if (!assets[id]) return state;
+  return { ...state, assets: { ...assets, [id]: { ...assets[id], ...(patch || {}) } } };
+}
 export function listAssets(state) {
   return Object.values(state.assets || {}).sort((a, b) => (b.ts || 0) - (a.ts || 0));
 }

@@ -88,3 +88,16 @@ Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` unt
 **Flagged for the DX-hub loop (their hot files — `Account:` commits):** Billing tab flashes the "no purchases yet" empty-state before `loadingOrders` resolves (AccountDashboard); licence-key state isn't date-aware so an expired key shows a green "issued" chip + live Download (LicenceKeys). Both MEDIUM, both quick.
 
 **Cycle-4 candidates:** standalone Media Library panel (alt-text edit + delete via the unused `removeAsset`); "How we work" engagement band on Services; StatStrip editor count-up replay; MaturityMap tier-count robustness; the two DX-hub account fixes if they don't take them.
+
+---
+
+## Cycle 4 — 2026-06-22 — standalone Media Library panel + board-accuracy fix
+
+**Cycle 3 went LIVE** (production bundle `index-DDlyi-Dv.js`). Cycle 4 audit (3 agents: fresh first-visitor/mobile re-walk, perf+cutting-edge research, remaining CMS gaps) running for cycle 5; meanwhile built the top CMS-completeness item.
+
+**Shipped (verified: 58/58 tests, clean build; asset store round-trip checked):**
+1. **NEW — standalone Media Library panel** (`src/cms/MediaLibraryPanel.jsx`): the one place to *curate* the asset library (the MediaField picker only adds + chooses). Staff can add (URL/upload, 600KB cap), **edit each image's alt text** (commit-on-blur, accessibility), and **delete** unused images — wiring up the previously **dead-code `removeAsset`**. `store.js` adds `updateAsset(state,id,patch)` (immutable, no-op on missing id). Registered in the AdminConsole Content rail (`need:'edit'`) + ALL_VIEWS/TITLES; `.gs-ml-*` styles (responsive). Asset functions verified via a Node round-trip (dedupe / alt-edit / delete-to-zero).
+2. **ReleaseBoard "Never published" accuracy** (deferred from C3): a published page with no `'Published'` version snapshot (seeded/imported pages ship `versions:[]`) now reads "Published" instead of contradicting its own status pill.
+
+**Status:** ✅ committed `<pending>`. Adversarial review (2 lenses) → 4 findings, all LOW/MEDIUM polish on the new panel, all applied: duplicate-add now shows "already in your library" (URL + upload) instead of silently clearing; delete buttons + alt inputs get per-image accessible names (was identical "Delete this image" / "Alt text" across rows — a real WCAG gap on a destructive action); asset delete now routes through the on-brand `ask()` confirm + `flash()` toast, matching `deletePage`. Cycle-4 audit also ran → feeds cycle 5.
+⚠️ **Deploy staged but BLOCKED on Netlify auth** (same as C1-C3). Finish: `cd ../greatstone-homepage-deploy && netlify deploy --prod --dir=. --site=3b1e97e6-e184-4251-badd-deed532be3ab`.

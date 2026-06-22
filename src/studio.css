@@ -475,6 +475,21 @@
 .gs-mp-item.is-current{border-color:var(--gs-accent);box-shadow:0 0 0 2px var(--gs-accent-dim,rgba(200,255,0,.2))}
 .gs-mp-item img{width:100%;height:100%;object-fit:cover;display:block}
 
+/* ---------- Media library panel (manage: alt-text + delete) ---------- */
+.gs-ml-grid{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:12px}
+.gs-ml-item{display:grid;grid-template-columns:88px 1fr auto;gap:14px;align-items:center;padding:10px;border:1px solid var(--gs-border-soft);border-radius:12px;background:rgba(255,255,255,.02)}
+.gs-ml-thumb{display:block;width:88px;height:58px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft)}
+.gs-ml-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.gs-ml-alt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gs-ml-alt input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:8px;padding:8px 11px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.84rem;outline:0}
+.gs-ml-alt input:focus{border-color:var(--gs-border)}
+@media (max-width:520px){
+  .gs-ml-item{grid-template-columns:64px 1fr;grid-template-areas:'thumb alt' 'del del';row-gap:10px}
+  .gs-ml-thumb{grid-area:thumb;width:64px}
+  .gs-ml-alt{grid-area:alt}
+  .gs-ml-del{grid-area:del;justify-self:start}
+}
+
 /* ---------- 3D background (scene-track) editor ---------- */
 .gs-track{position:relative;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--gs-border-soft);background:#0e110e}
 .gs-track-bands{display:flex;height:100%}
