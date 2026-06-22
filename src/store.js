@@ -591,6 +591,30 @@ function migrate(state) {
     if (sp && sp.published && sp.published !== sp.data) addFaq(sp.published.content);
     state._faqSeeded = true;
   }
+  // Time-savings calculator (additive, Excellence-loop cycle 5; NO SEED_VERSION bump): insert the
+  // interactive calculator on the services page of existing saved sites, ONCE (flagged), before the FAQ
+  // (matches the seed order). Idempotent + respects a later hand-removal. Full props inlined because
+  // PublicRender renders stored props verbatim. Fulfils the ContactBand "time-savings calculator" promise.
+  if (!state._calcSeeded) {
+    const sp = state.pages && state.pages.services;
+    const CALC_PROPS = {
+      kicker: 'The cost of the status quo', heading: 'See the hours you are quietly losing.',
+      intro: 'A rough, honest estimate in seconds. Move the numbers to match your team, and watch what the week is costing you across a year.',
+      teamLabel: 'People affected', hoursLabel: 'Hours lost per person, per week', costLabel: 'Average hourly cost',
+      defaultTeam: 12, defaultHours: 5, defaultCost: 30, weeksPerYear: 46, currency: '£',
+      resultLead: 'That is roughly', ctaLabel: 'Book a Deep Dive', ctaHref: '#book',
+      footnote: 'A guide, not a quote. The Deep Dive replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back.',
+    };
+    const addCalc = (content) => {
+      if (!Array.isArray(content) || content.some((b) => b && b.type === 'TimeSavingsCalculator')) return;
+      let idx = content.findIndex((b) => b && b.type === 'Faq');
+      if (idx < 0) idx = content.findIndex((b) => b && b.type === 'Invite');
+      content.splice(idx >= 0 ? idx : content.length, 0, blk('TimeSavingsCalculator', CALC_PROPS));
+    };
+    if (sp && sp.data) addCalc(sp.data.content);
+    if (sp && sp.published && sp.published !== sp.data) addCalc(sp.published.content);
+    state._calcSeeded = true;
+  }
   // Copy unification (additive, Excellence-loop cycle 1, 2026-06-21; NO SEED_VERSION bump): align the
   // Deep Dive duration to the real 30-min booking slot, drop the "Placeholder names" framing above the
   // real founders, and give the home hero a primary CTA — but ONLY where the stored value still equals

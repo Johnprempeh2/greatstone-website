@@ -101,3 +101,18 @@ Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` unt
 
 **Status:** ✅ committed `5818d2f` (deploy staged, build `index-D7jeNUai.js`). Adversarial review (2 lenses) → 4 findings, all LOW/MEDIUM polish on the new panel, all applied: duplicate-add now shows "already in your library" (URL + upload) instead of silently clearing; delete buttons + alt inputs get per-image accessible names (was identical "Delete this image" / "Alt text" across rows — a real WCAG gap on a destructive action); asset delete now routes through the on-brand `ask()` confirm + `flash()` toast, matching `deletePage`. Cycle-4 audit also ran → feeds cycle 5.
 ⚠️ **Deploy staged but BLOCKED on Netlify auth** (same as C1-C3). Finish: `cd ../greatstone-homepage-deploy && netlify deploy --prod --dir=. --site=3b1e97e6-e184-4251-badd-deed532be3ab`.
+
+---
+
+## Cycle 5 — 2026-06-22 — time-savings calculator (new section) + per-sector CTA
+
+**Cycle 4 went LIVE** (production bundle `index-D7jeNUai.js`). Cycle 5 acts on the cycle-4 audit (5 ship-now wins + 2 buildable sections); built the two highest-value conversion-path items.
+
+**Shipped (verified: 58/58 tests, clean build, live-preview):**
+1. **NEW — Time-savings calculator** (`src/blocks/TimeSavingsCalculator.jsx`): the interactive tool the site *already advertised* but never had (the ContactBand promised "Run the time-savings calculator → services", which had none — a broken promise on the conversion page). Three editable inputs (team size, hours lost/person/week, hourly cost) → live "hours a year" + "£ cost a year" (`hoursYr = team×hours×weeks`, clamped). Every label/default/working-weeks + the CTA are Puck-editable; result is `aria-live`; `Field` is module-scope (no focus-loss). On-brand ("see the hours you are quietly losing"), honest footnote ("a guide, not a quote"). Registered (Proof category), seeded on Services (after the stats, before the FAQ) + guarded `_calcSeeded` migrate. Verified math (12×5×46 = 2,760; 50×5×46 = 11,500) + live update in preview. **Fulfils the ContactBand promise.**
+2. **IndustryPicker per-sector CTA**: the signature "pick your sector → see your drains" interaction dead-ended at peak intent; added an editable "Book a Deep Dive" CTA (→ #book) inside the result card (mirrors the C2 #breakdown pattern). Verified in preview.
+
+**Status:** ✅ committed `5818d2f`→`<pending>`. Adversarial review (2 lenses) → 3 findings (all on the new calculator), all applied: number inputs now snap to their clamped value on blur (no figure/input desync above the caps); the result is no longer one keystroke-spammy `aria-live` block with the CTA inside it — the visual figures are `aria-hidden`, a single concise `gs-sr-only` live region announces the result, and the CTA sits outside any live region. Math/clamp confirmed correct (no NaN on empty/junk/huge input).
+⚠️ **Deploy staged but BLOCKED on Netlify auth** (same as C1-C4). Finish: `cd ../greatstone-homepage-deploy && netlify deploy --prod --dir=. --site=3b1e97e6-e184-4251-badd-deed532be3ab`.
+
+**Deferred to later cycles (from the cycle-4 audit):** Contact-page split booking surface / "Template form" framing (make the BookDeepDive form functional via a prefilled mailto, like the product quote — HIGH, next); lazy-load AdminConsole + CMS panels out of the eager public bundle (perf, M — its own focused cycle); Products↔consulting bridge (new section). Skipped: Insights/Intelligence dead cards — MOOT (the IntelHub replaces that page's body publicly) + Intel-loop domain.

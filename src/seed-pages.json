@@ -74,6 +74,26 @@
         }
       },
       {
+        "type": "TimeSavingsCalculator",
+        "props": {
+          "kicker": "The cost of the status quo",
+          "heading": "See the hours you are quietly losing.",
+          "intro": "A rough, honest estimate in seconds. Move the numbers to match your team, and watch what the week is costing you across a year.",
+          "teamLabel": "People affected",
+          "hoursLabel": "Hours lost per person, per week",
+          "costLabel": "Average hourly cost",
+          "defaultTeam": 12,
+          "defaultHours": 5,
+          "defaultCost": 30,
+          "weeksPerYear": 46,
+          "currency": "£",
+          "resultLead": "That is roughly",
+          "ctaLabel": "Book a Deep Dive",
+          "ctaHref": "#book",
+          "footnote": "A guide, not a quote. The Deep Dive replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
+        }
+      },
+      {
         "type": "Faq",
         "props": {
           "kicker": "Common questions",

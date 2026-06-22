@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { useReveal } from './reveal.js';
+import { Arrow } from './icons.jsx';
+import { safeHref } from '../lib/safe-url.js';
 
 // IndustryPicker: industries.html's signature interaction. A role=tablist of sector chips with a
 // travelling lime underline; choosing a sector crossfades the right-hand "specific drains" card and
@@ -23,6 +25,7 @@ export function IndustryPicker({
   universalFoot = '', universalFootAccent = '',
   specificHead = 'Specific to your world',
   specificFoot = '', specificFootAccent = '',
+  ctaLabel = '', ctaHref = '#book',
   industries = [],
 }) {
   const ref = useReveal([industries.length]);
@@ -129,6 +132,9 @@ export function IndustryPicker({
               {(specificFoot || specificFootAccent) ? (
                 <p className="b-ind-foot">{specificFoot} <span className="accent">{specificFootAccent}</span></p>
               ) : null}
+              {/* capture intent at the peak moment: the visitor has just seen their sector's drains.
+                  #book is routed to the booking flow by App's global interceptor. */}
+              {ctaLabel ? <a className="b-cta b-ind-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
             </article>
 
           </div>
@@ -158,6 +164,8 @@ export const css = `
 .b-ind-swap{margin-top:26px;transition:opacity .35s var(--gs-ease),transform .45s var(--gs-ease)}
 .b-ind-swap.is-swapping{opacity:0;transform:translateY(14px)}
 .b-ind-card{height:100%}
+.b-ind-card.specific{display:flex;flex-direction:column}
+.b-ind-cta{margin-top:auto;align-self:flex-start;padding-top:20px}
 .b-ind-num{display:inline-flex;align-items:center;gap:.55em;margin-bottom:14px;font-size:.78rem;font-weight:700;
   letter-spacing:.2em;color:var(--gs-accent)}
 .b-ind-head{font-size:.72rem;font-weight:700;letter-spacing:.26em;text-transform:uppercase}
@@ -206,6 +214,8 @@ export const puck = {
     specificHead: { type: 'text', label: 'Specific card · eyebrow', contentEditable: true },
     specificFoot: { type: 'text', label: 'Specific footer · lead' },
     specificFootAccent: { type: 'text', label: 'Specific footer · accent' },
+    ctaLabel: { type: 'text', label: 'Specific card · CTA label (blank to hide)' },
+    ctaHref: { type: 'text', label: 'Specific card · CTA link' },
     industries: {
       type: 'array', label: 'Industries (tabs)',
       arrayFields: {
@@ -242,6 +252,8 @@ export const puck = {
     specificHead: 'Specific to your world',
     specificFoot: 'Where your sector quietly bleeds hours:',
     specificFootAccent: 'we leave no stone unturned.',
+    ctaLabel: 'Book a Deep Dive',
+    ctaHref: '#book',
     industries: [
       { label: 'Real estate', headline: 'Less time on portals. More time closing.', specificTitle: 'What real estate quietly loses.', drains: DRAIN(['Pulling comps and area research by hand', 'Re-listing the same property across every portal', 'Drafting near-identical property descriptions', 'Chasing solicitors, surveyors and brokers', 'Matching new stock to buyers manually']) },
       { label: 'Healthcare', headline: 'Less time on admin. More time on patients.', specificTitle: 'What healthcare quietly loses.', drains: DRAIN(['Re-typing patient details across disconnected systems', 'Manual appointment reminders and no-show chasing', 'Coding and submitting claims by hand', 'Compiling compliance and audit reports from scratch', 'Routing referrals and results between teams']) },

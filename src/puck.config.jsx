@@ -31,11 +31,12 @@ import * as MethodTieIn from './blocks/MethodTieIn.jsx';
 import * as IntelBand from './blocks/IntelBand.jsx';
 import * as PillarCards from './blocks/PillarCards.jsx';
 import * as Faq from './blocks/Faq.jsx';
+import * as TimeSavingsCalculator from './blocks/TimeSavingsCalculator.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Chapter, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq };
+const MODULES = { Hero, Chapter, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator };
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
@@ -48,7 +49,7 @@ export const config = {
   categories: {
     page: { title: 'Page', components: ['Hero', 'Invite', 'NewsletterBand'] },
     story: { title: 'Story', components: ['Chapter', 'Pillars', 'PillarCards', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'Terrace', 'Spectrum', 'Timeline', 'Ladder', 'MethodTieIn'] },
-    proof: { title: 'Proof', components: ['StatStrip', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid', 'Faq'] },
+    proof: { title: 'Proof', components: ['StatStrip', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid', 'Faq', 'TimeSavingsCalculator'] },
     editorial: { title: 'Editorial', components: ['IntelBand', 'FeaturedArticle', 'InsightsGrid', 'Figure'] },
     commerce: { title: 'Commerce', components: ['Storefront'] },
     contact: { title: 'Contact', components: ['TimeCounter', 'BookDeepDive', 'ContactBand'] },
