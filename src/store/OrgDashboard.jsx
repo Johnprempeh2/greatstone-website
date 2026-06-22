@@ -185,7 +185,7 @@ function Org({ profile, session, onProfile }) {
         <span className="org-banner-icon" aria-hidden="true">{admin ? '★' : '◆'}</span>
         {admin
           ? <span>You're the <b>company admin</b> for {company.name}. You can manage the company profile and you're the primary point of contact for your Greatstone engagement.</span>
-          : <span>You're a <b>member</b> of {company.name}.{primaryContact ? <> Your company admin is <b>{primaryContact.full_name || primaryContact.email}</b>.</> : ''}</span>}
+          : <span>You're a <b>member</b> of {company.name}.{primaryContact ? <> Your company admin is <b>{primaryContact.full_name || primaryContact.email}</b>.</> : ''}<span className="org-role-caps">You can follow the engagement timeline, view orders and licence keys, place orders and manage your own profile. Company settings and team access are handled by your admin.</span></span>}
       </div>
 
       {/* at-a-glance */}
@@ -233,8 +233,8 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
   if (members === null || engagements === null || orders === null) return null; // wait for data
   const scrollTo = (id) => scrollToEl(document.getElementById(id), 'center');
   const steps = [
-    { id: 'profile', label: 'Complete your company profile', hint: 'Add your website and a note about your goals.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => scrollTo('org-co-h') } : null },
-    { id: 'team', label: 'Invite your team', hint: 'Bring your colleagues into the portal.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => scrollTo('org-mem-h') } : null },
+    { id: 'profile', label: 'Complete your company profile', hint: admin ? 'Add your website and a note about your goals.' : 'Your company admin will add this.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => scrollTo('org-co-h') } : null },
+    { id: 'team', label: 'Invite your team', hint: admin ? 'Bring your colleagues into the portal.' : 'Your company admin manages who has access.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => scrollTo('org-mem-h') } : null },
     { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a deep dive', href: '#go/contact' } },
     { id: 'order', label: 'Place your first order', hint: 'Explore the Greatstone software catalogue.', done: (orders || []).length > 0, cta: { label: 'Browse the store', href: '#shop' } },
   ];

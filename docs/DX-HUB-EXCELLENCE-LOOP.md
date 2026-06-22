@@ -29,8 +29,8 @@ approval — never done autonomously.**
 | 3 | Front-end correctness batch (reduced-motion scrolls, customer_id filters, quotes limit, mixed-currency guard) | #org + #account | S | yes | ✅ shipped |
 | 4 | **Return-on-transformation** strip beside the at-a-glance stats | #org | M | yes | ✅ shipped |
 | 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | ✅ shipped |
-| 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | next |
-| 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | |
+| 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | ✅ shipped |
+| 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | next |
 | 8 | Staff authoring throughput (default-to-draft, preview pane, Duplicate, stale badge) | ClientsManager | M | yes | |
 | 9 | Extract shared sanitizeHtml + date helpers module + mXSS regression tests | src/lib + tests | M | yes | |
 | 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | |
@@ -103,4 +103,15 @@ since <first engagement month> · N months in · <current phase> phase" marker i
 the earliest past engagement + the current phase. Both stay quiet when there's no data. Verified on Ethical Quest
 ("since February 2026 · 4 months in · Adoption phase"; lead John Prempeh), mobile clean, build + 58 tests green,
 and 0 console errors confirmed on a fresh dev server (clearing the stale mid-edit HMR buffer). Edited:
-`src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+`src/store/OrgDashboard.jsx`, `src/store/admin.css`. Commit f01d3aa, bundle index-CP4sb5B9, deploy 6a39c3c7.
+
+### Cycle 6 — Member agency pass (23 Jun)
+Turns the non-admin member from spectator into participant, copy + links only. (a) The #org member role
+banner now carries a capability line: what a member can do (follow the timeline, view orders + licence keys,
+place orders, manage their own profile) vs what their admin handles (company settings + team access). (b) The
+onboarding checklist's admin-only steps (company profile, invite team) reframe for members as "Your company
+admin will add this / manages who has access" instead of reading like the member's own unactionable to-dos.
+(c) The LicenceKeys empty state gains activation guidance (copy the key into the product's licence screen;
+contact us if stuck). Verified the member capability card live (signed in as demo-member@greatstone.dev),
+banner icon top-aligned for the two-line variant, mobile clean, build + 58 tests green, 0 console errors.
+Edited: `src/store/OrgDashboard.jsx`, `src/store/LicenceKeys.jsx`, `src/store/admin.css`.

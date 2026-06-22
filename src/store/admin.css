@@ -245,6 +245,8 @@
 .org-banner b { color:var(--gs-text); font-weight:800; }
 .org-banner-icon { flex:0 0 auto; width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,.06); color:var(--gs-text-faint); font-size:.9rem; }
 .org-banner.is-admin .org-banner-icon { background:var(--gs-accent); color:#0e1611; }
+.org-banner { align-items:flex-start; } /* top-align the icon now the member banner carries a capability line */
+.org-role-caps { display:block; margin-top:6px; font-size:.84rem; color:var(--gs-text-muted); }
 
 /* at-a-glance stat strip */
 .org-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:8px; }
