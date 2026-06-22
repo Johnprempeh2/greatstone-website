@@ -41,19 +41,20 @@ function buildNav(attention = {}) {
     ] },
     { group: 'People & settings', items: [
       { id: 'team', label: 'Team & roles', type: 'view', need: 'manage', badge: attention.team },
+      { id: 'settings', label: 'Site settings', type: 'view', need: 'manage' },
       { id: 'account', label: 'Customer portal', type: 'link' },
       { id: 'export', label: 'Export site (JSON)', type: 'action', need: 'manage' },
     ] },
   ];
 }
 
-const ALL_VIEWS = ['overview', 'pages', 'releases', 'seo', 'background', 'history', 'activity', 'team'];
-const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', seo: 'SEO & social', background: '3D background', history: 'Version history', activity: 'Activity log', team: 'Team & roles' };
+const ALL_VIEWS = ['overview', 'pages', 'releases', 'seo', 'background', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', seo: 'SEO & social', background: '3D background', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',
   panels = {}, order = [], pages = {}, current,
-  onSection, onEditor, onEditPage, onSelectPage, onCommerce, onStore, onAccount, onExport, onSignOut, onSite,
+  onSection, onEditor, onEditPage, onSelectPage, onCommerce, onStore, onAccount, onExport, onSignOut, onSite, logo, siteName,
 }) {
   const view = ALL_VIEWS.includes(section) ? section : 'overview';
   const allowed = (need) => need === 'manage' ? canManageUsers : need === 'edit' ? canEdit : true;
@@ -92,7 +93,7 @@ export default function AdminConsole({
     <div className="ac">
       <header className="ac-topbar">
         <button className="ac-logo" onClick={() => onSection('overview')} aria-label="Admin home">
-          <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
+          <img src={logo || LOGO} alt={siteName || 'Greatstone International'} width="800" height="160" decoding="async" />
         </button>
         <span className="ac-topbar-tag">Admin</span>
         <span className="ac-spacer" />

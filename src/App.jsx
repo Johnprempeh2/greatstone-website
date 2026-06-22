@@ -88,12 +88,13 @@ import PagesPanel from './cms/PagesPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
+import SiteSettingsPanel from './cms/SiteSettingsPanel.jsx';
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings } from './store.js';
 import { css as productDetailCss } from './blocks/ProductDetail.jsx';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
@@ -586,6 +587,7 @@ export default function App() {
     flash('Status: ' + (STATUSES.find((x) => x.id === to) || {}).label + (note ? ' · note added' : ''));
   }
   function setSeo(seo) { patchPage(current, { seo }); }
+  function setSettings(patch) { setState((s) => updateSettings(s, patch)); } // global site chrome (logo, name, footer, CTA)
   async function newPage() {
     const title = await ask({ kind: 'prompt', title: 'New page', label: 'Page title', defaultValue: 'New page', confirmLabel: 'Create page' });
     if (!title || !title.trim()) return;
@@ -914,6 +916,7 @@ export default function App() {
       history: <VersionHistory embedded versions={page.versions} onRestore={restoreVersion} onClose={onConsoleClose} />,
       activity: <ActivityPanel embedded statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={onConsoleClose} />,
       ...(canManageUsers ? { team: <TeamPanel embedded team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={onConsoleClose} /> } : {}),
+      ...(canManageUsers ? { settings: <SiteSettingsPanel embedded settings={state.settings} onChange={setSettings} onClose={onConsoleClose} /> } : {}),
     };
     return (
       <CatalogContext.Provider value={draftCatalog}>
@@ -934,6 +937,7 @@ export default function App() {
           onExport={exportSiteJson}
           onSignOut={doSignOut}
           onSite={() => navigate(current)}
+          logo={state.settings.logo} siteName={state.settings.siteName}
         />
       </div>
       </MediaContext.Provider>
@@ -1036,6 +1040,7 @@ export default function App() {
         onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }} accountActive={accountRoute}
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
+        logo={state.settings.logo} ctaLabel={state.settings.headerCtaLabel} siteName={state.settings.siteName}
       />
       <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
         <EditorBoundary key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
@@ -1061,7 +1066,7 @@ export default function App() {
         </EditorBoundary>
       </main>
       {(shopRoute || productSlug) && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
-      <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} />
+      <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} logo={state.settings.logo} tagline={state.settings.footerTagline} siteName={state.settings.siteName} />
     </div>
     </CatalogContext.Provider>
   );

@@ -18,6 +18,12 @@ const SCHEMA = 19;
 // content updates actually show for returning visitors instead of being masked by their saved store.
 // Review-prototype behaviour: a bump resets in-editor drafts; between bumps, edits persist normally.
 const SEED_VERSION = 20260617;
+
+// Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
+// in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
+// Footer / AdminConsole, so backfilling them onto an existing store changes nothing until an admin edits.
+export const DEFAULT_LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Deep Dive' };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
@@ -345,7 +351,7 @@ export function seedState() {
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
-  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { background: 'stone', siteName: 'Greatstone International' }, order, pages, assets: {}, org: ORG,
+  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { ...DEFAULT_SETTINGS }, order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
 }
@@ -434,7 +440,9 @@ function migrate(state) {
     if (mp && mp.data) mp.data.content = fix(mp.data.content);
     if (mp && mp.published) mp.published.content = fix(mp.published.content);
   }
-  if (!state.settings) state.settings = { background: 'stone', siteName: 'Greatstone International' };
+  // backfill any missing chrome settings (logo/footerTagline/headerCtaLabel added in the Site-Settings
+  // build) while preserving everything an admin has already set. Idempotent.
+  state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) };
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
@@ -619,6 +627,12 @@ function migrate(state) {
   }
   state.schema = SCHEMA;
   return state;
+}
+
+// Update global site-chrome settings (logo, siteName, footerTagline, headerCtaLabel, background). Shallow
+// merge so a panel can patch one field; persisted by App's autosave like any other state mutation.
+export function updateSettings(state, patch) {
+  return { ...state, settings: { ...state.settings, ...(patch || {}) } };
 }
 
 // ---- media library (stand-in for the future Laravel media / S3 endpoint) ----

@@ -20,8 +20,13 @@ function when(ts) {
 export default function ReleaseBoard({ order, pages, current, onOpen, onClose, embedded }) {
   const rows = order.map((slug) => {
     const p = pages[slug];
-    const lastPub = (p.versions || []).find((v) => v.status === 'published');
-    return { slug, title: p.title, status: p.status, drift: !eq(p.data, p.published), lastPubTs: lastPub ? lastPub.ts : null, lastPubBy: lastPub ? lastPub.by : null };
+    // match the publish event by its dedicated label, not status: restore/discard snapshots copy the
+    // page's status (so a snapshot taken while Published also reads status:'published' and, being newest,
+    // would wrongly become the "last published" record). The 'Published' label is only written by publish().
+    const lastPub = (p.versions || []).find((v) => v.label === 'Published');
+    // a never-published page (published == null) has no real drift — !eq(data, null) is always true, which
+    // would wrongly flag a brand-new draft as having "unpublished changes" on top of counting as Draft.
+    return { slug, title: p.title, status: p.status, drift: p.published != null && !eq(p.data, p.published), lastPubTs: lastPub ? lastPub.ts : null, lastPubBy: lastPub ? lastPub.by : null };
   });
   const counts = rows.reduce((m, r) => { m[r.status] = (m[r.status] || 0) + 1; return m; }, {});
   const driftCount = rows.filter((r) => r.drift).length;

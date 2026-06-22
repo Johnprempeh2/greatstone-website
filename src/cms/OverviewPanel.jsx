@@ -33,7 +33,10 @@ export default function OverviewPanel({ order = [], pages = {}, team = [], activ
   const pg = order.reduce((m, slug) => {
     const p = pages[slug]; if (!p) return m;
     m.total++; m[p.status] = (m[p.status] || 0) + 1;
-    if (!eq(p.data, p.published)) m.drift++;
+    // a never-published page (published == null) is "not yet published", not "has unpublished changes":
+    // !eq(data, null) is always true, which would double-count a brand-new draft as drift too. Mirrors
+    // the Releases board predicate so the two dashboards never disagree.
+    if (p.published != null && !eq(p.data, p.published)) m.drift++;
     return m;
   }, { total: 0, draft: 0, review: 0, approved: 0, published: 0, drift: 0 });
   const tm = { active: team.filter((m) => m.status !== 'invited').length, invited: team.filter((m) => m.status === 'invited').length };

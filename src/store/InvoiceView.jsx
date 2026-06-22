@@ -22,7 +22,11 @@ export default function InvoiceView({ orderId }) {
     supabase.from('orders')
       .select('id, reference, invoice_number, po_reference, status, currency, subtotal_minor, total_minor, refunded_minor, placed_at, created_at, customer:customers(name, domain), order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor)')
       .eq('id', orderId).maybeSingle()
-      .then(({ data }) => { if (alive) setOrder(data || null); });
+      .then(({ data }) => { if (alive) setOrder(data || null); })
+      // a network/RLS/transport rejection must fall through to the "Invoice not found" state, not hang
+      // forever on the loading spinner (this is a paid-order document — a silent infinite spinner is the
+      // worst failure mode). Every other store surface resolves errors to a visible state.
+      .catch(() => { if (alive) setOrder(null); });
     return () => { alive = false; };
   }, [orderId]);
 

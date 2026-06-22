@@ -167,6 +167,10 @@ export default function StoreCart({ confirmed = false }) {
 function Confirmed() {
   // Stripe redirected back after a successful test payment.
   const sid = (location.hash.match(/session=([^&]+)/) || [])[1] || '';
+  // Only a plausible Stripe session id makes this a real confirmation. A bare/garbage #order-confirmed
+  // (a bookmark of the success URL, Back/Forward after paying, or a hand-typed hash) must NOT show a
+  // counterfeit "order confirmed" or wipe the basket / fire a phantom conversion.
+  const valid = /^cs_(test|live)_/.test(sid);
   const isTest = /^cs_test_/.test(sid);
   // Show a clean reference, not the raw Stripe session id: drop the cs_test_/cs_live_ prefix + the
   // trailing secret segment. 12-char lowercase so it matches the account history + the receipt-email
@@ -177,11 +181,29 @@ function Confirmed() {
   // double-fire the value (transaction_id lets GA4 dedupe the conversion regardless). Dormant until
   // GTM is configured, like every other track() call.
   useEffect(() => {
+    if (!valid) return; // no real session → leave the basket intact and fire no conversion
     clearCart();
     let order = null;
     try { order = JSON.parse(sessionStorage.getItem('gs-pending-purchase') || 'null'); sessionStorage.removeItem('gs-pending-purchase'); } catch (e) { /* ignore */ }
     track('purchase', { transaction_id: ref, ...(order || {}) });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!valid) {
+    return (
+      <>
+        <div className="st-scrim" aria-hidden="true" />
+        <div className="sc-confirm">
+          <span className="st-kicker">Order</span>
+          <h1>We couldn&rsquo;t find that order.</h1>
+          <p>This page confirms an order right after checkout. If you just paid and landed here, your order and receipt are in your account. Otherwise, browse the catalogue or talk to us.</p>
+          <div className="sc-confirm-cta">
+            <a className="gs-btn primary" href="#account">Go to your account</a>
+            <a className="gs-btn ghost" href="#shop">Browse the catalogue</a>
+            <a className="gs-btn ghost" href="#book">Talk to the team</a>
+          </div>
+        </div>
+      </>
+    );
+  }
   return (
     <>
       <div className="st-scrim" aria-hidden="true" />

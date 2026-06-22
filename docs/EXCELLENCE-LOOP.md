@@ -68,3 +68,22 @@ Live site (`/puck-proof/`) still serves the prior bundle `index-Ch6Nm7Ge.js` unt
 - **MaturityMap tiers hardcoded to 3** (4th tier never activates; removing one orphans an SVG label) — needs deriving `trig`/label anchors from `tiers.length` (M). Deferred.
 
 **Cycle-3 candidates (audit-ranked):** **Global Site-Settings panel** (highest-leverage editability gap — logo/siteName/footer-tagline/header-CTA are hardcoded across Header+Footer+AdminConsole; wire to `state.settings`); "How we work" engagement band on Services; contextual #book bridges (IntelArticle — Intel-loop domain — + commerce empty-states); StatStrip editor count-up replay polish; MaturityMap tier-count robustness.
+
+---
+
+## Cycle 3 — 2026-06-22 — Global Site-Settings panel + customer-flow bug fixes
+
+**Cycle 2 went LIVE** (production bundle `index-DXOLVs_H.js`). Cycle 3 audit: 3 agents (admin/CMS depth, account/commerce, polish/perf/cutting-edge) + synthesis → 6 verified safe wins + 2 buildable sections.
+
+**Shipped (verified: 58/58 tests, clean build, live-preview):**
+1. **NEW — Global Site-Settings panel** (the top remaining editability gap; John's explicit priority). `src/cms/SiteSettingsPanel.jsx` (new) edits the global chrome: **logo (MediaField), site name, header CTA label, footer tagline** — previously hardcoded across Header + Footer + AdminConsole. `store.js`: `DEFAULT_SETTINGS` + additive idempotent migrate backfill + `updateSettings()`. Wired into the admin console (People & settings rail, manage-gated) with a live header/footer preview; Header/Footer/AdminConsole now read from `state.settings` (fallback to the old constants). Verified: public chrome binds to settings; build carries it; SEED_VERSION unchanged (no reseed); the dev preview's patch-then-reload "revert" was traced to the existing correct pagehide-flush, not a bug.
+2. **#order-confirmed counterfeit-success guard** (HIGH, customer-facing): a bare/garbage `#order-confirmed` (bookmark, Back/Forward, hand-typed) used to render a fake "order confirmed" AND wipe the basket + fire a phantom purchase event. Now gated on a valid `cs_(test|live)_` session id → neutral "We couldn't find that order" state, basket preserved. Verified both paths in-browser (bare → neutral + cart kept; valid session → success + cart cleared + ref + test banner).
+3. **InvoiceView infinite-spinner fix** (HIGH, customer-facing): a fetch error on the paid-order invoice hung forever on "Loading…". Added `.catch` → falls through to the existing "Invoice not found" state.
+4. **Releases "last published" by label, not status** (MEDIUM): restore/discard snapshots copy `status:'published'`, so the board could report a restore/discard as the last publish. Now matches `label==='Published'` (only `publish()` writes it).
+5. **Never-published draft no longer double-counted as "unpublished changes"** (LOW): `!eq(data, null)` is always true; both OverviewPanel + ReleaseBoard now require `published != null` for drift.
+
+**Status:** adversarial review (3 lenses) running before commit/stage-deploy.
+
+**Flagged for the DX-hub loop (their hot files — `Account:` commits):** Billing tab flashes the "no purchases yet" empty-state before `loadingOrders` resolves (AccountDashboard); licence-key state isn't date-aware so an expired key shows a green "issued" chip + live Download (LicenceKeys). Both MEDIUM, both quick.
+
+**Cycle-4 candidates:** standalone Media Library panel (alt-text edit + delete via the unused `removeAsset`); "How we work" engagement band on Services; StatStrip editor count-up replay; MaturityMap tier-count robustness; the two DX-hub account fixes if they don't take them.

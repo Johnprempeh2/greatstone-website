@@ -24,7 +24,11 @@ const UserIcon = (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="n
 // Site chrome (view mode). The page links sit inline while they fit; when they don't, they
 // collapse into a single "Pages" dropdown (measured, not breakpoint-guessed, so it works for
 // any number of pages). Editing affordances appear only for a signed-in user with edit rights.
-export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut }) {
+export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
+  // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
+  const logoSrc = logo || LOGO;
+  const bookLabel = ctaLabel || 'Book a Deep Dive';
+  const brandName = siteName || 'Greatstone International';
   const q = (query || '').trim().toLowerCase();
   // public visitors only see published pages (a never-published draft is hidden); editors see everything
   // so they can navigate to their own drafts. The home page (order[0]) is always kept.
@@ -87,7 +91,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
   return (
     <header className="gs-header">
       <a className="gs-logo" href="#" onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
-        <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
+        <img src={logoSrc} alt={brandName} width="800" height="160" decoding="async" />
       </a>
 
       <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>
@@ -103,7 +107,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                     onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
                 ))}
                 {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
-                <a role="menuitem" className="gs-navmenu-item gs-navmenu-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'menu' }); setMenuOpen(false); openBooking(); }}>Book a Deep Dive</a>
+                <a role="menuitem" className="gs-navmenu-item gs-navmenu-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'menu' }); setMenuOpen(false); openBooking(); }}>{bookLabel}</a>
                 {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Your account</button>}
                 {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
@@ -126,7 +130,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
         {/* persistent, always-visible primary CTA + account icon (Ben's 18 Jun review) — outside the
             signed-in block below so public visitors see them too. The CTA is an <a> so BOOK_URL can become
             an external Calendly link with no JS change. */}
-        <a className="gs-btn primary gs-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'header' }); openBooking(); }}>Book a Deep Dive</a>
+        <a className="gs-btn primary gs-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'header' }); openBooking(); }}>{bookLabel}</a>
         {onAccount && (
           <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label="Your account" aria-current={accountActive ? 'page' : undefined} title="Your account">
             <UserIcon />
