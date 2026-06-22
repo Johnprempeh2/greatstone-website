@@ -33,7 +33,10 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
   // public visitors only see published pages (a never-published draft is hidden); editors see everything
   // so they can navigate to their own drafts. The home page (order[0]) is always kept.
   const navOrder = publicNavOrder(order, pages, canEdit);
-  const visible = q ? navOrder.filter((s) => (pages[s].title || s).toLowerCase().includes(q) || s.includes(q)) : navOrder;
+  const visible = q ? navOrder.filter((s) => ((pages[s] && pages[s].title) || s).toLowerCase().includes(q) || s.includes(q)) : navOrder;
+  // the collapsed toggle should name the user's ACTUAL location, including the Products/account routes
+  // (which live in this same menu) rather than the last content page's title
+  const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (pages[current] && pages[current].title) || 'Pages';
 
   const wrapRef = useRef(null);
   const neededRef = useRef(0);
@@ -45,7 +48,12 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
     const wrap = wrapRef.current; if (!wrap) return;
     const measure = () => {
       if (!collapsed) neededRef.current = wrap.scrollWidth; // intrinsic links width, cached while inline
-      const next = neededRef.current > wrap.clientWidth + 1;
+      // collapse to the dropdown when the inline links overflow OR the viewport is in the mobile band
+      // (<=760px, where studio.css hides the persistent .gs-book CTA). That keeps the dropdown's lime
+      // "Book a Deep Dive" item the guaranteed booking entry point on every narrow viewport, not only
+      // when the links happen to overflow. (Keep this breakpoint in sync with studio.css's .gs-book hide.)
+      const narrow = typeof matchMedia !== 'undefined' && matchMedia('(max-width:760px)').matches;
+      const next = narrow || neededRef.current > wrap.clientWidth + 1;
       setCollapsed((c) => (c !== next ? next : c));
     };
     measure();
@@ -90,37 +98,37 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
 
   return (
     <header className="gs-header">
-      <a className="gs-logo" href="#" onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
-        <img src={logoSrc} alt={brandName} width="800" height="160" decoding="async" />
+      <a className="gs-logo" href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
+        <img src={logoSrc} alt={brandName} width="800" height="160" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
       </a>
 
       <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>
         {collapsed ? (
-          <div className="gs-navmenu">
-            <button ref={menuBtnRef} className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} onKeyDown={onMenuBtnKey} aria-expanded={menuOpen} aria-haspopup="menu">
-              <span>{(pages[current] && pages[current].title) || 'Pages'}</span><Chevron />
+          <nav className="gs-navmenu" aria-label="Primary">
+            <button ref={menuBtnRef} id="gs-navmenu-btn" className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} onKeyDown={onMenuBtnKey} aria-expanded={menuOpen} aria-haspopup="menu" aria-controls="gs-navmenu-pop" aria-label="Open navigation">
+              <span>{menuLabel}</span><Chevron />
             </button>
             {menuOpen && (
-              <div className="gs-navmenu-pop" role="menu" ref={menuPopRef} onKeyDown={onMenuKey}>
+              <div className="gs-navmenu-pop" id="gs-navmenu-pop" role="menu" aria-labelledby="gs-navmenu-btn" ref={menuPopRef} onKeyDown={onMenuKey}>
                 {visible.map((slug) => (
-                  <button key={slug} role="menuitem" className={'gs-navmenu-item' + (slug === current && !shopActive ? ' is-active' : '')}
-                    onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{pages[slug].title}</button>
+                  <button key={slug} role="menuitem" aria-current={slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (slug === current && !shopActive ? ' is-active' : '')}
+                    onClick={() => { onNavigate(slug); setMenuOpen(false); }}>{(pages[slug] && pages[slug].title) || slug}</button>
                 ))}
-                {onShop && <button role="menuitem" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
+                {onShop && <button role="menuitem" aria-current={shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
                 <a role="menuitem" className="gs-navmenu-item gs-navmenu-book" href={BOOK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'menu' }); setMenuOpen(false); openBooking(); }}>{bookLabel}</a>
                 {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Your account</button>}
                 {visible.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
             )}
-          </div>
+          </nav>
         ) : (
-          <nav className="gs-nav">
+          <nav className="gs-nav" aria-label="Primary">
             {visible.map((slug) => (
-              <button key={slug} className={'gs-navlink' + (slug === current && !shopActive ? ' is-active' : '')} onClick={() => onNavigate(slug)}>
-                {pages[slug].title}
+              <button key={slug} aria-current={slug === current && !shopActive ? 'page' : undefined} className={'gs-navlink' + (slug === current && !shopActive ? ' is-active' : '')} onClick={() => onNavigate(slug)}>
+                {(pages[slug] && pages[slug].title) || slug}
               </button>
             ))}
-            {onShop && <button className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Products</button>}
+            {onShop && <button aria-current={shopActive ? 'page' : undefined} className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Products</button>}
             {visible.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
           </nav>
         )}
@@ -161,7 +169,7 @@ export default function Header({ order, pages, current, query, onSearch, onNavig
                 <button className="gs-btn primary" onClick={onEdit}>Edit page</button>
               </>
             )}
-            <span className="gs-userchip" title={user.email}>{user.name} · {ROLE_LABEL[user.role] || user.role}</span>
+            <span className="gs-userchip" title={user.email}><span style={{ display: 'inline-block', maxWidth: '14ch', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{user.name}</span> · {ROLE_LABEL[user.role] || user.role}</span>
             <button className="gs-signout" onClick={onSignOut} title="Sign out">Sign out</button>
           </>
         ) : null}

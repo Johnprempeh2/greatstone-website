@@ -16,6 +16,7 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
   const navOrder = publicNavOrder(order, pages, canEdit);
   return (
     <footer className="site-footer">
+      <style dangerouslySetInnerHTML={{ __html: '@media(pointer:coarse){.site-footer .foot-links a{min-height:44px;padding:8px 6px;display:inline-flex;align-items:center}}' }} />
       <svg className="foot-wave" viewBox="0 0 500 500" fill="none" aria-hidden="true">
         <g stroke="var(--gs-accent)" strokeWidth="0.8" fill="none" opacity="0.5">
           <path d="M500 40 Q392 72 344 154 Q296 236 318 338 Q340 440 424 486" />
@@ -24,11 +25,11 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
           <path d="M404 112 Q332 144 296 202 Q260 260 276 326 Q292 392 340 426" />
         </g>
       </svg>
-      <div className="logo"><img src={logoSrc} alt={brandName} width="800" height="160" loading="lazy" decoding="async" /></div>
+      <div className="logo"><a href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}><img src={logoSrc} alt={brandName} width="800" height="160" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} /></a></div>
       <div className="tagline">{footTagline}</div>
-      <nav className="foot-links">
-        {navOrder.map((slug) => (
-          <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title}</a>
+      <nav className="foot-links" aria-label="Footer">
+        {navOrder.filter((slug) => pages[slug]).map((slug) => (
+          <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title || slug}</a>
         ))}
       </nav>
       <a className="mail" href={safeMailto(mail)}>{mail}</a>
