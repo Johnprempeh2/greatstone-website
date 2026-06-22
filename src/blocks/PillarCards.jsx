@@ -63,6 +63,7 @@ export const css = `
 .b-pc-assess li{font-size:.68rem;letter-spacing:.04em;color:var(--gs-text-faint);border:1px solid var(--gs-border-soft);border-radius:100px;padding:3px 9px}
 .b-pc-go{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent);opacity:0;transition:opacity .3s}
 .b-pc-card:hover .b-pc-go{opacity:1}
+@media(hover:none){.b-pc-go{opacity:1}}
 `;
 
 const CHIPS = (arr) => arr.map((text) => ({ text }));

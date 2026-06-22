@@ -92,6 +92,7 @@ export const css = `
 .b-proof-clients{margin-top:18px;color:var(--gs-faint);font-size:.82rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .b-proof-stats{display:grid;grid-template-columns:repeat(var(--b-cols,4),1fr);gap:clamp(18px,3vw,40px);margin-top:clamp(34px,5vw,56px)}
 @media(max-width:760px){.b-proof-stats{grid-template-columns:repeat(2,1fr) !important;gap:28px}}
+@media(max-width:480px){.b-proof-stats{grid-template-columns:1fr !important}}
 .b-stat-fig{display:flex;align-items:baseline;gap:.06em}
 .b-stat-num{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;
   background:linear-gradient(180deg,#fff,#c8ff00);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -117,6 +118,7 @@ export const css = `
    (no bg/border, just an invisible text scrim). Scoped to cards so band/plain/aurora keep their own backgrounds. */
 .b-proof-cards{border-top:0;border-bottom:0;background:none;padding:clamp(40px,8vh,110px) 0}
 .b-proof-cards .b-proof-stats{grid-template-columns:repeat(2,1fr) !important;gap:14px;max-width:560px}
+@media(max-width:480px){.b-proof-cards .b-proof-stats{grid-template-columns:1fr !important}}
 .b-proof-cards .b-stat{background:var(--gs-glass,rgba(30,38,32,.55));border:1px solid var(--gs-border);border-radius:10px;
   padding:20px;backdrop-filter:blur(6px)}
 .b-proof-cards .b-stat-num,.b-proof-cards .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-text)}

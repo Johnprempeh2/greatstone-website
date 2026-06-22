@@ -104,6 +104,7 @@ export const css = `
   transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease),background .25s var(--gs-ease)}
 .b-pillarx-tab:hover{color:var(--gs-text);border-color:var(--gs-border)}
 .b-pillarx-tab.is-active{color:#0e1611;background:var(--gs-accent);border-color:var(--gs-accent)}
+@media(pointer:coarse){.b-pillarx-tab{min-height:44px;display:inline-flex;align-items:center}}
 `;
 
 const P = (title, text, href = '', linkLabel = '') => ({ title, text, href, linkLabel });

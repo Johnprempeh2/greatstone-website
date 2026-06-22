@@ -156,6 +156,7 @@ export const css = `
 .b-ind-chip[aria-selected="true"]{color:#0e1611;background:var(--gs-accent);border-color:var(--gs-accent);
   box-shadow:0 8px 30px -10px var(--gs-accent-glow)}
 .b-ind-chip:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
+@media(pointer:coarse){.b-ind-chip{min-height:44px;display:inline-flex;align-items:center}}
 .b-ind-underline{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--gs-accent);border-radius:2px;
   box-shadow:0 0 12px var(--gs-accent-glow);pointer-events:none;
   transition:transform .55s var(--gs-ease),width .55s var(--gs-ease)}

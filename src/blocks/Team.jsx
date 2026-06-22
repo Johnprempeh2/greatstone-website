@@ -41,7 +41,7 @@ export const css = `
 .b-team-body{margin-top:1rem}
 .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,30px);margin-top:clamp(28px,4vh,48px)}
 @media(max-width:820px){.team-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.team-grid{grid-template-columns:1fr}}
+@media(max-width:680px){.team-grid{grid-template-columns:1fr}}
 .team-card{display:flex;align-items:center;gap:16px}
 .team-card .avatar{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.95rem;
   color:var(--gs-accent);background:radial-gradient(circle at 32% 28%,rgba(27,80,57,.9),rgba(14,49,34,.9));border:1px solid var(--gs-border);letter-spacing:.02em}

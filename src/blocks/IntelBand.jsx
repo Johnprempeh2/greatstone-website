@@ -64,7 +64,7 @@ export const css = `
 .b-intel-theme{font-size:.66rem;font-weight:700;letter-spacing:.04em;padding:.34em .8em;border-radius:100px;
   border:1px solid rgba(255,255,255,.14);color:var(--gs-text-muted,#c4c8c1)}
 .b-intel-cta{margin-top:24px;display:inline-flex}
-.b-intel-stats{display:flex;gap:26px;margin-top:22px;font-size:.8rem;color:var(--gs-text-faint,#9ca29b)}
+.b-intel-stats{display:flex;flex-wrap:wrap;gap:14px 26px;margin-top:22px;font-size:.8rem;color:var(--gs-text-faint,#9ca29b)}
 .b-intel-stats b{color:var(--gs-text,#f5f5f5);font-weight:900;font-size:1.05rem;font-variant-numeric:tabular-nums}
 .b-intel-viz{position:relative;z-index:1;display:grid;place-items:center}
 .b-intel-radar{width:100%;max-width:240px;height:auto;filter:drop-shadow(0 0 26px rgba(200,255,0,.18))}

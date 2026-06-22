@@ -32,6 +32,8 @@ export function TimeCounter({ kicker, headline, highlight, body, clockLabel, cta
       if (line) line.innerHTML = phrase(s);
     };
     tick();
+    // reduced-motion: render one static frame, don't tick every second (WCAG 2.2.2: no auto-updating the user can't pause)
+    if (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
   }, []);

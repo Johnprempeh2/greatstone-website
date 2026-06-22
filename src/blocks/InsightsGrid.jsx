@@ -77,7 +77,7 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
 
 export const css = `
 .b-ins-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:clamp(22px,3vw,34px)}
-.b-ins-chip{font-family:inherit;cursor:pointer;padding:.55em 1.15em;border-radius:100px;border:1px solid var(--gs-border);
+.b-ins-chip{font-family:inherit;cursor:pointer;padding:.55em 1.15em;min-height:44px;display:inline-flex;align-items:center;border-radius:100px;border:1px solid var(--gs-border);
   background:var(--gs-accent-soft);color:var(--gs-text-muted);font-size:.78rem;font-weight:700;letter-spacing:.06em;
   transition:color var(--gs-dur),background var(--gs-dur),border-color var(--gs-dur),transform var(--gs-dur) var(--gs-ease)}
 .b-ins-chip:hover{transform:translateY(-2px);color:var(--gs-text);border-color:var(--gs-accent-mid)}

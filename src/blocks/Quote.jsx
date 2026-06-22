@@ -58,7 +58,7 @@ export const css = `
 .b-quote .quote .mark{color:var(--gs-accent);font-size:1.1em;line-height:0}
 .b-quote .quote-attr{display:block;margin-top:28px;font-size:.86rem;font-weight:700;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-muted)}
 /* card variant: face + structured attribution */
-.b-quote .quote-card{display:inline-flex;align-items:center;gap:14px;margin-top:32px;text-align:left}
+.b-quote .quote-card{display:inline-flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:32px;text-align:left}
 .b-quote.align-center .quote-card{justify-content:center}
 .quote-avatar{flex:none;width:52px;height:52px;border-radius:50%;overflow:hidden;display:grid;place-items:center;
   background:var(--gs-accent-soft);border:1px solid var(--gs-border)}

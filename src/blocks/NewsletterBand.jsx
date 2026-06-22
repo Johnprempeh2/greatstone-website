@@ -57,7 +57,7 @@ export const css = `
 .b-news-h2{max-width:18ch;margin:.3em auto 0;font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;letter-spacing:-.02em;line-height:1.08}
 .b-news-lead{margin:16px auto 0;max-width:60ch}
 .b-news-form{display:flex;gap:10px;max-width:520px;margin:26px auto 0}
-.b-news-form input{flex:1;font-family:inherit;font-size:.95rem;color:var(--gs-text);padding:.9em 1.2em;border-radius:100px;
+.b-news-form input{flex:1;font-family:inherit;font-size:16px;color:var(--gs-text);padding:.9em 1.2em;border-radius:100px;
   border:1px solid var(--gs-border-soft);background:rgba(0,0,0,.25);transition:border-color var(--gs-dur)}
 .b-news-form input::placeholder{color:var(--gs-text-faint)}
 .b-news-form input:focus{outline:none;border-color:var(--gs-accent-mid)}

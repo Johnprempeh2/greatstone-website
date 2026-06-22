@@ -48,6 +48,7 @@ export const css = `
 .b-spectrum-meta{font-size:.84rem;color:var(--gs-text-muted);margin-left:auto;text-align:right}
 .b-spectrum-cap{font-size:.78rem;color:var(--gs-text-faint);margin-top:14px}
 @media(max-width:900px){.b-spectrum-figure{margin-top:8px}}
+@media(max-width:480px){.b-spectrum-row{flex-wrap:wrap}.b-spectrum-meta{margin-left:0;text-align:left;width:100%}}
 `;
 
 const R = (tone, term, meta) => ({ tone, term, meta });

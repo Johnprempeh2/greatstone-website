@@ -130,7 +130,7 @@ export const css = `
 textarea.fld{resize:vertical;min-height:120px;line-height:1.55}
 select.fld{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c8ff00' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1em center;padding-right:2.6em}
 select.fld option{background:#1b1f1d;color:var(--gs-text)}
-.fld:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.4));background:rgba(200,255,0,.04);box-shadow:0 0 0 3px var(--gs-accent-dim)}
+.fld:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.4));background:rgba(200,255,0,.04);box-shadow:0 0 0 3px var(--gs-accent-mid,rgba(200,255,0,.4))}
 .book-submit{margin-top:1.8rem;width:100%;justify-content:center}
 .book-fine{margin-top:1rem;font-size:.74rem;color:var(--gs-faint);text-align:center}
 .book-sent{text-align:center;padding:18px 0}
@@ -146,7 +146,7 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .b-book-ai svg{width:17px;height:17px;stroke:var(--gs-accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .b-book-at{font-weight:700;font-size:.96rem}
 .b-book-ad{margin-top:2px;font-size:.86rem;color:var(--gs-text-muted);line-height:1.5}
-.b-book-mail{display:inline-block;margin-top:22px;color:var(--gs-accent);font-weight:700;border-bottom:1px solid var(--gs-border);padding-bottom:3px}
+.b-book-mail{display:inline-block;overflow-wrap:anywhere;margin-top:22px;color:var(--gs-accent);font-weight:700;border-bottom:1px solid var(--gs-border);padding-bottom:3px}
 `;
 
 const PT = (title, text) => ({ title, text });
