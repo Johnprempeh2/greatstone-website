@@ -99,7 +99,7 @@ export const css = `
 .b-stat-suffix{font-size:clamp(1.4rem,3vw,2.2rem);font-weight:800;letter-spacing:-.02em;line-height:1;
   background:linear-gradient(180deg,#fff,#c8ff00);-webkit-background-clip:text;background-clip:text;color:transparent}
 .b-stat-l{margin-top:12px;font-size:.9rem;color:var(--gs-text);font-weight:700;line-height:1.35;max-width:26ch}
-.b-stat-n{margin-top:6px;font-size:.74rem;color:var(--gs-faint);font-weight:500;line-height:1.45;max-width:30ch}
+.b-stat-n{margin-top:6px;font-size:.82rem;color:var(--gs-text-muted);font-weight:500;line-height:1.45;max-width:30ch}
 /* band variant — the live proof .stat-band: border-block + accent-soft gradient, no header, per-stat left accent
    bar, solid white number that lights lime on reveal, smaller solid-lime suffix, muted label */
 .b-proof-band{border-top:1px solid var(--gs-border-soft);border-bottom:1px solid var(--gs-border-soft);

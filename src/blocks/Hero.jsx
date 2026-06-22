@@ -90,7 +90,8 @@ export const css = `
 /* optional stats row (about hero .hero-meta) */
 .b-hero-meta{display:flex;flex-wrap:wrap;gap:clamp(28px,5vw,64px);margin-top:clamp(34px,5vh,56px)}
 .b-hero.align-center .b-hero-meta{justify-content:center}
-.b-hero-bignum{display:block;font-weight:900;font-size:clamp(2.6rem,6vw,5rem);line-height:1;color:var(--gs-accent);letter-spacing:-.03em}
+.b-hero-stat{min-width:0}
+.b-hero-bignum{display:block;font-weight:900;font-size:clamp(2.6rem,6vw,5rem);line-height:1;color:var(--gs-accent);letter-spacing:-.03em;overflow-wrap:anywhere}
 .b-hero-statlabel{display:block;font-size:.82rem;font-weight:600;letter-spacing:.04em;color:var(--gs-text-muted);margin-top:.35rem;max-width:22ch}
 /* matches the live homepage .hero-cue */
 .b-hero-prompt{display:inline-flex;align-items:center;gap:.6em;margin-top:30px;font-size:10px;font-weight:700;

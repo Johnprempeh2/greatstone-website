@@ -58,11 +58,11 @@ export const css = `
 .b-news-lead{margin:16px auto 0;max-width:60ch}
 .b-news-form{display:flex;gap:10px;max-width:520px;margin:26px auto 0}
 .b-news-form input{flex:1;font-family:inherit;font-size:16px;color:var(--gs-text);padding:.9em 1.2em;border-radius:100px;
-  border:1px solid var(--gs-border-soft);background:rgba(0,0,0,.25);transition:border-color var(--gs-dur)}
+  border:1px solid var(--gs-border-soft);background:rgba(0,0,0,.25);transition:border-color var(--gs-dur),box-shadow var(--gs-dur)}
 .b-news-form input::placeholder{color:var(--gs-text-faint)}
-.b-news-form input:focus{outline:none;border-color:var(--gs-accent-mid)}
+.b-news-form input:focus{outline:none;border-color:var(--gs-accent-mid);box-shadow:0 0 0 3px var(--gs-accent-mid)}
 .b-news-confirm{margin:26px auto 0;max-width:46ch;color:var(--gs-accent);font-weight:700}
-.b-news-legal{font-size:.72rem;color:var(--gs-text-faint);margin-top:14px}
+.b-news-legal{font-size:.8rem;color:var(--gs-text-faint);margin-top:14px}
 @media(max-width:820px){.b-news-form{flex-direction:column}.b-news-form .btn{justify-content:center}}
 `;
 

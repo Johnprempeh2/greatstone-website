@@ -35,25 +35,26 @@ export function Pillars({ index, eyebrow, headline, highlight, body, items = [] 
 
 export const css = `
 .b-pillars{padding:clamp(72px,12vh,140px) 0;position:relative}
-.b-pillars-head{font-size:clamp(1.9rem,4.6vw,3.3rem);font-weight:900;line-height:1.03;letter-spacing:-.03em;max-width:18ch}
+.b-pillars-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:18ch}
 .b-pillars-body{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:64ch;line-height:1.7}
 .b-pillars-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(12px,1.4vw,18px);margin-top:clamp(34px,5vw,56px)}
 @media(max-width:980px){.b-pillars-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.b-pillars-grid{grid-template-columns:1fr}}
 .b-pillar{position:relative;overflow:hidden;background:var(--gs-card);border:1px solid var(--gs-border-soft);
   border-radius:16px;padding:22px 22px 26px;backdrop-filter:blur(6px);
-  transition:transform .4s var(--gs-ease),border-color .4s var(--gs-ease),background .4s var(--gs-ease)}
+  transition:transform var(--gs-dur) var(--gs-ease),border-color var(--gs-dur) var(--gs-ease),background var(--gs-dur) var(--gs-ease)}
 .b-pillar::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gs-accent);
   transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--gs-ease)}
 .b-pillar:hover{transform:translateY(-5px);border-color:var(--gs-border);background:rgba(200,255,0,.04)}
 .b-pillar:hover::before{transform:scaleY(1)}
 .b-pillar-n{font-size:.72rem;font-weight:900;letter-spacing:.1em;color:var(--gs-faint);font-variant-numeric:tabular-nums}
 .b-pillar:hover .b-pillar-n{color:var(--gs-accent)}
-.b-pillar h3{margin-top:12px;font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
-.b-pillar p{margin-top:9px;color:var(--gs-muted);font-size:.9rem;line-height:1.55}
+.b-pillar h3{margin-top:12px;font-size:1.12rem;font-weight:800;letter-spacing:-.01em;overflow-wrap:anywhere}
+.b-pillar p{margin-top:9px;color:var(--gs-muted);font-size:.9rem;line-height:1.55;overflow-wrap:anywhere}
 .b-pillar-sweep{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .5s var(--gs-ease);
   background:radial-gradient(120px 120px at var(--mx,50%) 0%,rgba(200,255,0,.12),transparent 70%)}
 .b-pillar:hover .b-pillar-sweep{opacity:1}
+@media(prefers-reduced-motion:reduce){.b-pillar,.b-pillar::before,.b-pillar-sweep{transition:none}.b-pillar:hover{transform:none}}
 `;
 
 const PILLAR = (title, text) => ({ title, text });

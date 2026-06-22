@@ -45,12 +45,12 @@ export const css = `
 .b-invite-body{margin:22px auto 0;max-width:54ch;color:var(--gs-muted);font-size:clamp(1.02rem,1.6vw,1.22rem);line-height:1.7}
 .b-invite-actions{margin-top:clamp(30px,5vw,46px);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px}
 .b-invite-email{font-size:.94rem;font-weight:700;color:var(--gs-text);border-bottom:1px solid var(--gs-border);padding-bottom:3px;
-  transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease)}
+  transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease);overflow-wrap:anywhere}
 .b-invite-email:hover{color:var(--gs-accent);border-color:var(--gs-accent)}
 /* framed variant: a contained bordered card (the live method .cta-band), no full-bleed aurora */
 .b-invite-framed{padding:clamp(48px,9vw,110px) 0}
 .b-invite-card{position:relative;max-width:880px;margin-inline:auto;text-align:center;overflow:hidden;
-  border:1px solid var(--gs-border);border-radius:26px;background:var(--gs-accent-soft);
+  border:1px solid var(--gs-border);border-radius:22px;background:var(--gs-accent-soft);
   padding:clamp(40px,6vw,72px);backdrop-filter:blur(10px)}
 .b-invite-card::before{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(600px 320px at 50% -20%,var(--gs-accent-dim),transparent 70%)}

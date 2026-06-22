@@ -5,7 +5,8 @@ import { safeHref } from '../lib/safe-url.js';
 // MaturityModel: method.html's "We meet you where you are." section — a row of three graduated tier
 // cards (Surviving / Organised / Compounding, lime tint deepening) over a four-up band of score
 // phases (Laggard..Pioneer), closing on a ghost link to the climb. Faithful port of .tier-row + .phases.
-const clampN = (i, n) => Math.min(i + 1, n);
+const tierClass = (i, n) => (i < n ? ' t' + (i + 1) : '');
+const phaseClass = (i, n) => (i < n ? ' p' + (i + 1) : '');
 
 export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], ctaLabel, ctaHref = '#' }) {
   const ref = useReveal([tiers.length, phases.length]);
@@ -18,7 +19,7 @@ export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], 
 
         <div className="b-mat-tiers">
           {tiers.map((t, i) => (
-            <div className={'b-mat-tier t' + clampN(i, 3)} data-reveal style={{ transitionDelay: `${i * 80}ms` }} key={i}>
+            <div className={'b-mat-tier' + tierClass(i, 3)} data-reveal style={{ transitionDelay: `${i * 80}ms` }} key={i}>
               {t.range ? <span className="b-mat-rng">{t.range}</span> : null}
               <h3>{t.label}</h3>
               <p>{t.body}</p>
@@ -28,9 +29,9 @@ export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], 
 
         <div className="b-mat-phases">
           {phases.map((p, i) => (
-            <div className={'b-mat-phase p' + clampN(i, 4)} data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
+            <div className={'b-mat-phase' + phaseClass(i, 4)} data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
               <span className="b-mat-pscore">{p.score}</span>
-              <h4>{p.label}</h4>
+              <h3>{p.label}</h3>
               <p>{p.body}</p>
             </div>
           ))}
@@ -65,7 +66,7 @@ export const css = `
 .b-mat-phase.p3{background:rgba(200,255,0,.06)}
 .b-mat-phase.p4{background:rgba(200,255,0,.10);border-color:var(--gs-border)}
 .b-mat-pscore{display:block;font-size:.7rem;font-weight:800;letter-spacing:.12em;color:var(--gs-text-faint);text-transform:uppercase}
-.b-mat-phase h4{margin:.45em 0 .35em;font-size:1.08rem;font-weight:800}
+.b-mat-phase h3{margin:.45em 0 .35em;font-size:1.08rem;font-weight:800}
 .b-mat-phase p{color:var(--gs-text-faint);font-size:.82rem;line-height:1.5}
 .b-mat-cta{margin-top:clamp(28px,4vw,40px)}
 @media(max-width:760px){.b-mat-tiers{grid-template-columns:1fr}.b-mat-phases{grid-template-columns:repeat(2,1fr)}}

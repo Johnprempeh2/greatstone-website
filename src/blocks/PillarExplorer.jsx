@@ -55,7 +55,7 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
           {index ? <span className="b-chapter-num">{index}</span> : null}
           {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
         </div>
-        <h2 className="b-pillarx-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        {(headline || highlight) ? (<h2 className="b-pillarx-head" data-reveal>{headline}{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>) : null}
         {body ? <p className="b-pillarx-body" data-reveal>{body}</p> : null}
 
         <div className="b-pillarx-stage" data-reveal>
@@ -84,22 +84,22 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
 
 export const css = `
 .b-pillarx{padding:clamp(64px,11vw,140px) 0;position:relative}
-.b-pillarx-head{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:900;line-height:1.03;letter-spacing:-.03em;max-width:18ch}
+.b-pillarx-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:18ch}
 .b-pillarx-body{margin-top:20px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
 .b-pillarx-stage{display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(18px,3vw,40px);align-items:center;margin-top:clamp(28px,4vw,44px)}
 @media(max-width:860px){.b-pillarx-stage{grid-template-columns:1fr}}
 .b-pillarx-canvas{height:clamp(340px,46vh,520px);min-width:0}
 .b-pillarx-canvas canvas{width:100%;height:100%;display:block}
-.b-pillarx-detail{background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:18px;padding:clamp(22px,2.6vw,32px);backdrop-filter:blur(6px)}
+.b-pillarx-detail{background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:18px;padding:clamp(22px,2.6vw,32px);backdrop-filter:blur(6px);min-width:0}
 .b-pillarx-n{font-size:.72rem;font-weight:900;letter-spacing:.12em;color:var(--gs-accent);font-variant-numeric:tabular-nums}
-.b-pillarx-detail h3{margin-top:12px;font-size:clamp(1.3rem,2.2vw,1.7rem);font-weight:800;letter-spacing:-.01em}
+.b-pillarx-detail h3{margin-top:12px;font-size:clamp(1.3rem,2.2vw,1.7rem);font-weight:800;letter-spacing:-.01em;overflow-wrap:anywhere}
 .b-pillarx-detail p{margin-top:12px;color:var(--gs-muted);font-size:1rem;line-height:1.65}
 .b-pillarx-cta{margin-top:18px;display:inline-flex;align-items:center;gap:7px;font-size:.82rem;font-weight:800;
   letter-spacing:.04em;color:var(--gs-accent);text-decoration:none}
 .b-pillarx-cta svg{transition:transform .25s var(--gs-ease)}
 .b-pillarx-cta:hover svg{transform:translateX(4px)}
 .b-pillarx-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:clamp(20px,3vw,30px)}
-.b-pillarx-tab{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:100px;
+.b-pillarx-tab{background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:100px;
   padding:8px 16px;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;color:var(--gs-muted);cursor:pointer;
   transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease),background .25s var(--gs-ease)}
 .b-pillarx-tab:hover{color:var(--gs-text);border-color:var(--gs-border)}

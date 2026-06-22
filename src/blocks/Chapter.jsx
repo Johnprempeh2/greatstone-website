@@ -41,7 +41,7 @@ export const css = `
   text-transform:uppercase;color:var(--gs-faint)}
 .b-chapter-name::before{content:"";position:absolute;left:0;top:50%;width:1px;height:13px;transform:translateY(-50%);
   background:var(--gs-border-soft)}
-.b-chapter h2{font-size:clamp(1.9rem,4.6vw,3.3rem);font-weight:900;line-height:1.03;letter-spacing:-.03em}
+.b-chapter h2{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em}
 .b-chapter-body{margin-top:24px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-chapter.align-center .b-chapter-body{margin-inline:auto}
 /* coda is just a follow-on body paragraph (the live .ch-copy is one muted block, no lime callout) */

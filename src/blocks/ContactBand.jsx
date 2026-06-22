@@ -13,14 +13,14 @@ export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftw
         <div className="contact-band">
           <div data-reveal>
             {kicker ? <p className="kicker">{kicker}</p> : null}
-            <h2 className="h2 b-cb-head">{heading}</h2>
+            {heading ? <h2 className="h2 b-cb-head">{heading}</h2> : null}
             {body ? <p className="muted b-cb-body">{body}</p> : null}
             <a className="big-mail" href={safeMailto(email)}>{email}</a>
           </div>
           <div className="card calc-card" data-reveal>
             {cardKicker ? <p className="kicker">{cardKicker}</p> : null}
             {cardStat ? <div className="calc-time"><b>{cardStat}</b><span>{cardStatUnit}</span></div> : null}
-            <h3 className="h3 b-cb-cardhead">{cardHeading}</h3>
+            {cardHeading ? <h3 className="h3 b-cb-cardhead">{cardHeading}</h3> : null}
             {cardBody ? <p className="muted">{cardBody}</p> : null}
             {cardCtaLabel ? <a className="b-cta ghost b-cb-cardcta" href={safeHref(cardCtaHref)}>{cardCtaLabel}<Arrow /></a> : null}
           </div>
@@ -70,7 +70,7 @@ export const puck = {
     email: 'dx@greatstonesoftware.co.uk',
     cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
     cardHeading: 'Run the time-savings calculator',
-    cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The deep dive picks up exactly where it leaves off.',
+    cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The Deep Dive picks up exactly where it leaves off.',
     cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
   },
   render: (props) => <ContactBand {...props} />,

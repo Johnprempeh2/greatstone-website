@@ -188,12 +188,13 @@ export const css = `
 .b-ind-swap .b-ind-card.specific .b-ind-drains li:nth-child(4){animation-delay:.22s}
 .b-ind-swap .b-ind-card.specific .b-ind-drains li:nth-child(5){animation-delay:.28s}
 @keyframes gsIndRowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
-.b-ind-foot{margin-top:20px;padding-top:18px;border-top:1px solid var(--gs-border-soft);font-size:.86rem;color:var(--gs-text-faint)}
+.b-ind-foot{margin-top:20px;padding-top:18px;border-top:1px solid var(--gs-border-soft);font-size:.92rem;color:var(--gs-text-faint)}
 .b-ind-foot .accent{color:var(--gs-accent);font-weight:700}
 @media(prefers-reduced-motion:reduce){
   .b-ind-swap,.b-ind-headline,.b-ind-underline{transition:none !important}
   .b-ind-swap.is-swapping{opacity:1;transform:none}
   .b-ind-swap .b-ind-card.specific .b-ind-drains li{animation:none !important}
+  .b-ind-chip:hover{transform:none}
 }
 `;
 

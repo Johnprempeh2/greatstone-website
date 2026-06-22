@@ -7,11 +7,15 @@ export function Steps({ index, eyebrow, headline, highlight, body, items = [], a
   return (
     <section ref={ref} className="b-steps" data-align={align}>
       <div className="wrap">
-        <div className="b-chapter-eyebrow" data-reveal>
-          {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
-        </div>
-        <h2 className="b-steps-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        {(index || eyebrow) ? (
+          <div className="b-chapter-eyebrow" data-reveal>
+            {index ? <span className="b-chapter-num">{index}</span> : null}
+            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          </div>
+        ) : null}
+        {(headline || highlight) ? (
+          <h2 className="b-steps-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        ) : null}
         {body ? <p className="b-steps-body" data-reveal>{body}</p> : null}
         <ol className="b-steps-grid">
           {items.map((it, i) => {
@@ -38,14 +42,14 @@ export function Steps({ index, eyebrow, headline, highlight, body, items = [], a
 
 export const css = `
 .b-steps{padding:clamp(64px,11vw,140px) 0;position:relative}
-.b-steps-head{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:900;line-height:1.03;letter-spacing:-.03em;max-width:16ch}
+.b-steps-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:16ch}
 .b-steps-body{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
 .b-steps-grid{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,30px);margin-top:clamp(36px,5vw,58px)}
 @media(max-width:820px){.b-steps-grid{grid-template-columns:1fr}}
 .b-step{position:relative;padding:28px 26px;border:1px solid var(--gs-border-soft);border-radius:18px;
-  background:var(--gs-card);backdrop-filter:blur(6px);transition:transform .4s var(--gs-ease),border-color .4s var(--gs-ease)}
+  background:var(--gs-card);backdrop-filter:blur(6px);transition:transform var(--gs-dur) var(--gs-ease),border-color var(--gs-dur) var(--gs-ease)}
 .b-step:hover{transform:translateY(-4px);border-color:var(--gs-border)}
-.b-step-n{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:13px;
+.b-step-n{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;
   font-weight:900;font-size:1.04rem;color:var(--gs-accent);background:rgba(200,255,0,.08);border:1px solid var(--gs-border);
   font-variant-numeric:tabular-nums}
 .b-step-phase{display:block;margin-top:14px;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}

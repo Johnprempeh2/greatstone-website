@@ -77,8 +77,8 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
 
 export const css = `
 .b-ins-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:clamp(22px,3vw,34px)}
-.b-ins-chip{font-family:inherit;cursor:pointer;padding:.55em 1.15em;min-height:44px;display:inline-flex;align-items:center;border-radius:100px;border:1px solid var(--gs-border);
-  background:var(--gs-accent-soft);color:var(--gs-text-muted);font-size:.78rem;font-weight:700;letter-spacing:.06em;
+.b-ins-chip{font-family:inherit;cursor:pointer;padding:.55em 1.15em;min-height:44px;display:inline-flex;align-items:center;border-radius:100px;border:1px solid var(--gs-border-soft);
+  background:var(--gs-card);color:var(--gs-text-muted);font-size:.78rem;font-weight:700;letter-spacing:.06em;
   transition:color var(--gs-dur),background var(--gs-dur),border-color var(--gs-dur),transform var(--gs-dur) var(--gs-ease)}
 .b-ins-chip:hover{transform:translateY(-2px);color:var(--gs-text);border-color:var(--gs-accent-mid)}
 .b-ins-chip[aria-pressed="true"]{background:var(--gs-accent);color:#0e1611;border-color:var(--gs-accent)}
@@ -111,6 +111,7 @@ export const css = `
 @media(prefers-reduced-motion:reduce){
   .b-ins-grid{transition:none}
   .b-ins-post:hover .b-ins-ink{transform:none;filter:none}
+  .b-ins-chip:hover{transform:none}
 }
 `;
 
@@ -150,12 +151,12 @@ export const puck = {
       { label: 'Adoption', value: 'adoption' },
     ],
     posts: [
-      { cat: 'ai', title: "Why your AI spend isn't paying back yet.", excerpt: "Most AI budgets buy tools, not outcomes. Here's the gap between a licence and a habit, and how we close it inside the team.", readTime: '6 min read', image: '', alt: '' },
+      { cat: 'ai', title: "Why your AI spend isn’t paying back yet.", excerpt: "Most AI budgets buy tools, not outcomes. Here’s the gap between a licence and a habit, and how we close it inside the team.", readTime: '6 min read', image: '', alt: '' },
       { cat: 'adoption', title: 'The week your team never gets back.', excerpt: 'We tracked one ordinary week across an operations team. The hours lost to copy-paste, context-switching and waiting were not small.', readTime: '5 min read', image: '', alt: '' },
       { cat: 'maturity', title: 'Pebble, plateau, peak: a maturity map.', excerpt: 'A plain-language way to place where you really are across the eight pillars, and what the next honest step looks like from here.', readTime: '9 min read', image: '', alt: '' },
-      { cat: 'industry', title: 'What “digital-first” means when the work is physical.', excerpt: "Field, trade and operations businesses don't need an app for everything. They need the right few. We sort the signal from the demos.", readTime: '7 min read', image: '', alt: '' },
+      { cat: 'industry', title: 'What “digital-first” means when the work is physical.', excerpt: "Field, trade and operations businesses don’t need an app for everything. They need the right few. We sort the signal from the demos.", readTime: '7 min read', image: '', alt: '' },
       { cat: 'ai', title: 'Automate the boring before the brilliant.', excerpt: 'The highest-return automations are rarely the flashy ones. We start where the friction is quiet, daily and unloved, then build up.', readTime: '4 min read', image: '', alt: '' },
-      { cat: 'adoption', title: "Tools don't transform teams. Habits do.", excerpt: "Rollout isn't go-live. We stay embedded past launch because the value lives in week six, not week one, when the new way becomes the only way.", readTime: '6 min read', image: '', alt: '' },
+      { cat: 'adoption', title: "Tools don’t transform teams. Habits do.", excerpt: "Rollout isn’t go-live. We stay embedded past launch because the value lives in week six, not week one, when the new way becomes the only way.", readTime: '6 min read', image: '', alt: '' },
     ],
     emptyNote: 'No field notes in this category yet: check back soon.',
   },

@@ -50,15 +50,15 @@ export const css = `
 @media(max-width:560px){.b-pc-grid{grid-template-columns:1fr}}
 .b-pc-card{display:flex;flex-direction:column;gap:10px;padding:24px;border-radius:16px;height:100%;text-align:left;
   background:var(--gs-card);border:1px solid var(--gs-border-soft);position:relative;overflow:hidden;
-  color:inherit;text-decoration:none;transition:transform .3s var(--gs-ease),border-color .3s,background .3s}
+  color:inherit;text-decoration:none;transition:transform var(--gs-dur) var(--gs-ease),border-color var(--gs-dur),background var(--gs-dur)}
 .b-pc-card:hover{transform:translateY(-5px);border-color:var(--gs-border);background:var(--gs-card-hover)}
 .b-pc-card::after{content:'';position:absolute;left:0;top:0;height:2px;width:0;background:var(--gs-accent);transition:width .4s var(--gs-ease)}
 .b-pc-card:hover::after{width:100%}
 .b-pc-top{display:flex;align-items:baseline;justify-content:space-between}
 .b-pc-n{font-size:.72rem;font-weight:800;letter-spacing:.16em;color:var(--gs-accent)}
-.b-pc-name{font-size:1.18rem;font-weight:800;margin:.1em 0}
-.b-pc-tag{font-size:.82rem;font-weight:700;color:var(--gs-text)}
-.b-pc-def{font-size:.86rem;color:var(--gs-text-muted);line-height:1.5}
+.b-pc-name{font-size:1.18rem;font-weight:800;margin:.1em 0;overflow-wrap:anywhere}
+.b-pc-tag{font-size:.82rem;font-weight:700;color:var(--gs-text);overflow-wrap:anywhere}
+.b-pc-def{font-size:.86rem;color:var(--gs-text-muted);line-height:1.5;overflow-wrap:anywhere}
 .b-pc-assess{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:8px;padding-left:0}
 .b-pc-assess li{font-size:.68rem;letter-spacing:.04em;color:var(--gs-text-faint);border:1px solid var(--gs-border-soft);border-radius:100px;padding:3px 9px}
 .b-pc-go{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent);opacity:0;transition:opacity .3s}

@@ -1,4 +1,5 @@
 import { useReveal } from './reveal.js';
+import { Arrow } from './icons.jsx';
 import { MediaField } from '../cms/MediaField.jsx';
 import { safeHref } from '../lib/safe-url.js';
 
@@ -19,13 +20,13 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
           </div>
           <div className="featured__body">
             {label ? <span className="pill">{label}</span> : null}
-            <h2 className="h3">{title}</h2>
+            {title ? <h2 className="h3">{title}</h2> : null}
             {excerpt ? <p className="muted">{excerpt}</p> : null}
             <div className="featured__meta">
               {meta ? <span className="faint">{meta}</span> : null}
               {readTime ? <span className="pill">{readTime}</span> : null}
             </div>
-            {ctaLabel ? <p className="featured__cta"><a className="btn btn--primary" href={safeHref(ctaHref)}>{ctaLabel}</a></p> : null}
+            {ctaLabel ? <p className="featured__cta"><a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a></p> : null}
           </div>
         </article>
       </div>

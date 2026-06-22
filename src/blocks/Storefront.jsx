@@ -16,7 +16,7 @@ function SearchGlyph() {
 // a fake payment here. Editable: the section heading + intro only (brand-locked cards).
 // vendor logos can fail to load (third-party hotlink) — hide the <img> gracefully so the name still reads
 const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
-function Card({ p, catName, catLogo }) {
+function Card({ p, catName, catLogo, as: H = 'h4' }) {
   return (
     <article className="b-sf-card" data-reveal>
       {p.image ? <div className="b-sf-media"><img src={p.image} alt={p.imageAlt || ''} loading="lazy" decoding="async" onError={hideOnError} /></div> : null}
@@ -25,7 +25,7 @@ function Card({ p, catName, catLogo }) {
         {catLogo ? <img className="b-sf-vlogo" src={catLogo} alt="" loading="lazy" onError={hideOnError} /> : null}
         <span>{catName || 'Software'}</span>
       </div>
-      <h4 className="b-sf-name"><a className="b-sf-namelink" href={'#product/' + (p.slug || p.id)}>{p.name}</a></h4>
+      <H className="b-sf-name"><a className="b-sf-namelink" href={'#product/' + (p.slug || p.id)}>{p.name}</a></H>
       <p className="b-sf-summary">{p.summary}</p>
       {Array.isArray(p.features) && p.features.length ? (
         <ul className="b-sf-features">{p.features.map((f, i) => <li key={i}>{f}</li>)}</ul>
@@ -163,7 +163,7 @@ export function Storefront({ heading, body, controls = 'show' }) {
               {view.length} {view.length === 1 ? 'product' : 'products'}{cat !== 'all' ? ' in ' + chipName(cat) : ''}{ql ? ' matching “' + q.trim() + '”' : ''}
             </p>
             {view.length ? (
-              <div className="b-sf-grid">{view.map((p) => <Card key={p.id} p={p} catName={catName(p.category)} catLogo={catLogo(p.category)} />)}</div>
+              <div className="b-sf-grid">{view.map((p) => <Card key={p.id} p={p} catName={catName(p.category)} catLogo={catLogo(p.category)} as="h3" />)}</div>
             ) : (
               <p className="b-sf-noresults">No products match. <button type="button" className="b-sf-clear" onClick={clearAll}>Clear filters</button></p>
             )}
@@ -179,7 +179,7 @@ export const css = `
 .b-sf-head{font-size:clamp(1.9rem,4.6vw,3.1rem);font-weight:900;letter-spacing:-.03em;line-height:1.04;text-align:center}
 .b-sf-intro{margin:18px auto 0;max-width:60ch;text-align:center;color:var(--gs-text-muted);font-size:clamp(1rem,1.5vw,1.16rem);line-height:1.7}
 .b-sf-controls{margin-top:clamp(28px,5vw,46px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;justify-content:center}
-.b-sf-search{display:inline-flex;align-items:center;gap:8px;background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);
+.b-sf-search{display:inline-flex;align-items:center;gap:8px;background:var(--gs-card);border:1px solid var(--gs-border-soft);
   border-radius:100px;padding:9px 16px;color:var(--gs-text-faint);min-width:min(280px,80vw)}
 .b-sf-search:focus-within{border-color:var(--gs-accent);outline:2px solid var(--gs-accent);outline-offset:2px}
 .b-sf-search svg{flex-shrink:0}
@@ -192,7 +192,7 @@ export const css = `
 .b-sf-chip:hover{color:var(--gs-text);border-color:var(--gs-border)}
 .b-sf-chip.is-on{background:var(--gs-accent);border-color:var(--gs-accent);color:#0e1611}
 .b-sf-chipn{font-size:.72rem;font-weight:800;opacity:.7;font-variant-numeric:tabular-nums}
-.b-sf-sort select{background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);border-radius:100px;padding:9px 16px;
+.b-sf-sort select{background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:100px;padding:9px 16px;
   color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;outline:none}
 .b-sf-sort select:focus-visible{border-color:var(--gs-accent);outline:2px solid var(--gs-accent);outline-offset:2px}
 .b-sf-results{margin-top:clamp(28px,5vw,44px)}
@@ -209,7 +209,7 @@ export const css = `
 .b-sf-groupn{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text-faint);
   background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:100px;padding:4px 11px}
 .b-sf-grid{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.b-sf-card{position:relative;display:flex;flex-direction:column;background:rgba(20,23,20,.6);border:1px solid var(--gs-border-soft);
+.b-sf-card{position:relative;display:flex;flex-direction:column;min-width:0;background:var(--gs-card);border:1px solid var(--gs-border-soft);
   border-radius:18px;padding:24px;backdrop-filter:blur(8px);transition:border-color .3s var(--gs-ease),transform .3s var(--gs-ease)}
 .b-sf-card:hover{border-color:var(--gs-border);transform:translateY(-3px)}
 .b-sf-media{margin:-4px -4px 14px;border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:rgba(255,255,255,.03)}
@@ -219,10 +219,10 @@ export const css = `
 .b-sf-badge.is-legacy{background:var(--gs-text-faint);color:#0e1611}
 .b-sf-cat{display:flex;align-items:center;gap:8px;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent)}
 .b-sf-vlogo{height:16px;width:auto;max-width:74px;object-fit:contain;background:#fff;border-radius:4px;padding:2px 5px;line-height:0}
-.b-sf-name{margin-top:8px;font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+.b-sf-name{margin-top:8px;font-size:1.4rem;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
 .b-sf-namelink{color:inherit;text-decoration:none}
 .b-sf-namelink:hover{color:var(--gs-accent)}
-.b-sf-summary{margin-top:10px;color:var(--gs-text-muted);font-size:.95rem;line-height:1.6}
+.b-sf-summary{margin-top:10px;color:var(--gs-text-muted);font-size:.95rem;line-height:1.6;overflow-wrap:anywhere}
 .b-sf-features{margin-top:16px;display:flex;flex-direction:column;gap:7px;list-style:none}
 .b-sf-features li{position:relative;padding-left:20px;font-size:.88rem;color:var(--gs-text);line-height:1.5}
 .b-sf-features li::before{content:"";position:absolute;left:0;top:.5em;width:9px;height:9px;border-radius:2px;
@@ -238,6 +238,7 @@ export const css = `
 .b-sf-details:hover{text-decoration:underline}
 .b-sf-details svg{width:13px;height:13px}
 .b-sf-empty{margin-top:30px;text-align:center;color:var(--gs-text-faint)}
+@media (prefers-reduced-motion:reduce){.b-sf-card{transition:border-color .3s var(--gs-ease)}.b-sf-card:hover{transform:none}}
 `;
 
 export const puck = {

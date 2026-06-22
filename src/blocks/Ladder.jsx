@@ -1,6 +1,6 @@
 import { useReveal } from './reveal.js';
 
-// The organisation-posture strip: lagger to pioneer, read as a posture rather than a verdict.
+// The organisation-posture strip: laggard to pioneer, read as a posture rather than a verdict.
 // The dim-to-lime colour progression is code-owned (by position); marketing edits the copy.
 export function Ladder({ kicker, headline, highlight, body, items = [] }) {
   const ref = useReveal([items.length]);
@@ -9,7 +9,7 @@ export function Ladder({ kicker, headline, highlight, body, items = [] }) {
       <div className="wrap">
         <div className="center" data-reveal>
           {kicker ? <span className="kicker">{kicker}</span> : null}
-          <h2 className="h2 b-ladder-head">{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+          {(headline || highlight) ? (<h2 className="h2 b-ladder-head">{headline}{headline && highlight ? ' ' : ''}{highlight ? <span className="accent">{highlight}</span> : null}</h2>) : null}
           {body ? <p className="lead b-ladder-body">{body}</p> : null}
         </div>
         <div className="phases">
@@ -36,7 +36,7 @@ export const css = `
 @media(max-width:880px){.phases{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.phases{grid-template-columns:1fr}}
 .phase{position:relative;border:1px solid var(--gs-border-soft);border-radius:16px;padding:22px 20px 24px;overflow:hidden;background:var(--gs-card);
-  transition:transform .3s var(--gs-ease),border-color .3s var(--gs-ease)}
+  transition:transform var(--gs-dur) var(--gs-ease),border-color var(--gs-dur) var(--gs-ease)}
 .phase:hover{transform:translateY(-4px)}
 .phase::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;background:linear-gradient(160deg,var(--p1,transparent),transparent 60%)}
 .phase .rank{font-size:.68rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gs-faint);position:relative}

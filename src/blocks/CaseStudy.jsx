@@ -17,7 +17,7 @@ export function CaseStudy({ index, eyebrow, headline, highlight, body, items = [
             )
             : (eyebrow ? <span className="kicker" data-reveal>{eyebrow}</span> : null)
         ) : null}
-        <h2 className="b-cases-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        {(headline || highlight) ? <h2 className="b-cases-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
         {body ? <p className="b-cases-body" data-reveal>{body}</p> : null}
         <div className="b-cases-grid">
           {items.map((c, i) => (
@@ -39,7 +39,7 @@ export function CaseStudy({ index, eyebrow, headline, highlight, body, items = [
 
 export const css = `
 .b-cases{padding:clamp(64px,11vw,140px) 0;position:relative}
-.b-cases-head{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:900;line-height:1.03;letter-spacing:-.03em;max-width:20ch}
+.b-cases-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:20ch}
 .b-cases-body{margin-top:20px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
 .b-cases-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2vw,24px);margin-top:clamp(28px,4vw,44px)}
 @media(max-width:920px){.b-cases-grid{grid-template-columns:1fr}}

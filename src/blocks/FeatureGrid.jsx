@@ -36,9 +36,8 @@ export const css = `
 .b-features-intro{margin:18px auto 0;max-width:64ch;color:var(--gs-muted);font-size:clamp(1rem,1.4vw,1.16rem);line-height:1.75}
 .b-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2vw,24px);margin-top:clamp(26px,4vw,42px)}
 @media(max-width:860px){.b-grid{grid-template-columns:1fr}}
-.b-card{background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:16px;padding:24px 26px;backdrop-filter:blur(6px);
-  transition:transform .3s var(--gs-ease),border-color .3s var(--gs-ease)}
-.b-card:hover{transform:translateY(-4px);border-color:var(--gs-border)}
+.b-card{background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:18px;padding:clamp(22px,2.6vw,34px);backdrop-filter:blur(8px);transition:transform var(--gs-dur) var(--gs-ease),border-color var(--gs-dur),background var(--gs-dur)}
+.b-card:hover{transform:translateY(-4px);border-color:var(--gs-border);background:var(--gs-card-hover)}
 .b-card h3{font-size:1.18rem;font-weight:800}
 .b-card p{margin-top:8px;color:var(--gs-muted);font-size:.95rem;line-height:1.55}
 /* principles variant — the live method framing: centered, no card chrome, leading 01/02/03 number */

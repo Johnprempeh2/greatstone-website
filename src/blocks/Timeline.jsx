@@ -65,7 +65,7 @@ export function Timeline({ index, eyebrow, headline, highlight, body, items = []
 
 export const css = `
 .b-timeline{padding:clamp(64px,11vw,140px) 0;position:relative}
-.b-timeline-head{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:900;line-height:1.03;letter-spacing:-.03em;max-width:18ch}
+.b-timeline-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:18ch}
 .b-timeline-body{margin-top:20px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
 .timeline{position:relative;margin-top:clamp(40px,7vh,80px)}
 .tl-track{position:absolute;top:0;bottom:0;left:22px;width:2px;--tl-progress:0}

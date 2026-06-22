@@ -12,19 +12,21 @@ export function Spectrum({ kicker, headline, highlight, body, coda, rows = [], c
         <div className="grid cols-2 b-spectrum-grid">
           <div data-reveal>
             {kicker ? <span className="kicker">{kicker}</span> : null}
-            <h2 className="h2 b-spectrum-head">{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+            {(headline || highlight) ? (<h2 className="h2 b-spectrum-head">{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>) : null}
             {body ? <p className="lead b-spectrum-lead">{body}</p> : null}
             {coda ? <p className="b-spectrum-coda">{coda}</p> : null}
           </div>
 
-          <div className="b-spectrum-figure" role="group" data-reveal aria-label="Tool selection driven by the problem, not the product">
-            {rows.map((r, i) => (
-              <div className="b-spectrum-row" key={i}>
-                <span className={'b-spectrum-dot ' + (r.tone === 'bad' ? 'bad' : 'good')} aria-hidden="true" />
-                <strong>{r.term}</strong>
-                {r.meta ? <span className="b-spectrum-meta">{r.meta}</span> : null}
-              </div>
-            ))}
+          <div data-reveal>
+            <ul className="b-spectrum-figure" role="group" aria-label="Tool selection driven by the problem, not the product">
+              {rows.map((r, i) => (
+                <li className="b-spectrum-row" key={i}>
+                  <span className={'b-spectrum-dot ' + (r.tone === 'bad' ? 'bad' : 'good')} aria-hidden="true" />
+                  <strong>{r.term}</strong>
+                  {r.meta ? <span className="b-spectrum-meta">{r.meta}</span> : null}
+                </li>
+              ))}
+            </ul>
             {caption ? <p className="b-spectrum-cap">{caption}</p> : null}
           </div>
         </div>
@@ -38,15 +40,15 @@ export const css = `
 .b-spectrum-grid{align-items:center}
 .b-spectrum-head{max-width:14ch;font-weight:900;letter-spacing:-.03em;margin:.4em 0 .6em}
 .b-spectrum-coda{margin-top:1.2em;color:var(--gs-text-muted);line-height:1.7}
-.b-spectrum-figure{border:1px solid var(--gs-border-soft);border-radius:18px;padding:clamp(22px,2.6vw,34px);background:var(--gs-card);backdrop-filter:blur(8px)}
-.b-spectrum-row{display:flex;align-items:center;gap:14px;padding:.85em 0;border-bottom:1px solid var(--gs-border-soft)}
+.b-spectrum-figure{list-style:none;margin:0;border:1px solid var(--gs-border-soft);border-radius:18px;padding:clamp(22px,2.6vw,34px);background:var(--gs-card);backdrop-filter:blur(8px)}
+.b-spectrum-row{display:flex;align-items:center;gap:14px;min-width:0;padding:.85em 0;border-bottom:1px solid var(--gs-border-soft)}
 .b-spectrum-row:last-of-type{border-bottom:0}
 .b-spectrum-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
 .b-spectrum-dot.bad{background:var(--gs-text-faint)}
 .b-spectrum-dot.good{background:var(--gs-accent);box-shadow:0 0 12px var(--gs-accent-glow)}
-.b-spectrum-row strong{font-weight:700}
+.b-spectrum-row strong{font-weight:700;min-width:0;overflow-wrap:anywhere}
 .b-spectrum-meta{font-size:.84rem;color:var(--gs-text-muted);margin-left:auto;text-align:right}
-.b-spectrum-cap{font-size:.78rem;color:var(--gs-text-faint);margin-top:14px}
+.b-spectrum-cap{font-size:.82rem;line-height:1.6;color:var(--gs-text-muted);margin-top:14px}
 @media(max-width:900px){.b-spectrum-figure{margin-top:8px}}
 @media(max-width:480px){.b-spectrum-row{flex-wrap:wrap}.b-spectrum-meta{margin-left:0;text-align:left;width:100%}}
 `;

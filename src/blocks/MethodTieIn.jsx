@@ -40,7 +40,7 @@ export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHre
 
           <div ref={chartRef} className={'b-tiein-chart' + (grown ? ' is-grown' : '')} data-reveal aria-hidden="true">
             {pillars.map((p, i) => (
-              <div className={'b-tiein-pm' + (p.lowest ? ' lowest' : '')} style={{ '--h': (p.height || 30) + '%' }} key={i}>
+              <div className={'b-tiein-pm' + (p.lowest ? ' lowest' : '')} style={{ '--h': (Number.isFinite(+p.height) ? +p.height : 30) + '%' }} key={i}>
                 <span>{p.label}</span>
               </div>
             ))}
@@ -60,7 +60,7 @@ export const css = `
 .b-tiein-chart{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .b-tiein-pm{aspect-ratio:1;border:1px solid var(--gs-border-soft);border-radius:12px;display:flex;align-items:flex-end;
   justify-content:center;padding:8px;font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
-  text-align:center;color:var(--gs-text-faint);position:relative;overflow:hidden}
+  text-align:center;color:var(--gs-text-faint);position:relative;overflow:hidden;overflow-wrap:anywhere;line-height:1.15}
 .b-tiein-pm::before{content:'';position:absolute;left:6px;right:6px;bottom:6px;border-radius:6px;height:0;
   background:linear-gradient(180deg,var(--gs-accent-soft),var(--gs-accent-dim));transition:height .8s var(--gs-ease)}
 .b-tiein-chart.is-grown .b-tiein-pm::before{height:var(--h,30%)}

@@ -3,7 +3,7 @@ import { useReveal } from './reveal.js';
 
 // The payback viz: a bar that fills to the break-even point on entry, with the rest of the year
 // read as pure return. The figures are editable; the bar width follows the payback percentage.
-export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct = 29, markerLabel = 'Payback', s1, s2, s3, paybackNum, paybackCap, legendCost, legendReturn }) {
+export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct = 29, markerLabel = 'Payback', s1, s2, s3, paybackNum = '', paybackCap, legendCost, legendReturn }) {
   const ref = useReveal();
   const roiRef = useRef(null);
   useEffect(() => {
@@ -23,16 +23,16 @@ export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct =
         ) : null}
         <div className="roi" ref={roiRef} style={{ '--roi-w': `${paybackPct}%` }}>
           <div className="roi-track-wrap" data-reveal>
-            <div className="roi-track" role="img" aria-label={`Engagement reaches ${(markerLabel || 'payback').toLowerCase()} at roughly ${paybackNum}; the rest of the year is return.`}>
+            <div className="roi-track" role="img" aria-label={`Engagement reaches ${(markerLabel || 'payback').toLowerCase()} at roughly ${paybackNum || 'the payback point'}; the rest of the year is return.`}>
               <div className="roi-fill" />
               {markerLabel ? <span className="roi-marker">{markerLabel}</span> : null}
             </div>
             <div className="roi-scale"><span>{s1}</span><span>{s2}</span><span>{s3}</span></div>
           </div>
           <div className="roi-copy">
-            <h3 className="h3" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h3>
+            <h2 className="h3" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
             {body ? <p className="lead" data-reveal>{body}</p> : null}
-            <div className="roi-payback" data-reveal><span className="p-num">{paybackNum}</span><span className="p-cap">{paybackCap}</span></div>
+            <div className="roi-payback" data-reveal>{paybackNum ? <span className="p-num">{paybackNum}</span> : null}<span className="p-cap">{paybackCap}</span></div>
             <div className="roi-legend" data-reveal>
               <span><i className="l-cost" />{legendCost}</span>
               <span><i className="l-return" />{legendReturn}</span>
@@ -58,7 +58,7 @@ export const css = `
 .roi-payback{margin-top:26px;display:flex;align-items:baseline;gap:.5em}
 .roi-payback .p-num{font-weight:900;font-size:clamp(2.2rem,4vw,3rem);color:var(--gs-accent);line-height:1;letter-spacing:-.03em}
 .roi-payback .p-cap{font-size:.92rem;color:var(--gs-muted);font-weight:600}
-.roi-copy h3{margin-bottom:14px}
+.roi-copy h2{margin-bottom:14px}
 .roi-legend{display:flex;gap:22px;margin-top:22px;flex-wrap:wrap}
 .roi-legend span{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gs-muted)}
 .roi-legend i{width:14px;height:14px;border-radius:4px;display:inline-block}

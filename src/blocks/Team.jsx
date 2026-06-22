@@ -26,7 +26,7 @@ export function Team({ kicker, heading, body, items = [] }) {
           {items.map((m, i) => (
             <div className="card team-card" data-reveal style={{ transitionDelay: `${i * 55}ms` }} key={i}>
               <TeamAvatar photo={m.photo} name={m.name} />
-              <div><div className="t-name">{m.name}</div><div className="t-role">{m.role}</div></div>
+              <div className="t-meta"><div className="t-name">{m.name}</div><div className="t-role">{m.role}</div></div>
             </div>
           ))}
         </div>
@@ -46,8 +46,9 @@ export const css = `
 .team-card .avatar{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.95rem;
   color:var(--gs-accent);background:radial-gradient(circle at 32% 28%,rgba(27,80,57,.9),rgba(14,49,34,.9));border:1px solid var(--gs-border);letter-spacing:.02em}
 .team-card .avatar-img{object-fit:cover}
-.team-card .t-name{font-weight:700;font-size:1rem;line-height:1.2}
-.team-card .t-role{font-size:.82rem;color:var(--gs-faint);margin-top:2px}
+.team-card .t-meta{min-width:0}
+.team-card .t-name{font-weight:700;font-size:1rem;line-height:1.2;overflow-wrap:anywhere}
+.team-card .t-role{font-size:.82rem;color:var(--gs-faint);margin-top:2px;overflow-wrap:anywhere}
 `;
 
 const T = (name, role) => ({ name, role });

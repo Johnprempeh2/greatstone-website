@@ -38,7 +38,7 @@ export const css = `
   transform:scaleY(0);transform-origin:top;transition:transform .5s var(--gs-ease)}
 .b-value-card:hover::after{transform:scaleY(1)}
 .b-value-idx{font-weight:900;font-size:2.2rem;line-height:1;color:var(--gs-accent);opacity:.25;letter-spacing:-.03em}
-.b-value-card h3{margin:.6rem 0 .5rem;font-size:clamp(1.15rem,1.8vw,1.45rem);font-weight:800}
+.b-value-card h3{margin:.6rem 0 .5rem;font-size:clamp(1.15rem,1.8vw,1.45rem);font-weight:800;overflow-wrap:anywhere}
 .b-value-card p{color:var(--gs-text-muted);font-size:.98rem;line-height:1.6}
 @media(prefers-reduced-motion:reduce){.b-value-card,.b-value-card::after{transition:none}}
 `;
