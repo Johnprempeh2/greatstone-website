@@ -371,15 +371,14 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~05:17):** c16 (5ed5301) → c26 (57146b2) — **eleven cycles** — are all committed; the combined
-> dist is staged in the mirror as **index-B2hylcYE.js** (admin chunk carries org-print-root + dx-tagrow + acct-pending +
-> acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome; c26 also touched the
-> OrgDashboard/AccountDashboard JS for the discuss-this mailto). The Netlify MCP deploy-site proxy has 404'd at zipAndBuild
-> on EVERY attempt since ~03:25 (~25 tries over ~3h45m — a sustained Netlify-side outage; **worth checking the Netlify
-> status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy ships all eleven (c16-c26).
-> Test baseline is **73**. The loop runs a stretched ~20-min cadence to conserve while the proxy is down, still building +
-> retrying each wake; local commits + the staged mirror are the durable record — the moment a deploy succeeds the whole
-> batch goes live and the cadence drops back to ≤10 min.
+> **Deploy backlog (as of ~05:28):** c16 (5ed5301) → c27 (51189dc) — **twelve cycles** — are all committed; the combined
+> dist is staged in the mirror as **index-Cyhu-J8V.js** (admin chunk admin-6RsCdBJ_.css carries org-print-root + dx-tagrow
+> + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome + acct-qcd).
+> The Netlify MCP deploy-site proxy has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~27 tries over **~4h15m** — a
+> sustained Netlify-side outage; **worth checking the Netlify status page / the netlify-mcp.netlify.app proxy in the
+> morning**). One successful deploy ships all twelve (c16-c27). Test baseline is **73**. The loop runs a stretched ~20-min
+> cadence to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are
+> the durable record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
 ### Cycle 20 — inline copy-key on the per-order licence chips (23 Jun)
 Adversarial finding: the **Keys tab** (LicenceKeys) already had a robust copy (clipboard + select-to-copy fallback +
