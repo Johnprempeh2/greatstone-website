@@ -467,14 +467,14 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~07:05):** c16 (5ed5301) → c33 (e3e6b43) **plus** a John-requested company-profile UI polish
-> (5dfd223: .pr-form textarea styling + org-profile field/hint/subtitle/dirty-Save) — **eighteen cycles + 1 fix** — are all
-> committed; the combined dist is staged in the mirror as **index-0d0gsAC_.js** (admin chunk carries org-print-root + dx-tagrow +
+> **Deploy backlog (as of ~07:22):** c16 (5ed5301) → c34 (894bb31) **plus** a John-requested company-profile UI polish
+> (5dfd223: .pr-form textarea styling + org-profile field/hint/subtitle/dirty-Save) — **nineteen cycles + 1 fix** — are all
+> committed; the combined dist is staged in the mirror as **index-B3uN3tSc.js** (admin chunk carries org-print-root + dx-tagrow +
 > acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome + acct-qcd +
-> acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub + acct-ordtrunc). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~39 tries over **~7h** — a sustained Netlify-side outage; **worth
+> acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub + acct-ordtrunc + dx-av-more). The Netlify MCP deploy-site proxy
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~41 tries over **~7h30m** — a sustained Netlify-side outage; **worth
 > checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy ships all
-> eighteen (c16-c33). Test baseline is now **98** (c33 added 5 monthly-spend tests). The loop runs a stretched ~20-min cadence
+> nineteen (c16-c34). Test baseline is now **103** (c34 added 5 timeline-a11y tests). The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
