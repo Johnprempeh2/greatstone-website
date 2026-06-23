@@ -441,10 +441,11 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~06:34):** c16 (5ed5301) → c32 (2a88709) — **seventeen cycles** — are all committed; the combined
-> dist is staged in the mirror as **index-Clpg6AMb.js** (admin chunk admin-DWvlSvJa.css carries org-print-root + dx-tagrow +
+> **Deploy backlog (as of ~06:48):** c16 (5ed5301) → c32 (2a88709) **plus** a John-requested company-profile UI polish
+> (5dfd223: .pr-form textarea styling + org-profile field/hint/subtitle/dirty-Save) — **seventeen cycles + 1 fix** — are all
+> committed; the combined dist is staged in the mirror as **index-69AFLc4A.js** (admin chunk carries org-print-root + dx-tagrow +
 > acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome + acct-qcd +
-> acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap). The Netlify MCP deploy-site proxy
+> acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub). The Netlify MCP deploy-site proxy
 > has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~37 tries over **~6h35m** — a sustained Netlify-side outage; **worth
 > checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy ships all
 > seventeen (c16-c32). Test baseline is now **93** (c32 added 4 next-move-gap tests). The loop runs a stretched ~20-min cadence
