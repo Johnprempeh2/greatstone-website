@@ -17,6 +17,7 @@ import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { moveGap } from './next-move-gap.mjs';
 import { monthlySpend } from './monthly-spend.mjs';
 import { attendeeOverflow, filterAnnouncement } from './timeline-a11y.mjs';
+import { firstRunState } from './org-firstrun.mjs';
 import './store.css';
 import './admin.css';
 
@@ -183,7 +184,7 @@ function Org({ profile, session, onProfile }) {
 
       <NextMove company={company} />
 
-      <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
+      <EngagementTimeline engagements={engagements} orders={orders} companyId={company.id} companyName={company.name} memberName={memberName} />
 
       <InnovationBand currentPhase={sinceMarker?.phase} />
 
@@ -334,7 +335,7 @@ function OrgAnalytics({ orders, engagements }) {
 }
 
 // ── DX engagement timeline ────────────────────────────────────────────────────
-function EngagementTimeline({ engagements, companyId, companyName, memberName }) {
+function EngagementTimeline({ engagements, orders, companyId, companyName, memberName }) {
   const [filter, setFilter] = useState('all');
   const [phaseFilter, setPhaseFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
@@ -412,6 +413,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   // announce the filtered result to screen readers, so the count change isn't silent (empty string when unfiltered)
   const filtering = filter !== 'all' || phaseFilter !== 'all' || tagFilter !== 'all' || q.trim() !== '';
   const filterMsg = filterAnnouncement({ filtering, visible: visible.length, total: past.length });
+  const firstRun = firstRunState({ engagements, orders }); // context-aware first-run empty-state messaging
 
   // group by period (newest first)
   const groups = [];
@@ -441,7 +443,15 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
         <div className="dx-empty">
           <div className="dx-empty-mark" aria-hidden="true">◇</div>
           <h3>Your engagement timeline starts here</h3>
-          <p>After your kickoff, every meeting recap, milestone and deliverable from your Greatstone engagement will appear here — a living record of your digital-experience journey.</p>
+          <p>{firstRun.hasOrdersNoEngagements
+            ? <>Your purchases are in <a className="ca-link" href="#account">your account</a>. After your kickoff, every meeting recap, milestone and deliverable from your Greatstone engagement will appear here.</>
+            : <>After your kickoff, every meeting recap, milestone and deliverable from your Greatstone engagement will appear here, a living record of your digital-experience journey.</>}</p>
+          <div className="dx-empty-kinds" aria-hidden="true">
+            <span className="dx-kind k-recap">Recaps</span>
+            <span className="dx-kind k-milestone">Milestones</span>
+            <span className="dx-kind k-deliverable">Deliverables</span>
+          </div>
+          <a className="gs-btn primary sm" href="#go/contact">Book your kickoff deep dive →</a>
         </div>
       ) : (
         <>

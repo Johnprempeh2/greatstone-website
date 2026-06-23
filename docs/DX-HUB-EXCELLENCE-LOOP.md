@@ -64,8 +64,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | ✅ built (ships with c16-c32) |
 | 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | ✅ built (ships with c16-c33) |
 | 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | ✅ built (ships with c16-c34) |
-| 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | next |
-| 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | |
+| 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | ✅ built (ships with c16-c35) |
+| 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | next |
 
 _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product (task w2ux752le), deduped vs c1-c34, ordered best-value-first (trust/honesty + a11y blockers → admin-week wins → staff throughput → mobile/polish). Each is safe, reversible, front-end, presentation-only._
 
@@ -311,6 +311,20 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 36 — aspirational first-run empty-state for a brand-new org's timeline (23 Jun)
+The engagement-timeline zero-state existed but was generic and had no call to action. It's now context-aware and
+inviting: a brand-new org (no engagements) sees "Your engagement timeline starts here", a preview row of the kinds
+that will populate it (Recaps · Milestones · Deliverables chips), and a **"Book your kickoff deep dive"** CTA; a client
+who has **purchased but has no engagements yet** gets a variant that points at their account ("Your purchases are in
+your account. After your kickoff…"). The which-empty-state predicate was extracted to a pure tested module
+(`src/store/org-firstrun.mjs`: `firstRunState` → `timelineEmpty` / `isBrandNew` / `hasOrdersNoEngagements`) — **baseline
+103 → 107** (brand-new, bought-but-no-engagements, has-engagements, null/garbage guards). Because the demo client has
+8 engagements the empty-state can't render for it, so verified by (1) the unit tests covering all three outcomes and
+(2) confirming the populated path still renders live for the demo (8 timeline items, no `.dx-empty`, no error boundary).
+`orders` is now threaded into EngagementTimeline. The Org-level brand-new welcome is intentionally left to the existing
+"Set up your organization" onboarding checklist to avoid duplication. New: `src/store/org-firstrun.mjs` + `.test.mjs`.
+Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Ships with c16-c35.
 
 ### Cycle 35 — #org polish pass: toast dismiss/safe-area + phase-nav scroll + intel-chip contrast (23 Jun)
 Three presentation fixes. (a) The flash **toast** now sits above the iOS home-indicator (`bottom: calc(24px +

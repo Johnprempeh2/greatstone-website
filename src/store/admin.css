@@ -439,6 +439,9 @@
 .dx-empty-mark { font-size:2rem; color:var(--gs-accent); opacity:.7; }
 .dx-empty h3 { font-size:1.15rem; font-weight:800; margin:.4em 0 .3em; color:var(--gs-text); }
 .dx-empty p { color:var(--gs-text-muted); font-size:.9rem; max-width:46ch; margin:0 auto; }
+.dx-empty .ca-link { color:var(--gs-accent,#c8ff00); }
+.dx-empty-kinds { display:flex; flex-wrap:wrap; justify-content:center; gap:7px; margin:16px 0 18px; opacity:.85; }
+.dx-empty .gs-btn { margin-top:2px; }
 
 /* what's next + highlights */
 .dx-next, .dx-pins { margin-top:18px; }
