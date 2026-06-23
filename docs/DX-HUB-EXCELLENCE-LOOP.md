@@ -52,8 +52,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | ✅ built (ships with c16-c20) |
 | 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | ✅ built (ships with c16-c21) |
 | 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | ✅ built (ships with c16-c22) |
-| 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | next |
-| 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | |
+| 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | ✅ built (ships with c16-c23) |
+| 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | next |
 | 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | |
 | 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | |
 | 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | |
@@ -285,6 +285,18 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 24 — loading skeletons for late-mounting #org bands (CLS fix) (23 Jun)
+The maturity radar already reserved its height while loading (a 300px `.st-skel`), but the relationship pulse
+(OrgAnalytics) and the return-on-transformation strip (ReturnStrip) both returned `null` until their Supabase reads
+resolved — so the page jumped as each band popped in. Both now render a height-reserving `.st-skel` placeholder
+while `engagements`/`orders` are null (124px and 118px, matching the real bands), `aria-hidden` so screen readers
+don't announce the shimmer, reduced-motion safe (the shimmer is killed under prefers-reduced-motion via the existing
+.st-skel rule). Reused the existing shimmer with inline `min-height:0` to override its 230px default. Only the
+loading path changed; the empty/error/loaded states are untouched. Verified live by remounting via SPA nav: caught
+both skeletons at 124px/118px, then the real four-tile pulse + return strip fill in with no leftover skeleton and no
+reflow; 0 console errors, no 380px overflow, build clean, 68 tests. CSS-free cycle (inline styles). Edited:
+`src/store/OrgDashboard.jsx`. Ships with c16-c23 on the next deploy.
 
 ### Cycle 23 — next-touchpoint reassurance tile (23 Jun)
 The #org relationship pulse showed Last touchpoint / Touchpoints / Spend trend — all backward-looking. It now also

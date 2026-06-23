@@ -240,7 +240,8 @@ function OnboardingChecklist({ company, admin, members, engagements, orders }) {
 // from data already loaded (milestones reached, deliverables shipped, journey progress). The honest
 // front-end read; quantified outcomes (hours saved, payback) are the later gated upgrade (cycle 15).
 function ReturnStrip({ engagements }) {
-  if (engagements === null) return null;
+  // reserve the band's height while the engagement read is in flight, so the page doesn't reflow when it lands
+  if (engagements === null) return <section className="org-return" aria-hidden="true"><div className="st-skel" style={{ minHeight: 0, height: 118, borderRadius: 16 }} /></section>;
   const today = todayISO();
   const past = engagements.filter(e => e.occurred_on <= today);
   if (!past.length) return null;
@@ -268,7 +269,8 @@ function ReturnStrip({ engagements }) {
 // Lightweight relationship analytics — last touchpoint, total touchpoints, a monthly spend sparkline.
 // All from data already loaded; hidden for a brand-new company with no history.
 function OrgAnalytics({ orders, engagements }) {
-  if (orders === null || engagements === null) return null;
+  // reserve the pulse height while the reads are in flight (prevents the page jumping as it lands)
+  if (orders === null || engagements === null) return <section className="org-analytics" aria-hidden="true"><div className="st-skel" style={{ minHeight: 0, height: 124, borderRadius: 14 }} /></section>;
   const today = todayISO();
   const pastEng = engagements.filter(e => e.occurred_on <= today);
   // soonest scheduled FUTURE engagement — the "next touchpoint" reassurance (date-guarded)
