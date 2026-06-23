@@ -61,8 +61,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | ✅ built (ships with c16-c29) |
 | 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | ✅ built (ships with c16-c30) |
 | 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | ✅ built (ships with c16-c31) |
-| 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | next |
-| 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | |
+| 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | ✅ built (ships with c16-c32) |
+| 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | next |
 | 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | |
 | 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | |
 | 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | |
@@ -285,6 +285,19 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 33 — #org spend-trend honesty: real-trend guard + orders-truncation note (23 Jun)
+Two honesty improvements on the #org dashboard. (a) The relationship-pulse spend sparkline already existed but rendered
+even for a single month (a one-bar "trend"); the month-bucketing was extracted to a pure tested module
+(`src/store/monthly-spend.mjs`: `monthlySpend`, sums live [non-cancelled/refunded] order totals by calendar month, last
+N months, skips undated orders rather than mis-bucketing, flags `hasTrend` only at >= 2 months) and the tile now renders
+only when there's a genuine multi-month trend. (b) The company-orders preview silently capped at 8; it now shows an
+honest "Showing the 8 most recent of {M}. See all {M} in your full history" whenever the list is truncated, so no orders
+disappear without a count. **Baseline 93 → 98** (bucket+sum, exclude cancelled/refunded, last-N slice, skip-undated +
+created_at fallback + currency, null/empty safe). Verified live as the demo client on #org: sparkline shows 2 bars
+(2026-04 £14,400, 2026-05 £5,760, total £20,160) with an accurate SR label; truncation note correctly absent at 2 orders;
+RecentOrders renders clean (no error boundary), no 380px overflow. New: `src/store/monthly-spend.mjs` + `.test.mjs`.
+Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Ships with c16-c32 on the next deploy.
 
 ### Cycle 32 — benchmark-gap chip on the #org "Your next move" card (23 Jun)
 The next-move card recommends strengthening the client's weakest pillar; this adds a small honest chip under the

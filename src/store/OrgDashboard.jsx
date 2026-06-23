@@ -15,6 +15,7 @@ import { PILLARS } from '../data/maturity-seed.mjs';
 import { useMaturity } from './useMaturity.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { moveGap } from './next-move-gap.mjs';
+import { monthlySpend } from './monthly-spend.mjs';
 import './store.css';
 import './admin.css';
 
@@ -30,6 +31,7 @@ const monthsBetween = (aISO, bISO) => { try { const a = new Date(aISO + 'T00:00:
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };
 const KIND_PLURAL = { recap: 'Recaps', milestone: 'Milestones', deliverable: 'Deliverables', kickoff: 'Kickoffs', review: 'Reviews', note: 'Notes' };
 const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled markers — the journey anchors
+const ORD_CAP = 8; // company-orders preview shows the most recent N; an honest "showing N of M" appears past it
 // the DX engagement journey (matches the 0013 `phase` free-text convention). Drives the Phase Navigator.
 const PHASES = ['Discovery', 'Build', 'Adoption', 'Review'];
 const PHASE_BLURB = { Discovery: 'Mapping the work and the drains.', Build: 'Wiring the systems that buy hours back.', Adoption: 'Embedding it in how you work.', Review: 'Measuring the return, planning the next climb.' };
@@ -296,11 +298,8 @@ function OrgAnalytics({ orders, engagements }) {
     // local-calendar diff (occurred_on is a local DATE; matches todayISO so "Today" reports correctly)
     lastTouch = Math.max(0, Math.round((new Date(today + 'T00:00:00').getTime() - new Date(latest.occurred_on + 'T00:00:00').getTime()) / 86400000));
   }
-  const byMonth = {};
-  for (const o of live) { const d = new Date(o.placed_at || o.created_at); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); byMonth[k] = (byMonth[k] || 0) + (o.total_minor || 0); }
-  const months = Object.keys(byMonth).sort().slice(-6);
-  const max = Math.max(1, ...months.map(m => byMonth[m]));
-  const curr = live[0]?.currency || 'GBP';
+  // monthly spend buckets for the sparkline (tested module; only renders as a "trend" when >= 2 months exist)
+  const { months, byMonth, max, total: spendTotal, curr } = monthlySpend(orders);
 
   return (
     <section className="org-analytics" aria-labelledby="org-an-h">
@@ -320,9 +319,9 @@ function OrgAnalytics({ orders, engagements }) {
             <p className="org-an-next-empty">Nothing booked yet. <a className="ca-link" href="#go/contact">Let's plan your next session →</a></p>
           </div>
         )}
-        {months.length > 0 && (
+        {months.length > 1 && (
           <div className="org-an-tile org-an-spark">
-            <div className="org-an-bars" role="img" aria-label={'Spend trend, last ' + months.length + ' month' + (months.length === 1 ? '' : 's') + ': ' + months.map(m => m + ' ' + fmtMoney(byMonth[m], curr)).join(', ') + '. Total ' + fmtMoney(live.reduce((s, o) => s + (o.total_minor || 0), 0), curr) + '.'}>
+            <div className="org-an-bars" role="img" aria-label={'Spend trend, last ' + months.length + ' months: ' + months.map(m => m + ' ' + fmtMoney(byMonth[m], curr)).join(', ') + '. Total ' + fmtMoney(spendTotal, curr) + '.'}>
               {months.map(m => <span key={m} className="org-an-bar" style={{ height: Math.max(10, Math.round(byMonth[m] / max * 100)) + '%' }} title={m + ': ' + fmtMoney(byMonth[m], curr)} />)}
             </div>
             <div className="org-stat-l">Spend trend</div>
@@ -894,7 +893,7 @@ function RecentOrders({ orders, memberName }) {
           <tbody>
             {orders.length === 0
               ? <tr><td colSpan="5" className="ca-muted" data-label=""><span role="status">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></span></td></tr>
-              : orders.slice(0, 8).map(o => (
+              : orders.slice(0, ORD_CAP).map(o => (
                 <tr key={o.id}>
                   <td data-label="Date">{fmtDate(o.placed_at || o.created_at)}</td>
                   <td data-label="Reference" className="ca-name"><code className="ca-ref">{o.reference}</code></td>
@@ -906,6 +905,9 @@ function RecentOrders({ orders, memberName }) {
           </tbody>
         </table>
       </div>
+      {orders.length > ORD_CAP && (
+        <p className="acct-ordtrunc" role="status">Showing the {ORD_CAP} most recent of {orders.length}. <a className="ca-link" href="#account">See all {orders.length} in your full history →</a></p>
+      )}
     </section>
   );
 }
