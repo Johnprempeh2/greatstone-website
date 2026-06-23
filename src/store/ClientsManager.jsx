@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
+import { portfolioHealth, quietFirstRank } from './client-recency.mjs';
 import './store.css';
 import './admin.css';
 
@@ -28,6 +29,7 @@ export default function ClientsManager({ staff }) {
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState(null); // selected customer
   const [activity, setActivity] = useState({}); // customer_id → most recent engagement created_at (staleness)
+  const [quietFirst, setQuietFirst] = useState(false); // sort the list by who's gone quiet longest
   const [toast, setToast] = useState(null);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
@@ -46,10 +48,33 @@ export default function ClientsManager({ staff }) {
 
   if (sel) return <ClientDetail customer={sel} staff={staff} onBack={() => setSel(null)} flash={flash} toast={toast} />;
 
+  // portfolio health from the most-recent-engagement recency per client (real signal, not seeded)
+  const health = portfolioHealth(customers.map(c => activity[c.id]));
+  const needAttention = health.quiet + health.cold + health.none;
+  const HEALTH = [
+    { key: 'active', label: 'active (≤7d)' }, { key: 'steady', label: 'steady (≤30d)' },
+    { key: 'quiet', label: 'going quiet' }, { key: 'cold', label: 'cold (60d+)' }, { key: 'none', label: 'no activity' },
+  ];
+  const ordered = quietFirst
+    ? [...customers].sort((a, b) => quietFirstRank(activity[b.id]) - quietFirstRank(activity[a.id]))
+    : customers;
+
   return (
     <div className="ca-wrap">
       <header className="ca-head"><div><span className="st-kicker">Clients</span><h1>Clients &amp; DX engagements</h1></div></header>
       <p className="ca-note" style={{ marginBottom: 14 }}>Pick a client company to curate its digital-experience timeline — upload meeting recaps (inline or a link), milestones and deliverables they'll see on their organization dashboard.</p>
+      {!loading && customers.length > 0 && (
+        <div className="ci-health" role="group" aria-label="Portfolio health by recency of last engagement">
+          {HEALTH.map(b => health[b.key] > 0 && (
+            <span key={b.key} className={'ci-health-chip is-' + b.key}><b>{health[b.key]}</b> {b.label}</span>
+          ))}
+          {needAttention > 0 && (
+            <button type="button" className={'ci-health-sort' + (quietFirst ? ' on' : '')} aria-pressed={quietFirst} onClick={() => setQuietFirst(v => !v)}>
+              {quietFirst ? 'Quiet first ✓' : 'Show quiet first'}
+            </button>
+          )}
+        </div>
+      )}
       <div className="ca-toolbar">
         <input className="ca-search" placeholder="Search clients…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search clients" />
         <span className="ca-count">{customers.length} shown</span>
@@ -60,7 +85,7 @@ export default function ClientsManager({ staff }) {
           <tbody>
             {loading ? <tr><td colSpan="5" className="ca-muted">Loading…</td></tr>
               : !customers.length ? <tr><td colSpan="5" className="ca-muted">No clients yet. They appear here once a buyer signs up or you seed one.</td></tr>
-                : customers.map(c => (
+                : ordered.map(c => (
                   <tr key={c.id}>
                     <td data-label="Company" className="ca-name">{c.name}{staleBadge(activity[c.id])}</td>
                     <td data-label="Domain">{c.domain || '—'}</td>

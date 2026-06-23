@@ -57,8 +57,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | ✅ built (ships with c16-c25) |
 | 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | ✅ built (ships with c16-c26) |
 | 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | ✅ built (ships with c16-c27) |
-| 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | next |
-| 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | |
+| 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | ✅ built (ships with c16-c28) |
+| 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | next |
 | 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | |
 | 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | |
 | 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | |
@@ -285,6 +285,17 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 29 — staff portfolio health bar + quiet-first sort (23 Jun)
+The first staff-facing roadmap cycle. The Clients & DX list now opens with a portfolio-health bar: recency-bucket
+chips from each client's most-recent engagement (active ≤7d teal / steady ≤30d / going quiet 31-60d amber / cold 60d+
+red / no activity), thresholds aligned with the existing staleBadge. A "Show quiet first" toggle re-sorts the list so
+the clients drifting out of contact surface at the top (no-activity = most quiet). Real signal, no seeded data. The
+recency/bucket/sort logic was extracted to a pure module (`src/store/client-recency.mjs`: daysSince / recencyBucket /
+portfolioHealth / quietFirstRank) and unit-tested — **baseline 77 → 81**. Verified live as the staff user in Clients &
+DX: bar reads "2 active (≤7d) · 1 no activity" across 3 clients, and "Show quiet first" lifts Northwind Logistics
+(no activity) to the top; 0 console errors, no 380px overflow, build clean, 81 tests. New: `src/store/client-recency.mjs`
++ `.test.mjs`. Edited: `src/store/ClientsManager.jsx`, `src/store/admin.css`. Ships with c16-c28 on the next deploy.
 
 ### Cycle 28 — ask-your-admin mailto for stranded members (23 Jun)
 A non-admin member who hits a wall (company settings, team, a licence they can't manage) now gets a warm route:
