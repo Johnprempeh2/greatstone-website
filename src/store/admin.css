@@ -7,6 +7,8 @@
 .ca-signin { max-width:380px; margin:4vh auto 0; background:rgba(20,24,20,.9); border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); border-radius:18px; padding:32px; backdrop-filter:blur(8px); }
 .ca-signin h1 { font-size:1.8rem; font-weight:900; margin:.2em 0 .3em; }
 .ca-sub { color:var(--gs-text-muted); font-size:.9rem; margin-bottom:20px; }
+.ca-trust { display:flex; align-items:center; gap:7px; margin:14px 0 0; font-size:.78rem; line-height:1.4; color:var(--gs-text-muted); }
+.ca-trust-ic { flex:none; color:var(--gs-teal,#4ecdc4); }
 .ca-signin form, .ca-drawer { display:flex; flex-direction:column; gap:14px; }
 .ca-signin label, .ca-drawer label { display:flex; flex-direction:column; gap:6px; font-size:.8rem; font-weight:700; color:var(--gs-text-muted); }
 .ca-signin input, .ca-drawer input, .ca-drawer textarea, .ca-drawer select { padding:.7em .9em; border-radius:10px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.95rem; }

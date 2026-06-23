@@ -109,6 +109,11 @@ export function AuthGate({ initialError = null } = {}) {
         {msg && <div className="ca-ok" role="status">{msg}</div>}
         <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Working…' : mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}</button>
       </form>
+      {/* honest, understated reassurance right where the user commits — only what's true (TLS, branded portal); no invented badges/certs */}
+      <p className="ca-trust">
+        <svg className="ca-trust-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+        Encrypted connection to the Greatstone customer portal.
+      </p>
       {linkFailed && mode === 'signin' && (
         <p className="ca-note" style={{ marginTop: 12 }}>
           Confirmation links are single-use and expire. Enter your email above and we'll send a fresh one.{' '}
