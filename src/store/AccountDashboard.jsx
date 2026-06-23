@@ -184,6 +184,12 @@ function Dashboard({ session, profile, onProfile }) {
     const el = document.getElementById('acct-tab-' + ACCOUNT_TABS[n].id);
     if (el) el.focus();
   };
+  // a deep-link (pending action / stat tile / "open in keys") switches tab AND moves focus into the revealed
+  // panel on the next frame, so keyboard + SR users land in the new content instead of the now-hidden trigger
+  const goTab = (id) => {
+    setTab(id);
+    setTimeout(() => { const p = document.getElementById('acct-panel-' + id); if (p) try { p.focus({ preventScroll: false }); } catch { /* ignore */ } }, 120);
+  };
 
   const loadOrders = useCallback(() => {
     setLoadingOrders(true); setOrdersErr(null);
@@ -220,12 +226,12 @@ function Dashboard({ session, profile, onProfile }) {
   // copy a licence key straight from the order detail. Clipboard API is the happy path; if it's blocked
   // (insecure origin / permission), fall back to the Keys tab where the code is visible + select-to-copy works.
   const copyKey = async (k) => {
-    if (!k.licence_key) { setTab('keys'); return; }
+    if (!k.licence_key) { goTab('keys'); return; }
     try {
       await navigator.clipboard.writeText(k.licence_key);
       setCopiedKey(k.id);
       setTimeout(() => setCopiedKey(c => (c === k.id ? null : c)), 1800);
-    } catch { setTab('keys'); }
+    } catch { goTab('keys'); }
   };
   // copy a quote reference; clipboard is the happy path, else flash the reference so it's still visible to copy
   const copyRef = async (r) => {
@@ -275,9 +281,9 @@ function Dashboard({ session, profile, onProfile }) {
   const KEY_SOON_DAYS = 30;
   const expiringKeys = Object.values(keysByOrder).flat().filter(k => isExpiringSoon(k, KEY_SOON_DAYS)).length;
   const nextStep = (() => {
-    if (expiringKeys > 0) return { title: 'Renew your licences', body: `${expiringKeys} of your licence key${expiringKeys === 1 ? '' : 's'} expire${expiringKeys === 1 ? 's' : ''} within ${KEY_SOON_DAYS} days. Renew to keep your seats active.`, ctas: [{ label: 'Review your keys', onClick: () => setTab('keys'), primary: true }, { label: 'Talk to us', href: '#go/contact' }] };
+    if (expiringKeys > 0) return { title: 'Renew your licences', body: `${expiringKeys} of your licence key${expiringKeys === 1 ? '' : 's'} expire${expiringKeys === 1 ? 's' : ''} within ${KEY_SOON_DAYS} days. Renew to keep your seats active.`, ctas: [{ label: 'Review your keys', onClick: () => goTab('keys'), primary: true }, { label: 'Talk to us', href: '#go/contact' }] };
     if (!loadingOrders && orders.length === 0) return { title: 'Start your Greatstone toolkit', body: 'Explore the software catalogue, or book a deep dive to kick off your transformation.', ctas: [{ label: 'Explore the catalogue', href: '#shop', primary: true }, { label: 'Book a deep dive', href: '#go/contact' }] };
-    if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to unlock your seats.', ctas: [{ label: 'View your keys', onClick: () => setTab('keys'), primary: true }] };
+    if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to unlock your seats.', ctas: [{ label: 'View your keys', onClick: () => goTab('keys'), primary: true }] };
     if (profile?.customer && admin) return { title: 'Set up your organization', body: 'Invite teammates and complete your company profile in your organization dashboard.', ctas: [{ label: 'Go to your organization', href: '#org', primary: true }] };
     if (profile?.customer) return { title: 'Follow your transformation', body: 'See your maturity, your engagement timeline and what your Greatstone team has delivered.', ctas: [{ label: 'Open your organization', href: '#org', primary: true }] };
     return null;
@@ -293,10 +299,10 @@ function Dashboard({ session, profile, onProfile }) {
     return days >= 0 && days <= SOON_DAYS;
   }).length;
   const pending = [];
-  if (expiringQuotes > 0) pending.push({ key: 'expiring', urgent: true, label: `${expiringQuotes} quote${expiringQuotes === 1 ? '' : 's'} expiring within ${SOON_DAYS} days`, action: () => setTab('orders') });
-  if (expiringKeys > 0) pending.push({ key: 'expkeys', urgent: true, label: `${expiringKeys} licence key${expiringKeys === 1 ? '' : 's'} expiring within ${KEY_SOON_DAYS} days`, action: () => setTab('keys') });
-  if (openQuotes > 0) pending.push({ key: 'quotes', label: `${openQuotes} open quote${openQuotes === 1 ? '' : 's'} to review`, action: () => setTab('orders') });
-  if (profile && !profile.full_name) pending.push({ key: 'profile', label: 'Add your name to complete your profile', action: () => setTab('profile') });
+  if (expiringQuotes > 0) pending.push({ key: 'expiring', urgent: true, label: `${expiringQuotes} quote${expiringQuotes === 1 ? '' : 's'} expiring within ${SOON_DAYS} days`, action: () => goTab('orders') });
+  if (expiringKeys > 0) pending.push({ key: 'expkeys', urgent: true, label: `${expiringKeys} licence key${expiringKeys === 1 ? '' : 's'} expiring within ${KEY_SOON_DAYS} days`, action: () => goTab('keys') });
+  if (openQuotes > 0) pending.push({ key: 'quotes', label: `${openQuotes} open quote${openQuotes === 1 ? '' : 's'} to review`, action: () => goTab('orders') });
+  if (profile && !profile.full_name) pending.push({ key: 'profile', label: 'Add your name to complete your profile', action: () => goTab('profile') });
   // Purchases search — filter the rendered orders by reference / invoice / item name / status
   const orderQuery = orderQ.trim().toLowerCase();
   const filteredOrders = orderQuery
@@ -306,7 +312,9 @@ function Dashboard({ session, profile, onProfile }) {
 
   return (
     <div className="ca-wrap">
-      <header className="acct-id">
+      {/* the store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
+      <a className="gs-skip" href="#acct-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('acct-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your account</a>
+      <header className="acct-id" id="acct-main" tabIndex={-1}>
         <div className="acct-avatar" aria-hidden="true">{initialsOf(profile?.full_name || profile?.email || company)}</div>
         <div className="acct-id-text">
           <span className="st-kicker">Your account</span>
@@ -328,8 +336,8 @@ function Dashboard({ session, profile, onProfile }) {
       <div className="org-stats" style={{ marginBottom: 20 }}>
         <div className="org-stat"><div className="org-stat-v">{loadingOrders ? '…' : fmtMoney(totalSpent, curr)}</div><div className="org-stat-l">Invested</div></div>
         {/* count + spend both exclude cancelled/refunded, so the two tiles can't disagree; tiles jump to the Purchases tab */}
-        <button type="button" className="org-stat" onClick={() => setTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your orders"><div className="org-stat-v">{loadingOrders ? '…' : liveOrders.length}</div><div className="org-stat-l">Orders</div></button>
-        <button type="button" className="org-stat" onClick={() => setTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your quotes"><div className="org-stat-v">{openQuotes}</div><div className="org-stat-l">Open quotes</div></button>
+        <button type="button" className="org-stat" onClick={() => goTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your orders"><div className="org-stat-v">{loadingOrders ? '…' : liveOrders.length}</div><div className="org-stat-l">Orders</div></button>
+        <button type="button" className="org-stat" onClick={() => goTab('orders')} style={{ cursor: 'pointer', font: 'inherit', textAlign: 'left' }} aria-label="View your quotes"><div className="org-stat-v">{openQuotes}</div><div className="org-stat-l">Open quotes</div></button>
       </div>
 
       {nextStep && (
@@ -383,7 +391,7 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
 
         {/* Purchases — order history + quotes */}
-        <div role="tabpanel" id="acct-panel-orders" aria-labelledby="acct-tab-orders" hidden={tab !== 'orders'}>
+        <div role="tabpanel" tabIndex={-1} id="acct-panel-orders" aria-labelledby="acct-tab-orders" hidden={tab !== 'orders'}>
           <div className="acct-ordhead">
             <h2>Order history</h2>
             {!!orders.length && (
@@ -453,7 +461,7 @@ function Dashboard({ session, profile, onProfile }) {
                                         );
                                       })}
                                       <span className="gs-sr-only" role="status" aria-live="polite">{copiedKey ? 'Licence key copied' : ''}</span>
-                                      <button type="button" className="gs-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={(e) => { e.stopPropagation(); setTab('keys'); }}>Open in Keys →</button>
+                                      <button type="button" className="gs-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={(e) => { e.stopPropagation(); goTab('keys'); }}>Open in Keys →</button>
                                     </div>
                                   )}
                                 </div>
@@ -504,17 +512,17 @@ function Dashboard({ session, profile, onProfile }) {
         </div>
 
         {/* Licence keys */}
-        <div role="tabpanel" id="acct-panel-keys" aria-labelledby="acct-tab-keys" hidden={tab !== 'keys'}>
+        <div role="tabpanel" tabIndex={-1} id="acct-panel-keys" aria-labelledby="acct-tab-keys" hidden={tab !== 'keys'}>
           <LicenceKeys />
         </div>
 
-        <div role="tabpanel" id="acct-panel-profile" aria-labelledby="acct-tab-profile" hidden={tab !== 'profile'}>
+        <div role="tabpanel" tabIndex={-1} id="acct-panel-profile" aria-labelledby="acct-tab-profile" hidden={tab !== 'profile'}>
           <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
         </div>
-        <div role="tabpanel" id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={tab !== 'security'}>
+        <div role="tabpanel" tabIndex={-1} id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={tab !== 'security'}>
           <SecurityCard email={profile?.email} lastSignIn={session.user?.last_sign_in_at} flash={flash} />
         </div>
-        <div role="tabpanel" id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={tab !== 'billing'}>
+        <div role="tabpanel" tabIndex={-1} id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={tab !== 'billing'}>
           <div className="pr-form">
             <h2>Billing &amp; cards</h2>
             {orders.length === 0 ? (

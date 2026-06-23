@@ -166,7 +166,9 @@ function Org({ profile, session, onProfile }) {
 
   return (
     <div className="ca-wrap org-print-root">
-      <header className="acct-id">
+      {/* the store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
+      <a className="gs-skip" href="#org-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('org-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your organization</a>
+      <header className="acct-id" id="org-main" tabIndex={-1}>
         <div className="acct-avatar" aria-hidden="true">{initialsOf(company.name)}</div>
         <div className="acct-id-text">
           <span className="st-kicker">Your organization</span>
