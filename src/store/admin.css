@@ -462,3 +462,69 @@
   .dx-item { padding-left:24px; }
 }
 @media (prefers-reduced-motion: reduce){ .dx-card { transition:none; } }
+
+/* ============================================================================
+   Board-ready print summary (#org). "Download a summary" calls window.print().
+   The visibility trick prints ONLY the org subtree (drops site nav/footer chrome
+   without needing their class names), flipped to dark-on-white and stripped of
+   interactive controls. Scoped to .org-print-root so #account print is untouched.
+   ========================================================================== */
+@media print {
+  @page { margin: 14mm; }
+  body * { visibility: hidden !important; }
+  .org-print-root, .org-print-root * { visibility: visible !important; }
+  .org-print-root {
+    position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0;
+    background: #fff !important; color: #1a1a1a !important;
+    --gs-accent: #2f7d00; --gs-teal: #0b6b63; --gs-purple: #5b3fb0;
+  }
+
+  /* drop interactive chrome + sections that aren't board material */
+  .org-print-root .acct-id-actions,
+  .org-print-root .org-banner,
+  .org-print-root .org-onboard,
+  .org-print-root .org-intel,
+  .org-print-root .org-move-ctas,
+  .org-print-root .org-mat-cta,
+  .org-print-root .ca-err,
+  .org-print-root .dx-phasenav,
+  .org-print-root .dx-controls,
+  .org-print-root section[aria-labelledby="org-mem-h"],
+  .org-print-root section[aria-labelledby="org-co-h"],
+  .org-print-root section[aria-labelledby="org-ord-h"],
+  .org-print-root button,
+  .org-print-root input,
+  .org-print-root select { display: none !important; }
+
+  /* light-on-dark → dark-on-white */
+  .org-print-root h1, .org-print-root h2, .org-print-root h3,
+  .org-print-root b, .org-print-root .org-stat-v, .org-print-root .acct-id-name,
+  .org-print-root .org-mat-badge-score b, .org-print-root .org-mat-climb-pct { color: #111 !important; }
+  .org-print-root p, .org-print-root li, .org-print-root .st-kicker,
+  .org-print-root .org-stat-l, .org-print-root .acct-id-sub, .org-print-root .acct-id-marker,
+  .org-print-root .org-mat-read, .org-print-root .org-mat-sub, .org-print-root .dx-date,
+  .org-print-root .org-mat-climb-l, .org-print-root .org-mat-climb-scale,
+  .org-print-root .org-mat-stand-l, .org-print-root .org-mat-stand-v { color: #333 !important; }
+
+  /* cards: white with a hairline border, no glow/shadow */
+  .org-print-root .org-mat-grid, .org-print-root .org-return, .org-print-root .org-analytics,
+  .org-print-root .org-sec, .org-print-root .org-move, .org-print-root .dx-section,
+  .org-print-root .org-stat, .org-print-root .org-an-tile, .org-print-root .org-mat-badge,
+  .org-print-root .org-mat-stand, .org-print-root .dx-item {
+    background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important;
+  }
+  .org-print-root .acct-avatar { background: #eee !important; color: #222 !important; border: 1px solid #ccc; }
+
+  /* radar reads on white: force the drawn state + darken grid/labels (data polygons use the redefined vars) */
+  .org-print-root .org-mat-data { opacity: 1 !important; transform: none !important; }
+  .org-print-root .org-mat-grid-lines polygon, .org-print-root .org-mat-grid-lines line { stroke: rgba(0,0,0,.22) !important; }
+  .org-print-root .org-mat-axislabel { fill: #222 !important; }
+
+  /* keep the climb meter fill printing its colour */
+  .org-print-root .org-mat-climb-track { background: #e7e7e7 !important; }
+  .org-print-root .org-mat-climb-fill { background: #2f7d00 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* don't split a card across a page break */
+  .org-print-root section, .org-print-root .org-mat-grid, .org-print-root .org-return,
+  .org-print-root .org-analytics, .org-print-root .dx-item { break-inside: avoid; page-break-inside: avoid; }
+}

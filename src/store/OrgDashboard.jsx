@@ -123,7 +123,7 @@ function Org({ profile, session, onProfile }) {
   const openQuotes = (quotes || []).filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
 
   return (
-    <div className="ca-wrap">
+    <div className="ca-wrap org-print-root">
       <header className="acct-id">
         <div className="acct-avatar" aria-hidden="true">{initialsOf(company.name)}</div>
         <div className="acct-id-text">
@@ -139,6 +139,7 @@ function Org({ profile, session, onProfile }) {
           )}
         </div>
         <div className="acct-id-actions">
+          <button className="gs-btn ghost sm" onClick={() => window.print()}>Download a summary</button>
           <a className="gs-btn ghost sm" href="#account">← Your account</a>
           <a className="gs-btn ghost sm" href="#shop">Continue shopping</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>

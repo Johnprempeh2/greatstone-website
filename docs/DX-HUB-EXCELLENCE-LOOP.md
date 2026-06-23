@@ -44,8 +44,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | ✅ shipped |
 | 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | ✅ shipped |
 | 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | ✅ shipped |
-| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | next |
-| 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | |
+| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | ✅ shipped |
+| 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | next |
 | 18 | **Pending-actions banner** above the #account tabs | #account | M | |
 | 19 | Order **search/filter** box on the Purchases tab | #account | M | |
 | 20 | Inline **copy-key** on the per-order licence chips | #account | M | |
@@ -241,4 +241,18 @@ aria-valuemin/now/max set to the actual overall scores and an aria-valuetext tha
 width transition is killed under reduced-motion (no infinite animation). Gated on both `target` and `baseline`
 being present, so it degrades silently otherwise. Ethical Quest reads "Climb to Peak · 39%" (baseline 3.4 → today
 5.3 → target 8.3). Verified live in the panel, 0 console errors, build clean, 63 tests.
-Edited: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`.
+Edited: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`. Commit 3a54870, bundle index-CBnGv8Wb, deploy 6a39e9ed.
+
+### Cycle 16 — Board-ready print summary + "Download a summary" (23 Jun)
+An #org admin can now take the whole DX picture into a leadership meeting. A "Download a summary" button in the
+identity band calls `window.print()`, and a scoped `@media print` block (admin.css) renders a clean one/two-pager:
+the classic visibility trick prints ONLY the `.org-print-root` subtree (so site nav/footer chrome drop without
+needing their class names), flipped to dark-on-white. It strips interactive controls (every button/input/select,
+the phase navigator, the timeline toolbar, role banner, onboarding, innovation hub, members/profile/orders
+sections, all CTAs); forces the radar's drawn state and recolours its grid lines, axis labels and data polygons
+(via redefined `--gs-accent/--gs-teal/--gs-purple`) to read on white; keeps the climb-meter fill printing with
+`print-color-adjust:exact`; and sets `break-inside:avoid` so no card splits across a page. Scoped to
+`.org-print-root` so #account printing is untouched. Verified the button renders, the print rule is present in the
+CSSOM and scoped to print media, screen rendering is unchanged, 0 console errors, build clean, 63 tests. (Print
+output itself can't be rasterised in the headless preview; the CSS is print-media-only so it carries zero screen
+risk.) Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
