@@ -677,3 +677,16 @@
   .org-print-root section, .org-print-root .org-mat-grid, .org-print-root .org-return,
   .org-print-root .org-analytics, .org-print-root .dx-item { break-inside: avoid; page-break-inside: avoid; }
 }
+
+/* Coarse-pointer (touch) hit areas: grow the small interactive controls to the ~44px WCAG 2.5.5 /
+   Apple HIG guideline. Gated on (pointer:coarse) so fine-pointer (desktop) rendering is unchanged;
+   inline-flex centring keeps the visible content centred as the hit area grows. dx-jstep-btn (flex
+   column, already tall) and the org-stat KPI tiles (already large) are intentionally excluded. */
+@media (pointer: coarse) {
+  .gs-btn.sm, .ci-health-chip, .org-an-cal, .acct-keychip, .ca-tabs button {
+    min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .acct-toggle, .ca-toast-x, .acct-refcopy {
+    min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center;
+  }
+}
