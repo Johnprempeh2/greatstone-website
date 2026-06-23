@@ -833,6 +833,7 @@ function CompanyProfile({ company, admin, onProfile, flash }) {
   const [notes, setNotes] = useState(company.notes || '');
   const [busy, setBusy] = useState(false);
   useEffect(() => { setName(company.name || ''); setDomain(company.domain || ''); setNotes(company.notes || ''); }, [company]);
+  const dirty = name !== (company.name || '') || domain !== (company.domain || '') || notes !== (company.notes || '');
 
   const save = async () => {
     setBusy(true);
@@ -846,13 +847,17 @@ function CompanyProfile({ company, admin, onProfile, flash }) {
   return (
     <section className="org-sec" aria-labelledby="org-co-h">
       <div className="acct-ordhead"><h2 id="org-co-h">Company profile</h2></div>
+      <p className="org-sec-sub">Your organisation details and the context your Greatstone team works from.</p>
       <div className="acct-grid">
-        <div className="pr-form">
+        <div className="pr-form org-profile">
           {admin ? <>
             <label>Company name<input value={name} onChange={e => setName(e.target.value)} autoComplete="organization" /></label>
             <label>Website domain<input value={domain} onChange={e => setDomain(e.target.value)} placeholder="example.com" autoComplete="url" /></label>
-            <label>Notes<textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} /></label>
-            <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save company profile'}</button>
+            <div className="pr-field">
+              <label>Notes<textarea id="org-notes" aria-describedby="org-notes-hint" rows={4} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Your goals, priorities, anything we should keep in mind…" /></label>
+              <p className="pr-hint" id="org-notes-hint">Shared with your Greatstone team to tailor your engagement. Not shown publicly.</p>
+            </div>
+            <button className="gs-btn primary" onClick={save} disabled={busy || !dirty}>{busy ? 'Saving…' : 'Save company profile'}</button>
           </> : <>
             <div className="org-field"><span className="org-field-l">Company name</span><span className="org-field-v">{company.name}</span></div>
             <div className="org-field"><span className="org-field-l">Website domain</span><span className="org-field-v">{company.domain || '—'}</span></div>

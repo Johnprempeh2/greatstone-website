@@ -69,8 +69,15 @@
 .pr-form { display:flex; flex-direction:column; gap:14px; }
 .pr-form h2, .pr-preview h2 { font-size:1.2rem; font-weight:800; }
 .pr-form label { display:flex; flex-direction:column; gap:6px; font-size:.8rem; font-weight:700; color:var(--gs-text-muted); }
-.pr-form input, .pr-form select { padding:.65em .9em; border-radius:10px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; }
-.pr-form input:focus, .pr-form select:focus { outline:none; border-color:var(--gs-accent-mid); }
+.pr-form input, .pr-form select, .pr-form textarea { padding:.7em .9em; border-radius:10px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; transition:border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.pr-form textarea { min-height:92px; line-height:1.55; resize:vertical; }
+.pr-form input::placeholder, .pr-form textarea::placeholder { color:var(--gs-text-faint,#707070); }
+.pr-form input:hover, .pr-form select:hover, .pr-form textarea:hover { border-color:rgba(255,255,255,.22); }
+.pr-form input:focus, .pr-form select:focus, .pr-form textarea:focus { outline:none; border-color:var(--gs-accent-mid); background:rgba(255,255,255,.07); box-shadow:0 0 0 3px var(--gs-accent-dim,rgba(200,255,0,.10)); }
+.pr-field { display:flex; flex-direction:column; gap:6px; }
+.pr-hint { margin:0; font-size:.74rem; font-weight:500; color:var(--gs-text-faint,#707070); line-height:1.45; }
+.org-profile > .gs-btn.primary { align-self:flex-start; margin-top:4px; padding-inline:1.5em; }
+.org-sec-sub { margin:-6px 0 16px; max-width:62ch; font-size:.9rem; line-height:1.55; color:var(--gs-text-muted,#b0b0b0); }
 .pr-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .pr-targets { display:flex; flex-direction:column; gap:4px; max-height:180px; overflow-y:auto; border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:10px; padding:8px; }
 .pr-chk { flex-direction:row !important; align-items:center; gap:.5em !important; font-weight:500 !important; color:var(--gs-text) !important; }
@@ -159,7 +166,7 @@
 /* inputs killed the outline on :focus — restore a ring for keyboard users */
 .ca-signin input:focus-visible, .ca-drawer input:focus-visible, .ca-drawer textarea:focus-visible,
 .ca-drawer select:focus-visible, .pr-form input:focus-visible, .pr-form select:focus-visible,
-.ca-search:focus-visible { outline:2px solid var(--gs-accent); outline-offset:1px; }
+.pr-form textarea:focus-visible, .ca-search:focus-visible { outline:2px solid var(--gs-accent); outline-offset:1px; }
 
 /* ── Admin tab bar: scroll as a strip on small screens instead of overflowing ─ */
 @media (max-width:640px){
