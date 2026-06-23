@@ -437,6 +437,10 @@
 .dx-jstep-btn:not(:disabled):hover .dx-jstep-node { transform:translateY(-2px); }
 .dx-jstep-btn:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
 .dx-jstep-note { margin:8px 0 0; font-size:.82rem; color:var(--gs-text-muted); text-align:center; }
+/* "what this phase delivers" value caption under the phase navigator */
+.dx-phase-delivers { margin:10px 0 0; font-size:.84rem; line-height:1.5; color:var(--gs-text-muted,#b0b0b0); text-align:center; }
+.dx-phase-delivers-ph { color:var(--gs-text-faint,#8a8a8a); }
+.dx-phase-delivers b { color:var(--gs-accent,#c8ff00); font-weight:700; }
 @media (max-width:520px){ .dx-jstep-node { width:30px; height:30px; font-size:.8rem; } .dx-jstep + .dx-jstep::before { top:14px; } .dx-jstep-name { font-size:.72rem; } }
 @media (prefers-reduced-motion: reduce){ .dx-jstep-node { transition:none; } }
 

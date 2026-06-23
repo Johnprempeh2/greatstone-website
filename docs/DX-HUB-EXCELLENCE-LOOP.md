@@ -50,8 +50,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 19 | Order **search/filter** box on the Purchases tab | #account | M | ✅ built (ships with c16-c18) |
 | 20 | Inline **copy-key** on the per-order licence chips | #account | M | ✅ built (ships with c16-c19) |
 | 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | ✅ built (ships with c16-c20) |
-| 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | next |
-| 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | |
+| 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | ✅ built (ships with c16-c21) |
+| 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | next |
 | 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | |
 | 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | |
 | 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | |
@@ -285,6 +285,18 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 22 — per-phase "what this delivers" caption (23 Jun)
+The PHASE_BLURB one-liners (Discovery "Mapping the work and the drains", Build "Wiring the systems that buy hours
+back", Adoption "Embedding it in how you work", Review "Measuring the return, planning the next climb") were only
+in the phase-button aria-labels. The #org phase navigator now carries a visible caption under the stepper that
+tells the value story: "You are in **Adoption** — Embedding it in how you work." for the current phase, switching
+to "Showing **Discovery** — Mapping the work and the drains. · Show all phases" when a phase is filtered (merging
+the old "Showing X only" clear-action into the same line). role="status" so the focus change is announced; the
+phase name pops in accent. Verified live: default shows the current phase (Adoption), filtering to Discovery swaps
+the blurb + offers clear, clearing restores; 0 console errors, no 380px overflow, build clean, 68 tests. It sits
+inside .dx-phasenav so the c16 print rule already hides it. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+Ships with c16-c21 on the next deploy.
 
 ### Cycle 21 — licence-key expiry badges + renewal nudge (23 Jun)
 The keys tab now shows an attention badge per key: red "Expired" once past, amber "Expires in N days" within 30

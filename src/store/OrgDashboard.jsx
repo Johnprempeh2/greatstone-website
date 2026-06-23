@@ -470,9 +470,19 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
                       );
                     })}
                   </ol>
-                  {phaseFilter !== 'all' && (
-                    <p className="dx-jstep-note" role="status">Showing <b>{phaseFilter}</b> only. <button type="button" className="ca-link" onClick={() => setPhaseFilter('all')}>Show all phases</button></p>
-                  )}
+                  {(() => {
+                    // the journey as a value story: a one-line "what this phase delivers" caption for the
+                    // focused phase — the filtered phase if one is active, else the phase you're currently in.
+                    const cap = phaseFilter !== 'all' ? phaseFilter : (currentPhaseIdx >= 0 ? PHASES[currentPhaseIdx] : null);
+                    if (!cap || !PHASE_BLURB[cap]) return null;
+                    const filtered = phaseFilter !== 'all';
+                    return (
+                      <p className="dx-phase-delivers" role="status">
+                        <span className="dx-phase-delivers-ph">{filtered ? <>Showing <b>{cap}</b></> : <>You are in <b>{cap}</b></>}</span> — {PHASE_BLURB[cap]}
+                        {filtered && <> <button type="button" className="ca-link" onClick={() => setPhaseFilter('all')}>Show all phases</button></>}
+                      </p>
+                    );
+                  })()}
                 </nav>
               )}
 
