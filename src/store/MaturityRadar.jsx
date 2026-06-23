@@ -68,6 +68,9 @@ function Radar({ data, source }) {
   const overall = overallOf(scores);
   const tier = data.tier || tierOf(overall);
   const baseOverall = baseline ? overallOf(baseline) : null;
+  // movement since the discovery baseline (shown only when baseline data is present; degrades silently otherwise)
+  const overallDelta = (baseOverall != null && baseOverall > 0 && overall > 0) ? Math.round((overall - baseOverall) * 10) / 10 : null;
+  const deltaOf = (key) => (baseline && Number(baseline[key]) > 0) ? clamp(scores[key]) - clamp(baseline[key]) : null;
   const rings = [2, 4, 6, 8, 10];
 
   // standout pillars: strongest, and the priority climb (lowest), with names
@@ -83,6 +86,7 @@ function Radar({ data, source }) {
   }, [scores]);
 
   const aLabel = `Eight-pillar digital maturity. Overall ${overall} out of 10, ${tierLabel(tier)}.`
+    + (overallDelta > 0 ? ` Up ${overallDelta} since discovery.` : '')
     + (strongest ? ` Strongest: ${strongest.name} at ${strongest.v}.` : '')
     + (weakest ? ` Priority climb: ${weakest.name} at ${weakest.v}.` : '')
     + (benchmark ? ' Shown against the industry benchmark' : '') + (target ? ' and the target tier.' : '.');
@@ -139,6 +143,7 @@ function Radar({ data, source }) {
             <span className="org-mat-badge-tier">{tierLabel(tier)}</span>
             <span className="org-mat-badge-score"><b>{overall}</b><span>/10</span></span>
           </div>
+          {overallDelta > 0 && <p className="org-mat-delta">▲ {overallDelta.toFixed(1)} since discovery</p>}
           <p className="org-mat-read">
             You're at <b>{tierLabel(tier)}</b> overall{baseOverall && baseOverall < overall ? <>, up from {tierLabel(tierOf(baseOverall))} ({baseOverall}) at discovery</> : ''}.
             {weakest ? <> The priority climb is <b>{weakest.name}</b>.</> : ''}
@@ -150,8 +155,8 @@ function Radar({ data, source }) {
           </ul>
           {strongest && weakest && (
             <div className="org-mat-standouts">
-              <div className="org-mat-stand"><span className="org-mat-stand-l">Strongest</span><span className="org-mat-stand-v">{strongest.name} · {strongest.v}</span></div>
-              <div className="org-mat-stand"><span className="org-mat-stand-l">Priority climb</span><span className="org-mat-stand-v">{weakest.name} · {weakest.v}</span></div>
+              <div className="org-mat-stand"><span className="org-mat-stand-l">Strongest</span><span className="org-mat-stand-v">{strongest.name} · {strongest.v}{deltaOf(strongest.key) > 0 && <span className="org-mat-up"> ▲{deltaOf(strongest.key)}</span>}</span></div>
+              <div className="org-mat-stand"><span className="org-mat-stand-l">Priority climb</span><span className="org-mat-stand-v">{weakest.name} · {weakest.v}{deltaOf(weakest.key) > 0 && <span className="org-mat-up"> ▲{deltaOf(weakest.key)}</span>}</span></div>
             </div>
           )}
           <a className="gs-btn ghost sm org-mat-cta" href="#go/contact">Discuss your roadmap</a>
@@ -162,12 +167,13 @@ function Radar({ data, source }) {
       <div className="org-mat-srwrap">
       <table className="org-mat-table">
         <caption>Digital maturity by pillar, scored 1 to 10. Overall {overall}, {tierLabel(tier)}.</caption>
-        <thead><tr><th scope="col">Pillar</th><th scope="col">Your score</th>{benchmark && <th scope="col">Industry benchmark</th>}{target && <th scope="col">Target</th>}</tr></thead>
+        <thead><tr><th scope="col">Pillar</th><th scope="col">Your score</th>{baseline && <th scope="col">Since discovery</th>}{benchmark && <th scope="col">Industry benchmark</th>}{target && <th scope="col">Target</th>}</tr></thead>
         <tbody>
           {PILLARS.map((p) => (
             <tr key={p.key}>
               <th scope="row">{p.name}</th>
               <td>{clamp(scores[p.key])} ({tierLabel(tierOf(scores[p.key]))})</td>
+              {baseline && <td>{deltaOf(p.key) != null ? (deltaOf(p.key) >= 0 ? '+' : '') + deltaOf(p.key) : '—'}</td>}
               {benchmark && <td>{clamp(benchmark[p.key])}</td>}
               {target && <td>{clamp(target[p.key])}</td>}
             </tr>

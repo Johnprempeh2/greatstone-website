@@ -41,6 +41,9 @@
 .org-mat-badge.t-peak { border-color: rgba(200,255,0,.4); }
 .org-mat-badge.t-peak .org-mat-badge-tier { color: var(--gs-accent, #c8ff00); }
 
+/* movement-since-discovery chips */
+.org-mat-delta { margin: -4px 0 0; font-size: .78rem; font-weight: 700; letter-spacing: .01em; color: var(--gs-accent, #c8ff00); }
+.org-mat-up { color: var(--gs-accent, #c8ff00); font-weight: 700; white-space: nowrap; }
 .org-mat-read { margin: 0; font-size: .9rem; line-height: 1.55; color: var(--gs-text-muted, #cfcfcf); }
 .org-mat-read b { color: var(--gs-text, #f5f5f5); }
 

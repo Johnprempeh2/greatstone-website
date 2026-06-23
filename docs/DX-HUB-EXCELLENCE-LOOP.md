@@ -42,8 +42,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 |---|---|---|---|---|
 | 12 | Restore keyboard focus ring on the timeline search (.dx-search) | #org admin.css | S | ✅ shipped |
 | 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | ✅ shipped |
-| 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | next |
-| 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | |
+| 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | ✅ shipped |
+| 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | next |
 | 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | |
 | 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | |
 | 18 | **Pending-actions banner** above the #account tabs | #account | M | |
@@ -222,4 +222,13 @@ now treats a row with no usable scores (overall 0) as not-yet-assessed (the empt
 a misleading "0/10 Pebble" — the defensive base for the delta/meter features landing next, so partial data once
 0019 is applied degrades gracefully. Verified the happy path is unaffected (radar 5.3, "15 Jun 2026" dates,
 no "Invalid Date" on page). Build clean, 63 tests, 0 console errors. Edited: `src/store/OrgDashboard.jsx`,
-`src/store/AccountDashboard.jsx`, `src/store/MaturityRadar.jsx`.
+`src/store/AccountDashboard.jsx`, `src/store/MaturityRadar.jsx`. Commit f6677c6, bundle index-D2yFgrQ9, deploy 6a39e293.
+
+### Cycle 14 — Maturity since-discovery delta chips (23 Jun)
+The radar already destructured `baseline` and computed `baseOverall`, so this is pure presentation: an overall
+"▲ N.N since discovery" chip beside the tier badge, a `▲N` chip on the strongest + priority-climb standouts, and
+a new "Since discovery" column in the screen-reader data table (+N per pillar). The aria-label now announces the
+climb too. All gated on baseline presence so it degrades silently for orgs without one (and never renders NaN, per
+cycle 13). For Ethical Quest this surfaces "▲ 1.9 since discovery", People · 6 ▲2, Data · 4 ▲2 — the climb made
+visible. Verified on desktop + 380px mobile (no overflow), 0 console errors, build clean, 63 tests.
+Edited: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`.
