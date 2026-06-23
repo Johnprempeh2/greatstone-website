@@ -14,6 +14,7 @@ import { BRIEFINGS, TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
 import { PILLARS } from '../data/maturity-seed.mjs';
 import { useMaturity } from './useMaturity.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
+import { moveGap } from './next-move-gap.mjs';
 import './store.css';
 import './admin.css';
 
@@ -634,12 +635,22 @@ function NextMove({ company }) {
   let lowest = null;
   for (const p of PILLARS) { const v = Number(data.scores[p.key]) || 0; if (v > 0 && (!lowest || v < lowest.v)) lowest = { ...p, v }; }
   if (!lowest) return null;
+  // honest, data-only gap the move closes: headroom to the engagement's target tier, else standing vs industry
+  const gap = moveGap(lowest.v, { target: data.target && data.target[lowest.key], benchmark: data.benchmark && data.benchmark[lowest.key] });
   return (
     <section className="org-move" aria-labelledby="org-move-h">
       <div className="org-move-icon" aria-hidden="true">↗</div>
       <div className="org-move-body">
         <span className="st-kicker">Your next move</span>
         <h2 id="org-move-h">Strengthen {lowest.name}</h2>
+        {gap && (
+          <p className={'org-move-gap' + (gap.kind === 'benchmark' && gap.delta < 0 ? ' is-behind' : '')}>
+            <span aria-hidden="true">{gap.kind === 'target' || gap.delta >= 0 ? '↑' : '↓'}</span>{' '}
+            {gap.kind === 'target'
+              ? <><b>+{gap.delta}</b> to reach your target <span className="org-move-gap-nums">({gap.value} → {gap.ref})</span><span className="gs-sr-only">. {lowest.name} is {gap.delta} below your target tier.</span></>
+              : <><b>{gap.delta >= 0 ? '+' : ''}{gap.delta}</b> {gap.delta >= 0 ? 'ahead of' : 'behind'} your industry <span className="org-move-gap-nums">({gap.value} vs {gap.ref})</span><span className="gs-sr-only">. {lowest.name} scores {gap.value} against an industry benchmark of {gap.ref}.</span></>}
+          </p>
+        )}
         <p>{lowest.name} is your lowest pillar right now, at {lowest.v}/10. {lowest.tag} A focused deep dive is the fastest way to move it, and lifts the score the whole assessment hangs on.</p>
         <div className="org-move-ctas">
           <a className="gs-btn primary sm" href="#go/contact">Book a deep dive</a>

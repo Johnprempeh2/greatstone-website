@@ -60,8 +60,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | ✅ built (ships with c16-c28) |
 | 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | ✅ built (ships with c16-c29) |
 | 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | ✅ built (ships with c16-c30) |
-| 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | next |
-| 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | |
+| 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | ✅ built (ships with c16-c31) |
+| 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | next |
 | 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | |
 | 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | |
 | 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | |
@@ -285,6 +285,19 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 32 — benchmark-gap chip on the #org "Your next move" card (23 Jun)
+The next-move card recommends strengthening the client's weakest pillar; this adds a small honest chip under the
+heading that quantifies the gap the move closes, using only data already in the maturity set (never invents a
+benchmark). It shows the headroom to the engagement's target tier ("↑ +5 to reach your target (4 → 9)") in lime, or,
+when no target is above the current score, the standing vs the industry benchmark ("+1 ahead of / -2 behind your
+industry (4 vs 6)") in lime/amber. The gap predicate is a pure module (`src/store/next-move-gap.mjs`: `moveGap`,
+target-first then benchmark fallback, null when there's nothing honest to show) and unit-tested — **baseline 89 → 93**
+(target headroom, benchmark ahead/behind, target-equal-to-current ignored, one-decimal rounding, null guards for
+zero/garbage/no-refs). Verified live as the demo client (Naa, Ethical Quest) on #org: weakest pillar Data 4, chip read
+"↑ +5 to reach your target (4 → 9)" in lime with the SR sentence "Data is 5 below your target tier", 0 console errors,
+no 380px overflow. New: `src/store/next-move-gap.mjs` + `.test.mjs`. Edited: `src/store/OrgDashboard.jsx`,
+`src/store/admin.css`. Ships with c16-c31 on the next deploy.
 
 ### Cycle 31 — staff engagement quick-start templates + pre-share checklist (23 Jun)
 Two help-staff-go-faster-and-not-ship-broken-items moves in the EngagementEditor (the '+ New engagement' drawer):
