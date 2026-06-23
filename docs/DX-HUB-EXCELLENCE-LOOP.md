@@ -45,8 +45,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | ✅ shipped |
 | 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | ✅ shipped |
 | 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | ✅ built + committed (deploy pending — Netlify 404 outage) |
-| 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | next |
-| 18 | **Pending-actions banner** above the #account tabs | #account | M | |
+| 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | ✅ built (ships with c16) |
+| 18 | **Pending-actions banner** above the #account tabs | #account | M | next |
 | 19 | Order **search/filter** box on the Purchases tab | #account | M | |
 | 20 | Inline **copy-key** on the per-order licence chips | #account | M | |
 | 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | |
@@ -260,3 +260,15 @@ risk.) Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Commit 5ed53
 5 fresh tokens (transient Netlify-side outage; the same flow shipped c15 fine ~15 min earlier, and the CLI has no
 auth token to fall back to). The commit is safe in git and the c16 dist is staged in the deploy mirror, so nothing
 is lost — the NEXT cycle re-attempts the deploy first; one deploy then ships c16 + c17 together once Netlify recovers.
+
+### Cycle 17 — Engagement tag-facet pills in the timeline filter (23 Jun)
+The #org engagement timeline gains a row of tag-facet pills under the type/search controls. It collects the
+distinct tags across past engagements (most-used first, each with a count), renders them as `aria-pressed` toggle
+buttons, and composes the tag filter with the existing kind chips + phase navigator + search (`visible` now also
+requires the tag when one is active). "All tags" resets; clicking the active pill clears it; every filter-reset
+path (jump-to-item, clear-filters, pins) also clears the tag. Keyboard-operable with a visible focus ring, full
+aria-labels, and the row degrades to nothing when no engagement carries a tag. Adversarial catch: `.dx-tagrow` is
+a sibling of `.dx-controls`, so it was added to the c16 print-hide list too. Verified live: pills render with
+counts (platform/report/roadmap/staging), clicking "platform" narrows 8→1 items and "All tags" restores, 0
+console errors, no 380px overflow, build clean, 63 tests. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+Ships together with c16 on the next successful deploy.

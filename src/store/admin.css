@@ -375,6 +375,13 @@
 .dx-chips { display:flex; gap:6px; flex-wrap:wrap; }
 .dx-chip { padding:.4em .9em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.03); color:var(--gs-text-muted); font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; }
 .dx-chip.on { background:var(--gs-accent); color:#0e1611; border-color:var(--gs-accent); }
+/* engagement tag-facet pills — compose with the type chips, phase nav + search */
+.dx-tagrow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; }
+.dx-tag { display:inline-flex; align-items:center; gap:5px; padding:.32em .8em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.03); color:var(--gs-text-muted); font:inherit; font-size:.74rem; font-weight:600; cursor:pointer; transition:border-color .15s, color .15s, background .15s; }
+.dx-tag:hover { border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); color:var(--gs-text,#f5f5f5); }
+.dx-tag.on { background:var(--gs-accent-dim,rgba(200,255,0,.12)); color:var(--gs-accent,#c8ff00); border-color:var(--gs-accent,#c8ff00); }
+.dx-tag:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
+.dx-tag-n { font-size:.66rem; opacity:.7; font-variant-numeric:tabular-nums; }
 .dx-search { flex:1 1 200px; min-width:160px; padding:.55em 1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.86rem; }
 .dx-search:focus { outline:none; border-color:var(--gs-accent-mid); }
 /* keyboard users get a visible ring (WCAG 2.4.7). Placed AFTER the outline:none above so it wins on :focus-visible. */
@@ -489,6 +496,7 @@
   .org-print-root .ca-err,
   .org-print-root .dx-phasenav,
   .org-print-root .dx-controls,
+  .org-print-root .dx-tagrow,
   .org-print-root section[aria-labelledby="org-mem-h"],
   .org-print-root section[aria-labelledby="org-co-h"],
   .org-print-root section[aria-labelledby="org-ord-h"],

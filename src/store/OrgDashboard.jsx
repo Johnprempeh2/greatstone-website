@@ -309,6 +309,7 @@ function OrgAnalytics({ orders, engagements }) {
 function EngagementTimeline({ engagements, companyId, companyName, memberName }) {
   const [filter, setFilter] = useState('all');
   const [phaseFilter, setPhaseFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState(null);
   const seenKey = 'gs-dx-seen:' + companyId;
@@ -330,7 +331,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
       const id = m[1];
       if (appliedRef.current === id) return; // already consumed this hash → don't wipe filters on reload
       appliedRef.current = id;
-      setOpenId(id); setFilter('all'); setPhaseFilter('all'); setQ('');
+      setOpenId(id); setFilter('all'); setPhaseFilter('all'); setTagFilter('all'); setQ('');
       clearTimeout(timer);
       timer = setTimeout(() => {
         const el = document.getElementById('dx-item-' + id);
@@ -356,6 +357,10 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   let past = engagements.filter(e => e.occurred_on <= today);
   const pinned = past.filter(e => e.pinned);
   const kindsPresent = [...new Set(past.map(e => e.kind))];
+  // distinct engagement tags across the timeline, most-used first — drives the tag-facet pills
+  const tagCounts = {};
+  for (const e of past) for (const tg of (e.tags || [])) { const k = String(tg).trim(); if (k) tagCounts[k] = (tagCounts[k] || 0) + 1; }
+  const tagsPresent = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a] || a.localeCompare(b));
   // phase journey: count per canonical phase, and the CURRENT phase = the phase of the most recent past
   // engagement that carries one (past is newest-first from the query). Drives the Phase Navigator stepper.
   const phaseCounts = {};
@@ -366,7 +371,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
 
   const scrollToNewest = () => {
     const n = past.find((e) => isNew(e));
-    setFilter('all'); setPhaseFilter('all'); setQ('');
+    setFilter('all'); setPhaseFilter('all'); setTagFilter('all'); setQ('');
     if (n) { setOpenId(n.id); setTimeout(() => scrollToEl(document.getElementById('dx-item-' + n.id), 'center'), 60); }
     else scrollToEl(document.getElementById('dx-h'), 'start');
   };
@@ -375,7 +380,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
     const hay = [e.title, e.summary, e.phase, e.owner_name, (e.tags || []).join(' '), (e.attendees || []).join(' ')].join(' ').toLowerCase();
     return hay.includes(q.trim().toLowerCase());
   };
-  const visible = past.filter(e => (filter === 'all' || e.kind === filter) && (phaseFilter === 'all' || e.phase === phaseFilter) && matchQ(e));
+  const visible = past.filter(e => (filter === 'all' || e.kind === filter) && (phaseFilter === 'all' || e.phase === phaseFilter) && (tagFilter === 'all' || (e.tags || []).includes(tagFilter)) && matchQ(e));
 
   // group by period (newest first)
   const groups = [];
@@ -430,7 +435,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
               <h3 className="dx-pins-h">Highlights</h3>
               <div className="dx-pins-row">
                 {pinned.map(e => (
-                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setPhaseFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => scrollToEl(document.getElementById('dx-item-' + e.id), 'center'), 60); }}>
+                  <button key={e.id} className="dx-pin" onClick={() => { setFilter('all'); setPhaseFilter('all'); setTagFilter('all'); setQ(''); setOpenId(e.id); setTimeout(() => scrollToEl(document.getElementById('dx-item-' + e.id), 'center'), 60); }}>
                     <span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span>
                     <span className="dx-pin-title">{e.title}</span>
                     <span className="dx-pin-date">{fmtDate(e.occurred_on)}</span>
@@ -481,8 +486,21 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
                 <input className="dx-search" type="search" placeholder="Search the timeline…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search engagements" />
               </div>
 
+              {tagsPresent.length > 0 && (
+                <div className="dx-tagrow" role="group" aria-label="Filter by tag">
+                  <button type="button" className={'dx-tag' + (tagFilter === 'all' ? ' on' : '')} aria-pressed={tagFilter === 'all'} onClick={() => setTagFilter('all')}>All tags</button>
+                  {tagsPresent.map(tg => (
+                    <button type="button" key={tg} className={'dx-tag' + (tagFilter === tg ? ' on' : '')} aria-pressed={tagFilter === tg}
+                      onClick={() => setTagFilter(tagFilter === tg ? 'all' : tg)}
+                      aria-label={`${tg}, ${tagCounts[tg]} item${tagCounts[tg] === 1 ? '' : 's'}.${tagFilter === tg ? ' Showing this tag only; activate to clear.' : ' Activate to filter the timeline to this tag.'}`}>
+                      {tg} <span className="dx-tag-n" aria-hidden="true">{tagCounts[tg]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {visible.length === 0 ? (
-                <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setPhaseFilter('all'); setQ(''); }}>Clear filters</button></p>
+                <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setPhaseFilter('all'); setTagFilter('all'); setQ(''); }}>Clear filters</button></p>
               ) : (
                 <div className="dx-timeline">
                   {groups.map(g => (
