@@ -71,7 +71,7 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 
 | 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | ✅ built (ships with c16-c37) |
 | 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | ✅ built (ships with c16-c38) |
-| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | ✅ #org done in the tab redesign; #account still TODO |
+| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | ✅ built (ships with c16-c39) |
 | 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | next (#org deep-links already focus targets via the redesign) |
 | 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | ✅ built in the #org tab redesign |
 | 43 | **Keyboard semantics** on the clickable order rows (role/tabindex/onKeyDown) | #account acct-ordrow | S | |
@@ -311,6 +311,15 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 40 — persistent toast live region on #account (23 Jun)
+Completes roadmap row 40 (the #org half landed with the tab redesign). The #account flash toast was mounted only when a
+message existed, so a screen-reader live region didn't pre-exist at announce time and SR users missed every save/copy/
+error confirmation. Added an always-present visually-hidden `<div className="gs-sr-only" role="status" aria-live="polite">`
+that holds the current toast text, and removed `role="status"` from the visible `.ca-toast` so the message isn't
+announced twice. a11y-only, no layout change; baseline holds at **111**. Verified live on #account: the persistent region
+is mounted + empty before any flash, fills to "Reference copied." when the quote-ref copy fires, and the visible toast no
+longer carries role=status (no double live region). Edited: `src/store/AccountDashboard.jsx`. Ships with the staged batch.
 
 ### John request — #org reorganised into tabs (23 Jun)
 John: "organise everything in the organisation screen into tabs and make the UX solid and intuitive." The #org dashboard

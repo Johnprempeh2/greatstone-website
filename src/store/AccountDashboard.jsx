@@ -527,7 +527,9 @@ function Dashboard({ session, profile, onProfile }) {
           </div>
         </div>
       </div>
-      {toast && <div className="ca-toast" role="status"><span className="ca-toast-msg">{toast}</span><button type="button" className="ca-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button></div>}
+      {/* persistent polite live region so a screen reader hears every flash; the visible toast is decorative */}
+      <div className="gs-sr-only" role="status" aria-live="polite">{toast || ''}</div>
+      {toast && <div className="ca-toast"><span className="ca-toast-msg">{toast}</span><button type="button" className="ca-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button></div>}
     </div>
   );
 }
