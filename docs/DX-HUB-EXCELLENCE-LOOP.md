@@ -287,8 +287,9 @@ no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/A
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
 
 > **Deploy backlog (as of ~04:11):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (10e39e9) are all
-> committed; the combined dist will be re-staged after c20's clean-worktree build. The Netlify MCP deploy-site
-> proxy has 404'd on every attempt since ~03:25 (~12 tries over ~60 min). One successful deploy ships all five
+> committed; the combined dist is staged in the mirror as **index-CiLe1Tzf.js** (admin chunk admin-WCv15F4t.css
+> carries org-print-root + dx-tagrow + acct-pending + acct-ordsearch + acct-keychip). The Netlify MCP deploy-site
+> proxy has 404'd on every attempt since ~03:25 (~13 tries over ~70 min). One successful deploy ships all five
 > (c16-c20). Local commits + the staged mirror are the durable record; the loop keeps building + re-attempts each cycle.
 
 ### Cycle 20 — inline copy-key on the per-order licence chips (23 Jun)
