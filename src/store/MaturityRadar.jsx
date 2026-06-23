@@ -71,6 +71,12 @@ function Radar({ data, source }) {
   // movement since the discovery baseline (shown only when baseline data is present; degrades silently otherwise)
   const overallDelta = (baseOverall != null && baseOverall > 0 && overall > 0) ? Math.round((overall - baseOverall) * 10) / 10 : null;
   const deltaOf = (key) => (baseline && Number(baseline[key]) > 0) ? clamp(scores[key]) - clamp(baseline[key]) : null;
+  // climb-completion: how far from the discovery baseline toward the target tier (needs both baseline + target)
+  const targetOverall = target ? overallOf(target) : null;
+  const climbPct = (baseOverall != null && targetOverall != null && targetOverall > baseOverall)
+    ? Math.max(0, Math.min(100, Math.round(((overall - baseOverall) / (targetOverall - baseOverall)) * 100)))
+    : null;
+  const targetTierLabel = targetOverall != null ? tierLabel(tierOf(targetOverall)) : '';
   const rings = [2, 4, 6, 8, 10];
 
   // standout pillars: strongest, and the priority climb (lowest), with names
@@ -157,6 +163,25 @@ function Radar({ data, source }) {
             <div className="org-mat-standouts">
               <div className="org-mat-stand"><span className="org-mat-stand-l">Strongest</span><span className="org-mat-stand-v">{strongest.name} · {strongest.v}{deltaOf(strongest.key) > 0 && <span className="org-mat-up"> ▲{deltaOf(strongest.key)}</span>}</span></div>
               <div className="org-mat-stand"><span className="org-mat-stand-l">Priority climb</span><span className="org-mat-stand-v">{weakest.name} · {weakest.v}{deltaOf(weakest.key) > 0 && <span className="org-mat-up"> ▲{deltaOf(weakest.key)}</span>}</span></div>
+            </div>
+          )}
+          {climbPct != null && (
+            <div className="org-mat-climb">
+              <div className="org-mat-climb-head">
+                <span className="org-mat-climb-l">Climb to {targetTierLabel}</span>
+                <span className="org-mat-climb-pct">{climbPct}%</span>
+              </div>
+              <div
+                className="org-mat-climb-track"
+                role="progressbar"
+                aria-valuemin={baseOverall}
+                aria-valuenow={overall}
+                aria-valuemax={targetOverall}
+                aria-valuetext={`${climbPct}% of the climb to ${targetTierLabel} complete: baseline ${baseOverall}, today ${overall}, target ${targetOverall}.`}
+              >
+                <div className="org-mat-climb-fill" style={{ width: climbPct + '%' }} />
+              </div>
+              <div className="org-mat-climb-scale" aria-hidden="true"><span>{baseOverall}</span><span>today {overall}</span><span>{targetOverall}</span></div>
             </div>
           )}
           <a className="gs-btn ghost sm org-mat-cta" href="#go/contact">Discuss your roadmap</a>

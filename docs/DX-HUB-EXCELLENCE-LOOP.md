@@ -43,8 +43,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 12 | Restore keyboard focus ring on the timeline search (.dx-search) | #org admin.css | S | ✅ shipped |
 | 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | ✅ shipped |
 | 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | ✅ shipped |
-| 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | next |
-| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | |
+| 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | ✅ shipped |
+| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | next |
 | 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | |
 | 18 | **Pending-actions banner** above the #account tabs | #account | M | |
 | 19 | Order **search/filter** box on the Purchases tab | #account | M | |
@@ -231,4 +231,14 @@ a new "Since discovery" column in the screen-reader data table (+N per pillar). 
 climb too. All gated on baseline presence so it degrades silently for orgs without one (and never renders NaN, per
 cycle 13). For Ethical Quest this surfaces "▲ 1.9 since discovery", People · 6 ▲2, Data · 4 ▲2 — the climb made
 visible. Verified on desktop + 380px mobile (no overflow), 0 console errors, build clean, 63 tests.
+Edited: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`. Commit d812995, bundle index-BaP7ZTct, deploy 6a39e664.
+
+### Cycle 15 — Distance-to-target climb-completion meter (23 Jun)
+The radar now answers "how far along the journey are we?" A slim progress meter sits under the standouts:
+`climbPct = round((overall − baseOverall) / (targetOverall − baseOverall) × 100)`, clamped 0–100, with a lime
+fill on a charcoal track and a baseline → today → target scale beneath. It's a real `role="progressbar"` with
+aria-valuemin/now/max set to the actual overall scores and an aria-valuetext that reads the whole story; the
+width transition is killed under reduced-motion (no infinite animation). Gated on both `target` and `baseline`
+being present, so it degrades silently otherwise. Ethical Quest reads "Climb to Peak · 39%" (baseline 3.4 → today
+5.3 → target 8.3). Verified live in the panel, 0 console errors, build clean, 63 tests.
 Edited: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`.
