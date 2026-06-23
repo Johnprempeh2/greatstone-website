@@ -8,7 +8,7 @@ import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword,
 import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
-import { isExpiringSoon } from './licence-expiry.mjs';
+import { isExpiringSoon, daysUntil } from './licence-expiry.mjs';
 import { sinceLastVisit } from './welcome-back.mjs';
 import './store.css';
 import './admin.css';
@@ -360,7 +360,12 @@ function Dashboard({ session, profile, onProfile }) {
         <div role="tabpanel" id="acct-panel-orders" aria-labelledby="acct-tab-orders" hidden={tab !== 'orders'}>
           <div className="acct-ordhead">
             <h2>Order history</h2>
-            {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
+            {!!orders.length && (
+              <div className="acct-ordhead-actions">
+                {liveOrders[0] && <button className="gs-btn ghost sm" onClick={() => reorder(liveOrders[0])}>Reorder your last order</button>}
+                <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>
+              </div>
+            )}
           </div>
           {!loadingOrders && !ordersErr && orders.length > 0 && (
             <div className="acct-ordtools">
@@ -450,7 +455,11 @@ function Dashboard({ session, profile, onProfile }) {
                       <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
                       <td data-label="Total" className="ca-amt">
                         {qt.quoted_total_minor != null
-                          ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}</>
+                          ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}{qt.valid_until && !['won', 'lost', 'cancelled'].includes(qt.status) && (() => {
+                              const d = daysUntil(qt.valid_until); if (d === null) return null;
+                              const cls = d < 0 ? ' is-over' : d <= 7 ? ' is-soon' : '';
+                              return <span className={'acct-qcd' + cls}>{d < 0 ? 'Expired' : d === 0 ? 'Expires today' : `${d} day${d === 1 ? '' : 's'} left`}</span>;
+                            })()}</>
                           : qt.indicative_total_minor != null
                             ? <>{fmtMoney(qt.indicative_total_minor, qt.currency)} <span className="ca-muted">(indicative, ex VAT)</span></>
                             : '–'}

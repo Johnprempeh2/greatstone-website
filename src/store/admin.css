@@ -191,6 +191,11 @@
 .acct-ordsearch:focus { outline:none; border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); }
 .acct-ordsearch:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:1px; }
 .acct-ordcount { font-size:.78rem; font-weight:600; color:var(--gs-text-muted,#b0b0b0); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.acct-ordhead-actions { display:flex; flex-wrap:wrap; gap:8px; }
+/* quote valid-until countdown chip */
+.acct-qcd { display:inline-block; margin-left:8px; font-size:.68rem; font-weight:700; letter-spacing:.02em; padding:1px 8px; border-radius:999px; white-space:nowrap; color:var(--gs-teal,#4ecdc4); background:rgba(78,205,196,.1); border:1px solid rgba(78,205,196,.3); }
+.acct-qcd.is-soon { color:var(--gs-warning,#ffc800); background:rgba(255,200,0,.1); border-color:rgba(255,200,0,.35); }
+.acct-qcd.is-over { color:var(--gs-danger,#ff6b6b); background:rgba(255,107,107,.1); border-color:rgba(255,107,107,.4); }
 /* per-order licence-key chips: click to copy the key straight from the order detail */
 .acct-keychip { font:inherit; font-size:.82rem; padding:2px 9px; border-radius:999px; background:rgba(190,242,100,.12); border:1px solid rgba(190,242,100,.28); color:var(--gs-text,#f5f5f5); cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
 .acct-keychip:hover { background:rgba(190,242,100,.22); border-color:rgba(190,242,100,.5); }

@@ -55,8 +55,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | ✅ built (ships with c16-c23) |
 | 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | ✅ built (ships with c16-c24) |
 | 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | ✅ built (ships with c16-c25) |
-| 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | next |
-| 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | |
+| 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | ✅ built (ships with c16-c26) |
+| 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | next |
 | 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | |
 | 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | |
 | 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | |
@@ -285,6 +285,17 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 27 — quote valid-until countdown + reorder-last (23 Jun)
+Two #account conversion nudges. (a) Each open, firm quote with a `valid_until` now shows a countdown chip beside the
+date — "N days left" (teal), amber "≤7 days left" / "Expires today", red "Expired" once past — reusing the
+unit-tested `daysUntil` from licence-expiry.mjs (date-guarded; only for open quotes, so a won/closed quote never
+shows a stale "Expired"). Ethical Quest's quote Q-2026-000042 reads "valid until 31 Jul 2026 · 38 days left". (b) A
+"Reorder your last order" button in the Purchases header reuses the existing `reorder()` (adds the newest live
+order's items to the cart at last price, redirects to the shop, surfaces skipped retired lines). Verified live: the
+countdown chip + the reorder button render, no 380px overflow, 0 console errors, build clean, 73 tests. (Spend
+context already exists in the #org org-stats "Invested" tile; not duplicated on #account to avoid noise.) Edited:
+`src/store/AccountDashboard.jsx`, `src/store/admin.css`. Ships with c16-c26 on the next deploy.
 
 ### Cycle 26 — "Discuss this" mailto on timeline items + quotes (23 Jun)
 A client can now start a conversation in context. Each #org engagement-timeline item gets a "Discuss this →" link
