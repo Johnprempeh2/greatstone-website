@@ -555,7 +555,7 @@ function EngagementTimeline({ engagements, orders, companyId, companyName, membe
                       const active = phaseFilter === ph;
                       return (
                         <li key={ph} className={'dx-jstep is-' + state + (active ? ' is-active' : '')}>
-                          <button type="button" className="dx-jstep-btn" aria-pressed={active} disabled={count === 0}
+                          <button type="button" className="dx-jstep-btn" aria-pressed={active} aria-current={state === 'current' ? 'step' : undefined} disabled={count === 0}
                             onClick={() => setPhaseFilter(active ? 'all' : ph)}
                             aria-label={`${ph} phase. ${PHASE_BLURB[ph]} ${count} item${count === 1 ? '' : 's'}. ${state === 'current' ? 'Current phase.' : state === 'done' ? 'Completed.' : 'Not started.'}${count ? (active ? ' Showing this phase only; activate to clear.' : ' Activate to filter the timeline to this phase.') : ''}`}>
                             <span className="dx-jstep-node" aria-hidden="true">{state === 'done' ? '✓' : i + 1}</span>

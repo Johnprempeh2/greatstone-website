@@ -499,6 +499,8 @@
 .dx-jstep.is-current .dx-jstep-node { background:var(--gs-accent,#c8ff00); border-color:var(--gs-accent,#c8ff00); color:#0e1611; box-shadow:0 0 0 4px rgba(200,255,0,.18); }
 .dx-jstep-name { font-size:.82rem; font-weight:700; color:var(--gs-text); }
 .dx-jstep.is-upcoming .dx-jstep-name { color:var(--gs-text-faint,#8a8a8a); }
+/* future phases read as not-yet-active: dim the node + count so completed/current/upcoming are unambiguous at a glance (SR gets the state via the button aria-label + aria-current) */
+.dx-jstep.is-upcoming .dx-jstep-node, .dx-jstep.is-upcoming .dx-jstep-count { opacity:.5; }
 .dx-jstep-count { font-size:.68rem; color:var(--gs-text-faint,#8a8a8a); }
 .dx-jstep-here { font-size:.6rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gs-accent,#c8ff00); }
 .dx-jstep.is-active .dx-jstep-node { box-shadow:0 0 0 4px rgba(200,255,0,.28); }
