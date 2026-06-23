@@ -271,8 +271,16 @@ function OrgAnalytics({ orders, engagements }) {
   if (orders === null || engagements === null) return null;
   const today = todayISO();
   const pastEng = engagements.filter(e => e.occurred_on <= today);
+  // soonest scheduled FUTURE engagement — the "next touchpoint" reassurance (date-guarded)
+  const upcoming = engagements.filter(e => e.occurred_on > today).sort((a, b) => a.occurred_on.localeCompare(b.occurred_on));
+  const nextEng = upcoming[0] || null;
+  let nextIn = null;
+  if (nextEng) {
+    const d = new Date(nextEng.occurred_on + 'T00:00:00');
+    if (!Number.isNaN(d.getTime())) nextIn = Math.max(0, Math.round((d.getTime() - new Date(today + 'T00:00:00').getTime()) / 86400000));
+  }
   const live = orders.filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
-  if (!live.length && !pastEng.length) return null;
+  if (!live.length && !pastEng.length && !nextEng) return null;
 
   let lastTouch = null;
   if (pastEng.length) {
@@ -292,6 +300,18 @@ function OrgAnalytics({ orders, engagements }) {
       <div className="org-an-grid">
         {lastTouch !== null && <div className="org-an-tile"><div className="org-stat-v">{lastTouch === 0 ? 'Today' : lastTouch + 'd'}</div><div className="org-stat-l">Last touchpoint</div></div>}
         <div className="org-an-tile"><div className="org-stat-v">{pastEng.length}</div><div className="org-stat-l">Touchpoints</div></div>
+        {nextEng ? (
+          <div className="org-an-tile org-an-next">
+            <div className="org-stat-v">{nextIn === 0 ? 'Today' : nextIn === 1 ? 'Tomorrow' : 'in ' + nextIn + 'd'}</div>
+            <div className="org-stat-l">Next touchpoint</div>
+            <div className="org-an-next-detail">{KIND_LABEL[nextEng.kind] || 'Session'}{nextEng.title ? ' · ' + nextEng.title : ''} · {fmtDate(nextEng.occurred_on)}</div>
+          </div>
+        ) : (
+          <div className="org-an-tile org-an-next is-empty">
+            <div className="org-stat-l">Next touchpoint</div>
+            <p className="org-an-next-empty">Nothing booked yet. <a className="ca-link" href="#go/contact">Let's plan your next session →</a></p>
+          </div>
+        )}
         {months.length > 0 && (
           <div className="org-an-tile org-an-spark">
             <div className="org-an-bars" role="img" aria-label={'Spend trend, last ' + months.length + ' month' + (months.length === 1 ? '' : 's') + ': ' + months.map(m => m + ' ' + fmtMoney(byMonth[m], curr)).join(', ') + '. Total ' + fmtMoney(live.reduce((s, o) => s + (o.total_minor || 0), 0), curr) + '.'}>

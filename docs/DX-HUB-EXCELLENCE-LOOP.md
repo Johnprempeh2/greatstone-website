@@ -51,8 +51,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 20 | Inline **copy-key** on the per-order licence chips | #account | M | ✅ built (ships with c16-c19) |
 | 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | ✅ built (ships with c16-c20) |
 | 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | ✅ built (ships with c16-c21) |
-| 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | next |
-| 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | |
+| 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | ✅ built (ships with c16-c22) |
+| 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | next |
 | 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | |
 | 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | |
 | 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | |
@@ -285,6 +285,16 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 23 — next-touchpoint reassurance tile (23 Jun)
+The #org relationship pulse showed Last touchpoint / Touchpoints / Spend trend — all backward-looking. It now also
+answers "when do we next meet?" A "Next touchpoint" tile reads the soonest future-dated engagement (date-guarded)
+and shows the countdown + what it is: "in 7d · Milestone · Production launch · 30 Jun 2026" for Ethical Quest. When
+nothing is scheduled it's a warm CTA, not a dead tile ("Nothing booked yet. Let's plan your next session →" to
+#go/contact), and the band's early-return now also fires for an org whose only activity is an upcoming session. Teal
+accent ties it to the "upcoming" colour language. Verified live: tile reads "in 7d" with the milestone detail,
+pulse now has four tiles, 0 console errors, no 380px overflow, build clean, 68 tests. Edited: `src/store/OrgDashboard.jsx`,
+`src/store/admin.css`. Ships with c16-c22 on the next deploy.
 
 ### Cycle 22 — per-phase "what this delivers" caption (23 Jun)
 The PHASE_BLURB one-liners (Discovery "Mapping the work and the drains", Build "Wiring the systems that buy hours
