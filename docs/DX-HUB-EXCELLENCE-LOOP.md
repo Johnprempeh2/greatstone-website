@@ -89,7 +89,7 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 | 55 | **Add-to-calendar (.ics)** affordance on the Next-touchpoint tile (client-side, no backend) | #org OrgAnalytics org-an-next | S | ✅ c52 (765b88d): "Add to calendar" button on the next-touchpoint tile downloads an all-day .ics (VEVENT, DTSTART/DTEND DATE) via a Blob object URL; string builder extracted to tested to-ics.mjs (+5 tests, 115→120). Verified live (30 Jun 2026 touchpoint → valid VCALENDAR, greatstone-next-touchpoint.ics) |
 | 56 | **Primary-vs-secondary hierarchy** for the identity-header action buttons | #account + #org acct-id-actions | S | ⊘ c53 CLEAN: audited every #account + #org tab + AuthGate — each has exactly one primary (AuthGate sign-in, Profile save, Security update-password, NextMove "Book a deep dive" paired w/ a ghost, InviteForm "Request access", CompanyProfile save); no destructive action styled primary. Only multi-primary case = the persistent OnboardingChecklist card alongside a tab primary for a new org (intentional onboarding pattern). Descoped |
 | 57 | **Expectation-setting line** on the 2FA "Ask us to enable" control | #account SecurityCard | S | ✅ c53 (1acb70f): added an honest security-posture line on the Security tab (shield icon, reuses ca-trust) — password over an encrypted connection + strong-password/sign-out-everywhere nudge. NO fake 2FA toggle / no promised feature (there's no MFA in the code). Verified live as demo-client (line renders, no 2FA checkbox, real controls intact, AA) |
-| 58 | **Single-row scrollable tab strip** for #account on narrow phones (pill chrome breaks <=480) | #account tabs + .acct-tabs | S | |
+| 58 | **Single-row scrollable tab strip** for #account on narrow phones (pill chrome breaks <=480) | #account tabs + .acct-tabs | S | ✅ c54 (9fe47c2): removed the inline flexWrap:'wrap' on the #account tablist that was overriding the shared .ca-tabs ≤768px rule (flex-wrap:nowrap; overflow-x:auto), so it now scrolls in one row like #org instead of wrapping to 2 rows. Verified live at 380px (5 tabs one row, scrollWidth 475 > clientWidth 342) |
 | 59 | **Coarse-pointer tap-size bump** for timeline jump pins / filter chips / tag pills (<44px today) | #org + admin.css @media(pointer:coarse) | S | |
 
 ## Needs John's approval (parked — do not self-serve)
@@ -581,18 +581,18 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~22:25):** c16 (5ed5301) → c53 (1acb70f: #account honest security line); through c52 (765b88d: #org add-to-calendar .ics)
+> **Deploy backlog (as of ~22:55):** c16 (5ed5301) → c54 (9fe47c2: #account mobile tab strip one-row scroll); through c53 (1acb70f: #account honest security line)
 > **plus** two John-requested changes — a company-profile UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs
-> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **thirty-eight cycles + 2 John
+> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **thirty-nine cycles + 2 John
 > changes** — are all committed; the combined dist is
-> staged in the mirror as **index-luRlm8U8.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
+> staged in the mirror as **index-DAHyiYko.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
 > is-link + org-print-root tabpanel-unhide; #account now also has the persistent gs-sr-only toast region [c40]; sigs incl.
 > dx-tagrow + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome +
 > acct-qcd + acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub +
 > acct-ordtrunc + dx-av-more + ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus + org-tabs). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~66 tries over **~20h** — a sustained Netlify-side outage; **worth
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~67 tries over **~20.5h** — a sustained Netlify-side outage; **worth
 > checking the Netlify status page / the netlify-mcp.netlify.app proxy**). One successful deploy ships
-> everything (c16-c53 + both John changes). Test baseline is now **120**. The loop runs a stretched ~20-min cadence
+> everything (c16-c54 + both John changes). Test baseline is now **120**. The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
