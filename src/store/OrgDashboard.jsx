@@ -545,7 +545,7 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
                       <h3 className="dx-period">{g.period}</h3>
                       <ol className="dx-list">
                         {g.items.map(e => (
-                          <Item key={e.id} e={e} isNew={isNew(e)} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
+                          <Item key={e.id} e={e} companyName={companyName} isNew={isNew(e)} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
                         ))}
                       </ol>
                     </div>
@@ -560,9 +560,13 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
   );
 }
 
-function Item({ e, isNew, open, onToggle }) {
+function Item({ e, companyName, isNew, open, onToggle }) {
   const anchor = ANCHOR_KINDS.has(e.kind);
   const url = location.origin + location.pathname + '#org/e/' + e.id;
+  // "Discuss this" — prefilled mailto to the Greatstone team, so a client can pick up a thread in context
+  const discussHref = 'mailto:DX@greatstoneinternational.co.uk'
+    + '?subject=' + encodeURIComponent(`Re: ${e.title}${companyName ? ` (${companyName})` : ''}`)
+    + '&body=' + encodeURIComponent(`Hi Greatstone team,\n\nI'd like to discuss this from our engagement timeline:\n• ${e.title} — ${fmtDate(e.occurred_on)}\n\nThanks`);
   const [copyMsg, setCopyMsg] = useState('');
   const linkRef = useRef(null);
   const cleanBody = useMemo(() => (open && e.body_html ? sanitizeHtml(e.body_html) : ''), [open, e.body_html]);
@@ -611,6 +615,7 @@ function Item({ e, isNew, open, onToggle }) {
             </a>
           )}
           <button type="button" className="dx-copy" onClick={copyLink} aria-label={copied ? 'Link copied to clipboard' : 'Copy a link to “' + e.title + '”'}>{copied ? 'Copied ✓' : 'Copy link'}</button>
+          <a className="dx-copy dx-discuss" href={discussHref} aria-label={'Email the Greatstone team about “' + e.title + '”'}>Discuss this →</a>
           <input type="text" className={'dx-copy-src' + (needsManual ? ' is-shown' : '')} ref={linkRef} value={url} readOnly tabIndex={-1} aria-hidden={!needsManual} aria-label={'Link to “' + e.title + '”'} onFocus={(ev) => ev.target.select()} />
           <span className="gs-sr-only" role="status" aria-live="polite">{copyMsg}</span>
         </div>

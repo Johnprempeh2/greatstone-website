@@ -54,8 +54,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | ✅ built (ships with c16-c22) |
 | 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | ✅ built (ships with c16-c23) |
 | 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | ✅ built (ships with c16-c24) |
-| 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | next |
-| 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | |
+| 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | ✅ built (ships with c16-c25) |
+| 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | next |
 | 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | |
 | 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | |
 | 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | |
@@ -285,6 +285,18 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 26 — "Discuss this" mailto on timeline items + quotes (23 Jun)
+A client can now start a conversation in context. Each #org engagement-timeline item gets a "Discuss this →" link
+in its action row (a prefilled mailto to the canonical DX@greatstoneinternational.co.uk, subject "Re: {title}
+({company})", body naming the item + date), and each #account quote that has no order yet shows "Discuss this →"
+in its Invoice cell (instead of a dead "–"), subject "Re: quote {reference}". All params are encodeURIComponent'd;
+the canonical address was already in-repo (confirmed against the brand skill). No parent row/card click-handlers on
+these elements, so no stopPropagation needed. `.dx-discuss` added to the c16 print-hide list (mailto links are
+chrome, not board content). Verified live: #org item → "Re: Go-live readiness (Ethical Quest)" with the dated body,
+#account quote → "Re: quote Q-2026-000042"; 0 console errors, no 380px overflow, build clean, 73 tests. CSS-light
+(reused .dx-copy / .ca-link). Edited: `src/store/OrgDashboard.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
+Ships with c16-c25 on the next deploy.
 
 ### Cycle 25 — personalised welcome-back / since-last-visit line (23 Jun)
 A subtle one-liner above the identity name: "Welcome back, {first name}" on #org (where the h1 is the company), and

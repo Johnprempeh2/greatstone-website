@@ -540,6 +540,7 @@
   .org-print-root .dx-phasenav,
   .org-print-root .dx-controls,
   .org-print-root .dx-tagrow,
+  .org-print-root .dx-discuss,
   .org-print-root section[aria-labelledby="org-mem-h"],
   .org-print-root section[aria-labelledby="org-co-h"],
   .org-print-root section[aria-labelledby="org-ord-h"],
