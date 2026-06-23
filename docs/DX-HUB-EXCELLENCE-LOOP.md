@@ -69,7 +69,7 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 
 _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product (task w2ux752le), deduped vs c1-c34, ordered best-value-first (trust/honesty + a11y blockers → admin-week wins → staff throughput → mobile/polish). Each is safe, reversible, front-end, presentation-only._
 
-| 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | next |
+| 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | ✅ built (ships with c16-c37) |
 | 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | |
 | 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | |
 | 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | |
@@ -311,6 +311,16 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 38 — surface the maturity assessment date on the radar (23 Jun)
+The radar's underlying `assessed_on` (in the seed + the Supabase `maturity_assessments` select) was fetched but never
+destructured or rendered, so an admin quoting a 5.x score to her board couldn't tell how current it is. Confirmed the
+field exists first (seed carries `assessed_on: '2026-06-15'`), then surfaced it: a small uppercase "Assessed 15 Jun
+2026" line under the radar subtitle (date-guarded → '' on a bad date) and added to the radar's SR aria-label. Paired with
+the existing "Sample baseline" chip so the demo reads honestly as a seeded/illustrative baseline, not live data. CSS-only
+addition (no new tests; baseline holds at **111**). Verified live on #org: the line shows "Assessed 15 Jun 2026", the SR
+label includes it, the Sample-baseline chip is still present, radar renders clean, no overflow. Edited:
+`src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`. Ships with c16-c37. (First of the critique-refilled batch.)
 
 ### Cycle 37 — #account: download-all-keys export + copy-quote-reference (23 Jun)
 Two self-serve conveniences on #account. (a) The Licence keys tab now has a **"Download all (.csv)"** button that

@@ -57,7 +57,9 @@ export default function MaturityRadar({ company }) {
 }
 
 function Radar({ data, source }) {
-  const { scores, benchmark, target, baseline } = data;
+  const { scores, benchmark, target, baseline, assessed_on } = data;
+  // surface how current the assessment is, so a reader quoting a score knows its date (date-guarded → '' if bad)
+  const assessedLabel = assessed_on ? (() => { const d = new Date(assessed_on + 'T00:00:00'); return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); })() : '';
   const [drawn, setDrawn] = useState(() => prefersReduced());
   useEffect(() => {
     if (drawn) return undefined;
@@ -92,6 +94,7 @@ function Radar({ data, source }) {
   }, [scores]);
 
   const aLabel = `Eight-pillar digital maturity. Overall ${overall} out of 10, ${tierLabel(tier)}.`
+    + (assessedLabel ? ` Assessed ${assessedLabel}.` : '')
     + (overallDelta > 0 ? ` Up ${overallDelta} since discovery.` : '')
     + (strongest ? ` Strongest: ${strongest.name} at ${strongest.v}.` : '')
     + (weakest ? ` Priority climb: ${weakest.name} at ${weakest.v}.` : '')
@@ -104,6 +107,7 @@ function Radar({ data, source }) {
           <span className="st-kicker">Digital maturity</span>
           <h2 id="org-mat-h">Your eight-pillar maturity</h2>
           <p className="org-mat-sub">Where you stand today across the Greatstone pillars, against your industry and the climb ahead.</p>
+          {assessedLabel && <p className="org-mat-assessed">Assessed {assessedLabel}</p>}
         </div>
         {source === 'sample' && <span className="org-mat-sample" title="Illustrative baseline shown for the demo account">Sample baseline</span>}
       </div>
