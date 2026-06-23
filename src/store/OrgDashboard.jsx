@@ -15,6 +15,7 @@ import { PILLARS } from '../data/maturity-seed.mjs';
 import { useMaturity } from './useMaturity.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
+import { toIcs } from './to-ics.mjs';
 import { moveGap } from './next-move-gap.mjs';
 import { monthlySpend } from './monthly-spend.mjs';
 import { attendeeOverflow, filterAnnouncement } from './timeline-a11y.mjs';
@@ -357,6 +358,23 @@ function OrgAnalytics({ orders, engagements }) {
     // local-calendar diff (occurred_on is a local DATE; matches todayISO so "Today" reports correctly)
     lastTouch = Math.max(0, Math.round((new Date(today + 'T00:00:00').getTime() - new Date(latest.occurred_on + 'T00:00:00').getTime()) / 86400000));
   }
+  // client-side .ics so a client can save the next touchpoint to any calendar (no backend; Blob object URL; tested toIcs)
+  const addToCalendar = (eng) => {
+    const ics = toIcs({
+      title: 'Greatstone · ' + (KIND_LABEL[eng.kind] || 'Session') + (eng.title ? ' · ' + eng.title : ''),
+      date: eng.occurred_on,
+      description: eng.summary || 'Your next Greatstone touchpoint.',
+      uid: 'greatstone-eng-' + eng.id,
+      stamp: String(eng.occurred_on || '').replace(/-/g, '') + 'T000000Z',
+    });
+    if (!ics) return;
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'greatstone-next-touchpoint.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
   // monthly spend buckets for the sparkline (tested module; only renders as a "trend" when >= 2 months exist)
   const { months, byMonth, max, total: spendTotal, curr } = monthlySpend(orders);
 
@@ -371,6 +389,10 @@ function OrgAnalytics({ orders, engagements }) {
             <div className="org-stat-v">{nextIn === 0 ? 'Today' : nextIn === 1 ? 'Tomorrow' : 'in ' + nextIn + 'd'}</div>
             <div className="org-stat-l">Next touchpoint</div>
             <div className="org-an-next-detail">{KIND_LABEL[nextEng.kind] || 'Session'}{nextEng.title ? ' · ' + nextEng.title : ''} · {fmtDate(nextEng.occurred_on)}</div>
+            <button type="button" className="org-an-cal" onClick={() => addToCalendar(nextEng)} aria-label={'Add the next touchpoint on ' + fmtDate(nextEng.occurred_on) + ' to your calendar'}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              Add to calendar
+            </button>
           </div>
         ) : (
           <div className="org-an-tile org-an-next is-empty">

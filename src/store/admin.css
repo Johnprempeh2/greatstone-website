@@ -581,6 +581,10 @@
 .org-an-next.org-an-next { border-color:rgba(78,205,196,.3); }
 .org-an-next .org-stat-v { color:var(--gs-teal,#4ecdc4); }
 .org-an-next-detail { margin-top:6px; font-size:.74rem; color:var(--gs-text-muted,#b0b0b0); line-height:1.45; }
+/* save-the-touchpoint .ics button on the next-touchpoint tile */
+.org-an-cal { display:inline-flex; align-items:center; gap:5px; margin-top:8px; font:inherit; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:999px; border:1px solid rgba(78,205,196,.4); background:rgba(78,205,196,.08); color:var(--gs-teal,#4ecdc4); cursor:pointer; transition:background .15s, border-color .15s; }
+.org-an-cal:hover { background:rgba(78,205,196,.16); border-color:var(--gs-teal,#4ecdc4); }
+.org-an-cal:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
 .org-an-next.is-empty { display:flex; flex-direction:column; justify-content:center; }
 .org-an-next-empty { margin:6px 0 0; font-size:.8rem; color:var(--gs-text-muted,#b0b0b0); line-height:1.45; }
 .org-an-spark { display:flex; flex-direction:column; justify-content:space-between; }
