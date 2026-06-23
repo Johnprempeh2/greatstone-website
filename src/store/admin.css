@@ -83,6 +83,11 @@
 .org-profile > .gs-btn.primary { align-self:flex-start; margin-top:4px; padding-inline:1.5em; }
 .org-sec-sub { margin:-6px 0 16px; max-width:62ch; font-size:.9rem; line-height:1.55; color:var(--gs-text-muted,#b0b0b0); }
 .acct-ordtrunc { margin:10px 2px 0; font-size:.82rem; color:var(--gs-text-faint,#707070); line-height:1.5; }
+/* licence-keys export tools + copy-quote-reference button */
+.acct-keystools { display:flex; flex-wrap:wrap; gap:8px; }
+.acct-refcopy { margin-left:6px; padding:1px 6px; font-size:.78rem; line-height:1.4; border-radius:6px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:transparent; color:var(--gs-text-muted,#b0b0b0); cursor:pointer; vertical-align:middle; transition:border-color .15s ease, color .15s ease; }
+.acct-refcopy:hover { border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); color:var(--gs-accent,#c8ff00); }
+.acct-refcopy:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:1px; }
 .pr-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .pr-targets { display:flex; flex-direction:column; gap:4px; max-height:180px; overflow-y:auto; border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:10px; padding:8px; }
 .pr-chk { flex-direction:row !important; align-items:center; gap:.5em !important; font-weight:500 !important; color:var(--gs-text) !important; }

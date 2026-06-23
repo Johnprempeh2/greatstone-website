@@ -227,6 +227,11 @@ function Dashboard({ session, profile, onProfile }) {
       setTimeout(() => setCopiedKey(c => (c === k.id ? null : c)), 1800);
     } catch { setTab('keys'); }
   };
+  // copy a quote reference; clipboard is the happy path, else flash the reference so it's still visible to copy
+  const copyRef = async (r) => {
+    try { await navigator.clipboard.writeText(r); flash('Reference copied.'); }
+    catch { flash('Reference: ' + r); }
+  };
 
   const openPortal = async () => {
     setPortalBusy(true);
@@ -473,7 +478,7 @@ function Dashboard({ session, profile, onProfile }) {
                       return (
                     <tr key={qt.id}>
                       <td data-label="Date">{fmtDate(qt.created_at)}</td>
-                      <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code></td>
+                      <td data-label="Reference" className="ca-name"><code className="ca-ref">{qt.reference}</code>{qt.reference && <button type="button" className="acct-refcopy" onClick={() => copyRef(qt.reference)} aria-label={'Copy quote reference ' + qt.reference} title="Copy reference">⧉</button>}</td>
                       <td data-label="Total" className="ca-amt">
                         {qt.quoted_total_minor != null
                           ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}{qt.valid_until && !['won', 'lost', 'cancelled'].includes(qt.status) && (() => {

@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { expiryInfo } from './licence-expiry.mjs';
+import { keysToCsv } from './keys-export.mjs';
 import './store.css';
 import './admin.css';
 
@@ -32,6 +33,16 @@ export default function LicenceKeys() {
       setCopied('fail:' + kk.id); setTimeout(() => setCopied(null), 4000);
     }
   };
+  // client-side export of all the customer's keys (no backend): serialize to CSV, download via an object URL
+  const downloadKeys = () => {
+    const csv = keysToCsv(keys);
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }); // BOM so Excel reads UTF-8
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'greatstone-licence-keys.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
   // explicit map so an unknown status can't silently render as the red "refunded" chip
   const statusClass = (s) => ({ issued: 'ca-published', expired: 'ca-draft', revoked: 'ca-ord-refunded' }[s] || 'ca-archived');
 
@@ -39,7 +50,12 @@ export default function LicenceKeys() {
     <section className="org-sec" aria-labelledby="acct-keys-h">
       <div className="acct-ordhead">
         <h2 id="acct-keys-h">Licence keys</h2>
-        {keys && keys.length > 0 && <button className="gs-btn ghost sm" onClick={load}>Refresh</button>}
+        {keys && keys.length > 0 && (
+          <div className="acct-keystools">
+            <button className="gs-btn ghost sm" onClick={downloadKeys} aria-label="Download all your licence keys as a CSV file">Download all (.csv)</button>
+            <button className="gs-btn ghost sm" onClick={load}>Refresh</button>
+          </div>
+        )}
       </div>
       {keys === null ? (
         <div className="st-skel" style={{ height: 76, borderRadius: 14 }} />

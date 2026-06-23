@@ -65,11 +65,11 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | ✅ built (ships with c16-c33) |
 | 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | ✅ built (ships with c16-c34) |
 | 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | ✅ built (ships with c16-c35) |
-| 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | next |
+| 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | ✅ built (ships with c16-c36) |
 
 _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product (task w2ux752le), deduped vs c1-c34, ordered best-value-first (trust/honesty + a11y blockers → admin-week wins → staff throughput → mobile/polish). Each is safe, reversible, front-end, presentation-only._
 
-| 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | |
+| 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | next |
 | 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | |
 | 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | |
 | 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | |
@@ -311,6 +311,19 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 37 — #account: download-all-keys export + copy-quote-reference (23 Jun)
+Two self-serve conveniences on #account. (a) The Licence keys tab now has a **"Download all (.csv)"** button that
+client-side serializes every key (Product, Variant, Licence key, Seats, Status, Expires, Order) to a UTF-8 CSV (with a
+BOM so Excel reads it) and downloads it via a Blob + object URL, no backend; shown only when the customer has keys. The
+CSV serialization (RFC-4180 quoting/escaping) is a pure tested module (`src/store/keys-export.mjs`: `keysToCsv`) —
+**baseline 107 → 111**. (b) Each quote row gets a small **copy-reference button** (clipboard happy-path; falls back to
+flashing the reference) so a buyer can grab "Q-2026-000042" without manual selection. Verified live as the demo client:
+the download produced `greatstone-licence-keys.csv` with the correct header + 2 real key rows (Mortar Connect / Bedrock
+Platform); the copy button captured "Q-2026-000042" (via a stubbed clipboard) and flashed "Reference copied."; no page
+overflow (the quote table uses the existing `.ca-table-wrap` horizontal-scroll on mobile); build clean, 111 tests. New:
+`src/store/keys-export.mjs` + `.test.mjs`. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`,
+`src/store/admin.css`. This completes the original roadmap (c35-c37); next is the refilled batch c38-c59. Ships with c16-c36.
 
 ### Cycle 36 — aspirational first-run empty-state for a brand-new org's timeline (23 Jun)
 The engagement-timeline zero-state existed but was generic and had no call to action. It's now context-aware and
