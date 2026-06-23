@@ -7,6 +7,7 @@ import { useModal } from './useModal.mjs';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { portfolioHealth, quietFirstRank } from './client-recency.mjs';
 import { engagementView } from './engagement-view.mjs';
+import { listState } from './list-state.mjs';
 import { shareChecklist } from './engagement-checklist.mjs';
 import { expiryInfo } from './licence-expiry.mjs';
 import './store.css';
@@ -38,6 +39,7 @@ export default function ClientsManager({ staff }) {
   const [customers, setCustomers] = useState([]);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState(null); // a failed clients read must NOT read as "no clients yet"
   const [sel, setSel] = useState(null); // selected customer
   const [activity, setActivity] = useState({}); // customer_id → most recent engagement created_at (staleness)
   const [quietFirst, setQuietFirst] = useState(false); // sort the list by who's gone quiet longest
@@ -50,7 +52,7 @@ export default function ClientsManager({ staff }) {
       .select('id, name, slug, domain, created_at, tier:customer_tiers(name)')
       .is('deleted_at', null).order('name').limit(500);
     if (q.trim()) query = query.ilike('name', '%' + q.trim() + '%');
-    query.then(({ data, error }) => { if (error) console.error(error); setCustomers(data || []); setLoading(false); });
+    query.then(({ data, error }) => { setLoadErr(error || null); setCustomers(error ? [] : (data || [])); setLoading(false); });
     // staleness: most recent engagement created_at per client, so the list flags dashboards going quiet
     supabase.from('engagements').select('customer_id, created_at').is('deleted_at', null).limit(2000)
       .then(({ data }) => { const m = {}; for (const e of (data || [])) { if (!m[e.customer_id] || e.created_at > m[e.customer_id]) m[e.customer_id] = e.created_at; } setActivity(m); });
@@ -69,6 +71,7 @@ export default function ClientsManager({ staff }) {
   const ordered = quietFirst
     ? [...customers].sort((a, b) => quietFirstRank(activity[b.id]) - quietFirstRank(activity[a.id]))
     : customers;
+  const clientListState = listState(loading, loadErr, customers);
 
   return (
     <div className="ca-wrap">
@@ -94,8 +97,9 @@ export default function ClientsManager({ staff }) {
         <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Company</th><th scope="col">Domain</th><th scope="col">Tier</th><th scope="col">Client since</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan="5" className="ca-muted">Loading…</td></tr>
-              : !customers.length ? <tr><td colSpan="5" className="ca-muted">No clients yet. They appear here once a buyer signs up or you seed one.</td></tr>
+            {clientListState === 'loading' ? <tr><td colSpan="5" className="ca-muted">Loading…</td></tr>
+              : clientListState === 'error' ? <tr><td colSpan="5" className="ca-muted"><span role="alert">Couldn't load your clients. <button className="ca-link" onClick={() => load()}>Try again</button></span></td></tr>
+              : clientListState === 'empty' ? <tr><td colSpan="5" className="ca-muted">No clients yet. They appear here once a buyer signs up or you seed one.</td></tr>
                 : ordered.map(c => (
                   <tr key={c.id}>
                     <td data-label="Company" className="ca-name">{c.name}{staleBadge(activity[c.id])}</td>
@@ -118,6 +122,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [items, setItems] = useState(null);
   const [requests, setRequests] = useState([]);
   const [keys, setKeys] = useState(null);
+  const [keysErr, setKeysErr] = useState(null); // a failed keys read must NOT read as "no licence keys yet" / loop on Loading…
   const [orders, setOrders] = useState([]); // for linking a key to the purchase it fulfils
   const [editing, setEditing] = useState(null); // engagement object or {} for new
   const [keyEditing, setKeyEditing] = useState(null); // licence-key object or {} for new
@@ -131,7 +136,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
     supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url, order_id').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
-      .then(({ data, error }) => { if (!error) setKeys(data || []); });
+      .then(({ data, error }) => { setKeysErr(error || null); setKeys(error ? [] : (data || [])); });
     supabase.from('orders').select('id, reference, placed_at, created_at').is('deleted_at', null).eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setOrders(data || []); });
   }, [customer.id]);
@@ -263,6 +268,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
           <thead><tr><th scope="col">Product</th><th scope="col">Key</th><th scope="col">Seats</th><th scope="col">Status</th><th scope="col">Delivered</th><th scope="col">Expires</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {keys === null ? <tr><td colSpan="7" className="ca-muted">Loading…</td></tr>
+              : keysErr ? <tr><td colSpan="7" className="ca-muted"><span role="alert">Couldn't load licence keys. <button className="ca-link" onClick={() => load()}>Try again</button></span></td></tr>
               : !keys.length ? <tr><td colSpan="7" className="ca-muted">No licence keys yet. Issue one when you fulfil an order — the client sees it on their account.</td></tr>
                 : keys.map(k => (
                   <tr key={k.id}>
