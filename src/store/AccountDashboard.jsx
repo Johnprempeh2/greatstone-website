@@ -316,8 +316,8 @@ function Dashboard({ session, profile, onProfile }) {
     : orders;
 
   return (
-    <div className="ca-wrap">
-      {/* the store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
+    <div className="ca-wrap" role="region" aria-label="Your account">
+      {/* role=region (not a 2nd <main>; the shell's #gs-main owns the single unlabelled main) gives SR users a named dashboard landmark. The store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
       <a className="gs-skip" href="#acct-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('acct-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your account</a>
       <header className="acct-id" id="acct-main" tabIndex={-1}>
         <div className="acct-avatar" aria-hidden="true">{initialsOf(profile?.full_name || profile?.email || company)}</div>

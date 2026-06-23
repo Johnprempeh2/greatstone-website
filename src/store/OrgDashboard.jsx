@@ -165,8 +165,8 @@ function Org({ profile, session, onProfile }) {
   const openQuotes = (quotes || []).filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
 
   return (
-    <div className="ca-wrap org-print-root">
-      {/* the store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
+    <div className="ca-wrap org-print-root" role="region" aria-label="Your organization">
+      {/* role=region (not a 2nd <main>; the shell's #gs-main owns the single unlabelled main) gives SR users a named dashboard landmark. The store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
       <a className="gs-skip" href="#org-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('org-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your organization</a>
       <header className="acct-id" id="org-main" tabIndex={-1}>
         <div className="acct-avatar" aria-hidden="true">{initialsOf(company.name)}</div>
