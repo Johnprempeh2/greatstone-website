@@ -152,6 +152,7 @@ function Dashboard({ session, profile, onProfile }) {
   const [portalBusy, setPortalBusy] = useState(false);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
   const [tab, setTab] = useState('orders');
+  const [pendingDismissed, setPendingDismissed] = useState(false);
   const onTabKey = (e, i) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
@@ -242,6 +243,20 @@ function Dashboard({ session, profile, onProfile }) {
     if (profile?.customer) return { title: 'Follow your transformation', body: 'See your maturity, your engagement timeline and what your Greatstone team has delivered.', ctas: [{ label: 'Open your organization', href: '#org', primary: true }] };
     return null;
   })();
+  // pending-actions banner — decision/time-sensitive open loops, each a deep-link to its tab. Distinct from the
+  // onboarding "next step" above; hides entirely when nothing is pending. Dates guarded (Invalid Date → ignored).
+  const SOON_DAYS = 7;
+  const openQuoteRows = quotes.filter(q => !['won', 'lost', 'cancelled'].includes(q.status));
+  const expiringQuotes = openQuoteRows.filter(q => {
+    if (!q.valid_until) return false;
+    const d = new Date(q.valid_until); if (Number.isNaN(d.getTime())) return false;
+    const days = (d.getTime() - Date.now()) / 86400000;
+    return days >= 0 && days <= SOON_DAYS;
+  }).length;
+  const pending = [];
+  if (expiringQuotes > 0) pending.push({ key: 'expiring', urgent: true, label: `${expiringQuotes} quote${expiringQuotes === 1 ? '' : 's'} expiring within ${SOON_DAYS} days`, action: () => setTab('orders') });
+  if (openQuotes > 0) pending.push({ key: 'quotes', label: `${openQuotes} open quote${openQuotes === 1 ? '' : 's'} to review`, action: () => setTab('orders') });
+  if (profile && !profile.full_name) pending.push({ key: 'profile', label: 'Add your name to complete your profile', action: () => setTab('profile') });
 
   return (
     <div className="ca-wrap">
@@ -282,6 +297,23 @@ function Dashboard({ session, profile, onProfile }) {
               ? <a key={i} className={'gs-btn ' + (c.primary ? 'primary' : 'ghost') + ' sm'} href={c.href}>{c.label}</a>
               : <button key={i} type="button" className={'gs-btn ' + (c.primary ? 'primary' : 'ghost') + ' sm'} onClick={c.onClick}>{c.label}</button>)}
           </div>
+        </section>
+      )}
+
+      {!pendingDismissed && pending.length > 0 && (
+        <section className="acct-pending" role="region" aria-label="Items that need your attention">
+          <span className="acct-pending-icon" aria-hidden="true">!</span>
+          <div className="acct-pending-body">
+            <h2 className="acct-pending-h">{pending.length} thing{pending.length === 1 ? '' : 's'} need{pending.length === 1 ? 's' : ''} your attention</h2>
+            <ul className="acct-pending-list">
+              {pending.map(p => (
+                <li key={p.key}>
+                  <button type="button" className={'acct-pending-link' + (p.urgent ? ' is-urgent' : '')} onClick={p.action}>{p.label}<span aria-hidden="true"> →</span></button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button type="button" className="acct-pending-x" onClick={() => setPendingDismissed(true)} aria-label="Dismiss this attention banner">×</button>
         </section>
       )}
 

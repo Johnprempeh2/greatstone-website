@@ -46,8 +46,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | ✅ shipped |
 | 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | ✅ built + committed (deploy pending — Netlify 404 outage) |
 | 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | ✅ built (ships with c16) |
-| 18 | **Pending-actions banner** above the #account tabs | #account | M | next |
-| 19 | Order **search/filter** box on the Purchases tab | #account | M | |
+| 18 | **Pending-actions banner** above the #account tabs | #account | M | ✅ built (ships with c16+c17) |
+| 19 | Order **search/filter** box on the Purchases tab | #account | M | next |
 | 20 | Inline **copy-key** on the per-order licence chips | #account | M | |
 | 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | |
 | 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | |
@@ -274,3 +274,14 @@ console errors, no 380px overflow, build clean, 63 tests. Edited: `src/store/Org
 Commit 4a2d746. **DEPLOY STILL PENDING:** the Netlify MCP proxy continued to 404 on retry (~7 attempts over ~18
 min, ~03:25–03:43). c16 (5ed5301) + c17 (4a2d746) are both committed and the COMBINED dist (mirror bundle
 index-ClPGwiZ3) is staged in the deploy mirror — one successful deploy ships both. The next cycle retries first.
+
+### Cycle 18 — #account pending-actions banner (23 Jun)
+A dismissible attention banner above the account tabs surfaces decision/time-sensitive open loops, each a
+deep-link to its tab: quotes expiring within 7 days (urgent, amber), open quotes to review, and an incomplete
+profile (no name). It's a labelled `role="region"`, counts the items with correct singular/plural grammar, hides
+entirely when nothing is pending, and is session-dismissible (returns next visit if still pending). Distinct from
+the onboarding "next step" card (which stays a single guidance nudge); dates are guarded per c13 (Invalid Date →
+ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use the warning token. Verified live as
+demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
+no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
+**Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).

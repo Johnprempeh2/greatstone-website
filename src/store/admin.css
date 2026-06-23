@@ -303,6 +303,21 @@
 .acct-next-text p { margin:0; font-size:.9rem; color:var(--gs-text-muted); max-width:54ch; }
 .acct-next-ctas { display:flex; flex-wrap:wrap; gap:8px; }
 @media (max-width:560px){ .acct-next { flex-direction:column; align-items:flex-start; } }
+
+/* pending-actions banner — decision/time-sensitive open loops above the account tabs */
+.acct-pending { display:flex; align-items:flex-start; gap:12px; margin:0 0 18px; padding:14px 16px; border-radius:14px; background:var(--gs-warning-dim,rgba(255,200,0,.07)); border:1px solid rgba(255,200,0,.28); }
+.acct-pending-icon { flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.8rem; color:#1f1a05; background:var(--gs-warning,#ffc800); margin-top:1px; }
+.acct-pending-body { flex:1 1 auto; min-width:0; }
+.acct-pending-h { font-size:.92rem; font-weight:700; margin:0 0 6px; color:var(--gs-text,#f5f5f5); }
+.acct-pending-list { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px 18px; }
+.acct-pending-link { font:inherit; font-size:.86rem; font-weight:600; color:var(--gs-accent,#c8ff00); background:none; border:0; padding:2px 0; cursor:pointer; text-align:left; }
+.acct-pending-link:hover { text-decoration:underline; }
+.acct-pending-link.is-urgent { color:var(--gs-warning,#ffc800); }
+.acct-pending-link:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; border-radius:3px; }
+.acct-pending-link.is-urgent:focus-visible { outline-color:var(--gs-warning,#ffc800); }
+.acct-pending-x { flex:none; font-size:1.2rem; line-height:1; background:none; border:0; color:var(--gs-text-faint,#8a8a8a); cursor:pointer; padding:2px 4px; border-radius:6px; }
+.acct-pending-x:hover { color:var(--gs-text,#f5f5f5); }
+.acct-pending-x:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
 .org-field { display:flex; justify-content:space-between; gap:14px; padding:.5em 0; border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.06)); font-size:.9rem; }
 .org-field:last-child { border-bottom:0; }
 .org-field-l { color:var(--gs-text-faint); font-weight:700; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; }
