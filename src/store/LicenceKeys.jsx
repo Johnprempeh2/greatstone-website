@@ -3,10 +3,11 @@
 // a buyer reads only their own company's keys; staff issue them.
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
+import { expiryInfo } from './licence-expiry.mjs';
 import './store.css';
 import './admin.css';
 
-const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
+const fmtDate = (s) => { const d = new Date(s); return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); };
 
 export default function LicenceKeys() {
   const [keys, setKeys] = useState(null);   // null = loading
@@ -55,6 +56,7 @@ export default function LicenceKeys() {
             <div key={kk.id} className={'lk-card' + (kk.status !== 'issued' ? ' is-inactive' : '')}>
               <div className="lk-head">
                 <span className="lk-prod">{kk.offering_name}{kk.variant_name ? <span className="lk-variant"> · {kk.variant_name}</span> : ''}</span>
+                {(() => { const ex = expiryInfo(kk.expires_at); return ex && ex.kind !== 'ok' ? <span className={'lk-expbadge ' + ex.cls}>{ex.label}</span> : null; })()}
                 <span className={'ca-status ' + statusClass(kk.status)}>{kk.status}</span>
               </div>
               <div className="lk-keyrow" style={{ flexWrap: 'wrap' }}>

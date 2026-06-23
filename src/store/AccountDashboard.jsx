@@ -8,6 +8,7 @@ import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword,
 import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
+import { isExpiringSoon } from './licence-expiry.mjs';
 import './store.css';
 import './admin.css';
 
@@ -189,7 +190,7 @@ function Dashboard({ session, profile, onProfile }) {
   // purchase. RLS (customer_self, 0017) already scopes this to the buyer's own company.
   const [keysByOrder, setKeysByOrder] = useState({});
   const loadKeyLinks = useCallback(() => {
-    supabase.from('licence_keys').select('id, offering_name, variant_name, status, order_id, licence_key')
+    supabase.from('licence_keys').select('id, offering_name, variant_name, status, order_id, licence_key, expires_at')
       .is('deleted_at', null).not('order_id', 'is', null)
       .then(({ data, error }) => {
         if (error) return; // non-critical enrichment — leave the order detail as-is on a read error
@@ -248,7 +249,11 @@ function Dashboard({ session, profile, onProfile }) {
   const openQuotes = quotes.filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
   // state-adaptive "your next step" band — the most relevant unmet action, from data already fetched
   const keyCount = Object.values(keysByOrder).reduce((n, arr) => n + (arr?.length || 0), 0);
+  // issued licence keys whose expiry falls within 30 days (date-guarded per c13) — a renewal nudge
+  const KEY_SOON_DAYS = 30;
+  const expiringKeys = Object.values(keysByOrder).flat().filter(k => isExpiringSoon(k, KEY_SOON_DAYS)).length;
   const nextStep = (() => {
+    if (expiringKeys > 0) return { title: 'Renew your licences', body: `${expiringKeys} of your licence key${expiringKeys === 1 ? '' : 's'} expire${expiringKeys === 1 ? 's' : ''} within ${KEY_SOON_DAYS} days. Renew to keep your seats active.`, ctas: [{ label: 'Review your keys', onClick: () => setTab('keys'), primary: true }, { label: 'Talk to us', href: '#go/contact' }] };
     if (!loadingOrders && orders.length === 0) return { title: 'Start your Greatstone toolkit', body: 'Explore the software catalogue, or book a deep dive to kick off your transformation.', ctas: [{ label: 'Explore the catalogue', href: '#shop', primary: true }, { label: 'Book a deep dive', href: '#go/contact' }] };
     if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to unlock your seats.', ctas: [{ label: 'View your keys', onClick: () => setTab('keys'), primary: true }] };
     if (profile?.customer && admin) return { title: 'Set up your organization', body: 'Invite teammates and complete your company profile in your organization dashboard.', ctas: [{ label: 'Go to your organization', href: '#org', primary: true }] };
@@ -267,6 +272,7 @@ function Dashboard({ session, profile, onProfile }) {
   }).length;
   const pending = [];
   if (expiringQuotes > 0) pending.push({ key: 'expiring', urgent: true, label: `${expiringQuotes} quote${expiringQuotes === 1 ? '' : 's'} expiring within ${SOON_DAYS} days`, action: () => setTab('orders') });
+  if (expiringKeys > 0) pending.push({ key: 'expkeys', urgent: true, label: `${expiringKeys} licence key${expiringKeys === 1 ? '' : 's'} expiring within ${KEY_SOON_DAYS} days`, action: () => setTab('keys') });
   if (openQuotes > 0) pending.push({ key: 'quotes', label: `${openQuotes} open quote${openQuotes === 1 ? '' : 's'} to review`, action: () => setTab('orders') });
   if (profile && !profile.full_name) pending.push({ key: 'profile', label: 'Add your name to complete your profile', action: () => setTab('profile') });
   // Purchases search — filter the rendered orders by reference / invoice / item name / status

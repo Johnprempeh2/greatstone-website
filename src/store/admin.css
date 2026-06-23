@@ -132,8 +132,12 @@
 .lk-card { background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:14px; padding:16px 18px; }
 .lk-card.is-inactive { opacity:.7; }
 .lk-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
-.lk-prod { color:var(--gs-text); font-weight:700; font-size:.95rem; }
+.lk-prod { color:var(--gs-text); font-weight:700; font-size:.95rem; margin-right:auto; }
 .lk-variant { color:var(--gs-text-faint); font-weight:500; }
+/* expiry attention badge (amber ≤30 days, red once past) */
+.lk-expbadge { font-size:.68rem; font-weight:700; letter-spacing:.02em; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+.lk-exp-soon { color:var(--gs-warning,#ffc800); background:rgba(255,200,0,.12); border:1px solid rgba(255,200,0,.35); }
+.lk-exp-over { color:var(--gs-danger,#ff6b6b); background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); }
 .lk-keyrow { display:flex; align-items:center; gap:8px; }
 .lk-key { flex:1 1 auto; min-width:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9rem; letter-spacing:.04em; color:var(--gs-accent); background:rgba(200,255,0,.06); border:1px solid var(--gs-border,rgba(200,255,0,.16)); border-radius:8px; padding:.5em .7em; overflow-x:auto; white-space:nowrap; }
 .lk-meta { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:10px; font-size:.78rem; color:var(--gs-text-faint); }
