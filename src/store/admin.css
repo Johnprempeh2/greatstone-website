@@ -577,6 +577,7 @@
 .org-an-bars { display:flex; align-items:flex-end; gap:5px; height:42px; margin-bottom:6px; }
 .org-an-bar { flex:1 1 auto; min-width:5px; background:var(--gs-accent); border-radius:3px 3px 0 0; opacity:.85; }
 .org-an-bar:last-child { opacity:1; }
+.org-an-spark-fig { font-size:.66rem; color:var(--gs-text-faint,#8a8a8a); font-variant-numeric:tabular-nums; margin-top:4px; }
 .dx-body { margin-top:14px; padding-top:14px; border-top:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); font-size:.9rem; color:var(--gs-text-muted); line-height:1.6; }
 .dx-body .dx-lead { color:var(--gs-text); font-weight:600; }
 .dx-body h4, .dx-body h5, .dx-body h6 { font-size:.72rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--gs-text-faint); margin:14px 0 6px; }

@@ -379,10 +379,13 @@ function OrgAnalytics({ orders, engagements }) {
         )}
         {months.length > 1 && (
           <div className="org-an-tile org-an-spark">
-            <div className="org-an-bars" role="img" aria-label={'Spend trend, last ' + months.length + ' months: ' + months.map(m => m + ' ' + fmtMoney(byMonth[m], curr)).join(', ') + '. Total ' + fmtMoney(spendTotal, curr) + '.'}>
+            <div className="org-stat-v">{fmtMoney(spendTotal, curr)}</div>
+            <div className="org-an-bars" role="img" aria-label={'Spend by month, last ' + months.length + ' months: ' + months.map(m => m + ' ' + fmtMoney(byMonth[m], curr)).join(', ') + '.'}>
               {months.map(m => <span key={m} className="org-an-bar" style={{ height: Math.max(10, Math.round(byMonth[m] / max * 100)) + '%' }} title={m + ': ' + fmtMoney(byMonth[m], curr)} />)}
             </div>
-            <div className="org-stat-l">Spend trend</div>
+            <div className="org-stat-l">Spend · last {months.length} months</div>
+            {/* visible trend endpoints so sighted users get the figures without hovering each bar */}
+            <div className="org-an-spark-fig">{months[0]} {fmtMoney(byMonth[months[0]], curr)} → {months[months.length - 1]} {fmtMoney(byMonth[months[months.length - 1]], curr)}</div>
           </div>
         )}
       </div>
