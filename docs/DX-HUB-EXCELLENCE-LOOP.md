@@ -44,7 +44,7 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | ✅ shipped |
 | 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | ✅ shipped |
 | 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | ✅ shipped |
-| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | ✅ shipped |
+| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | ✅ built + committed (deploy pending — Netlify 404 outage) |
 | 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | next |
 | 18 | **Pending-actions banner** above the #account tabs | #account | M | |
 | 19 | Order **search/filter** box on the Purchases tab | #account | M | |
@@ -255,4 +255,8 @@ sections, all CTAs); forces the radar's drawn state and recolours its grid lines
 `.org-print-root` so #account printing is untouched. Verified the button renders, the print rule is present in the
 CSSOM and scoped to print media, screen rendering is unchanged, 0 console errors, build clean, 63 tests. (Print
 output itself can't be rasterised in the headless preview; the CSS is print-media-only so it carries zero screen
-risk.) Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+risk.) Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Commit 5ed5301, mirror bundle index-BD2Vm7p1.
+**DEPLOY PENDING:** the Netlify MCP deploy-site proxy returned a sustained `404 Not Found` at zipAndBuild across
+5 fresh tokens (transient Netlify-side outage; the same flow shipped c15 fine ~15 min earlier, and the CLI has no
+auth token to fall back to). The commit is safe in git and the c16 dist is staged in the deploy mirror, so nothing
+is lost — the NEXT cycle re-attempts the deploy first; one deploy then ships c16 + c17 together once Netlify recovers.
