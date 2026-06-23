@@ -286,11 +286,11 @@ demo-client: "1 thing needs your attention → 1 open quote to review", the link
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
 
-> **Deploy backlog (as of ~04:10):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (order search, committed
-> below) are all committed; the combined dist will be re-staged in the mirror after c19's clean-worktree build. The
-> Netlify MCP deploy-site proxy has 404'd on every attempt since ~03:25 (~10 tries over ~45 min). One successful
-> deploy ships all four. Local commits + the staged mirror are the durable record; the loop keeps building and
-> re-attempts the deploy each cycle.
+> **Deploy backlog (as of ~04:11):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (10e39e9) are all
+> committed; the combined dist is staged in the mirror as **index-CBMQbKkM.js** (admin chunk admin-CA1Fruzb.css
+> carries org-print-root + dx-tagrow + acct-pending + acct-ordsearch). The Netlify MCP deploy-site proxy has 404'd
+> on every attempt since ~03:25 (~11 tries over ~50 min). One successful deploy ships all four. Local commits +
+> the staged mirror are the durable record; the loop keeps building and re-attempts the deploy each cycle.
 
 ### Cycle 19 — #account Purchases order search (23 Jun)
 A search box above the order-history table filters the rendered orders by reference / invoice number / item name /
