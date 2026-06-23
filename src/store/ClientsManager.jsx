@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
-import { portfolioHealth, quietFirstRank } from './client-recency.mjs';
+import { portfolioHealth, quietFirstRank, recencyBucket } from './client-recency.mjs';
 import { engagementView } from './engagement-view.mjs';
 import { listState } from './list-state.mjs';
 import { shareChecklist } from './engagement-checklist.mjs';
@@ -43,6 +43,7 @@ export default function ClientsManager({ staff }) {
   const [sel, setSel] = useState(null); // selected customer
   const [activity, setActivity] = useState({}); // customer_id → most recent engagement created_at (staleness)
   const [quietFirst, setQuietFirst] = useState(false); // sort the list by who's gone quiet longest
+  const [healthFilter, setHealthFilter] = useState(null); // recency bucket to filter the list to, or null for all
   const [toast, setToast] = useState(null);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
@@ -72,15 +73,22 @@ export default function ClientsManager({ staff }) {
     ? [...customers].sort((a, b) => quietFirstRank(activity[b.id]) - quietFirstRank(activity[a.id]))
     : customers;
   const clientListState = listState(loading, loadErr, customers);
+  // chip filter: same recency bucket the health bar counts (reuses recencyBucket — one source of thresholds)
+  const filtered = healthFilter ? ordered.filter(c => recencyBucket(activity[c.id]) === healthFilter) : ordered;
 
   return (
     <div className="ca-wrap">
       <header className="ca-head"><div><span className="st-kicker">Clients</span><h1>Clients &amp; DX engagements</h1></div></header>
       <p className="ca-note" style={{ marginBottom: 14 }}>Pick a client company to curate its digital-experience timeline — upload meeting recaps (inline or a link), milestones and deliverables they'll see on their organization dashboard.</p>
       {!loading && customers.length > 0 && (
-        <div className="ci-health" role="group" aria-label="Portfolio health by recency of last engagement">
+        <div className="ci-health" role="group" aria-label="Portfolio health by recency of last engagement — filter the list">
           {HEALTH.map(b => health[b.key] > 0 && (
-            <span key={b.key} className={'ci-health-chip is-' + b.key}><b>{health[b.key]}</b> {b.label}</span>
+            <button key={b.key} type="button" aria-pressed={healthFilter === b.key}
+              className={'ci-health-chip is-' + b.key + (healthFilter === b.key ? ' is-on' : '')}
+              onClick={() => setHealthFilter(f => (f === b.key ? null : b.key))}
+              aria-label={`${health[b.key]} ${b.label} client${health[b.key] === 1 ? '' : 's'}` + (healthFilter === b.key ? ' — filtering, activate to show all' : ' — activate to show only these')}>
+              <b>{health[b.key]}</b> {b.label}
+            </button>
           ))}
           {needAttention > 0 && (
             <button type="button" className={'ci-health-sort' + (quietFirst ? ' on' : '')} aria-pressed={quietFirst} onClick={() => setQuietFirst(v => !v)}>
@@ -91,7 +99,7 @@ export default function ClientsManager({ staff }) {
       )}
       <div className="ca-toolbar">
         <input className="ca-search" placeholder="Search clients…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search clients" />
-        <span className="ca-count">{customers.length} shown</span>
+        <span className="ca-count" role="status">{healthFilter ? `${filtered.length} of ${customers.length} shown` : `${customers.length} shown`}</span>
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
@@ -100,7 +108,8 @@ export default function ClientsManager({ staff }) {
             {clientListState === 'loading' ? <tr><td colSpan="5" className="ca-muted">Loading…</td></tr>
               : clientListState === 'error' ? <tr><td colSpan="5" className="ca-muted"><span role="alert">Couldn't load your clients. <button className="ca-link" onClick={() => load()}>Try again</button></span></td></tr>
               : clientListState === 'empty' ? <tr><td colSpan="5" className="ca-muted">No clients yet. They appear here once a buyer signs up or you seed one.</td></tr>
-                : ordered.map(c => (
+              : !filtered.length ? <tr><td colSpan="5" className="ca-muted">No clients in this view. <button className="ca-link" onClick={() => setHealthFilter(null)}>Show all clients</button></td></tr>
+                : filtered.map(c => (
                   <tr key={c.id}>
                     <td data-label="Company" className="ca-name">{c.name}{staleBadge(activity[c.id])}</td>
                     <td data-label="Domain">{c.domain || '—'}</td>
