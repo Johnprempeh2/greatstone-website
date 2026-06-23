@@ -269,6 +269,21 @@
 .org-team-role { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--gs-text-faint); }
 .org-team-cta { margin-left:auto; }
 @media (max-width:520px){ .org-team-cta { margin-left:0; width:100%; } }
+/* innovation hub band — "in your field" AI Intelligence on #org */
+.org-intel { margin-top:34px; }
+.org-intel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+.org-intel-head h2 { font-size:1.18rem; margin:2px 0 0; }
+.org-intel-sub { margin:6px 0 0; font-size:.9rem; color:var(--gs-text-muted); max-width:48ch; }
+.org-intel-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+.org-intel-card { display:flex; flex-direction:column; gap:8px; padding:16px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); text-decoration:none; color:inherit; transition:transform .15s ease, border-color .15s ease; }
+.org-intel-card:hover { transform:translateY(-2px); border-color:var(--gs-border-strong,rgba(200,255,0,.18)); }
+.org-intel-card:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
+.org-intel-meta { display:flex; align-items:center; gap:8px; }
+.org-intel-topic { font-size:.6rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:.18em .6em; border-radius:100px; color:hsl(var(--h,84) 70% 72%); background:hsl(var(--h,84) 70% 50% / .15); }
+.org-intel-date { font-size:.72rem; color:var(--gs-text-faint); }
+.org-intel-title { font-size:.95rem; font-weight:700; line-height:1.3; color:var(--gs-text); margin:0; }
+.org-intel-vendor { font-size:.78rem; color:var(--gs-text-muted); margin-top:auto; }
+@media (prefers-reduced-motion: reduce){ .org-intel-card { transition:none; } }
 
 .org-sec { margin-top:34px; }
 .org-you { margin-left:.5em; font-size:.62rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:.15em .5em; border-radius:100px; background:var(--gs-accent); color:#0e1611; vertical-align:middle; }

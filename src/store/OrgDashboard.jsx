@@ -10,6 +10,7 @@ import { getCustomerProfile, isCustomer, isCompanyAdmin, signOut, getSession, on
 import { AuthGate } from './AccountDashboard.jsx';
 import MaturityRadar from './MaturityRadar.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
+import { BRIEFINGS, TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
 import './store.css';
 import './admin.css';
 
@@ -27,6 +28,13 @@ const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled mark
 // the DX engagement journey (matches the 0013 `phase` free-text convention). Drives the Phase Navigator.
 const PHASES = ['Discovery', 'Build', 'Adoption', 'Review'];
 const PHASE_BLURB = { Discovery: 'Mapping the work and the drains.', Build: 'Wiring the systems that buy hours back.', Adoption: 'Embedding it in how you work.', Review: 'Measuring the return, planning the next climb.' };
+// the innovation-hub lens: which AI Intelligence topics matter at each phase of the journey
+const PHASE_TOPICS = {
+  Discovery: ['frontier-models', 'enterprise', 'multimodal'],
+  Build: ['coding', 'agents', 'infrastructure'],
+  Adoption: ['enterprise', 'open-source', 'hardware'],
+  Review: ['ai-security', 'regulation', 'funding'],
+};
 
 // The recap HTML sanitiser now lives in ../lib/sanitize-html.mjs (shared with the staff preview pane + unit-tested).
 const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'link'; } };
@@ -161,6 +169,8 @@ function Org({ profile, session, onProfile }) {
       <MaturityRadar company={company} />
 
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
+
+      <InnovationBand currentPhase={sinceMarker?.phase} />
 
       <GreatstoneTeam engagements={engagements} />
 
@@ -548,6 +558,48 @@ function Item({ e, isNew, open, onToggle }) {
         )}
       </article>
     </li>
+  );
+}
+
+// ── innovation hub v1: "in your field" AI Intelligence, filtered to the client's current phase ──────────
+// Reuses the Intelligence hub's briefing data (src/data/ai-intel.mjs) so #org becomes a window onto what's
+// moving in AI for where the client is right now, each card linking to its full #intel/<id> article.
+function InnovationBand({ currentPhase }) {
+  const wanted = PHASE_TOPICS[currentPhase] || ['frontier-models', 'enterprise', 'ai-security'];
+  const briefs = useMemo(() => {
+    const set = new Set(wanted);
+    const matched = (BRIEFINGS || []).filter(b => (b.topics || []).some(t => set.has(t)));
+    const pool = matched.length ? matched : (BRIEFINGS || []);
+    return [...pool].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 3);
+  }, [currentPhase]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!briefs.length) return null;
+  const topTopic = (b) => (b.topics || []).find(t => wanted.includes(t)) || (b.topics || [])[0];
+  return (
+    <section className="org-intel" aria-labelledby="org-intel-h">
+      <div className="org-intel-head">
+        <div>
+          <span className="st-kicker">In your field</span>
+          <h2 id="org-intel-h">Intelligence for {currentPhase ? 'your ' + currentPhase.toLowerCase() + ' phase' : 'your transformation'}</h2>
+          <p className="org-intel-sub">AI moves worth knowing while you're here, from the Greatstone Intelligence desk.</p>
+        </div>
+        <a className="gs-btn ghost sm" href="#intel">Open the full Intelligence hub →</a>
+      </div>
+      <div className="org-intel-grid">
+        {briefs.map(b => {
+          const t = topTopic(b);
+          return (
+            <a key={b.id} className="org-intel-card" href={'#intel/' + b.id}>
+              <div className="org-intel-meta">
+                {t && <span className="org-intel-topic" style={{ '--h': TOPIC_HUE[t] }}>{TOPIC_LABEL[t]}</span>}
+                <span className="org-intel-date">{fmtDate(b.date)}</span>
+              </div>
+              <h3 className="org-intel-title">{b.headline}</h3>
+              <span className="org-intel-vendor">{b.vendor}</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

@@ -33,8 +33,8 @@ approval — never done autonomously.**
 | 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | ✅ shipped |
 | 8 | Staff authoring throughput (default-to-draft, Duplicate, stale badge) | ClientsManager | M | yes | ✅ shipped |
 | 9 | Extract shared sanitizeHtml + policy mXSS tests + **preview-as-client pane** | src/lib + ClientsManager + tests | M | yes | ✅ shipped |
-| 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | next |
-| 11 | Rules-based **"Your next move"** card + proactive health signals | #org | S | yes | |
+| 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | ✅ shipped |
+| 11 | Rules-based **"Your next move"** card + proactive health signals | #org | S | yes | next |
 | 12 | **Apply migration 0019** + seed Ethical Quest + swap radar to live data | Supabase + #org | M | **needs John** | |
 | 13 | Staff 8-slider **maturity scoring form** | ClientsManager | M | needs 0019 | |
 | 14 | **"Your climb"** maturity-over-time (data-bound MaturityMap) | #org | M | needs 0019 | |
@@ -149,4 +149,15 @@ stays verified in-browser. Built the "Preview as the client sees it" pane in the
 rendering the exact sanitised output the client sees (verified it shows the h5 heading-demotion). Regression-
 checked the #org recap still renders. Build clean, 63 tests green, 0 console errors, staff + client both verified.
 New: `src/lib/sanitize-html.mjs`, `src/lib/sanitize-html.test.mjs`. Edited: `src/store/OrgDashboard.jsx`,
-`src/store/ClientsManager.jsx`, `src/store/admin.css`.
+`src/store/ClientsManager.jsx`, `src/store/admin.css`. Commit 6c47c55, bundle index-jEqYmEd1, deploy 6a39d438.
+
+### Cycle 10 — Innovation hub v1: "In your field" Intelligence band on #org (23 Jun)
+The connection John specifically wanted: #org now carries a band that reuses the AI Intelligence hub's briefing
+data (src/data/ai-intel.mjs, a shared chunk) filtered to the client's CURRENT phase via a phase→topics map
+(Discovery→frontier/enterprise/multimodal, Build→coding/agents/infrastructure, Adoption→enterprise/open-source/
+hardware, Review→ai-security/regulation/funding). Shows the 3 most recent matching briefings, each a card
+(topic chip in the topic's hue + date + headline + vendor) linking to its full #intel/<id> article, plus an
+"Open the full Intelligence hub →" CTA. Falls back to a general topic set when the phase is unknown. Verified
+live as Ethical Quest (Adoption): heading "Intelligence for your adoption phase", 3 Enterprise-topic cards, and
+a card click navigates to the #intel article. Build clean, 63 tests, mobile clean, 0 console errors. Edited:
+`src/store/OrgDashboard.jsx`, `src/store/admin.css`.
