@@ -523,6 +523,7 @@
 .dx-attendees { display:inline-flex; margin-left:4px; }
 .dx-av { width:22px; height:22px; border-radius:50%; margin-left:-6px; background:var(--gs-emerald,#1b5039); color:#cfeede; display:inline-grid; place-items:center; font-size:.6rem; font-weight:800; border:1.5px solid var(--gs-bg,#121212); }
 .dx-av:first-child { margin-left:0; }
+.dx-av-more { background:var(--gs-bg-card,#363636); color:var(--gs-text-muted,#b0b0b0); font-size:.58rem; cursor:default; }
 .dx-summary { font-size:.9rem; color:var(--gs-text-muted); margin-top:8px; line-height:1.5; }
 .dx-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 .dx-ext { text-decoration:none; }

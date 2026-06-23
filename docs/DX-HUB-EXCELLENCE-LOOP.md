@@ -62,8 +62,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | ✅ built (ships with c16-c30) |
 | 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | ✅ built (ships with c16-c31) |
 | 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | ✅ built (ships with c16-c32) |
-| 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | next |
-| 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | |
+| 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | ✅ built (ships with c16-c33) |
+| 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | next |
 | 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | |
 | 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | |
 
@@ -285,6 +285,19 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 34 — #org timeline a11y: attendee-overflow chip + filter live announcement (23 Jun)
+Two screen-reader-honesty fixes on the engagement timeline. (a) Attendee avatars capped at 5 and silently dropped the
+rest; an `attendeeOverflow` helper now splits shown-vs-hidden and a "+N" chip (`.dx-av-more`, title = the hidden names,
+aria-hidden since the wrapper already labels every attendee) appears so 6+ attendees never vanish. (b) Changing the
+customer kind/phase/tag/search filter changed the visible count silently; a persistent polite live region now announces
+"Showing N of M engagements" (the zero case stays owned by the existing empty-state to avoid a double-announce). Logic
+extracted to a pure tested module (`src/store/timeline-a11y.mjs`: `attendeeOverflow` + `filterAnnouncement`) — **baseline
+98 → 103** (overflow split, at/under cap, blank/null guards; announcement silent-when-unfiltered, narrowed/empty/all-match
+counts, singular/plural). Verified live as the demo client on #org: clicking "Recaps" announced "Showing 3 of 8
+engagements" (matching the 3 visible items) and "All" cleared it to silent; timeline renders clean (no error boundary),
+no 380px overflow. Overflow chip is unit-tested (the demo's engagements have <= 3 attendees). New:
+`src/store/timeline-a11y.mjs` + `.test.mjs`. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Ships with c16-c33.
 
 ### Cycle 33 — #org spend-trend honesty: real-trend guard + orders-truncation note (23 Jun)
 Two honesty improvements on the #org dashboard. (a) The relationship-pulse spend sparkline already existed but rendered

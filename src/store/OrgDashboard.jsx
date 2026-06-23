@@ -16,6 +16,7 @@ import { useMaturity } from './useMaturity.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { moveGap } from './next-move-gap.mjs';
 import { monthlySpend } from './monthly-spend.mjs';
+import { attendeeOverflow, filterAnnouncement } from './timeline-a11y.mjs';
 import './store.css';
 import './admin.css';
 
@@ -408,6 +409,9 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
     return hay.includes(q.trim().toLowerCase());
   };
   const visible = past.filter(e => (filter === 'all' || e.kind === filter) && (phaseFilter === 'all' || e.phase === phaseFilter) && (tagFilter === 'all' || (e.tags || []).includes(tagFilter)) && matchQ(e));
+  // announce the filtered result to screen readers, so the count change isn't silent (empty string when unfiltered)
+  const filtering = filter !== 'all' || phaseFilter !== 'all' || tagFilter !== 'all' || q.trim() !== '';
+  const filterMsg = filterAnnouncement({ filtering, visible: visible.length, total: past.length });
 
   // group by period (newest first)
   const groups = [];
@@ -536,6 +540,9 @@ function EngagementTimeline({ engagements, companyId, companyName, memberName })
                 </div>
               )}
 
+              {/* polite live region: announces the narrowed count (the zero case is owned by the empty-state below) */}
+              <div className="gs-sr-only" role="status" aria-live="polite">{visible.length > 0 ? filterMsg : ''}</div>
+
               {visible.length === 0 ? (
                 <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>No items match. <button className="ca-link" onClick={() => { setFilter('all'); setPhaseFilter('all'); setTagFilter('all'); setQ(''); }}>Clear filters</button></p>
               ) : (
@@ -595,11 +602,15 @@ function Item({ e, companyName, isNew, open, onToggle }) {
         <div className="dx-meta">
           <span className="dx-date">{fmtDate(e.occurred_on)}</span>
           {e.owner_name && <span className="dx-owner">· {e.owner_name}</span>}
-          {(e.attendees || []).length > 0 && (
-            <span className="dx-attendees" aria-label={'Attendees: ' + e.attendees.join(', ')}>
-              {e.attendees.slice(0, 5).map((a, i) => <span key={i} className="dx-av" title={a}>{initialsOf(a)}</span>)}
-            </span>
-          )}
+          {(e.attendees || []).length > 0 && (() => {
+            const { shown, hiddenCount, hiddenNames } = attendeeOverflow(e.attendees, 5);
+            return (
+              <span className="dx-attendees" aria-label={'Attendees: ' + e.attendees.join(', ')}>
+                {shown.map((a, i) => <span key={i} className="dx-av" title={a}>{initialsOf(a)}</span>)}
+                {hiddenCount > 0 && <span className="dx-av dx-av-more" aria-hidden="true" title={hiddenNames.join(', ')}>+{hiddenCount}</span>}
+              </span>
+            );
+          })()}
         </div>
         {e.summary && <p className="dx-summary">{e.summary}</p>}
         <div className="dx-actions">
