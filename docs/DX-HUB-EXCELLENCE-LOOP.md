@@ -76,8 +76,8 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 | 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | ✅ built in the #org tab redesign |
 | 43 | **Keyboard semantics** on the clickable order rows (role/tabindex/onKeyDown) | #account acct-ordrow | S | ✅ c42 (af23a7a): the row already had a real disclosure <button> with aria-expanded/aria-controls — gave it a proper accessible name ("Items in order <ref>"), aria-hidden glyph, type=button. Single named keyboard control per row (no second tab stop) |
 | 44 | **Dim + aria-disable** zero-item phase-navigator steps (cursor-only today) | #org EngagementTimeline + .dx-jstep-btn | S | ✅ c43 (a5009c1): SR state was already in the button aria-label; added semantic aria-current="step" on the current step + dimmed upcoming node+count (opacity .5) so done/current/upcoming are unambiguous visually too (zero-item steps already disabled) |
-| 45 | **"What needs you" attention strip** at the top of #org (mirror #account pending banner; reuse loaded data) | #org identity-header band | M | |
-| 46 | **Visible spend-sparkline figures** (latest-month + total caption, axis hint; values are hover-only today) | #org OrgAnalytics org-an-spark | S | |
+| 45 | **"What needs you" attention strip** at the top of #org (mirror #account pending banner; reuse loaded data) | #org identity-header band | M | ⊘ c44 DESCOPED (redundant): customer_users carry no invite/pending state + engagements no accept state, so the net-new items can't be honestly surfaced; the supportable ones (open quotes, next touchpoint) are already covered by the KPI tiles + OnboardingChecklist + ReturnStrip. A duplicate strip = a nag. Revisit only if an invite/pending-state migration lands (PARK-for-John). |
+| 46 | **Visible spend-sparkline figures** (latest-month + total caption, axis hint; values are hover-only today) | #org OrgAnalytics org-an-spark | S | ✅ c44 (fb29bf4): added a visible total headline + a first→last trend-endpoint caption (figures were SR-/hover-only); trimmed the now-duplicated "Total" from the bars' aria-label |
 | 47 | **Trust/value framing** on the AuthGate sign-in (replace the "software store" first impression) | #account AuthGate | M | |
 | 48 | **Section jump-nav + labelled `<main>` landmark** for the long #org scroll | #org Org() top + admin.css | M | ~superseded by the tab redesign (the tablist replaces the single scroll); re-scope to a labelled landmark only |
 | 49 | **Pending invite-requests count** on the Members heading (data already loaded) | #org Members heading | S | |
@@ -581,18 +581,18 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~17:25):** c16 (5ed5301) → c43 (a5009c1: #org phase-navigator current/upcoming clarity); through c42 (af23a7a: order-row disclosure-button accessible name)
+> **Deploy backlog (as of ~17:55):** c16 (5ed5301) → c44 (fb29bf4: #org visible spend-sparkline figures); through c43 (a5009c1: #org phase-navigator clarity)
 > **plus** two John-requested changes — a company-profile UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs
-> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **twenty-eight cycles + 2 John
+> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **twenty-nine cycles + 2 John
 > changes** — are all committed; the combined dist is
-> staged in the mirror as **index-Cjw1YkCh.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
+> staged in the mirror as **index-DUtbHlgQ.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
 > is-link + org-print-root tabpanel-unhide; #account now also has the persistent gs-sr-only toast region [c40]; sigs incl.
 > dx-tagrow + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome +
 > acct-qcd + acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub +
 > acct-ordtrunc + dx-av-more + ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus + org-tabs). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~56 tries over **~15h** — a sustained Netlify-side outage; **worth
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~57 tries over **~15.5h** — a sustained Netlify-side outage; **worth
 > checking the Netlify status page / the netlify-mcp.netlify.app proxy**). One successful deploy ships
-> everything (c16-c43 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
+> everything (c16-c44 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
