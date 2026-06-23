@@ -195,7 +195,7 @@ function Org({ profile, session, onProfile }) {
 
       <RecentOrders orders={orders} memberName={memberName} />
 
-      {toast && <div className="ca-toast" role="status">{toast}</div>}
+      {toast && <div className="ca-toast" role="status"><span className="ca-toast-msg">{toast}</span><button type="button" className="ca-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button></div>}
     </div>
   );
 }

@@ -63,8 +63,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | ✅ built (ships with c16-c31) |
 | 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | ✅ built (ships with c16-c32) |
 | 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | ✅ built (ships with c16-c33) |
-| 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | next |
-| 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | |
+| 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | ✅ built (ships with c16-c34) |
+| 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | next |
 | 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | |
 
 _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product (task w2ux752le), deduped vs c1-c34, ordered best-value-first (trust/honesty + a11y blockers → admin-week wins → staff throughput → mobile/polish). Each is safe, reversible, front-end, presentation-only._
@@ -311,6 +311,19 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 35 — #org polish pass: toast dismiss/safe-area + phase-nav scroll + intel-chip contrast (23 Jun)
+Three presentation fixes. (a) The flash **toast** now sits above the iOS home-indicator (`bottom: calc(24px +
+env(safe-area-inset-bottom))`), is a flex row with an ellipsised message, and carries a **× dismiss button** so it
+never lingers under a notch or blocks content; applied to both #org and #account (shared `.ca-toast`). (b) The **Phase
+Navigator** now horizontally **overflow-scrolls with scroll-snap + a faded right edge** below 560px (steps go
+`flex:0 0 30vw` instead of cramming every phase into the width), keeping all phases reachable. (c) The "In your field"
+**intel topic chips** had `hsl(h 70% 72%)` text that was borderline on the charcoal; lifted to `hsl(h 78% 82%)` —
+measured **9.82:1** for the worst-case purple "Enterprise" chip against the real opaque backdrop, comfortably past AA.
+CSS-only (no new tests; baseline holds at **103**). Verified live as the demo client on #org at 380px: phase nav
+scrolls (overflow-x auto, snap-x, 4 steps ~114px, no page overflow); toast shows "Company profile saved." with a
+working × dismiss; chips pass AA; 0 NEW console errors. Edited: `src/store/admin.css`, `src/store/OrgDashboard.jsx`,
+`src/store/AccountDashboard.jsx`. Ships with c16-c34.
 
 ### Cycle 34 — #org timeline a11y: attendee-overflow chip + filter live announcement (23 Jun)
 Two screen-reader-honesty fixes on the engagement timeline. (a) Attendee avatars capped at 5 and silently dropped the
