@@ -153,6 +153,7 @@ function Dashboard({ session, profile, onProfile }) {
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
   const [tab, setTab] = useState('orders');
   const [pendingDismissed, setPendingDismissed] = useState(false);
+  const [orderQ, setOrderQ] = useState('');
   const onTabKey = (e, i) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
@@ -257,6 +258,12 @@ function Dashboard({ session, profile, onProfile }) {
   if (expiringQuotes > 0) pending.push({ key: 'expiring', urgent: true, label: `${expiringQuotes} quote${expiringQuotes === 1 ? '' : 's'} expiring within ${SOON_DAYS} days`, action: () => setTab('orders') });
   if (openQuotes > 0) pending.push({ key: 'quotes', label: `${openQuotes} open quote${openQuotes === 1 ? '' : 's'} to review`, action: () => setTab('orders') });
   if (profile && !profile.full_name) pending.push({ key: 'profile', label: 'Add your name to complete your profile', action: () => setTab('profile') });
+  // Purchases search — filter the rendered orders by reference / invoice / item name / status
+  const orderQuery = orderQ.trim().toLowerCase();
+  const filteredOrders = orderQuery
+    ? orders.filter(o => [o.reference, o.invoice_number, o.status, ...(o.order_items || []).flatMap(it => [it.offering_name, it.variant_name])]
+        .filter(Boolean).join(' ').toLowerCase().includes(orderQuery))
+    : orders;
 
   return (
     <div className="ca-wrap">
@@ -334,6 +341,13 @@ function Dashboard({ session, profile, onProfile }) {
             <h2>Order history</h2>
             {!!orders.length && <button className="gs-btn ghost sm" onClick={loadOrders}>Refresh</button>}
           </div>
+          {!loadingOrders && !ordersErr && orders.length > 0 && (
+            <div className="acct-ordtools">
+              <input className="acct-ordsearch" type="search" value={orderQ} onChange={e => setOrderQ(e.target.value)}
+                placeholder="Search by reference, item or status…" aria-label="Search your orders" />
+              {orderQuery && <span className="acct-ordcount" role="status" aria-live="polite">{filteredOrders.length} of {orders.length}</span>}
+            </div>
+          )}
           <div className="ca-table-wrap">
             <table className="ca-table acct-orders">
               <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
@@ -341,7 +355,8 @@ function Dashboard({ session, profile, onProfile }) {
                 {loadingOrders ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">Loading your orders…</span></td></tr>
                   : ordersErr ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="alert">Couldn't load your orders. <button className="ca-link" onClick={loadOrders}>Try again</button></span></td></tr>
                     : !orders.length ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">No orders yet. <a className="ca-link" href="#shop">Browse the store →</a></span></td></tr>
-                      : orders.map(o => {
+                      : !filteredOrders.length ? <tr><td colSpan="6" className="ca-muted" data-label=""><span role="status">No orders match “{orderQ.trim()}”. <button className="ca-link" onClick={() => setOrderQ('')}>Clear search</button></span></td></tr>
+                      : filteredOrders.map(o => {
                         const expanded = open === o.id;
                         return (
                           <React.Fragment key={o.id}>

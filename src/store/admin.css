@@ -181,6 +181,12 @@
 /* ── Account: order history as collapsible rows + mobile cards ───────────── */
 .acct-ordhead { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:30px 0 12px; }
 .acct-ordhead h2 { font-size:1.2rem; font-weight:800; }
+/* Purchases search */
+.acct-ordtools { display:flex; align-items:center; gap:10px; margin:0 0 12px; }
+.acct-ordsearch { flex:1 1 240px; min-width:160px; max-width:420px; padding:.55em 1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.86rem; }
+.acct-ordsearch:focus { outline:none; border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); }
+.acct-ordsearch:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:1px; }
+.acct-ordcount { font-size:.78rem; font-weight:600; color:var(--gs-text-muted,#b0b0b0); font-variant-numeric:tabular-nums; white-space:nowrap; }
 .acct-orders tbody tr.acct-ordrow { cursor:pointer; }
 .acct-orders .acct-toggle { background:none; border:0; color:var(--gs-text-faint); font:inherit; cursor:pointer; padding:4px; }
 .acct-orders .acct-toggle[aria-expanded="true"] { color:var(--gs-accent); }
