@@ -13,6 +13,7 @@ import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { BRIEFINGS, TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
 import { PILLARS } from '../data/maturity-seed.mjs';
 import { useMaturity } from './useMaturity.mjs';
+import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import './store.css';
 import './admin.css';
 
@@ -71,6 +72,9 @@ export default function OrgDashboard() {
 function Org({ profile, session, onProfile }) {
   const company = profile.customer;
   const admin = isCompanyAdmin(profile);
+  const firstName = firstNameOf(profile.full_name);
+  // record this visit + read the gap since the last one (front-end only, runs once on mount)
+  const [lastVisit] = useState(() => sinceLastVisit('gs:lastvisit:org'));
   const [toast, setToast] = useState(null);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
 
@@ -128,6 +132,7 @@ function Org({ profile, session, onProfile }) {
         <div className="acct-avatar" aria-hidden="true">{initialsOf(company.name)}</div>
         <div className="acct-id-text">
           <span className="st-kicker">Your organization</span>
+          {(firstName || lastVisit) && <p className="acct-welcome">Welcome back{firstName ? ', ' + firstName : ''}{lastVisit ? ' · ' + lastVisit : ''}</p>}
           <h1 className="acct-id-name">{company.name}</h1>
           <div className="acct-id-sub">
             {company.domain ? company.domain + ' · ' : ''}

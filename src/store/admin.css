@@ -275,6 +275,8 @@
 .org-return-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; }
 /* "in transformation since …" marker in the identity band */
 .acct-id-marker { margin-top:6px; font-size:.78rem; font-weight:600; color:var(--gs-teal,#4ecdc4); }
+/* subtle "welcome back · last here N days ago" greeting above the identity name */
+.acct-welcome { margin:0 0 2px; font-size:.76rem; font-weight:600; letter-spacing:.01em; color:var(--gs-text-faint,#8a8a8a); }
 /* your Greatstone team card */
 .org-team-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:10px; }
 .org-team-card { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); }
@@ -528,6 +530,7 @@
 
   /* drop interactive chrome + sections that aren't board material */
   .org-print-root .acct-id-actions,
+  .org-print-root .acct-welcome,
   .org-print-root .org-banner,
   .org-print-root .org-onboard,
   .org-print-root .org-intel,

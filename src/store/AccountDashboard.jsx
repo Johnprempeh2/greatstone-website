@@ -9,6 +9,7 @@ import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
 import { isExpiringSoon } from './licence-expiry.mjs';
+import { sinceLastVisit } from './welcome-back.mjs';
 import './store.css';
 import './admin.css';
 
@@ -155,6 +156,8 @@ function Dashboard({ session, profile, onProfile }) {
   const [tab, setTab] = useState('orders');
   const [pendingDismissed, setPendingDismissed] = useState(false);
   const [orderQ, setOrderQ] = useState('');
+  // the #account h1 already greets by name, so only surface the "since last visit" line on a return visit
+  const [lastVisit] = useState(() => sinceLastVisit('gs:lastvisit:account'));
   const [copiedKey, setCopiedKey] = useState(null);
   const onTabKey = (e, i) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
@@ -288,6 +291,7 @@ function Dashboard({ session, profile, onProfile }) {
         <div className="acct-avatar" aria-hidden="true">{initialsOf(profile?.full_name || profile?.email || company)}</div>
         <div className="acct-id-text">
           <span className="st-kicker">Your account</span>
+          {lastVisit && <p className="acct-welcome">Welcome back · {lastVisit}</p>}
           <h1 className="acct-id-name">{profile?.full_name || 'Welcome back'}</h1>
           <div className="acct-id-sub">
             {profile?.email || session.user?.email}

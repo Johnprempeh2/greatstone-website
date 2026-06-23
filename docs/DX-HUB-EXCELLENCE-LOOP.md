@@ -53,8 +53,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | ✅ built (ships with c16-c21) |
 | 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | ✅ built (ships with c16-c22) |
 | 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | ✅ built (ships with c16-c23) |
-| 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | next |
-| 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | |
+| 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | ✅ built (ships with c16-c24) |
+| 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | next |
 | 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | |
 | 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | |
 | 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | |
@@ -285,6 +285,21 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 25 — personalised welcome-back / since-last-visit line (23 Jun)
+A subtle one-liner above the identity name: "Welcome back, {first name}" on #org (where the h1 is the company), and
+on #account only on a return visit ("Welcome back · last here …", since its h1 already greets by name). Front-end
+only: `sinceLastVisit(key)` records the visit timestamp in localStorage (`gs:lastvisit:org` / `:account`) and returns
+the gap for the PREVIOUS visit ("last here earlier today / yesterday / N days ago"), date-guarded, first-visit shows
+no stale "days ago" (server-side per-user last-seen stays the gated wishlist item). Extracted to a pure module
+(`src/store/welcome-back.mjs`: `sinceLastVisit` + `firstNameOf`) and unit-tested — **baseline 68 → 73**. Adversarial
+catch: the first verification showed "last here earlier today" even after clearing storage — React StrictMode's dev
+double-invoke of the useState initializer was reading back the timestamp it had just written. Fixed with a per-page-load
+memo so the real-storage path is idempotent (tests inject opts → bypass it); re-verified that a genuine first visit shows
+only "Welcome back, Naa" and a return visit adds "last here earlier today". Also added `.acct-welcome` to the c16
+print-hide list (a casual greeting shouldn't print on the board summary). 0 console errors, no 380px overflow, build
+clean, 73 tests. New: `src/store/welcome-back.mjs` + `.test.mjs`. Edited: `src/store/OrgDashboard.jsx`,
+`src/store/AccountDashboard.jsx`, `src/store/admin.css`. Ships with c16-c24 on the next deploy.
 
 ### Cycle 24 — loading skeletons for late-mounting #org bands (CLS fix) (23 Jun)
 The maturity radar already reserved its height while loading (a 300px `.st-skel`), but the relationship pulse
