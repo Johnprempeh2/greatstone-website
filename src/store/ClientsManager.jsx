@@ -7,12 +7,21 @@ import { useModal } from './useModal.mjs';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { portfolioHealth, quietFirstRank } from './client-recency.mjs';
 import { engagementView } from './engagement-view.mjs';
+import { shareChecklist } from './engagement-checklist.mjs';
 import './store.css';
 import './admin.css';
 
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };
 const KINDS = ['recap', 'milestone', 'deliverable', 'kickoff', 'review', 'note'];
 const NEEDS_CONTENT = new Set(['recap', 'deliverable']); // mirror the 0013 chk_engagement_content constraint
+// Quick-start scaffolds for a new engagement — prefill kind + a title stub + a sensible phase so staff start faster.
+const ENG_TEMPLATES = [
+  { kind: 'kickoff', label: 'Kickoff', title: 'Kickoff — mapping the climb', phase: 'Discovery' },
+  { kind: 'recap', label: 'Recap', title: 'Meeting recap — ', phase: '' },
+  { kind: 'milestone', label: 'Milestone', title: 'Milestone — ', phase: 'Build' },
+  { kind: 'deliverable', label: 'Deliverable', title: 'Deliverable — ', phase: 'Build' },
+  { kind: 'review', label: 'Review', title: 'Review — measuring the return', phase: 'Review' },
+];
 // freshness flag for the client list — amber after 30 quiet days, red after 60, a nudge when a client has none
 const staleBadge = (lastIso) => {
   if (!lastIso) return <span className="ci-stale is-none" title="No engagements yet">No activity</span>;
@@ -372,6 +381,15 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
   const ref = useRef(null);
   useModal(ref, true, onClose);
 
+  // pre-share readiness: what the client will see, and whether the item is complete enough to make visible
+  const checklist = shareChecklist({ kind, title, occurredOn, externalUrl, bodyHtml });
+  const shareReady = checklist.every(i => i.ok);
+  const applyTemplate = (t) => { // set kind + phase; fill title/phase only when blank so a typed title isn't clobbered
+    setKind(t.kind);
+    setTitle(prev => prev.trim() ? prev : t.title);
+    if (t.phase) setPhase(prev => prev.trim() ? prev : t.phase);
+  };
+
   const save = async () => {
     setErr(null);
     if (!title.trim()) { setErr('Give it a title.'); return; }
@@ -400,6 +418,14 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
       <div ref={ref} tabIndex={-1} className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={isNew ? 'New engagement' : 'Edit engagement'}>
         <h2>{isNew ? 'New engagement' : 'Edit engagement'}</h2>
         <p className="ca-note" style={{ marginTop: -2 }}>For {customer.name}'s DX timeline.</p>
+        {isNew && (
+          <div className="eng-templates" role="group" aria-label="Start from a template">
+            <span className="eng-tpl-label">Quick start</span>
+            {ENG_TEMPLATES.map(t => (
+              <button type="button" key={t.kind} className="gs-btn ghost sm" onClick={() => applyTemplate(t)}>{t.label}</button>
+            ))}
+          </div>
+        )}
         <label>Type
           <select value={kind} onChange={e => setKind(e.target.value)}>
             {KINDS.map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
@@ -444,10 +470,23 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
           </label>
           <label className="ca-check" style={{ alignSelf: 'end' }}><input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /> Pin to Highlights</label>
         </div>
+        {status === 'shared' && (
+          <div className={'eng-checklist' + (shareReady ? ' is-ready' : '')} role="status" aria-live="polite">
+            <p className="eng-checklist-head">{shareReady ? `Ready to share — ${customer.name} will see:` : 'Before sharing, finish:'}</p>
+            <ul>
+              {checklist.map(i => (
+                <li key={i.key} className={i.ok ? 'ok' : 'todo'}>
+                  <span aria-hidden="true">{i.ok ? '✓' : '○'}</span> {i.label}
+                  <span className="gs-sr-only">{i.ok ? ' — done' : ' — still needed'}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {err && <div className="ca-err" role="alert">{err}</div>}
         <div className="ca-drawer-foot">
           <button className="gs-btn ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : isNew ? 'Add to timeline' : 'Save'}</button>
+          <button className="gs-btn primary" onClick={save} disabled={busy || (status === 'shared' && !shareReady)} title={status === 'shared' && !shareReady ? 'Finish the share checklist first, or save it as a draft.' : undefined}>{busy ? 'Saving…' : isNew ? 'Add to timeline' : 'Save'}</button>
         </div>
       </div>
     </div>

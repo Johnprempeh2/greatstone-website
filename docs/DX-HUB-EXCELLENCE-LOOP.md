@@ -59,8 +59,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | ✅ built (ships with c16-c27) |
 | 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | ✅ built (ships with c16-c28) |
 | 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | ✅ built (ships with c16-c29) |
-| 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | next |
-| 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | |
+| 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | ✅ built (ships with c16-c30) |
+| 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | next |
 | 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | |
 | 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | |
 | 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | |
@@ -285,6 +285,25 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 31 — staff engagement quick-start templates + pre-share checklist (23 Jun)
+Two help-staff-go-faster-and-not-ship-broken-items moves in the EngagementEditor (the '+ New engagement' drawer):
+**(a) quick-start templates** — for a NEW engagement, a "Quick start" row of five buttons (Kickoff / Recap / Milestone /
+Deliverable / Review) that prefill kind + a title stub + a sensible phase (data-driven from an `ENG_TEMPLATES` const).
+applyTemplate sets kind/phase and only fills the title when it's blank, so a half-typed title isn't clobbered.
+**(b) pre-share checklist** — whenever Visibility is set to Shared, a live checklist shows exactly what the client will
+see and whether the item is complete (title present, date present, and for recaps/deliverables a recap link OR inline
+content). When incomplete it reads "Before sharing, finish:" with the missing item flagged and the save button disabled
+(title hint: save as a draft instead); when complete it turns teal, "Ready to share — {client} will see:", save enabled.
+This mirrors the 0013 chk_engagement_content constraint so a Share-on-save can't fail server-side. The checklist
+predicate was extracted to a pure module (`src/store/engagement-checklist.mjs`: `shareChecklist` + `isShareReady`) and
+unit-tested — **baseline 85 → 89** (milestone needs title+date only; recap/deliverable add a content rule; isShareReady
+true only when all pass; whitespace-only fields don't count; empty-arg safe). Verified live as staff in the editor:
+templates render + apply (Kickoff → kind kickoff, title "Kickoff — mapping the climb"); shared+kickoff → ready, save
+enabled; switched to recap with no content → content todo, save disabled; 0 console errors; no 380px overflow (templates
+wrap, drawer 350px). `role="status"`/`aria-live="polite"` on the checklist, SR text on each item. New:
+`src/store/engagement-checklist.mjs` + `.test.mjs`. Edited: `src/store/ClientsManager.jsx`, `src/store/admin.css`.
+Ships with c16-c30 on the next deploy.
 
 ### Cycle 30 — staff in-client engagement filter + unshared-draft nudge (23 Jun)
 In the staff ClientDetail engagement timeline: a type-filter chip row (All + the kinds present) with a live "{n} of
