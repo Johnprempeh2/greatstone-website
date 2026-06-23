@@ -67,7 +67,33 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | |
 | 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | |
 
+_Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product (task w2ux752le), deduped vs c1-c34, ordered best-value-first (trust/honesty + a11y blockers → admin-week wins → staff throughput → mobile/polish). Each is safe, reversible, front-end, presentation-only._
+
+| 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | |
+| 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | |
+| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | |
+| 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | |
+| 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | |
+| 43 | **Keyboard semantics** on the clickable order rows (role/tabindex/onKeyDown) | #account acct-ordrow | S | |
+| 44 | **Dim + aria-disable** zero-item phase-navigator steps (cursor-only today) | #org EngagementTimeline + .dx-jstep-btn | S | |
+| 45 | **"What needs you" attention strip** at the top of #org (mirror #account pending banner; reuse loaded data) | #org identity-header band | M | |
+| 46 | **Visible spend-sparkline figures** (latest-month + total caption, axis hint; values are hover-only today) | #org OrgAnalytics org-an-spark | S | |
+| 47 | **Trust/value framing** on the AuthGate sign-in (replace the "software store" first impression) | #account AuthGate | M | |
+| 48 | **Section jump-nav + labelled `<main>` landmark** for the long #org scroll | #org Org() top + admin.css | M | |
+| 49 | **Pending invite-requests count** on the Members heading (data already loaded) | #org Members heading | S | |
+| 50 | **Copy-key + expiry badge** on the staff licence-key rows (bare `<code>` today) | ClientsManager staff keys | S | |
+| 51 | **Honest staff client-list states** (error+retry + distinct "no match" vs "No clients yet") | ClientsManager list load/tbody | S | |
+| 52 | **Clickable portfolio-health chips** as recency filters (inert spans today) | ClientsManager ci-health | M | |
+| 53 | **"Ask your admin" escape hatch** on #org member dead-ends (reuse askAdminMailto) | #org member branches | S | |
+| 54 | **First-run welcome/empty state** for a brand-new org with no engagements (pairs with row 36) | #org empty-path + admin.css | M | |
+| 55 | **Add-to-calendar (.ics)** affordance on the Next-touchpoint tile (client-side, no backend) | #org OrgAnalytics org-an-next | S | |
+| 56 | **Primary-vs-secondary hierarchy** for the identity-header action buttons | #account + #org acct-id-actions | S | |
+| 57 | **Expectation-setting line** on the 2FA "Ask us to enable" control | #account SecurityCard | S | |
+| 58 | **Single-row scrollable tab strip** for #account on narrow phones (pill chrome breaks <=480) | #account tabs + .acct-tabs | S | |
+| 59 | **Coarse-pointer tap-size bump** for timeline jump pins / filter chips / tag pills (<44px today) | #org + admin.css @media(pointer:coarse) | S | |
+
 ## Needs John's approval (parked — do not self-serve)
+- **Staff cross-client pending-invite signal** (a portfolio-wide "N teammates awaiting approval across your clients" digest) — needs a batched cross-customer read of `member_invite_requests`; verify it stays within staff RLS scope before building (flagged by the c34 critique as needs-a-look, not purely presentational).
 - **Apply migration 0019** + seed Ethical Quest + the staff 8-slider scoring form, then **"Your climb" over time** (multi-point history) and the **engagement_outcomes + initiatives** tables (ROI + innovation pipeline) — the gated maturity/ROI ladder.
 - **Apply migration 0019** (`maturity_assessments`) + seed Ethical Quest → promotes the radar from seeded prototype to live, staff-authored, re-scorable data. Needs founder OK to apply against the live DB + a one-shot RLS verification.
 - **engagement_outcomes + initiatives tables** (ROI rigour + innovation pipeline) → two gated migrations + staff authoring.
