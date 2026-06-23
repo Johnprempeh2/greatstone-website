@@ -427,7 +427,7 @@ function Dashboard({ session, profile, onProfile }) {
                               <td data-label="Total" className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
                               <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>
                               <td className="ca-ord-actions acct-ord-cell-actions">
-                                <button className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} title={expanded ? 'Hide items' : 'Show items'}>{expanded ? '▾' : '▸'}</button>
+                                <button type="button" className="acct-toggle" aria-expanded={expanded} aria-controls={'ord-' + o.id} onClick={(e) => { e.stopPropagation(); setOpen(expanded ? null : o.id); }} aria-label={'Items in order ' + ref(o.reference)} title={expanded ? 'Hide items' : 'Show items'}><span aria-hidden="true">{expanded ? '▾' : '▸'}</span></button>
                                 <a className="gs-btn ghost sm" href={'#invoice/' + o.id} onClick={(e) => e.stopPropagation()}>Invoice</a>
                                 <button className="gs-btn ghost sm" onClick={(e) => { e.stopPropagation(); reorder(o); }}>Buy again</button>
                               </td>
