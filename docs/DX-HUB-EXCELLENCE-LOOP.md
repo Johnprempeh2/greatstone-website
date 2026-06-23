@@ -81,7 +81,7 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 | 47 | **Trust/value framing** on the AuthGate sign-in (replace the "software store" first impression) | #account AuthGate | M | ✅ c45 (57afabf): added an understated, honest reassurance line under the submit ("Encrypted connection to the Greatstone customer portal") with an inline lock icon — only true claims (TLS + branded portal), no invented certs; mode-agnostic, AA contrast |
 | 48 | **Section jump-nav + labelled `<main>` landmark** for the long #org scroll | #org Org() top + admin.css | M | ✅ c46 (ab2b9c6): `<main>` part DESCOPED (App.jsx #gs-main already owns the single, unlabelled main + App.jsx is off-limits → a 2nd main would violate). Instead gave each dashboard root role=region + aria-label ("Your account"/"Your organization") = a named landmark inside the existing main. Verified exactly 1 main per view + region nested inside |
 | 49 | **Pending invite-requests count** on the Members heading (data already loaded) | #org Members heading | S | ✅ c47 (056ce6c): added a "N pending" chip on the "Members & access" heading (above the table) + count in the "Pending invitations (N)" subheading; renders only when pending>0; count derived from the same filtered list so it can't disagree with the rows. (member_invite_requests carries a real status — data-supported, not a descope) |
-| 50 | **Copy-key + expiry badge** on the staff licence-key rows (bare `<code>` today) | ClientsManager staff keys | S | |
+| 50 | **Copy-key + expiry badge** on the staff licence-key rows (bare `<code>` today) | ClientsManager staff keys | S | ✅ c48 (e0436b1): per-key Copy button (customer clipboard + select-to-copy fallback) + new Expires column with the shared expiryInfo()/.lk-expbadge. Verified live as staff on Ethical Quest (2 keys, Copy writes the value → "Copied ✓", Expires column present); reuses licence-expiry.mjs (tested) |
 | 51 | **Honest staff client-list states** (error+retry + distinct "no match" vs "No clients yet") | ClientsManager list load/tbody | S | |
 | 52 | **Clickable portfolio-health chips** as recency filters (inert spans today) | ClientsManager ci-health | M | |
 | 53 | **"Ask your admin" escape hatch** on #org member dead-ends (reuse askAdminMailto) | #org member branches | S | |
@@ -581,18 +581,18 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~19:25):** c16 (5ed5301) → c47 (056ce6c: #org pending-invite count); through c46 (ab2b9c6: labelled region landmark)
+> **Deploy backlog (as of ~19:55):** c16 (5ed5301) → c48 (e0436b1: staff copy-key + expiry column); through c47 (056ce6c: #org pending-invite count)
 > **plus** two John-requested changes — a company-profile UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs
-> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **thirty-two cycles + 2 John
+> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **thirty-three cycles + 2 John
 > changes** — are all committed; the combined dist is
-> staged in the mirror as **index-CWGqQf9w.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
+> staged in the mirror as **index-CHE_GuaJ.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
 > is-link + org-print-root tabpanel-unhide; #account now also has the persistent gs-sr-only toast region [c40]; sigs incl.
 > dx-tagrow + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome +
 > acct-qcd + acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub +
 > acct-ordtrunc + dx-av-more + ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus + org-tabs). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~60 tries over **~17h** — a sustained Netlify-side outage; **worth
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~61 tries over **~17.5h** — a sustained Netlify-side outage; **worth
 > checking the Netlify status page / the netlify-mcp.netlify.app proxy**). One successful deploy ships
-> everything (c16-c47 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
+> everything (c16-c48 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
