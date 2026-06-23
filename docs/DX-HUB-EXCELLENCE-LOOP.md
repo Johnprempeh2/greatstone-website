@@ -84,7 +84,7 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 | 50 | **Copy-key + expiry badge** on the staff licence-key rows (bare `<code>` today) | ClientsManager staff keys | S | ✅ c48 (e0436b1): per-key Copy button (customer clipboard + select-to-copy fallback) + new Expires column with the shared expiryInfo()/.lk-expbadge. Verified live as staff on Ethical Quest (2 keys, Copy writes the value → "Copied ✓", Expires column present); reuses licence-expiry.mjs (tested) |
 | 51 | **Honest staff client-list states** (error+retry + distinct "no match" vs "No clients yet") | ClientsManager list load/tbody | S | ✅ c49 (a4be0a2): client list + licence-keys read errors were SWALLOWED → a failed load rendered the "No clients yet"/"No keys yet" empty copy. Added error rows + "Try again" retry (role=alert) on both; extracted the error-vs-empty decision to a tested pure list-state.mjs (error wins over empty/stale rows). +4 tests (baseline 111→115) |
 | 52 | **Clickable portfolio-health chips** as recency filters (inert spans today) | ClientsManager ci-health | M | ✅ c50 (d7e797d): chips are now toggle buttons that filter the client list to that recency bucket (aria-pressed + accent-ring active state + "X of Y shown" + "Show all" clear); reuses recencyBucket() (tested) — one source of thresholds. Verified live as staff (3 clients → "active" filters to 2, toggles clear) |
-| 53 | **"Ask your admin" escape hatch** on #org member dead-ends (reuse askAdminMailto) | #org member branches | S | |
+| 53 | **"Ask your admin" escape hatch** on #org member dead-ends (reuse askAdminMailto) | #org member branches | S | ✅ c51 (c703c8c): non-admin Members copy now reads "Ask your company admin <name>" with a prefilled mailto to the admin (reuses pickAdmin + askAdminMailto + acct-askadmin), instead of pointing at the Greatstone team. Admins keep the invite UI. Verified live as demo-member (names Naa, mailto to admin, invite button absent) |
 | 54 | **First-run welcome/empty state** for a brand-new org with no engagements (pairs with row 36) | #org empty-path + admin.css | M | |
 | 55 | **Add-to-calendar (.ics)** affordance on the Next-touchpoint tile (client-side, no backend) | #org OrgAnalytics org-an-next | S | |
 | 56 | **Primary-vs-secondary hierarchy** for the identity-header action buttons | #account + #org acct-id-actions | S | |
@@ -581,18 +581,18 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~20:55):** c16 (5ed5301) → c50 (d7e797d: clickable staff health-chip filters); through c49 (a4be0a2: staff list honest error states)
+> **Deploy backlog (as of ~21:25):** c16 (5ed5301) → c51 (c703c8c: #org ask-your-admin affordance); through c50 (d7e797d: clickable staff health-chip filters)
 > **plus** two John-requested changes — a company-profile UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs
-> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **thirty-five cycles + 2 John
+> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **thirty-six cycles + 2 John
 > changes** — are all committed; the combined dist is
-> staged in the mirror as **index-B9RU7K6p.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
+> staged in the mirror as **index-CpbAx-1L.js** (AccountDashboard chunk carries the order-row disclosure-button name + goTab focus-into-panel; OrgDashboard chunk also carries the phase-nav aria-current + upcoming-dim; OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
 > is-link + org-print-root tabpanel-unhide; #account now also has the persistent gs-sr-only toast region [c40]; sigs incl.
 > dx-tagrow + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome +
 > acct-qcd + acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub +
 > acct-ordtrunc + dx-av-more + ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus + org-tabs). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~63 tries over **~18.5h** — a sustained Netlify-side outage; **worth
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~64 tries over **~19h** — a sustained Netlify-side outage; **worth
 > checking the Netlify status page / the netlify-mcp.netlify.app proxy**). One successful deploy ships
-> everything (c16-c50 + both John changes). Test baseline is now **115**. The loop runs a stretched ~20-min cadence
+> everything (c16-c51 + both John changes). Test baseline is now **115**. The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
