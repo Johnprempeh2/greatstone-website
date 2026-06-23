@@ -48,8 +48,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | ✅ built (ships with c16) |
 | 18 | **Pending-actions banner** above the #account tabs | #account | M | ✅ built (ships with c16+c17) |
 | 19 | Order **search/filter** box on the Purchases tab | #account | M | ✅ built (ships with c16-c18) |
-| 20 | Inline **copy-key** on the per-order licence chips | #account | M | next |
-| 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | |
+| 20 | Inline **copy-key** on the per-order licence chips | #account | M | ✅ built (ships with c16-c19) |
+| 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | next |
 | 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | |
 | 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | |
 | 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | |
@@ -287,10 +287,19 @@ no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/A
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
 
 > **Deploy backlog (as of ~04:11):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (10e39e9) are all
-> committed; the combined dist is staged in the mirror as **index-CBMQbKkM.js** (admin chunk admin-CA1Fruzb.css
-> carries org-print-root + dx-tagrow + acct-pending + acct-ordsearch). The Netlify MCP deploy-site proxy has 404'd
-> on every attempt since ~03:25 (~11 tries over ~50 min). One successful deploy ships all four. Local commits +
-> the staged mirror are the durable record; the loop keeps building and re-attempts the deploy each cycle.
+> committed; the combined dist will be re-staged after c20's clean-worktree build. The Netlify MCP deploy-site
+> proxy has 404'd on every attempt since ~03:25 (~12 tries over ~60 min). One successful deploy ships all five
+> (c16-c20). Local commits + the staged mirror are the durable record; the loop keeps building + re-attempts each cycle.
+
+### Cycle 20 — inline copy-key on the per-order licence chips (23 Jun)
+Adversarial finding: the **Keys tab** (LicenceKeys) already had a robust copy (clipboard + select-to-copy fallback +
+per-key "Copied ✓" + aria) — so the real gap was the **order-detail** key summary, which only bounced you to that tab.
+Now each per-order key chip is a copy button: clicking it writes the key to the clipboard (the keysByOrder fetch now
+includes `licence_key`), flips to "Copied ✓" with an aria-live announcement, and reverts after 1.8s; per-key state so
+only the clicked chip flips. If the clipboard API is blocked (insecure origin), it falls back to the Keys tab where the
+key is visible + select-to-copy works. Verified live as demo-client: a chip ("Bedrock Platform · Site licence") flips to
+"Copied ✓" on the stubbed-success path, the real blocked-iframe path bounces to Keys, no 380px overflow, 0 console
+errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`. Ships with c16-c19.
 
 ### Cycle 19 — #account Purchases order search (23 Jun)
 A search box above the order-history table filters the rendered orders by reference / invoice number / item name /
