@@ -70,8 +70,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product (task w2ux752le), deduped vs c1-c34, ordered best-value-first (trust/honesty + a11y blockers → admin-week wins → staff throughput → mobile/polish). Each is safe, reversible, front-end, presentation-only._
 
 | 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | ✅ built (ships with c16-c37) |
-| 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | |
-| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | |
+| 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | ✅ built (ships with c16-c38) |
+| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | next |
 | 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | |
 | 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | |
 | 43 | **Keyboard semantics** on the clickable order rows (role/tabindex/onKeyDown) | #account acct-ordrow | S | |
@@ -311,6 +311,16 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 39 — make the "Sample baseline" caveat visible + accessible (23 Jun)
+The radar's `.org-mat-sample` chip showed the text "Sample baseline" but the actual caveat ("illustrative, not live")
+lived ONLY in the chip's `title=` tooltip, invisible on touch and to screen readers, so a buyer on a phone could repeat
+seeded numbers in good faith. Now, when `source === 'sample'`: a visible amber inline note under the radar head ("ⓘ These
+scores are an illustrative demo baseline, not a live assessment.") and a proper `aria-label` on the chip so a screen
+reader hears the full caveat instead of just "Sample baseline". CSS-only addition (no new tests; baseline holds at
+**111**). Verified live on #org: the amber note renders (rgb 255,200,0), the chip aria-label reads the full caveat, radar
+renders clean, note wraps to 3 lines at 380px with no overflow. Only shows for the sample source (real assessments are
+unaffected). Edited: `src/store/MaturityRadar.jsx`, `src/store/maturity-radar.css`. Ships with c16-c38.
 
 ### Cycle 38 — surface the maturity assessment date on the radar (23 Jun)
 The radar's underlying `assessed_on` (in the seed + the Supabase `maturity_assessments` select) was fetched but never

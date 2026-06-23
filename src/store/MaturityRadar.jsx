@@ -108,8 +108,9 @@ function Radar({ data, source }) {
           <h2 id="org-mat-h">Your eight-pillar maturity</h2>
           <p className="org-mat-sub">Where you stand today across the Greatstone pillars, against your industry and the climb ahead.</p>
           {assessedLabel && <p className="org-mat-assessed">Assessed {assessedLabel}</p>}
+          {source === 'sample' && <p className="org-mat-illus"><span aria-hidden="true">ⓘ</span> These scores are an illustrative demo baseline, not a live assessment.</p>}
         </div>
-        {source === 'sample' && <span className="org-mat-sample" title="Illustrative baseline shown for the demo account">Sample baseline</span>}
+        {source === 'sample' && <span className="org-mat-sample" title="Illustrative demo baseline, not a live assessment" aria-label="Sample baseline: these scores are an illustrative demo baseline, not a live assessment">Sample baseline</span>}
       </div>
 
       <div className="org-mat-grid">

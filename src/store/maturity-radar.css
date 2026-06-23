@@ -5,6 +5,8 @@
 .org-mat-head h2 { font-size: 1.18rem; margin: 2px 0 0; }
 .org-mat-sub { margin: 6px 0 0; font-size: .9rem; color: var(--gs-text-muted, #b0b0b0); max-width: 46ch; }
 .org-mat-assessed { margin: 7px 0 0; font-size: .72rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--gs-text-faint, #707070); }
+.org-mat-illus { margin: 6px 0 0; max-width: 48ch; font-size: .78rem; line-height: 1.45; color: var(--gs-warning, #ffc800); }
+.org-mat-illus span[aria-hidden] { font-weight: 700; }
 .org-mat-sample {
   flex: none; align-self: center; font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--gs-text-muted, #b0b0b0); padding: 4px 10px; border-radius: 999px;
