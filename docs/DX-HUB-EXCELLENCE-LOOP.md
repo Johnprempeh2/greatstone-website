@@ -285,3 +285,9 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+> **Deploy backlog (as of ~03:53):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) are all committed; the combined
+> dist is staged in the mirror as **index-BhjO0Dgc.js** (admin chunk admin-CfccFmh9.css carries org-print-root +
+> dx-tagrow + acct-pending). The Netlify MCP deploy-site proxy has 404'd on every attempt since ~03:25 (~9 tries
+> over ~35 min). One successful deploy ships all three. Local commits + the staged mirror are the durable record;
+> the loop keeps building and re-attempts the deploy each cycle.
