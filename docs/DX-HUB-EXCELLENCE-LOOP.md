@@ -31,8 +31,8 @@ approval — never done autonomously.**
 | 5 | **Your Greatstone team** card + "in transformation since…" marker | #org | S | yes | ✅ shipped |
 | 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | ✅ shipped |
 | 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | ✅ shipped |
-| 8 | Staff authoring throughput (default-to-draft, preview pane, Duplicate, stale badge) | ClientsManager | M | yes | next |
-| 9 | Extract shared sanitizeHtml + date helpers module + mXSS regression tests | src/lib + tests | M | yes | |
+| 8 | Staff authoring throughput (default-to-draft, Duplicate, stale badge) | ClientsManager | M | yes | ✅ shipped |
+| 9 | Extract shared sanitizeHtml + date helpers + mXSS tests + **preview-as-client pane** (moved from C8 — needs the extracted sanitizer) | src/lib + ClientsManager + tests | M | yes | next |
 | 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | |
 | 11 | Rules-based **"Your next move"** card + proactive health signals | #org | S | yes | |
 | 12 | **Apply migration 0019** + seed Ethical Quest + swap radar to live data | Supabase + #org | M | **needs John** | |
@@ -124,4 +124,15 @@ dive; has licence keys → activate them (jumps to the Keys tab); company admin 
 otherwise → follow your transformation on #org. Also made the "Company admin" badge actionable (now a link
 to #org). Verified both as member (band: "Activate your licences"; no admin badge) and admin (badge is an
 <a href="#org">, aria-labelled), mobile clean, build + 58 tests green, 0 console errors. Edited:
-`src/store/AccountDashboard.jsx`, `src/store/admin.css`.
+`src/store/AccountDashboard.jsx`, `src/store/admin.css`. Commit 6780d40, bundle index-2ZTraEK8, deploy 6a39cb68.
+
+### Cycle 8 — Staff authoring throughput (23 Jun)
+Three self-contained throughput wins in the staff Clients manager (#catalogue → Clients), front-end only.
+(a) New engagements now default to status=draft (was shared — a publish footgun); staff Share deliberately
+with the existing row button. (b) A Duplicate row action opens a New-engagement editor pre-filled from the
+item (title + "(copy)", today's date, draft) so a similar recap is one edit away. (c) A staleness badge on
+the client list (amber after 30 quiet days, red after 60, "No activity" when a client has no engagements)
+so the team can spot dashboards going quiet. The "preview as the client sees it" pane was deferred to cycle 9
+because it needs the shared sanitizeHtml, which cycle 9 extracts. Verified live as staff (admin@greatstone.dev):
+new engagement defaults to draft, Duplicate pre-fills "… (copy)" as a draft, Northwind shows "No activity".
+Build + 58 tests green, 0 console errors. Edited: `src/store/ClientsManager.jsx`, `src/store/admin.css`.

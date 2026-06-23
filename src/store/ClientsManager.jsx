@@ -10,6 +10,14 @@ import './admin.css';
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };
 const KINDS = ['recap', 'milestone', 'deliverable', 'kickoff', 'review', 'note'];
 const NEEDS_CONTENT = new Set(['recap', 'deliverable']); // mirror the 0013 chk_engagement_content constraint
+// freshness flag for the client list — amber after 30 quiet days, red after 60, a nudge when a client has none
+const staleBadge = (lastIso) => {
+  if (!lastIso) return <span className="ci-stale is-none" title="No engagements yet">No activity</span>;
+  const days = Math.floor((Date.now() - new Date(lastIso).getTime()) / 86400000);
+  if (days > 60) return <span className="ci-stale is-red" title={`Last update ${days} days ago`}>{days}d quiet</span>;
+  if (days > 30) return <span className="ci-stale is-amber" title={`Last update ${days} days ago`}>{days}d quiet</span>;
+  return null;
+};
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
 const arr = (s) => (s || '').split(',').map(x => x.trim()).filter(Boolean);
 
@@ -18,6 +26,7 @@ export default function ClientsManager({ staff }) {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState(null); // selected customer
+  const [activity, setActivity] = useState({}); // customer_id → most recent engagement created_at (staleness)
   const [toast, setToast] = useState(null);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
@@ -28,6 +37,9 @@ export default function ClientsManager({ staff }) {
       .is('deleted_at', null).order('name').limit(500);
     if (q.trim()) query = query.ilike('name', '%' + q.trim() + '%');
     query.then(({ data, error }) => { if (error) console.error(error); setCustomers(data || []); setLoading(false); });
+    // staleness: most recent engagement created_at per client, so the list flags dashboards going quiet
+    supabase.from('engagements').select('customer_id, created_at').is('deleted_at', null).limit(2000)
+      .then(({ data }) => { const m = {}; for (const e of (data || [])) { if (!m[e.customer_id] || e.created_at > m[e.customer_id]) m[e.customer_id] = e.created_at; } setActivity(m); });
   }, [q]);
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t); }, [load]);
 
@@ -49,7 +61,7 @@ export default function ClientsManager({ staff }) {
               : !customers.length ? <tr><td colSpan="5" className="ca-muted">No clients yet. They appear here once a buyer signs up or you seed one.</td></tr>
                 : customers.map(c => (
                   <tr key={c.id}>
-                    <td data-label="Company" className="ca-name">{c.name}</td>
+                    <td data-label="Company" className="ca-name">{c.name}{staleBadge(activity[c.id])}</td>
                     <td data-label="Domain">{c.domain || '—'}</td>
                     <td data-label="Tier">{c.tier?.name || 'Standard'}</td>
                     <td data-label="Client since">{fmtDate(c.created_at)}</td>
@@ -106,6 +118,12 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
     if (error || !data?.length) { flash(error ? 'Could not delete.' : 'That item was already removed.'); load(); return; }
     flash('Deleted.'); load();
   };
+  // open a NEW engagement editor pre-filled from an existing item (no id → insert on save), today + draft
+  const duplicate = (e) => setEditing({
+    kind: e.kind, title: e.title + ' (copy)', occurred_on: new Date().toISOString().slice(0, 10), status: 'draft',
+    phase: e.phase, owner_name: e.owner_name, summary: e.summary, external_url: e.external_url,
+    body_html: e.body_html, attendees: e.attendees, tags: e.tags, pinned: false,
+  });
 
   const revokeKey = async (k) => {
     const next = k.status === 'revoked' ? 'issued' : 'revoked';
@@ -170,6 +188,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
                     <td data-label="" className="ca-ord-actions">
                       <button className="gs-btn ghost sm" onClick={() => toggleShare(e)}>{e.status === 'shared' ? 'Unshare' : 'Share'}</button>
                       <button className="gs-btn ghost sm" onClick={() => setEditing(e)}>Edit</button>
+                      <button className="gs-btn ghost sm" onClick={() => duplicate(e)}>Duplicate</button>
                       <button className="gs-btn ghost sm" onClick={() => del(e)}>Delete</button>
                     </td>
                   </tr>
@@ -295,7 +314,7 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
   const [kind, setKind] = useState(engagement.kind || 'recap');
   const [title, setTitle] = useState(engagement.title || '');
   const [occurredOn, setOccurredOn] = useState(engagement.occurred_on || new Date().toISOString().slice(0, 10));
-  const [status, setStatus] = useState(engagement.status || 'shared');
+  const [status, setStatus] = useState(engagement.status || 'draft'); // new items start hidden; staff Share deliberately
   const [phase, setPhase] = useState(engagement.phase || '');
   const [owner, setOwner] = useState(engagement.owner_name || (isNew ? (staff.full_name || '') : ''));
   const [summary, setSummary] = useState(engagement.summary || '');

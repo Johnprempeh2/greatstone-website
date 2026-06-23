@@ -292,6 +292,11 @@
 .org-pendstatus { margin-left:auto; font-size:.74rem; color:var(--gs-warning,#ffc800); }
 .ci-sub { font-size:1.1rem; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:10px; }
 .ci-reqs { margin-bottom:8px; }
+/* client-list staleness flag */
+.ci-stale { margin-left:8px; font-size:.6rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:.15em .55em; border-radius:100px; vertical-align:middle; white-space:nowrap; }
+.ci-stale.is-amber { background:rgba(255,200,0,.14); color:var(--gs-warning,#ffc800); }
+.ci-stale.is-red { background:rgba(255,107,107,.14); color:var(--gs-danger,#ff6b6b); }
+.ci-stale.is-none { background:rgba(255,255,255,.06); color:var(--gs-text-faint); }
 
 /* first-run onboarding checklist (#org) */
 .org-onboard { margin:8px 0 24px; padding:20px 22px; border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); border-radius:16px; background:var(--gs-accent-soft); }
