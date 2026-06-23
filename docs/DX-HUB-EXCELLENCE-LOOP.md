@@ -34,7 +34,7 @@ approval — never done autonomously.**
 | 8 | Staff authoring throughput (default-to-draft, Duplicate, stale badge) | ClientsManager | M | yes | ✅ shipped |
 | 9 | Extract shared sanitizeHtml + policy mXSS tests + **preview-as-client pane** | src/lib + ClientsManager + tests | M | yes | ✅ shipped |
 | 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | ✅ shipped |
-| 11 | Rules-based **"Your next move"** card + proactive health signals | #org | S | yes | next |
+| 11 | Rules-based **"Your next move"** card (from the weakest maturity pillar) | #org | S | yes | ✅ shipped — initial 11-item roadmap COMPLETE; refill via fresh critique |
 | 12 | **Apply migration 0019** + seed Ethical Quest + swap radar to live data | Supabase + #org | M | **needs John** | |
 | 13 | Staff 8-slider **maturity scoring form** | ClientsManager | M | needs 0019 | |
 | 14 | **"Your climb"** maturity-over-time (data-bound MaturityMap) | #org | M | needs 0019 | |
@@ -160,4 +160,19 @@ hardware, Review→ai-security/regulation/funding). Shows the 3 most recent matc
 "Open the full Intelligence hub →" CTA. Falls back to a general topic set when the phase is unknown. Verified
 live as Ethical Quest (Adoption): heading "Intelligence for your adoption phase", 3 Enterprise-topic cards, and
 a card click navigates to the #intel article. Build clean, 63 tests, mobile clean, 0 console errors. Edited:
+`src/store/OrgDashboard.jsx`, `src/store/admin.css`. Commit 78c1041, bundle index-DkGdkGKz, deploy 6a39d7dd.
+
+### Cycle 11 — Rules-based "Your next move" card on #org (23 Jun)
+Extracted the maturity-assessment fetch (Supabase `maturity_assessments` → seeded DEMO_ASSESSMENT → empty,
+the 0019-dormant guard) into a shared `src/store/useMaturity.mjs` hook, so the Maturity Radar and the new
+card always read the SAME data. Added a "Your next move" card after the radar: it finds the lowest-scoring
+pillar and turns it into a concrete recommendation — names the pillar + its tag, why it matters, a "Book a
+deep dive" CTA (#go/contact), and "See the eight pillars →" (#go/method). Graceful when no maturity data
+(returns null). Verified live as Ethical Quest: "Strengthen Data … your lowest pillar … at 4/10", radar still
+renders (refactor regression passed, both agree at 5.3 overall / Data weakest). Build clean, 63 tests, mobile
+clean, 0 console errors. New: `src/store/useMaturity.mjs`. Edited: `src/store/MaturityRadar.jsx`,
 `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
+
+**★ Initial 11-cycle front-end roadmap COMPLETE.** Next loop fire runs a fresh multi-persona critique to
+refill the roadmap with the next wave of safe, reversible front-end wins (see the wishlist above for the
+gated big ideas that still need John).

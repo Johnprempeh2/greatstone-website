@@ -11,6 +11,8 @@ import { AuthGate } from './AccountDashboard.jsx';
 import MaturityRadar from './MaturityRadar.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { BRIEFINGS, TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
+import { PILLARS } from '../data/maturity-seed.mjs';
+import { useMaturity } from './useMaturity.mjs';
 import './store.css';
 import './admin.css';
 
@@ -167,6 +169,8 @@ function Org({ profile, session, onProfile }) {
       <OrgAnalytics orders={orders} engagements={engagements} />
 
       <MaturityRadar company={company} />
+
+      <NextMove company={company} />
 
       <EngagementTimeline engagements={engagements} companyId={company.id} companyName={company.name} memberName={memberName} />
 
@@ -558,6 +562,29 @@ function Item({ e, isNew, open, onToggle }) {
         )}
       </article>
     </li>
+  );
+}
+
+// ── rules-based "your next move" — the weakest maturity pillar becomes a concrete recommendation ────────
+function NextMove({ company }) {
+  const { status, data } = useMaturity(company); // shares the radar's data source (Supabase → seed → empty)
+  if (status !== 'ready' || !data || !data.scores) return null;
+  let lowest = null;
+  for (const p of PILLARS) { const v = Number(data.scores[p.key]) || 0; if (v > 0 && (!lowest || v < lowest.v)) lowest = { ...p, v }; }
+  if (!lowest) return null;
+  return (
+    <section className="org-move" aria-labelledby="org-move-h">
+      <div className="org-move-icon" aria-hidden="true">↗</div>
+      <div className="org-move-body">
+        <span className="st-kicker">Your next move</span>
+        <h2 id="org-move-h">Strengthen {lowest.name}</h2>
+        <p>{lowest.name} is your lowest pillar right now, at {lowest.v}/10. {lowest.tag} A focused deep dive is the fastest way to move it, and lifts the score the whole assessment hangs on.</p>
+        <div className="org-move-ctas">
+          <a className="gs-btn primary sm" href="#go/contact">Book a deep dive</a>
+          <a className="gs-btn ghost sm" href="#go/method">See the eight pillars →</a>
+        </div>
+      </div>
+    </section>
   );
 }
 

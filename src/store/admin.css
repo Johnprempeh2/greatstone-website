@@ -269,6 +269,14 @@
 .org-team-role { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--gs-text-faint); }
 .org-team-cta { margin-left:auto; }
 @media (max-width:520px){ .org-team-cta { margin-left:0; width:100%; } }
+/* "your next move" recommendation card on #org (driven by the weakest maturity pillar) */
+.org-move { display:flex; gap:14px; align-items:flex-start; margin:0 0 28px; padding:18px 20px; border-radius:16px; background:var(--gs-accent-soft,rgba(200,255,0,.05)); border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); }
+.org-move-icon { flex:none; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-size:1.2rem; font-weight:800; background:var(--gs-accent,#c8ff00); color:#0e1611; }
+.org-move-body { min-width:0; }
+.org-move-body h2 { font-size:1.1rem; margin:2px 0 4px; }
+.org-move-body p { margin:0 0 12px; font-size:.9rem; line-height:1.55; color:var(--gs-text-muted); max-width:60ch; }
+.org-move-ctas { display:flex; flex-wrap:wrap; gap:8px; }
+
 /* innovation hub band — "in your field" AI Intelligence on #org */
 .org-intel { margin-top:34px; }
 .org-intel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }

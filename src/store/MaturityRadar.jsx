@@ -6,8 +6,8 @@
 // and never another company's numbers. The SVG is paired with a visually-hidden data table and a
 // text legend so nothing is conveyed by colour or shape alone; entrance motion honours reduced-motion.
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase.mjs';
-import { PILLARS, SCALE_MAX, tierOf, tierLabel, overallOf, isDemoCompany, DEMO_ASSESSMENT } from '../data/maturity-seed.mjs';
+import { PILLARS, SCALE_MAX, tierOf, tierLabel, overallOf } from '../data/maturity-seed.mjs';
+import { useMaturity } from './useMaturity.mjs';
 import './maturity-radar.css';
 
 // ── geometry ──────────────────────────────────────────────────────────────────
@@ -30,27 +30,7 @@ const labelPos = (i) => {
 const prefersReduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export default function MaturityRadar({ company }) {
-  const [state, setState] = useState({ status: 'loading', data: null, source: null });
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      let row = null;
-      try {
-        const { data, error } = await supabase
-          .from('maturity_assessments')
-          .select('assessed_on, tier, scores, benchmark, target, baseline, notes')
-          .eq('customer_id', company.id).is('deleted_at', null)
-          .order('assessed_on', { ascending: false }).limit(1);
-        if (!error && Array.isArray(data) && data.length) row = data[0];   // table present + a row → live
-      } catch { /* table absent (0019 dormant) → fall through to seed / empty, no console noise */ }
-      if (!alive) return;
-      if (row && row.scores) setState({ status: 'ready', data: row, source: 'live' });
-      else if (isDemoCompany(company)) setState({ status: 'ready', data: DEMO_ASSESSMENT, source: 'sample' });
-      else setState({ status: 'empty', data: null, source: null });
-    })();
-    return () => { alive = false; };
-  }, [company.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const state = useMaturity(company); // shared with the "Your next move" card
 
   if (state.status === 'loading') return (
     <section className="org-mat" aria-busy="true" aria-labelledby="org-mat-h">
