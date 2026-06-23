@@ -58,8 +58,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | ✅ built (ships with c16-c26) |
 | 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | ✅ built (ships with c16-c27) |
 | 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | ✅ built (ships with c16-c28) |
-| 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | next |
-| 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | |
+| 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | ✅ built (ships with c16-c29) |
+| 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | next |
 | 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | |
 | 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | |
 | 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | |
@@ -285,6 +285,19 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 30 — staff in-client engagement filter + unshared-draft nudge (23 Jun)
+In the staff ClientDetail engagement timeline: a type-filter chip row (All + the kinds present) with a live "{n} of
+{total}" count so staff can focus a busy client's timeline, and an unshared-draft nudge — "{n} drafts not yet shared
+with {client} — only **Shared** items appear on their dashboard" — so nothing a buyer should see is left invisible.
+"Draft" = not shared and not archived (so an intentionally archived item isn't nagged about). The filter only appears
+when >1 kind is present; the nudge only when there are drafts. The kinds/draft-count/filter logic was extracted to a
+pure module (`src/store/engagement-view.mjs`: `engagementView`) and unit-tested — **baseline 81 → 85** (distinct kinds,
+draft = not shared/archived, kind filter incl. "all" passthrough, null/garbage guards). Positive verification via the
+unit tests because the demo client I could reach (Northwind, 2 shared same-kind engagements) correctly shows neither
+chip nor nudge, and the preview back-nav to a richer client wasn't drivable; confirmed the ClientDetail still renders
+cleanly after the refactor (no console errors, no 380px overflow, build clean, 85 tests). New: `src/store/engagement-view.mjs`
++ `.test.mjs`. Edited: `src/store/ClientsManager.jsx`, `src/store/admin.css`. Ships with c16-c29 on the next deploy.
 
 ### Cycle 29 — staff portfolio health bar + quiet-first sort (23 Jun)
 The first staff-facing roadmap cycle. The Clients & DX list now opens with a portfolio-health bar: recency-bucket

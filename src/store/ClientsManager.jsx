@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { portfolioHealth, quietFirstRank } from './client-recency.mjs';
+import { engagementView } from './engagement-view.mjs';
 import './store.css';
 import './admin.css';
 
@@ -110,6 +111,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [orders, setOrders] = useState([]); // for linking a key to the purchase it fulfils
   const [editing, setEditing] = useState(null); // engagement object or {} for new
   const [keyEditing, setKeyEditing] = useState(null); // licence-key object or {} for new
+  const [kindFilter, setKindFilter] = useState('all'); // filter the engagement list staff are curating
   const load = useCallback(() => {
     supabase.from('customer_users').select('id, email, full_name, is_primary, role').is('deleted_at', null).eq('customer_id', customer.id).order('is_primary', { ascending: false })
       .then(({ data }) => setMembers(data || []));
@@ -130,6 +132,8 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
     flash(status === 'provisioned' ? 'Marked provisioned.' : 'Request declined.'); load();
   };
   const pendingReqs = requests.filter(r => r.status === 'pending');
+  // engagement-list helpers: type filter + a draft nudge (draft = not shared and not archived → invisible to the client)
+  const { kinds: kindsPresent, draftCount, filtered: filteredItems } = engagementView(items, kindFilter);
 
   const toggleShare = async (e) => {
     const next = e.status === 'shared' ? 'draft' : 'shared';
@@ -198,13 +202,25 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       )}
 
       <h2 className="ci-sub" style={{ marginTop: pendingReqs.length ? 26 : 0 }}>Engagement timeline</h2>
+      {draftCount > 0 && (
+        <p className="ci-draftnudge" role="status"><span aria-hidden="true">✎</span> {draftCount} draft{draftCount === 1 ? '' : 's'} not yet shared with {customer.name} — only <b>Shared</b> items appear on their dashboard.</p>
+      )}
+      {items && items.length > 0 && kindsPresent.length > 1 && (
+        <div className="ci-engfilter" role="group" aria-label="Filter engagements by type">
+          <button type="button" className={'dx-chip' + (kindFilter === 'all' ? ' on' : '')} aria-pressed={kindFilter === 'all'} onClick={() => setKindFilter('all')}>All</button>
+          {kindsPresent.map(k => (
+            <button type="button" key={k} className={'dx-chip' + (kindFilter === k ? ' on' : '')} aria-pressed={kindFilter === k} onClick={() => setKindFilter(k)}>{KIND_LABEL[k] || k}</button>
+          ))}
+          <span className="ca-count">{filteredItems.length} of {items.length}</span>
+        </div>
+      )}
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Title</th><th scope="col">Content</th><th scope="col">Visibility</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {items === null ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
               : !items.length ? <tr><td colSpan="6" className="ca-muted">No engagements yet. Add the kickoff or first recap with “+ New engagement”.</td></tr>
-                : items.map(e => (
+                : filteredItems.map(e => (
                   <tr key={e.id}>
                     <td data-label="Date">{fmtDate(e.occurred_on)}</td>
                     <td data-label="Type"><span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span></td>
