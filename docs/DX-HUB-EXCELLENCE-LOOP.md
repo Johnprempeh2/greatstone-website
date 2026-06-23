@@ -271,4 +271,6 @@ aria-labels, and the row degrades to nothing when no engagement carries a tag. A
 a sibling of `.dx-controls`, so it was added to the c16 print-hide list too. Verified live: pills render with
 counts (platform/report/roadmap/staging), clicking "platform" narrows 8→1 items and "All tags" restores, 0
 console errors, no 380px overflow, build clean, 63 tests. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
-Ships together with c16 on the next successful deploy.
+Commit 4a2d746. **DEPLOY STILL PENDING:** the Netlify MCP proxy continued to 404 on retry (~7 attempts over ~18
+min, ~03:25–03:43). c16 (5ed5301) + c17 (4a2d746) are both committed and the COMBINED dist (mirror bundle
+index-ClPGwiZ3) is staged in the deploy mirror — one successful deploy ships both. The next cycle retries first.
