@@ -71,15 +71,15 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 
 | 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | ✅ built (ships with c16-c37) |
 | 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | ✅ built (ships with c16-c38) |
-| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | next |
-| 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | |
-| 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | |
+| 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | ✅ #org done in the tab redesign; #account still TODO |
+| 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | next (#org deep-links already focus targets via the redesign) |
+| 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | ✅ built in the #org tab redesign |
 | 43 | **Keyboard semantics** on the clickable order rows (role/tabindex/onKeyDown) | #account acct-ordrow | S | |
 | 44 | **Dim + aria-disable** zero-item phase-navigator steps (cursor-only today) | #org EngagementTimeline + .dx-jstep-btn | S | |
 | 45 | **"What needs you" attention strip** at the top of #org (mirror #account pending banner; reuse loaded data) | #org identity-header band | M | |
 | 46 | **Visible spend-sparkline figures** (latest-month + total caption, axis hint; values are hover-only today) | #org OrgAnalytics org-an-spark | S | |
 | 47 | **Trust/value framing** on the AuthGate sign-in (replace the "software store" first impression) | #account AuthGate | M | |
-| 48 | **Section jump-nav + labelled `<main>` landmark** for the long #org scroll | #org Org() top + admin.css | M | |
+| 48 | **Section jump-nav + labelled `<main>` landmark** for the long #org scroll | #org Org() top + admin.css | M | ~superseded by the tab redesign (the tablist replaces the single scroll); re-scope to a labelled landmark only |
 | 49 | **Pending invite-requests count** on the Members heading (data already loaded) | #org Members heading | S | |
 | 50 | **Copy-key + expiry badge** on the staff licence-key rows (bare `<code>` today) | ClientsManager staff keys | S | |
 | 51 | **Honest staff client-list states** (error+retry + distinct "no match" vs "No clients yet") | ClientsManager list load/tbody | S | |
@@ -311,6 +311,25 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### John request — #org reorganised into tabs (23 Jun)
+John: "organise everything in the organisation screen into tabs and make the UX solid and intuitive." The #org dashboard
+was a ~13-band single-scroll wall. Ran a 3-proposal + judge design Workflow (task w0i2illkc) to settle the information
+architecture, then implemented it. Now: identity header + role banner + the 4 KPI tiles + the onboarding checklist stay
+**persistent** above a 5-tab strip (consistent with #account's `.ca-tabs.acct-tabs` chrome): **Overview** (default —
+ReturnStrip ROI + Relationship pulse), **Maturity** (radar + Next move, which share useMaturity), **Engagement** (the
+timeline + In-your-field intel + Greatstone-team card — the heavy interactive tab, off-default), **Team & access**
+(Members), **Company** (profile + orders). Same tab set for admin + member (bands gate their own write controls). Built
+to best practice: role=tablist/tab/tabpanel, aria-selected, roving-tabindex arrow/Home/End keyboard nav (cloned from
+#account); the KPI tiles are now buttons that jump to their tab (Members→Team, quotes/orders/invested→Company) and the
+onboarding "Edit profile"/"Invite a teammate" CTAs switch to the Company/Team tab then scroll+focus the heading
+(tabIndex=-1 added); the external `#org/e/<id>` timeline permalink reveals the Engagement tab; a print override un-hides
+every panel so "Download a summary" still captures the whole dashboard. Folded in **roadmap row 40** (a persistent
+gs-sr-only role=status live region for the #org toast + removed role=status from the visible toast) and **row 42**
+(clickable KPI tiles) since I was rewriting those areas. Verified live as the demo admin: 5 tabs switch correctly, each
+panel shows its bands (radar/timeline/members/profile+orders), arrow-key nav + roving focus work, the Members tile jumps
+to Team and focuses the heading, the tab strip swipe-scrolls at 380px with no page overflow, build clean, 111 tests,
+0 console errors. Edited: `src/store/OrgDashboard.jsx`, `src/store/admin.css`. Ships with the staged batch.
 
 ### Cycle 39 — make the "Sample baseline" caveat visible + accessible (23 Jun)
 The radar's `.org-mat-sample` chip showed the text "Sample baseline" but the actual caveat ("illustrative, not live")

@@ -34,6 +34,15 @@ const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable
 const KIND_PLURAL = { recap: 'Recaps', milestone: 'Milestones', deliverable: 'Deliverables', kickoff: 'Kickoffs', review: 'Reviews', note: 'Notes' };
 const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled markers — the journey anchors
 const ORD_CAP = 8; // company-orders preview shows the most recent N; an honest "showing N of M" appears past it
+// #org is organised into tabs (consistent with #account): identity header + role banner + KPI tiles + onboarding
+// stay persistent above the tablist; each tab groups related bands so no tab is overloaded.
+const ORG_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'maturity', label: 'Maturity' },
+  { id: 'engagement', label: 'Engagement' },
+  { id: 'team', label: 'Team & access' },
+  { id: 'company', label: 'Company' },
+];
 // the DX engagement journey (matches the 0013 `phase` free-text convention). Drives the Phase Navigator.
 const PHASES = ['Discovery', 'Build', 'Adoption', 'Review'];
 const PHASE_BLURB = { Discovery: 'Mapping the work and the drains.', Build: 'Wiring the systems that buy hours back.', Adoption: 'Embedding it in how you work.', Review: 'Measuring the return, planning the next climb.' };
@@ -83,6 +92,23 @@ function Org({ profile, session, onProfile }) {
   const [toast, setToast] = useState(null);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
 
+  // ── tabs ──────────────────────────────────────────────────────────────────
+  const [tab, setTab] = useState('overview');
+  // switch tab, then on the next frame scroll the deep-link target into view + focus it (the panel must un-hide first)
+  const goToTab = (tabId, anchorId) => {
+    setTab(tabId);
+    if (!anchorId) return;
+    setTimeout(() => { const el = document.getElementById(anchorId); if (!el) return; scrollToEl(el, 'center'); try { el.focus({ preventScroll: true }); } catch { /* ignore */ } }, 120);
+  };
+  const onTabKey = (e, i) => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const last = ORG_TABS.length - 1;
+    const n = e.key === 'ArrowRight' ? (i === last ? 0 : i + 1) : e.key === 'ArrowLeft' ? (i === 0 ? last : i - 1) : e.key === 'Home' ? 0 : last;
+    setTab(ORG_TABS[n].id);
+    const el = document.getElementById('org-tab-' + ORG_TABS[n].id); if (el) el.focus();
+  };
+
   // ── data ──────────────────────────────────────────────────────────────────
   const [members, setMembers] = useState(null);
   const [engagements, setEngagements] = useState(null);
@@ -109,6 +135,13 @@ function Org({ profile, session, onProfile }) {
       .then(({ data }) => setQuotes(data || []));
   }, [company.id]);
   useEffect(() => { load(); }, [load]);
+  // an external #org/e/<id> timeline permalink must reveal the Engagement tab so the item isn't in a hidden panel
+  useEffect(() => {
+    const applyTabHash = () => { if (/#\/?org\/e\//i.test(location.hash || '')) setTab('engagement'); };
+    applyTabHash();
+    addEventListener('hashchange', applyTabHash);
+    return () => removeEventListener('hashchange', applyTabHash);
+  }, []);
 
   const memberName = useMemo(() => {
     const m = {}; (members || []).forEach(u => { m[u.id] = u.full_name || u.email; }); return m;
@@ -164,57 +197,78 @@ function Org({ profile, session, onProfile }) {
           : <span>You're a <b>member</b> of {company.name}.{primaryContact ? <> Your company admin is <b>{primaryContact.full_name || primaryContact.email}</b>.</> : ''}<span className="org-role-caps">You can follow the engagement timeline, view orders and licence keys, place orders and manage your own profile. Company settings and team access are handled by your admin.</span></span>}
       </div>
 
-      {/* at-a-glance */}
+      {/* at-a-glance — always visible; each tile jumps to the tab that drills into it */}
       <div className="org-stats">
-        <Stat label="Members" value={members ? members.length : '…'} />
-        <Stat label="Open quotes" value={quotes ? openQuotes : '…'} />
-        <Stat label="Orders" value={orders ? liveOrders.length : '…'} />
-        <Stat label="Invested" value={orders ? fmtMoney(totalSpent, investedCurr) : '…'} />
+        <Stat label="Members" value={members ? members.length : '…'} onClick={() => goToTab('team', 'org-mem-h')} go="Team & access" />
+        <Stat label="Open quotes" value={quotes ? openQuotes : '…'} onClick={() => goToTab('company', 'org-co-h')} go="Company" />
+        <Stat label="Orders" value={orders ? liveOrders.length : '…'} onClick={() => goToTab('company', 'org-co-h')} go="Company" />
+        <Stat label="Invested" value={orders ? fmtMoney(totalSpent, investedCurr) : '…'} onClick={() => goToTab('company', 'org-co-h')} go="Company" />
       </div>
 
       {err && <div className="ca-err" role="alert" style={{ marginBottom: 16 }}>Some data couldn't load. <button className="ca-link" onClick={load}>Try again</button></div>}
 
-      <ReturnStrip engagements={engagements} />
+      <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} nav={goToTab} />
 
-      <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} />
+      {/* tabs — consistent with #account; identity/role/KPIs/onboarding above stay on every tab */}
+      <div className="ca-tabs acct-tabs org-tabs" role="tablist" aria-label="Your organization">
+        {ORG_TABS.map((t, i) => (
+          <button key={t.id} id={'org-tab-' + t.id} role="tab" type="button"
+            aria-selected={tab === t.id} aria-controls={'org-panel-' + t.id}
+            tabIndex={tab === t.id ? 0 : -1} className={tab === t.id ? 'on' : ''}
+            onClick={() => setTab(t.id)} onKeyDown={(e) => onTabKey(e, i)}>{t.label}</button>
+        ))}
+      </div>
 
-      <OrgAnalytics orders={orders} engagements={engagements} />
+      <div role="tabpanel" id="org-panel-overview" aria-labelledby="org-tab-overview" hidden={tab !== 'overview'}>
+        <ReturnStrip engagements={engagements} />
+        <OrgAnalytics orders={orders} engagements={engagements} />
+      </div>
 
-      <MaturityRadar company={company} />
+      <div role="tabpanel" id="org-panel-maturity" aria-labelledby="org-tab-maturity" hidden={tab !== 'maturity'}>
+        <MaturityRadar company={company} />
+        <NextMove company={company} />
+      </div>
 
-      <NextMove company={company} />
+      <div role="tabpanel" id="org-panel-engagement" aria-labelledby="org-tab-engagement" hidden={tab !== 'engagement'}>
+        <EngagementTimeline engagements={engagements} orders={orders} companyId={company.id} companyName={company.name} memberName={memberName} />
+        <InnovationBand currentPhase={sinceMarker?.phase} />
+        <GreatstoneTeam engagements={engagements} />
+      </div>
 
-      <EngagementTimeline engagements={engagements} orders={orders} companyId={company.id} companyName={company.name} memberName={memberName} />
+      <div role="tabpanel" id="org-panel-team" aria-labelledby="org-tab-team" hidden={tab !== 'team'}>
+        <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
+      </div>
 
-      <InnovationBand currentPhase={sinceMarker?.phase} />
+      <div role="tabpanel" id="org-panel-company" aria-labelledby="org-tab-company" hidden={tab !== 'company'}>
+        <CompanyProfile company={company} admin={admin} onProfile={onProfile} flash={flash} />
+        <RecentOrders orders={orders} memberName={memberName} />
+      </div>
 
-      <GreatstoneTeam engagements={engagements} />
-
-      <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
-
-      <CompanyProfile company={company} admin={admin} onProfile={onProfile} flash={flash} />
-
-      <RecentOrders orders={orders} memberName={memberName} />
-
-      {toast && <div className="ca-toast" role="status"><span className="ca-toast-msg">{toast}</span><button type="button" className="ca-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button></div>}
+      {/* persistent polite live region so a screen reader hears every flash; the visible toast is decorative */}
+      <div className="gs-sr-only" role="status" aria-live="polite">{toast || ''}</div>
+      {toast && <div className="ca-toast"><span className="ca-toast-msg">{toast}</span><button type="button" className="ca-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button></div>}
     </div>
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, onClick, go }) {
+  if (onClick) return (
+    <button type="button" className="org-stat is-link" onClick={onClick} aria-label={label + ' ' + value + (go ? '. Go to ' + go : '')}>
+      <div className="org-stat-v">{value}</div><div className="org-stat-l">{label}</div>
+    </button>
+  );
   return <div className="org-stat"><div className="org-stat-v">{value}</div><div className="org-stat-l">{label}</div></div>;
 }
 
 // First-run setup checklist — shown until the company is set up (or dismissed). Steps derive from data
 // already loaded, so it self-completes; admins get the action buttons, members see progress.
-function OnboardingChecklist({ company, admin, members, engagements, orders }) {
+function OnboardingChecklist({ company, admin, members, engagements, orders, nav }) {
   const key = 'gs-org-onboard:' + company.id;
   const [dismissed, setDismissed] = useState(() => { try { return localStorage.getItem(key) === '1'; } catch { return false; } });
   if (members === null || engagements === null || orders === null) return null; // wait for data
-  const scrollTo = (id) => scrollToEl(document.getElementById(id), 'center');
   const steps = [
-    { id: 'profile', label: 'Complete your company profile', hint: admin ? 'Add your website and a note about your goals.' : 'Your company admin will add this.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => scrollTo('org-co-h') } : null },
-    { id: 'team', label: 'Invite your team', hint: admin ? 'Bring your colleagues into the portal.' : 'Your company admin manages who has access.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => scrollTo('org-mem-h') } : null },
+    { id: 'profile', label: 'Complete your company profile', hint: admin ? 'Add your website and a note about your goals.' : 'Your company admin will add this.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => nav('company', 'org-co-h') } : null },
+    { id: 'team', label: 'Invite your team', hint: admin ? 'Bring your colleagues into the portal.' : 'Your company admin manages who has access.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => nav('team', 'org-mem-h') } : null },
     { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a deep dive', href: '#go/contact' } },
     { id: 'order', label: 'Place your first order', hint: 'Explore the Greatstone software catalogue.', done: (orders || []).length > 0, cta: { label: 'Browse the store', href: '#shop' } },
   ];
@@ -769,7 +823,7 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
   return (
     <section className="org-sec" aria-labelledby="org-mem-h">
       <div className="acct-ordhead">
-        <h2 id="org-mem-h">Members &amp; access</h2>
+        <h2 id="org-mem-h" tabIndex={-1}>Members &amp; access</h2>
         {admin && <button className="gs-btn ghost sm" aria-expanded={showForm} onClick={() => setShowForm(s => !s)}>{showForm ? 'Close' : '+ Invite a teammate'}</button>}
       </div>
       {showForm && <InviteForm customerId={customerId} requestedBy={requestedBy} taken={taken} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
@@ -866,7 +920,7 @@ function CompanyProfile({ company, admin, onProfile, flash }) {
 
   return (
     <section className="org-sec" aria-labelledby="org-co-h">
-      <div className="acct-ordhead"><h2 id="org-co-h">Company profile</h2></div>
+      <div className="acct-ordhead"><h2 id="org-co-h" tabIndex={-1}>Company profile</h2></div>
       <p className="org-sec-sub">Your organisation details and the context your Greatstone team works from.</p>
       <div className="acct-grid">
         <div className="pr-form org-profile">

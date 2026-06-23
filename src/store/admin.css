@@ -290,6 +290,13 @@
 .org-stat { background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); border-radius:12px; padding:14px 16px; }
 .org-stat-v { font-size:1.5rem; font-weight:900; letter-spacing:-.02em; color:var(--gs-text); font-variant-numeric:tabular-nums; }
 .org-stat-l { font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gs-text-faint); margin-top:2px; }
+/* a KPI tile that jumps to its tab — button reset + clear interactive affordance */
+.org-stat.is-link { font:inherit; text-align:left; width:100%; cursor:pointer; transition:border-color .15s ease, background .15s ease, transform .15s ease; }
+.org-stat.is-link:hover { border-color:var(--gs-border-strong,rgba(200,255,0,.18)); background:rgba(255,255,255,.05); }
+.org-stat.is-link:active { transform:translateY(1px); }
+.org-stat.is-link:focus-visible { outline:2px solid var(--gs-accent,#c8ff00); outline-offset:2px; }
+/* org tab strip: identical chrome to #account (.ca-tabs.acct-tabs) + a little breathing room below the onboarding */
+.org-tabs { margin-top:4px; }
 /* return-on-transformation band — the value delivered, paired with the Invested figure above */
 .org-return { margin:18px 0 8px; padding:16px 18px; border-radius:16px; background:rgba(78,205,196,.05); border:1px solid rgba(78,205,196,.18); }
 .org-return-head { margin-bottom:12px; }
@@ -616,6 +623,10 @@
   .org-print-root button,
   .org-print-root input,
   .org-print-root select { display: none !important; }
+
+  /* tabs: un-hide every panel so the summary prints whatever tab is active; drop the tablist itself */
+  .org-print-root [role="tabpanel"][hidden] { display: block !important; }
+  .org-print-root .org-tabs { display: none !important; }
 
   /* light-on-dark → dark-on-white */
   .org-print-root h1, .org-print-root h2, .org-print-root h3,
