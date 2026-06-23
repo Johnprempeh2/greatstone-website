@@ -14,6 +14,7 @@ import { BRIEFINGS, TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
 import { PILLARS } from '../data/maturity-seed.mjs';
 import { useMaturity } from './useMaturity.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
+import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
 import { moveGap } from './next-move-gap.mjs';
 import { monthlySpend } from './monthly-spend.mjs';
 import { attendeeOverflow, filterAnnouncement } from './timeline-a11y.mjs';
@@ -238,7 +239,7 @@ function Org({ profile, session, onProfile }) {
       </div>
 
       <div role="tabpanel" id="org-panel-team" aria-labelledby="org-tab-team" hidden={tab !== 'team'}>
-        <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} flash={flash} />
+        <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} companyName={company.name} flash={flash} />
       </div>
 
       <div role="tabpanel" id="org-panel-company" aria-labelledby="org-tab-company" hidden={tab !== 'company'}>
@@ -808,7 +809,7 @@ function GreatstoneTeam({ engagements }) {
 }
 
 // ── members directory + invite requests ───────────────────────────────────────
-function Members({ members, meId, admin, customerId, requestedBy, flash }) {
+function Members({ members, meId, admin, customerId, requestedBy, companyName, flash }) {
   const [requests, setRequests] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const loadReqs = useCallback(() => {
@@ -861,10 +862,13 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
           ))}
         </div>
       )}
-      <p className="ca-note">{admin
-        ? <>Invite a teammate above and our team will set up their access and be in touch. To remove a member or change the company admin, </>
-        : <>To add or remove teammates, or change who's the company admin, </>}
-        <a className="ca-link" href="#go/contact">contact your Greatstone team</a>.</p>
+      {admin
+        ? <p className="ca-note">Invite a teammate above and our team will set up their access and be in touch. To remove a member or change the company admin, <a className="ca-link" href="#go/contact">contact your Greatstone team</a>.</p>
+        : (() => { const a = pickAdmin(members); return (
+            <p className="acct-askadmin">Need a teammate added or your access changed? {a
+              ? <>Ask your company admin <a className="ca-link" href={askAdminMailto({ company: companyName, admin: a })}>{firstNameOf(a.full_name) || a.email} &rarr;</a></>
+              : <>Your <a className="ca-link" href="#go/contact">Greatstone team</a> can help.</>}</p>
+          ); })()}
     </section>
   );
 }
