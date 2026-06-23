@@ -828,7 +828,7 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
   return (
     <section className="org-sec" aria-labelledby="org-mem-h">
       <div className="acct-ordhead">
-        <h2 id="org-mem-h" tabIndex={-1}>Members &amp; access</h2>
+        <h2 id="org-mem-h" tabIndex={-1}>Members &amp; access{pending.length > 0 && <>{' '}<span className="org-pendcount">{pending.length} pending</span></>}</h2>
         {admin && <button className="gs-btn ghost sm" aria-expanded={showForm} onClick={() => setShowForm(s => !s)}>{showForm ? 'Close' : '+ Invite a teammate'}</button>}
       </div>
       {showForm && <InviteForm customerId={customerId} requestedBy={requestedBy} taken={taken} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
@@ -851,7 +851,7 @@ function Members({ members, meId, admin, customerId, requestedBy, flash }) {
       </div>
       {pending.length > 0 && (
         <div className="org-pending">
-          <h3 className="dx-pins-h">Pending invitations</h3>
+          <h3 className="dx-pins-h">Pending invitations ({pending.length})</h3>
           {pending.map(r => (
             <div key={r.id} className="org-pendrow">
               <span className="ca-name">{r.full_name || r.email}</span>
