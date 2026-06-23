@@ -41,8 +41,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | Cycle | Item | Surface | Effort | Status |
 |---|---|---|---|---|
 | 12 | Restore keyboard focus ring on the timeline search (.dx-search) | #org admin.css | S | ✅ shipped |
-| 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | next |
-| 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | |
+| 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | ✅ shipped |
+| 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | next |
 | 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | |
 | 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | |
 | 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | |
@@ -213,4 +213,13 @@ a keyboard user tabbing to the #org timeline search got no ring (WCAG 2.4.7). Ad
 suggested adding `.dx-search` to the earlier restore list, but that rule sits BEFORE the `outline:none`, so with
 equal specificity it'd be overridden — the correct fix is a `.dx-search:focus-visible` ring placed AFTER the
 `outline:none` so it wins on keyboard focus (mouse focus keeps no outline). Build clean, 63 tests. Edited:
-`src/store/admin.css`.
+`src/store/admin.css`. Commit 2051d48, bundle index-IcJXG9fR, deploy 6a39defe.
+
+### Cycle 13 — Invalid-Date / thin-data guards (23 Jun)
+toLocaleDateString returns the literal "Invalid Date" (it does not throw) on a bad value, so fmtDate/periodOf
+on #org and fmtDate on #account now guard with `Number.isNaN(getTime())` → '—' / 'Earlier'. The Maturity Radar
+now treats a row with no usable scores (overall 0) as not-yet-assessed (the empty state) rather than rendering
+a misleading "0/10 Pebble" — the defensive base for the delta/meter features landing next, so partial data once
+0019 is applied degrades gracefully. Verified the happy path is unaffected (radar 5.3, "15 Jun 2026" dates,
+no "Invalid Date" on page). Build clean, 63 tests, 0 console errors. Edited: `src/store/OrgDashboard.jsx`,
+`src/store/AccountDashboard.jsx`, `src/store/MaturityRadar.jsx`.

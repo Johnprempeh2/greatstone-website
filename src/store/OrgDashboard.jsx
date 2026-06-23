@@ -20,8 +20,9 @@ const ORG_ID = '11111111-1111-4111-8111-111111111111'; // single live org (match
 const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
 // the viewer's LOCAL calendar date (occurred_on is a local DATE) — a UTC date flips past/upcoming at the day boundary
 const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
-const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
-const periodOf = (iso) => { try { const d = new Date(iso); return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); } catch { return 'Earlier'; } };
+// toLocaleDateString returns the literal "Invalid Date" (it does not throw) on a bad value, so guard with getTime().
+const fmtDate = (s) => { const d = new Date(s); return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); };
+const periodOf = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? 'Earlier' : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
 // whole months between two local DATE strings (for the "N months in" engagement marker)
 const monthsBetween = (aISO, bISO) => { try { const a = new Date(aISO + 'T00:00:00'), b = new Date(bISO + 'T00:00:00'); return Math.max(0, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())); } catch { return 0; } };
 const KIND_LABEL = { recap: 'Meeting recap', milestone: 'Milestone', deliverable: 'Deliverable', kickoff: 'Kickoff', review: 'Review', note: 'Note' };

@@ -221,7 +221,7 @@ function Dashboard({ session, profile, onProfile }) {
     if (n && typeof location !== 'undefined') location.hash = 'shop';
   };
 
-  const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
+  const fmtDate = (s) => { const d = new Date(s); return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); };
   const company = profile?.customer?.name || '';
   const tier = profile?.customer?.tier?.name;
   const admin = isCompanyAdmin(profile);

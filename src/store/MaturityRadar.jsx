@@ -39,7 +39,9 @@ export default function MaturityRadar({ company }) {
     </section>
   );
 
-  if (state.status === 'empty') return (
+  // a row that exists but carries no usable scores (all 0/missing) reads as not-yet-assessed, not "0/10 Pebble"
+  const noScores = state.status === 'ready' && overallOf(state.data && state.data.scores) === 0;
+  if (state.status === 'empty' || noScores) return (
     <section className="org-mat" aria-labelledby="org-mat-h">
       <div className="org-mat-head"><span className="st-kicker">Digital maturity</span><h2 id="org-mat-h">Your eight-pillar maturity</h2></div>
       <div className="org-mat-empty">
