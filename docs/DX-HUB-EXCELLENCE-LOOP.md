@@ -299,11 +299,12 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~04:11):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (10e39e9) are all
-> committed; the combined dist is staged in the mirror as **index-CiLe1Tzf.js** (admin chunk admin-WCv15F4t.css
-> carries org-print-root + dx-tagrow + acct-pending + acct-ordsearch + acct-keychip). The Netlify MCP deploy-site
-> proxy has 404'd on every attempt since ~03:25 (~13 tries over ~70 min). One successful deploy ships all five
-> (c16-c20). Local commits + the staged mirror are the durable record; the loop keeps building + re-attempts each cycle.
+> **Deploy backlog (as of ~04:22):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (10e39e9) + c20 (a293f0e)
+> + c21 (29e8eb6) are all committed; the combined dist is staged in the mirror as **index-5pVm3Y6y.js** (admin chunk
+> admin-DF8wNHj9.css carries org-print-root + dx-tagrow + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge).
+> The Netlify MCP deploy-site proxy has 404'd on every attempt since ~03:25 (~15 tries over ~90 min). One successful
+> deploy ships all six (c16-c21). Test baseline is now 68 (c21 added 5). Local commits + the staged mirror are the
+> durable record; the loop keeps building + re-attempts each cycle.
 
 ### Cycle 20 — inline copy-key on the per-order licence chips (23 Jun)
 Adversarial finding: the **Keys tab** (LicenceKeys) already had a robust copy (clipboard + select-to-copy fallback +
