@@ -602,6 +602,11 @@ function SecurityCard({ email, lastSignIn, flash }) {
     <form className="pr-form" onSubmit={save}>
       <h2>Security</h2>
       {lastSignIn && <p className="ca-note" style={{ marginTop: -4 }}>Last signed in {fmtWhen(lastSignIn)}.</p>}
+      {/* honest security posture — only what's true today (password + TLS + sign-out-everywhere); no promised/fake 2FA */}
+      <p className="ca-trust">
+        <svg className="ca-trust-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
+        Your account is protected by your password over an encrypted connection. Use a strong, unique password, and sign out of all your devices below if you ever lose one.
+      </p>
       <label>New password<PasswordInput value={pw} onChange={e => setPw(e.target.value)} minLength={8} autoComplete="new-password" showStrength /></label>
       <label>Confirm new password<PasswordInput value={confirmPw} onChange={e => setConfirmPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
       {err && <div className="ca-err" role="alert">{err}</div>}
