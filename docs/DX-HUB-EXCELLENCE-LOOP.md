@@ -10,7 +10,7 @@ the bar each cycle. This doc is the canonical roadmap + cycle log (the structure
 1. Check Notion Website Tickets `Directions for agent` view for John; act on anything there first.
 2. Pick the next roadmap item below (or run a fresh multi-persona critique when the list thins).
 3. Build it to best practice: incredible UI, thoughtful UX, WCAG-AA a11y, responsive, real empty/error/loading states.
-4. Verify: `npm run build` clean + `npm test` (58 green) + preview 0 console errors (desktop + mobile) + self-review.
+4. Verify: `npm run build` clean + `npm test` (63 green since C9 added the sanitizer tests) + preview 0 console errors (desktop + mobile) + self-review.
 5. Deploy: **pathspec commit** (`git commit -m … -- <only my files>`, never `git add -A`) → build the dist from a **clean HEAD worktree** (a concurrent Excellence loop + uncommitted WIP share this repo + the single Netlify deploy) → rsync → Netlify MCP deploy-site (site `3b1e97e6`) → curl 200.
 6. Log the cycle below; reschedule ≤600s.
 
@@ -32,8 +32,8 @@ approval — never done autonomously.**
 | 6 | Member agency pass (role card, member-aware onboarding, key activation help) | #org + LicenceKeys | M | yes | ✅ shipped |
 | 7 | #account get-started band (state-adaptive next step + actionable admin badge) | #account | M | yes | ✅ shipped |
 | 8 | Staff authoring throughput (default-to-draft, Duplicate, stale badge) | ClientsManager | M | yes | ✅ shipped |
-| 9 | Extract shared sanitizeHtml + date helpers + mXSS tests + **preview-as-client pane** (moved from C8 — needs the extracted sanitizer) | src/lib + ClientsManager + tests | M | yes | next |
-| 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | |
+| 9 | Extract shared sanitizeHtml + policy mXSS tests + **preview-as-client pane** | src/lib + ClientsManager + tests | M | yes | ✅ shipped |
+| 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | next |
 | 11 | Rules-based **"Your next move"** card + proactive health signals | #org | S | yes | |
 | 12 | **Apply migration 0019** + seed Ethical Quest + swap radar to live data | Supabase + #org | M | **needs John** | |
 | 13 | Staff 8-slider **maturity scoring form** | ClientsManager | M | needs 0019 | |
@@ -136,3 +136,17 @@ so the team can spot dashboards going quiet. The "preview as the client sees it"
 because it needs the shared sanitizeHtml, which cycle 9 extracts. Verified live as staff (admin@greatstone.dev):
 new engagement defaults to draft, Duplicate pre-fills "… (copy)" as a draft, Northwind shows "No activity".
 Build + 58 tests green, 0 console errors. Edited: `src/store/ClientsManager.jsx`, `src/store/admin.css`.
+Commit 1cae99b, bundle index-CpD_TFw6, deploy 6a39cfbf.
+
+### Cycle 9 — Shared sanitiser module + tests + preview-as-client pane (23 Jun)
+Extracted the recap HTML sanitiser out of OrgDashboard into `src/lib/sanitize-html.mjs` (sanitizeHtml +
+the ALLOWED / DROP_ENTIRELY / DEMOTE policy sets + a pure isSafeHref), so the client #org view and the
+new staff preview pane share ONE sanitiser. Added `src/lib/sanitize-html.test.mjs` — pure-node regression
+tests (no DOM dep) locking the security policy: dangerous foreign-content/rawtext tags are dropped + never
+allowed, all headings demote, only http(s)/mailto hrefs survive (javascript:/data:/leading-space tricks
+rejected), no allow/drop overlap, and the SSR guard. **Test baseline 58 → 63.** The DOM-mutation behaviour
+stays verified in-browser. Built the "Preview as the client sees it" pane in the staff EngagementEditor,
+rendering the exact sanitised output the client sees (verified it shows the h5 heading-demotion). Regression-
+checked the #org recap still renders. Build clean, 63 tests green, 0 console errors, staff + client both verified.
+New: `src/lib/sanitize-html.mjs`, `src/lib/sanitize-html.test.mjs`. Edited: `src/store/OrgDashboard.jsx`,
+`src/store/ClientsManager.jsx`, `src/store/admin.css`.

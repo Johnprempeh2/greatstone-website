@@ -1,9 +1,10 @@
 // Staff: clients & DX engagements (#catalogue → Clients tab). Pick a client company, then curate its
 // DX engagement timeline — meeting recaps / milestones / deliverables, each inline HTML OR an external
 // link (e.g. a deployed Netlify recap). Writes go through the staff JWT → staff_all RLS (0004/0013).
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
+import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import './store.css';
 import './admin.css';
 
@@ -323,6 +324,8 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
   const [attendees, setAttendees] = useState((engagement.attendees || []).join(', '));
   const [tags, setTags] = useState((engagement.tags || []).join(', '));
   const [pinned, setPinned] = useState(!!engagement.pinned);
+  const [showPreview, setShowPreview] = useState(false);
+  const cleanPreview = useMemo(() => (showPreview ? sanitizeHtml(bodyHtml) : ''), [showPreview, bodyHtml]); // exactly what the client's #org sees
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const ref = useRef(null);
@@ -374,6 +377,18 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
           <textarea rows="5" value={bodyHtml} onChange={e => setBodyHtml(e.target.value)} placeholder="<p>…</p>  (sanitised on render)" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.82rem' }} />
         </label>
         <p className="ca-note" style={{ marginTop: -6 }}>Provide a link, inline HTML, or both. Recaps &amp; deliverables need at least one.</p>
+        {bodyHtml.trim() && (
+          <div className="ca-preview">
+            <button type="button" className="gs-btn ghost sm" aria-expanded={showPreview} aria-controls="ca-preview-pane" onClick={() => setShowPreview(s => !s)}>
+              {showPreview ? 'Hide preview' : 'Preview as the client sees it'}
+            </button>
+            {showPreview && (
+              cleanPreview
+                ? <div id="ca-preview-pane" className="ca-preview-pane dx-body" dangerouslySetInnerHTML={{ __html: cleanPreview }} />
+                : <p id="ca-preview-pane" className="ca-note" role="status" style={{ marginTop: 8 }}>Nothing renders — the sanitiser strips everything in this content (only basic formatting and safe links survive).</p>
+            )}
+          </div>
+        )}
         <div className="pr-row">
           <label>Attendees (comma-separated)<input value={attendees} onChange={e => setAttendees(e.target.value)} placeholder="Naa Korkoi, Ben Mensah" /></label>
           <label>Tags (comma-separated)<input value={tags} onChange={e => setTags(e.target.value)} placeholder="report, roadmap" /></label>

@@ -9,6 +9,7 @@ import { fmtMoney } from '../lib/pricing.mjs';
 import { getCustomerProfile, isCustomer, isCompanyAdmin, signOut, getSession, onAuth } from './customerAuth.mjs';
 import { AuthGate } from './AccountDashboard.jsx';
 import MaturityRadar from './MaturityRadar.jsx';
+import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import './store.css';
 import './admin.css';
 
@@ -27,54 +28,7 @@ const ANCHOR_KINDS = new Set(['milestone', 'kickoff', 'review']); // filled mark
 const PHASES = ['Discovery', 'Build', 'Adoption', 'Review'];
 const PHASE_BLURB = { Discovery: 'Mapping the work and the drains.', Build: 'Wiring the systems that buy hours back.', Adoption: 'Embedding it in how you work.', Review: 'Measuring the return, planning the next climb.' };
 
-// Allowlist sanitiser for staff-authored inline recap HTML — defence-in-depth even though authors are
-// staff. Browser-only (DOMParser). The output is re-parsed by React (dangerouslySetInnerHTML), so this
-// must survive the round-trip: (a) foreign-content / rawtext containers (svg/math/style/noscript/…) are
-// DROPPED ENTIRELY rather than unwrapped — unwrapping them is the classic mutation-XSS vector; (b) any
-// heading is demoted to <h5> so a recap can't break the page heading order (card title is <h4>); (c) the
-// whole pass runs to a fixpoint so a string that re-parses differently can't smuggle live nodes through.
-const ALLOWED = new Set(['P', 'H5', 'H6', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'A', 'BR', 'BLOCKQUOTE', 'CODE', 'PRE', 'SPAN', 'HR']);
-const DROP_ENTIRELY = new Set(['SCRIPT', 'STYLE', 'SVG', 'MATH', 'NOSCRIPT', 'TEMPLATE', 'TEXTAREA', 'TITLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'HEAD', 'FRAME', 'FRAMESET', 'XMP']);
-const DEMOTE = new Set(['H1', 'H2', 'H3', 'H4']); // any body heading sits below the <h4> card title
-
-function sanitizeOnce(html) {
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
-  const root = doc.body.firstChild;
-  const walk = (node) => {
-    for (const el of Array.from(node.children || [])) {
-      const tag = el.tagName;
-      if (DROP_ENTIRELY.has(tag)) { el.remove(); continue; }                 // drop the whole subtree
-      if (DEMOTE.has(tag)) {                                                  // rename heading → h5
-        const h = doc.createElement('h5');
-        while (el.firstChild) h.appendChild(el.firstChild);
-        el.replaceWith(h); walk(h); continue;
-      }
-      if (!ALLOWED.has(tag)) { el.replaceWith(...Array.from(el.childNodes)); continue; } // unwrap benign unknown (fixpoint re-cleans promoted children)
-      for (const attr of Array.from(el.attributes)) {
-        const n = attr.name.toLowerCase();
-        if (el.tagName === 'A' && n === 'href') {
-          if (!/^(https?:|mailto:)/i.test(attr.value.trim())) el.removeAttribute('href');
-          continue;
-        }
-        if (n !== 'class') el.removeAttribute(attr.name);                     // strips on* handlers + everything else
-      }
-      if (el.tagName === 'A' && el.getAttribute('href')) {
-        el.setAttribute('target', '_blank');
-        el.setAttribute('rel', 'noopener noreferrer');
-        el.setAttribute('aria-label', (el.textContent || 'link').trim() + ' (opens in a new tab)');
-      }
-      walk(el);
-    }
-  };
-  walk(root);
-  return root.innerHTML;
-}
-function sanitizeHtml(html) {
-  if (!html || typeof window === 'undefined') return '';
-  let out = String(html);
-  for (let i = 0; i < 6; i++) { const next = sanitizeOnce(out); if (next === out) break; out = next; } // fixpoint
-  return out;
-}
+// The recap HTML sanitiser now lives in ../lib/sanitize-html.mjs (shared with the staff preview pane + unit-tested).
 const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'link'; } };
 // honour prefers-reduced-motion on every programmatic scroll (WCAG 2.3.3): jump instantly, don't animate.
 const prefersReducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;

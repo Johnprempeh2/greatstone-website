@@ -297,6 +297,9 @@
 .ci-stale.is-amber { background:rgba(255,200,0,.14); color:var(--gs-warning,#ffc800); }
 .ci-stale.is-red { background:rgba(255,107,107,.14); color:var(--gs-danger,#ff6b6b); }
 .ci-stale.is-none { background:rgba(255,255,255,.06); color:var(--gs-text-faint); }
+/* staff "preview as the client sees it" pane in the engagement editor */
+.ca-preview { margin:6px 0 4px; }
+.ca-preview-pane { margin-top:10px; padding:14px 16px; border:1px dashed var(--gs-border-soft,rgba(255,255,255,.14)); border-radius:12px; background:rgba(255,255,255,.02); }
 
 /* first-run onboarding checklist (#org) */
 .org-onboard { margin:8px 0 24px; padding:20px 22px; border:1px solid var(--gs-border-strong,rgba(200,255,0,.18)); border-radius:16px; background:var(--gs-accent-soft); }
