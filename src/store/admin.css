@@ -377,6 +377,8 @@
 .dx-chip.on { background:var(--gs-accent); color:#0e1611; border-color:var(--gs-accent); }
 .dx-search { flex:1 1 200px; min-width:160px; padding:.55em 1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.86rem; }
 .dx-search:focus { outline:none; border-color:var(--gs-accent-mid); }
+/* keyboard users get a visible ring (WCAG 2.4.7). Placed AFTER the outline:none above so it wins on :focus-visible. */
+.dx-search:focus-visible { outline:2px solid var(--gs-accent); outline-offset:1px; }
 /* Phase Navigator — the engagement journey (Discovery→Build→Adoption→Review) as a stepper above the controls.
    Classes are dx-jstep* (NOT dx-phase*) to avoid colliding with the per-card .dx-phase badge. */
 .dx-phasenav { margin:20px 0 4px; }

@@ -35,12 +35,40 @@ approval — never done autonomously.**
 | 9 | Extract shared sanitizeHtml + policy mXSS tests + **preview-as-client pane** | src/lib + ClientsManager + tests | M | yes | ✅ shipped |
 | 10 | "In your field" phase-filtered **Intelligence band** on #org (innovation hub v1) | #org | M | yes | ✅ shipped |
 | 11 | Rules-based **"Your next move"** card (from the weakest maturity pillar) | #org | S | yes | ✅ shipped — initial 11-item roadmap COMPLETE; refill via fresh critique |
-| 12 | **Apply migration 0019** + seed Ethical Quest + swap radar to live data | Supabase + #org | M | **needs John** | |
-| 13 | Staff 8-slider **maturity scoring form** | ClientsManager | M | needs 0019 | |
-| 14 | **"Your climb"** maturity-over-time (data-bound MaturityMap) | #org | M | needs 0019 | |
-| 15 | Engagement **outcomes + initiatives** tables (ROI + innovation pipeline) | Supabase + #org + ClientsManager | L | **needs John** | |
+_(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over-time, outcomes/initiatives — moved to "Needs John's approval" below. The table now carries the REFILLED front-end roadmap from the 23 Jun fresh 6-persona critique.)_
+
+## Refilled front-end roadmap (cycles 12+, 23 Jun critique — all ship without a migration)
+| Cycle | Item | Surface | Effort | Status |
+|---|---|---|---|---|
+| 12 | Restore keyboard focus ring on the timeline search (.dx-search) | #org admin.css | S | ✅ shipped |
+| 13 | Guard date helpers + maturity chips vs Invalid Date / NaN | #org OrgDashboard + MaturityRadar | S | next |
+| 14 | Maturity since-discovery **delta chips** (per-pillar + overall) | #org MaturityRadar | S | |
+| 15 | Distance-to-target **climb-completion meter** | #org MaturityRadar | S | |
+| 16 | Board-ready **print stylesheet** + "Download a summary" | #org admin.css + identity band | M | |
+| 17 | Engagement **tag-facet pills** in the timeline filter row | #org EngagementTimeline | M | |
+| 18 | **Pending-actions banner** above the #account tabs | #account | M | |
+| 19 | Order **search/filter** box on the Purchases tab | #account | M | |
+| 20 | Inline **copy-key** on the per-order licence chips | #account | M | |
+| 21 | Licence-key **expiry badges** + #account next-step rule | #account + LicenceKeys + staff keys | M | |
+| 22 | Per-phase **what-this-delivers** line on the phase navigator | #org EngagementTimeline | S | |
+| 23 | **Next-touchpoint** reassurance tile in the relationship pulse | #org OrgAnalytics | S | |
+| 24 | **Loading skeletons** for late-mounting #org bands (CLS fix) | #org OrgDashboard | M | |
+| 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | |
+| 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | |
+| 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | |
+| 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | |
+| 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | |
+| 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | |
+| 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | |
+| 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | |
+| 33 | Single-month spend sparkline + orders-truncation honesty | #org OrgAnalytics + RecentOrders | S | |
+| 34 | Attendee overflow chip + filter-result live announcement (a11y) | #org Item + EngagementTimeline | M | |
+| 35 | Toast safe-area/dismiss + phase-nav overflow scroll + intel-chip contrast | #org admin.css + InnovationBand | M | |
+| 36 | Aspirational **empty-states** for a brand-new org | #org body + timeline empty | M | |
+| 37 | Download-all-my-keys export + copy-quote-reference | #account LicenceKeys + Quotes | M | |
 
 ## Needs John's approval (parked — do not self-serve)
+- **Apply migration 0019** + seed Ethical Quest + the staff 8-slider scoring form, then **"Your climb" over time** (multi-point history) and the **engagement_outcomes + initiatives** tables (ROI + innovation pipeline) — the gated maturity/ROI ladder.
 - **Apply migration 0019** (`maturity_assessments`) + seed Ethical Quest → promotes the radar from seeded prototype to live, staff-authored, re-scorable data. Needs founder OK to apply against the live DB + a one-shot RLS verification.
 - **engagement_outcomes + initiatives tables** (ROI rigour + innovation pipeline) → two gated migrations + staff authoring.
 - **Anonymised peer-benchmark data source** (a real benchmark table/view crosses the per-company RLS boundary → explicit sign-off on the anonymisation approach).
@@ -173,6 +201,16 @@ renders (refactor regression passed, both agree at 5.3 overall / Data weakest). 
 clean, 0 console errors. New: `src/store/useMaturity.mjs`. Edited: `src/store/MaturityRadar.jsx`,
 `src/store/OrgDashboard.jsx`, `src/store/admin.css`.
 
-**★ Initial 11-cycle front-end roadmap COMPLETE.** Next loop fire runs a fresh multi-persona critique to
-refill the roadmap with the next wave of safe, reversible front-end wins (see the wishlist above for the
-gated big ideas that still need John).
+**★ Initial 11-cycle front-end roadmap COMPLETE.** A fresh 7-agent / 6-persona critique (run wvtusn8c7, 23 Jun)
+refilled the roadmap with cycles 12-37 (see the Refilled front-end roadmap table above) + an expanded gated
+wishlist (quantified ROI outcomes table, climb-over-time, two-way timeline, in-app accept-quote, peer percentile,
+watermarked Periscope export, AI next-best-move, transformation-pulse email, Notion sync, server-side last-seen,
+per-tool adoption pulse, staff needs-attention triage, simulate-the-climb planner) — all needing John.
+
+### Cycle 12 — Restore keyboard focus ring on the timeline search (23 Jun)
+The fresh critique's top item: `.dx-search:focus { outline:none }` (admin.css) had no `:focus-visible` restore, so
+a keyboard user tabbing to the #org timeline search got no ring (WCAG 2.4.7). Adversarial note: the critique
+suggested adding `.dx-search` to the earlier restore list, but that rule sits BEFORE the `outline:none`, so with
+equal specificity it'd be overridden — the correct fix is a `.dx-search:focus-visible` ring placed AFTER the
+`outline:none` so it wins on keyboard focus (mouse focus keeps no outline). Build clean, 63 tests. Edited:
+`src/store/admin.css`.
