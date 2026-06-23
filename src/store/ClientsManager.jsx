@@ -8,6 +8,7 @@ import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { portfolioHealth, quietFirstRank } from './client-recency.mjs';
 import { engagementView } from './engagement-view.mjs';
 import { shareChecklist } from './engagement-checklist.mjs';
+import { expiryInfo } from './licence-expiry.mjs';
 import './store.css';
 import './admin.css';
 
@@ -120,6 +121,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [orders, setOrders] = useState([]); // for linking a key to the purchase it fulfils
   const [editing, setEditing] = useState(null); // engagement object or {} for new
   const [keyEditing, setKeyEditing] = useState(null); // licence-key object or {} for new
+  const [copiedKey, setCopiedKey] = useState(null); // licence-key id (or 'fail:'+id) flashing the copy state
   const [kindFilter, setKindFilter] = useState('all'); // filter the engagement list staff are curating
   const load = useCallback(() => {
     supabase.from('customer_users').select('id, email, full_name, is_primary, role').is('deleted_at', null).eq('customer_id', customer.id).order('is_primary', { ascending: false })
@@ -170,6 +172,11 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
     const { data, error } = await supabase.from('licence_keys').update({ status: next }).eq('id', k.id).select('id');
     if (error || !data?.length) { flash(error ? 'Could not update key.' : 'Key not found.'); load(); return; }
     flash(next === 'revoked' ? 'Key revoked.' : 'Key re-issued.'); load();
+  };
+  // copy a key value to hand to the client; clipboard is the happy path, else select the code so staff can ⌘/Ctrl+C
+  const copyKey = async (k, codeEl) => {
+    try { await navigator.clipboard.writeText(k.licence_key); setCopiedKey(k.id); setTimeout(() => setCopiedKey(c => (c === k.id ? null : c)), 1800); }
+    catch { try { const r = document.createRange(); r.selectNodeContents(codeEl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch { /* ignore */ } setCopiedKey('fail:' + k.id); setTimeout(() => setCopiedKey(c => (c === 'fail:' + k.id ? null : c)), 4000); }
   };
 
   const admin = members.find(m => m.is_primary || m.role === 'admin');
@@ -253,17 +260,26 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       </div>
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
-          <thead><tr><th scope="col">Product</th><th scope="col">Key</th><th scope="col">Seats</th><th scope="col">Status</th><th scope="col">Delivered</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+          <thead><tr><th scope="col">Product</th><th scope="col">Key</th><th scope="col">Seats</th><th scope="col">Status</th><th scope="col">Delivered</th><th scope="col">Expires</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
-            {keys === null ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
-              : !keys.length ? <tr><td colSpan="6" className="ca-muted">No licence keys yet. Issue one when you fulfil an order — the client sees it on their account.</td></tr>
+            {keys === null ? <tr><td colSpan="7" className="ca-muted">Loading…</td></tr>
+              : !keys.length ? <tr><td colSpan="7" className="ca-muted">No licence keys yet. Issue one when you fulfil an order — the client sees it on their account.</td></tr>
                 : keys.map(k => (
                   <tr key={k.id}>
                     <td data-label="Product" className="ca-name">{k.offering_name}{k.variant_name ? ' · ' + k.variant_name : ''}</td>
-                    <td data-label="Key"><code className="ca-ref">{k.licence_key}</code></td>
+                    <td data-label="Key" className="ci-keycell">
+                      <code className="ca-ref">{k.licence_key}</code>
+                      <button type="button" className="gs-btn ghost sm" onClick={(e) => copyKey(k, e.currentTarget.previousElementSibling)}
+                        aria-label={(copiedKey === k.id ? 'Copied' : copiedKey === 'fail:' + k.id ? 'Selected, press Cmd or Ctrl plus C to copy' : 'Copy') + ' licence key for ' + k.offering_name}>
+                        {copiedKey === k.id ? 'Copied ✓' : copiedKey === 'fail:' + k.id ? '⌘/Ctrl+C' : 'Copy'}
+                      </button>
+                    </td>
                     <td data-label="Seats">{k.seats || '—'}</td>
                     <td data-label="Status"><span className={'ca-status ' + (k.status === 'issued' ? 'ca-published' : k.status === 'revoked' ? 'ca-ord-refunded' : 'ca-draft')}>{k.status}</span></td>
                     <td data-label="Delivered">{fmtDate(k.delivered_at)}</td>
+                    <td data-label="Expires">{k.expires_at
+                      ? (() => { const ex = expiryInfo(k.expires_at); return <>{fmtDate(k.expires_at)}{ex && ex.kind !== 'ok' ? <span className={'lk-expbadge ' + ex.cls} style={{ marginLeft: 6 }}>{ex.label}</span> : null}</>; })()
+                      : <span className="ca-muted">No expiry</span>}</td>
                     <td data-label="" className="ca-ord-actions">
                       <button className="gs-btn ghost sm" onClick={() => setKeyEditing(k)}>Edit</button>
                       <button className="gs-btn ghost sm" onClick={() => revokeKey(k)}>{k.status === 'revoked' ? 'Re-issue' : 'Revoke'}</button>

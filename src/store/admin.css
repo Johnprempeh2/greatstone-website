@@ -158,6 +158,8 @@
 .lk-exp-soon { color:var(--gs-warning,#ffc800); background:rgba(255,200,0,.12); border:1px solid rgba(255,200,0,.35); }
 .lk-exp-over { color:var(--gs-danger,#ff6b6b); background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); }
 .lk-keyrow { display:flex; align-items:center; gap:8px; }
+/* staff Clients & DX key cell: keep the code + copy button on one row, wrap on narrow */
+.ci-keycell { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .lk-key { flex:1 1 auto; min-width:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9rem; letter-spacing:.04em; color:var(--gs-accent); background:rgba(200,255,0,.06); border:1px solid var(--gs-border,rgba(200,255,0,.16)); border-radius:8px; padding:.5em .7em; overflow-x:auto; white-space:nowrap; }
 .lk-meta { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:10px; font-size:.78rem; color:var(--gs-text-faint); }
 /* Security & sessions rows (account → Security tab) */
