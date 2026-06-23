@@ -572,14 +572,17 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~08:51):** c16 (5ed5301) → c39 (bfd8ad8) **plus** a John-requested company-profile UI polish
-> (5dfd223: .pr-form textarea styling + org-profile field/hint/subtitle/dirty-Save) — **twenty-four cycles + 1 fix** — are all
-> committed; the combined dist is staged in the mirror as **index-CjxvsLmn.js** (admin/org chunk carries org-print-root + dx-tagrow +
-> acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome + acct-qcd +
-> acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub + acct-ordtrunc + dx-av-more + ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~51 tries over **~10h** — a sustained Netlify-side outage; **worth
-> checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy ships all
-> twenty-four (c16-c39). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
+> **Deploy backlog (as of ~09:05):** c16 (5ed5301) → c39 (bfd8ad8) **plus** two John-requested changes — a company-profile
+> UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs + clickable KPI tiles + #org persistent toast live
+> region, folding in roadmap rows 40+42)** — **twenty-four cycles + 2 John changes** — are all committed; the combined dist is
+> staged in the mirror as **index-BWsUWr6e.js** (admin chunk admin-C7eRwaT1.css; OrgDashboard chunk carries the org-tabs/
+> org-panel structure + org-stat is-link + org-print-root tabpanel-unhide; sigs incl. dx-tagrow + acct-pending + acct-ordsearch +
+> acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome + acct-qcd + acct-askadmin + ci-health +
+> ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub + acct-ordtrunc + dx-av-more +
+> ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus + org-tabs). The Netlify MCP deploy-site proxy
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~52 tries over **~10h** — a sustained Netlify-side outage; **worth
+> checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy ships
+> everything (c16-c39 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
