@@ -72,7 +72,7 @@ _Rows 38-59 below: refilled 23 Jun from a 7-persona critique of the live product
 | 38 | Show the maturity **assessment date** on the radar ("Assessed 15 Jun 2026 · seeded baseline") | MaturityRadar org-mat-head | S | ✅ built (ships with c16-c37) |
 | 39 | Visible inline **"Sample baseline" disclosure** (not hover-only title) | MaturityRadar org-mat-sample | S | ✅ built (ships with c16-c38) |
 | 40 | **Persistent toast live region** (mount empty role=status once, fill on flash) — SR misses it today | #account + #org .ca-toast | M | ✅ built (ships with c16-c39) |
-| 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | next (#org deep-links already focus targets via the redesign) |
+| 41 | **Move focus into the panel** after a tab switch / deep-link + visible-on-focus skip link | #account tablist + #org header | M | ✅ c41 (905f513): goTab() focuses revealed panel on every #account deep-link; route-safe skip links on both dashboards (reuse canonical studio.css .gs-skip) |
 | 42 | **Clickable at-a-glance tiles** on #org (parity with #account's button tiles) | #org Stat + admin.css | S | ✅ built in the #org tab redesign |
 | 43 | **Keyboard semantics** on the clickable order rows (role/tabindex/onKeyDown) | #account acct-ordrow | S | |
 | 44 | **Dim + aria-disable** zero-item phase-navigator steps (cursor-only today) | #org EngagementTimeline + .dx-jstep-btn | S | |
@@ -581,17 +581,18 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~09:22):** c16 (5ed5301) → c40 (fa0d459) **plus** two John-requested changes — a company-profile
-> UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs + clickable KPI tiles + #org persistent toast live
-> region, folding in roadmap rows 40+42)** — **twenty-five cycles + 2 John changes** — are all committed; the combined dist is
-> staged in the mirror as **index-ClZk003w.js** (OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
+> **Deploy backlog (as of ~14:05):** c16 (5ed5301) → c41 (905f513: #account/#org focus-into-panel + route-safe skip links)
+> **plus** two John-requested changes — a company-profile UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs
+> + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **twenty-six cycles + 2 John
+> changes** — are all committed; the combined dist is
+> staged in the mirror as **index-BIUfdOwl.js** (OrgDashboard chunk carries the org-tabs/org-panel structure + org-stat
 > is-link + org-print-root tabpanel-unhide; #account now also has the persistent gs-sr-only toast region [c40]; sigs incl.
 > dx-tagrow + acct-pending + acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome +
 > acct-qcd + acct-askadmin + ci-health + ci-draftnudge + eng-templates + eng-checklist + org-move-gap + pr-field/pr-hint/org-sec-sub +
 > acct-ordtrunc + dx-av-more + ca-toast-x + dx-empty-kinds + acct-refcopy/acct-keystools + org-mat-assessed + org-mat-illus + org-tabs). The Netlify MCP deploy-site proxy
-> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~53 tries over **~10h30m** — a sustained Netlify-side outage; **worth
-> checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy ships
-> everything (c16-c40 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
+> has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~54 tries over **~14h** — a sustained Netlify-side outage; **worth
+> checking the Netlify status page / the netlify-mcp.netlify.app proxy**). One successful deploy ships
+> everything (c16-c41 + both John changes). Test baseline is now **111**. The loop runs a stretched ~20-min cadence
 > to conserve while the proxy is down, still building + retrying each wake; local commits + the staged mirror are the durable
 > record — the moment a deploy succeeds the whole batch goes live and the cadence drops back to ≤10 min.
 
