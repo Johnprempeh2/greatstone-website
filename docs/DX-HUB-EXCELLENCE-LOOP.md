@@ -348,14 +348,14 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~04:55):** c16 (5ed5301) + c17 (4a2d746) + c18 (641ed0c) + c19 (10e39e9) + c20 (a293f0e)
-> + c21 (29e8eb6) + c22 (0da714d) + c23 (eca0ed9) + c24 (574e892) are all committed; the combined dist is staged in the
-> mirror as **index-DY00MbGQ.js** (admin chunk carries org-print-root + dx-tagrow + acct-pending + acct-ordsearch +
-> acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next; c24 is a JS-only OrgDashboard change). The Netlify MCP
-> deploy-site proxy has 404'd on every attempt since ~03:25 (~21 tries over ~2h40m — a sustained Netlify-side outage;
-> **worth checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**). One successful deploy
-> ships all nine (c16-c24). Test baseline is 68. The loop runs a stretched ~20-min cadence to conserve while the proxy
-> is down, still building + retrying each wake; local commits + the staged mirror are the durable record.
+> **Deploy backlog (as of ~05:06):** c16 (5ed5301) → c25 (9545081) — ten cycles — are all committed; the combined dist
+> is staged in the mirror as **index-CWrkvHAw.js** (admin chunk carries org-print-root + dx-tagrow + acct-pending +
+> acct-ordsearch + acct-keychip + lk-expbadge + dx-phase-delivers + org-an-next + acct-welcome). The Netlify MCP
+> deploy-site proxy has 404'd at zipAndBuild on EVERY attempt since ~03:25 (~23 tries over ~3h15m — a sustained
+> Netlify-side outage; **worth checking the Netlify status page / the netlify-mcp.netlify.app proxy in the morning**).
+> One successful deploy ships all ten (c16-c25). Test baseline is now **73** (c21 +5, c25 +5). The loop runs a stretched
+> ~20-min cadence to conserve while the proxy is down, still building + retrying each wake; local commits + the staged
+> mirror are the durable record — the moment a deploy succeeds, the whole batch goes live and the cadence drops back to ≤10 min.
 
 ### Cycle 20 — inline copy-key on the per-order licence chips (23 Jun)
 Adversarial finding: the **Keys tab** (LicenceKeys) already had a robust copy (clipboard + select-to-copy fallback +
