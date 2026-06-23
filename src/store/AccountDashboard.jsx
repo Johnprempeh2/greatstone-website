@@ -9,7 +9,8 @@ import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
 import { isExpiringSoon, daysUntil } from './licence-expiry.mjs';
-import { sinceLastVisit } from './welcome-back.mjs';
+import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
+import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
 import './store.css';
 import './admin.css';
 
@@ -158,6 +159,19 @@ function Dashboard({ session, profile, onProfile }) {
   const [orderQ, setOrderQ] = useState('');
   // the #account h1 already greets by name, so only surface the "since last visit" line on a return visit
   const [lastVisit] = useState(() => sinceLastVisit('gs:lastvisit:account'));
+  // for a non-admin member: who to ask for access (their company's primary contact / admin). RLS customer_self
+  // already scopes customer_users to the member's own company; this read is a no-op for admins.
+  const [companyAdmin, setCompanyAdmin] = useState(null);
+  useEffect(() => {
+    if (!profile?.customer?.id || isCompanyAdmin(profile)) return;
+    let live = true;
+    supabase.from('customer_users').select('email, full_name, is_primary, role').eq('customer_id', profile.customer.id)
+      .then(({ data }) => {
+        if (!live) return;
+        setCompanyAdmin(pickAdmin(data));
+      });
+    return () => { live = false; };
+  }, [profile]);
   const [copiedKey, setCopiedKey] = useState(null);
   const onTabKey = (e, i) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
@@ -327,6 +341,13 @@ function Dashboard({ session, profile, onProfile }) {
           </div>
         </section>
       )}
+
+      {profile?.customer && !isCompanyAdmin(profile) && (() => {
+        // a non-admin member hits walls (company settings, team, licences they can't manage) — give them a warm
+        // route to whoever can help: their company admin if known, else the Greatstone team.
+        const href = askAdminMailto({ company, admin: companyAdmin });
+        return <p className="acct-askadmin">Need access to company settings, team or a licence you can&rsquo;t manage? <a className="ca-link" href={href}>Ask your admin{companyAdmin?.full_name ? ' (' + firstNameOf(companyAdmin.full_name) + ')' : ''} &rarr;</a></p>;
+      })()}
 
       {!pendingDismissed && pending.length > 0 && (
         <section className="acct-pending" role="region" aria-label="Items that need your attention">

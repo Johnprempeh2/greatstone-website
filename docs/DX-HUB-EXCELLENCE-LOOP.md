@@ -56,8 +56,8 @@ _(The original gated cycles 12-15 — apply 0019, staff scoring form, climb-over
 | 25 | Personalised **welcome-back / since-last-visit** header line | #org + #account identity | S | ✅ built (ships with c16-c24) |
 | 26 | **"Discuss this"** mailto on timeline items + quotes | #org Item + #account Quotes | S | ✅ built (ships with c16-c25) |
 | 27 | Quote **valid-until countdown** + reorder-last + spend context | #account | M | ✅ built (ships with c16-c26) |
-| 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | next |
-| 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | |
+| 28 | **Ask-your-admin** prefilled mailto for stranded members | #account | S | ✅ built (ships with c16-c27) |
+| 29 | Staff **portfolio health bar** + quiet-first sort | Staff client list | M | next |
 | 30 | Staff in-client **timeline filter/count + unshared-draft nudge** | Staff ClientDetail | M | |
 | 31 | Staff engagement **quick-start templates** + pre-share checklist | Staff EngagementEditor | M | |
 | 32 | **Benchmark-gap chip** on the Next-move card | #org NextMove | S | |
@@ -285,6 +285,20 @@ ignored, no NaN). Keyboard-operable with visible focus rings; urgent items use t
 demo-client: "1 thing needs your attention → 1 open quote to review", the link selects the Purchases tab, × dismisses,
 no 380px overflow, 0 console errors, build clean, 63 tests. Edited: `src/store/AccountDashboard.jsx`, `src/store/admin.css`.
 **Ships with c16+c17 on the next successful deploy** (Netlify proxy still being retried).
+
+### Cycle 28 — ask-your-admin mailto for stranded members (23 Jun)
+A non-admin member who hits a wall (company settings, team, a licence they can't manage) now gets a warm route:
+"Need access to company settings, team or a licence you can't manage? Ask your admin (Naa) →" — a prefilled mailto
+to their company's primary contact / admin, with a named greeting and an "Re: {company} account access" subject;
+falls back to the Greatstone team (DX@greatstoneinternational.co.uk) when the admin email is unknown. Shown ONLY
+for members (hidden for admins — confirmed live: the line is absent for the admin demo-client). The admin email is
+read with a small RLS-safe customer_users query (customer_self scopes it to the member's own company; a no-op for
+admins). The select-admin + mailto-build logic was extracted to a pure module (`src/store/ask-admin.mjs`: `pickAdmin`
++ `askAdminMailto`) and unit-tested — **baseline 73 → 77** (primary-wins / role=admin / null; named greeting + encoded
+params; team fallback; empty-company → "your"). This positive verification matters because the demo member sign-in
+couldn't be driven through the preview's auth form reliably; the admin-negative case was confirmed live. 0 console
+errors, build clean, 77 tests. New: `src/store/ask-admin.mjs` + `.test.mjs`. Edited: `src/store/AccountDashboard.jsx`,
+`src/store/admin.css`. Ships with c16-c27 on the next deploy.
 
 ### Cycle 27 — quote valid-until countdown + reorder-last (23 Jun)
 Two #account conversion nudges. (a) Each open, firm quote with a `valid_until` now shows a countdown chip beside the

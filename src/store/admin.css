@@ -282,6 +282,8 @@
 .acct-id-marker { margin-top:6px; font-size:.78rem; font-weight:600; color:var(--gs-teal,#4ecdc4); }
 /* subtle "welcome back · last here N days ago" greeting above the identity name */
 .acct-welcome { margin:0 0 2px; font-size:.76rem; font-weight:600; letter-spacing:.01em; color:var(--gs-text-faint,#8a8a8a); }
+/* "ask your admin" helper line for non-admin members */
+.acct-askadmin { margin:-8px 0 20px; font-size:.84rem; color:var(--gs-text-muted,#b0b0b0); }
 /* your Greatstone team card */
 .org-team-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:10px; }
 .org-team-card { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); }
