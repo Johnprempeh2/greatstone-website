@@ -583,7 +583,9 @@ negative path was confirmed live (no badge, nextStep stays "Activate your licenc
 restart cleared stale HMR noise. Edited: `src/store/LicenceKeys.jsx`, `src/store/AccountDashboard.jsx`, `src/store/admin.css`;
 new `src/store/licence-expiry.mjs` + `src/store/licence-expiry.test.mjs`. Ships with c16-c20 on the next deploy.
 
-> **Deploy backlog (as of ~00:55, 24 Jun):** c16 (5ed5301) → c55 (cb2498d: coarse-pointer 44px tap targets — roadmap 12-59 complete); through c54 (9fe47c2: #account mobile tab strip)
+> **✅ SHIPPED LIVE 24 Jun (deployId 6a3b84f96487a211fbbc6f8a)** — the whole c16 (5ed5301) → c55 (cb2498d) batch + both John changes went live in one push the moment John gave the go-ahead (Netlify proxy recovered). `https://greatstone-home.netlify.app/puck-proof/` = 200 serving **index-C_EO6b8V.js**. Roadmap rows 16-59 are now LIVE, not just staged. NOTE: from here, do NOT auto-deploy — build/stage/mirror freely but push to Netlify only on John's explicit word (rate-limit/credits; see memory greatstone-deploy-flow). Historical staging detail below for the record.
+>
+> **Deploy backlog (was, as of ~00:55, 24 Jun — now shipped):** c16 (5ed5301) → c55 (cb2498d: coarse-pointer 44px tap targets — roadmap 12-59 complete); through c54 (9fe47c2: #account mobile tab strip)
 > **plus** two John-requested changes — a company-profile UI polish (5dfd223) and the **#org tabbed redesign (9de90d8: 5 tabs
 > + clickable KPI tiles + #org persistent toast live region, folding in roadmap rows 40+42)** — **forty cycles + 2 John
 > changes** — are all committed; the combined dist is
