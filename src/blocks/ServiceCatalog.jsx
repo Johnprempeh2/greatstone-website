@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { shortFormat, serviceSlug, serviceReason, featuredServices, newServices, popularServices } from '../store/services.mjs';
-import { usePopularity } from '../store/popularity.mjs';
+import { usePopularity, loadGlobalPopularity } from '../store/popularity.mjs';
 import { InquiryToggle } from '../store/InquiryUI.jsx';
 import { categories as CATALOG_CATEGORIES, services as CATALOG_SERVICES, umbrella as UMBRELLA } from '../data/service-catalog.mjs';
 
@@ -80,6 +80,7 @@ export function ServiceCatalog({
   // most-popular by this visitor's interaction (popularity counts, deduped + GA4-mirrored). The strip's
   // tabs let a visitor jump straight to New or Popular; empty tabs hide themselves.
   const counts = usePopularity();
+  useEffect(() => { loadGlobalPopularity(); }, []); // pull the global, cross-visitor "Popular" ranking once
   const [featTab, setFeatTab] = useState('top');
   const popularList = useMemo(() => popularServices(services, counts, 12), [services, counts]);
   const popularSet = useMemo(() => new Set(popularList.map(serviceSlug)), [popularList]);
