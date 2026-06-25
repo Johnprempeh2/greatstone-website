@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Greatstone">
   <rect width="64" height="64" rx="14" fill="#0e1611"/>
-  <path d="M32 14 L50 26 L44 50 L20 50 L14 26 Z" fill="none" stroke="#c8ff00" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- the five traced slab outlines of the Greatstone "O/G" mark (from greatstone-logo.mjs SLABS) -->
+  <g fill="none" stroke="#c8ff00" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round">
+    <polygon points="36.1,8.9 37.2,8.9 43.4,12.0 45.5,19.0 33.3,18.9 32.1,18.1 28.0,13.4 29.7,11.8"/>
+    <polygon points="27.2,16.5 29.1,16.7 33.4,21.4 45.4,21.7 47.6,28.6 38.6,29.7 20.8,24.0 20.3,22.9 21.0,21.7 25.7,17.4"/>
+    <polygon points="19.7,25.3 40.4,31.8 17.5,34.8 17.8,28.0 19.0,25.7"/>
+    <polygon points="45.2,32.7 45.5,32.7 45.5,33.4 44.9,43.8 40.9,39.4 29.9,39.8 19.2,46.1 16.4,36.3"/>
+    <polygon points="39.4,41.4 40.9,41.7 44.2,45.5 44.1,46.0 41.1,50.0 40.3,52.0 38.8,52.7 38.5,51.6 32.2,55.1 30.9,55.0 25.8,52.8 24.4,53.6 18.8,48.0 28.7,41.9"/>
+  </g>
 </svg>
