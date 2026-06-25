@@ -1,10 +1,12 @@
-// Greatstone service catalogue — "The Foundation".
+// Greatstone "Managed Services" catalogue.
 // Generated 2026-06-25 from a 23-agent brainstorm (16 customer personas + 4 capability lenses),
 // synthesized, critiqued and finalized. Edit here (or in the CMS) to change what the catalogue shows.
 // Shape consumed by blocks/ServiceCatalog.jsx: { categories:[{name,blurb}], services:[{category,name,
 // oneLiner,format,featured,outcome,idealClient,bullets:[{text}]}] }.
 
-export const umbrella = "The Foundation";
+// Umbrella label shown as the catalogue kicker. John chose "Managed Services" (25 Jun) over the
+// brainstorm's "The Foundation" recommendation — it is his offering name, kept as-is.
+export const umbrella = "Managed Services";
 
 export const categories = [
   {

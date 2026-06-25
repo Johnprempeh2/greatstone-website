@@ -729,6 +729,19 @@ function migrate(state) {
     if (sp && sp.published && sp.published !== sp.data) addCatalog(sp.published.content);
     state._svcCatalogSeeded = true;
   }
+  // Services catalogue kicker (additive, 2026-06-25; NO bump): John chose "Managed Services" over the
+  // brainstorm's "The Foundation" umbrella. Relabel any ServiceCatalog already inserted (with the old
+  // default kicker) on existing saved sites, ONCE (flagged). Idempotent; respects a later hand-edit.
+  if (!state._svcCatalogKicker) {
+    const relabel = (content) => {
+      if (!Array.isArray(content)) return;
+      content.forEach((b) => { if (b && b.type === 'ServiceCatalog' && b.props && b.props.kicker === 'The Foundation') b.props.kicker = 'Managed Services'; });
+    };
+    const sp = state.pages && state.pages.services;
+    if (sp && sp.data) relabel(sp.data.content);
+    if (sp && sp.published && sp.published !== sp.data) relabel(sp.published.content);
+    state._svcCatalogKicker = true;
+  }
   // Diagnostic rename (additive, 2026-06-25; NO SEED_VERSION bump): the "Deep Dive" booking language is
   // retired for "Diagnostic" wherever it shows. Sweep every saved page's block props, root, SEO, version
   // snapshots and the site-chrome settings ONCE (flagged), rewriting the display substrings. Runs AFTER the
