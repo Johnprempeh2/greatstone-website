@@ -8,6 +8,7 @@ import {
   openInquiryDrawer, onOpenInquiryDrawer,
 } from './inquiry.mjs';
 import { serviceSlug } from './services.mjs';
+import { bumpService } from './popularity.mjs';
 import { safeMailto } from '../lib/safe-url.js';
 import { track } from '../lib/analytics.js';
 import './service-detail.css';
@@ -22,7 +23,7 @@ export function InquiryToggle({ service, size = 'sm', onAdded }) {
   const flip = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     const item = asItem(service);
-    if (!on) { addInquiry(item); track('add_to_inquiry', { service: item.slug }); if (onAdded) onAdded(); }
+    if (!on) { addInquiry(item); bumpService(item.slug, 'inquiry'); track('add_to_inquiry', { service: item.slug }); if (onAdded) onAdded(); }
     else removeInquiry(item.slug);
   };
   return (

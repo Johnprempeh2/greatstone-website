@@ -4,6 +4,7 @@
 // pages and the inquiry. Falls back to the bundled default data when a page has no catalogue block yet.
 import { createContext, useContext } from 'react';
 import { services as DEFAULT_SERVICES, categories as DEFAULT_CATEGORIES } from '../data/service-catalog.mjs';
+import { topSlugs } from './popularity.mjs';
 
 const DEFAULT_EMAIL = 'dx@greatstonesoftware.co.uk';
 
@@ -52,6 +53,39 @@ export function servicesFromPage(page) {
 
 export function findService(services, slug) {
   return (services || []).find((s) => serviceSlug(s) === slug) || null;
+}
+
+// ---- Featured: blends three inputs — admin selection (service.featured), new (service.isNew) and the
+// most-popular by visitor interaction (popularity counts). Used by the catalogue's Featured strip + the
+// per-card "why it's here" badge. ----
+
+// The reason a service is surfaced, for its badge. Priority: New > Popular > Featured (admin pick).
+export function serviceReason(service, popularSet) {
+  if (service && service.isNew) return 'new';
+  if (popularSet && popularSet.has(serviceSlug(service))) return 'popular';
+  if (service && service.featured) return 'featured';
+  return null;
+}
+
+export function newServices(services) { return (services || []).filter((s) => s && s.isNew); }
+
+export function popularServices(services, counts, max = 12) {
+  return topSlugs(counts, max).map((slug) => (services || []).find((s) => serviceSlug(s) === slug)).filter(Boolean);
+}
+
+// The blended "Top picks" set: admin-featured first, then new, then most-popular, deduped, capped.
+export function featuredServices(services, counts, max = 9) {
+  const admin = (services || []).filter((s) => s && s.featured);
+  const isNew = newServices(services);
+  const popular = popularServices(services, counts, max);
+  const seen = new Set(); const out = [];
+  for (const grp of [admin, isNew, popular]) {
+    for (const s of grp) {
+      const sl = serviceSlug(s);
+      if (!seen.has(sl)) { seen.add(sl); out.push(s); if (out.length >= max) return out; }
+    }
+  }
+  return out;
 }
 
 export const ServicesContext = createContext({ services: DEFAULT_SERVICES, categories: DEFAULT_CATEGORIES, email: DEFAULT_EMAIL });

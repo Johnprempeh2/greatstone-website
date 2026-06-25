@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { useServices, findService, serviceSlug, shortFormat } from './services.mjs';
 import { InquiryToggle, InquiryBar } from './InquiryUI.jsx';
 import { openInquiryDrawer } from './inquiry.mjs';
+import { bumpService } from './popularity.mjs';
 import { track } from '../lib/analytics.js';
 import { safeMailto } from '../lib/safe-url.js';
 import './store.css';
@@ -17,6 +18,9 @@ export default function ServiceDetail({ slug, onBack }) {
   const svc = findService(services, slug);
 
   useEffect(() => { document.title = (svc ? svc.name : 'Service') + ' · Greatstone International'; }, [svc, slug]);
+  // record the visit so the catalogue's "Popular" surface reflects real interest (deduped per session);
+  // also fire the global GA4 event. Runs once per slug.
+  useEffect(() => { if (svc) { bumpService(slug, 'view'); track('view_service', { service: slug }); } }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!svc) {
     return (
@@ -59,7 +63,8 @@ export default function ServiceDetail({ slug, onBack }) {
           <h1 className="sp-title">{svc.name}</h1>
           <div className="st-badges">
             {svc.format ? <span className="st-badge sd-fmt">{shortFormat(svc.format)}</span> : null}
-            {svc.featured ? <span className="sd-flag">Flagship</span> : null}
+            {svc.isNew ? <span className="sd-reason r-new">New</span> : null}
+            {svc.featured ? <span className="sd-reason r-featured">Featured</span> : null}
           </div>
           {svc.oneLiner ? <p className="sp-lead">{svc.oneLiner}</p> : null}
           <div className="sd-cta">

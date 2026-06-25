@@ -770,12 +770,12 @@ function migrate(state) {
     }
     state._diagnosticRename = true;
   }
-  // Service catalogue v2 (additive, 2026-06-25; NO bump): the catalogue moved to clear, buyer-facing
-  // service NAMES + per-service SLUGS (each service now has its own detail page). Refresh the data baked
+  // Service catalogue v3 (additive, 2026-06-25; NO bump): clear NAMES + SLUGS (v2) PLUS the Featured
+  // inputs — admin pick (featured), New (isNew) and most-popular by interaction. Refresh the data baked
   // into the Services-page catalogue block on existing saved sites ONCE (flagged) so returning visitors
-  // get the new names/slugs/intro and the detail-page links resolve. Keeps the editor's chosen kicker.
-  // Safe: the catalogue is brand new with no real CMS edits to preserve.
-  if (!state._svcCatalogV2) {
+  // get the new names/slugs/intro/New-flags. Keeps the editor's chosen kicker. The flag bumped v2→v3 so
+  // sites that already took v2 re-refresh once. Safe: the catalogue is new with no real CMS edits yet.
+  if (!state._svcCatalogV3) {
     const fresh = (config.components.ServiceCatalog && config.components.ServiceCatalog.defaultProps) || {};
     const refresh = (content) => {
       if (!Array.isArray(content)) return;
@@ -791,7 +791,7 @@ function migrate(state) {
     const sp = state.pages && state.pages.services;
     if (sp && sp.data) refresh(sp.data.content);
     if (sp && sp.published && sp.published !== sp.data) refresh(sp.published.content);
-    state._svcCatalogV2 = true;
+    state._svcCatalogV3 = true;
   }
   state.schema = SCHEMA;
   return state;

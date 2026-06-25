@@ -6,7 +6,9 @@
 .sd-wrap{padding-bottom:clamp(40px,6vw,90px)}
 .sd-head{max-width:760px}
 .sd-eyebrow{font-size:.74rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gs-accent);margin-bottom:.8em}
-.sd-flag{display:inline-flex;align-items:center;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}
+.sd-reason{display:inline-flex;align-items:center;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.3em .65em;border-radius:6px;border:1px solid transparent}
+.sd-reason.r-new{color:#0e1611;background:var(--gs-accent);border-color:var(--gs-accent)}
+.sd-reason.r-featured{color:var(--gs-accent);background:transparent;border-color:var(--gs-border)}
 .sd-fmt{background:var(--gs-accent-soft);border-color:var(--gs-border);color:var(--gs-accent)}
 .sd-cta{display:flex;flex-wrap:wrap;gap:12px;margin:1.6em 0 1em}
 .sd-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:clamp(16px,2.4vw,28px)}

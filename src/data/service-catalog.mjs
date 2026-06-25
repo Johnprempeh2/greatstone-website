@@ -1,7 +1,7 @@
 // Greatstone "Managed Services" catalogue — clear, buyer-facing service names + slugs (each service has its
-// own detail page at #service/<slug>). Edit here or in the CMS (the Services-catalogue block's array).
-// Shape consumed by blocks/ServiceCatalog.jsx + store/ServiceDetail.jsx:
-// { categories:[{name,blurb}], services:[{category,name,slug,oneLiner,format,featured,outcome,idealClient,bullets:[{text}]}] }
+// own detail page at #service/<slug>). Featured = admin pick (featured) + New (isNew) + most-popular by
+// visitor interaction. Edit here or in the CMS (the Services-catalogue block's array).
+// Shape: { categories:[{name,blurb}], services:[{category,name,slug,oneLiner,format,featured,isNew?,outcome,idealClient,bullets:[{text}]}] }
 
 export const umbrella = "Managed Services";
 
@@ -592,6 +592,7 @@ export const services = [
     "oneLiner": "An AI voice agent that answers every call, day or night, in your voice — and never misses a booking.",
     "format": "Setup plus a per-seat or per-minute build-and-run subscription",
     "featured": false,
+    "isNew": true,
     "outcome": "No missed call, no after-hours gap, no front desk buried in repeat questions — every caller is handled and captured.",
     "idealClient": "Venues, clinics, agencies and any phone-heavy business where a missed call is lost money.",
     "bullets": [
@@ -646,6 +647,7 @@ export const services = [
     "oneLiner": "A locked-down AI grounded only in your own rulebook, precedents and filings — built for compliance, drafting or diligence in your field.",
     "format": "Fixed-scope private build (4 to 8 weeks) plus a managed update and hosting retainer; priced per firm and configured to your domain",
     "featured": false,
+    "isNew": true,
     "outcome": "The right, sourced answer to a policy question in seconds; a 90-minute drafting job cut to a 10-minute review; first-pass document review that took hours done in minutes — with the audit trail to prove it and nothing sensitive touching a public tool.",
     "idealClient": "Financial services, legal, healthcare, education and public-sector teams doing regulated, document-heavy work under confidentiality constraints.",
     "bullets": [
@@ -673,6 +675,7 @@ export const services = [
     "oneLiner": "AI that reads every transaction and case for the risk signals, prioritises the real ones, and shows its working.",
     "format": "Private build plus a tuning period, then a managed service",
     "featured": false,
+    "isNew": true,
     "outcome": "Analysts spend their time on the cases that matter, false positives fall, and every escalation comes with a clear, recorded reason.",
     "idealClient": "Compliance and risk teams drowning in alerts from rigid rules-based monitoring.",
     "bullets": [
@@ -727,6 +730,7 @@ export const services = [
     "oneLiner": "A WhatsApp concierge that sells, reorders and supports your customers on the channel they actually use — UK and Ghana.",
     "format": "WhatsApp agent build plus a monthly managed-channel retainer",
     "featured": false,
+    "isNew": true,
     "outcome": "Your highest-intent, most mobile customers get an always-on personal shopper on WhatsApp — repeat orders captured automatically, you freed from playing 24/7 salesperson.",
     "idealClient": "Brands and operators with loyal, mobile-first or West-Africa customers who already try to buy over WhatsApp.",
     "bullets": [

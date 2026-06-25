@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
-import { shortFormat, serviceSlug } from '../store/services.mjs';
+import { shortFormat, serviceSlug, serviceReason, featuredServices, newServices, popularServices } from '../store/services.mjs';
+import { usePopularity } from '../store/popularity.mjs';
 import { InquiryToggle } from '../store/InquiryUI.jsx';
 import { categories as CATALOG_CATEGORIES, services as CATALOG_SERVICES, umbrella as UMBRELLA } from '../data/service-catalog.mjs';
 
@@ -26,6 +27,28 @@ function useCategories(services, categoryOrder) {
     for (const c of counts.keys()) ordered.push(c); // any categories not in the order, appended
     return ordered;
   }, [services, categoryOrder]);
+}
+
+// One catalogue card — used in both the Featured strip and the main grid. The card itself never
+// subscribes to any store (so it can't be re-rendered into invisibility); the inquiry toggle is the only
+// live child. `reason` drives the New / Popular / Featured pill.
+function ServiceCard({ s, reason }) {
+  const slug = serviceSlug(s);
+  const rLabel = reason === 'new' ? 'New' : reason === 'popular' ? 'Popular' : reason === 'featured' ? 'Featured' : '';
+  return (
+    <article className={'card b-cat-card' + (s.featured ? ' is-flag' : '')}>
+      <div className="b-cat-card-top">
+        {s.format ? <span className="b-cat-fmt">{shortFormat(s.format)}</span> : null}
+        {rLabel ? <span className={'b-cat-reason r-' + reason}>{rLabel}</span> : null}
+      </div>
+      <h3 className="b-cat-name"><a className="b-cat-cardlink" href={'#service/' + slug}>{s.name}</a></h3>
+      {s.oneLiner ? <p className="b-cat-one">{s.oneLiner}</p> : null}
+      <div className="b-cat-card-foot">
+        <span className="b-cat-view" aria-hidden="true">View details<Arrow /></span>
+        <InquiryToggle service={s} />
+      </div>
+    </article>
+  );
 }
 
 export function ServiceCatalog({
@@ -53,6 +76,21 @@ export function ServiceCatalog({
       });
   }, [services, active, query]);
 
+  // Featured = three inputs blended: admin selection (service.featured), New (service.isNew) and the
+  // most-popular by this visitor's interaction (popularity counts, deduped + GA4-mirrored). The strip's
+  // tabs let a visitor jump straight to New or Popular; empty tabs hide themselves.
+  const counts = usePopularity();
+  const [featTab, setFeatTab] = useState('top');
+  const popularList = useMemo(() => popularServices(services, counts, 12), [services, counts]);
+  const popularSet = useMemo(() => new Set(popularList.map(serviceSlug)), [popularList]);
+  const featTabs = useMemo(() => [
+    { id: 'top', label: 'Top picks', items: featuredServices(services, counts, 9) },
+    { id: 'new', label: 'New', items: newServices(services) },
+    { id: 'popular', label: 'Popular', items: popularList },
+  ].filter((t) => t.items.length), [services, counts, popularList]);
+  const activeFeat = featTabs.find((t) => t.id === featTab) || featTabs[0];
+  const showFeatured = active === 'All' && !query.trim() && featTabs.length > 0;
+
   return (
     <section ref={ref} className="b-cat">
       <div className="wrap">
@@ -63,6 +101,26 @@ export function ServiceCatalog({
               <h2 className="b-cat-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
             ) : null}
             {intro ? <p className="b-cat-intro">{intro}</p> : null}
+          </div>
+        ) : null}
+
+        {showFeatured ? (
+          <div className="b-cat-featured">
+            <div className="b-cat-feat-head">
+              <span className="kicker b-cat-feat-kicker">Featured</span>
+              {featTabs.length > 1 ? (
+                <div className="b-cat-feat-tabs" role="tablist" aria-label="Featured services">
+                  {featTabs.map((t) => (
+                    <button key={t.id} type="button" role="tab" aria-selected={activeFeat.id === t.id}
+                      className={'b-cat-feat-tab' + (activeFeat.id === t.id ? ' is-on' : '')}
+                      onClick={() => setFeatTab(t.id)}>{t.label} <span className="b-cat-feat-n">{t.items.length}</span></button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="b-cat-feat-grid">
+              {activeFeat.items.map((s) => <ServiceCard key={serviceSlug(s)} s={s} reason={serviceReason(s, popularSet)} />)}
+            </div>
           </div>
         ) : null}
 
@@ -108,23 +166,7 @@ export function ServiceCatalog({
           </div>
         ) : (
           <div className="b-cat-grid">
-            {filtered.map((s) => {
-              const slug = serviceSlug(s);
-              return (
-                <article key={slug || s.name} className={'card b-cat-card' + (s.featured ? ' is-flag' : '')}>
-                  <div className="b-cat-card-top">
-                    {s.format ? <span className="b-cat-fmt">{shortFormat(s.format)}</span> : null}
-                    {s.featured ? <span className="b-cat-flag">Flagship</span> : null}
-                  </div>
-                  <h3 className="b-cat-name"><a className="b-cat-cardlink" href={'#service/' + slug}>{s.name}</a></h3>
-                  {s.oneLiner ? <p className="b-cat-one">{s.oneLiner}</p> : null}
-                  <div className="b-cat-card-foot">
-                    <span className="b-cat-view" aria-hidden="true">View details<Arrow /></span>
-                    <InquiryToggle service={s} />
-                  </div>
-                </article>
-              );
-            })}
+            {filtered.map((s) => <ServiceCard key={serviceSlug(s) || s.name} s={s} reason={serviceReason(s, popularSet)} />)}
           </div>
         )}
 
@@ -164,6 +206,17 @@ export const css = `
 .b-cat-chip.is-on .b-cat-chip-n{opacity:.6}
 .b-cat-catblurb{text-align:center;max-width:62ch;margin:2px auto 0;color:var(--gs-text-muted);font-size:.96rem;line-height:1.55}
 .b-cat-count{text-align:center;margin:18px 0 22px;font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gs-faint)}
+/* featured strip */
+.b-cat-featured{margin:0 0 clamp(30px,4.5vw,46px);padding-bottom:clamp(26px,4vw,40px);border-bottom:1px solid var(--gs-border-soft)}
+.b-cat-feat-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.b-cat-feat-kicker{margin:0}
+.b-cat-feat-tabs{display:inline-flex;gap:5px;background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);border-radius:999px;padding:4px}
+.b-cat-feat-tab{display:inline-flex;align-items:center;gap:.4em;font-family:inherit;font-size:.82rem;font-weight:700;color:var(--gs-text-muted);background:none;border:0;border-radius:999px;padding:.42em .95em;cursor:pointer;transition:all .18s var(--gs-ease)}
+.b-cat-feat-tab:hover{color:var(--gs-text)}
+.b-cat-feat-tab.is-on{color:#0e1611;background:var(--gs-accent)}
+.b-cat-feat-n{font-size:.7rem;font-weight:800;opacity:.6}
+.b-cat-feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:clamp(14px,1.6vw,20px);align-items:stretch}
+@media(max-width:520px){.b-cat-feat-grid{grid-template-columns:1fr}}
 /* grid */
 .b-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:clamp(14px,1.6vw,20px);align-items:stretch}
 .b-cat-card{position:relative;display:flex;flex-direction:column;padding:clamp(20px,2.2vw,26px);height:100%;
@@ -173,7 +226,10 @@ export const css = `
 .b-cat-card-top{display:flex;align-items:center;gap:8px;margin-bottom:14px;min-height:22px}
 .b-cat-fmt{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-accent);
   background:var(--gs-accent-soft);border:1px solid var(--gs-border);border-radius:6px;padding:.3em .6em}
-.b-cat-flag{margin-left:auto;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}
+.b-cat-reason{margin-left:auto;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.28em .6em;border-radius:6px;border:1px solid transparent;white-space:nowrap}
+.b-cat-reason.r-new{color:#0e1611;background:var(--gs-accent);border-color:var(--gs-accent)}
+.b-cat-reason.r-popular{color:var(--gs-accent);background:var(--gs-accent-soft);border-color:var(--gs-border)}
+.b-cat-reason.r-featured{color:var(--gs-accent);background:transparent;border-color:var(--gs-border)}
 .b-cat-name{font-size:1.12rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;margin-bottom:.45em}
 .b-cat-cardlink{color:inherit;text-decoration:none}
 /* stretch the title link over the whole card so the body is clickable; the inquiry toggle sits above it */
@@ -219,7 +275,8 @@ export const puck = {
         category: { type: 'text', label: 'Category' },
         oneLiner: { type: 'textarea', label: 'One-liner' },
         format: { type: 'text', label: 'How we deliver it (Build / Build + Run / Subscription …)' },
-        featured: { type: 'radio', label: 'Flagship', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] },
+        featured: { type: 'radio', label: 'Featured (admin pick)', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] },
+        isNew: { type: 'radio', label: 'New', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] },
         outcome: { type: 'textarea', label: 'The payback' },
         idealClient: { type: 'text', label: 'Ideal for' },
         bullets: {
@@ -229,7 +286,7 @@ export const puck = {
           getItemSummary: (i) => i.text || 'Item',
         },
       },
-      defaultItemProps: { name: 'New service', slug: '', category: 'AI Agents & Assistants', oneLiner: 'What it does.', format: 'Build', featured: false, outcome: '', idealClient: '', bullets: [] },
+      defaultItemProps: { name: 'New service', slug: '', category: 'AI Agents & Assistants', oneLiner: 'What it does.', format: 'Build', featured: false, isNew: true, outcome: '', idealClient: '', bullets: [] },
       getItemSummary: (i) => i.name || 'Service',
     },
   },
