@@ -1,33 +1,17 @@
-import { useState, useMemo, useId } from 'react';
+import { useState, useMemo } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
-import { track } from '../lib/analytics.js';
+import { shortFormat, serviceSlug } from '../store/services.mjs';
+import { InquiryToggle } from '../store/InquiryUI.jsx';
 import { categories as CATALOG_CATEGORIES, services as CATALOG_SERVICES, umbrella as UMBRELLA } from '../data/service-catalog.mjs';
 
 // ServiceCatalog: the browsable, productized catalogue of everything Greatstone can build and run.
 // A search box + category chips filter a responsive grid of service cards. Each card carries a format
-// badge, the one-line promise, an expandable "what we build / outcome / ideal for" panel, and an
-// "Inquire" CTA that composes a prefilled mailto naming the service (client-side, no backend — the same
-// pattern BookDeepDive uses). Flagship services are accented. Built from the live brand tokens so it
-// sits inside the existing site without a restyle.
-
-// The catalogue's `format` field is a full engagement sentence (e.g. "Fixed-scope build, then an
-// embedded build-and-run subscription"). The card badge wants a short tag, so we distil one engagement
-// type from it; the full sentence still shows in the expanded "How we deliver it" line. Order matters —
-// check the most specific signal first.
-function shortFormat(f) {
-  const s = (f || '').toLowerCase();
-  if (/\b(assessment|audit|diagnostic|workshop|discovery)\b/.test(s) && !/\bbuild\b/.test(s)) return 'Assessment';
-  const hasBuild = /\b(build|web app|platform|deployment|microsite|landing page|site)\b/.test(s);
-  const optionalRun = /optional[^.,;]*\b(retainer|care plan|subscription|run-and|maintenance|support plan|hosting)/.test(s);
-  const hasRun = /\b(retainer|subscription|managed|run-and|run rate|run cost|hosted and operated|operated by|per-seat|per-minute|per-cycle|per-event|monthly)\b/.test(s);
-  if (hasBuild && hasRun && !optionalRun) return 'Build + Run';
-  if (hasBuild) return 'Build';
-  if (/\bintegration\b/.test(s)) return 'Integration';
-  if (hasRun) return 'Subscription';
-  return 'Engagement';
-}
+// badge, the one-line promise, links to that service's OWN detail page (#service/<slug>), and an
+// "Add to inquiry" toggle so a client can line up one or several services and inquire about them at once.
+// The card itself never re-renders on inquiry change (the toggle is an isolated child) and carries no
+// reveal class, so it can't be clobbered into invisibility the way the old inline expander was.
 
 // derive the chip list from the services present, honouring an explicit category order when given
 function useCategories(services, categoryOrder) {
@@ -49,10 +33,8 @@ export function ServiceCatalog({
   bookLabel, bookHref = '#book', categories = [], services = [], searchPlaceholder = 'Search services…',
 }) {
   const ref = useReveal([services.length]);
-  const uid = useId();
   const [active, setActive] = useState('All');
   const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(null); // index of the expanded card, or null
 
   const catNames = useCategories(services, categories.map((c) => c.name));
   const blurbFor = useMemo(() => {
@@ -62,7 +44,6 @@ export function ServiceCatalog({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return services
-      .map((s, i) => ({ ...s, _i: i }))
       .filter((s) => active === 'All' || s.category === active)
       .filter((s) => {
         if (!q) return true;
@@ -71,26 +52,6 @@ export function ServiceCatalog({
         return hay.includes(q);
       });
   }, [services, active, query]);
-
-  const inquire = (s) => {
-    const subject = 'Service inquiry · ' + (s.name || 'Greatstone services');
-    const body = [
-      'I would like to inquire about: ' + (s.name || ''),
-      s.oneLiner ? '(' + s.oneLiner + ')' : '',
-      '',
-      'A little about us / what we are trying to solve:',
-      '',
-      '',
-      'Company:',
-      'Where the time goes right now:',
-    ].filter((l) => l !== undefined).join('\n');
-    track('generate_lead', { form: 'service_inquiry', service: s.name || '' });
-    const to = safeMailto(inquiryEmail);
-    if (to !== '#') {
-      const href = to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-      try { if (typeof window !== 'undefined') window.location.href = href; } catch (e) { /* ignore */ }
-    }
-  };
 
   return (
     <section ref={ref} className="b-cat">
@@ -122,7 +83,7 @@ export function ServiceCatalog({
               const n = services.filter((s) => s.category === c).length;
               return (
                 <button key={c} type="button" className={'b-cat-chip' + (active === c ? ' is-on' : '')}
-                  aria-pressed={active === c} onClick={() => { setActive(c); setOpen(null); }}>
+                  aria-pressed={active === c} onClick={() => setActive(c)}>
                   {c} <span className="b-cat-chip-n">{n}</span>
                 </button>
               );
@@ -148,43 +109,18 @@ export function ServiceCatalog({
         ) : (
           <div className="b-cat-grid">
             {filtered.map((s) => {
-              const isOpen = open === s._i;
-              const panelId = uid + 'p' + s._i;
+              const slug = serviceSlug(s);
               return (
-                <article key={s._i} className={'card b-cat-card' + (s.featured ? ' is-flag' : '') + (isOpen ? ' is-open' : '')} data-reveal>
+                <article key={slug || s.name} className={'card b-cat-card' + (s.featured ? ' is-flag' : '')}>
                   <div className="b-cat-card-top">
                     {s.format ? <span className="b-cat-fmt">{shortFormat(s.format)}</span> : null}
                     {s.featured ? <span className="b-cat-flag">Flagship</span> : null}
                   </div>
-                  <h3 className="b-cat-name">{s.name}</h3>
+                  <h3 className="b-cat-name"><a className="b-cat-cardlink" href={'#service/' + slug}>{s.name}</a></h3>
                   {s.oneLiner ? <p className="b-cat-one">{s.oneLiner}</p> : null}
-
-                  {(Array.isArray(s.bullets) && s.bullets.length) || s.outcome || s.idealClient ? (
-                    <>
-                      <button type="button" className="b-cat-toggle" aria-expanded={isOpen} aria-controls={panelId}
-                        onClick={() => setOpen(isOpen ? null : s._i)}>
-                        {isOpen ? 'Hide details' : 'What we build'}
-                        <span className={'b-cat-caret' + (isOpen ? ' up' : '')} aria-hidden="true">
-                          <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
-                        </span>
-                      </button>
-                      <div id={panelId} className="b-cat-panel" hidden={!isOpen}>
-                        {Array.isArray(s.bullets) && s.bullets.length ? (
-                          <ul className="b-cat-list">
-                            {s.bullets.map((b, j) => <li key={j}>{b.text}</li>)}
-                          </ul>
-                        ) : null}
-                        {s.outcome ? <p className="b-cat-out"><span>The payback</span>{s.outcome}</p> : null}
-                        {s.idealClient ? <p className="b-cat-ideal"><span>Ideal for</span>{s.idealClient}</p> : null}
-                        {s.format ? <p className="b-cat-deliver"><span>How we deliver it</span>{s.format}</p> : null}
-                      </div>
-                    </>
-                  ) : null}
-
                   <div className="b-cat-card-foot">
-                    <button type="button" className="b-cta b-cat-inq" onClick={() => inquire(s)}>
-                      Inquire<Arrow />
-                    </button>
+                    <span className="b-cat-view" aria-hidden="true">View details<Arrow /></span>
+                    <InquiryToggle service={s} />
                   </div>
                 </article>
               );
@@ -229,28 +165,25 @@ export const css = `
 .b-cat-catblurb{text-align:center;max-width:62ch;margin:2px auto 0;color:var(--gs-text-muted);font-size:.96rem;line-height:1.55}
 .b-cat-count{text-align:center;margin:18px 0 22px;font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gs-faint)}
 /* grid */
-.b-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:clamp(14px,1.6vw,20px);align-items:start}
-.b-cat-card{position:relative;display:flex;flex-direction:column;padding:clamp(20px,2.2vw,26px);height:100%}
+.b-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:clamp(14px,1.6vw,20px);align-items:stretch}
+.b-cat-card{position:relative;display:flex;flex-direction:column;padding:clamp(20px,2.2vw,26px);height:100%;
+  transition:transform .18s var(--gs-ease),border-color .18s var(--gs-ease)}
+.b-cat-card:hover{transform:translateY(-3px);border-color:var(--gs-accent-mid,rgba(200,255,0,.4))}
 .b-cat-card.is-flag{border-color:var(--gs-accent-mid,rgba(200,255,0,.4));background:linear-gradient(180deg,var(--gs-accent-soft),transparent 60%)}
 .b-cat-card-top{display:flex;align-items:center;gap:8px;margin-bottom:14px;min-height:22px}
 .b-cat-fmt{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-accent);
   background:var(--gs-accent-soft);border:1px solid var(--gs-border);border-radius:6px;padding:.3em .6em}
 .b-cat-flag{margin-left:auto;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}
 .b-cat-name{font-size:1.12rem;font-weight:800;line-height:1.2;letter-spacing:-.01em;margin-bottom:.45em}
-.b-cat-one{color:var(--gs-text-muted);font-size:.92rem;line-height:1.55;margin-bottom:1em}
-.b-cat-toggle{display:inline-flex;align-items:center;gap:.4em;margin-top:auto;font-family:inherit;font-size:.8rem;font-weight:700;
-  letter-spacing:.04em;color:var(--gs-accent);background:none;border:0;padding:0;cursor:pointer;align-self:flex-start}
-.b-cat-caret svg{width:15px;height:15px;stroke:var(--gs-accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s var(--gs-ease)}
-.b-cat-caret.up svg{transform:rotate(180deg)}
-.b-cat-panel{margin-top:.9em;border-top:1px solid var(--gs-border-soft);padding-top:.9em}
-.b-cat-list{list-style:none;display:grid;gap:.45em;padding:0;margin:0 0 .9em}
-.b-cat-list li{position:relative;padding-left:1.3em;font-size:.86rem;line-height:1.5;color:var(--gs-text)}
-.b-cat-list li::before{content:'';position:absolute;left:0;top:.55em;width:6px;height:6px;border-radius:50%;
-  background:var(--gs-accent);box-shadow:0 0 9px var(--gs-accent-glow)}
-.b-cat-out,.b-cat-ideal,.b-cat-deliver{font-size:.84rem;line-height:1.5;color:var(--gs-text-muted);margin:.5em 0 0}
-.b-cat-out span,.b-cat-ideal span,.b-cat-deliver span{display:block;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-faint);margin-bottom:.2em}
-.b-cat-card-foot{margin-top:1.1em;padding-top:.2em}
-.b-cat-inq{width:100%;justify-content:center;font-size:.9rem;padding:.7em 1em}
+.b-cat-cardlink{color:inherit;text-decoration:none}
+/* stretch the title link over the whole card so the body is clickable; the inquiry toggle sits above it */
+.b-cat-cardlink::after{content:'';position:absolute;inset:0;border-radius:inherit}
+.b-cat-cardlink:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
+.b-cat-one{color:var(--gs-text-muted);font-size:.92rem;line-height:1.55;margin-bottom:1.2em}
+.b-cat-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto}
+.b-cat-view{display:inline-flex;align-items:center;gap:.3em;font-size:.82rem;font-weight:700;color:var(--gs-accent)}
+.b-cat-view svg{width:14px;height:14px}
+.b-cat-card .inq-toggle{position:relative;z-index:1}
 .b-cat-empty{text-align:center;padding:40px 0;color:var(--gs-text-muted)}
 .b-cat-empty .b-cta{margin-top:14px}
 .b-cat-foot{text-align:center;margin-top:clamp(32px,5vw,56px);display:flex;flex-direction:column;align-items:center;gap:14px}
@@ -279,14 +212,15 @@ export const puck = {
       getItemSummary: (i) => i.name || 'Category',
     },
     services: {
-      type: 'array', label: 'Services',
+      type: 'array', label: 'Services (each gets its own page)',
       arrayFields: {
-        category: { type: 'text', label: 'Category' },
         name: { type: 'text', label: 'Name' },
+        slug: { type: 'text', label: 'Slug (URL; blank = auto from name)' },
+        category: { type: 'text', label: 'Category' },
         oneLiner: { type: 'textarea', label: 'One-liner' },
-        format: { type: 'text', label: 'Format (Build / Build + Run / Subscription …)' },
+        format: { type: 'text', label: 'How we deliver it (Build / Build + Run / Subscription …)' },
         featured: { type: 'radio', label: 'Flagship', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] },
-        outcome: { type: 'textarea', label: 'Outcome' },
+        outcome: { type: 'textarea', label: 'The payback' },
         idealClient: { type: 'text', label: 'Ideal for' },
         bullets: {
           type: 'array', label: 'What we build',
@@ -295,14 +229,14 @@ export const puck = {
           getItemSummary: (i) => i.text || 'Item',
         },
       },
-      defaultItemProps: { category: 'AI Agents & Assistants', name: 'New service', oneLiner: 'What it does.', format: 'Build', featured: false, outcome: '', idealClient: '', bullets: [] },
+      defaultItemProps: { name: 'New service', slug: '', category: 'AI Agents & Assistants', oneLiner: 'What it does.', format: 'Build', featured: false, outcome: '', idealClient: '', bullets: [] },
       getItemSummary: (i) => i.name || 'Service',
     },
   },
   defaultProps: {
     kicker: UMBRELLA,
     heading: 'Everything we build,', highlight: 'and run for you.',
-    intro: 'One catalogue of the systems we put to work for clients — the website, the storefront, the AI behind them, and the quiet automation that buys back the hours. Find what fits, inquire on it, and we’ll scope it against your numbers.',
+    intro: 'One catalogue of the systems we put to work for clients — the website, the storefront, the AI behind them, and the quiet automation that buys back the hours. Open any service for the detail, add the ones that fit, and inquire about them together.',
     searchPlaceholder: 'Search services…',
     inquiryEmail: 'dx@greatstonesoftware.co.uk',
     bookLabel: 'Book a Diagnostic',

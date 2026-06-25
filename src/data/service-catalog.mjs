@@ -1,11 +1,8 @@
-// Greatstone "Managed Services" catalogue.
-// Generated 2026-06-25 from a 23-agent brainstorm (16 customer personas + 4 capability lenses),
-// synthesized, critiqued and finalized. Edit here (or in the CMS) to change what the catalogue shows.
-// Shape consumed by blocks/ServiceCatalog.jsx: { categories:[{name,blurb}], services:[{category,name,
-// oneLiner,format,featured,outcome,idealClient,bullets:[{text}]}] }.
+// Greatstone "Managed Services" catalogue — clear, buyer-facing service names + slugs (each service has its
+// own detail page at #service/<slug>). Edit here or in the CMS (the Services-catalogue block's array).
+// Shape consumed by blocks/ServiceCatalog.jsx + store/ServiceDetail.jsx:
+// { categories:[{name,blurb}], services:[{category,name,slug,oneLiner,format,featured,outcome,idealClient,bullets:[{text}]}] }
 
-// Umbrella label shown as the catalogue kicker. John chose "Managed Services" (25 Jun) over the
-// brainstorm's "The Foundation" recommendation — it is his offering name, kept as-is.
 export const umbrella = "Managed Services";
 
 export const categories = [
@@ -50,7 +47,8 @@ export const categories = [
 export const services = [
   {
     "category": "Websites & Web Apps",
-    "name": "Foundation Site",
+    "name": "Business Website Build",
+    "slug": "business-website-build",
     "oneLiner": "A fast, credible, multi-page marketing site that becomes your business's home ground — live in days, editable by you.",
     "format": "Fixed-scope build, live in days to 4 weeks; one-time fee with an optional care plan",
     "featured": true,
@@ -76,7 +74,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "The Studio",
+    "name": "Editable Website CMS",
+    "slug": "editable-website-cms",
     "oneLiner": "Our Puck-based CMS studio — edit your live site inline, no developer, no tickets, no waiting.",
     "format": "Build plus onboarding, then an optional monthly hosting and support subscription",
     "featured": true,
@@ -103,6 +102,7 @@ export const services = [
   {
     "category": "Websites & Web Apps",
     "name": "Campaign Landing Pages",
+    "slug": "campaign-landing-pages",
     "oneLiner": "A fast, conversion-built landing page or campaign microsite — live in days, wired to capture and ready for your ad spend.",
     "format": "Quick fixed-scope build, live in days; one-time fee per page with an optional campaign-support plan",
     "featured": false,
@@ -129,6 +129,7 @@ export const services = [
   {
     "category": "Websites & Web Apps",
     "name": "Client & Member Portal",
+    "slug": "client-member-portal",
     "oneLiner": "A secure, branded login where clients or members see status, documents and invoices — instead of emailing you to ask.",
     "format": "Fixed-scope build, then an embedded build-and-run subscription with support",
     "featured": false,
@@ -154,7 +155,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "MVP-in-a-Fortnight",
+    "name": "Rapid MVP App Build",
+    "slug": "rapid-mvp-app-build",
     "oneLiner": "Your first working product — a real app users can sign up for and use — built fast on a foundation that scales.",
     "format": "Scoped sprint build with a fixed feature set; live deployment",
     "featured": false,
@@ -180,7 +182,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Booking Engine",
+    "name": "Online Booking System",
+    "slug": "online-booking-system",
     "oneLiner": "A branded booking site that takes appointments, deposits and confirmations on its own — wired to your calendar and your phone.",
     "format": "Fixed-scope build with an optional run-and-maintain plan",
     "featured": false,
@@ -206,7 +209,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Self-Service Front Door",
+    "name": "Self-Service Citizen Portal",
+    "slug": "self-service-citizen-portal",
     "oneLiner": "A mobile-first portal that lets members and citizens do online what they currently queue or call to do in person.",
     "format": "Fixed-scope build (portal plus staff back office) with a monthly run-and-support retainer",
     "featured": false,
@@ -232,7 +236,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Internal Console",
+    "name": "Custom Internal Web App",
+    "slug": "custom-internal-web-app",
     "oneLiner": "A custom internal web app that replaces the brittle spreadsheet your operation secretly runs on.",
     "format": "Scoped build, then a run-and-extend subscription",
     "featured": false,
@@ -258,7 +263,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Dispatch Deck",
+    "name": "Job & Fleet Dispatch Board",
+    "slug": "job-fleet-dispatch-board",
     "oneLiner": "One live board where every job, driver and van sits in front of you — replacing the whiteboard, the spreadsheet and the three open chats.",
     "format": "Web app on a Supabase backend, branded, on desktop and tablet",
     "featured": false,
@@ -284,7 +290,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Paperless Job & Intake Forms",
+    "name": "Digital Forms & Intake",
+    "slug": "digital-forms-intake",
     "oneLiner": "Clipboards and PDFs rebuilt as guided digital forms that fill, validate and file themselves the moment they're done.",
     "format": "Per-form-flow build, priced by number of forms, on an optional automation retainer",
     "featured": false,
@@ -310,7 +317,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Member Directory",
+    "name": "Searchable Member Directory",
+    "slug": "searchable-member-directory",
     "oneLiner": "A searchable member or 'find a professional' directory that turns your membership into a benefit people can see and use.",
     "format": "Fixed-scope directory build with an optional maintenance retainer",
     "featured": false,
@@ -336,7 +344,8 @@ export const services = [
   },
   {
     "category": "Websites & Web Apps",
-    "name": "Public Verification Page",
+    "name": "Public Credential Verification",
+    "slug": "public-credential-verification",
     "oneLiner": "A public lookup page and QR credential so anyone can confirm a member's standing in seconds — no call to your office.",
     "format": "Fixed-scope build with a small monthly hosting retainer",
     "featured": false,
@@ -362,7 +371,8 @@ export const services = [
   },
   {
     "category": "Commerce & Storefronts",
-    "name": "Catalogue Engine",
+    "name": "Online Store & E-commerce Build",
+    "slug": "online-store-ecommerce-build",
     "oneLiner": "A real owned storefront and admin — one catalogue, priced, searchable, checkout-ready, on a backend that won't buckle as you grow.",
     "format": "Fixed-scope build (commerce platform plus admin), then an optional monthly run-and-maintain retainer",
     "featured": true,
@@ -388,7 +398,8 @@ export const services = [
   },
   {
     "category": "Commerce & Storefronts",
-    "name": "Take-the-Money Checkout",
+    "name": "Stripe Checkout Setup",
+    "slug": "stripe-checkout-setup",
     "oneLiner": "Start charging customers this week — a real product or service catalogue with Stripe checkout, live and taking payments.",
     "format": "Scoped commerce build on Supabase and Stripe; admin handover included",
     "featured": false,
@@ -414,7 +425,8 @@ export const services = [
   },
   {
     "category": "Commerce & Storefronts",
-    "name": "Course & Event Commerce",
+    "name": "Course & Event Sales Platform",
+    "slug": "course-event-sales-platform",
     "oneLiner": "Sell short courses, modules, CPD and event tickets like products — checkout, member pricing, access and certificates handled.",
     "format": "Commerce build plus per-event or annual run rate",
     "featured": false,
@@ -440,7 +452,8 @@ export const services = [
   },
   {
     "category": "Commerce & Storefronts",
-    "name": "Treatment & Deposit Payments",
+    "name": "Online Deposits & Patient Payments",
+    "slug": "online-deposits-patient-payments",
     "oneLiner": "Online deposits, plan pricing and self-pay payments that take money off the front desk and into clean, reconciled records.",
     "format": "Fixed-scope build",
     "featured": false,
@@ -466,7 +479,8 @@ export const services = [
   },
   {
     "category": "Commerce & Storefronts",
-    "name": "Membership & Subscription Engine",
+    "name": "Membership & Subscription Platform",
+    "slug": "membership-subscription-platform",
     "oneLiner": "A gated members area or association membership that sells, gates and renews itself — content in, recurring revenue out.",
     "format": "Build, then an embedded build-and-run subscription",
     "featured": false,
@@ -492,7 +506,8 @@ export const services = [
   },
   {
     "category": "Commerce & Storefronts",
-    "name": "Unified Venue OS",
+    "name": "All-in-One Venue Platform",
+    "slug": "all-in-one-venue-platform",
     "oneLiner": "A single owned platform tying orders, bookings, menus, payments and guest data into one foundation you control.",
     "format": "Bespoke commerce platform on Supabase and Stripe, hosted and operated by Greatstone; phased rollout per venue",
     "featured": false,
@@ -518,7 +533,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "The Vault",
+    "name": "Private AI Assistant",
+    "slug": "private-ai-assistant",
     "oneLiner": "Your own AI assistant, trained on your confidential documents, answering only the people cleared to ask — and never leaving your four walls.",
     "format": "Discovery and secure build, then a monthly hosting-and-retraining retainer",
     "featured": true,
@@ -544,7 +560,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "AI Front Desk",
+    "name": "AI Customer-Service Chat Agent",
+    "slug": "ai-customer-service-chat-agent",
     "oneLiner": "A customer-facing AI agent on your site and WhatsApp that answers, qualifies and books — day and night, in your voice.",
     "format": "Build plus a monthly run-and-tune retainer; channels added to suit",
     "featured": true,
@@ -570,7 +587,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "The Switchboard",
+    "name": "AI Phone Answering Agent",
+    "slug": "ai-phone-answering-agent",
     "oneLiner": "An AI voice agent that answers every call, day or night, in your voice — and never misses a booking.",
     "format": "Setup plus a per-seat or per-minute build-and-run subscription",
     "featured": false,
@@ -596,7 +614,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "The Copilot",
+    "name": "Internal Team AI Copilot",
+    "slug": "internal-team-ai-copilot",
     "oneLiner": "A role-aware internal assistant that drafts, answers and triages the work your team repeats all day.",
     "format": "Build plus a per-seat monthly subscription",
     "featured": false,
@@ -622,7 +641,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "Private AI for Your Domain",
+    "name": "Industry-Specific Private AI",
+    "slug": "industry-specific-private-ai",
     "oneLiner": "A locked-down AI grounded only in your own rulebook, precedents and filings — built for compliance, drafting or diligence in your field.",
     "format": "Fixed-scope private build (4 to 8 weeks) plus a managed update and hosting retainer; priced per firm and configured to your domain",
     "featured": false,
@@ -648,7 +668,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "Watchtower Screening",
+    "name": "AI Risk & Fraud Screening",
+    "slug": "ai-risk-fraud-screening",
     "oneLiner": "AI that reads every transaction and case for the risk signals, prioritises the real ones, and shows its working.",
     "format": "Private build plus a tuning period, then a managed service",
     "featured": false,
@@ -674,7 +695,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "The Translator",
+    "name": "Multilingual AI Translation",
+    "slug": "multilingual-ai-translation",
     "oneLiner": "AI that lets your site, agents and messages speak your customers' language — including Twi, Ga, Pidgin and more across West Africa.",
     "format": "Add-on layer to an existing site, agent or comms build, plus a light monthly retainer",
     "featured": false,
@@ -700,7 +722,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "WhatsApp Commerce Agent",
+    "name": "WhatsApp Sales & Support Agent",
+    "slug": "whatsapp-sales-support-agent",
     "oneLiner": "A WhatsApp concierge that sells, reorders and supports your customers on the channel they actually use — UK and Ghana.",
     "format": "WhatsApp agent build plus a monthly managed-channel retainer",
     "featured": false,
@@ -726,7 +749,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "The Member Assistant",
+    "name": "WhatsApp Member Support AI",
+    "slug": "whatsapp-member-support-ai",
     "oneLiner": "A WhatsApp AI assistant, trained on your own rules and documents, that answers members' and citizens' questions day and night.",
     "format": "Build plus a monthly hosting, monitoring and content-update retainer",
     "featured": false,
@@ -752,7 +776,8 @@ export const services = [
   },
   {
     "category": "AI Agents & Assistants",
-    "name": "The Recruiter",
+    "name": "AI Recruitment Screening Assistant",
+    "slug": "ai-recruitment-screening-assistant",
     "oneLiner": "A recruiting copilot that screens, replies to and shortlists applicants so your inbox stops being the bottleneck.",
     "format": "Build plus a per-role or monthly run cost; integrates with your ATS or email",
     "featured": false,
@@ -778,7 +803,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "The Relay",
+    "name": "Workflow Process Automation",
+    "slug": "workflow-process-automation",
     "oneLiner": "The repetitive, end-to-end processes that eat your week — mapped, automated and running on their own.",
     "format": "Build per workflow plus a build-and-run monitoring subscription",
     "featured": true,
@@ -804,7 +830,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "The Connective",
+    "name": "App & Tool Integration",
+    "slug": "app-tool-integration",
     "oneLiner": "We connect the tools you already pay for so they finally talk to each other — no more re-keying.",
     "format": "Discovery-led, scoped per integration after a short audit, then ongoing maintenance",
     "featured": false,
@@ -830,7 +857,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Onboarding Engine",
+    "name": "Automated Onboarding Workflow",
+    "slug": "automated-onboarding-workflow",
     "oneLiner": "New-client or new-hire onboarding that collects, checks and files itself, with the paper trail built in.",
     "format": "Web app plus integration build (8 to 10 weeks), then a light retainer",
     "featured": false,
@@ -856,7 +884,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Ledger Chaser",
+    "name": "Automated Invoicing & Chasing",
+    "slug": "automated-invoicing-chasing",
     "oneLiner": "An automated billing and payment-chasing workflow that drafts invoices, sends polite reminders, and tracks who owes what.",
     "format": "Workflow build plus a light monthly retainer; integrates with your accounting tools",
     "featured": false,
@@ -882,7 +911,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Reminder & Recall Engine",
+    "name": "Automated Appointment Reminders",
+    "slug": "automated-appointment-reminders",
     "oneLiner": "Automated reminders and recalls that bring people back on schedule and refill empty slots — without a single manual chase.",
     "format": "Build plus a monthly managed-automation retainer",
     "featured": false,
@@ -908,7 +938,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Renewal Tide",
+    "name": "Automated Membership Renewals",
+    "slug": "automated-membership-renewals",
     "oneLiner": "Automated, on-brand renewal and dues reminders with one-click payment that recover lapsing members before they drift away.",
     "format": "Build plus a per-cycle automation retainer",
     "featured": false,
@@ -934,7 +965,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Customer Status Tracker",
+    "name": "Customer Order Status Tracking",
+    "slug": "customer-order-status-tracking",
     "oneLiner": "A live status link customers check themselves, so they stop phoning the office to ask where their job or order is.",
     "format": "Hosted status page plus messaging automation wired to your job data",
     "featured": false,
@@ -960,7 +992,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Inbox & Request Triage",
+    "name": "Automated Inbox & Request Triage",
+    "slug": "automated-inbox-request-triage",
     "oneLiner": "An AI front door for every inbox and channel that reads, answers what it can, and routes the rest with SLA timers running.",
     "format": "Integration build (M365 or Google) plus a monthly run-and-improve retainer",
     "featured": false,
@@ -986,7 +1019,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Cart Rescue & Lifecycle",
+    "name": "Abandoned-Cart & Win-Back Emails",
+    "slug": "abandoned-cart-win-back-emails",
     "oneLiner": "Always-on recovery and lifecycle messaging that wins back carts and turns one-time buyers into repeat buyers.",
     "format": "Automation build plus a monthly managed-retention retainer",
     "featured": false,
@@ -1012,7 +1046,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Restock Radar",
+    "name": "Automated Stock Alerts",
+    "slug": "automated-stock-alerts",
     "oneLiner": "Inventory that watches itself and tells the right person before you sell something you can't ship.",
     "format": "Automation build plus light monthly maintenance",
     "featured": false,
@@ -1038,7 +1073,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Reputation Loop",
+    "name": "Automated Review Requests",
+    "slug": "automated-review-requests",
     "oneLiner": "Automated, well-timed review requests that turn happy customers into the reviews that fill your books.",
     "format": "Build plus a monthly automation retainer",
     "featured": false,
@@ -1064,7 +1100,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Case & Complaints Desk",
+    "name": "Case & Complaints Tracking System",
+    "slug": "case-complaints-tracking-system",
     "oneLiner": "A trackable case system so every citizen or member request has a reference number and a visible status.",
     "format": "Fixed-scope build plus a monthly run-and-support retainer",
     "featured": false,
@@ -1090,7 +1127,8 @@ export const services = [
   },
   {
     "category": "Automation & Integration",
-    "name": "Supplier & Procurement Desk",
+    "name": "Supplier & Purchase-Order Portal",
+    "slug": "supplier-purchase-order-portal",
     "oneLiner": "A shared portal where POs, confirmations and delivery dates live in one place instead of buried in a buyer's inbox.",
     "format": "Discovery plus build (5 to 7 weeks), then a hosting-and-support retainer",
     "featured": false,
@@ -1116,7 +1154,8 @@ export const services = [
   },
   {
     "category": "Comms Channels",
-    "name": "The Dispatch",
+    "name": "Automated Email Newsletters",
+    "slug": "automated-email-newsletters",
     "oneLiner": "A branded email and newsletter channel that designs, personalises and sends itself — and tells you what landed.",
     "format": "Build plus a monthly managed-send retainer; integrates with your CRM and commerce data",
     "featured": false,
@@ -1142,7 +1181,8 @@ export const services = [
   },
   {
     "category": "Comms Channels",
-    "name": "WhatsApp Order Line",
+    "name": "WhatsApp Ordering Channel",
+    "slug": "whatsapp-ordering-channel",
     "oneLiner": "A WhatsApp channel where customers and reps place and check orders, captured straight into your system instead of a phone log.",
     "format": "Build plus channel setup (4 to 6 weeks), then a managed run retainer",
     "featured": false,
@@ -1168,7 +1208,8 @@ export const services = [
   },
   {
     "category": "Comms Channels",
-    "name": "Broadcast Hub",
+    "name": "Multi-Channel Broadcast Messaging",
+    "slug": "multi-channel-broadcast-messaging",
     "oneLiner": "Reach every member or citizen on the channel they actually use — WhatsApp first, SMS and email behind it — from one place.",
     "format": "Hub build plus a monthly send-volume retainer",
     "featured": false,
@@ -1194,7 +1235,8 @@ export const services = [
   },
   {
     "category": "Comms Channels",
-    "name": "Beneficiary & Field Line",
+    "name": "Two-Way Field & Beneficiary SMS",
+    "slug": "two-way-field-beneficiary-sms",
     "oneLiner": "A two-way WhatsApp line that reaches and hears from the people you serve or the crews in the field — at a scale a team can't reach by hand.",
     "format": "WhatsApp automation plus assistant build, with a monthly retainer to run campaigns and flows",
     "featured": false,
@@ -1220,7 +1262,8 @@ export const services = [
   },
   {
     "category": "Comms Channels",
-    "name": "Event RSVP & Check-In",
+    "name": "Event RSVP & Check-In System",
+    "slug": "event-rsvp-check-in-system",
     "oneLiner": "Run conferences, AGMs and trainings end-to-end on the phone — RSVP, ticket, pay, and tap-to-check-in at the door.",
     "format": "Per-event build or an annual events package with run-of-event support",
     "featured": false,
@@ -1246,7 +1289,8 @@ export const services = [
   },
   {
     "category": "Meetings & Knowledge",
-    "name": "The Scribe",
+    "name": "AI Meeting Notes & Recaps",
+    "slug": "ai-meeting-notes-recaps",
     "oneLiner": "Every meeting captured, recapped and turned into action — automatically, on-brand, before you've left the room.",
     "format": "Fixed-scope build plus a per-seat monthly subscription, or bundled into a retainer",
     "featured": true,
@@ -1272,7 +1316,8 @@ export const services = [
   },
   {
     "category": "Meetings & Knowledge",
-    "name": "The Archive",
+    "name": "Company Knowledge AI Search",
+    "slug": "company-knowledge-ai-search",
     "oneLiner": "A private AI that has read everything your company knows — and answers in seconds, with the source.",
     "format": "Build-and-run subscription (foundation build plus monthly hosting, tuning and growth)",
     "featured": false,
@@ -1298,7 +1343,8 @@ export const services = [
   },
   {
     "category": "Meetings & Knowledge",
-    "name": "The Cairn",
+    "name": "Notion / M365 Workspace Build",
+    "slug": "notion-m365-workspace-build",
     "oneLiner": "We build the company brain in Notion or M365 — databases, dashboards and a command centre that actually gets used.",
     "format": "Fixed-scope build (3 to 5 weeks), migration and training, with an optional care plan",
     "featured": false,
@@ -1324,7 +1370,8 @@ export const services = [
   },
   {
     "category": "Meetings & Knowledge",
-    "name": "Decision Vault",
+    "name": "Searchable Decision Log",
+    "slug": "searchable-decision-log",
     "oneLiner": "A searchable record of every decision your company has made — and the why behind it.",
     "format": "Fixed-scope build, often paired with The Scribe or The Cairn",
     "featured": false,
@@ -1350,7 +1397,8 @@ export const services = [
   },
   {
     "category": "Meetings & Knowledge",
-    "name": "The Summit Brief",
+    "name": "Automated Meeting Pre-Briefs",
+    "slug": "automated-meeting-pre-briefs",
     "oneLiner": "Walk into every important meeting already briefed — context, history and the right questions, delivered before you sit down.",
     "format": "Build-and-run subscription, often paired with The Scribe",
     "featured": false,
@@ -1376,7 +1424,8 @@ export const services = [
   },
   {
     "category": "Meetings & Knowledge",
-    "name": "The Induction",
+    "name": "New-Hire Onboarding AI",
+    "slug": "new-hire-onboarding-ai",
     "oneLiner": "A private AI that walks every new hire through how your company actually works.",
     "format": "Fixed-scope build plus monthly run, or folded into The Archive",
     "featured": false,
@@ -1402,7 +1451,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Command Deck",
+    "name": "Live Operations Dashboard",
+    "slug": "live-operations-dashboard",
     "oneLiner": "One screen that pulls your scattered numbers into a live operations dashboard — so the state of the business is never a mystery.",
     "format": "Dashboard build plus integration, then an embedded build-and-run subscription with data upkeep",
     "featured": true,
@@ -1428,7 +1478,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "The Ledger Brief",
+    "name": "Plain-English Finance Brief",
+    "slug": "plain-english-finance-brief",
     "oneLiner": "Your financial numbers, read for you — a plain-English brief that explains what moved on the money and why.",
     "format": "Build-and-run subscription (integration build plus recurring reporting)",
     "featured": false,
@@ -1454,7 +1505,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Daily Pulse",
+    "name": "Daily Operations Brief",
+    "slug": "daily-operations-brief",
     "oneLiner": "A branded morning operational brief — what happened overnight across your ops, and what needs you today.",
     "format": "Build-and-run subscription (setup plus ongoing daily or weekly delivery and tuning)",
     "featured": false,
@@ -1480,7 +1532,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Risk & Retention Radar",
+    "name": "Customer Churn Early Warning",
+    "slug": "customer-churn-early-warning",
     "oneLiner": "See the customer, student or member drifting away while you can still reach them — not after they've gone.",
     "format": "Dashboard build plus automation wiring and a monthly retainer",
     "featured": false,
@@ -1506,7 +1559,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Demand Forecast",
+    "name": "Demand & Stock Forecasting",
+    "slug": "demand-stock-forecasting",
     "oneLiner": "A forecast of what you'll need — stock, crew or buy-ahead — built from your own history so you plan ahead of demand, not behind it.",
     "format": "Discovery plus model build (6 to 8 weeks), delivered as a weekly running service",
     "featured": false,
@@ -1533,6 +1587,7 @@ export const services = [
   {
     "category": "Intelligence & Reporting",
     "name": "Board & Accreditation Reporting",
+    "slug": "board-accreditation-reporting",
     "oneLiner": "The board pack, trustee report or accreditation submission, assembled for you — current, consistent and on demand.",
     "format": "Build plus a monthly retainer with on-demand report generation",
     "featured": false,
@@ -1558,7 +1613,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Voice of the Field",
+    "name": "Customer Feedback Analysis",
+    "slug": "customer-feedback-analysis",
     "oneLiner": "Turn every customer call, ticket, review and survey into a clear read on what people actually think.",
     "format": "Build-and-run subscription (pipeline build plus recurring reporting)",
     "featured": false,
@@ -1584,7 +1640,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Market Watchtower",
+    "name": "Live Market Intelligence Hub",
+    "slug": "live-market-intelligence-hub",
     "oneLiner": "A live, client-facing intelligence hub that tracks your market, ranks what matters, and refreshes itself.",
     "format": "Build-and-run subscription (hub build plus scheduled refresh, hosting and curation)",
     "featured": false,
@@ -1610,7 +1667,8 @@ export const services = [
   },
   {
     "category": "Intelligence & Reporting",
-    "name": "Deep Vein Research",
+    "name": "On-Demand Market Research",
+    "slug": "on-demand-market-research",
     "oneLiner": "A fact-checked deep-dive on any market, competitor or question — on demand, in your brand.",
     "format": "Per-report fixed price, or a research retainer for recurring intelligence",
     "featured": false,
@@ -1636,7 +1694,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "The Showpiece",
+    "name": "Cinematic 3D Brand Website",
+    "slug": "cinematic-3d-brand-website",
     "oneLiner": "A cinematic, 3D-led brand site or pitch experience — animated logo, scroll story, the kind of page that makes people stop.",
     "format": "Premium fixed-scope build per site or pitch; one-time fee with a retainer option for recurring decks",
     "featured": true,
@@ -1662,7 +1721,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Living Mark",
+    "name": "Interactive 3D Logo",
+    "slug": "interactive-3d-logo",
     "oneLiner": "Your logo, rebuilt as a real-time, light-responsive 3D object that reacts to the visitor.",
     "format": "Fixed-scope build, 2 to 3 weeks, one-off fee",
     "featured": false,
@@ -1688,7 +1748,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Carved Set",
+    "name": "3D Icon Set Design",
+    "slug": "3d-icon-set-design",
     "oneLiner": "Your flat icons rebuilt as light-responsive 3D gems for a dimensional brand system.",
     "format": "Fixed-scope set, priced per icon count, 2 to 3 weeks",
     "featured": false,
@@ -1714,7 +1775,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Motion Lab",
+    "name": "Daily Brand Animation Service",
+    "slug": "daily-brand-animation-service",
     "oneLiner": "A fresh, on-brand generative motion study delivered every day, on autopilot — so you never run dry.",
     "format": "Build-and-run subscription (daily cron plus gallery and catalogue), or a fixed-scope one-off signature piece",
     "featured": false,
@@ -1740,7 +1802,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "The Storyboard",
+    "name": "AI Explainer & Product Videos",
+    "slug": "ai-explainer-product-videos",
     "oneLiner": "Branded explainer videos, product clips and social video generated from a script or a single asset — without a film crew.",
     "format": "Per-video build or a monthly video-content retainer",
     "featured": false,
@@ -1766,7 +1829,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Proposal & Document Studio",
+    "name": "Branded Proposal & Document Builder",
+    "slug": "branded-proposal-document-builder",
     "oneLiner": "Branded proposals, decks, contracts and reports generated from a short brief in minutes — built to win and impossible to get wrong.",
     "format": "Fixed-scope build per document type; embedded build-and-run for high-volume pipelines",
     "featured": false,
@@ -1792,7 +1856,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Content Engine",
+    "name": "Always-On Content Production",
+    "slug": "always-on-content-production",
     "oneLiner": "An always-on pipeline that turns your raw material — and your house voice — into a steady stream of on-brand content.",
     "format": "Embedded build-and-run subscription, monthly fee",
     "featured": false,
@@ -1818,7 +1883,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Social Cut Factory",
+    "name": "Social Clip Repurposing",
+    "slug": "social-clip-repurposing",
     "oneLiner": "A production line that turns one long asset into a month of branded, channel-ready cuts.",
     "format": "Repurposing pipeline plus a branded template and motion kit, with content-calendar handoff",
     "featured": false,
@@ -1844,7 +1910,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Story in Data",
+    "name": "Interactive Data Visualisation",
+    "slug": "interactive-data-visualisation",
     "oneLiner": "Your numbers turned into a branded, interactive visualisation that actually persuades.",
     "format": "Fixed-scope build per visualisation; retainer for live, refreshing dashboards",
     "featured": false,
@@ -1870,7 +1937,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Story Engine",
+    "name": "Impact Storytelling Content",
+    "slug": "impact-storytelling-content",
     "oneLiner": "Turn the good you do every day into a steady stream of polished, on-brand content — without a comms hire.",
     "format": "Content-engine build plus a light monthly retainer for drafting and templates",
     "featured": false,
@@ -1896,7 +1964,8 @@ export const services = [
   },
   {
     "category": "Brand, Content & Media",
-    "name": "Annual Report Studio",
+    "name": "Annual & Impact Report Design",
+    "slug": "annual-impact-report-design",
     "oneLiner": "The flagship annual or impact report that wins trust — written, designed and built from your data, not a month of agony.",
     "format": "Annual project (content draft, design, web build), repeatable each year at lower cost",
     "featured": false,
@@ -1922,7 +1991,8 @@ export const services = [
   },
   {
     "category": "The Method",
-    "name": "DXP — Digital Excellence Assessment",
+    "name": "8-Pillar Digital Assessment",
+    "slug": "8-pillar-digital-assessment",
     "oneLiner": "Our 8-pillar read on exactly where your operating week drains — with a costed, sequenced plan to win it back.",
     "format": "Fixed-fee assessment (2 to 3 weeks), delivered as a branded report and roadmap, creditable against the build that follows",
     "featured": true,
@@ -1948,7 +2018,8 @@ export const services = [
   },
   {
     "category": "The Method",
-    "name": "The Operating Foundation",
+    "name": "Operations Command-Centre Build",
+    "slug": "operations-command-centre-build",
     "oneLiner": "We map where your week drains, then build and run the command centre that takes the busywork off the founders entirely — assessment-led.",
     "format": "DXP assessment then command-centre build then an embedded run-and-improve retainer",
     "featured": true,
@@ -1974,7 +2045,8 @@ export const services = [
   },
   {
     "category": "The Method",
-    "name": "The Embedded Team",
+    "name": "Outsourced Web Team (Retainer)",
+    "slug": "outsourced-web-team-retainer",
     "oneLiner": "We become the team that builds, hosts, runs and keeps improving your entire web presence — month after month, no assessment required to start.",
     "format": "Embedded build-and-run monthly subscription, ongoing rolling scope, no DXP prerequisite",
     "featured": false,
@@ -2003,7 +2075,8 @@ export const services = [
   },
   {
     "category": "The Method",
-    "name": "The Ascent — AI Adoption & Enablement",
+    "name": "AI Training & Adoption Support",
+    "slug": "ai-training-adoption-support",
     "oneLiner": "We don't just build the AI — we get your team actually using it, with the training, playbooks and adoption support to make it stick.",
     "format": "Enablement engagement (onboarding plus training) then a light monthly adoption retainer; bundles with any build",
     "featured": true,
@@ -2029,7 +2102,8 @@ export const services = [
   },
   {
     "category": "The Method",
-    "name": "The Night Shift",
+    "name": "Overnight AI Agent",
+    "slug": "overnight-ai-agent",
     "oneLiner": "A standing AI agent that works your queue overnight so your team wakes up to it done.",
     "format": "Embedded build-and-run monthly subscription",
     "featured": false,
@@ -2055,7 +2129,8 @@ export const services = [
   },
   {
     "category": "The Method",
-    "name": "Site Rescue",
+    "name": "Website Audit & Rebuild",
+    "slug": "website-audit-rebuild",
     "oneLiner": "A fixed-scope audit and rebuild of the site you already have — faster, clearer, converting — before you commit to a bigger build.",
     "format": "Quick fixed-scope engagement, 1 to 2 weeks, one-time fee",
     "featured": false,

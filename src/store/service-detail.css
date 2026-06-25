@@ -1,0 +1,81 @@
+/* Service detail page (#service/<slug>) + the multi-select inquiry UI (toggle, bar, FAB, drawer).
+   Reuses store.css's sp-*/st-*/gs-btn product-detail classes; this file adds only the service-specific
+   bits and the inquiry list. Brand tokens (--gs-*) come from the global site stylesheet. */
+
+/* ---- detail head ---- */
+.sd-wrap{padding-bottom:clamp(40px,6vw,90px)}
+.sd-head{max-width:760px}
+.sd-eyebrow{font-size:.74rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gs-accent);margin-bottom:.8em}
+.sd-flag{display:inline-flex;align-items:center;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}
+.sd-fmt{background:var(--gs-accent-soft);border-color:var(--gs-border);color:var(--gs-accent)}
+.sd-cta{display:flex;flex-wrap:wrap;gap:12px;margin:1.6em 0 1em}
+.sd-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:clamp(16px,2.4vw,28px)}
+.sd-fact h3{font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-faint);margin-bottom:.5em}
+.sd-fact p{color:var(--gs-text-muted);line-height:1.6;font-size:.96rem}
+
+/* ---- add-to-inquiry toggle ---- */
+.inq-toggle{display:inline-flex;align-items:center;gap:.5em;font-family:inherit;font-size:.82rem;font-weight:700;
+  color:var(--gs-accent);background:var(--gs-accent-soft);border:1px solid var(--gs-border);border-radius:999px;
+  padding:.5em .95em;cursor:pointer;transition:all .18s var(--gs-ease);white-space:nowrap}
+.inq-toggle:hover{border-color:var(--gs-accent-mid,rgba(200,255,0,.45))}
+.inq-toggle svg{width:15px;height:15px;stroke:var(--gs-accent);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.inq-toggle.is-on{background:var(--gs-accent);color:#0e1611;border-color:var(--gs-accent)}
+.inq-toggle.is-on svg{stroke:#0e1611}
+.inq-toggle.lg{font-size:.95rem;padding:.72em 1.3em}
+.inq-toggle.lg svg{width:18px;height:18px}
+
+/* ---- "N in your inquiry · Review" bar ---- */
+.inq-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;
+  padding:14px 18px;border:1px solid var(--gs-border);border-radius:14px;background:var(--gs-accent-soft)}
+.inq-bar-txt{font-weight:700;font-size:.95rem;color:var(--gs-text)}
+.inq-bar-btn{font-family:inherit;font-size:.9rem;font-weight:800;color:var(--gs-accent);background:none;border:0;cursor:pointer}
+
+/* ---- floating FAB ---- */
+.inq-fab{position:fixed;right:clamp(14px,2.5vw,26px);bottom:clamp(14px,2.5vw,26px);z-index:60;
+  display:inline-flex;align-items:center;gap:.55em;font-family:inherit;font-size:.92rem;font-weight:800;
+  color:#0e1611;background:var(--gs-accent);border:0;border-radius:999px;padding:.8em 1.25em;cursor:pointer;
+  box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 0 1px var(--gs-accent) inset;transition:transform .18s var(--gs-ease)}
+.inq-fab:hover{transform:translateY(-2px)}
+.inq-fab svg{width:18px;height:18px;stroke:#0e1611;fill:none;stroke-width:2.2;stroke-linecap:round}
+.inq-fab-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
+  background:#0e1611;color:var(--gs-accent);font-size:.74rem;font-weight:800}
+@media(max-width:520px){.inq-fab-label{display:none}}
+
+/* ---- drawer ---- */
+.inq-overlay{position:fixed;inset:0;z-index:70;background:rgba(6,10,8,.6);backdrop-filter:blur(3px);
+  display:flex;justify-content:flex-end;animation:inqFade .2s var(--gs-ease)}
+@keyframes inqFade{from{opacity:0}to{opacity:1}}
+.inq-drawer{width:min(440px,100%);height:100%;overflow-y:auto;background:var(--gs-bg,#0e1611);
+  border-left:1px solid var(--gs-border);padding:clamp(20px,3vw,30px);animation:inqSlide .26s var(--gs-ease)}
+@keyframes inqSlide{from{transform:translateX(24px);opacity:.6}to{transform:translateX(0);opacity:1}}
+.inq-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.inq-drawer-head h2{font-size:1.3rem;font-weight:800}
+.inq-x{font-size:1.1rem;line-height:1;color:var(--gs-muted);background:none;border:0;cursor:pointer;padding:6px}
+.inq-x:hover{color:var(--gs-text)}
+.inq-list{list-style:none;display:grid;gap:10px;padding:0;margin:0 0 12px}
+.inq-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;
+  padding:12px 14px;border:1px solid var(--gs-border-soft);border-radius:12px;background:rgba(255,255,255,.02)}
+.inq-item-name{grid-column:1;font-weight:700;font-size:.96rem;color:var(--gs-text);border-bottom:1px solid transparent}
+.inq-item-name:hover{border-bottom-color:var(--gs-accent)}
+.inq-item-cat{grid-column:1;grid-row:2;font-size:.78rem;color:var(--gs-faint)}
+.inq-remove{grid-column:2;grid-row:1/3;font-family:inherit;font-size:.78rem;font-weight:700;color:var(--gs-muted);
+  background:none;border:0;cursor:pointer;align-self:center}
+.inq-remove:hover{color:var(--gs-accent)}
+.inq-clear{font-family:inherit;font-size:.8rem;font-weight:700;color:var(--gs-muted);background:none;border:0;cursor:pointer;margin-bottom:18px}
+.inq-clear:hover{color:var(--gs-text)}
+.inq-form{border-top:1px solid var(--gs-border-soft);padding-top:18px;display:grid;gap:12px}
+.inq-form-lead{font-size:.9rem;color:var(--gs-text-muted);line-height:1.55;margin-bottom:2px}
+.inq-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:420px){.inq-row{grid-template-columns:1fr}}
+.inq-form label{display:block;font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-muted)}
+.inq-opt{text-transform:none;letter-spacing:0;font-weight:400;color:var(--gs-faint)}
+.inq-fld{display:block;width:100%;margin-top:.5em;font-family:inherit;font-size:.95rem;color:var(--gs-text);
+  background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);border-radius:10px;padding:.7em .85em}
+textarea.inq-fld{resize:vertical;line-height:1.5}
+.inq-fld:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.45));background:rgba(200,255,0,.04);box-shadow:0 0 0 3px var(--gs-accent-soft)}
+.inq-send{width:100%;justify-content:center;margin-top:4px}
+.inq-fine{font-size:.78rem;color:var(--gs-muted);text-align:center}
+.inq-empty,.inq-sent{text-align:center;padding:30px 6px;color:var(--gs-text-muted);line-height:1.6}
+.inq-empty .gs-btn,.inq-sent .gs-btn{margin-top:16px}
+.inq-sent h3{font-size:1.2rem;font-weight:800;color:var(--gs-text);margin-bottom:8px}
+@media(prefers-reduced-motion:reduce){.inq-overlay,.inq-drawer{animation:none}}

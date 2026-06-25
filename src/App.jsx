@@ -34,6 +34,8 @@ const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invo
 const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
 const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // the AI Intelligence section — renders inline as the body of the "Intelligence" page (the renamed Insights)
 const LazyIntelArticle = lazy(() => import('./intel/IntelArticle.jsx')); // #intel/<id> — a single briefing's own article page
+const LazyServiceDetail = lazy(() => import('./store/ServiceDetail.jsx')); // #service/<slug> — a single service's own page
+const LazyInquiryDrawer = lazy(() => import('./store/InquiryUI.jsx'));      // floating multi-select service-inquiry drawer
 
 // Branded loading state for the lazy Intel Hub chunk. Self-contained (inline styles + scoped
 // keyframes) because intel.css ships *inside* that chunk and isn't available while it loads.
@@ -96,12 +98,12 @@ import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, removeAsset, updateAsset } from './store.js';
-import { css as productDetailCss } from './blocks/ProductDetail.jsx';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
+import { ServicesContext, servicesFromPage } from './store/services.mjs';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -120,6 +122,11 @@ const SITE_ORIGIN = 'https://greatstone.com'; // matches the SeoPanel URL previe
 // #product/<slug> (or #/product/<slug>) → the public product detail route; anything else → null
 function readProductHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?product\/([\w-]+)/i);
+  return m ? m[1] : null;
+}
+// #service/<slug> → a single service's own detail page (the services catalogue's product-detail twin)
+function readServiceHash() {
+  const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?service\/([\w-]+)/i);
   return m ? m[1] : null;
 }
 // #join/<token> → the invite-accept route (the DX-dashboard invitation link)
@@ -298,6 +305,7 @@ export default function App() {
   const mountedRef = useRef(true);                  // App lifetime — the long-lived auth subscription guards on this, not a per-run flag
   const [adminNav, setAdminNav] = useState(readAdminHash); // { section, slug } | null — the one admin-route source
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
+  const [svcSlug, setSvcSlug] = useState(readServiceHash); // #service/<slug> → public service detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
   const [shopRoute, setShopRoute] = useState(readShopHash);        // #shop[/<vendor>] → live storefront
   const [catalogueAdmin, setCatalogueAdmin] = useState(readCatalogueHash); // #catalogue → live catalogue admin (Supabase auth)
@@ -347,7 +355,7 @@ export default function App() {
     return () => removeEventListener('beforeunload', flush);
   }, []);
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null); };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -493,6 +501,11 @@ export default function App() {
   const publishedCatalog = { products: pubProducts, categories: pubCategories };
   const catalogDrift = catalogHasDrift(state);
   function exitProduct() { if (location.hash) location.hash = ''; setProductSlug(null); navigate(state.pages.products ? 'products' : state.order[0]); }
+  // the services catalogue + per-service detail pages all read this one published projection (pulled from
+  // the Services page's catalogue block — the single CMS-editable source), so the listing, the detail pages
+  // and the inquiry list never drift.
+  const publishedServices = useMemo(() => servicesFromPage(state.pages && state.pages.services), [state.pages]);
+  function exitService() { if (location.hash) location.hash = ''; setSvcSlug(null); navigate(state.pages.services ? 'services' : state.order[0]); }
   // a page is "unpublished" if its content OR its 3D background differs from the published snapshot
   const hasUnpublished = useMemo(() => !eq(page.data, page.published) || !eq(page.background, page.publishedBackground), [page.data, page.published, page.background, page.publishedBackground]);
   // Attention signals surfaced on the one "Studio" toolbar button + the relevant tabs, so editors see
@@ -837,7 +850,7 @@ export default function App() {
     return cmds;
   }, [cmdOpen, state, current, mode, page, user, canEdit, canPublish, canManageUsers]);
 
-  const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss + '\n' + productDetailCss }} />;
+  const styleTag = <style dangerouslySetInnerHTML={{ __html: blockCss }} />;
   const overlays = (
     <>
       {styleTag}
@@ -1035,6 +1048,7 @@ export default function App() {
 
   return (
     <CatalogContext.Provider value={publishedCatalog}>
+    <ServicesContext.Provider value={publishedServices}>
     <div className="is-view">
       {overlays}
       <a className="gs-skip" href="#gs-main">Skip to content</a>
@@ -1051,8 +1065,8 @@ export default function App() {
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
         logo={state.settings.logo} ctaLabel={state.settings.headerCtaLabel} siteName={state.settings.siteName}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : current}>
-        <EditorBoundary key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : svcSlug ? 'service:' + svcSlug : current}>
+        <EditorBoundary key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : svcSlug ? 'sd:' + svcSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !svcSlug && !accountRoute && !orgRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : (accountRoute || authLanding)
@@ -1067,6 +1081,8 @@ export default function App() {
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>
+            : svcSlug
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyServiceDetail slug={svcSlug} onBack={exitService} /></Suspense>
             : intelArticle
             ? <Suspense fallback={<IntelBoot />}><LazyIntelArticle id={intelArticle} onBack={() => navigate(state.pages.insights ? 'insights' : state.order[0])} /></Suspense>
             : current === 'insights'
@@ -1075,8 +1091,10 @@ export default function App() {
         </EditorBoundary>
       </main>
       {(shopRoute || productSlug) && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
+      {(svcSlug || current === 'services') && <Suspense fallback={null}><LazyInquiryDrawer email={publishedServices.email} /></Suspense>}
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} logo={state.settings.logo} tagline={state.settings.footerTagline} siteName={state.settings.siteName} footerEmail={state.settings.footerEmail} legalName={state.settings.legalName} />
     </div>
+    </ServicesContext.Provider>
     </CatalogContext.Provider>
   );
 }
