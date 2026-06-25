@@ -141,9 +141,9 @@ export const puck = {
     costLabel: 'Average hourly cost',
     defaultTeam: 12, defaultHours: 5, defaultCost: 30, weeksPerYear: 46, currency: '£',
     resultLead: 'That is roughly',
-    ctaLabel: 'Book a Deep Dive',
+    ctaLabel: 'Book a Diagnostic',
     ctaHref: '#book',
-    footnote: 'A guide, not a quote. The Deep Dive replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back.',
+    footnote: 'A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back.',
   },
   render: (props) => <TimeSavingsCalculator {...props} />,
 };

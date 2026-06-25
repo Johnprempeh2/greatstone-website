@@ -273,7 +273,7 @@ function OnboardingChecklist({ company, admin, members, engagements, orders, nav
   const steps = [
     { id: 'profile', label: 'Complete your company profile', hint: admin ? 'Add your website and a note about your goals.' : 'Your company admin will add this.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => nav('company', 'org-co-h') } : null },
     { id: 'team', label: 'Invite your team', hint: admin ? 'Bring your colleagues into the portal.' : 'Your company admin manages who has access.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => nav('team', 'org-mem-h') } : null },
-    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a deep dive', href: '#go/contact' } },
+    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a Diagnostic', href: '#go/contact' } },
     { id: 'order', label: 'Place your first order', hint: 'Explore the Greatstone software catalogue.', done: (orders || []).length > 0, cta: { label: 'Browse the store', href: '#shop' } },
   ];
   const doneCount = steps.filter(s => s.done).length;
@@ -533,7 +533,7 @@ function EngagementTimeline({ engagements, orders, companyId, companyName, membe
             <span className="dx-kind k-milestone">Milestones</span>
             <span className="dx-kind k-deliverable">Deliverables</span>
           </div>
-          <a className="gs-btn primary sm" href="#go/contact">Book your kickoff deep dive →</a>
+          <a className="gs-btn primary sm" href="#go/contact">Book your kickoff diagnostic →</a>
         </div>
       ) : (
         <>
@@ -753,9 +753,9 @@ function NextMove({ company }) {
               : <><b>{gap.delta >= 0 ? '+' : ''}{gap.delta}</b> {gap.delta >= 0 ? 'ahead of' : 'behind'} your industry <span className="org-move-gap-nums">({gap.value} vs {gap.ref})</span><span className="gs-sr-only">. {lowest.name} scores {gap.value} against an industry benchmark of {gap.ref}.</span></>}
           </p>
         )}
-        <p>{lowest.name} is your lowest pillar right now, at {lowest.v}/10. {lowest.tag} A focused deep dive is the fastest way to move it, and lifts the score the whole assessment hangs on.</p>
+        <p>{lowest.name} is your lowest pillar right now, at {lowest.v}/10. {lowest.tag} A focused diagnostic is the fastest way to move it, and lifts the score the whole assessment hangs on.</p>
         <div className="org-move-ctas">
-          <a className="gs-btn primary sm" href="#go/contact">Book a deep dive</a>
+          <a className="gs-btn primary sm" href="#go/contact">Book a Diagnostic</a>
           <a className="gs-btn ghost sm" href="#go/method">See the eight pillars →</a>
         </div>
       </div>
@@ -824,7 +824,7 @@ function GreatstoneTeam({ engagements }) {
             <div className="org-team-info"><span className="org-team-name">{n}</span><span className="org-team-role">Greatstone lead</span></div>
           </div>
         ))}
-        <a className="gs-btn ghost sm org-team-cta" href="#go/contact">Book a deep dive</a>
+        <a className="gs-btn ghost sm org-team-cta" href="#go/contact">Book a Diagnostic</a>
       </div>
     </section>
   );

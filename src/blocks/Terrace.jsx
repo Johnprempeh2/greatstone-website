@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
 
-// Terrace: home §06 "How a Deep Dive works" — a centered chapter (reusing the .b-chapter framing) over
+// Terrace: home §06 "How a Diagnostic works" — a centered chapter (reusing the .b-chapter framing) over
 // a stack of slabs that grow WIDER as they descend (calc(70% + i*15%)), each a lime trapezoid that
 // settles up from below in a top-down stagger when the stack scrolls in. Faithful port of .dd-stack /
 // .dd-slab. The chapter copy lands first, then "each layer settles before the next one lands".
@@ -83,7 +83,7 @@ export const puck = {
     },
   },
   defaultProps: {
-    index: '06', eyebrow: 'How a Deep Dive Works',
+    index: '06', eyebrow: 'How a Diagnostic Works',
     headline: 'Three moves to your', highlight: 'foundation.',
     body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',
     slabs: [

@@ -182,7 +182,7 @@ export const puck = {
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
     headlineSuffix: '',
-    align: 'left', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false,
+    align: 'left', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false,
   },
   render: (props) => <Hero {...props} />,
 };

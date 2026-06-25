@@ -111,7 +111,7 @@ export const puck = {
     items: [
       M('2005', 'One business, one problem worth solving.', 'A single client, a process bleeding time, and a refusal to accept that this is just how it works here.'),
       M('2011', 'Advice was not enough.', 'We stopped advising and started building, sitting inside the business until the change actually shipped.'),
-      M('2016', 'The eight pillars took shape.', 'Years of deep dives became a method we could assess any business against.'),
+      M('2016', 'The eight pillars took shape.', 'Years of diagnostics became a method we could assess any business against.'),
       M('2021', 'From projects to partnerships.', 'Clients stopped hiring us for one thing and kept us as their foundation.'),
       M('Today', 'Buying back the hours, at scale.', 'Same belief, broader reach. We find the time a business is quietly losing, and win it back.'),
     ],

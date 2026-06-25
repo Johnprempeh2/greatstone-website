@@ -86,8 +86,8 @@ export const puck = {
   defaultProps: {
     eyebrow: 'Start the Conversation',
     headline: 'The first step', highlight: 'costs nothing.',
-    body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-    ctaLabel: 'Book a Deep Dive', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
+    body: 'A Diagnostic: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
+    ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
   },
   render: (props) => <Invite {...props} />,
 };

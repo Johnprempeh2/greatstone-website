@@ -6,7 +6,7 @@ import { track } from '../lib/analytics.js';
 
 const DEFAULT_SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
-// small inline icon set for the "Why a deep dive" assure rows (lime stroke, set in CSS)
+// small inline icon set for the "Why a diagnostic" assure rows (lime stroke, set in CSS)
 const ico = (children) => <svg viewBox="0 0 24 24">{children}</svg>;
 const ICONS = {
   check: ico(<><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></>),
@@ -14,7 +14,7 @@ const ICONS = {
   scan: ico(<><path d="M4 7V5a2 2 0 0 1 2-2h2" /><path d="M16 3h2a2 2 0 0 1 2 2v2" /><path d="M20 17v2a2 2 0 0 1-2 2h-2" /><path d="M8 21H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></>),
 };
 
-// The "Book a Deep Dive" page: the booking form beside a short framing aside. On submit it composes a
+// The "Book a Diagnostic" page: the booking form beside a short framing aside. On submit it composes a
 // prefilled mailto to the contact address from the entered fields (client-side, no backend) and shows a
 // confirmation with the address as a fallback. A future build may POST to a backend; that decision is open.
 export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk' }) {
@@ -38,7 +38,7 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
     const fd = new FormData(e.currentTarget);
     const g = (k) => (fd.get(k) || '').toString().trim();
     const nm = g('name'), company = g('company');
-    const subject = 'Deep Dive request' + (company ? ' · ' + company : nm ? ' · ' + nm : '');
+    const subject = 'Diagnostic request' + (company ? ' · ' + company : nm ? ' · ' + nm : '');
     const parts = [];
     if (nm) parts.push('Name: ' + nm);
     if (company) parts.push('Company: ' + company);
@@ -147,7 +147,7 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .book-sent p{margin:12px auto 22px;color:var(--gs-muted);max-width:42ch;line-height:1.6}
 .book-aside .h3{margin:.5rem 0 .6rem}
 .b-book-aside-body{margin-bottom:1.4rem;color:var(--gs-muted);font-size:.96rem;line-height:1.6}
-/* iconed "Why a deep dive" assure rows (faithful to the live .assure: 34px lime icon tile + title + desc) */
+/* iconed "Why a diagnostic" assure rows (faithful to the live .assure: 34px lime icon tile + title + desc) */
 .b-book-assure{display:flex;gap:.9rem;align-items:flex-start;padding:1rem 0;border-bottom:1px solid var(--gs-border-soft)}
 .b-book-assure:last-of-type{border-bottom:0}
 .b-book-ai{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
@@ -161,7 +161,7 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 const PT = (title, text) => ({ title, text });
 
 export const puck = {
-  label: 'Book a Deep Dive (form)',
+  label: 'Book a Diagnostic (form)',
   fields: {
     eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
     headline: { type: 'text', label: 'Headline', contentEditable: true },
@@ -191,12 +191,12 @@ export const puck = {
   },
   defaultProps: {
     eyebrow: 'Tell us where the week goes',
-    headline: 'Book a', highlight: 'Deep Dive.',
+    headline: 'Book a', highlight: 'Diagnostic.',
     body: 'Thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
-    submitLabel: 'Book a Deep Dive',
-    asideKicker: 'Why a deep dive',
+    submitLabel: 'Book a Diagnostic',
+    asideKicker: 'Why a diagnostic',
     asideHeading: 'We don’t advise. We become your foundation.',
-    asideBody: 'A deep dive isn’t a sales call dressed up. It’s the first hour of the work: us assessing how you actually run, against the eight pillars of our method, so the time we hand back is real and measured.',
+    asideBody: 'A diagnostic isn’t a sales call dressed up. It’s the first hour of the work: us assessing how you actually run, against the eight pillars of our method, so the time we hand back is real and measured.',
     asidePoints: [
       { icon: 'check', title: 'Eight pillars, one honest score', text: 'We assess your whole operation, not the symptom you walked in with.' },
       { icon: 'clock', title: 'Hours quantified, not promised', text: 'You leave knowing exactly where the time goes, and where it comes back.' },

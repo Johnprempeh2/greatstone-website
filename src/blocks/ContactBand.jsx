@@ -70,7 +70,7 @@ export const puck = {
     email: 'dx@greatstonesoftware.co.uk',
     cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
     cardHeading: 'Run the time-savings calculator',
-    cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The Deep Dive picks up exactly where it leaves off.',
+    cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The Diagnostic picks up exactly where it leaves off.',
     cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
   },
   render: (props) => <ContactBand {...props} />,

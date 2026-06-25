@@ -1,6 +1,6 @@
 import { useReveal } from './reveal.js';
 
-// A numbered process: how a Deep Dive works. Each step settles before the next lands (the
+// A numbered process: how a Diagnostic works. Each step settles before the next lands (the
 // stagger does the talking). Numbering is derived; marketing edits titles and copy.
 export function Steps({ index, eyebrow, headline, highlight, body, items = [], align = 'left', numberStyle = 'badge' }) {
   const ref = useReveal([items.length]);
@@ -95,7 +95,7 @@ export const puck = {
     },
   },
   defaultProps: {
-    index: '06', eyebrow: 'How a Deep Dive Works',
+    index: '06', eyebrow: 'How a Diagnostic Works',
     headline: 'Three moves to your', highlight: 'foundation.',
     align: 'left', numberStyle: 'badge',
     body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',

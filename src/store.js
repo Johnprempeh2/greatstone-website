@@ -23,7 +23,7 @@ const SEED_VERSION = 20260617;
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
 // Footer / AdminConsole, so backfilling them onto an existing store changes nothing until an admin edits.
 export const DEFAULT_LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
-const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Deep Dive', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
+const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Diagnostic', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
@@ -246,11 +246,11 @@ export function logActivity(state, label, by) {
 const HOME_FAQ = {
   showSchema: false,
   kicker: 'Common questions', heading: 'The questions buyers ask first.',
-  intro: 'Straight answers to what most teams want to know before they book. The Deep Dive is the fastest way to get the rest.',
+  intro: 'Straight answers to what most teams want to know before they book. The Diagnostic is the fastest way to get the rest.',
   items: [
-    { q: 'What actually happens in a Deep Dive?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
+    { q: 'What actually happens in a Diagnostic?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
     { q: 'Are you a software house or consultants?', a: 'Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside.' },
-    { q: 'How long before we see results?', a: 'The Deep Dive gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
+    { q: 'How long before we see results?', a: 'The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
   ],
 };
 export function seedState() {
@@ -260,7 +260,7 @@ export function seedState() {
           kicker: 'Greatstone International',
           headline: 'The Foundation of', highlight: 'Digital Excellence.',
           body: 'We don’t decorate businesses with technology. We build what holds everything up.',
-          prompt: '', align: 'center', size: 'full', ctaLabel: 'Book a Deep Dive', ctaHref: '#book', scrollCue: true,
+          prompt: '', align: 'center', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', scrollCue: true,
         }),
         blk('Chapter', {
           index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner. Not a software house.', highlight: '',
@@ -294,7 +294,7 @@ export function seedState() {
           ],
         }),
         blk('Terrace', {
-          index: '06', eyebrow: 'How a Deep Dive Works', headline: 'Three moves to your foundation.', highlight: '',
+          index: '06', eyebrow: 'How a Diagnostic Works', headline: 'Three moves to your foundation.', highlight: '',
           body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',
           slabs: [
             { n: '01', title: 'Diagnostic', body: 'We map where the week goes, across all eight pillars.' },
@@ -305,8 +305,8 @@ export function seedState() {
         blk('Faq', HOME_FAQ),
         blk('Invite', {
           eyebrow: 'Start the Conversation', headline: 'The first step', highlight: 'costs nothing.',
-          body: 'A Deep Dive: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-          ctaLabel: 'Book a Deep Dive', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk', variant: 'band',
+          body: 'A Diagnostic: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
+          ctaLabel: 'Book a Diagnostic', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk', variant: 'band',
         }),
       ], { title: 'Greatstone International · Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, embedding alongside your team with AI as the accelerator.', ogImage: '' }),
 
@@ -314,7 +314,7 @@ export function seedState() {
         blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
           body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
           prompt: '', align: 'center', size: 'full',
-          ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: 'Book a Deep Dive', ctaHref2: '#book' }),
+          ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: 'Book a Diagnostic', ctaHref2: '#book' }),
         blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
           body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: a full, honest read of the business across eight pillars, so the work that follows is the work that actually moves you.',
           items: [
@@ -325,8 +325,8 @@ export function seedState() {
         blk('PillarCards', {}),
         blk('MaturityModel', {}),
         blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
-          body: 'A Deep Dive scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
-          ctaLabel: 'Book a Deep Dive', ctaHref: '#book', variant: 'framed' }),
+          body: 'A Diagnostic scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
+          ctaLabel: 'Book a Diagnostic', ctaHref: '#book', variant: 'framed' }),
       ], { title: 'Process · Eight Pillars · Greatstone International', description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.', ogImage: '' }),
 
       contact: seedPage('Contact', 'tide', [
@@ -334,7 +334,7 @@ export function seedState() {
         blk('BookDeepDive', {
           eyebrow: 'The first step', headline: 'Tell us where the week goes', highlight: '',
           body: 'Two minutes here saves us an hour later. The more honest the picture, the sharper the dive.',
-          submitLabel: 'Book a Deep Dive',
+          submitLabel: 'Book a Diagnostic',
           email: 'dx@greatstonesoftware.co.uk',
         }),
         blk('Steps', {
@@ -342,7 +342,7 @@ export function seedState() {
           body: 'From the moment you book to the moment you see the hours, the path is short and plainly worth your time.',
           items: [
             { phase: 'Within 24 hours', title: 'We read your week', text: 'We take what you’ve told us and map it against the eight pillars before we ever speak, so the call starts where most engagements end.', timing: 'A short reply, a held slot' },
-            { phase: 'The deep dive', title: '30 focused minutes', text: 'We sit with you, pull on the threads, and surface where the hours are draining. You’ll feel the difference between advice and a foundation being laid.', timing: 'One session, real findings' },
+            { phase: 'The diagnostic', title: '30 focused minutes', text: 'We sit with you, pull on the threads, and surface where the hours are draining. You’ll feel the difference between advice and a foundation being laid.', timing: 'One session, real findings' },
             { phase: 'The hours, costed', title: 'A picture you can act on', text: 'You leave with a clear read on what your week is quietly costing you, and exactly where Greatstone buys it back. No deck. No fluff.', timing: 'Yours to keep, pressure-free' },
           ],
         }),
@@ -352,10 +352,10 @@ export function seedState() {
           email: 'dx@greatstonesoftware.co.uk',
           cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
           cardHeading: 'Run the time-savings calculator',
-          cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The deep dive picks up exactly where it leaves off.',
+          cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The diagnostic picks up exactly where it leaves off.',
           cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
         }),
-      ], { title: 'Book a Deep Dive · Greatstone International', description: 'You still cannot buy time, so let us save yours. Book a Deep Dive and we map where your week goes across eight pillars. The first step costs nothing.', ogImage: '' }),
+      ], { title: 'Book a Diagnostic · Greatstone International', description: 'You still cannot buy time, so let us save yours. Book a Diagnostic and we map where your week goes across eight pillars. The first step costs nothing.', ogImage: '' }),
   };
   // fold in the rest of the site, converted from the live pages into editable blocks
   seedPages.forEach((p) => {
@@ -589,9 +589,9 @@ function migrate(state) {
       kicker: 'Common questions', heading: 'The questions buyers ask first.',
       intro: 'Straight answers to what most teams want to know before they book. If yours is not here, the Deep Dive is the fastest way to get it.',
       items: [
-        { q: 'What actually happens in a Deep Dive?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
+        { q: 'What actually happens in a Diagnostic?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
         { q: 'Are you a software house or consultants?', a: 'Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside.' },
-        { q: 'How long before we see results?', a: 'The Deep Dive gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
+        { q: 'How long before we see results?', a: 'The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
         { q: 'What about our data and security?', a: 'We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment.' },
         { q: 'Do you replace our team?', a: 'No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do.' },
         { q: 'Is this just AI hype?', a: 'Digital transformation first, AI as the accelerator. We automate the boring before the brilliant, and only deploy AI where it pays back in hours returned, not headlines.' },
@@ -710,6 +710,52 @@ function migrate(state) {
         b.props.body = 'The senior people who do the work, not a sales team between you and them. Your founders are on it from day one; the rest of your engagement team is named at kickoff.';
       }
     });
+  }
+  // Service catalogue (additive, 2026-06-25; NO SEED_VERSION bump): surface the productized service
+  // catalogue on the services page of existing saved sites ONCE (flagged), just after the "three moves"
+  // ServiceCards (the WHAT, after the HOW), else after the Hero. blk() bakes the block's full defaultProps
+  // (the whole catalogue) into the stored item, so PublicRender renders it verbatim. Idempotent + respects
+  // a later hand-removal (the flag is not re-run).
+  if (!state._svcCatalogSeeded) {
+    const sp = state.pages && state.pages.services;
+    const addCatalog = (content) => {
+      if (!Array.isArray(content) || content.some((b) => b && b.type === 'ServiceCatalog')) return;
+      let idx = content.findIndex((b) => b && b.type === 'ServiceCards');
+      if (idx >= 0) idx += 1; // just after the three-moves cards
+      else { const h = content.findIndex((b) => b && b.type === 'Hero'); idx = h >= 0 ? h + 1 : content.length; }
+      content.splice(idx, 0, blk('ServiceCatalog', {}));
+    };
+    if (sp && sp.data) addCatalog(sp.data.content);
+    if (sp && sp.published && sp.published !== sp.data) addCatalog(sp.published.content);
+    state._svcCatalogSeeded = true;
+  }
+  // Diagnostic rename (additive, 2026-06-25; NO SEED_VERSION bump): the "Deep Dive" booking language is
+  // retired for "Diagnostic" wherever it shows. Sweep every saved page's block props, root, SEO, version
+  // snapshots and the site-chrome settings ONCE (flagged), rewriting the display substrings. Runs AFTER the
+  // inserts above so any freshly-added "Deep Dive" copy is caught too. Naturally idempotent (no match
+  // remains after the first pass); flagged so it never fights a deliberate later hand-edit. Block TYPE ids
+  // ("BookDeepDive") carry no space and are left untouched.
+  if (!state._diagnosticRename) {
+    const swap = (s) => (typeof s === 'string'
+      ? s.replace(/Deep Dive/g, 'Diagnostic').replace(/deep dive/g, 'diagnostic')
+      : s);
+    const deep = (v) => {
+      if (typeof v === 'string') return swap(v);
+      if (Array.isArray(v)) return v.map(deep);
+      if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) o[k] = deep(v[k]); return o; }
+      return v;
+    };
+    if (state.settings) state.settings = deep(state.settings);
+    if (state.pages) {
+      for (const k of Object.keys(state.pages)) {
+        const p = state.pages[k]; if (!p) continue;
+        if (p.data) p.data = deep(p.data);
+        if (p.published) p.published = deep(p.published);
+        if (p.seo) p.seo = deep(p.seo);
+        if (p.versions) p.versions = deep(p.versions);
+      }
+    }
+    state._diagnosticRename = true;
   }
   state.schema = SCHEMA;
   return state;

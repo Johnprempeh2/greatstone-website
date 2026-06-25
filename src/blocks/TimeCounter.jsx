@@ -92,9 +92,9 @@ export const puck = {
     ctaHref: { type: 'text', label: 'Button link' },
   },
   defaultProps: {
-    kicker: 'Book a Deep Dive',
+    kicker: 'Book a Diagnostic',
     headline: 'You still can’t buy time.', highlight: 'Let’s save yours.',
-    body: 'Everyone sells you tools. We buy back the hours your business is quietly losing, week after week, in the gaps you’ve stopped noticing. One deep dive. No pitch, no obligation. We come in, look hard, and leave no stone unturned.',
+    body: 'Everyone sells you tools. We buy back the hours your business is quietly losing, week after week, in the gaps you’ve stopped noticing. One diagnostic. No pitch, no obligation. We come in, look hard, and leave no stone unturned.',
     clockLabel: 'on this page',
     ctaLabel: '', ctaHref: '#book',
   },

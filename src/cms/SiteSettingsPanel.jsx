@@ -28,7 +28,7 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
 
         <label className="gs-field">
           <span className="gs-field-label">Header CTA label</span>
-          <input value={s.headerCtaLabel || ''} onChange={(e) => set('headerCtaLabel', e.target.value)} placeholder="Book a Deep Dive" />
+          <input value={s.headerCtaLabel || ''} onChange={(e) => set('headerCtaLabel', e.target.value)} placeholder="Book a Diagnostic" />
           <span className="gs-field-hint">The persistent button in the header and the Pages menu. The link is the booking flow.</span>
         </label>
 
@@ -56,7 +56,7 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
                 visitors actually see; alt="" because this is a decorative duplicate of the fields above. */}
             <img src={s.logo || DEFAULT_LOGO} alt="" style={{ height: 22, width: 'auto' }} />
           </span>
-          <span style={{ background: 'var(--gs-accent,#c8ff00)', color: '#0e1611', fontWeight: 800, fontSize: '.74rem', borderRadius: 100, padding: '7px 13px', whiteSpace: 'nowrap' }}>{s.headerCtaLabel || 'Book a Deep Dive'}</span>
+          <span style={{ background: 'var(--gs-accent,#c8ff00)', color: '#0e1611', fontWeight: 800, fontSize: '.74rem', borderRadius: 100, padding: '7px 13px', whiteSpace: 'nowrap' }}>{s.headerCtaLabel || 'Book a Diagnostic'}</span>
         </div>
 
         <div className="gs-preview-label">Footer preview</div>

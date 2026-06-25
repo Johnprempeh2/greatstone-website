@@ -27,7 +27,7 @@ const UserIcon = (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="n
 export default function Header({ order, pages, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
   // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
   const logoSrc = logo || LOGO;
-  const bookLabel = ctaLabel || 'Book a Deep Dive';
+  const bookLabel = ctaLabel || 'Book a Diagnostic';
   const brandName = siteName || 'Greatstone International';
   const q = (query || '').trim().toLowerCase();
   // public visitors only see published pages (a never-published draft is hidden); editors see everything

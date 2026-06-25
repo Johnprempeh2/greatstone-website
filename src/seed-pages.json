@@ -19,7 +19,7 @@
           "align": "left",
           "size": "compact",
           "gridBackdrop": true,
-          "ctaLabel": "Book a Deep Dive",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "ctaLabel2": "See the Method",
           "ctaHref2": "#go/method"
@@ -27,6 +27,10 @@
       },
       {
         "type": "ServiceCards",
+        "props": {}
+      },
+      {
+        "type": "ServiceCatalog",
         "props": {}
       },
       {
@@ -88,9 +92,9 @@
           "weeksPerYear": 46,
           "currency": "£",
           "resultLead": "That is roughly",
-          "ctaLabel": "Book a Deep Dive",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
-          "footnote": "A guide, not a quote. The Deep Dive replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
+          "footnote": "A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
         }
       },
       { "type": "ComparisonMatrix", "props": {} },
@@ -99,11 +103,11 @@
         "props": {
           "kicker": "Common questions",
           "heading": "The questions buyers ask first.",
-          "intro": "Straight answers to what most teams want to know before they book. If yours is not here, the Deep Dive is the fastest way to get it.",
+          "intro": "Straight answers to what most teams want to know before they book. If yours is not here, the Diagnostic is the fastest way to get it.",
           "items": [
-            { "q": "What actually happens in a Deep Dive?", "a": "Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation." },
+            { "q": "What actually happens in a Diagnostic?", "a": "Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation." },
             { "q": "Are you a software house or consultants?", "a": "Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside." },
-            { "q": "How long before we see results?", "a": "The Deep Dive gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters." },
+            { "q": "How long before we see results?", "a": "The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters." },
             { "q": "What about our data and security?", "a": "We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment." },
             { "q": "Do you replace our team?", "a": "No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do." },
             { "q": "Is this just AI hype?", "a": "Digital transformation first, AI as the accelerator. We automate the boring before the brilliant, and only deploy AI where it pays back in hours returned, not headlines." }
@@ -116,8 +120,8 @@
           "eyebrow": "Start here",
           "headline": "Let's find the hours you're",
           "highlight": "losing.",
-          "body": "A Deep Dive is where it begins: a focused look at where your week goes and what it's costing. No deck, no pitch. Just the first stone, turned over.",
-          "ctaLabel": "Book a Deep Dive",
+          "body": "A Diagnostic is where it begins: a focused look at where your week goes and what it's costing. No deck, no pitch. Just the first stone, turned over.",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "Explore the 8 pillars",
@@ -182,11 +186,11 @@
       {
         "type": "Invite",
         "props": {
-          "eyebrow": "Your sector, your deep dive",
+          "eyebrow": "Your sector, your diagnostic",
           "headline": "Let's start with",
           "highlight": "your world.",
-          "body": "Book a deep dive and we'll show you the hours your industry is quietly losing, and how we buy them back.",
-          "ctaLabel": "Book a Deep Dive",
+          "body": "Book a diagnostic and we'll show you the hours your industry is quietly losing, and how we buy them back.",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See the method",
@@ -215,7 +219,7 @@
           "body": "Every number below came from a real engagement, anonymised but earned. They are the floor, not the ceiling. The only result that counts is the one we build inside your business. We don't advise from the sidelines: we become your foundation, and we leave no stone unturned.",
           "align": "left",
           "size": "compact",
-          "ctaLabel": "Book a Deep Dive",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "pillEyebrow": true
         }
@@ -326,8 +330,8 @@
           "eyebrow": "Your number is waiting",
           "headline": "The next case study on this page",
           "highlight": "could be yours.",
-          "body": "Book a Deep Dive and we'll find the hours your business is quietly losing, then show you exactly what reclaiming them is worth.",
-          "ctaLabel": "Book a Deep Dive",
+          "body": "Book a Diagnostic and we'll find the hours your business is quietly losing, then show you exactly what reclaiming them is worth.",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See how we work",
@@ -397,7 +401,7 @@
             {
               "year": "2016",
               "head": "The eight pillars took shape.",
-              "text": "Years of deep dives became a method. Eight pillars we could assess any business against, so the work stopped being guesswork and started being a map."
+              "text": "Years of diagnostics became a method. Eight pillars we could assess any business against, so the work stopped being guesswork and started being a map."
             },
             {
               "year": "2021",
@@ -477,8 +481,8 @@
           "eyebrow": "Start Here",
           "headline": "Let us find the hours you are",
           "highlight": "quietly losing.",
-          "body": "A deep dive is thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
-          "ctaLabel": "Book a Deep Dive",
+          "body": "A diagnostic is thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See the Method",
@@ -656,8 +660,8 @@
           "eyebrow": "Find your altitude",
           "headline": "Let's find out where you",
           "highlight": "stand.",
-          "body": "A deep dive scores you across all eight pillars and hands you the route up: pebble, plateau, or peak. The climb starts with one honest read.",
-          "ctaLabel": "Book a Deep Dive",
+          "body": "A diagnostic scores you across all eight pillars and hands you the route up: pebble, plateau, or peak. The climb starts with one honest read.",
+          "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "Explore the Method",

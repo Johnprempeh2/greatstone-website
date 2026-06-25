@@ -254,7 +254,7 @@ export const puck = {
     specificHead: 'Specific to your world',
     specificFoot: 'Where your sector quietly bleeds hours:',
     specificFootAccent: 'we leave no stone unturned.',
-    ctaLabel: 'Book a Deep Dive',
+    ctaLabel: 'Book a Diagnostic',
     ctaHref: '#book',
     industries: [
       { label: 'Real estate', headline: 'Less time on portals. More time closing.', specificTitle: 'What real estate quietly loses.', drains: DRAIN(['Pulling comps and area research by hand', 'Re-listing the same property across every portal', 'Drafting near-identical property descriptions', 'Chasing solicitors, surveyors and brokers', 'Matching new stock to buyers manually']) },
