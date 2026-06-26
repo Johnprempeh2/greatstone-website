@@ -11,13 +11,12 @@ the bar each cycle. This doc is the canonical roadmap + cycle log (the structure
 2. Pick the next roadmap item below (or run a fresh multi-persona critique when the list thins).
 3. Build it to best practice: incredible UI, thoughtful UX, WCAG-AA a11y, responsive, real empty/error/loading states.
 4. Verify: `npm run build` clean + `npm test` (63 green since C9 added the sanitizer tests) + preview 0 console errors (desktop + mobile) + self-review.
-5. Deploy: **pathspec commit** (`git commit -m … -- <only my files>`, never `git add -A`) → build the dist from a **clean HEAD worktree** (a concurrent Excellence loop + uncommitted WIP share this repo + the single Netlify deploy) → rsync → Netlify MCP deploy-site (site `3b1e97e6`) → curl 200.
+5. Deploy (**ASK JOHN FIRST — never auto-deploy**): **pathspec commit** (`git commit -m … -- <only my files>`, never `git add -A`) → build the dist from a **clean HEAD worktree** with `cp .env` (a concurrent Excellence loop + uncommitted WIP share this repo + the single Netlify deploy) → Netlify MCP deploy-site (site `3b1e97e6`), run the npx cmd **from `dist/` itself** → curl `https://greatstone-home.netlify.app/` 200. **★26 Jun: the studio now deploys at the ROOT of greatstone-home (base `/`); there is NO rsync and NO `greatstone-homepage-deploy` mirror — that folder is retired. See [[greatstone-deploy-flow]].**
 6. Log the cycle below; reschedule ≤600s.
 
 ## Guardrails
 TEST/sandbox keys only; never expose/commit secrets; never deploy Supabase edge fns; never sign in as John;
-do not touch greatstonesoftware.co.uk or the base greatstone-home site; only write within `greatstone-puck-proof`
-+ the deploy mirror. Keep my edits OUT of files the other loop holds uncommitted (esp. `App.jsx`). **Big or
+do not touch greatstonesoftware.co.uk (the separate production domain); greatstone-home.netlify.app is now the studio's OWN site (its root deploy target); only write within `greatstone-puck-proof` (the deploy mirror is retired). Keep my edits OUT of files the other loop holds uncommitted (esp. `App.jsx`). **Big or
 irreversible items (applying a migration, new infra, Notion creds, AI endpoints) are PARKED for John's morning
 approval — never done autonomously.**
 
