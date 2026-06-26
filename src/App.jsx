@@ -228,8 +228,10 @@ function applyHead(seo, pageTitle, slug) {
   upsertMeta('property', 'og:url', url);
   upsertMeta('name', 'twitter:title', title);
   // image family — clear it when a page has none so the previous page's image doesn't linger
-  if (s.ogImage) { upsertMeta('property', 'og:image', s.ogImage); upsertMeta('name', 'twitter:image', s.ogImage); upsertMeta('name', 'twitter:card', 'summary_large_image'); }
-  else { dropMeta('property', 'og:image'); dropMeta('name', 'twitter:image'); upsertMeta('name', 'twitter:card', 'summary'); }
+  // Always emit a large-image card: the page's own image when set, otherwise the branded default
+  // (absolute URL via SITE_ORIGIN). No page shares bare.
+  const ogImg = s.ogImage || (SITE_ORIGIN + '/og-default.png');
+  upsertMeta('property', 'og:image', ogImg); upsertMeta('name', 'twitter:image', ogImg); upsertMeta('name', 'twitter:card', 'summary_large_image');
 }
 
 // Site-level structured data (schema.org): Organization + WebSite, injected once. Makes the site

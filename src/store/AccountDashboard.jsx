@@ -506,7 +506,7 @@ function Dashboard({ session, profile, onProfile }) {
                       <td data-label="Status"><span className={'ca-status ca-q-' + qt.status}>{quoteLabel(qt.status)}</span></td>
                       <td data-label="Invoice">{ord
                         ? <a className="ca-link" href={'#invoice/' + ord.id}>View invoice{ord.invoice_number ? ' ' + ord.invoice_number : ''}</a>
-                        : <a className="ca-link" href={'mailto:DX@greatstoneinternational.co.uk?subject=' + encodeURIComponent('Re: quote ' + qt.reference) + '&body=' + encodeURIComponent('Hi Greatstone team,\n\nI\'d like to discuss quote ' + qt.reference + '.\n\nThanks')} aria-label={'Email the Greatstone team about quote ' + qt.reference}>Discuss this →</a>}</td>
+                        : <a className="ca-link" href={'mailto:dx@greatstonesoftware.co.uk?subject=' + encodeURIComponent('Re: quote ' + qt.reference) + '&body=' + encodeURIComponent('Hi Greatstone team,\n\nI\'d like to discuss quote ' + qt.reference + '.\n\nThanks')} aria-label={'Email the Greatstone team about quote ' + qt.reference}>Discuss this →</a>}</td>
                     </tr>
                       );
                     })}

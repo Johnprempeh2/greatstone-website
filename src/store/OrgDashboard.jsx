@@ -663,7 +663,7 @@ function Item({ e, companyName, isNew, open, onToggle }) {
   const anchor = ANCHOR_KINDS.has(e.kind);
   const url = location.origin + location.pathname + '#org/e/' + e.id;
   // "Discuss this" — prefilled mailto to the Greatstone team, so a client can pick up a thread in context
-  const discussHref = 'mailto:DX@greatstoneinternational.co.uk'
+  const discussHref = 'mailto:dx@greatstonesoftware.co.uk'
     + '?subject=' + encodeURIComponent(`Re: ${e.title}${companyName ? ` (${companyName})` : ''}`)
     + '&body=' + encodeURIComponent(`Hi Greatstone team,\n\nI'd like to discuss this from our engagement timeline:\n• ${e.title} — ${fmtDate(e.occurred_on)}\n\nThanks`);
   const [copyMsg, setCopyMsg] = useState('');

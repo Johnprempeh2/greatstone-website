@@ -20,9 +20,9 @@ test('askAdminMailto: to the admin with a named greeting + encoded params', () =
 
 test('askAdminMailto: falls back to the Greatstone team when no admin email', () => {
   const href = askAdminMailto({ company: 'Ethical Quest', admin: null });
-  assert.ok(href.startsWith('mailto:DX@greatstoneinternational.co.uk?subject='));
+  assert.ok(href.startsWith('mailto:dx@greatstonesoftware.co.uk?subject='));
   assert.ok(href.includes(encodeURIComponent('Re: Ethical Quest account access')));
-  assert.equal(askAdminMailto({ company: 'X', admin: { full_name: 'No Email' } }).startsWith('mailto:DX@greatstoneinternational.co.uk'), true);
+  assert.equal(askAdminMailto({ company: 'X', admin: { full_name: 'No Email' } }).startsWith('mailto:dx@greatstonesoftware.co.uk'), true);
 });
 
 test('askAdminMailto: empty company degrades to "your"', () => {

@@ -7,7 +7,7 @@ export function pickAdmin(members) {
 }
 
 // Prefilled mailto to the company admin (named greeting), or the Greatstone team when the admin email is unknown.
-export function askAdminMailto({ company, admin, fallbackEmail = 'DX@greatstoneinternational.co.uk' } = {}) {
+export function askAdminMailto({ company, admin, fallbackEmail = 'dx@greatstonesoftware.co.uk' } = {}) {
   const co = (company || '').trim() || 'your';
   const subject = encodeURIComponent('Re: ' + co + ' account access');
   if (admin && admin.email) {

@@ -88,7 +88,7 @@ export default function InvoiceView({ orderId }) {
 
         <footer className="inv-foot">
           <p>{order.po_reference ? 'Payable on the above purchase order per agreed terms.' : 'Paid by card via Stripe.'} Licence keys are issued separately by our licensing team.</p>
-          <p className="inv-contact">Queries: DX@greatstoneinternational.co.uk · Order reference {cleanRef(order.reference)}</p>
+          <p className="inv-contact">Queries: dx@greatstonesoftware.co.uk · Order reference {cleanRef(order.reference)}</p>
         </footer>
       </article>
     </div>
