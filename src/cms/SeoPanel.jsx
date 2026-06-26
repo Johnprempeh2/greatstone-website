@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MediaField } from './MediaField.jsx';
 import PanelFrame from './PanelFrame.jsx';
+import { siteDomain } from '../lib/site-origin.mjs';
 
 // In-context SEO: edit the meta title/description and watch a live Google result and social
 // card update, with length guidance (green in range, amber out). Catches the silent SEO
@@ -15,7 +16,7 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugL
   const desc = seo.description || '';
   const shownTitle = title || (pageTitle + ' · Greatstone International');
   const shownDesc = desc || 'Add a description so search and social show the right summary.';
-  const url = 'greatstone.com' + (slug === 'home' ? '' : '/' + slug);
+  const url = siteDomain() + (slug === 'home' ? '' : '/' + slug);
   const tm = meter(title.length, 40, 60);
   const dm = meter(desc.length, 110, 158);
   const set = (k, v) => onChange({ ...seo, [k]: v });
@@ -61,7 +62,7 @@ export default function SeoPanel({ seo, pageTitle, slug, onChange, onSlug, slugL
             {!seo.ogImage && <span>no image set</span>}
           </div>
           <div className="gs-social-meta">
-            <div className="gs-social-domain">greatstone.com</div>
+            <div className="gs-social-domain">{siteDomain()}</div>
             <div className="gs-social-title">{shownTitle}</div>
             <div className="gs-social-desc">{shownDesc}</div>
           </div>

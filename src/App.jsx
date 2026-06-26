@@ -5,6 +5,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 import { publicNavOrder } from './lib/nav-order.js';
 import { initAnalytics, pageview, track } from './lib/analytics.js';
 import { openBooking } from './lib/booking.js';
+import { siteOrigin } from './lib/site-origin.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
@@ -118,7 +119,10 @@ const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // placeholder. This applies the stored SEO to the head and refreshes it on navigation/edit, so
 // what the panel previews is what the page actually serves. The dev team's Laravel build will
 // render the same fields server-side; the prototype keeps index.html's noindex (don't touch it).
-const SITE_ORIGIN = 'https://greatstone.com'; // matches the SeoPanel URL preview; dev team sets the real domain
+// Canonical public origin (SEO/canonical/og/schema). Domain-portable: tracks the live host unless
+// VITE_SITE_ORIGIN pins it at build time. Single source of truth in lib/site-origin.mjs (same as the
+// SeoPanel preview). See docs/DOMAIN-CUTOVER.md.
+const SITE_ORIGIN = siteOrigin();
 // #product/<slug> (or #/product/<slug>) → the public product detail route; anything else → null
 function readProductHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?product\/([\w-]+)/i);
