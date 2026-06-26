@@ -73,6 +73,7 @@
 .gs-btn{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;border-radius:100px;padding:9px 16px;cursor:pointer;
   border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s}
 .gs-btn:hover{transform:translateY(-1px)}
+.gs-btn:active{transform:scale(.96)}
 .gs-btn.sm{padding:7px 12px;font-size:.74rem}
 .gs-btn.primary{background:var(--gs-accent);color:#0e1611}
 .gs-btn.ghost{background:rgba(255,255,255,.05);border-color:var(--gs-border-soft);color:var(--gs-text)}
@@ -433,6 +434,8 @@
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);
   border-radius:100px;padding:5px 11px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;color:var(--gs-muted);cursor:pointer;transition:color .15s,border-color .15s,background .15s}
 .gs-pagefilter-btn:hover{color:var(--gs-text)}
+.gs-pagefilter-btn:active{transform:scale(.92)}
+.gs-pagefilter-btn:focus-visible{outline:2px solid var(--gs-accent);outline-offset:1px}
 .gs-pagefilter-btn.is-active{color:#0e1611;background:var(--gs-accent);border-color:var(--gs-accent)}
 .gs-pagefilter-n{font-size:.62rem;opacity:.7}
 /* per-row actions */
@@ -441,6 +444,8 @@
   border-radius:7px;color:var(--gs-faint);font-size:.86rem;cursor:pointer;transition:color .15s,background .15s,border-color .15s}
 .gs-page-acts button:hover{color:var(--gs-text);background:rgba(255,255,255,.06);border-color:var(--gs-border-soft)}
 .gs-page-acts button:disabled{opacity:.3;cursor:default}
+.gs-page-acts button:active{transform:scale(.92)}
+.gs-page-acts button:focus-visible{outline:2px solid var(--gs-accent);outline-offset:1px}
 .gs-page-acts .gs-page-del:hover{color:#ff6b6b;border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.08)}
 
 /* ---------- error boundary card ---------- */

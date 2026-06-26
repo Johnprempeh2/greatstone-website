@@ -3,6 +3,8 @@ import { MediaField } from '../cms/MediaField.jsx';
 
 // A general image with an optional caption — the simplest "drop a real photo on the page"
 // block. Image comes from the media library (URL or small upload); alt + caption are editable.
+const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
+
 export function Figure({ image, alt, caption, width = 'standard', aspect = '16:9' }) {
   const ref = useReveal();
   // reserve the image box up-front (aspect-ratio + cover) so it never shifts layout as it loads;
@@ -13,7 +15,7 @@ export function Figure({ image, alt, caption, width = 'standard', aspect = '16:9
       <div className="wrap">
         <figure className="b-figure-inner" data-reveal>
           {image
-            ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" decoding="async" style={imgStyle} onError={e => { e.currentTarget.style.display = 'none'; }} />
+            ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" decoding="async" style={imgStyle} onError={hideOnError} />
             : <div className="b-figure-ph">Choose an image in the panel →</div>}
           {caption ? <figcaption className="b-figure-cap">{caption}</figcaption> : null}
         </figure>

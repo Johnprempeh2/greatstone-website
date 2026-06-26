@@ -32,7 +32,7 @@ export default function StoreProduct({ slug, onBack }) {
     if (!supabase || !slug) { setO(null); return; }
     let alive = true; setO(undefined); setGi(0); setRelated([]);
     getOffering(supabase, slug)
-      .then(d => { if (!alive) return; setO(d); if (d) relatedOfferings(supabase, d).then(r => alive && setRelated(r)).catch(() => {}); })
+      .then(d => { if (!alive) return; setO(d); if (d) relatedOfferings(supabase, d).then(r => alive && setRelated(r)).catch(e => { console.warn('relatedOfferings', e); }); })
       .catch(e => { console.error('getOffering', e); if (alive) setO(null); });
     return () => { alive = false; };
   }, [slug]);

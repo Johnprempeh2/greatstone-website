@@ -7,6 +7,8 @@ import { safeHref } from '../lib/safe-url.js';
 // editor drops in real, permissioned logos (the company owns those relationships; we never fabricate a
 // client mark). Each logo is an editable image + alt + optional link; image-less rows are filtered out
 // so empty slots never show a broken glyph. Logos sit muted and lift to full strength on hover/focus.
+const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
+
 export function LogoWall({ eyebrow, logos = [] }) {
   const shown = logos.filter((l) => l && l.image);
   const ref = useReveal([shown.length]);
@@ -17,7 +19,7 @@ export function LogoWall({ eyebrow, logos = [] }) {
         {shown.length ? (
           <ul className="b-logos-row" data-reveal>
             {shown.map((l, i) => {
-              const img = <img src={l.image} alt={l.alt || ''} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+              const img = <img src={l.image} alt={l.alt || ''} loading="lazy" decoding="async" onError={hideOnError} />;
               const href = safeHref(l.href || '');
               return (
                 <li className="b-logos-item" key={i}>

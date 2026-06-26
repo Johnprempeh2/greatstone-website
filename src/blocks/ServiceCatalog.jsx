@@ -294,7 +294,7 @@ export const puck = {
   defaultProps: {
     kicker: UMBRELLA,
     heading: 'Everything we build,', highlight: 'and run for you.',
-    intro: 'One catalogue of the systems we put to work for clients — the website, the storefront, the AI behind them, and the quiet automation that buys back the hours. Open any service for the detail, add the ones that fit, and inquire about them together.',
+    intro: 'One catalogue of the systems we put to work for clients · the website, the storefront, the AI behind them, and the quiet automation that buys back the hours. Open any service for the detail, add the ones that fit, and inquire about them together.',
     searchPlaceholder: 'Search services…',
     inquiryEmail: 'dx@greatstonesoftware.co.uk',
     bookLabel: 'Book a Diagnostic',

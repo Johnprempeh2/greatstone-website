@@ -132,9 +132,9 @@ function Org({ profile, session, onProfile }) {
       .then(({ data, error }) => { if (error) setErr(error); setEngagements(data || []); });
     supabase.from('orders').select('id, reference, status, currency, total_minor, placed_at, created_at, customer_user_id, invoice_number')
       .is('deleted_at', null).eq('customer_id', company.id).order('created_at', { ascending: false }).limit(50)
-      .then(({ data }) => setOrders(data || []));
+      .then(({ data, error }) => { if (error) setErr(error); setOrders(data || []); });
     supabase.from('quotes').select('id, status').is('deleted_at', null).eq('customer_id', company.id).limit(200)
-      .then(({ data }) => setQuotes(data || []));
+      .then(({ data, error }) => { if (error) setErr(error); setQuotes(data || []); });
   }, [company.id]);
   useEffect(() => { load(); }, [load]);
   // an external #org/e/<id> timeline permalink must reveal the Engagement tab so the item isn't in a hidden panel

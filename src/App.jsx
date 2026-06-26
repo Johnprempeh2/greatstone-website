@@ -441,15 +441,15 @@ export default function App() {
     // utility / app routes have no CMS page behind them. Give each a clear, self-describing title +
     // canonical instead of leaving the previous page's SEO stamped on the tab. Order mirrors the
     // render precedence below (breakdown > admin > invoice > account > confirm > catalogue > shop > product).
-    const utility = (t, slug) => applyHead({ title: t + ' · ' + SITE_NAME }, t, slug);
+    const utility = (t, slug, desc) => applyHead({ title: t + ' · ' + SITE_NAME, description: desc }, t, slug);
     if (breakdownRoute) { utility('The eight pillars', 'method'); return; }
     if (intelArticle) { utility('Briefing', 'insights'); return; } // the article component refines this to the headline on mount
     if (adminNav) { utility('Studio admin', 'home'); return; }
-    if (invoiceRoute) { utility('Invoice', 'home'); return; }
-    if (accountRoute || authLanding) { utility('Your account', 'home'); return; }
-    if (orgRoute) { utility('Your organization', 'home'); return; }
-    if (confirmRoute) { utility('Order confirmed', 'home'); return; }
-    if (catalogueAdmin) { utility('Catalogue admin', 'home'); return; }
+    if (invoiceRoute) { utility('Invoice', 'home', 'View and print the details of your Greatstone order.'); return; }
+    if (accountRoute || authLanding) { utility('Your account', 'home', 'Manage your Greatstone account, orders and details.'); return; }
+    if (orgRoute) { utility('Your organization', 'home', 'Manage your organisation, team and orders with Greatstone.'); return; }
+    if (confirmRoute) { utility('Order confirmed', 'home', 'Your Greatstone order is confirmed. Review the details.'); return; }
+    if (catalogueAdmin) { utility('Catalogue admin', 'home', 'Manage the Greatstone product catalogue.'); return; }
     if (shopRoute) { utility('Products', 'shop'); return; }
     if (productSlug) {
       const pr = findProductBySlug(state.publishedProducts, productSlug);
@@ -483,7 +483,7 @@ export default function App() {
       const a = e.target.closest && e.target.closest('a[href^="#"]');
       if (!a) return;
       const href = a.getAttribute('href') || '';
-      // every in-content "Book a Deep Dive" CTA opens the on-brand Calendly popup (openBooking lazy-loads
+      // every in-content book CTA (configurable label, e.g. "Book a Diagnostic") opens the on-brand Calendly popup (openBooking lazy-loads
       // the widget, themed dark + lime, and falls back to a new tab). The contact page + its form stay
       // reachable via the "Contact" nav for a note instead.
       if (href === '#book') { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'content' }); openBooking(); return; }
