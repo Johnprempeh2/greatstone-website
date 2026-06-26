@@ -13,11 +13,15 @@ import { safeMailto } from '../lib/safe-url.js';
 import './store.css';
 import './service-detail.css';
 
-export default function ServiceDetail({ slug, onBack }) {
+export default function ServiceDetail({ slug, onBack, applyHead }) {
   const { services, email } = useServices();
   const svc = findService(services, slug);
 
-  useEffect(() => { document.title = (svc ? svc.name : 'Service') + ' · Greatstone International'; }, [svc, slug]);
+  // full head (canonical + og/twitter + description) for the service, not just the tab title
+  useEffect(() => {
+    if (applyHead) applyHead({ description: svc ? svc.oneLiner : undefined }, svc ? svc.name : 'Service', svc ? 'service/' + serviceSlug(svc) : 'service');
+    else document.title = (svc ? svc.name : 'Service') + ' · Greatstone International';
+  }, [svc, slug]); // eslint-disable-line react-hooks/exhaustive-deps
   // record the visit so the catalogue's "Popular" surface reflects real interest (deduped per session);
   // also fire the global GA4 event. Runs once per slug.
   useEffect(() => { if (svc) { bumpService(slug, 'view'); track('view_service', { service: slug }); } }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps

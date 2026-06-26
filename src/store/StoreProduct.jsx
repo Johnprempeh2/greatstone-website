@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { getOffering, relatedOfferings } from '../data/catalog.mjs';
+import { siteOrigin } from '../lib/site-origin.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { addItem, useCart, openCart } from './cart.mjs';
 import './store.css';
@@ -23,7 +24,7 @@ const quoteMailto = (o, variant) => {
   return 'mailto:' + QUOTE_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 };
 
-export default function StoreProduct({ slug, onBack }) {
+export default function StoreProduct({ slug, onBack, applyHead }) {
   const [o, setO] = useState(undefined); // undefined = loading, null = not found
   const [related, setRelated] = useState([]);
   const [gi, setGi] = useState(0);
@@ -37,7 +38,30 @@ export default function StoreProduct({ slug, onBack }) {
     return () => { alive = false; };
   }, [slug]);
 
-  useEffect(() => { if (o) document.title = (o.seo && o.seo.metaTitle) || (o.name + ' · Greatstone International'); }, [o]);
+  // full head (canonical + og/twitter + description) once the offering resolves, so a product link no
+  // longer shares with stale meta. Falls back to a bare title if applyHead wasn't supplied.
+  useEffect(() => {
+    if (!o) return;
+    if (applyHead) applyHead({ title: (o.seo && o.seo.metaTitle) || undefined, description: (o.seo && o.seo.metaDescription) || o.short_description || o.description, ogImage: img(o.attributes && (o.attributes.mainImage || o.attributes.icon)) }, o.name, 'product/' + slug);
+    else document.title = (o.seo && o.seo.metaTitle) || (o.name + ' · Greatstone International');
+  }, [o, slug]);
+  // Product structured data (schema.org) for rich results; mirrors the Storefront ItemList Offer shape
+  // (priceCurrency + availability, no numeric price so POA items stay valid). Removed on unmount/slug change.
+  useEffect(() => {
+    if (!o) return;
+    const origin = siteOrigin();
+    const i = img(o.attributes && (o.attributes.mainImage || o.attributes.icon || (o.vendor && o.vendor.logo_url)));
+    const imageAbs = i ? (/^https?:/.test(i) ? i : origin + i) : undefined;
+    const data = { '@context': 'https://schema.org', '@type': 'Product', name: o.name,
+      brand: { '@type': 'Brand', name: (o.vendor && o.vendor.name) || 'Greatstone International' },
+      offers: { '@type': 'Offer', priceCurrency: o.from_price_currency || 'GBP', availability: 'https://schema.org/InStock', url: origin + '/product/' + slug } };
+    const desc = o.short_description || o.description; if (desc) data.description = desc;
+    if (imageAbs) data.image = imageAbs;
+    let el = document.getElementById('gs-ld-product');
+    if (!el) { el = document.createElement('script'); el.id = 'gs-ld-product'; el.type = 'application/ld+json'; document.head.appendChild(el); }
+    el.textContent = JSON.stringify(data);
+    return () => { const e = document.getElementById('gs-ld-product'); if (e) e.remove(); };
+  }, [o, slug]);
 
   if (o === undefined) return <><div className="st-scrim" aria-hidden="true" /><div className="sp-wrap"><div className="st-loading" role="status">Loading…</div></div></>;
   if (o === null) return <><div className="st-scrim" aria-hidden="true" /><div className="sp-wrap"><div className="st-empty"><h3>Product not found</h3><p>It may have moved or the link is out of date.</p><button className="st-more" onClick={onBack}>Back to the catalogue</button></div></div></>;

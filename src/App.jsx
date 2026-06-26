@@ -451,6 +451,7 @@ export default function App() {
     if (confirmRoute) { utility('Order confirmed', 'home', 'Your Greatstone order is confirmed. Review the details.'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home', 'Manage the Greatstone product catalogue.'); return; }
     if (shopRoute) { utility('Products', 'shop'); return; }
+    if (svcSlug) { utility('Service', 'service/' + svcSlug); return; } // the ServiceDetail component refines this to the service name + one-liner on load
     if (productSlug) {
       const pr = findProductBySlug(state.publishedProducts, productSlug);
       if (pr) { applyHead({ description: pr.summary, ogImage: pr.image }, pr.name, 'product/' + (pr.slug || productSlug)); return; }
@@ -458,7 +459,7 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  }, [current, state.pages, productSlug, svcSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
@@ -1086,11 +1087,11 @@ export default function App() {
             : shopRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreProduct slug={productSlug} onBack={exitProduct} applyHead={applyHead} /></Suspense>
             : svcSlug
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyServiceDetail slug={svcSlug} onBack={exitService} /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyServiceDetail slug={svcSlug} onBack={exitService} applyHead={applyHead} /></Suspense>
             : intelArticle
-            ? <Suspense fallback={<IntelBoot />}><LazyIntelArticle id={intelArticle} onBack={() => navigate(state.pages.insights ? 'insights' : state.order[0])} /></Suspense>
+            ? <Suspense fallback={<IntelBoot />}><LazyIntelArticle id={intelArticle} onBack={() => navigate(state.pages.insights ? 'insights' : state.order[0])} applyHead={applyHead} /></Suspense>
             : current === 'insights'
             ? <Suspense fallback={<IntelBoot />}><LazyIntelHub /></Suspense>
             : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}

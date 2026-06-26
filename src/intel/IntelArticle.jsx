@@ -34,7 +34,7 @@ function RelatedCard({ b }) {
   );
 }
 
-export default function IntelArticle({ id, onBack }) {
+export default function IntelArticle({ id, onBack, applyHead }) {
   const intel = useMemo(() => buildIntel(), []);
   const b = useMemo(() => (intel.briefings || []).find((x) => x.id === id) || null, [intel, id]);
   const readRef = useRef(null);
@@ -47,9 +47,13 @@ export default function IntelArticle({ id, onBack }) {
     recordRead(b, 0);
     try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch { window.scrollTo(0, 0); }
   }, [b]);
-  // keep the tab title on the headline (separate, un-guarded: App's head effect can re-assert a generic
-  // "Briefing" title on an unrelated re-render while parked here, so re-set it whenever the briefing resolves)
-  useEffect(() => { if (b) document.title = b.headline + ' · Greatstone Intelligence'; }, [b]);
+  // full head once the briefing resolves (App's head effect only stamps a generic "Briefing" placeholder):
+  // headline-branded title + the summary as description + canonical, so a shared briefing link is complete.
+  useEffect(() => {
+    if (!b) return;
+    if (applyHead) applyHead({ title: b.headline + ' · Greatstone Intelligence', description: b.summary }, b.headline, 'insights/' + b.id);
+    else document.title = b.headline + ' · Greatstone Intelligence';
+  }, [b]); // eslint-disable-line react-hooks/exhaustive-deps
   // dwell as a sales signal: how long the visitor stayed on this briefing (fires on leave / id change).
   // recordDwell ignores sub-400ms bounces, and StrictMode's immediate cleanup records ~0ms (ignored).
   useEffect(() => {
