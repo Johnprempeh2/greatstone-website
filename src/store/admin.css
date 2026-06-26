@@ -199,7 +199,10 @@
 .acct-avatar { flex:0 0 auto; width:54px; height:54px; border-radius:50%; background:var(--gs-accent); color:#0e1611; display:grid; place-items:center; font-weight:900; font-size:1.2rem; letter-spacing:.02em; }
 .acct-id-text { min-width:0; flex:1 1 240px; }
 .acct-id-name { font-size:clamp(1.5rem,3.2vw,2.2rem); font-weight:900; letter-spacing:-.02em; line-height:1.1; }
-.acct-id-sub { color:var(--gs-text-muted); font-size:.86rem; margin-top:3px; overflow:hidden; text-overflow:ellipsis; }
+.acct-id-sub { color:var(--gs-text-muted); font-size:.86rem; margin-top:3px; }
+/* email truncates in its own span so a long address can't push the role chip / company under the
+   container's clip; the chip + company then wrap to their own line on narrow screens instead of cutting off */
+.acct-id-email { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
 .acct-id-actions { display:flex; gap:10px; flex-wrap:wrap; }
 .acct-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:14px; margin-bottom:8px; align-items:start; }
 .acct-tier { display:inline-block; margin-top:6px; font-size:.7rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:.25em .7em; border-radius:100px; background:var(--gs-accent-soft); color:var(--gs-accent); }

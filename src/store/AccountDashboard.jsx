@@ -326,7 +326,7 @@ function Dashboard({ session, profile, onProfile }) {
           {lastVisit && <p className="acct-welcome">Welcome back · {lastVisit}</p>}
           <h1 className="acct-id-name">{profile?.full_name || 'Welcome back'}</h1>
           <div className="acct-id-sub">
-            {profile?.email || session.user?.email}
+            <span className="acct-id-email">{profile?.email || session.user?.email}</span>
             {admin && <a className="org-rolechip is-admin" href="#org" style={{ marginLeft: 8, whiteSpace: 'nowrap', textDecoration: 'none' }} aria-label="Company admin — open your organization">Company admin</a>}
             {company && <> · <a className="ca-link" href="#org">{company}</a>{tier && <span className="acct-tier">{tier}</span>}</>}
           </div>
