@@ -47,6 +47,16 @@
 [data-reveal].is-in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none;transition:none}}
 
+/* ---- block rhythm + scroll-snap 'slides': each public block gets breathing room and snaps gently
+   into place as you scroll, like a slide deck. Proximity (not mandatory) so the near-full-height
+   blocks (hero, proof) never trap the scroll; scroll-padding-top clears the fixed header. Scoped to
+   the public view (off in the editor, where .is-edit is present) and off for reduced-motion. ---- */
+.gs-blk + .gs-blk{margin-top:clamp(1.75rem,4vw,3.5rem)}
+.gs-blk{scroll-snap-align:start;scroll-snap-stop:normal}
+.gs-blk:last-child{scroll-snap-align:none} /* never snap the final block, so the footer after it stays reachable */
+html:not(:has(.is-edit)){scroll-snap-type:y proximity;scroll-padding-top:clamp(76px,9vh,96px)}
+@media(prefers-reduced-motion:reduce){html{scroll-snap-type:none}}
+
 /* the persistent 3D stage: one fixed layer behind the page, with cross-fading scenes */
 .gs-stage{position:fixed;inset:0;z-index:0;pointer-events:none}
 .gs-stage .gs-layer{position:absolute;inset:0}
