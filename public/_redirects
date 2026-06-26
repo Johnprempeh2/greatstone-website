@@ -1,0 +1,8 @@
+# Legacy studio URL (was served under /puck-proof/) → now the site root.
+# Forced (!) so they win over Netlify's default trailing-slash / asset handling.
+# Hash deep-links (#account, #shop, #join/<token>, #order-confirmed) are carried across the 301 by the browser.
+/puck-proof          /             301!
+/puck-proof/         /             301!
+/puck-proof/*        /:splat       301!
+# SPA fallback — must stay last, unforced so real assets are served first
+/*                   /index.html   200

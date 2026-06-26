@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { roleNotice } from './staffRoles.mjs'; // pure (no Supabase) — keeps the client out of this bundle
 import PasswordInput from '../store/PasswordInput.jsx'; // pure (no Supabase) — show/hide toggle, shared with the storefront
 
-const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const LOGO = '/assets/greatstone-logo-web.png';
 
 // The admin sign-in (reached only via #admin). One account now controls the WHOLE admin — the
 // console, the page editor AND the catalogue — so this authenticates against Supabase staff (the same

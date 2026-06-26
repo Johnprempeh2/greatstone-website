@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ROLES } from './auth.js';
 
-const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const LOGO = '/assets/greatstone-logo-web.png';
 // friendly labels for the capability keys, so the invitee never sees a raw identifier like "manageUsers"
 const CAP_LABELS = { edit: 'Edit content', publish: 'Publish pages', manageUsers: 'Manage the team' };
 

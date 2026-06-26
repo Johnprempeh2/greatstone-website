@@ -6,7 +6,7 @@ import { publicNavOrder } from './lib/nav-order.js';
 import { track } from './lib/analytics.js';
 import { BOOKING_URL, openBooking } from './lib/booking.js';
 
-const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const LOGO = '/assets/greatstone-logo-web.png';
 // the view-mode 3D switcher flips to its light-surface variant when a light scene (tide family) sits
 // behind the header, so the control stays legible over a bright background
 const LIGHT_KINDS = new Set(['tide', 'tideRadial', 'tideCalm']);

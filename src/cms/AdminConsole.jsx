@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react';
 // adminAuth (and its @supabase/supabase-js dependency) is imported DYNAMICALLY inside the session
 // effect below, so the heavy Supabase client stays out of the eager bundle the public homepage loads.
 
-const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const LOGO = '/assets/greatstone-logo-web.png';
 const PER_PAGE = new Set(['seo', 'background', 'history', 'activity']);
 
 // nav model — `type` decides what activating an item does:

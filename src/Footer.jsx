@@ -1,7 +1,7 @@
 import { publicNavOrder } from './lib/nav-order.js';
 import { safeMailto } from './lib/safe-url.js';
 
-const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const LOGO = '/assets/greatstone-logo-web.png';
 
 // The real site footer (uses site.css .site-footer classes verbatim), so the studio closes
 // the page exactly like the live site. Global chrome, shown in view mode only.

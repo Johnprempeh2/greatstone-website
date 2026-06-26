@@ -8,7 +8,7 @@ import { safeHref } from '../lib/safe-url.js';
 // method Hero's "Open the interactive breakdown" CTA (#breakdown). three.js loads only when this mounts.
 // Content (the eight pillars, incl. each one's optional link) comes from the editable Pillar-cards block,
 // so marketing edits the cards and the breakdown follows.
-const LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+const LOGO = '/assets/greatstone-logo-web.png';
 const pad2 = (n) => String(n).padStart(2, '0');
 
 export default function MethodExplorer({ pillars = [], onClose }) {

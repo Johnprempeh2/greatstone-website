@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// base is '/puck-proof/' for the static build (deployed under that path),
-// '/' in dev so the local server serves at root.
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/puck-proof/' : '/',
+// base '/' — the studio IS the site: deployed at the root of greatstone-home.netlify.app
+// (previously served under the /puck-proof/ subpath of the old static homepage, now retired).
+export default defineConfig(() => ({
+  base: '/',
   plugins: [react()],
   server: { port: 5180, host: true },
   build: {

@@ -22,7 +22,7 @@ const SEED_VERSION = 20260617;
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
 // Footer / AdminConsole, so backfilling them onto an existing store changes nothing until an admin edits.
-export const DEFAULT_LOGO = 'https://greatstone-home.netlify.app/assets/greatstone-logo-web.png';
+export const DEFAULT_LOGO = '/assets/greatstone-logo-web.png';
 const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Diagnostic', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
