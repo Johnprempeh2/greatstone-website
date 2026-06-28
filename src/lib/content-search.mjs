@@ -24,7 +24,7 @@ const LOOKS_LIKE_REF = /^(#|https?:|mailto:|\/|[\w-]+\.[\w-]+$)/i;
 const SNIPPET_RADIUS = 40;
 export const MIN_QUERY = 2; // 0–1 char queries match everything → noise; ignored
 
-function isSearchableText(key, value) {
+export function isSearchableText(key, value) {
   if (typeof value !== 'string') return false;
   const t = value.trim();
   if (!t) return false;
@@ -38,7 +38,7 @@ export function stripMarks(s) { return String(s).replace(/\*\*/g, ''); }
 
 // recurse props, invoking cb(fieldPath, text) for every searchable prose string; fieldPath is a dotted
 // trail ('body', 'items.0.q', 'slabs.1.title') used for display + ranking only.
-function walkText(node, key, path, cb) {
+export function walkText(node, key, path, cb) {
   if (Array.isArray(node)) { node.forEach((n, i) => walkText(n, key, path ? path + '.' + i : String(i), cb)); return; }
   if (node && typeof node === 'object') { Object.keys(node).forEach((k) => walkText(node[k], k, path ? path + '.' + k : k, cb)); return; }
   if (isSearchableText(key, node)) cb(path || key, node);
@@ -57,7 +57,7 @@ function findMatches(text, qLower) {
 
 // snippet around the first match; hi offsets are snippet-relative so the UI splits [before][mark][after]
 // without re-searching (avoids mis-locating on repeated terms).
-function buildSnippet(hay, m) {
+export function buildSnippet(hay, m) {
   let s = Math.max(0, m.start - SNIPPET_RADIUS);
   const e = Math.min(hay.length, m.end + SNIPPET_RADIUS);
   if (s > 0) { const sp = hay.indexOf(' ', s); if (sp !== -1 && sp < m.start) s = sp + 1; } // snap to a word boundary
