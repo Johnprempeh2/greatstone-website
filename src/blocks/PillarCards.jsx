@@ -1,5 +1,6 @@
 import { useReveal } from './reveal.js';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // PillarCards: method.html's "The Eight Pillars / Every facet, examined." — a 4-up wall of examinable
 // pillar cards (P·01…P·08), each with a number + "Inspect" affordance, a name, a one-line tag, a short
@@ -17,9 +18,9 @@ export function PillarCards({ kicker, heading, body, pillars = [] }) {
         </div>
         <div className="b-pc-grid">
           {pillars.map((p, i) => {
-            const linked = p.href && p.href !== '#';
+            const linked = hasLink(p.href);
             const Tag = linked ? 'a' : 'article';
-            const extra = linked ? { href: safeHref(p.href) } : {};
+            const extra = linked ? resolveLink(p.href) : {};
             return (
               <Tag key={i} className="b-pc-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} {...extra}>
                 <div className="b-pc-top">
@@ -87,7 +88,7 @@ export const puck = {
           defaultItemProps: { text: 'Facet' },
           getItemSummary: (i) => i.text || 'Chip',
         },
-        href: { type: 'text', label: 'Deep-link (optional)' },
+        href: { type: 'custom', label: 'Deep-link (optional)', render: (props) => <LinkField {...props} /> },
       },
       defaultItemProps: { n: 'P·00', name: 'Pillar', tag: 'A one-line tag.', def: 'What we examine here.', chips: [], href: '' },
       getItemSummary: (i) => i.name || 'Pillar',

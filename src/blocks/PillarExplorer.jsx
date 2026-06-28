@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 // three.js is imported DYNAMICALLY inside the effect (not statically) so this editor-registered but
 // heavy 3D block never drags three.js onto the public critical path.
 
@@ -64,7 +65,7 @@ export function PillarExplorer({ index, eyebrow, headline, highlight, body, item
             <span className="b-pillarx-n">{String(selected + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span>
             <h3>{active.title}</h3>
             <p>{active.text}</p>
-            {active.href ? <a className="b-pillarx-cta" href={safeHref(active.href)}>{active.linkLabel || 'Inspect this pillar'}<Arrow /></a> : null}
+            {hasLink(active.href) ? <a className="b-pillarx-cta" {...resolveLink(active.href)}>{active.linkLabel || 'Inspect this pillar'}<Arrow /></a> : null}
           </aside>
         </div>
 
@@ -122,7 +123,7 @@ export const puck = {
       arrayFields: {
         title: { type: 'text', label: 'Title' },
         text: { type: 'textarea', label: 'Description' },
-        href: { type: 'text', label: 'Link (optional)' },        // a per-pillar link the panel shows as a CTA
+        href: { type: 'custom', label: 'Link (optional)', render: (props) => <LinkField {...props} /> },        // a per-pillar link the panel shows as a CTA
         linkLabel: { type: 'text', label: 'Link label' },
       },
       defaultItemProps: { title: 'Pillar', text: 'A short, honest read.', href: '', linkLabel: 'Inspect this pillar' },

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
 
 // The full-screen "interactive breakdown" — the live homepage's #/method methodology explorer brought
 // into the studio. Eight emerald pillar-gems in a ring around a central EXPLORE orb; hover to feel one,
@@ -158,9 +158,9 @@ export default function MethodExplorer({ pillars = [], onClose }) {
                 optional per-pillar link stays as a secondary, hidden when it would just duplicate #book. */}
             <div className="me-detail-actions">
               <a className="me-detail-book" href="#book" onClick={onClose}>Book a Diagnostic<Arrow /></a>
-              {active.href && active.href !== '#' && active.href !== '#book' ? (
-                <a className="me-detail-cta" href={safeHref(active.href)} onClick={onClose}>Inspect this pillar<Arrow /></a>
-              ) : null}
+              {(() => { const l = resolveLink(active.href); return l.href !== '#' && l.href !== '#book' ? (
+                <a className="me-detail-cta" {...l} onClick={onClose}>Inspect this pillar<Arrow /></a>
+              ) : null; })()}
             </div>
             <nav className="me-pager">
               <button onClick={() => step(-1)} aria-label="Previous pillar"><span>← Prev</span></button>

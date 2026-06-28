@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // InsightsGrid: insights.html's filtered article wall. A row of category chips (aria-pressed, "All"
 // auto-prepended) crossfades the grid of post cards by data-cat; each card is a gradient-ink (or image)
@@ -63,8 +64,8 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
             );
             // A post with a link becomes a real, focusable card-link (with a "Read" affordance); one
             // without a link stays a plain preview card, exactly as before. No nested interactive els.
-            return p.href
-              ? <a key={i} className={cls + ' is-link'} href={safeHref(p.href)} data-reveal>{inner}<span className="b-ins-more" aria-hidden="true">Read &rarr;</span></a>
+            return hasLink(p.href)
+              ? <a key={i} className={cls + ' is-link'} {...resolveLink(p.href)} data-reveal>{inner}<span className="b-ins-more" aria-hidden="true">Read &rarr;</span></a>
               : <article key={i} className={cls} data-reveal>{inner}</article>;
           })}
         </div>
@@ -134,7 +135,7 @@ export const puck = {
         title: { type: 'text', label: 'Title' },
         excerpt: { type: 'textarea', label: 'Excerpt' },
         readTime: { type: 'text', label: 'Read time' },
-        href: { type: 'text', label: 'Link (optional, makes the card clickable)' },
+        href: { type: 'custom', label: 'Link (optional, makes the card clickable)', render: (props) => <LinkField {...props} /> },
         image: { type: 'custom', label: 'Image (optional)', render: (props) => <MediaField {...props} /> },
         alt: { type: 'text', label: 'Image alt' },
       },
