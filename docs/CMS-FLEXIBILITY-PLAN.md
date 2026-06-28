@@ -53,19 +53,23 @@ Committed.
 This is the "build the nav bar yourself" capability, and it permanently retired the hardcoded array.
 Verified end-to-end: editing a group label in the panel updated the live header immediately.
 
-### Phase 2 — Central link resolver + a Link picker
-- **`resolveLink()`** — one resolver that turns a structured link (`page` / `url` / `email` / `booking`
-  / `anchor` + new-tab) *or* a legacy string into `{ href, target, onClick }`, folding in the
-  `#book`/`#go` logic + the safe-URL guards. *(M)*
-- **`LinkField`** — a reusable custom Puck field (same mechanism as MediaField): a type selector, a page
-  dropdown with autocomplete, URL/email/anchor inputs, an "open in new tab" toggle, and a live resolved
-  preview with error feedback. *(M)*
+### Phase 2 — Central link resolver + a Link picker (DONE — commit 43f7665)
+- **`resolveLink()`** (`lib/link-resolver.mjs`) — turns a structured link (`page`/`url`/`email`/`booking`/
+  `anchor` + new-tab) *or* a legacy string into `{ href, target, rel }`, routing `#book`/`#go` to App's
+  click handler and everything else through the safe-URL guards. + `hasLink` / `describeLink`. 10 unit tests. *(done)*
+- **`LinkField`** (`cms/LinkField.jsx`) — a reusable custom Puck field (same mechanism as MediaField): a
+  type selector, a page dropdown, URL/email/anchor inputs, an open-in-new-tab toggle, and a live resolved
+  preview. Coerces legacy strings so old data loads and upgrades on first edit; page list via LinkContext. *(done)*
 
-### Phase 3 — Roll the picker into blocks + discoverability
-- Migrate blocks to `LinkField` + `resolveLink`, **Hero first as the proof**, then Invite / Chapter /
-  ContactBand / BookDeepDive (replace the hardcoded `#book` with an "open booking" action), then the
-  rest. Backward-compatible (legacy strings still resolve), so each block is independent and reversible. *(M)*
-- A link-vocabulary reference card + inline field hints. *(S)*
+### Phase 3 — Roll the picker into blocks (DONE — commits 43f7665, c4c1bd6, a9a6ee4)
+- Migrated to `LinkField` + `resolveLink` (via a `{...resolveLink(x)}` spread so href/target/rel carry):
+  **Hero** (proof), then **Invite, Chapter, ContactBand, IntelBand, MethodTieIn, FeaturedArticle,
+  IndustryPicker, TimeCounter, TimeSavingsCalculator** (button CTAs), then the per-item links in
+  **PillarCards, InsightsGrid, PillarExplorer, MethodExplorer**. Backward-compatible (legacy strings still
+  resolve); `hasLink()` gates so an unset link renders as a plain element, not a dead `#`. *(done)*
+- Intentionally left: **LogoWall** (logos force new-tab external links; the picker default would regress
+  that) and **BookDeepDive** (its CTA is the booking action by design). A link-vocabulary reference card
+  + inline hints is the remaining *(S)* nicety, not yet built.
 
 ## Recommendation
 
