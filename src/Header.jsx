@@ -75,6 +75,17 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
   const popRef = useRef(null);
   const active = members.some((m) => m.kind === 'page' && m.slug === current) && !shopActive;
 
+  // Hover intent: open immediately, but close on a short grace delay that is cancelled the moment the
+  // cursor re-enters the group (button OR menu). This is what stops the menu vanishing while the cursor
+  // travels across the gap between the button and the popover — far more robust than a CSS hover bridge,
+  // and it also tolerates the open animation, diagonal paths and fast cursors. Touch/click + keyboard are
+  // unaffected (they toggle `open` directly). The timer is always cleared on unmount.
+  const closeTimer = useRef(null);
+  const cancelClose = () => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } };
+  const openNow = () => { cancelClose(); setOpen(true); };
+  const scheduleClose = () => { cancelClose(); closeTimer.current = setTimeout(() => setOpen(false), 220); };
+  useEffect(() => () => cancelClose(), []);
+
   useEffect(() => {
     if (!open) return;
     const onDoc = (e) => { if (!ref.current || !ref.current.contains(e.target)) setOpen(false); };
@@ -101,7 +112,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
   };
 
   return (
-    <div className="gs-navgroup" ref={ref} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+    <div className="gs-navgroup" ref={ref} onMouseEnter={openNow} onMouseLeave={scheduleClose}>
       <button ref={btnRef} className={'gs-navlink gs-navgroup-btn' + (active ? ' is-active' : '')}
         aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); } }}>
