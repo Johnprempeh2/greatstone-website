@@ -44,6 +44,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
   voice (banned filler, em-dashes, "not just X it's Y", metaphor clichés, "whilst") with suggestions.
 - **Cycle 7 — Accessibility quality.** Content a11y pre-flight beyond alt text: vague link text (2.4.4)
   + H1 structure (missing/duplicate/empty main heading, 2.4.6/1.3.1) with WCAG refs + suggestions.
+- **Cycle 8 — SEO / discoverability quality.** Site-wide SEO Health scorecard: every page's meta audited
+  together for presence + length (SeoPanel's own 40–60 / 110–158 thresholds) + cross-page DUPLICATE
+  titles/descriptions, with a Fix deep-link into the per-page SEO editor.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -55,6 +58,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 5 | Editor velocity | **Saved Sections** — save a configured block as a named preset, insert a fresh-id copy into any page (panel-driven block browser + pure store append); ⌘K command | `97ba202` | NON-REDUNDANT: duplicatePage is whole-page; "Add block" inserts a config default; nothing saved/reused a single configured block |
 | 6 | Content quality | **Copy Coach** — read-only house-voice checker over all page prose (banned filler, em-dashes [hard], not-just tic, metaphor clichés, whilst), grouped by page with snippet + suggestion + Open deep-link; rail badge (hard only) + ⌘K command | `46b0fa3` | NON-REDUNDANT: SeoPanel meters meta length only; nothing checked copy quality/voice. Reuses content-search's walker (exported walkText/isSearchableText/buildSnippet) so no drift |
 | 7 | Accessibility quality | **A11y pre-flight** — read-only content-a11y checker (vague link text 2.4.4 on standalone CTAs; missing/duplicate/empty H1 via grounded Hero+TimeCounter detection), grouped by page with WCAG ref + suggestion + Open deep-link; rail badge (errors only) + ⌘K. Section id `access` (route #admin/access — the admin regex is [a-z]+, rejects digits) | `56acaae` | NON-REDUNDANT: findMissingAlt is image-alt-at-publish only; Copy Coach is voice; Link health is targets — nothing checked link-text quality or heading structure |
+| 8 | SEO / discoverability | **SEO Health scorecard** — read-only site-wide meta audit: presence + length (SeoPanel's own 40–60/110–158 thresholds, cited so audit & editor never contradict) + the standout cross-page DUPLICATE title/description check, grouped worst-first with a Fix deep-link that opens the SEO editor on that page; rail badge (errors only) + ⌘K. Section id `seohealth` | `62d0e4c` | NON-REDUNDANT: SeoPanel is the per-page meta EDITOR + length meter; a11y owns H1; nothing audited meta site-wide or detected duplicates. Reuses SeoPanel's exact thresholds; no schema bump, no new CSS |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -72,17 +76,22 @@ re-validate redundancy against the current code before building.
    cycle 3 (`a738d2f`).
    - **Redirects Manager** — ✅ SHIPPED cycle 4 (`dd50000`).
    - **Saved Sections** — ✅ cycle 5 (`97ba202`). **Copy Coach** — ✅ cycle 6 (`46b0fa3`). **A11y
-     pre-flight** — ✅ cycle 7 (`56acaae`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-7): **page-level SEO scorecard**
-     (title/description/H1 presence + length + cross-page DUPLICATE-title detection — a site-wide audit,
-     distinct from SeoPanel's per-page length meter), **Scheduled Publish** (publishing — a publishAt +
-     client timer; frame the stale-tab caveat honestly), **Bulk page actions** (multi-select status
-     changes — write, moderate blast radius), **Reading-time / content-length insight** per page. Avoid
-     Page Health (now overlaps findMissingAlt + link audit + copy coach + a11y) and Global Find&Replace
-     (bulk-mutate risk). Process notes: (1) the text-output spec+review workflow (cycles 3-7) is reliable
-     and the adversarial review keeps catching real bugs (cycle 4 self-redirect/cycle, cycle 6 en-dash
-     range FP, cycle 7 array-link WCAG FP) — keep it over strict-JSON schemas; (2) NEW admin section ids
-     must be LETTERS-ONLY (the admin route regex is [a-z]+ — digits/hyphens fall back to overview)._
+     pre-flight** — ✅ cycle 7 (`56acaae`). **SEO Health scorecard** — ✅ cycle 8 (`62d0e4c`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-8): **Scheduled Publish**
+     (publishing angle — a publishAt embargo + client timer; reuses publish() + version snapshot; frame
+     the "timer only fires while a studio tab is open" caveat honestly), **Bulk page actions** (multi-
+     select status/delete across the Pages list — write, moderate blast radius, needs a confirm + undo),
+     **Reading-time / content-length insight** per page (read-only, reuses the content-search walker —
+     words/min + thin-content flag), or an **internal-link graph / orphan-page finder** (which pages no
+     nav or in-content #go link reaches — distinct from Link health's broken-target audit). Avoid Page
+     Health (now overlaps findMissingAlt + link audit + copy coach + a11y + SEO health) and Global
+     Find&Replace (bulk-mutate risk). Process notes: (1) the text-output spec+review workflow (cycles
+     3-8) is reliable and the adversarial review keeps catching real bugs (cycle 4 self-redirect/cycle,
+     cycle 6 en-dash range FP, cycle 7 array-link WCAG FP, cycle 8 buildSnippet-arity + duplicate-naming
+     precision) — keep it over strict-JSON schemas; (2) NEW admin section ids must be LETTERS-ONLY (the
+     admin route regex is [a-z]+ — digits/hyphens fall back to overview); (3) when a new audit overlaps
+     an existing editor, reuse that editor's exact thresholds/constants and cite them so the two never
+     drift (cycle 8 reused SeoPanel's 40–60/110–158)._
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
