@@ -551,6 +551,21 @@
 .gs-redir-status{min-width:210px}
 .gs-redir-say{display:block;font-size:.74rem;color:var(--gs-muted);margin-top:3px}
 @media (max-width:560px){.gs-redir-addrow{flex-direction:column;align-items:stretch}.gs-redir-l input,.gs-redir-l select{min-width:0;width:100%}.gs-redir-arrow{display:none}}
+
+/* saved sections (reusable block library) */
+.gs-ss-h{font-size:.78rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-muted);margin:18px 0 8px}
+.gs-ss-h2{margin-top:24px;padding-top:16px;border-top:1px solid var(--gs-border-soft)}
+.gs-ss-empty{font-size:.84rem;color:var(--gs-muted);margin:6px 0}
+.gs-ss-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.gs-ss-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02);flex-wrap:wrap}
+.gs-ss-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gs-ss-label{font-size:.86rem;font-weight:700;color:var(--gs-text)}
+.gs-ss-chip{font-size:.62rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-muted);background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:999px;padding:2px 8px}
+.gs-ss-summary{font-size:.78rem;color:var(--gs-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.gs-ss-acts{display:flex;gap:6px;flex-wrap:wrap}
+.gs-ss-browse{margin:0 0 8px}
+.gs-ss-pickl{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gs-faint)}
+.gs-ss-pickl select{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:8px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:500;text-transform:none;letter-spacing:0;padding:6px 10px}
 /* status filter chips */
 .gs-pagefilter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);

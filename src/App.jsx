@@ -92,6 +92,7 @@ import NavigationPanel from './cms/NavigationPanel.jsx';
 import LinkAuditPanel from './cms/LinkAuditPanel.jsx';
 import ContentSearchPanel from './cms/ContentSearchPanel.jsx';
 import RedirectsPanel from './cms/RedirectsPanel.jsx';
+import SavedSectionsPanel from './cms/SavedSectionsPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
@@ -103,7 +104,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -307,6 +308,7 @@ export default function App() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [panel, setPanel] = useState(null);        // 'seo' | 'history' | null
   const [savedAt, setSavedAt] = useState(null);
+  const [sectionBrowse, setSectionBrowse] = useState(''); // which page the Saved-sections block browser shows
   const [toast, setToast] = useState(null);
   const [puckKey, setPuckKey] = useState(0);        // bump to force Puck to re-read data
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
@@ -647,6 +649,58 @@ export default function App() {
   }
   function repointRedirect(from, to) { setState((s) => setRedirect(s, from, to)); flash('Redirect repointed.'); }
   function dropRedirect(from) { setState((s) => removeRedirect(s, from)); flash('Redirect removed.'); }
+
+  // Saved sections: the browsed page's blocks, shaped for the panel (human label + a one-line summary).
+  const browseSlug = sectionBrowse || current; // the block browser defaults to the current page
+  const sectionBrowseBlocks = useMemo(() => {
+    const p = state.pages[browseSlug];
+    const content = (p && p.data && p.data.content) || [];
+    const summarize = (props) => {
+      const v = props && (props.headline || props.heading || props.title || props.kicker || props.eyebrow || props.label || props.body || props.text || props.lead || props.intro || props.quote);
+      if (v) return String(v).replace(/\s+/g, ' ').slice(0, 70);
+      const arr = props && Object.values(props).find((x) => Array.isArray(x) && x.length);
+      return arr ? arr.length + ' item' + (arr.length === 1 ? '' : 's') : '';
+    };
+    return content.map((b) => ({ id: b.props.id, type: b.type, props: b.props, summary: summarize(b.props) }));
+  }, [state.pages, browseSlug]);
+  // SAVE: snapshot a browsed block under a name (App owns the ask() prompt; the panel stays presentational).
+  async function saveSection(block) {
+    const def = config.components[block.type];
+    const label = await ask({ kind: 'prompt', title: 'Save section', label: 'Name this saved section', defaultValue: (def ? def.label : block.type), confirmLabel: 'Save section' });
+    if (label === null) return;
+    setState((s) => addSection(s, { type: block.type, props: block.props }, label, rid));
+    flash('Saved “' + ((label || '').trim() || (def ? def.label : block.type)) + '” to your sections.');
+  }
+  // INSERT: append a fresh-id copy to the CURRENT page's draft, reopening it to draft if it was live.
+  function insertSection(sectionId) {
+    const sec = listSections(state).find((x) => x.id === sectionId);
+    if (!sec) return;
+    const block = buildInsertBlock(sec, rid); // fresh ids — never collides (mirrors duplicatePage)
+    setState((s) => {
+      const p = s.pages[current];
+      const data = { ...p.data, content: [...((p.data && p.data.content) || []), block] };
+      const reopen = (p.status === 'published' || p.status === 'approved') && p.published != null && !eq(data, p.published);
+      const patch = reopen
+        ? { data, status: 'draft', statusHistory: [...(p.statusHistory || []), { from: p.status, to: 'draft', by: user ? user.email : null, ts: Date.now(), note: 'Reopened (inserted a saved section)' }] }
+        : { data };
+      return { ...s, pages: { ...s.pages, [current]: { ...p, ...patch } } };
+    });
+    setSavedAt(Date.now());
+    setPuckKey((k) => k + 1); // the editor re-reads on its next mount (console + editor are separate branches)
+    flash('Inserted “' + sec.label + '” at the bottom of “' + state.pages[current].title + '”. Open the editor to place it.');
+  }
+  async function renameSavedSection(id) {
+    const cur = listSections(state).find((x) => x.id === id);
+    const label = await ask({ kind: 'prompt', title: 'Rename section', label: 'Section name', defaultValue: cur ? cur.label : '', confirmLabel: 'Rename' });
+    if (label === null || !label.trim()) return;
+    setState((s) => renameSection(s, id, label.trim())); flash('Section renamed.');
+  }
+  async function removeSavedSection(id) {
+    const cur = listSections(state).find((x) => x.id === id);
+    const ok = await ask({ kind: 'confirm', title: 'Remove saved section', message: 'Remove “' + (cur ? cur.label : 'this section') + '” from your saved sections? Pages already using a copy keep it.', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
+    setState((s) => removeSection(s, id)); flash('Removed from saved sections.');
+  }
   async function newPage() {
     const title = await ask({ kind: 'prompt', title: 'New page', label: 'Page title', defaultValue: 'New page', confirmLabel: 'Create page' });
     if (!title || !title.trim()) return;
@@ -884,6 +938,7 @@ export default function App() {
       cmds.push({ id: 'search', group: 'Admin', label: 'Search content', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/search'; } });
       cmds.push({ id: 'links', group: 'Admin', label: 'Check link health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/links'; } });
       cmds.push({ id: 'redirects', group: 'Admin', label: 'Manage redirects', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/redirects'; } });
+      cmds.push({ id: 'sections', group: 'Admin', label: 'Saved sections', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sections'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
       cmds.push({ id: 'dup', group: 'Pages', label: 'Duplicate this page', run: () => clonePage(current) });
       cmds.push({ id: 'rename', group: 'Pages', label: 'Rename this page', run: () => retitlePage(current) });
@@ -998,6 +1053,7 @@ export default function App() {
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { redirects: <RedirectsPanel embedded rows={listRedirects(state)} pages={state.pages} order={state.order} error={state._redirectError} onAdd={addRedirectMut} onRepoint={repointRedirect} onRemove={dropRedirect} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { sections: <SavedSectionsPanel embedded sections={listSections(state)} pages={state.pages} order={state.order} current={current} browseSlug={browseSlug} browseBlocks={sectionBrowseBlocks} labelFor={labelFor} onBrowse={setSectionBrowse} onSave={saveSection} onInsert={insertSection} onRename={renameSavedSection} onRemove={removeSavedSection} onClose={onConsoleClose} /> } : {}),
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
       background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
       history: <VersionHistory embedded versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={onConsoleClose} />,

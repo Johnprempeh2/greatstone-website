@@ -8,6 +8,7 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
 export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
 export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './lib/redirects-model.mjs';
+export { addSection, removeSection, renameSection, listSections, buildInsertBlock } from './lib/sections-model.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped
@@ -389,7 +390,7 @@ export function seedState() {
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
-  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), order, pages, assets: {}, org: ORG,
+  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
 }
@@ -484,6 +485,7 @@ function migrate(state) {
   // backfill the editable navigation tree (additive: only when absent, so an admin's edits are kept)
   if (!Array.isArray(state.navigation)) state.navigation = DEFAULT_NAVIGATION();
   if (!Array.isArray(state.redirects)) state.redirects = []; // slug-rename forwarding table (read by the #go self-heal + link audit)
+  if (!Array.isArray(state.sections)) state.sections = []; // saved-section library (reusable named block presets)
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
