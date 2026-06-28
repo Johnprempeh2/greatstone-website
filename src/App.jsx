@@ -104,6 +104,7 @@ import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
 import { MediaContext } from './cms/MediaField.jsx';
+import { LinkContext } from './cms/LinkField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
 import { ServicesContext, servicesFromPage } from './store/services.mjs';
 
@@ -953,6 +954,7 @@ export default function App() {
     return (
       <CatalogContext.Provider value={draftCatalog}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
+      <LinkContext.Provider value={{ pages: state.pages, order: state.order }}>
       <div className={'is-view ac-root' + (section === 'background' ? ' ac-has-stage' : '')}>
         {overlays}
         <a className="gs-skip" href="#admin-main">Skip to content</a>
@@ -972,6 +974,7 @@ export default function App() {
           logo={state.settings.logo} siteName={state.settings.siteName}
         />
       </div>
+      </LinkContext.Provider>
       </MediaContext.Provider>
       </CatalogContext.Provider>
     );
@@ -981,6 +984,7 @@ export default function App() {
     return (
       <CatalogContext.Provider value={draftCatalog}>
       <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
+      <LinkContext.Provider value={{ pages: state.pages, order: state.order }}>
       <div className="is-edit">
         {overlays}
         <Stage background={bg} previewP={previewP} />
@@ -1051,6 +1055,7 @@ export default function App() {
         </Suspense>
         </EditorBoundary>
       </div>
+      </LinkContext.Provider>
       </MediaContext.Provider>
       </CatalogContext.Provider>
     );

@@ -1,7 +1,8 @@
 import { useReveal } from './reveal.js';
 import { useEffect, useState } from 'react';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // THE BLOCK CONTRACT (every block file follows this):
 //   export function X(props)      — the React component; renders public + editor canvas.
@@ -25,6 +26,10 @@ export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, p
   // stacked headline (e.g. climb "Pebble. / Plateau. / Peak."): an explicit lines array forces a line
   // break per item, accenting (+ glow) the flagged ones — kept off the contentEditable headline string.
   const stacked = Array.isArray(lines) && lines.length > 0;
+  // CTA targets come from the LinkField (structured) or a legacy string; resolveLink folds both into
+  // sanitised anchor props. '#book'/'#go/<slug>' are handled by App's global click handler.
+  const cta1 = resolveLink(ctaHref);
+  const cta2 = resolveLink(ctaHref2);
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}${gridBackdrop ? ' has-grid' : ''}`}>
       <div className="wrap b-hero-inner">
@@ -47,8 +52,8 @@ export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, p
         ) : null}
         {(ctaLabel || ctaLabel2) ? (
           <div className="b-cta-row" data-reveal>
-            {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
-            {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
+            {ctaLabel ? <a className="b-cta" href={cta1.href} target={cta1.target} rel={cta1.rel}>{ctaLabel}<Arrow /></a> : null}
+            {ctaLabel2 ? <a className="b-cta ghost" href={cta2.href} target={cta2.target} rel={cta2.rel}>{ctaLabel2}</a> : null}
           </div>
         ) : null}
         {prompt ? (
@@ -155,9 +160,9 @@ export const puck = {
       { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' }, { label: 'Compact', value: 'compact' },
     ]},
     ctaLabel: { type: 'text', label: 'Primary button label (optional)' },
-    ctaHref: { type: 'text', label: 'Primary button link' },
+    ctaHref: { type: 'custom', label: 'Primary button link', render: (props) => <LinkField {...props} /> },
     ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
-    ctaHref2: { type: 'text', label: 'Ghost button link' },
+    ctaHref2: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
     meta: {
       type: 'array', label: 'Stats row (optional)',
       arrayFields: { bignum: { type: 'text', label: 'Figure' }, label: { type: 'text', label: 'Label' } },

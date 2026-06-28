@@ -463,6 +463,15 @@
 .gs-navedit-empty{font-size:.76rem;color:var(--gs-faint);padding:8px 4px}
 .gs-navedit-add{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .gs-navedit-add.is-sub{margin-top:0;padding-left:18px}
+
+/* link picker (custom Puck field on block CTAs — page / URL / email / booking / anchor) */
+.gs-lf{display:flex;flex-direction:column;gap:7px}
+.gs-lf-kind,.gs-lf-in{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:9px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.84rem;padding:8px 10px}
+.gs-lf-kind:focus,.gs-lf-in:focus{border-color:var(--gs-border);outline:none}
+.gs-lf-tab{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;color:var(--gs-muted);cursor:pointer}
+.gs-lf-tab input{accent-color:var(--gs-accent)}
+.gs-lf-note{font-size:.74rem;color:var(--gs-faint);margin:0;line-height:1.5}
+.gs-lf-preview{font-size:.72rem;color:var(--gs-accent);margin:2px 0 0;font-weight:600;word-break:break-word}
 /* status filter chips */
 .gs-pagefilter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);
