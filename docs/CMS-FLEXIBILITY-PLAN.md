@@ -39,16 +39,19 @@ The shipped "Who We Are" dropdown was clipped by `.gs-navwrap{overflow:hidden}` 
 the bar collapsed) and had an 8px hover gap. Fixed: `overflow:visible` + a transparent hover bridge.
 Committed.
 
-### Phase 1 — Editable navigation (recommended first; ships without the publish gate)
-- **`state.navigation` tree** — `[{ id, type:'link'|'group', label, pageSlug?, href?, children?, visible }]`,
-  seeded from a default that mirrors today's bar exactly, plus CRUD helpers and a defensive migration. *(S)*
-- **Header/Footer refactor** — `buildNavModel()` walks the tree instead of the hardcoded const; the
-  `NavGroup` dropdown + collapse + keyboard a11y stay exactly as they are. *(M)*
-- **NavigationPanel** — a new editor panel: add/remove/reorder, nest pages into dropdown groups, rename
-  groups, override a page's nav label (blank = page title), pick a page *or* paste a URL per item, and
-  toggle header visibility. *(M)*
+### Phase 1 — Editable navigation (DONE — commits 8327e9e, a683afc)
+- **`state.navigation` tree** — `[{ id, type:'page'|'link'|'group', label?, pageSlug?, href?, newTab?, visible, children? }]`,
+  seeded by `DEFAULT_NAVIGATION()` to mirror today's bar exactly, with `setNavigation()` + a defensive
+  additive `migrate()` backfill. *(done)*
+- **Header refactor** — `buildNavModel()` walks the tree (resolveNavItem drops unpublished pages for the
+  public, falls back to page order if empty); the `NavGroup` dropdown + collapse + keyboard a11y are
+  unchanged, and it now also renders custom/external link items. *(done)*
+- **NavigationPanel** — admin section *Content → Navigation*: add/remove/reorder, nest pages into dropdown
+  groups, rename groups, override a page's nav label (blank = page title), pick a page *or* paste a URL per
+  item, open-in-new-tab, and toggle header visibility. Applies live, no publish gate. *(done)*
 
-This is the "build the nav bar yourself" capability, and it permanently retires the hardcoded array.
+This is the "build the nav bar yourself" capability, and it permanently retired the hardcoded array.
+Verified end-to-end: editing a group label in the panel updated the live header immediately.
 
 ### Phase 2 — Central link resolver + a Link picker
 - **`resolveLink()`** — one resolver that turns a structured link (`page` / `url` / `email` / `booking`
