@@ -8,7 +8,10 @@
 .gs-logo img{width:138px;height:auto;display:block}
 .gs-logo{flex:none}
 /* the nav lives in a flexible wrap that we measure for overflow */
-.gs-navwrap{flex:1;min-width:0;display:flex;overflow:hidden}
+/* overflow:visible so an inline nav-group dropdown can escape downward; the row still measures its
+   intrinsic width via scrollWidth to decide when to collapse, and the trimmed 6-item bar fits without
+   spilling. (Was overflow:hidden, which clipped the dropdown popover.) */
+.gs-navwrap{flex:1;min-width:0;display:flex;overflow:visible}
 /* once collapsed we no longer measure inline overflow, so let the dropdown escape the clip */
 .gs-navwrap.is-collapsed{overflow:visible}
 .gs-nav{display:flex;align-items:center;gap:2px;flex-wrap:nowrap;white-space:nowrap}
@@ -32,6 +35,17 @@
 .gs-navmenu-item:hover{color:var(--gs-text);background:rgba(255,255,255,.05)}
 .gs-navmenu-item.is-active{color:var(--gs-accent);background:rgba(200,255,0,.08)}
 .gs-navmenu-empty{padding:10px 12px;font-size:.8rem;color:var(--gs-faint)}
+
+/* inline nav group ("Who We Are" dropdown) — the button reads as a nav link with a chevron; the popover
+   reuses the collapsed-menu box (.gs-navmenu-pop), just left-aligned under the button */
+.gs-navgroup{position:relative;display:inline-flex}
+.gs-navgroup-btn{display:inline-flex;align-items:center;gap:5px}
+.gs-navgroup-pop{right:auto;left:0;min-width:200px}
+/* transparent hover bridge over the 8px gap so moving from the button to the menu doesn't trip mouseleave */
+.gs-navgroup-pop::before{content:'';position:absolute;left:0;right:0;top:-8px;height:8px}
+/* the mobile menu shows the group's pages under a small label, lightly indented */
+.gs-navmenu-grouplabel{display:block;padding:8px 12px 2px;font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-faint)}
+.gs-navmenu-item.is-sub{padding-left:22px}
 
 .gs-tools{display:flex;align-items:center;gap:10px}
 /* persistent navbar CTA + account icon (Ben's 18 Jun review) */
