@@ -53,6 +53,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 10 — Asset governance.** The first media lens: unused library images (crowd the localStorage
   quota), untracked page images (used but not in the library), and missing alt — a key-gated image walker
   over the keys content-search deliberately SKIPS, so genuinely new ground.
+- **Cycle 11 — Holistic synthesis.** The capstone roll-up: ONE quality score (0-100 / A-F) across all six
+  audits, worst-first per-dimension breakdown + deep-links. Pure synthesis of the reports App already
+  computes; the one aggregate cycles 1-10 deliberately skipped.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -66,7 +69,8 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 7 | Accessibility quality | **A11y pre-flight** — read-only content-a11y checker (vague link text 2.4.4 on standalone CTAs; missing/duplicate/empty H1 via grounded Hero+TimeCounter detection), grouped by page with WCAG ref + suggestion + Open deep-link; rail badge (errors only) + ⌘K. Section id `access` (route #admin/access — the admin regex is [a-z]+, rejects digits) | `56acaae` | NON-REDUNDANT: findMissingAlt is image-alt-at-publish only; Copy Coach is voice; Link health is targets — nothing checked link-text quality or heading structure |
 | 8 | SEO / discoverability | **SEO Health scorecard** — read-only site-wide meta audit: presence + length (SeoPanel's own 40–60/110–158 thresholds, cited so audit & editor never contradict) + the standout cross-page DUPLICATE title/description check, grouped worst-first with a Fix deep-link that opens the SEO editor on that page; rail badge (errors only) + ⌘K. Section id `seohealth` | `62d0e4c` | NON-REDUNDANT: SeoPanel is the per-page meta EDITOR + length meter; a11y owns H1; nothing audited meta site-wide or detected duplicates. Reuses SeoPanel's exact thresholds; no schema bump, no new CSS |
 | 9 | Navigation integrity | **Navigation health** — read-only audit of the header MENU's completeness: navToDraft (error — visible menu item → unpublished page the public header drops), deadCustomLink (error — type:'link' href empty/# or #go to a missing page), emptyGroup (warn — dead dropdown), missingFromNav (warn — published page in no menu). Grouped by page/menu, Error/Warning pill, Fix deep-link into the Navigation editor; rail badge errors-only + ⌘K. Section id `navcheck` | `1c9b637` | NON-REDUNDANT: link-audit's "orphan" is already an orphan PAGE (reachability) + it walks link targets; classifyPageSlug is publish-status-BLIND (any existing page = ok) and never inspects custom-link hrefs — so nav→draft + dead custom hrefs + empty groups are all uncaught. navToMissing dropped (link-audit owns broken/recoverable nav targets). Reuses resolveRedirect/linkPageSlug/hasLink |
-| 10 | Asset governance | **Media usage** — read-only library audit: UNTRACKED page images (used but not in the library), MISSING ALT (known image field, blank alt — standing version of findMissingAlt), UNUSED library images (nothing references them, with reclaimable data-URI bytes). Key-gated image walker + per-page seo.ogImage + non-draft products; thumbnails, Open deep-links, three sorted sections; badge = untracked+missingAlt (errors:0, OUT of total) + ⌘K. Section id `mediausage`. Delete-unused action PARKED for cycle 11 (read-only this cycle) | `71770a1` | NON-REDUNDANT: content-search's walkText explicitly SKIPS image keys; a11y-check excludes alt; findMissingAlt is publish-only + Storefront-gated + page-scoped; link-audit walks link targets never image URLs. First asset lens — unused/untracked/where-used has no prior home |
+| 10 | Asset governance | **Media usage** — read-only library audit: UNTRACKED page images (used but not in the library), MISSING ALT (known image field, blank alt — standing version of findMissingAlt), UNUSED library images (nothing references them, with reclaimable data-URI bytes). Key-gated image walker + per-page seo.ogImage + non-draft products; thumbnails, Open deep-links, three sorted sections; badge = untracked+missingAlt (errors:0, OUT of total) + ⌘K. Section id `mediausage`. Delete-unused action PARKED (read-only this cycle) | `71770a1` | NON-REDUNDANT: content-search's walkText explicitly SKIPS image keys; a11y-check excludes alt; findMissingAlt is publish-only + Storefront-gated + page-scoped; link-audit walks link targets never image URLs. First asset lens — unused/untracked/where-used has no prior home |
+| 11 | Holistic synthesis | **Site health** — ONE quality score (100 − 3·errors − 1·warnings, clamped; grade A-F) rolling up all six audits (links, copy, a11y, SEO, nav, media), with a worst-first per-dimension breakdown + Open deep-link into each. Pure `computeHealth(reports)` consuming the already-memoised reports (no re-walk/re-audit/writes); transparent scoring (no per-dimension weights, no magic thresholds, hand-reconstructable). Score block + dimension list + Error/Warning/OK pills; badge = roll-up error count, OUT of total (would double-count). Section id `sitehealth`, first under Overview | `cb11c4e` | NON-REDUNDANT: OverviewPanel imports ZERO audits (page-status/catalogue/team/activity only); the rail badges are siloed per-dimension counts with no score + no cross-dimension ranking. Adds a synthesised score + worst-first list nothing else provides. orphans EXCLUDED from links→warnings (owned by navcheck — avoids double-count) |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -86,31 +90,33 @@ re-validate redundancy against the current code before building.
    - **Saved Sections** — ✅ cycle 5 (`97ba202`). **Copy Coach** — ✅ cycle 6 (`46b0fa3`). **A11y
      pre-flight** — ✅ cycle 7 (`56acaae`). **SEO Health scorecard** — ✅ cycle 8 (`62d0e4c`).
      **Navigation health** — ✅ cycle 9 (`1c9b637`). **Media usage** — ✅ cycle 10 (`71770a1`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-10): **Delete-unused-media action**
-     (cycle-10's natural follow-up — a per-row "Delete" on the Unused list routing through the existing
-     reversible-in-effect removeAsset + its confirm at App.jsx:748; the only WRITE candidate that's safe
-     because removeAsset just drops a library row, not page content — still, gate it behind a confirm and
-     ship as its own small cycle), **Reading-time / content insight** per page (read-only content-analytics
-     — words + est. read time + block count + thin-content flag; reuses content-search's walkText/stripMarks;
-     the runner-up scout B grounded fully), **Scheduled Publish** in the SAFE "due-to-publish" framing only
-     (a publishAt intent field + a read-only "due/overdue" lane in ReleaseBoard; the auto-flip timer is
-     half-baked + an autonomous write — keep OUT, hand the cron to Laravel), or an **internal-link graph /
-     site-map view** (page→page adjacency + in/out-degree; fresher but a good interactive render is harder
-     to land at excellence). DEAD/PARKED (verified): orphan-page finder (link-audit's "orphan" already IS an
-     orphan PAGE); content freshness/staleness (NO per-page edit timestamp — savedAt React-only, version ts
-     publish-only); "what's unpublished" dashboard (ReleaseBoard already does it); bulk page actions
-     (removePage hard-deletes page + its versions[] — irreversible, PARK FOR JOHN). Avoid Page Health
-     (overlaps findMissingAlt + link + copy + a11y + SEO + nav + media). Process notes: (1) the
-     SCOUT→spec→adversarial-review workflow is the strongest shape — cycles 9-10 used it to settle
-     redundancy + kill dead candidates BEFORE coding (cycle 10: media beat reading-time on real-drift; the
-     review caught the wrong clone-base); keep it over strict-JSON; (2) NEW admin section ids must be
-     LETTERS-ONLY (admin route regex [a-z]+); (3) reuse adjacent primitives + cite them so audits never
-     drift/double-report (c10 mirrors findMissingAlt's curated-alt rules + reuses nothing of content-search's
-     walker since it SKIPS image keys — wrote a parallel key-gated walker); (4) advisory/error-only badges
-     stay OUT of the Studio `total` — only genuine public-facing breakage counts (media errors:0 by design);
-     (5) the live seed has an EMPTY media library + no page image URLs, so audits over assets render their
-     clean state live — lean on the unit tests + a localStorage-inject probe (note: the app re-seeds on
-     reload, so injected probe data won't persist; the unit suite is the proof)._
+     **Site health** — ✅ cycle 11 (`cb11c4e`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-11): **Scheduled / due-to-publish**
+     in the SAFE framing only (an additive page.publishAt intent field + a read-only "due/overdue" lane —
+     publishing angle, fresh; honestly additive+reversible metadata, NO auto-flip timer = an autonomous
+     write + only fires while a tab is open, hand the cron to Laravel; scout B grounded it — strong cycle-12
+     lead), **Content depth** (scout C's reframe — thin/skeleton-page detection as the HEADLINE with
+     reading-time secondary; words<threshold over content-search's walkText; the body-substance complement
+     to SEO's metadata checks; live data shows 2/6 seed pages thin so the problem is real), **Delete-unused-
+     media action** (cycle-10 follow-up — a per-row Delete on the Unused list via the reversible removeAsset
+     + confirm; the one safe WRITE candidate, but REPEATS the asset angle), or an **internal-link graph /
+     site-map view** (page→page adjacency; fresher but a good interactive render is harder at excellence).
+     DEAD/PARKED (verified): orphan-page finder (link-audit owns it); content freshness/staleness (NO
+     per-page edit timestamp); "what's unpublished" dashboard (ReleaseBoard does it); bulk page actions
+     (removePage hard-deletes page + versions[] — irreversible, PARK FOR JOHN). Avoid Page Health (overlaps
+     findMissingAlt + link + copy + a11y + SEO + nav + media + the c11 roll-up). Process notes: (1) the
+     SCOUT→spec→adversarial-review workflow is the strongest shape — cycles 9-11 used it to settle
+     redundancy + kill dead candidates BEFORE coding (c11: scouts proved OverviewPanel imports zero audits;
+     the review caught the orphans double-count); keep it over strict-JSON; (2) NEW admin section ids must
+     be LETTERS-ONLY (admin route regex [a-z]+); (3) reuse adjacent primitives/reports + cite them so audits
+     never drift or double-report (c11 consumes the six memoised reports + EXCLUDED links-orphans since
+     navcheck owns them); (4) advisory/aggregate/error-only badges stay OUT of the Studio `total` — c11's
+     roll-up errors are a re-sum of the source dimensions, so badge-only never into total; (5) the live seed
+     scores 0/F (174 em-dash copy "errors") so the scorecard exercises its populated path live, but
+     asset/media audits render clean (empty library) — lean on unit tests there (the app re-seeds on reload
+     so localStorage-inject probes don't persist). **The audit SUITE is now complete (links/copy/a11y/SEO/
+     nav/media + the health roll-up) — future cycles should pivot to NEW capability families (publishing,
+     content-depth, actions) rather than more read-only audits, which would start overlapping.**_
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
