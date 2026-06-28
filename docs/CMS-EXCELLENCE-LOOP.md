@@ -40,6 +40,8 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
   self-heal consumes: view/add/repoint/remove, with cycle-safe validation. Completes the redirects story.
 - **Cycle 5 — Editor velocity / content reuse.** Save a configured block as a named preset and insert
   a fresh-id copy into any page. Panel-driven (no Puck-selection seam); insert is a pure store append.
+- **Cycle 6 — Content quality / on-brand voice.** Check every page's prose against the Greatstone house
+  voice (banned filler, em-dashes, "not just X it's Y", metaphor clichés, "whilst") with suggestions.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -49,6 +51,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 3 | Editor findability | **Content Search** — read-only full-text search across all page prose + titles, grouped by page with highlighted snippets + Open deep-link; ⌘K command | `a738d2f` | NON-REDUNDANT: the ⌘K palette only matches page/command labels, never block prop text; nothing searched content |
 | 4 | Ops governance | **Redirects Manager** — view/add/repoint/remove the slug-rename forwarding table, cycle-safe validation, Active/Dead-end/Shadowed status; ⌘K command | `dd50000` | NON-REDUNDANT: state.redirects was written by setSlug + read by the #go self-heal, but no surface let an editor see or manage it |
 | 5 | Editor velocity | **Saved Sections** — save a configured block as a named preset, insert a fresh-id copy into any page (panel-driven block browser + pure store append); ⌘K command | `97ba202` | NON-REDUNDANT: duplicatePage is whole-page; "Add block" inserts a config default; nothing saved/reused a single configured block |
+| 6 | Content quality | **Copy Coach** — read-only house-voice checker over all page prose (banned filler, em-dashes [hard], not-just tic, metaphor clichés, whilst), grouped by page with snippet + suggestion + Open deep-link; rail badge (hard only) + ⌘K command | `46b0fa3` | NON-REDUNDANT: SeoPanel meters meta length only; nothing checked copy quality/voice. Reuses content-search's walker (exported walkText/isSearchableText/buildSnippet) so no drift |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -65,14 +68,16 @@ re-validate redundancy against the current code before building.
 4. ~~**Version Compare**~~ — ✅ SHIPPED cycle 2 (`35d42e4`). **In-studio Content Search** — ✅ SHIPPED
    cycle 3 (`a738d2f`).
    - **Redirects Manager** — ✅ SHIPPED cycle 4 (`dd50000`).
-   - **Saved Sections** — ✅ SHIPPED cycle 5 (`97ba202`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-5): **Scheduled Publish**
-     (publishing — a publishAt + client timer; note the stale-tab caveat, so frame honestly), **On-Brand
-     Copy Coach** (content quality — banned-phrase/readability hints from greatstone-voice, advisory/read-
-     only), **Bulk page actions** or an **in-studio a11y pre-flight** beyond alt text (single-h1/heading
-     order). Avoid Page Health (overlaps findMissingAlt + link audit) and Global Find&Replace (bulk-mutate
-     risk) for now. Process note: the text-output spec+review workflow shape (cycles 3-5) is reliable;
-     keep using it over strict-JSON schemas._
+   - **Saved Sections** — ✅ SHIPPED cycle 5 (`97ba202`). **Copy Coach** — ✅ SHIPPED cycle 6 (`46b0fa3`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-6): **In-studio a11y pre-flight**
+     beyond alt text (single-h1 / heading-order / link-text quality — a NEW quality lens, not the copy
+     one), **Scheduled Publish** (publishing — a publishAt + client timer; frame the stale-tab caveat
+     honestly), **Bulk page actions** (multi-select status changes — write, moderate blast radius), or a
+     **page-level SEO scorecard** (title/description/H1 presence beyond SeoPanel's length meter). Avoid
+     Page Health (now overlaps findMissingAlt + link audit + copy coach) and Global Find&Replace (bulk-
+     mutate risk). Process note: the text-output spec+review workflow (cycles 3-6) is reliable; the
+     adversarial review keeps catching real bugs (cycle 4 self-redirect/cycle, cycle 6 en-dash range FP)
+     — keep using it over strict-JSON schemas._
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
