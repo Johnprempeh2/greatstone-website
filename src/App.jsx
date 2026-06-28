@@ -88,6 +88,7 @@ import ReleaseBoard from './cms/ReleaseBoard.jsx';
 import ProductsPanel from './cms/ProductsPanel.jsx';
 import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
+import NavigationPanel from './cms/NavigationPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -98,7 +99,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, removeAsset, updateAsset } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -609,6 +610,7 @@ export default function App() {
   }
   function setSeo(seo) { patchPage(current, { seo }); }
   function setSettings(patch) { setState((s) => updateSettings(s, patch)); } // global site chrome (logo, name, footer, CTA)
+  function setNav(tree) { setState((s) => setNavigation(s, tree)); } // editable header navigation tree
   async function newPage() {
     const title = await ask({ kind: 'prompt', title: 'New page', label: 'Page title', defaultValue: 'New page', confirmLabel: 'Create page' });
     if (!title || !title.trim()) return;
@@ -938,6 +940,7 @@ export default function App() {
     const consolePanels = {
       overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
       pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} />,
+      ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
       background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,

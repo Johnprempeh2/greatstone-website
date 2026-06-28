@@ -443,6 +443,26 @@
 .gs-page-status .gs-dot{width:7px;height:7px;border-radius:50%;background:#9aa0a6}
 .gs-st-review .gs-dot{background:#f5a623} .gs-st-approved .gs-dot{background:#4ecdc4} .gs-st-published .gs-dot{background:#39b34a}
 .gs-pages-new{width:100%;margin-top:14px;justify-content:center;display:flex}
+
+/* navigation builder (admin → Navigation): a tree of page / link / dropdown rows */
+.gs-navedit{list-style:none;display:flex;flex-direction:column;gap:8px;margin:0;padding:0}
+.gs-navedit-row{display:flex;align-items:center;gap:8px;border:1px solid var(--gs-border-soft);border-radius:12px;padding:8px 8px 8px 12px}
+.gs-navedit-row.is-group{background:rgba(255,255,255,.02)}
+.gs-navedit-main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gs-navedit-in{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:9px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.82rem;padding:7px 10px;min-width:120px}
+.gs-navedit-in:focus{border-color:var(--gs-border);outline:none}
+.gs-navedit-href{flex:1;min-width:160px}
+.gs-navedit-page{min-width:150px}
+.gs-navedit-flag{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:var(--gs-muted);white-space:nowrap;cursor:pointer}
+.gs-navedit-flag input{accent-color:var(--gs-accent)}
+.gs-navedit-gtag{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent);background:rgba(200,255,0,.1);border-radius:6px;padding:4px 8px;white-space:nowrap}
+.gs-navedit-acts{flex:none}
+.gs-navedit-group{border:1px solid var(--gs-border-soft);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.gs-navedit-group>.gs-navedit-row{border:0;padding:4px 4px 4px 8px}
+.gs-navedit-children{list-style:none;margin:0;padding:0 0 0 18px;border-left:2px solid var(--gs-border-soft);display:flex;flex-direction:column;gap:8px}
+.gs-navedit-empty{font-size:.76rem;color:var(--gs-faint);padding:8px 4px}
+.gs-navedit-add{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.gs-navedit-add.is-sub{margin-top:0;padding-left:18px}
 /* status filter chips */
 .gs-pagefilter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);
