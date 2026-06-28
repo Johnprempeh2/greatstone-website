@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // IndustryPicker: industries.html's signature interaction. A role=tablist of sector chips with a
 // travelling lime underline; choosing a sector crossfades the right-hand "specific drains" card and
@@ -134,7 +135,7 @@ export function IndustryPicker({
               ) : null}
               {/* capture intent at the peak moment: the visitor has just seen their sector's drains.
                   #book is routed to the booking flow by App's global interceptor. */}
-              {ctaLabel ? <a className="b-cta b-ind-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+              {ctaLabel ? <a className="b-cta b-ind-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
             </article>
 
           </div>
@@ -217,7 +218,7 @@ export const puck = {
     specificFoot: { type: 'text', label: 'Specific footer · lead' },
     specificFootAccent: { type: 'text', label: 'Specific footer · accent' },
     ctaLabel: { type: 'text', label: 'Specific card · CTA label (blank to hide)' },
-    ctaHref: { type: 'text', label: 'Specific card · CTA link' },
+    ctaHref: { type: 'custom', label: 'Specific card · CTA link', render: (props) => <LinkField {...props} /> },
     industries: {
       type: 'array', label: 'Industries (tabs)',
       arrayFields: {

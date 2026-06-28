@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // contact.html's signature hero: "You still can't buy time. Let's save yours." over a compact bordered
 // time-cost chip — a blinking dot + a live MM:SS clock counting the visitor's time on the page + an
@@ -54,7 +55,7 @@ export function TimeCounter({ kicker, headline, highlight, body, clockLabel, cta
           <p className="b-tc-line" ref={lineRef}>The clock’s already running. You won’t get this second back, now imagine a year of them.</p>
         </div>
 
-        {ctaLabel ? <a className="b-cta b-time-cta" href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel ? <a className="b-cta b-time-cta" {...resolveLink(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
   );
@@ -89,7 +90,7 @@ export const puck = {
     body: { type: 'textarea', label: 'Lead', contentEditable: true },
     clockLabel: { type: 'text', label: 'Clock label', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Button label (optional)' },
-    ctaHref: { type: 'text', label: 'Button link' },
+    ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
   },
   defaultProps: {
     kicker: 'Book a Diagnostic',

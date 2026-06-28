@@ -1,7 +1,8 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { MediaField } from '../cms/MediaField.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // The insights hero post: a two-up card. A real hero image if one is set, otherwise the
 // stone-echo media panel (giant glyph + ridges + corner wave). Editable meta + read time.
@@ -28,7 +29,7 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
               {meta ? <span className="faint">{meta}</span> : null}
               {readTime ? <span className="pill">{readTime}</span> : null}
             </div>
-            {ctaLabel ? <p className="featured__cta"><a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a></p> : null}
+            {ctaLabel ? <p className="featured__cta"><a className="b-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a></p> : null}
           </div>
         </article>
       </div>
@@ -80,7 +81,7 @@ export const puck = {
     alt: { type: 'text', label: 'Image alt text (accessibility)' },
     glyph: { type: 'text', label: 'Media glyph (fallback)' },
     ctaLabel: { type: 'text', label: 'Button label (optional)' },
-    ctaHref: { type: 'text', label: 'Button link' },
+    ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
   },
   defaultProps: {
     label: 'Featured', glyph: 'G', image: '', alt: '',

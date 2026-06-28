@@ -1,6 +1,7 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 import { emphasize } from './emphasis.jsx';
 
 // The editorial "chapter" section the live homepage leans on: a numbered eyebrow, a big
@@ -19,7 +20,7 @@ export function Chapter({ index, eyebrow, headline, highlight, body, coda, align
         <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-chapter-body" data-reveal>{emphasize(body, editing)}</p> : null}
         {coda ? <p className="b-chapter-coda" data-reveal>{emphasize(coda, editing)}</p> : null}
-        {ctaLabel ? <a className={'b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost')} href={safeHref(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel ? <a className={'b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost')} {...resolveLink(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
   );
@@ -66,7 +67,7 @@ export const puck = {
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},
     ctaLabel: { type: 'text', label: 'Button label (optional)' },
-    ctaHref: { type: 'text', label: 'Button link' },
+    ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
     ctaVariant: { type: 'radio', label: 'Button style', options: [
       { label: 'Ghost', value: 'ghost' }, { label: 'Primary (solid)', value: 'primary' },
     ]},

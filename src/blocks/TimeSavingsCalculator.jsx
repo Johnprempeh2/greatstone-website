@@ -1,7 +1,8 @@
 import { useState, useId, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // The time-savings calculator the rest of the site advertises ("45 seconds to see the hours your
 // business is quietly losing"). Three honest inputs → the hours and money draining each year, live.
@@ -73,7 +74,7 @@ export function TimeSavingsCalculator({
             <div className="b-tsc-rbig" aria-hidden="true"><b>{fmtInt(hoursYr)}</b> <span>hours a year</span></div>
             <div className="b-tsc-rmoney" aria-hidden="true">about <b>{currency}{fmtInt(costYr)}</b> in time, every year</div>
             <p className="gs-sr-only" role="status" aria-live="polite">{resultLead} {fmtInt(hoursYr)} hours a year, about {currency}{fmtInt(costYr)} in time.</p>
-            {ctaLabel ? <a className="b-cta b-tsc-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+            {ctaLabel ? <a className="b-cta b-tsc-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
           </div>
         </div>
         {footnote ? <p className="b-tsc-foot" data-reveal>{footnote}</p> : null}
@@ -129,7 +130,7 @@ export const puck = {
     currency: { type: 'text', label: 'Currency symbol' },
     resultLead: { type: 'text', label: 'Result lead', contentEditable: true },
     ctaLabel: { type: 'text', label: 'CTA label' },
-    ctaHref: { type: 'text', label: 'CTA link' },
+    ctaHref: { type: 'custom', label: 'CTA link', render: (props) => <LinkField {...props} /> },
     footnote: { type: 'textarea', label: 'Footnote', contentEditable: true },
   },
   defaultProps: {

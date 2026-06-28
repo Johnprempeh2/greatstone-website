@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // MethodTieIn: climb.html's "(4) method tie-in" — a two-column band. LEFT: kicker + headline (accented
 // "lowest first") + lead + a ghost link to the method. RIGHT: a 4×2 mini bar chart of the eight pillars
@@ -35,7 +36,7 @@ export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHre
               <h2 className="b-tiein-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
             ) : null}
             {body ? <p className="lead b-tiein-lead">{body}</p> : null}
-            {ctaLabel ? <a className="b-cta ghost b-tiein-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+            {ctaLabel ? <a className="b-cta ghost b-tiein-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
           </div>
 
           <div ref={chartRef} className={'b-tiein-chart' + (grown ? ' is-grown' : '')} data-reveal aria-hidden="true">
@@ -78,7 +79,7 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted phrase', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Ghost button label' },
-    ctaHref: { type: 'text', label: 'Ghost button link' },
+    ctaHref: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
     pillars: {
       type: 'array', label: 'Pillars (mini bar chart)',
       arrayFields: {

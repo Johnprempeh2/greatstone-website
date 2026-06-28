@@ -1,6 +1,8 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref, safeMailto } from '../lib/safe-url.js';
+import { safeMailto } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
@@ -14,8 +16,8 @@ export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref =
       <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
       {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
       <div className="b-invite-actions" data-reveal>
-        {ctaLabel ? <a className="b-cta" href={safeHref(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
-        {ctaLabel2 ? <a className="b-cta ghost" href={safeHref(ctaHref2)}>{ctaLabel2}</a> : null}
+        {ctaLabel ? <a className="b-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel2 ? <a className="b-cta ghost" {...resolveLink(ctaHref2)}>{ctaLabel2}</a> : null}
         {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
       </div>
     </>
@@ -72,9 +74,9 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Primary button label' },
-    ctaHref: { type: 'text', label: 'Primary button link' },
+    ctaHref: { type: 'custom', label: 'Primary button link', render: (props) => <LinkField {...props} /> },
     ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
-    ctaHref2: { type: 'text', label: 'Ghost button link' },
+    ctaHref2: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
     email: { type: 'text', label: 'Contact email (optional)' },
     variant: { type: 'radio', label: 'Style', options: [
       { label: 'Full-bleed (aurora)', value: 'aurora' }, { label: 'Framed card', value: 'framed' }, { label: 'Plain band', value: 'band' },

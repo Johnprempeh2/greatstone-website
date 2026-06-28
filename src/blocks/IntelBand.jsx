@@ -1,6 +1,7 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
-import { safeHref } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 
 // IntelBand: the prominent entry point to the AI Intelligence Hub from the Insights page. A glass band
 // with a live pulse, the hub's pitch + a primary CTA that opens #intel, and a radar motif on the right
@@ -10,7 +11,7 @@ export function IntelBand({ kicker, heading, highlight, body, ctaLabel, ctaHref 
   return (
     <section ref={ref} className="b-intel section">
       <div className="wrap">
-        <a className="b-intel-card" href={safeHref(ctaHref)} data-reveal>
+        <a className="b-intel-card" {...resolveLink(ctaHref)} data-reveal>
           <div className="b-intel-glow" aria-hidden="true" />
           <div className="b-intel-main">
             {kicker ? <span className="b-intel-live"><span className="b-intel-dot" aria-hidden="true" />{kicker}</span> : null}
@@ -82,7 +83,7 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted phrase', contentEditable: true },
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Button label' },
-    ctaHref: { type: 'text', label: 'Button link' },
+    ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
     themes: { type: 'array', label: 'Theme chips', arrayFields: { label: { type: 'text', label: 'Theme' } }, defaultItemProps: { label: 'Theme' }, getItemSummary: (i) => i.label || 'Theme' },
     stat1: { type: 'object', label: 'Stat 1', objectFields: { value: { type: 'text', label: 'Value' }, label: { type: 'text', label: 'Label' } } },
     stat2: { type: 'object', label: 'Stat 2', objectFields: { value: { type: 'text', label: 'Value' }, label: { type: 'text', label: 'Label' } } },

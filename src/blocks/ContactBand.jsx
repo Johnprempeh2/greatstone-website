@@ -1,5 +1,7 @@
 import { useReveal } from './reveal.js';
-import { safeMailto, safeHref } from '../lib/safe-url.js';
+import { safeMailto } from '../lib/safe-url.js';
+import { resolveLink } from '../lib/link-resolver.mjs';
+import { LinkField } from '../cms/LinkField.jsx';
 import { Arrow } from './icons.jsx';
 
 // The direct-contact close: a big mailto on one side, a "before you book" prompt card on the
@@ -22,7 +24,7 @@ export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftw
             {cardStat ? <div className="calc-time"><b>{cardStat}</b><span>{cardStatUnit}</span></div> : null}
             {cardHeading ? <h3 className="h3 b-cb-cardhead">{cardHeading}</h3> : null}
             {cardBody ? <p className="muted">{cardBody}</p> : null}
-            {cardCtaLabel ? <a className="b-cta ghost b-cb-cardcta" href={safeHref(cardCtaHref)}>{cardCtaLabel}<Arrow /></a> : null}
+            {cardCtaLabel ? <a className="b-cta ghost b-cb-cardcta" {...resolveLink(cardCtaHref)}>{cardCtaLabel}<Arrow /></a> : null}
           </div>
         </div>
       </div>
@@ -62,7 +64,7 @@ export const puck = {
     cardHeading: { type: 'text', label: 'Card heading', contentEditable: true },
     cardBody: { type: 'textarea', label: 'Card body', contentEditable: true },
     cardCtaLabel: { type: 'text', label: 'Card button label (optional)' },
-    cardCtaHref: { type: 'text', label: 'Card button link' },
+    cardCtaHref: { type: 'custom', label: 'Card button link', render: (props) => <LinkField {...props} /> },
   },
   defaultProps: {
     kicker: 'Rather just talk?', heading: 'Reach us direct.',
