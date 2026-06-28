@@ -28,6 +28,7 @@ function buildNav(attention = {}) {
       { id: 'navigation', label: 'Navigation', type: 'view', need: 'edit' },
       { id: 'releases', label: 'Releases', type: 'view', need: 'edit', badge: attention.releases },
       { id: 'links', label: 'Link health', type: 'view', need: 'edit', badge: attention.links },
+      { id: 'navcheck', label: 'Navigation health', type: 'view', need: 'edit', badge: attention.navcheck },
       { id: 'copy', label: 'Copy coach', type: 'view', need: 'edit', badge: attention.copy },
       { id: 'access', label: 'Accessibility', type: 'view', need: 'edit', badge: attention.access },
       { id: 'seohealth', label: 'SEO health', type: 'view', need: 'edit', badge: attention.seohealth },
@@ -57,8 +58,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['overview', 'search', 'pages', 'navigation', 'releases', 'links', 'copy', 'access', 'seohealth', 'redirects', 'sections', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
-const TITLES = { overview: 'Overview', search: 'Search content', pages: 'Pages', releases: 'Releases', links: 'Link health', copy: 'Copy coach', access: 'Accessibility', seohealth: 'SEO health', redirects: 'Redirects', sections: 'Saved sections', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['overview', 'search', 'pages', 'navigation', 'releases', 'links', 'navcheck', 'copy', 'access', 'seohealth', 'redirects', 'sections', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', search: 'Search content', pages: 'Pages', navigation: 'Navigation', releases: 'Releases', links: 'Link health', navcheck: 'Navigation health', copy: 'Copy coach', access: 'Accessibility', seohealth: 'SEO health', redirects: 'Redirects', sections: 'Saved sections', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',
