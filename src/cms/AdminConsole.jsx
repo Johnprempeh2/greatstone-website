@@ -30,6 +30,7 @@ function buildNav(attention = {}) {
       { id: 'links', label: 'Link health', type: 'view', need: 'edit', badge: attention.links },
       { id: 'copy', label: 'Copy coach', type: 'view', need: 'edit', badge: attention.copy },
       { id: 'access', label: 'Accessibility', type: 'view', need: 'edit', badge: attention.access },
+      { id: 'seohealth', label: 'SEO health', type: 'view', need: 'edit', badge: attention.seohealth },
       { id: 'redirects', label: 'Redirects', type: 'view', need: 'edit', badge: attention.redirects },
       { id: 'sections', label: 'Saved sections', type: 'view', need: 'edit' },
       { id: 'seo', label: 'SEO & social', type: 'view', need: 'edit' },
@@ -56,8 +57,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['overview', 'search', 'pages', 'navigation', 'releases', 'links', 'copy', 'access', 'redirects', 'sections', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
-const TITLES = { overview: 'Overview', search: 'Search content', pages: 'Pages', releases: 'Releases', links: 'Link health', copy: 'Copy coach', access: 'Accessibility', redirects: 'Redirects', sections: 'Saved sections', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['overview', 'search', 'pages', 'navigation', 'releases', 'links', 'copy', 'access', 'seohealth', 'redirects', 'sections', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', search: 'Search content', pages: 'Pages', releases: 'Releases', links: 'Link health', copy: 'Copy coach', access: 'Accessibility', seohealth: 'SEO health', redirects: 'Redirects', sections: 'Saved sections', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',
