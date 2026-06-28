@@ -94,8 +94,10 @@ import ContentSearchPanel from './cms/ContentSearchPanel.jsx';
 import RedirectsPanel from './cms/RedirectsPanel.jsx';
 import SavedSectionsPanel from './cms/SavedSectionsPanel.jsx';
 import CopyCoachPanel from './cms/CopyCoachPanel.jsx';
+import A11yPanel from './cms/A11yPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import { checkVoice } from './lib/voice-check.mjs';
+import { checkA11y } from './lib/a11y-check.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -534,6 +536,8 @@ export default function App() {
   // what needs action without opening every panel. A page counts once (drift OR awaiting review).
   // on-brand voice check (Copy coach) — computed once, shared by the panel + the rail badge.
   const voiceReport = useMemo(() => checkVoice(state), [state.pages, state.order]);
+  // content accessibility pre-flight (A11y coach) — computed once, shared by the panel + the rail badge.
+  const a11yReport = useMemo(() => checkA11y(state), [state.pages, state.order]);
   const studioAttention = useMemo(() => {
     const pagesNeedingAction = state.order.filter((s) => {
       const p = state.pages[s]; if (!p) return false;
@@ -549,8 +553,8 @@ export default function App() {
     const badRedirects = listRedirects(state).filter((r) => r.status !== 'ok').length;
     // only the HARD voice issues (em-dashes) drive a quiet rail count; stylistic flags show in-panel and
     // are kept out of `total` so advisory advice never inflates the top-line "needs action" number.
-    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, total: pagesNeedingAction + pendingInvites + brokenLinks };
-  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, canManageUsers]);
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, total: pagesNeedingAction + pendingInvites + brokenLinks };
+  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -944,6 +948,7 @@ export default function App() {
       cmds.push({ id: 'search', group: 'Admin', label: 'Search content', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/search'; } });
       cmds.push({ id: 'links', group: 'Admin', label: 'Check link health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/links'; } });
       cmds.push({ id: 'copy', group: 'Admin', label: 'Coach my copy (voice check)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/copy'; } });
+      cmds.push({ id: 'access', group: 'Admin', label: 'Check accessibility', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/access'; } });
       cmds.push({ id: 'redirects', group: 'Admin', label: 'Manage redirects', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/redirects'; } });
       cmds.push({ id: 'sections', group: 'Admin', label: 'Saved sections', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sections'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
@@ -1059,6 +1064,7 @@ export default function App() {
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { copy: <CopyCoachPanel embedded report={voiceReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { access: <A11yPanel embedded report={a11yReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { redirects: <RedirectsPanel embedded rows={listRedirects(state)} pages={state.pages} order={state.order} error={state._redirectError} onAdd={addRedirectMut} onRepoint={repointRedirect} onRemove={dropRedirect} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sections: <SavedSectionsPanel embedded sections={listSections(state)} pages={state.pages} order={state.order} current={current} browseSlug={browseSlug} browseBlocks={sectionBrowseBlocks} labelFor={labelFor} onBrowse={setSectionBrowse} onSave={saveSection} onInsert={insertSection} onRename={renameSavedSection} onRemove={removeSavedSection} onClose={onConsoleClose} /> } : {}),
