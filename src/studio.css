@@ -490,6 +490,32 @@
 .gs-la-fix{flex:none}
 .gs-la-navnote{flex:none;font-size:.72rem;color:var(--gs-faint)}
 @media (max-width:560px){.gs-la-row{flex-wrap:wrap}.gs-la-fix,.gs-la-navnote{margin-left:auto}}
+
+/* version compare — diff pills (text + colour, never colour alone) reuse the .gs-la-pill base */
+.gs-la-pill.is-added{color:#4ecdc4;border-color:rgba(78,205,196,.4);background:rgba(78,205,196,.1)}
+.gs-la-pill.is-removed{color:#ff6b6b;border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1)}
+.gs-la-pill.is-moved{color:#b197fc;border-color:rgba(177,151,252,.4);background:rgba(177,151,252,.1)}
+.gs-la-pill.is-changed{color:#ffc800;border-color:rgba(255,200,0,.4);background:rgba(255,200,0,.1)}
+.gs-vdiff-compare{margin:2px 0 16px;padding:12px;border:1px solid var(--gs-border-soft);border-radius:12px;background:rgba(255,255,255,.02)}
+.gs-vdiff-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:.76rem;color:var(--gs-muted)}
+.gs-vdiff-pick label{display:inline-flex;align-items:center;gap:6px}
+.gs-vdiff-pick select{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:8px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.78rem;padding:5px 8px;max-width:200px}
+.gs-vdiff-arrow{color:var(--gs-faint)}
+.gs-vdiff-clean{font-size:.82rem;color:var(--gs-muted);margin:4px 0}
+.gs-vdiff-grp{margin:8px 0}
+.gs-vdiff-h{display:flex;align-items:center;gap:8px;margin:0 0 4px}
+.gs-vdiff-n{color:var(--gs-faint);font-weight:700;font-size:.74rem}
+.gs-vdiff-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:.82rem;font-weight:600;color:var(--gs-text)}
+.gs-vdiff-fields{list-style:none;margin:2px 0 0;padding:0 0 0 12px;display:flex;flex-direction:column;gap:1px;font-size:.74rem;font-weight:500;color:var(--gs-muted)}
+.gs-vdiff-titlerow{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--gs-text);margin:4px 0}
+.gs-vdiff-foot{display:block;font-size:.72rem;color:var(--gs-faint);margin:10px 0 0}
+.gs-vdiff-cap{font-size:.74rem;color:var(--gs-muted);margin:0 0 4px}
+/* version row: stack the diff under the row, keep Compare + Restore together */
+.gs-version{align-items:flex-start}
+.gs-version-dot{margin-top:5px}
+.gs-version-acts{display:flex;gap:6px;flex:none}
+.gs-version-diff{margin-top:8px;padding:8px 10px;border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(0,0,0,.18)}
+@media (max-width:560px){.gs-version{flex-wrap:wrap}.gs-version-acts{margin-left:21px}}
 /* status filter chips */
 .gs-pagefilter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);

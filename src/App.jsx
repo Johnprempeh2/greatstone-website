@@ -90,6 +90,7 @@ import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import NavigationPanel from './cms/NavigationPanel.jsx';
 import LinkAuditPanel from './cms/LinkAuditPanel.jsx';
+import { diffVersions } from './lib/version-diff.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -501,6 +502,9 @@ export default function App() {
   }, [state.order, state.pages, state.redirects]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const page = state.pages[current] || state.pages[state.order[0]];
+  // human block label for the version-compare diff (e.g. "Hero", not the raw type), without making
+  // VersionHistory import the Puck config directly.
+  const labelFor = (type) => (config.components[type] && config.components[type].label) || type;
   // the 3D scene is part of the draft→publish gate: an editor sees their working background live in the
   // canvas, but the public keeps the published background until the page is published (mirrors data/published).
   const bg = (canEdit ? page.background : (page.publishedBackground ?? page.background)) || state.settings.background || 'stone';
@@ -789,7 +793,21 @@ export default function App() {
   }
   // restore/discard snapshot the current draft first, so neither is unrecoverable
   async function restoreVersion(v) {
-    const ok = await ask({ kind: 'confirm', title: 'Restore snapshot', message: 'Restore this snapshot into the draft? Your current draft is snapshotted first, so nothing is lost.', confirmLabel: 'Restore' });
+    // informed restore: show exactly what this snapshot would change vs the current draft (no longer blind)
+    const d = diffVersions(page.data, v.data);
+    const n = d.counts.total;
+    const parts = [];
+    if (d.counts.changed) parts.push(d.counts.changed + ' edited');
+    if (d.counts.added) parts.push(d.counts.added + ' added');
+    if (d.counts.removed) parts.push(d.counts.removed + ' removed');
+    if (d.counts.moved) parts.push(d.counts.moved + ' moved');
+    if (d.titleChanged) parts.push('title');
+    const summary = n
+      ? 'This restore changes ' + n + ' thing' + (n === 1 ? '' : 's') + (parts.length ? ' (' + parts.join(', ') + ')' : '') + '. '
+      : 'This snapshot’s content is identical to your current draft. ';
+    const ok = await ask({ kind: 'confirm', title: 'Restore snapshot',
+      message: summary + 'Your current draft is snapshotted first, so nothing is lost.',
+      confirmLabel: n ? 'Restore (' + n + ' change' + (n === 1 ? '' : 's') + ')' : 'Restore anyway' });
     if (!ok) return;
     setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before restore', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: v.data, versions } } }; });
     setPuckKey((k) => k + 1); setPanel(null); flash('Restored into the draft. Request review to publish it.');
@@ -962,7 +980,7 @@ export default function App() {
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
       background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
-      history: <VersionHistory embedded versions={page.versions} onRestore={restoreVersion} onClose={onConsoleClose} />,
+      history: <VersionHistory embedded versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={onConsoleClose} />,
       activity: <ActivityPanel embedded statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={onConsoleClose} />,
       ...(canManageUsers ? { team: <TeamPanel embedded team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={onConsoleClose} /> } : {}),
       ...(canManageUsers ? { settings: <SiteSettingsPanel embedded settings={state.settings} onChange={setSettings} onClose={onConsoleClose} /> } : {}),
@@ -1013,7 +1031,7 @@ export default function App() {
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
-            history: <VersionHistory versions={page.versions} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
+            history: <VersionHistory versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
             activity: <ActivityPanel statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={() => setPanel(null)} embedded />,
           }} />
         )}
