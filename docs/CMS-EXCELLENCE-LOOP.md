@@ -36,6 +36,8 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
   what changes) instead of blind. Completes the editorial-governance spine (draft → publish → version).
 - **Cycle 3 — Editor findability.** Full-text search across all page prose (the ⌘K palette only matched
   page/command names) so editors can find where a phrase lives and jump to it.
+- **Cycle 4 — Ops governance (routing table).** Manage the redirect table renames write + the #go
+  self-heal consumes: view/add/repoint/remove, with cycle-safe validation. Completes the redirects story.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -43,6 +45,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 1 | Content integrity | **Link health** — site-wide link integrity auditor (broken / recoverable / dead-CTA / orphan), redirect-aware #go self-heal + publish-time warning | `af616fb` | NON-REDUNDANT: publish preflight was alt-text only; nothing audited link targets; the redirect table was written by setSlug and read by nothing |
 | 2 | Rollback safety | **Version Compare** — semantic diff before restore (per-row vs draft + compare-any-two), reorder-aware (keys on props.id), change-count folded into the restore confirm | `35d42e4` | NON-REDUNDANT: VersionHistory restored blind (generic confirm); no diff/compare utility existed anywhere |
 | 3 | Editor findability | **Content Search** — read-only full-text search across all page prose + titles, grouped by page with highlighted snippets + Open deep-link; ⌘K command | `a738d2f` | NON-REDUNDANT: the ⌘K palette only matches page/command labels, never block prop text; nothing searched content |
+| 4 | Ops governance | **Redirects Manager** — view/add/repoint/remove the slug-rename forwarding table, cycle-safe validation, Active/Dead-end/Shadowed status; ⌘K command | `dd50000` | NON-REDUNDANT: state.redirects was written by setSlug + read by the #go self-heal, but no surface let an editor see or manage it |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -58,9 +61,12 @@ re-validate redundancy against the current code before building.
    (duplicatePage is whole-page; no single-block reuse exists). Needs a `state.sections` key + Puck insert.
 4. ~~**Version Compare**~~ — ✅ SHIPPED cycle 2 (`35d42e4`). **In-studio Content Search** — ✅ SHIPPED
    cycle 3 (`a738d2f`).
-   - _Lead remaining fresh-angle candidate: **Redirects Manager** (ops governance) — a panel to
-     view/add/remove/repoint the `state.redirects` table the #go self-heal now consumes; S-effort, read+
-     write but low blast-radius. Then Saved Sections (editor velocity) or Scheduled Publish (publishing)._
+   - **Redirects Manager** — ✅ SHIPPED cycle 4 (`dd50000`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-4): **Saved Sections** (editor
+     velocity — save a configured block, insert a copy; M, needs a new state.sections key + a Puck-insert
+     seam), **Scheduled Publish** (publishing — a publishAt + client timer; note the stale-tab caveat),
+     **On-Brand Copy Coach** (quality — banned-phrase/readability hints, advisory). Avoid Page Health
+     (overlaps findMissingAlt + link audit) and Global Find&Replace (bulk-mutate risk) for now._
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
