@@ -35,6 +35,26 @@ let _seq = 0;
 // one canonical id generator (block/scene/asset ids must be unique within a page — they key both
 // the gs-blk-<id> background anchors and the duplicate-page remap). Exported so App + panels share it.
 export const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.random().toString(36).slice(2, 6);
+
+// The editable header navigation tree (state.navigation): page links, custom/external links, and
+// one-level dropdown groups. Seeded to mirror the current bar exactly; edited in the Navigation panel.
+// A blank label on a page item falls back to that page's own title. 'Products' (the storefront route)
+// and the booking CTA stay header chrome added by Header.jsx, so they are not items in this tree.
+const navItem = (o) => ({ id: rid('nav'), visible: true, ...o });
+export function DEFAULT_NAVIGATION() {
+  return [
+    navItem({ type: 'page', pageSlug: 'home' }),
+    navItem({ type: 'group', label: 'Who We Are', children: [
+      navItem({ type: 'page', pageSlug: 'about' }),
+      navItem({ type: 'page', pageSlug: 'method' }),
+      navItem({ type: 'page', pageSlug: 'climb' }),
+      navItem({ type: 'page', pageSlug: 'industries' }),
+    ] }),
+    navItem({ type: 'page', pageSlug: 'services' }),
+    navItem({ type: 'page', pageSlug: 'proof' }),
+    navItem({ type: 'page', pageSlug: 'insights' }),
+  ];
+}
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
 // undefined in the editor — Puck's inline fields expect strings, and a missing one throws.
 const blk = (type, props) => {
@@ -366,7 +386,7 @@ export function seedState() {
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
-  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { ...DEFAULT_SETTINGS }, order, pages, assets: {}, org: ORG,
+  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
 }
@@ -458,6 +478,8 @@ function migrate(state) {
   // backfill any missing chrome settings (logo/footerTagline/headerCtaLabel added in the Site-Settings
   // build) while preserving everything an admin has already set. Idempotent.
   state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) };
+  // backfill the editable navigation tree (additive: only when absent, so an admin's edits are kept)
+  if (!Array.isArray(state.navigation)) state.navigation = DEFAULT_NAVIGATION();
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;
@@ -801,6 +823,13 @@ function migrate(state) {
 // merge so a panel can patch one field; persisted by App's autosave like any other state mutation.
 export function updateSettings(state, patch) {
   return { ...state, settings: { ...state.settings, ...(patch || {}) } };
+}
+
+// Replace the whole header navigation tree. The Navigation panel manages add/remove/reorder/nest in its
+// own working copy and writes the full tree here. Global chrome — persisted + live immediately (no
+// publish gate), exactly like updateSettings.
+export function setNavigation(state, navigation) {
+  return { ...state, navigation: Array.isArray(navigation) ? navigation : (state.navigation || []) };
 }
 
 // ---- media library (stand-in for the future Laravel media / S3 endpoint) ----

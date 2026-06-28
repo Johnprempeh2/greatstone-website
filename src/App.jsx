@@ -1065,7 +1065,7 @@ export default function App() {
           own solid surface — no bleed-through, no WebGL cost. */}
       {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'insights') && !saveData && <Stage background={bg} />}
       <Header
-        order={state.order} pages={state.pages} current={current} query={query}
+        order={state.order} pages={state.pages} navigation={state.navigation} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
         onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }} accountActive={accountRoute}
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
