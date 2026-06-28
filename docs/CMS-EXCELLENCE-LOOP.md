@@ -32,11 +32,14 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 ## Angles covered
 - **Cycle 1 — Content integrity (site admin + dev + QA).** Link/reference integrity across the
   structured page references the nav builder + link picker created.
+- **Cycle 2 — Rollback safety / publishing confidence.** Make version-restore informed (show exactly
+  what changes) instead of blind. Completes the editorial-governance spine (draft → publish → version).
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
 |---|---|---|---|---|
 | 1 | Content integrity | **Link health** — site-wide link integrity auditor (broken / recoverable / dead-CTA / orphan), redirect-aware #go self-heal + publish-time warning | `af616fb` | NON-REDUNDANT: publish preflight was alt-text only; nothing audited link targets; the redirect table was written by setSlug and read by nothing |
+| 2 | Rollback safety | **Version Compare** — semantic diff before restore (per-row vs draft + compare-any-two), reorder-aware (keys on props.id), change-count folded into the restore confirm | `35d42e4` | NON-REDUNDANT: VersionHistory restored blind (generic confirm); no diff/compare utility existed anywhere |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -50,8 +53,10 @@ re-validate redundancy against the current code before building.
 3. **Saved Sections** *(M, content editor)* — a saved-block presets library: save a configured block,
    insert a copy elsewhere. Reuses duplicatePage's rid remap + MediaLibraryPanel layout. NON-REDUNDANT
    (duplicatePage is whole-page; no single-block reuse exists). Needs a `state.sections` key + Puck insert.
-4. **Version Compare** *(S, publishing)* — a `diffContent(a,b)` helper + a diff view in VersionHistory so
-   restore isn't blind. NON-REDUNDANT. Cheap, no store change.
+4. ~~**Version Compare**~~ — ✅ SHIPPED cycle 2 (`35d42e4`).
+   - _Note: the cycle-2 probes for **In-studio Content Search** (editor findability) and **Redirects
+     Manager** (ops governance) hit the structured-output cap and didn't return — both remain strong,
+     un-probed fresh-angle candidates worth picking up next._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
    Saved Sections; the synced-render path is fiddly — ship Saved Sections first.
 6. **Page Health Panel** *(M, quality)* — only its genuinely-new rules (single-h1, heading-order); the
