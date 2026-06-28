@@ -89,6 +89,7 @@ import ProductsPanel from './cms/ProductsPanel.jsx';
 import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import NavigationPanel from './cms/NavigationPanel.jsx';
+import LinkAuditPanel from './cms/LinkAuditPanel.jsx';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -99,7 +100,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -491,11 +492,13 @@ export default function App() {
       // reachable via the "Contact" nav for a note instead.
       if (href === '#book') { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'content' }); openBooking(); return; }
       const m = href.match(/^#go\/([\w-]+)$/);
-      if (m && state.pages[m[1]]) { e.preventDefault(); navigate(m[1]); }
+      // self-heal: a link to a since-renamed page forwards to its current slug via the redirect table
+      // (resolveRedirect returns the slug itself when it's already live), so old internal links never dead-end.
+      if (m) { const t = resolveRedirect(state, m[1]); if (t) { e.preventDefault(); navigate(t); } }
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
-  }, [state.order, state.pages]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.order, state.pages, state.redirects]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const page = state.pages[current] || state.pages[state.order[0]];
   // the 3D scene is part of the draft→publish gate: an editor sees their working background live in the
@@ -525,9 +528,12 @@ export default function App() {
       return !eq(p.data, p.published) || p.status === 'review' || p.status === 'approved';
     }).length;
     const pendingInvites = canManageUsers ? state.team.filter((m) => m.status === 'invited').length : 0;
+    // broken internal links (deleted/renamed-without-redirect targets + dead CTAs) surfaced as an
+    // attention signal on the Link health rail item + the Studio badge.
+    const brokenLinks = auditLinks(state).broken;
     // (the live product catalogue lives in Supabase and is managed under Commerce, not here)
-    return { releases: pagesNeedingAction, team: pendingInvites, total: pagesNeedingAction + pendingInvites };
-  }, [state.order, state.pages, state.team, canManageUsers]);
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, total: pagesNeedingAction + pendingInvites + brokenLinks };
+  }, [state.order, state.pages, state.team, state.navigation, state.redirects, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -552,6 +558,15 @@ export default function App() {
     if (missing.length) {
       const ok = await ask({ kind: 'confirm', title: 'Publish without alt text?',
         message: missing.length + (missing.length > 1 ? ' images have' : ' image has') + ' no alt text (' + missing.slice(0, 4).join(', ') + (missing.length > 4 ? '…' : '') + '). Alt text matters for accessibility and SEO. Publish anyway, or cancel to add it?',
+        confirmLabel: 'Publish anyway' });
+      if (!ok) return;
+    }
+    // link preflight: warn (don't block) if a button on this page links nowhere or at a deleted page
+    const deadLinks = auditLinks({ ...state, pages: { ...state.pages, [current]: { ...state.pages[current], data } } })
+      .issues.filter((i) => i.pageSlug === current && i.severity === 'broken');
+    if (deadLinks.length) {
+      const ok = await ask({ kind: 'confirm', title: 'Publish with broken links?',
+        message: deadLinks.length + (deadLinks.length > 1 ? ' buttons on this page link' : ' button on this page links') + ' nowhere or at a page that no longer exists. Publish anyway, or cancel to fix them under Link health?',
         confirmLabel: 'Publish anyway' });
       if (!ok) return;
     }
@@ -832,6 +847,7 @@ export default function App() {
     if (!authed) return cmds;
     if (authed) cmds.push({ id: 'hub', group: 'Admin', label: 'Go to the admin hub', run: goHub });
     if (canEdit) {
+      cmds.push({ id: 'links', group: 'Admin', label: 'Check link health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/links'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
       cmds.push({ id: 'dup', group: 'Pages', label: 'Duplicate this page', run: () => clonePage(current) });
       cmds.push({ id: 'rename', group: 'Pages', label: 'Rename this page', run: () => retitlePage(current) });
@@ -943,6 +959,7 @@ export default function App() {
       pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} />,
       ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
+      ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
       background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
       history: <VersionHistory embedded versions={page.versions} onRestore={restoreVersion} onClose={onConsoleClose} />,

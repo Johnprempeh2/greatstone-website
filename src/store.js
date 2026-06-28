@@ -5,6 +5,8 @@
 import seedPages from './seed-pages.json';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
+// Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
+export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped
@@ -480,6 +482,7 @@ function migrate(state) {
   state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) };
   // backfill the editable navigation tree (additive: only when absent, so an admin's edits are kept)
   if (!Array.isArray(state.navigation)) state.navigation = DEFAULT_NAVIGATION();
+  if (!Array.isArray(state.redirects)) state.redirects = []; // slug-rename forwarding table (read by the #go self-heal + link audit)
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite
   if (!Array.isArray(state.categories)) state.categories = SEED_CATEGORIES;

@@ -472,6 +472,24 @@
 .gs-lf-tab input{accent-color:var(--gs-accent)}
 .gs-lf-note{font-size:.74rem;color:var(--gs-faint);margin:0;line-height:1.5}
 .gs-lf-preview{font-size:.72rem;color:var(--gs-accent);margin:2px 0 0;font-weight:600;word-break:break-word}
+
+/* link health report (read-only audit panel) */
+.gs-la-clean{padding:14px 16px;border:1px solid var(--gs-border-soft);border-radius:12px;background:rgba(78,205,196,.07);color:var(--gs-text);font-size:.9rem;font-weight:600}
+.gs-la-group{margin-top:18px}
+.gs-la-grouph{font-size:.78rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-muted);margin:0 0 8px}
+.gs-la-sub{font-weight:600;text-transform:none;letter-spacing:0;color:var(--gs-faint)}
+.gs-la-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.gs-la-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--gs-border-soft);border-radius:10px;background:rgba(255,255,255,.02)}
+.gs-la-pill{flex:none;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid}
+.gs-la-pill.is-broken{color:#ff6b6b;border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.1)}
+.gs-la-pill.is-recoverable{color:#ffc800;border-color:rgba(255,200,0,.4);background:rgba(255,200,0,.1)}
+.gs-la-pill.is-orphan{color:var(--gs-muted);border-color:var(--gs-border-soft);background:rgba(255,255,255,.04)}
+.gs-la-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.gs-la-where{font-size:.84rem;font-weight:700;color:var(--gs-text)}
+.gs-la-target{font-size:.78rem;color:var(--gs-muted)}
+.gs-la-fix{flex:none}
+.gs-la-navnote{flex:none;font-size:.72rem;color:var(--gs-faint)}
+@media (max-width:560px){.gs-la-row{flex-wrap:wrap}.gs-la-fix,.gs-la-navnote{margin-left:auto}}
 /* status filter chips */
 .gs-pagefilter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);

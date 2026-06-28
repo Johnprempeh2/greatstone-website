@@ -26,6 +26,7 @@ function buildNav(attention = {}) {
       { id: 'pages', label: 'Pages', type: 'view', need: 'edit' },
       { id: 'navigation', label: 'Navigation', type: 'view', need: 'edit' },
       { id: 'releases', label: 'Releases', type: 'view', need: 'edit', badge: attention.releases },
+      { id: 'links', label: 'Link health', type: 'view', need: 'edit', badge: attention.links },
       { id: 'seo', label: 'SEO & social', type: 'view', need: 'edit' },
       { id: 'background', label: '3D background', type: 'view', need: 'edit' },
       { id: 'media', label: 'Media library', type: 'view', need: 'edit' },
@@ -50,8 +51,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['overview', 'pages', 'navigation', 'releases', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
-const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['overview', 'pages', 'navigation', 'releases', 'links', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', links: 'Link health', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',
