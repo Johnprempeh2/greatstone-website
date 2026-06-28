@@ -47,6 +47,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 8 — SEO / discoverability quality.** Site-wide SEO Health scorecard: every page's meta audited
   together for presence + length (SeoPanel's own 40–60 / 110–158 thresholds) + cross-page DUPLICATE
   titles/descriptions, with a Fix deep-link into the per-page SEO editor.
+- **Cycle 9 — Navigation integrity.** The menu's OWN health (vs Link health's link targets): a menu item
+  pointing at an unpublished page (public header silently drops it), a dead custom link, an empty dropdown,
+  or a published page in no menu at all. The publish-status-blind gap link-audit leaves open.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -59,6 +62,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 6 | Content quality | **Copy Coach** — read-only house-voice checker over all page prose (banned filler, em-dashes [hard], not-just tic, metaphor clichés, whilst), grouped by page with snippet + suggestion + Open deep-link; rail badge (hard only) + ⌘K command | `46b0fa3` | NON-REDUNDANT: SeoPanel meters meta length only; nothing checked copy quality/voice. Reuses content-search's walker (exported walkText/isSearchableText/buildSnippet) so no drift |
 | 7 | Accessibility quality | **A11y pre-flight** — read-only content-a11y checker (vague link text 2.4.4 on standalone CTAs; missing/duplicate/empty H1 via grounded Hero+TimeCounter detection), grouped by page with WCAG ref + suggestion + Open deep-link; rail badge (errors only) + ⌘K. Section id `access` (route #admin/access — the admin regex is [a-z]+, rejects digits) | `56acaae` | NON-REDUNDANT: findMissingAlt is image-alt-at-publish only; Copy Coach is voice; Link health is targets — nothing checked link-text quality or heading structure |
 | 8 | SEO / discoverability | **SEO Health scorecard** — read-only site-wide meta audit: presence + length (SeoPanel's own 40–60/110–158 thresholds, cited so audit & editor never contradict) + the standout cross-page DUPLICATE title/description check, grouped worst-first with a Fix deep-link that opens the SEO editor on that page; rail badge (errors only) + ⌘K. Section id `seohealth` | `62d0e4c` | NON-REDUNDANT: SeoPanel is the per-page meta EDITOR + length meter; a11y owns H1; nothing audited meta site-wide or detected duplicates. Reuses SeoPanel's exact thresholds; no schema bump, no new CSS |
+| 9 | Navigation integrity | **Navigation health** — read-only audit of the header MENU's completeness: navToDraft (error — visible menu item → unpublished page the public header drops), deadCustomLink (error — type:'link' href empty/# or #go to a missing page), emptyGroup (warn — dead dropdown), missingFromNav (warn — published page in no menu). Grouped by page/menu, Error/Warning pill, Fix deep-link into the Navigation editor; rail badge errors-only + ⌘K. Section id `navcheck` | `1c9b637` | NON-REDUNDANT: link-audit's "orphan" is already an orphan PAGE (reachability) + it walks link targets; classifyPageSlug is publish-status-BLIND (any existing page = ok) and never inspects custom-link hrefs — so nav→draft + dead custom hrefs + empty groups are all uncaught. navToMissing dropped (link-audit owns broken/recoverable nav targets). Reuses resolveRedirect/linkPageSlug/hasLink |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -77,21 +81,26 @@ re-validate redundancy against the current code before building.
    - **Redirects Manager** — ✅ SHIPPED cycle 4 (`dd50000`).
    - **Saved Sections** — ✅ cycle 5 (`97ba202`). **Copy Coach** — ✅ cycle 6 (`46b0fa3`). **A11y
      pre-flight** — ✅ cycle 7 (`56acaae`). **SEO Health scorecard** — ✅ cycle 8 (`62d0e4c`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-8): **Scheduled Publish**
-     (publishing angle — a publishAt embargo + client timer; reuses publish() + version snapshot; frame
-     the "timer only fires while a studio tab is open" caveat honestly), **Bulk page actions** (multi-
-     select status/delete across the Pages list — write, moderate blast radius, needs a confirm + undo),
-     **Reading-time / content-length insight** per page (read-only, reuses the content-search walker —
-     words/min + thin-content flag), or an **internal-link graph / orphan-page finder** (which pages no
-     nav or in-content #go link reaches — distinct from Link health's broken-target audit). Avoid Page
-     Health (now overlaps findMissingAlt + link audit + copy coach + a11y + SEO health) and Global
-     Find&Replace (bulk-mutate risk). Process notes: (1) the text-output spec+review workflow (cycles
-     3-8) is reliable and the adversarial review keeps catching real bugs (cycle 4 self-redirect/cycle,
-     cycle 6 en-dash range FP, cycle 7 array-link WCAG FP, cycle 8 buildSnippet-arity + duplicate-naming
-     precision) — keep it over strict-JSON schemas; (2) NEW admin section ids must be LETTERS-ONLY (the
-     admin route regex is [a-z]+ — digits/hyphens fall back to overview); (3) when a new audit overlaps
-     an existing editor, reuse that editor's exact thresholds/constants and cite them so the two never
-     drift (cycle 8 reused SeoPanel's 40–60/110–158)._
+     **Navigation health** — ✅ cycle 9 (`1c9b637`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-9): **Reading-time / content
+     insight** per page (read-only content-analytics — words + est. read time + block count + thin-content
+     flag; reuses content-search's exported walkText/stripMarks; strong cycle-10 lead, scout B's pick),
+     **Scheduled Publish** in the SAFE "due-to-publish" framing only (a publishAt intent field + a
+     read-only "due / overdue" lane folded into ReleaseBoard; the auto-flip timer is half-baked + an
+     autonomous write — keep it OUT, hand the cron to the Laravel backend), or an **internal-link graph /
+     site-map view** (page→page adjacency + in/out-degree; fresher but a good interactive render is harder
+     to land at excellence). DEAD/PARKED (verified): orphan-page finder (link-audit's "orphan" already IS
+     an orphan PAGE); content freshness/staleness (NO per-page edit timestamp exists — savedAt is React-
+     only, version ts is publish-only); "what's unpublished" dashboard (ReleaseBoard already does drift +
+     counts + last-published); bulk page actions (removePage hard-deletes page + its versions[] —
+     irreversible, PARK FOR JOHN). Avoid Page Health (overlaps findMissingAlt + link + copy + a11y + SEO +
+     nav). Process notes: (1) the SCOUT→spec→adversarial-review text-output workflow (cycle 9 fanned 3
+     scouts) is the strongest shape yet — the scouts settled the orphan-redundancy question + killed two
+     dead candidates before any code; keep it over strict-JSON; (2) NEW admin section ids must be LETTERS-
+     ONLY (admin route regex [a-z]+); (3) when a new audit is adjacent to an existing one, reuse its
+     primitives + cite them (cycle 9 reused link-audit's resolveRedirect/linkPageSlug; cycle 8 reused
+     SeoPanel's thresholds) so the two never drift or double-report; (4) advisory/error-only badges stay
+     OUT of the Studio `total` (M1) — only genuine public-facing breakage counts._
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
