@@ -90,6 +90,7 @@ import TeamPanel from './cms/TeamPanel.jsx';
 import PagesPanel from './cms/PagesPanel.jsx';
 import NavigationPanel from './cms/NavigationPanel.jsx';
 import LinkAuditPanel from './cms/LinkAuditPanel.jsx';
+import ContentSearchPanel from './cms/ContentSearchPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
@@ -865,6 +866,7 @@ export default function App() {
     if (!authed) return cmds;
     if (authed) cmds.push({ id: 'hub', group: 'Admin', label: 'Go to the admin hub', run: goHub });
     if (canEdit) {
+      cmds.push({ id: 'search', group: 'Admin', label: 'Search content', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/search'; } });
       cmds.push({ id: 'links', group: 'Admin', label: 'Check link health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/links'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
       cmds.push({ id: 'dup', group: 'Pages', label: 'Duplicate this page', run: () => clonePage(current) });
@@ -978,6 +980,7 @@ export default function App() {
       ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
       background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
       history: <VersionHistory embedded versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={onConsoleClose} />,

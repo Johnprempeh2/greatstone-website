@@ -22,6 +22,7 @@ function buildNav(attention = {}) {
   return [
     { group: 'Content', note: 'website pages', items: [
       { id: 'overview', label: 'Overview', type: 'view' },
+      { id: 'search', label: 'Search content', type: 'view', need: 'edit' },
       { id: 'editor', label: 'Page editor', type: 'editor', need: 'edit' },
       { id: 'pages', label: 'Pages', type: 'view', need: 'edit' },
       { id: 'navigation', label: 'Navigation', type: 'view', need: 'edit' },
@@ -51,8 +52,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['overview', 'pages', 'navigation', 'releases', 'links', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
-const TITLES = { overview: 'Overview', pages: 'Pages', releases: 'Releases', links: 'Link health', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['overview', 'search', 'pages', 'navigation', 'releases', 'links', 'seo', 'background', 'media', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', search: 'Search content', pages: 'Pages', releases: 'Releases', links: 'Link health', seo: 'SEO & social', background: '3D background', media: 'Media library', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',
