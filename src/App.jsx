@@ -98,12 +98,14 @@ import A11yPanel from './cms/A11yPanel.jsx';
 import SeoHealthPanel from './cms/SeoHealthPanel.jsx';
 import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
 import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
+import SiteHealthPanel from './cms/SiteHealthPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import { checkVoice } from './lib/voice-check.mjs';
 import { checkA11y } from './lib/a11y-check.mjs';
 import { checkSeo } from './lib/seo-check.mjs';
 import { auditNavCoverage } from './lib/nav-coverage.mjs';
 import { auditMedia } from './lib/media-audit.mjs';
+import { computeHealth } from './lib/site-health.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -550,6 +552,11 @@ export default function App() {
   const navCoverageReport = useMemo(() => auditNavCoverage(state), [state.pages, state.order, state.navigation, state.redirects]);
   // media usage (unused library images + untracked page images + missing alt) — computed once, shared.
   const mediaReport = useMemo(() => auditMedia(state), [state.pages, state.order, state.assets, state.products]);
+  // site health: one score rolling up the six audits — pure synthesis of the reports already computed above.
+  const healthReport = useMemo(() => computeHealth({
+    links: auditLinks(state), navcheck: navCoverageReport, access: a11yReport,
+    seohealth: seoReport, copy: voiceReport, mediausage: mediaReport,
+  }), [state.pages, state.order, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport]);
   const studioAttention = useMemo(() => {
     const pagesNeedingAction = state.order.filter((s) => {
       const p = state.pages[s]; if (!p) return false;
@@ -565,8 +572,10 @@ export default function App() {
     const badRedirects = listRedirects(state).filter((r) => r.status !== 'ok').length;
     // only the HARD voice issues (em-dashes) drive a quiet rail count; stylistic flags show in-panel and
     // are kept out of `total` so advisory advice never inflates the top-line "needs action" number.
-    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, total: pagesNeedingAction + pendingInvites + brokenLinks };
-  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, canManageUsers]);
+    // sitehealth badge = the roll-up's error count; kept OUT of `total` because those errors are already
+    // counted via links/access/seohealth/navcheck — adding it would double-count the same defects.
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, total: pagesNeedingAction + pendingInvites + brokenLinks };
+  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -964,6 +973,7 @@ export default function App() {
       cmds.push({ id: 'seohealth', group: 'Admin', label: 'Check SEO health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/seohealth'; } });
       cmds.push({ id: 'navcheck', group: 'Admin', label: 'Check navigation health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/navcheck'; } });
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
+      cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
       cmds.push({ id: 'redirects', group: 'Admin', label: 'Manage redirects', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/redirects'; } });
       cmds.push({ id: 'sections', group: 'Admin', label: 'Saved sections', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sections'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
@@ -1083,6 +1093,7 @@ export default function App() {
       ...(canEdit ? { seohealth: <SeoHealthPanel embedded report={seoReport} pages={state.pages} onFix={(slug) => goAdmin('seo', slug)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { sitehealth: <SiteHealthPanel embedded report={healthReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { redirects: <RedirectsPanel embedded rows={listRedirects(state)} pages={state.pages} order={state.order} error={state._redirectError} onAdd={addRedirectMut} onRepoint={repointRedirect} onRemove={dropRedirect} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sections: <SavedSectionsPanel embedded sections={listSections(state)} pages={state.pages} order={state.order} current={current} browseSlug={browseSlug} browseBlocks={sectionBrowseBlocks} labelFor={labelFor} onBrowse={setSectionBrowse} onSave={saveSection} onInsert={insertSection} onRename={renameSavedSection} onRemove={removeSavedSection} onClose={onConsoleClose} /> } : {}),
