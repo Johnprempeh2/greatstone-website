@@ -7,6 +7,7 @@ import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
 export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
+export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './lib/redirects-model.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped

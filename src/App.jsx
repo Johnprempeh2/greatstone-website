@@ -91,6 +91,7 @@ import PagesPanel from './cms/PagesPanel.jsx';
 import NavigationPanel from './cms/NavigationPanel.jsx';
 import LinkAuditPanel from './cms/LinkAuditPanel.jsx';
 import ContentSearchPanel from './cms/ContentSearchPanel.jsx';
+import RedirectsPanel from './cms/RedirectsPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
@@ -102,7 +103,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -537,7 +538,10 @@ export default function App() {
     // attention signal on the Link health rail item + the Studio badge.
     const brokenLinks = auditLinks(state).broken;
     // (the live product catalogue lives in Supabase and is managed under Commerce, not here)
-    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, total: pagesNeedingAction + pendingInvites + brokenLinks };
+    // redirect problems (dead-end / shadowed rows) surface on the Redirects rail badge, but are NOT
+    // added to `total` — a dead-end redirect already shows up as a broken inbound link in `links`.
+    const badRedirects = listRedirects(state).filter((r) => r.status !== 'ok').length;
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, total: pagesNeedingAction + pendingInvites + brokenLinks };
   }, [state.order, state.pages, state.team, state.navigation, state.redirects, canManageUsers]);
 
   function flash(msg) {
@@ -632,6 +636,17 @@ export default function App() {
   function setSeo(seo) { patchPage(current, { seo }); }
   function setSettings(patch) { setState((s) => updateSettings(s, patch)); } // global site chrome (logo, name, footer, CTA)
   function setNav(tree) { setState((s) => setNavigation(s, tree)); } // editable header navigation tree
+  // the slug-rename forwarding table — global chrome, no publish gate (like setNav). The success boolean
+  // is computed synchronously from the current state (validateRedirect is pure) so the panel can clear its
+  // inputs reliably; the actual mutation goes through the updater form like every other store write.
+  function addRedirectMut(from, to) {
+    const ok = !validateRedirect(state, from, to);
+    setState((s) => addRedirect(s, from, to));
+    flash(ok ? 'Redirect added.' : 'Couldn’t add that redirect.');
+    return ok;
+  }
+  function repointRedirect(from, to) { setState((s) => setRedirect(s, from, to)); flash('Redirect repointed.'); }
+  function dropRedirect(from) { setState((s) => removeRedirect(s, from)); flash('Redirect removed.'); }
   async function newPage() {
     const title = await ask({ kind: 'prompt', title: 'New page', label: 'Page title', defaultValue: 'New page', confirmLabel: 'Create page' });
     if (!title || !title.trim()) return;
@@ -868,6 +883,7 @@ export default function App() {
     if (canEdit) {
       cmds.push({ id: 'search', group: 'Admin', label: 'Search content', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/search'; } });
       cmds.push({ id: 'links', group: 'Admin', label: 'Check link health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/links'; } });
+      cmds.push({ id: 'redirects', group: 'Admin', label: 'Manage redirects', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/redirects'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
       cmds.push({ id: 'dup', group: 'Pages', label: 'Duplicate this page', run: () => clonePage(current) });
       cmds.push({ id: 'rename', group: 'Pages', label: 'Rename this page', run: () => retitlePage(current) });
@@ -981,6 +997,7 @@ export default function App() {
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { redirects: <RedirectsPanel embedded rows={listRedirects(state)} pages={state.pages} order={state.order} error={state._redirectError} onAdd={addRedirectMut} onRepoint={repointRedirect} onRemove={dropRedirect} onClose={onConsoleClose} /> } : {}),
       seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
       background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
       history: <VersionHistory embedded versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={onConsoleClose} />,

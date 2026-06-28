@@ -533,6 +533,24 @@
 .gs-cs-where{font-size:.7rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--gs-faint)}
 .gs-cs-snippet{font-size:.84rem;color:var(--gs-muted);line-height:1.5;word-break:break-word}
 .gs-cs-mark{background:rgba(200,255,0,.22);color:var(--gs-text);font-weight:600;border-radius:3px;padding:0 2px}
+
+/* redirects manager */
+.gs-redir-add{margin:2px 0 14px;padding:12px;border:1px solid var(--gs-border-soft);border-radius:12px;background:rgba(255,255,255,.02)}
+.gs-redir-addrow{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.gs-redir-l{display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gs-faint)}
+.gs-redir-l input,.gs-redir-l select{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:9px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.84rem;font-weight:500;text-transform:none;letter-spacing:0;padding:8px 10px;min-width:170px}
+.gs-redir-l input:focus,.gs-redir-l select:focus{border-color:var(--gs-border);outline:none}
+.gs-redir-arrow{color:var(--gs-faint);padding-bottom:9px}
+.gs-redir-err{color:#ff6b6b;font-size:.78rem;margin:8px 0 0}
+.gs-redir-tablewrap{overflow-x:auto}
+.gs-redir-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.gs-redir-table th{text-align:left;font-size:.64rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-faint);padding:6px 10px;border-bottom:1px solid var(--gs-border-soft)}
+.gs-redir-table td{padding:9px 10px;border-bottom:1px solid var(--gs-border-soft);vertical-align:top}
+.gs-redir-path{font-size:.8rem;color:var(--gs-text)}
+.gs-redir-to{background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);border-radius:8px;color:var(--gs-text);font-family:'Montserrat',sans-serif;font-size:.8rem;padding:5px 8px;max-width:190px}
+.gs-redir-status{min-width:210px}
+.gs-redir-say{display:block;font-size:.74rem;color:var(--gs-muted);margin-top:3px}
+@media (max-width:560px){.gs-redir-addrow{flex-direction:column;align-items:stretch}.gs-redir-l input,.gs-redir-l select{min-width:0;width:100%}.gs-redir-arrow{display:none}}
 /* status filter chips */
 .gs-pagefilter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .gs-pagefilter-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--gs-border-soft);
