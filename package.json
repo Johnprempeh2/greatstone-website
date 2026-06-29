@@ -6,6 +6,7 @@
   "description": "Proof: the Greatstone front-end native in React, with Puck as the in-app visual editor and the bespoke three.js as a React component.",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/gen-seo-files.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test"
