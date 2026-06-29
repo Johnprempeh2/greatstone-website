@@ -28,6 +28,19 @@ test('looksLikeHtml distinguishes authored HTML from a legacy plain string', () 
   assert.equal(looksLikeHtml('plain **bold** text'), false);
   assert.equal(looksLikeHtml(''), false);
   assert.equal(looksLikeHtml(null), false);
+  // legacy plain copy with a bare angle bracket must NOT be mistaken for HTML (else its text gets parsed away)
+  assert.equal(looksLikeHtml('margins < 5% vs > 10%'), false);
+  assert.equal(looksLikeHtml('a < b and c > d'), false);
+});
+
+test('plainToRichHtml preserves a bare < in legacy copy as escaped text (no silent drop)', () => {
+  assert.equal(plainToRichHtml('margins < 5%'), 'margins &lt; 5%');
+});
+
+test('stripTags separates words across line-boundary tags (br/p) for FAQ schema text', () => {
+  assert.equal(stripTags('line one<br>line two'), 'line one line two');
+  assert.equal(stripTags('<p>one</p><p>two</p>'), 'one two');
+  assert.equal(stripTags('<strong>joined</strong>word'), 'joinedword'); // inline tags do not add a space
 });
 
 test('plainToRichHtml is stable on already-plain text (no markers)', () => {

@@ -7,7 +7,11 @@
 // Allow only safe link protocols; anything else (javascript:, data:, vbscript:, ...) → '#'.
 const SAFE = /^(https?:|mailto:|tel:|#|\/|\.\/|\.\.\/)/i;
 export function safeHref(h) {
-  const v = (h == null ? '' : String(h)).trim();
+  // Strip ALL ASCII control chars + spaces (0x00–0x20 and DEL), not just the ends, BEFORE scheme-matching.
+  // Browsers ignore tab/newline/leading-control chars when resolving a URL's protocol, so without this a value
+  // like `java\tscript:` or `\x01javascript:` (or its &#9;/&#1; entity forms, decoded by the HTML parser before
+  // we see it) would slip past the scheme tests and reach the DOM as a live javascript: link (stored XSS).
+  const v = (h == null ? '' : String(h)).replace(/[\x00-\x20\x7f]/g, '');
   if (!v) return '#';
   // a bare path/anchor or an allow-listed protocol is fine; everything else is rejected
   if (SAFE.test(v)) return v;

@@ -45,7 +45,7 @@ const cmd = (name) => { try { document.execCommand('styleWithCSS', false, false)
 export function RichTextField({ value, onChange }) {
   const ref = useRef(null);
   const lastEmitted = useRef(undefined); // the last value WE emitted, so an echo from Puck never re-seeds (caret)
-  const [marks, setMarks] = useState({ bold: false, italic: false, underline: false });
+  const [marks, setMarks] = useState({ bold: false, italic: false, underline: false, colorClass: '', hiClass: '' });
 
   // seed the editable surface on mount + on an EXTERNAL value change (switching blocks / undo), never on our
   // own onChange echo. Legacy plain strings (and the **bold** convention) are coerced to safe HTML first.
@@ -70,7 +70,13 @@ export function RichTextField({ value, onChange }) {
       const el = ref.current; if (!el) return;
       const sel = window.getSelection();
       if (!sel || !sel.anchorNode || !el.contains(sel.anchorNode)) return;
-      try { setMarks({ bold: document.queryCommandState('bold'), italic: document.queryCommandState('italic'), underline: document.queryCommandState('underline') }); } catch { /* ignore */ }
+      // detect the active colour / highlight class by walking up from the caret to the editor root
+      let colorClass = '', hiClass = '', n = sel.anchorNode;
+      while (n && n !== el) {
+        if (n.classList) for (const c of n.classList) { if (c.indexOf('gs-rt-c-') === 0) colorClass = c; else if (c.indexOf('gs-rt-bg-') === 0) hiClass = c; }
+        n = n.parentNode;
+      }
+      try { setMarks({ bold: document.queryCommandState('bold'), italic: document.queryCommandState('italic'), underline: document.queryCommandState('underline'), colorClass, hiClass }); } catch { /* ignore */ }
     };
     document.addEventListener('selectionchange', update);
     return () => document.removeEventListener('selectionchange', update);
@@ -105,8 +111,10 @@ export function RichTextField({ value, onChange }) {
   };
 
   const apply = (name) => { ref.current && ref.current.focus(); cmd(name); sync(); };
-  const setColor = (className) => { const el = ref.current; if (!el) return; el.focus(); clearBrand(el, 'gs-rt-c-'); if (className) wrapSelection(className); sync(); };
-  const setHi = (className) => { const el = ref.current; if (!el) return; el.focus(); clearBrand(el, 'gs-rt-bg-'); if (className) wrapSelection(className); sync(); };
+  // colour and highlight are mutually exclusive on a run: a coloured-text run and a (dark-ink) highlight box
+  // can never co-exist, so a colour can't sit on a box and defeat the box's baked AA contrast.
+  const setColor = (className) => { const el = ref.current; if (!el) return; el.focus(); clearBrand(el, 'gs-rt-c-'); clearBrand(el, 'gs-rt-bg-'); if (className) wrapSelection(className); sync(); };
+  const setHi = (className) => { const el = ref.current; if (!el) return; el.focus(); clearBrand(el, 'gs-rt-bg-'); clearBrand(el, 'gs-rt-c-'); if (className) wrapSelection(className); sync(); };
 
   const noBlur = (e) => e.preventDefault(); // keep the editor's selection alive while a toolbar control is pressed
 
@@ -118,17 +126,23 @@ export function RichTextField({ value, onChange }) {
         <button type="button" className={'gs-rt-btn' + (marks.underline ? ' is-on' : '')} aria-pressed={marks.underline} title="Underline (Cmd/Ctrl+U)" aria-label="Underline" onMouseDown={noBlur} onClick={() => apply('underline')}><u>U</u></button>
         <span className="gs-rt-sep" aria-hidden="true" />
         <span className="gs-rt-swatches" role="group" aria-label="Text colour">
-          {RT_COLORS.map((c) => (
-            <button key={'c' + c.id} type="button" className={'gs-rt-sw' + (c.id ? '' : ' is-clear')} title={'Text colour: ' + c.label} aria-label={'Text colour ' + c.label}
-              style={c.id ? { color: RT_HEX[c.id] } : undefined} onMouseDown={noBlur} onClick={() => setColor(c.className)}>{c.id ? 'A' : 'A'}</button>
-          ))}
+          {RT_COLORS.map((c) => {
+            const on = marks.colorClass === c.className;
+            return (
+              <button key={'c' + c.id} type="button" className={'gs-rt-sw' + (c.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on} title={'Text colour: ' + c.label} aria-label={'Text colour ' + c.label}
+                style={c.id ? { color: RT_HEX[c.id] } : undefined} onMouseDown={noBlur} onClick={() => setColor(c.className)}>A</button>
+            );
+          })}
         </span>
         <span className="gs-rt-sep" aria-hidden="true" />
         <span className="gs-rt-swatches" role="group" aria-label="Highlight">
-          {RT_HIGHLIGHTS.map((h) => (
-            <button key={'h' + h.id} type="button" className={'gs-rt-sw gs-rt-hi' + (h.id ? '' : ' is-clear')} title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label}
-              style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined} onMouseDown={noBlur} onClick={() => setHi(h.className)}>{h.id ? '■' : '✕'}</button>
-          ))}
+          {RT_HIGHLIGHTS.map((h) => {
+            const on = marks.hiClass === h.className;
+            return (
+              <button key={'h' + h.id} type="button" className={'gs-rt-sw gs-rt-hi' + (h.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on} title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label}
+                style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined} onMouseDown={noBlur} onClick={() => setHi(h.className)}>{h.id ? '■' : '✕'}</button>
+            );
+          })}
         </span>
         <span className="gs-rt-sep" aria-hidden="true" />
         <button type="button" className="gs-rt-btn gs-rt-clear" title="Clear formatting" aria-label="Clear formatting" onMouseDown={noBlur}

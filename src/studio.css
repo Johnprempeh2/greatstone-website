@@ -921,3 +921,4 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
 .gs-rt-edit strong{color:var(--gs-text,#fff);font-weight:700}
 .gs-rt-hint{margin:0;font-size:.72rem;color:var(--gs-text-faint,#9ca29b);line-height:1.4}
 @media(prefers-reduced-motion:reduce){.gs-rt-btn,.gs-rt-sw{transition:none}}
+.gs-rt-sw.is-on{border-color:var(--gs-accent,#c8ff00);box-shadow:0 0 0 1px var(--gs-accent,#c8ff00)}
