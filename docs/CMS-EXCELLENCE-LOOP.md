@@ -71,6 +71,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 16 — Enablement (getting-started guide).** A read-only first-run setup checklist that derives each
   task's done-ness from real state ("changed from the Greatstone default", not merely filled) + deep-links to
   the fixing tool + a studio map. Manager-gated. The first orientation/enablement surface.
+- **Cycle 17 — Authoring (page templates).** A static, curated set of named page recipes (Landing/Article/
+  Service/Proof) seeded into a brand-new draft via a Templates gallery. The first feature to touch the
+  create-a-page moment (cycles 1-16 all act on pages that already exist).
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -91,6 +94,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 14 | Safe-actions | **Bulk-safe status** — the studio's FIRST multi-select, folded into the Pages list: per-row checkbox + tri-state select-all (respects the active filter) + an action-bar that offers the ONE applicable Send-to-review / Send-back-to-draft button (or none on a mixed selection). Pure bulk-status.mjs (10 tests, store-free): SAFE_STATUSES/SAFE_EDGES allowlist, canBulk/bulkSetStatus/bulkActions; mirrors setStatus's {from,to,by,ts} entry, touches ONLY status+statusHistory. canEdit-gated; flash count computed off the state snapshot (not inside the updater). New CSS gs-page-select/selectall/bulkbar | `99c4279` | NON-REDUNDANT: first MULTI-SELECT in the studio. setStatus is single-page + full graph + notes; this is list-level, two reversible edges only. Structurally CANNOT bulk-publish/approve/delete (allowlist narrower than canTransition — verified vs the live TRANSITIONS graph). No store change, no new admin section (folds in), reversible (write-safe) |
 | 15 | Content-analytics | **Content inventory** — a read-only, SORTABLE table: per page word count / est. read time / block count / words-per-block / status + advisory THIN (words<120) / SKELETON (4+ blocks, <25 words/block) / BULK (one of ≥2 blocks >70% of a ≥120-word page) chips + a site summary. Pure content-stats.mjs (12 tests, STORE-FREE, reuses content-search's walkText/stripMarks so counts == search's index): analyzeContent → {rows, summary}; floor-only flags + exported thresholds. WCAG-AA sortable native <table> (aria-sort, <th scope=col>, focusable sort buttons, sr-only caption); reuses is-changed/is-orphan pills (no new pill). Badge = thin count, OUT of total. Section id `inventory` | `a4a0f25` | NON-REDUNDANT: first content-VOLUME measure. PagesPanel shows block COUNT not words; ReleaseBoard is status; Copy Coach is voice; SEO is meta-length not body; Site health rolls up DEFECTS. The only `readTime` in the tree is an editor-TYPED card string, not a metric. Always-populated dashboard framing (not an empty defect audit). Read-only |
 | 16 | Enablement | **Getting started** — a read-only first-run setup guide (first in the Content rail): a % meter + a checklist deriving each task's done-ness from real state, with a "Set up" deep-link per unfinished task + a studio map. Pure onboarding-model.mjs (8 tests, STORE-FREE): deriveChecklist(state, opts) → {items, doneCount, total, pct, allDone}; `done` for branded fields = CHANGED FROM the injected Greatstone default (DEFAULT_SETTINGS ships them pre-filled, so non-empty would falsely read 100%). Clones SiteHealthPanel; manager-gated (most tasks are Site settings = need:'manage'); badgeless, OUT of total. Section id `gettingstarted` | `3c02e4d` | NON-REDUNDANT: first ENABLEMENT/orientation surface. OverviewPanel shows live-work counts (published/drift/invites/activity) — no notion of "unconfigured"; Site health (c11) scores content DEFECTS, never reads settings/nav/published-count. Disjoint quadrant. Read-only, no schema bump |
+| 17 | Authoring | **Page templates / starters** — a Templates gallery (cards: label/blurb/block-type chips) that seeds a brand-NEW draft from a curated recipe (Blank/Landing/Article/Service/Proof) + opens it in the editor. Pure templates-model.mjs (5 tests, STORE-FREE, imports only sections-model): a frozen STARTERS array of REAL puck.config block types + buildStarterContent(starter, mintId) (remapIds per block; the test pins types vs a 37-entry MODULES copy so a typo can't ship a dead block). ONE store fn addPageFromStarter (near-clone of addPageTo; draft, published=null, deletable); addPageTo/blk/seedPage unchanged. Section id `templates` | `a0a5155` | NON-REDUNDANT: first AUTHORING/create-a-page feature. Saved sections inserts ONE block; duplicatePage clones a LIVE page (needs an exemplar + carries its copy/SEO); a starter is a page recipe with ZERO exemplar. Static-in-code (no schema bump, no user-saved templates), creates a reversible draft (write-safe) |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -113,16 +117,14 @@ re-validate redundancy against the current code before building.
      **Site health** — ✅ cycle 11 (`cb11c4e`). **Publish schedule** — ✅ cycle 12 (`010f6a8`).
      **Editorial notes** — ✅ cycle 13 (`526e4fb`). **Bulk-safe status** — ✅ cycle 14 (`99c4279`).
      **Content inventory** — ✅ cycle 15 (`a4a0f25`). **Getting started** — ✅ cycle 16 (`3c02e4d`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-16): **Page templates / starters**
-     (AUTHORING family, scout-C-grounded — a STATIC, curated set of named page recipes [Landing/Article/
-     Service] seeded into a NEW draft via a "+ New from template" picker; refactor addPageTo into the 'blank'
-     case + a store-free templates-model + remapIds id-minting; additive+reversible, owns the un-touched
-     create-a-page moment; HONEST caveat: duplicatePage covers ~70% on a mature site, so frame it as
-     consistency + zero-exemplar velocity, and keep starters STATIC-in-code [user-saved templates would
-     re-implement Saved Sections]); **MORE safe-actions** reusing the c14 multi-select harness — bulk
-     SET-publish-date or bulk SET-note (reuse c12/c13 setSchedule/setNote, additive+reversible), or a per-row
-     "add untracked image to library" on c10 via addAsset; ~~**Content depth**~~ (✅ SHIPPED c15 as Content
-     inventory), **per-page collaboration extras** (assignee
+     **Page templates** — ✅ cycle 17 (`a0a5155`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-17): **MORE safe-actions** reusing
+     the c14 multi-select harness — bulk SET-publish-date or bulk SET-note across selected pages (reuse
+     c12/c13 setSchedule/setNote, additive+reversible), or a per-row "add untracked image to library" on c10
+     via addAsset; **per-page collaboration extras** (an additive page.assignee / review-requested flag —
+     extends c13); a **keyboard-shortcuts / power-user reference** (enablement-adjacent, low-risk); ~~**Page
+     templates**~~ (✅ SHIPPED c17), ~~**Content depth**~~ (✅ SHIPPED c15 as Content inventory),
+     **per-page collaboration extras** (assignee
      / review-requested flag — extends c13's collaboration family with another additive field), or a
      **One-click "add untracked image to library"** on c10's untracked list via addAsset (additive+reversible
      safe action). DEAD/PARKED (verified): orphan finder (link-audit owns it); freshness/staleness (no
@@ -142,9 +144,10 @@ re-validate redundancy against the current code before building.
      badges stay OUT of the Studio `total`; (5) WRITE features CAN be exercised live (set→observe→clear) —
      do it; read-only audits over the seed often show only the empty state (lean on unit tests); (6) a new
      pure .mjs must be STORE-FREE (store.js imports puck.config.jsx → bare node --test can't load it; inline
-     the constant + a drift-guard comment instead of importing). **SIX families now open (audit c1-11, publishing
-     c12, collaboration c13, safe-actions c14, content-analytics c15, enablement c16) — keep deepening these /
-     safe actions, NOT more read-only DEFECT audits. (7) WEIGH "empty on seed" HARD before picking: a feature
+     the constant + a drift-guard comment instead of importing). **SEVEN families now open (audit c1-11, publishing
+     c12, collaboration c13, safe-actions c14, content-analytics c15, enablement c16, authoring c17) — keep
+     deepening these / safe actions, NOT more read-only DEFECT audits. The single-page surfaces are getting
+     well-covered; favour features that span MULTIPLE pages or the create/compose moment. (7) WEIGH "empty on seed" HARD before picking: a feature
      that renders only its empty state on the seed is low-value (c16's timeline candidate died on this — the
      seed ships versions:[] so it had no publish history to plot); features that derive from populated
      state.data/settings/nav always have something to show. (8) For a deep-link checklist, gate the panel on
