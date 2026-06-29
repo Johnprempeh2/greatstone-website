@@ -424,10 +424,25 @@ export function load() {
 
 // tolerate older/partial shapes so a saved draft never crashes the editor; branch on the in-payload
 // schema version so future shape changes have a real forward-migration path (and never re-wipe data)
+// Deep voice repair: the em dash (—) is a banned AI tell, so sweep it out of every string value in a
+// persisted content tree (e.g. a service catalogue baked into a block BEFORE the source file was cleaned).
+// Replaces " — " / "—" with ", " (a comma is grammatically safe where an em dash sat). Returns the SAME
+// reference when there is nothing to change, so it is idempotent + cheap on already-clean content.
+function deEmDash(v) {
+  if (typeof v === 'string') return v.indexOf('—') === -1 ? v : v.replace(/\s*—\s*/g, ', ');
+  if (Array.isArray(v)) { let ch = false; const out = v.map((x) => { const n = deEmDash(x); if (n !== x) ch = true; return n; }); return ch ? out : v; }
+  if (v && typeof v === 'object') { let ch = false; const out = {}; for (const k of Object.keys(v)) { const n = deEmDash(v[k]); if (n !== v[k]) ch = true; out[k] = n; } return ch ? out : v; }
+  return v;
+}
+
 function migrate(state) {
   if (!state || !state.pages) return seedState();
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
+    // voice: sweep banned em dashes from persisted CONTENT (draft + live projection together, so no
+    // artificial drift appears). Idempotent — clean pages return the same refs and are untouched.
+    const sweptData = deEmDash(p.data); if (sweptData !== p.data) p.data = sweptData;
+    if (p.published) { const sweptPub = deEmDash(p.published); if (sweptPub !== p.published) p.published = sweptPub; }
     if (!p.seo) p.seo = { title: (p.title || 'Page') + ' · Greatstone International', description: '', ogImage: '' };
     // voice: the em dash is a banned AI tell. Repair any meta title persisted by an earlier seed
     // (e.g. "Greatstone International — The Foundation…") so saved sites match the current voice.

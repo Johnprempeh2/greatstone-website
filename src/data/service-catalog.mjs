@@ -1,4 +1,4 @@
-// Greatstone "Managed Services" catalogue — clear, buyer-facing service names + slugs (each service has its
+// Greatstone "Managed Services" catalogue: clear, buyer-facing service names + slugs (each service has its
 // own detail page at #service/<slug>). Featured = admin pick (featured) + New (isNew) + most-popular by
 // visitor interaction. Edit here or in the CMS (the Services-catalogue block's array).
 // Shape: { categories:[{name,blurb}], services:[{category,name,slug,oneLiner,format,featured,isNew?,outcome,idealClient,bullets:[{text}]}] }
@@ -8,39 +8,39 @@ export const umbrella = "Managed Services";
 export const categories = [
   {
     "name": "Websites & Web Apps",
-    "blurb": "Your business's home ground, built right the first time — fast, on-brand, and editable by your own team, not held hostage by a developer queue."
+    "blurb": "Your business's home ground, built right the first time: fast, on-brand, and editable by your own team, not held hostage by a developer queue."
   },
   {
     "name": "Commerce & Storefronts",
-    "blurb": "A real storefront you own — catalogue, pricing, checkout and orders on a backend that won't buckle as you grow, with no per-sale platform tax."
+    "blurb": "A real storefront you own: catalogue, pricing, checkout and orders on a backend that won't buckle as you grow, with no per-sale platform tax."
   },
   {
     "name": "AI Agents & Assistants",
-    "blurb": "Custom and privatized AI that does one valuable thing brilliantly — trained on your world, answering, drafting and triaging around the clock, with your data staying yours."
+    "blurb": "Custom and privatized AI that does one valuable thing brilliantly, trained on your world, answering, drafting and triaging around the clock, with your data staying yours."
   },
   {
     "name": "Automation & Integration",
-    "blurb": "We connect the tools you already pay for and automate the busywork between them — so a number entered once shows up everywhere, and the repetitive week runs itself."
+    "blurb": "We connect the tools you already pay for and automate the busywork between them, so a number entered once shows up everywhere, and the repetitive week runs itself."
   },
   {
     "name": "Comms Channels",
-    "blurb": "Meet your customers, members and field teams where they actually are — WhatsApp-first for UK and West Africa, email and SMS behind it — on one trackable channel where nothing gets lost in the scroll."
+    "blurb": "Meet your customers, members and field teams where they actually are (WhatsApp-first for UK and West Africa, email and SMS behind it) on one trackable channel where nothing gets lost in the scroll."
   },
   {
     "name": "Meetings & Knowledge",
-    "blurb": "One searchable brain for everything your company knows, and every meeting turned into a clean record — so the answer doesn't leave when a person does, and nothing said in a room gets lost."
+    "blurb": "One searchable brain for everything your company knows, and every meeting turned into a clean record, so the answer doesn't leave when a person does, and nothing said in a room gets lost."
   },
   {
     "name": "Intelligence & Reporting",
-    "blurb": "One live view of the business and a brief that tells you what changed and what to do — so you steer on current signal instead of last month's autopsy, and reports write themselves."
+    "blurb": "One live view of the business and a brief that tells you what changed and what to do, so you steer on current signal instead of last month's autopsy, and reports write themselves."
   },
   {
     "name": "Brand, Content & Media",
-    "blurb": "The mark, the page and the document that make you look the size you actually are — cinematic 3D experiences, generative motion, AI video, and branded content engines that keep producing when the team can't."
+    "blurb": "The mark, the page and the document that make you look the size you actually are: cinematic 3D experiences, generative motion, AI video, and branded content engines that keep producing when the team can't."
   },
   {
     "name": "The Method",
-    "blurb": "We don't advise — we map exactly where your week drains with the 8-pillar Digital Excellence assessment, then build and run the foundation that buys those hours back, and stay embedded improving it."
+    "blurb": "We don't advise. We map exactly where your week drains with the 8-pillar Digital Excellence assessment, then build and run the foundation that buys those hours back, and stay embedded improving it."
   }
 ];
 
@@ -49,10 +49,10 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Business Website Build",
     "slug": "business-website-build",
-    "oneLiner": "A fast, credible, multi-page marketing site that becomes your business's home ground — live in days, editable by you.",
+    "oneLiner": "A fast, credible, multi-page marketing site that becomes your business's home ground: live in days, editable by you.",
     "format": "Fixed-scope build, live in days to 4 weeks; one-time fee with an optional care plan",
     "featured": true,
-    "outcome": "A site you're proud to put on a pitch deck — that loads fast, ranks, turns visitors into enquiries, and you can edit yourself afterwards.",
+    "outcome": "A site you're proud to put on a pitch deck, that loads fast, ranks, turns visitors into enquiries, and you can edit yourself afterwards.",
     "idealClient": "SMEs, founders and professional-services firms replacing a tired, template, or un-editable website.",
     "bullets": [
       {
@@ -76,7 +76,7 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Editable Website CMS",
     "slug": "editable-website-cms",
-    "oneLiner": "Our Puck-based CMS studio — edit your live site inline, no developer, no tickets, no waiting.",
+    "oneLiner": "Our Puck-based CMS studio: edit your live site inline, no developer, no tickets, no waiting.",
     "format": "Build plus onboarding, then an optional monthly hosting and support subscription",
     "featured": true,
     "outcome": "Your team ships site changes in minutes instead of waiting weeks on an agency.",
@@ -92,7 +92,7 @@ export const services = [
         "text": "Version history and rollback so no edit is ever final or fatal"
       },
       {
-        "text": "Editorial workflow — draft, review, approve, publish — with roles and permissions"
+        "text": "Editorial workflow (draft, review, approve, publish) with roles and permissions"
       },
       {
         "text": "A block library matched to your brand so non-technical staff build pages safely"
@@ -103,10 +103,10 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Campaign Landing Pages",
     "slug": "campaign-landing-pages",
-    "oneLiner": "A fast, conversion-built landing page or campaign microsite — live in days, wired to capture and ready for your ad spend.",
+    "oneLiner": "A fast, conversion-built landing page or campaign microsite: live in days, wired to capture and ready for your ad spend.",
     "format": "Quick fixed-scope build, live in days; one-time fee per page with an optional campaign-support plan",
     "featured": false,
-    "outcome": "A page built to convert the traffic you're paying for — live this week, measurable from day one, instead of pointing ad spend at a slow homepage.",
+    "outcome": "A page built to convert the traffic you're paying for, live this week, measurable from day one, instead of pointing ad spend at a slow homepage.",
     "idealClient": "SMEs and founders running paid ads, launches or events who are burning spend against a generic homepage.",
     "bullets": [
       {
@@ -130,7 +130,7 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Client & Member Portal",
     "slug": "client-member-portal",
-    "oneLiner": "A secure, branded login where clients or members see status, documents and invoices — instead of emailing you to ask.",
+    "oneLiner": "A secure, branded login where clients or members see status, documents and invoices, instead of emailing you to ask.",
     "format": "Fixed-scope build, then an embedded build-and-run subscription with support",
     "featured": false,
     "outcome": "Clients and members self-serve the answers they used to email for, your phone stops ringing, and the relationship feels handled rather than opaque.",
@@ -157,10 +157,10 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Rapid MVP App Build",
     "slug": "rapid-mvp-app-build",
-    "oneLiner": "Your first working product — a real app users can sign up for and use — built fast on a foundation that scales.",
+    "oneLiner": "Your first working product (a real app users can sign up for and use) built fast on a foundation that scales.",
     "format": "Scoped sprint build with a fixed feature set; live deployment",
     "featured": false,
-    "outcome": "A live product in users' hands within weeks — traction and proof instead of a pitch deck full of promises.",
+    "outcome": "A live product in users' hands within weeks: traction and proof instead of a pitch deck full of promises.",
     "idealClient": "A non-technical founder with validated demand who needs a usable product to win users, feedback or funding.",
     "bullets": [
       {
@@ -184,7 +184,7 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Online Booking System",
     "slug": "online-booking-system",
-    "oneLiner": "A branded booking site that takes appointments, deposits and confirmations on its own — wired to your calendar and your phone.",
+    "oneLiner": "A branded booking site that takes appointments, deposits and confirmations on its own, wired to your calendar and your phone.",
     "format": "Fixed-scope build with an optional run-and-maintain plan",
     "featured": false,
     "outcome": "Appointments book, pay and confirm themselves while you do the work you're actually paid for.",
@@ -214,7 +214,7 @@ export const services = [
     "oneLiner": "A mobile-first portal that lets members and citizens do online what they currently queue or call to do in person.",
     "format": "Fixed-scope build (portal plus staff back office) with a monthly run-and-support retainer",
     "featured": false,
-    "outcome": "The queue empties because routine work moves online — fewer walk-ins, shorter waits, and a front desk freed for the cases that genuinely need a human.",
+    "outcome": "The queue empties because routine work moves online: fewer walk-ins, shorter waits, and a front desk freed for the cases that genuinely need a human.",
     "idealClient": "Professional bodies, associations, SACCOs and public agencies whose members or citizens queue or call for routine tasks.",
     "bullets": [
       {
@@ -265,7 +265,7 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Job & Fleet Dispatch Board",
     "slug": "job-fleet-dispatch-board",
-    "oneLiner": "One live board where every job, driver and van sits in front of you — replacing the whiteboard, the spreadsheet and the three open chats.",
+    "oneLiner": "One live board where every job, driver and van sits in front of you, replacing the whiteboard, the spreadsheet and the three open chats.",
     "format": "Web app on a Supabase backend, branded, on desktop and tablet",
     "featured": false,
     "outcome": "The whole day's work is visible in one place, reschedules take seconds instead of a morning, and double-bookings stop happening.",
@@ -295,11 +295,11 @@ export const services = [
     "oneLiner": "Clipboards and PDFs rebuilt as guided digital forms that fill, validate and file themselves the moment they're done.",
     "format": "Per-form-flow build, priced by number of forms, on an optional automation retainer",
     "featured": false,
-    "outcome": "Paper intake becomes a tracked digital register overnight — submissions arrive complete, staff stop re-keying, and disputes are settled with a timestamped photo and signature.",
+    "outcome": "Paper intake becomes a tracked digital register overnight: submissions arrive complete, staff stop re-keying, and disputes are settled with a timestamped photo and signature.",
     "idealClient": "Practices, field-services firms and public bodies still running intake, job sheets or registrations on paper or PDFs.",
     "bullets": [
       {
-        "text": "Branded online forms — intake, job sheets, consent, registrations — sent automatically when relevant"
+        "text": "Branded online forms (intake, job sheets, consent, registrations) sent automatically when relevant"
       },
       {
         "text": "Conditional questions that adapt to the person, with validation that catches errors on the spot"
@@ -322,7 +322,7 @@ export const services = [
     "oneLiner": "A searchable member or 'find a professional' directory that turns your membership into a benefit people can see and use.",
     "format": "Fixed-scope directory build with an optional maintenance retainer",
     "featured": false,
-    "outcome": "Your membership becomes a visible, usable network — a reason to join and stay, with real referral value for accredited members.",
+    "outcome": "Your membership becomes a visible, usable network: a reason to join and stay, with real referral value for accredited members.",
     "idealClient": "A professional body or association whose member network is invisible and underused as a benefit.",
     "bullets": [
       {
@@ -346,14 +346,14 @@ export const services = [
     "category": "Websites & Web Apps",
     "name": "Public Credential Verification",
     "slug": "public-credential-verification",
-    "oneLiner": "A public lookup page and QR credential so anyone can confirm a member's standing in seconds — no call to your office.",
+    "oneLiner": "A public lookup page and QR credential so anyone can confirm a member's standing in seconds, no call to your office.",
     "format": "Fixed-scope build with a small monthly hosting retainer",
     "featured": false,
-    "outcome": "Verification becomes self-service and trustworthy — third parties confirm standing themselves, fraud gets harder, and your office stops fielding confirmation calls.",
+    "outcome": "Verification becomes self-service and trustworthy: third parties confirm standing themselves, fraud gets harder, and your office stops fielding confirmation calls.",
     "idealClient": "Regulators, professional bodies, licensing authorities and certifying institutions.",
     "bullets": [
       {
-        "text": "A clean public lookup page — enter a number or scan a QR and see live standing"
+        "text": "A clean public lookup page: enter a number or scan a QR and see live standing"
       },
       {
         "text": "Tamper-evident digital certificates and ID cards carrying a verifiable QR code"
@@ -362,7 +362,7 @@ export const services = [
         "text": "A shareable verification link members can paste into an email or WhatsApp"
       },
       {
-        "text": "Privacy by design — confirms status only, never exposes personal data"
+        "text": "Privacy by design: confirms status only, never exposes personal data"
       },
       {
         "text": "A staff console to issue, suspend or revoke a credential, reflected instantly"
@@ -373,10 +373,10 @@ export const services = [
     "category": "Commerce & Storefronts",
     "name": "Online Store & E-commerce Build",
     "slug": "online-store-ecommerce-build",
-    "oneLiner": "A real owned storefront and admin — one catalogue, priced, searchable, checkout-ready, on a backend that won't buckle as you grow.",
+    "oneLiner": "A real owned storefront and admin: one catalogue, priced, searchable, checkout-ready, on a backend that won't buckle as you grow.",
     "format": "Fixed-scope build (commerce platform plus admin), then an optional monthly run-and-maintain retainer",
     "featured": true,
-    "outcome": "Catalogue ops stops being a founder job — one source of truth, edited by anyone in minutes, selling without a developer in the loop and without per-sale platform tax.",
+    "outcome": "Catalogue ops stops being a founder job: one source of truth, edited by anyone in minutes, selling without a developer in the loop and without per-sale platform tax.",
     "idealClient": "DTC and B2B brands with 50+ SKUs outgrowing Shopify-style builders and tired of product data living in too many places.",
     "bullets": [
       {
@@ -400,10 +400,10 @@ export const services = [
     "category": "Commerce & Storefronts",
     "name": "Stripe Checkout Setup",
     "slug": "stripe-checkout-setup",
-    "oneLiner": "Start charging customers this week — a real product or service catalogue with Stripe checkout, live and taking payments.",
+    "oneLiner": "Start charging customers this week: a real product or service catalogue with Stripe checkout, live and taking payments.",
     "format": "Scoped commerce build on Supabase and Stripe; admin handover included",
     "featured": false,
-    "outcome": "Money in the bank this week instead of next quarter — a real storefront you control, not a workaround.",
+    "outcome": "Money in the bank this week instead of next quarter: a real storefront you control, not a workaround.",
     "idealClient": "A founder with something to sell who needs to take real online payments fast without enterprise overhead.",
     "bullets": [
       {
@@ -427,10 +427,10 @@ export const services = [
     "category": "Commerce & Storefronts",
     "name": "Course & Event Sales Platform",
     "slug": "course-event-sales-platform",
-    "oneLiner": "Sell short courses, modules, CPD and event tickets like products — checkout, member pricing, access and certificates handled.",
+    "oneLiner": "Sell short courses, modules, CPD and event tickets like products: checkout, member pricing, access and certificates handled.",
     "format": "Commerce build plus per-event or annual run rate",
     "featured": false,
-    "outcome": "Self-paced, CPD and event revenue runs like a real storefront — people buy and start in minutes, member pricing is always right, and your team stops chasing invoices.",
+    "outcome": "Self-paced, CPD and event revenue runs like a real storefront: people buy and start in minutes, member pricing is always right, and your team stops chasing invoices.",
     "idealClient": "Education providers and associations monetising short courses, CPD or events through manual invoicing.",
     "bullets": [
       {
@@ -481,10 +481,10 @@ export const services = [
     "category": "Commerce & Storefronts",
     "name": "Membership & Subscription Platform",
     "slug": "membership-subscription-platform",
-    "oneLiner": "A gated members area or association membership that sells, gates and renews itself — content in, recurring revenue out.",
+    "oneLiner": "A gated members area or association membership that sells, gates and renews itself: content in, recurring revenue out.",
     "format": "Build, then an embedded build-and-run subscription",
     "featured": false,
-    "outcome": "A membership that sells, gates and renews itself — recurring revenue that stops depending on someone remembering to chase.",
+    "outcome": "A membership that sells, gates and renews itself: recurring revenue that stops depending on someone remembering to chase.",
     "idealClient": "Educators, associations and creators monetising gated content, community or recurring membership.",
     "bullets": [
       {
@@ -535,14 +535,14 @@ export const services = [
     "category": "AI Agents & Assistants",
     "name": "Private AI Assistant",
     "slug": "private-ai-assistant",
-    "oneLiner": "Your own AI assistant, trained on your confidential documents, answering only the people cleared to ask — and never leaving your four walls.",
+    "oneLiner": "Your own AI assistant, trained on your confidential documents, answering only the people cleared to ask, and never leaving your four walls.",
     "format": "Discovery and secure build, then a monthly hosting-and-retraining retainer",
     "featured": true,
-    "outcome": "Confidential knowledge stops walking out the door at 6pm — instant, sourced, access-controlled answers from your own brain, and that brain stays inside the company.",
+    "outcome": "Confidential knowledge stops walking out the door at 6pm: instant, sourced, access-controlled answers from your own brain, and that brain stays inside the company.",
     "idealClient": "Professional services, finance, healthcare and any SME whose value sits in confidential documents and a few people's heads.",
     "bullets": [
       {
-        "text": "A privatized RAG assistant trained on your document store, matters and policies, hosted in your control — your data never trains anyone else's model"
+        "text": "A privatized RAG assistant trained on your document store, matters and policies, hosted in your control: your data never trains anyone else's model"
       },
       {
         "text": "Strict role and clearance gating so people only ever see answers drawn from what they're cleared for"
@@ -562,7 +562,7 @@ export const services = [
     "category": "AI Agents & Assistants",
     "name": "AI Customer-Service Chat Agent",
     "slug": "ai-customer-service-chat-agent",
-    "oneLiner": "A customer-facing AI agent on your site and WhatsApp that answers, qualifies and books — day and night, in your voice.",
+    "oneLiner": "A customer-facing AI agent on your site and WhatsApp that answers, qualifies and books, day and night, in your voice.",
     "format": "Build plus a monthly run-and-tune retainer; channels added to suit",
     "featured": true,
     "outcome": "Routine questions and triage stop reaching your team, qualified enquiries get booked even at midnight, and customers get an instant answer instead of a queue.",
@@ -589,11 +589,11 @@ export const services = [
     "category": "AI Agents & Assistants",
     "name": "AI Phone Answering Agent",
     "slug": "ai-phone-answering-agent",
-    "oneLiner": "An AI voice agent that answers every call, day or night, in your voice — and never misses a booking.",
+    "oneLiner": "An AI voice agent that answers every call, day or night, in your voice, and never misses a booking.",
     "format": "Setup plus a per-seat or per-minute build-and-run subscription",
     "featured": false,
     "isNew": true,
-    "outcome": "No missed call, no after-hours gap, no front desk buried in repeat questions — every caller is handled and captured.",
+    "outcome": "No missed call, no after-hours gap, no front desk buried in repeat questions: every caller is handled and captured.",
     "idealClient": "Venues, clinics, agencies and any phone-heavy business where a missed call is lost money.",
     "bullets": [
       {
@@ -630,7 +630,7 @@ export const services = [
         "text": "Triage skills that read an inbound request, classify it and route or pre-fill the next step"
       },
       {
-        "text": "Connections into the tools your team lives in — email, Notion, CRM, M365 — so it acts in context"
+        "text": "Connections into the tools your team lives in (email, Notion, CRM, M365) so it acts in context"
       },
       {
         "text": "Reusable prompt 'plays' for your most common tasks, owned and editable by your team"
@@ -644,18 +644,18 @@ export const services = [
     "category": "AI Agents & Assistants",
     "name": "Industry-Specific Private AI",
     "slug": "industry-specific-private-ai",
-    "oneLiner": "A locked-down AI grounded only in your own rulebook, precedents and filings — built for compliance, drafting or diligence in your field.",
+    "oneLiner": "A locked-down AI grounded only in your own rulebook, precedents and filings: built for compliance, drafting or diligence in your field.",
     "format": "Fixed-scope private build (4 to 8 weeks) plus a managed update and hosting retainer; priced per firm and configured to your domain",
     "featured": false,
     "isNew": true,
-    "outcome": "The right, sourced answer to a policy question in seconds; a 90-minute drafting job cut to a 10-minute review; first-pass document review that took hours done in minutes — with the audit trail to prove it and nothing sensitive touching a public tool.",
+    "outcome": "The right, sourced answer to a policy question in seconds; a 90-minute drafting job cut to a 10-minute review; first-pass document review that took hours done in minutes, with the audit trail to prove it and nothing sensitive touching a public tool.",
     "idealClient": "Financial services, legal, healthcare, education and public-sector teams doing regulated, document-heavy work under confidentiality constraints.",
     "bullets": [
       {
         "text": "A private RAG assistant grounded strictly in your policies, precedents, regulations or deal documents, entirely inside your environment"
       },
       {
-        "text": "A configured mode for your need — Compliance (answer 'are we allowed to…' with the exact clause), Drafting (brief-to-near-final document from your precedent bank), or Diligence (summarise and extract terms, clauses and risks from long documents)"
+        "text": "A configured mode for your need: Compliance (answer 'are we allowed to…' with the exact clause), Drafting (brief-to-near-final document from your precedent bank), or Diligence (summarise and extract terms, clauses and risks from long documents)"
       },
       {
         "text": "Hard refusal to invent beyond the source, with every answer cited to its document and clause"
@@ -700,10 +700,10 @@ export const services = [
     "category": "AI Agents & Assistants",
     "name": "Multilingual AI Translation",
     "slug": "multilingual-ai-translation",
-    "oneLiner": "AI that lets your site, agents and messages speak your customers' language — including Twi, Ga, Pidgin and more across West Africa.",
+    "oneLiner": "AI that lets your site, agents and messages speak your customers' language, including Twi, Ga, Pidgin and more across West Africa.",
     "format": "Add-on layer to an existing site, agent or comms build, plus a light monthly retainer",
     "featured": false,
-    "outcome": "You reach the customers and members you were quietly excluding — served properly in their own language, on the channels they actually use.",
+    "outcome": "You reach the customers and members you were quietly excluding, served properly in their own language, on the channels they actually use.",
     "idealClient": "Businesses and bodies serving multilingual UK or West-African audiences currently served English-only.",
     "bullets": [
       {
@@ -727,11 +727,11 @@ export const services = [
     "category": "AI Agents & Assistants",
     "name": "WhatsApp Sales & Support Agent",
     "slug": "whatsapp-sales-support-agent",
-    "oneLiner": "A WhatsApp concierge that sells, reorders and supports your customers on the channel they actually use — UK and Ghana.",
+    "oneLiner": "A WhatsApp concierge that sells, reorders and supports your customers on the channel they actually use, UK and Ghana.",
     "format": "WhatsApp agent build plus a monthly managed-channel retainer",
     "featured": false,
     "isNew": true,
-    "outcome": "Your highest-intent, most mobile customers get an always-on personal shopper on WhatsApp — repeat orders captured automatically, you freed from playing 24/7 salesperson.",
+    "outcome": "Your highest-intent, most mobile customers get an always-on personal shopper on WhatsApp: repeat orders captured automatically, you freed from playing 24/7 salesperson.",
     "idealClient": "Brands and operators with loyal, mobile-first or West-Africa customers who already try to buy over WhatsApp.",
     "bullets": [
       {
@@ -762,13 +762,13 @@ export const services = [
     "idealClient": "Associations, professional bodies and public agencies whose phones are dominated by the same handful of repeat questions.",
     "bullets": [
       {
-        "text": "A private AI assistant trained only on your constitution, by-laws, fee schedules, FAQs and notices — answers from your documents, not the open internet"
+        "text": "A private AI assistant trained only on your constitution, by-laws, fee schedules, FAQs and notices: answers from your documents, not the open internet"
       },
       {
         "text": "Available 24/7 on WhatsApp and your site, in plain language that reads well on a small screen"
       },
       {
-        "text": "Honest hand-off — when it doesn't know, it says so and routes to the right human or queue"
+        "text": "Honest hand-off: when it doesn't know, it says so and routes to the right human or queue"
       },
       {
         "text": "Trained to refuse to invent fees, dates or rules it wasn't given"
@@ -809,7 +809,7 @@ export const services = [
     "category": "Automation & Integration",
     "name": "Workflow Process Automation",
     "slug": "workflow-process-automation",
-    "oneLiner": "The repetitive, end-to-end processes that eat your week — mapped, automated and running on their own.",
+    "oneLiner": "The repetitive, end-to-end processes that eat your week: mapped, automated and running on their own.",
     "format": "Build per workflow plus a build-and-run monitoring subscription",
     "featured": true,
     "outcome": "The work that used to fill your week now runs itself, and your team only steps in for the genuine exceptions.",
@@ -836,14 +836,14 @@ export const services = [
     "category": "Automation & Integration",
     "name": "App & Tool Integration",
     "slug": "app-tool-integration",
-    "oneLiner": "We connect the tools you already pay for so they finally talk to each other — no more re-keying.",
+    "oneLiner": "We connect the tools you already pay for so they finally talk to each other, no more re-keying.",
     "format": "Discovery-led, scoped per integration after a short audit, then ongoing maintenance",
     "featured": false,
-    "outcome": "Your tools stop being islands — data and actions flow between them automatically, and nobody re-keys anything.",
+    "outcome": "Your tools stop being islands: data and actions flow between them automatically, and nobody re-keys anything.",
     "idealClient": "SMEs with a pile of disconnected SaaS tools, each holding a slice of the truth, never syncing.",
     "bullets": [
       {
-        "text": "MCP and API integrations linking your existing stack — HubSpot/Pipedrive, Microsoft 365, Google, Slack/Teams, Notion, WhatsApp — into one connected fabric"
+        "text": "MCP and API integrations linking your existing stack (HubSpot/Pipedrive, Microsoft 365, Google, Slack/Teams, Notion, WhatsApp) into one connected fabric"
       },
       {
         "text": "Two-way sync so a change in one system updates the others, killing duplicate manual entry"
@@ -893,7 +893,7 @@ export const services = [
     "oneLiner": "An automated billing and payment-chasing workflow that drafts invoices, sends polite reminders, and tracks who owes what.",
     "format": "Workflow build plus a light monthly retainer; integrates with your accounting tools",
     "featured": false,
-    "outcome": "Invoices go out on time, reminders run themselves, and cash comes in faster — without ever sending an awkward 'just following up' email.",
+    "outcome": "Invoices go out on time, reminders run themselves, and cash comes in faster, without ever sending an awkward 'just following up' email.",
     "idealClient": "Firms with healthy WIP but slow cash collection because billing and chasing fall to the bottom of the list.",
     "bullets": [
       {
@@ -917,7 +917,7 @@ export const services = [
     "category": "Automation & Integration",
     "name": "Automated Appointment Reminders",
     "slug": "automated-appointment-reminders",
-    "oneLiner": "Automated reminders and recalls that bring people back on schedule and refill empty slots — without a single manual chase.",
+    "oneLiner": "Automated reminders and recalls that bring people back on schedule and refill empty slots, without a single manual chase.",
     "format": "Build plus a monthly managed-automation retainer",
     "featured": false,
     "outcome": "No-show rates fall, freed slots refill automatically, dormant customers reactivate, and recurring revenue stops leaking.",
@@ -1001,7 +1001,7 @@ export const services = [
     "oneLiner": "An AI front door for every inbox and channel that reads, answers what it can, and routes the rest with SLA timers running.",
     "format": "Integration build (M365 or Google) plus a monthly run-and-improve retainer",
     "featured": false,
-    "outcome": "Your team starts the day with a triaged, drafted queue instead of an overflowing inbox — the routine clears itself; the judgement calls surface to the top.",
+    "outcome": "Your team starts the day with a triaged, drafted queue instead of an overflowing inbox: the routine clears itself; the judgement calls surface to the top.",
     "idealClient": "Teams drowning in shared-inbox and multi-channel volume where most messages are routine but the important ones get buried.",
     "bullets": [
       {
@@ -1028,14 +1028,14 @@ export const services = [
     "oneLiner": "Always-on recovery and lifecycle messaging that wins back carts and turns one-time buyers into repeat buyers.",
     "format": "Automation build plus a monthly managed-retention retainer",
     "featured": false,
-    "outcome": "A retention and recovery engine that runs itself — money the brand was already losing, returned, and repeat purchase lifted without a lifecycle hire.",
+    "outcome": "A retention and recovery engine that runs itself: money the brand was already losing, returned, and repeat purchase lifted without a lifecycle hire.",
     "idealClient": "DTC brands with real checkout volume but weak repeat purchase and no CRM or lifecycle owner.",
     "bullets": [
       {
         "text": "Automated multi-step cart recovery across email and WhatsApp (UK and Ghana), triggered the moment a cart is abandoned"
       },
       {
-        "text": "Lifecycle journeys — welcome, post-purchase, replenishment, win-back — keyed to what each customer actually bought"
+        "text": "Lifecycle journeys (welcome, post-purchase, replenishment, win-back) keyed to what each customer actually bought"
       },
       {
         "text": "AI-personalised, on-brand messaging with smart timing, incentive and stop rules to protect margin"
@@ -1055,7 +1055,7 @@ export const services = [
     "oneLiner": "Inventory that watches itself and tells the right person before you sell something you can't ship.",
     "format": "Automation build plus light monthly maintenance",
     "featured": false,
-    "outcome": "No more overselling, no more silent stockouts — the system flags what needs reordering and captures demand on sold-out items.",
+    "outcome": "No more overselling, no more silent stockouts: the system flags what needs reordering and captures demand on sold-out items.",
     "idealClient": "Physical-product brands and distributors stung by stockouts and overselling, managing stock timing in someone's head.",
     "bullets": [
       {
@@ -1109,14 +1109,14 @@ export const services = [
     "oneLiner": "A trackable case system so every citizen or member request has a reference number and a visible status.",
     "format": "Fixed-scope build plus a monthly run-and-support retainer",
     "featured": false,
-    "outcome": "Every request becomes a tracked case with a reference and an honest status — citizens stop chasing, staff stop losing cases, and leadership sees where service breaks down.",
+    "outcome": "Every request becomes a tracked case with a reference and an honest status: citizens stop chasing, staff stop losing cases, and leadership sees where service breaks down.",
     "idealClient": "Public-sector service desks, regulators and member bodies handling complaints or service requests at volume.",
     "bullets": [
       {
         "text": "Intake on WhatsApp and web that issues a reference number the moment a case is logged"
       },
       {
-        "text": "A status the person checks themselves any time — submitted, in review, resolved"
+        "text": "A status the person checks themselves any time: submitted, in review, resolved"
       },
       {
         "text": "A staff back office to assign, escalate, comment and close, with a full audit trail"
@@ -1143,7 +1143,7 @@ export const services = [
         "text": "A supplier-facing portal where you issue POs and suppliers confirm quantities, prices and dates"
       },
       {
-        "text": "A live status on every open PO — confirmed, in transit or overdue — at a glance"
+        "text": "A live status on every open PO (confirmed, in transit or overdue) at a glance"
       },
       {
         "text": "Automated chase reminders to suppliers on unconfirmed or late orders"
@@ -1160,10 +1160,10 @@ export const services = [
     "category": "Comms Channels",
     "name": "Automated Email Newsletters",
     "slug": "automated-email-newsletters",
-    "oneLiner": "A branded email and newsletter channel that designs, personalises and sends itself — and tells you what landed.",
+    "oneLiner": "A branded email and newsletter channel that designs, personalises and sends itself, and tells you what landed.",
     "format": "Build plus a monthly managed-send retainer; integrates with your CRM and commerce data",
     "featured": false,
-    "outcome": "A consistent, professional email presence that runs on a cadence instead of stopping the moment the team gets busy — with proof of what reached and moved people.",
+    "outcome": "A consistent, professional email presence that runs on a cadence instead of stopping the moment the team gets busy, with proof of what reached and moved people.",
     "idealClient": "SMEs, associations and brands whose email is sporadic, off-brand or stuck in a generic tool nobody enjoys using.",
     "bullets": [
       {
@@ -1176,7 +1176,7 @@ export const services = [
         "text": "Segmentation by customer, member, region or status so the right message reaches the right list"
       },
       {
-        "text": "Automated sequences — welcome, nurture, re-engagement, announcements — triggered off your real data"
+        "text": "Automated sequences (welcome, nurture, re-engagement, announcements) triggered off your real data"
       },
       {
         "text": "Open, click and delivery reporting plus list health, integrated with your CRM and commerce backend"
@@ -1214,17 +1214,17 @@ export const services = [
     "category": "Comms Channels",
     "name": "Multi-Channel Broadcast Messaging",
     "slug": "multi-channel-broadcast-messaging",
-    "oneLiner": "Reach every member or citizen on the channel they actually use — WhatsApp first, SMS and email behind it — from one place.",
+    "oneLiner": "Reach every member or citizen on the channel they actually use (WhatsApp first, SMS and email behind it) from one place.",
     "format": "Hub build plus a monthly send-volume retainer",
     "featured": false,
-    "outcome": "Every announcement reaches people once, on the channel they read, with proof it landed — no more notices half the membership never saw.",
+    "outcome": "Every announcement reaches people once, on the channel they read, with proof it landed: no more notices half the membership never saw.",
     "idealClient": "Any organisation needing to reach a large, phone-based membership or public reliably and on time.",
     "bullets": [
       {
         "text": "One console to compose once and send across WhatsApp, SMS and email"
       },
       {
-        "text": "Segmented broadcasts — by branch, region, category or dues status — so the right people get the right notice"
+        "text": "Segmented broadcasts (by branch, region, category or dues status) so the right people get the right notice"
       },
       {
         "text": "Scheduling for deadlines, events and AGMs, with automatic reminders as the date nears"
@@ -1241,10 +1241,10 @@ export const services = [
     "category": "Comms Channels",
     "name": "Two-Way Field & Beneficiary SMS",
     "slug": "two-way-field-beneficiary-sms",
-    "oneLiner": "A two-way WhatsApp line that reaches and hears from the people you serve or the crews in the field — at a scale a team can't reach by hand.",
+    "oneLiner": "A two-way WhatsApp line that reaches and hears from the people you serve or the crews in the field, at a scale a team can't reach by hand.",
     "format": "WhatsApp automation plus assistant build, with a monthly retainer to run campaigns and flows",
     "featured": false,
-    "outcome": "You stay in real, two-way contact at a scale your team could never reach by hand — and every reply and acknowledgement lands on the record.",
+    "outcome": "You stay in real, two-way contact at a scale your team could never reach by hand, and every reply and acknowledgement lands on the record.",
     "idealClient": "Frontline nonprofits serving WhatsApp-first communities, and field teams coordinating crews over personal WhatsApp.",
     "bullets": [
       {
@@ -1268,7 +1268,7 @@ export const services = [
     "category": "Comms Channels",
     "name": "Event RSVP & Check-In System",
     "slug": "event-rsvp-check-in-system",
-    "oneLiner": "Run conferences, AGMs and trainings end-to-end on the phone — RSVP, ticket, pay, and tap-to-check-in at the door.",
+    "oneLiner": "Run conferences, AGMs and trainings end-to-end on the phone: RSVP, ticket, pay, and tap-to-check-in at the door.",
     "format": "Per-event build or an annual events package with run-of-event support",
     "featured": false,
     "outcome": "Events run smoothly from invite to door, you know exactly who attended and paid, and reconciliation that took a week is done before you leave the hall.",
@@ -1281,7 +1281,7 @@ export const services = [
         "text": "QR tickets sent to each attendee's phone, with a paper fallback"
       },
       {
-        "text": "Fast door check-in by scanning the QR — live headcount as people arrive"
+        "text": "Fast door check-in by scanning the QR, with live headcount as people arrive"
       },
       {
         "text": "Automatic reminders before, and a branded recap or certificate of attendance after"
@@ -1295,10 +1295,10 @@ export const services = [
     "category": "Meetings & Knowledge",
     "name": "AI Meeting Notes & Recaps",
     "slug": "ai-meeting-notes-recaps",
-    "oneLiner": "Every meeting captured, recapped and turned into action — automatically, on-brand, before you've left the room.",
+    "oneLiner": "Every meeting captured, recapped and turned into action, automatically, on-brand, before you've left the room.",
     "format": "Fixed-scope build plus a per-seat monthly subscription, or bundled into a retainer",
     "featured": true,
-    "outcome": "Nothing said in a meeting gets lost — recaps, actions and follow-ups are handled before you've left the call, captured the same day instead of reconstructed a week later.",
+    "outcome": "Nothing said in a meeting gets lost: recaps, actions and follow-ups are handled before you've left the call, captured the same day instead of reconstructed a week later.",
     "idealClient": "Consultancies, sales teams, client-facing and professional-services teams who live in meetings and lose the output.",
     "bullets": [
       {
@@ -1322,17 +1322,17 @@ export const services = [
     "category": "Meetings & Knowledge",
     "name": "Company Knowledge AI Search",
     "slug": "company-knowledge-ai-search",
-    "oneLiner": "A private AI that has read everything your company knows — and answers in seconds, with the source.",
+    "oneLiner": "A private AI that has read everything your company knows, and answers in seconds, with the source.",
     "format": "Build-and-run subscription (foundation build plus monthly hosting, tuning and growth)",
     "featured": false,
-    "outcome": "Institutional memory stops walking out the door — your team stops hunting and starts asking, and a new hire gets senior-level answers from day one.",
-    "idealClient": "Document-heavy organisations — law, finance, consultancy, healthcare, education, manufacturing — drowning in their own files.",
+    "outcome": "Institutional memory stops walking out the door: your team stops hunting and starts asking, and a new hire gets senior-level answers from day one.",
+    "idealClient": "Document-heavy organisations (law, finance, consultancy, healthcare, education, manufacturing) drowning in their own files.",
     "bullets": [
       {
-        "text": "A privatized, company-wide knowledge base built on your own documents, drives, wikis and policies — your data never trains a public model"
+        "text": "A privatized, company-wide knowledge base built on your own documents, drives, wikis and policies: your data never trains a public model"
       },
       {
-        "text": "Ingestion from where knowledge already lives — SharePoint/M365, Google Drive, Notion, Confluence, email"
+        "text": "Ingestion from where knowledge already lives: SharePoint/M365, Google Drive, Notion, Confluence, email"
       },
       {
         "text": "A natural-language ask-and-search layer that answers in plain English with citations back to the original doc"
@@ -1349,14 +1349,14 @@ export const services = [
     "category": "Meetings & Knowledge",
     "name": "Notion / M365 Workspace Build",
     "slug": "notion-m365-workspace-build",
-    "oneLiner": "We build the company brain in Notion or M365 — databases, dashboards and a command centre that actually gets used.",
+    "oneLiner": "We build the company brain in Notion or M365: databases, dashboards and a command centre that actually gets used.",
     "format": "Fixed-scope build (3 to 5 weeks), migration and training, with an optional care plan",
     "featured": false,
-    "outcome": "One place that holds the truth of the business — and a team that trusts it enough to live in it, with new joiners productive in days not months.",
+    "outcome": "One place that holds the truth of the business, and a team that trusts it enough to live in it, with new joiners productive in days not months.",
     "idealClient": "Growing teams of 5 to 50 whose tools have outgrown spreadsheets but who can't justify heavyweight enterprise software.",
     "bullets": [
       {
-        "text": "A bespoke Notion or Microsoft 365 workspace architected to how your business actually runs — clients, matters, projects, tasks, pipeline, knowledge"
+        "text": "A bespoke Notion or Microsoft 365 workspace architected to how your business actually runs: clients, matters, projects, tasks, pipeline, knowledge"
       },
       {
         "text": "Connected databases with the right relations and rollups so data entered once shows up everywhere"
@@ -1376,10 +1376,10 @@ export const services = [
     "category": "Meetings & Knowledge",
     "name": "Searchable Decision Log",
     "slug": "searchable-decision-log",
-    "oneLiner": "A searchable record of every decision your company has made — and the why behind it.",
+    "oneLiner": "A searchable record of every decision your company has made, and the why behind it.",
     "format": "Fixed-scope build, often paired with The Scribe or The Cairn",
     "featured": false,
-    "outcome": "Your company's reasoning is preserved, not just its conclusions — so you stop re-litigating settled calls.",
+    "outcome": "Your company's reasoning is preserved, not just its conclusions, so you stop re-litigating settled calls.",
     "idealClient": "Leadership teams, boards and scaling startups where context evaporates between decisions and consequences.",
     "bullets": [
       {
@@ -1389,7 +1389,7 @@ export const services = [
         "text": "Each entry holds the decision, the options weighed, the rationale, the owner and the date"
       },
       {
-        "text": "Natural-language search across the whole history — 'why did we choose vendor X?'"
+        "text": "Natural-language search across the whole history: 'why did we choose vendor X?'"
       },
       {
         "text": "Links from each decision back to the meeting, document or message it came from"
@@ -1403,10 +1403,10 @@ export const services = [
     "category": "Meetings & Knowledge",
     "name": "Automated Meeting Pre-Briefs",
     "slug": "automated-meeting-pre-briefs",
-    "oneLiner": "Walk into every important meeting already briefed — context, history and the right questions, delivered before you sit down.",
+    "oneLiner": "Walk into every important meeting already briefed: context, history and the right questions, delivered before you sit down.",
     "format": "Build-and-run subscription, often paired with The Scribe",
     "featured": false,
-    "outcome": "No meeting starts from zero — every conversation picks up exactly where the last one left off.",
+    "outcome": "No meeting starts from zero: every conversation picks up exactly where the last one left off.",
     "idealClient": "Sales teams, account managers and consultants whose edge is showing up sharp and remembering everything.",
     "bullets": [
       {
@@ -1433,14 +1433,14 @@ export const services = [
     "oneLiner": "A private AI that walks every new hire through how your company actually works.",
     "format": "Fixed-scope build plus monthly run, or folded into The Archive",
     "featured": false,
-    "outcome": "New hires get productive in days, not months — without draining your senior team's calendar.",
+    "outcome": "New hires get productive in days, not months, without draining your senior team's calendar.",
     "idealClient": "Fast-growing teams and high-turnover operations where onboarding is a recurring bottleneck.",
     "bullets": [
       {
         "text": "A privatized AI assistant trained on your processes, policies, tools and tribal knowledge"
       },
       {
-        "text": "A conversational onboarding copilot new hires can ask anything — 'how do I raise an invoice?', 'who owns the X account?'"
+        "text": "A conversational onboarding copilot new hires can ask anything: 'how do I raise an invoice?', 'who owns the X account?'"
       },
       {
         "text": "Curated learning paths that surface the right docs and people at the right moment"
@@ -1457,10 +1457,10 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "Live Operations Dashboard",
     "slug": "live-operations-dashboard",
-    "oneLiner": "One screen that pulls your scattered numbers into a live operations dashboard — so the state of the business is never a mystery.",
+    "oneLiner": "One screen that pulls your scattered numbers into a live operations dashboard, so the state of the business is never a mystery.",
     "format": "Dashboard build plus integration, then an embedded build-and-run subscription with data upkeep",
     "featured": true,
-    "outcome": "Leadership sees the true state of the business at a glance and acts the same day — the status meeting shrinks or dies.",
+    "outcome": "Leadership sees the true state of the business at a glance and acts the same day: the status meeting shrinks or dies.",
     "idealClient": "Founders, COOs and ops leaders flying blind across disconnected tools and lagging manual reports.",
     "bullets": [
       {
@@ -1470,7 +1470,7 @@ export const services = [
         "text": "Live KPI tiles, trends and drill-downs for the metrics that actually govern your week"
       },
       {
-        "text": "Role-based views — leadership, ops, sales — each seeing what they need"
+        "text": "Role-based views (leadership, ops, sales) each seeing what they need"
       },
       {
         "text": "Threshold alerts that warn before an SLA or deadline slips, not after"
@@ -1484,20 +1484,20 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "Plain-English Finance Brief",
     "slug": "plain-english-finance-brief",
-    "oneLiner": "Your financial numbers, read for you — a plain-English brief that explains what moved on the money and why.",
+    "oneLiner": "Your financial numbers, read for you: a plain-English brief that explains what moved on the money and why.",
     "format": "Build-and-run subscription (integration build plus recurring reporting)",
     "featured": false,
-    "outcome": "The monthly financial report writes itself — and finally tells you what the numbers actually mean for the business.",
+    "outcome": "The monthly financial report writes itself, and finally tells you what the numbers actually mean for the business.",
     "idealClient": "SMEs and finance leaders who have revenue and cash data everywhere but no analyst to turn it into a story.",
     "bullets": [
       {
-        "text": "Connectors into your financial and revenue sources — Stripe, accounting, CRM, spreadsheets"
+        "text": "Connectors into your financial and revenue sources: Stripe, accounting, CRM, spreadsheets"
       },
       {
-        "text": "A KPI layer tracking the money metrics that matter — revenue, cash, margin, collections, runway"
+        "text": "A KPI layer tracking the money metrics that matter: revenue, cash, margin, collections, runway"
       },
       {
-        "text": "An AI narrative explaining the financials — what changed, by how much, likely why, what to watch"
+        "text": "An AI narrative explaining the financials: what changed, by how much, likely why, what to watch"
       },
       {
         "text": "Scheduled branded financial reports (weekly or monthly) delivered to leadership automatically"
@@ -1511,10 +1511,10 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "Daily Operations Brief",
     "slug": "daily-operations-brief",
-    "oneLiner": "A branded morning operational brief — what happened overnight across your ops, and what needs you today.",
+    "oneLiner": "A branded morning operational brief: what happened overnight across your ops, and what needs you today.",
     "format": "Build-and-run subscription (setup plus ongoing daily or weekly delivery and tuning)",
     "featured": false,
-    "outcome": "Everyone walks in already knowing where today stands operationally — the day starts on the front foot, not catching up.",
+    "outcome": "Everyone walks in already knowing where today stands operationally: the day starts on the front foot, not catching up.",
     "idealClient": "Founders, executives and team leads who need to stay on top of daily operations without living in their tools.",
     "bullets": [
       {
@@ -1527,7 +1527,7 @@ export const services = [
         "text": "A clean branded page or email delivered at a set time, every day or week"
       },
       {
-        "text": "Tailored editions per recipient — leadership sees the cross-business view, ops sees throughput and queues"
+        "text": "Tailored editions per recipient: leadership sees the cross-business view, ops sees throughput and queues"
       },
       {
         "text": "Tuning over the first month so the brief learns what actually matters to you"
@@ -1538,17 +1538,17 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "Customer Churn Early Warning",
     "slug": "customer-churn-early-warning",
-    "oneLiner": "See the customer, student or member drifting away while you can still reach them — not after they've gone.",
+    "oneLiner": "See the customer, student or member drifting away while you can still reach them, not after they've gone.",
     "format": "Dashboard build plus automation wiring and a monthly retainer",
     "featured": false,
-    "outcome": "Your team intervenes in the window that still matters — retention becomes something you act on, and fewer earned customers walk away.",
+    "outcome": "Your team intervenes in the window that still matters: retention becomes something you act on, and fewer earned customers walk away.",
     "idealClient": "Education providers, membership bodies and subscription businesses where disengagement is only spotted after it's too late.",
     "bullets": [
       {
         "text": "A risk dashboard pulling activity signals (logins, attendance, submissions, orders, support contact) into one view per person and cohort"
       },
       {
-        "text": "Plain risk tiers — on track, drifting, at risk — with the reason shown, not a black-box score"
+        "text": "Plain risk tiers (on track, drifting, at risk) with the reason shown, not a black-box score"
       },
       {
         "text": "Automated nudges to the person and an alert to their owner when they start to slip"
@@ -1565,10 +1565,10 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "Demand & Stock Forecasting",
     "slug": "demand-stock-forecasting",
-    "oneLiner": "A forecast of what you'll need — stock, crew or buy-ahead — built from your own history so you plan ahead of demand, not behind it.",
+    "oneLiner": "A forecast of what you'll need (stock, crew or buy-ahead) built from your own history so you plan ahead of demand, not behind it.",
     "format": "Discovery plus model build (6 to 8 weeks), delivered as a weekly running service",
     "featured": false,
-    "outcome": "You plan against expected demand instead of a rear-view mirror — working capital and idle time both fall, and stockouts on your fast movers become rare.",
+    "outcome": "You plan against expected demand instead of a rear-view mirror: working capital and idle time both fall, and stockouts on your fast movers become rare.",
     "idealClient": "Distributors, manufacturers and field-services operators with enough history to forecast and real money tied up in stock or labour.",
     "bullets": [
       {
@@ -1592,7 +1592,7 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "Board & Accreditation Reporting",
     "slug": "board-accreditation-reporting",
-    "oneLiner": "The board pack, trustee report or accreditation submission, assembled for you — current, consistent and on demand.",
+    "oneLiner": "The board pack, trustee report or accreditation submission, assembled for you: current, consistent and on demand.",
     "format": "Build plus a monthly retainer with on-demand report generation",
     "featured": false,
     "outcome": "The report writes itself from one source of truth, the numbers reconcile, and board or accreditation season stops eating your team's month.",
@@ -1622,7 +1622,7 @@ export const services = [
     "oneLiner": "Turn every customer call, ticket, review and survey into a clear read on what people actually think.",
     "format": "Build-and-run subscription (pipeline build plus recurring reporting)",
     "featured": false,
-    "outcome": "Leadership hears the real, aggregated voice of the customer — not just the loudest complaint of the week.",
+    "outcome": "Leadership hears the real, aggregated voice of the customer, not just the loudest complaint of the week.",
     "idealClient": "E-commerce, education, hospitality and service businesses with high feedback volume and no one to read it all.",
     "bullets": [
       {
@@ -1649,11 +1649,11 @@ export const services = [
     "oneLiner": "A live, client-facing intelligence hub that tracks your market, ranks what matters, and refreshes itself.",
     "format": "Build-and-run subscription (hub build plus scheduled refresh, hosting and curation)",
     "featured": false,
-    "outcome": "You become the authoritative, always-current view of your space — a living resource your market checks regularly and credits to you.",
+    "outcome": "You become the authoritative, always-current view of your space: a living resource your market checks regularly and credits to you.",
     "idealClient": "Consultancies, membership bodies, trade associations and category leaders who want to own the intelligence layer in their field.",
     "bullets": [
       {
-        "text": "A branded, always-on intelligence hub — leaderboards, movement tracking, side-by-side comparisons for your sector"
+        "text": "A branded, always-on intelligence hub: leaderboards, movement tracking, side-by-side comparisons for your sector"
       },
       {
         "text": "An engine that refreshes the data daily or weekly and redeploys the updated site automatically"
@@ -1673,10 +1673,10 @@ export const services = [
     "category": "Intelligence & Reporting",
     "name": "On-Demand Market Research",
     "slug": "on-demand-market-research",
-    "oneLiner": "A fact-checked deep-dive on any market, competitor or question — on demand, in your brand.",
+    "oneLiner": "A fact-checked deep-dive on any market, competitor or question, on demand, in your brand.",
     "format": "Per-report fixed price, or a research retainer for recurring intelligence",
     "featured": false,
-    "outcome": "Board-grade research without a research team — sourced, current and ready to act on.",
+    "outcome": "Board-grade research without a research team: sourced, current and ready to act on.",
     "idealClient": "Leadership teams entering new markets, sizing up competitors, or preparing pitches, deals and board papers.",
     "bullets": [
       {
@@ -1686,7 +1686,7 @@ export const services = [
         "text": "Adversarial fact-checking so claims are verified before they reach you, with citations attached"
       },
       {
-        "text": "A synthesised, branded report — market landscape, competitor moves, opportunities, risks — built for a real decision"
+        "text": "A synthesised, branded report (market landscape, competitor moves, opportunities, risks) built for a real decision"
       },
       {
         "text": "On-demand commissioning: name the question, get the dossier"
@@ -1700,14 +1700,14 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "Cinematic 3D Brand Website",
     "slug": "cinematic-3d-brand-website",
-    "oneLiner": "A cinematic, 3D-led brand site or pitch experience — animated logo, scroll story, the kind of page that makes people stop.",
+    "oneLiner": "A cinematic, 3D-led brand site or pitch experience: animated logo, scroll story, the kind of page that makes people stop.",
     "format": "Premium fixed-scope build per site or pitch; one-time fee with a retainer option for recurring decks",
     "featured": true,
-    "outcome": "A page that makes prospects stop, stay and take you seriously before they've read a word — and a link that keeps selling after you've gone.",
+    "outcome": "A page that makes prospects stop, stay and take you seriously before they've read a word, and a link that keeps selling after you've gone.",
     "idealClient": "Brands launching flagships, founders raising, and agencies running high-stakes pitches where the work has to out-class the competition.",
     "bullets": [
       {
-        "text": "A bespoke 3D hero — animated, cursor-responsive brand mark or product"
+        "text": "A bespoke 3D hero: animated, cursor-responsive brand mark or product"
       },
       {
         "text": "A scroll-driven narrative with motion, colour grading and paced reveals, or an interactive browser-based pitch deck"
@@ -1730,11 +1730,11 @@ export const services = [
     "oneLiner": "Your logo, rebuilt as a real-time, light-responsive 3D object that reacts to the visitor.",
     "format": "Fixed-scope build, 2 to 3 weeks, one-off fee",
     "featured": false,
-    "outcome": "A first impression that proves you build modern things — the brand greets every visitor instead of just sitting there.",
+    "outcome": "A first impression that proves you build modern things: the brand greets every visitor instead of just sitting there.",
     "idealClient": "SMEs and professional-services firms relaunching or pitching who want a hero moment without a full rebrand.",
     "bullets": [
       {
-        "text": "A real-time WebGL build of your existing logo or symbol — extruded, lit and shaded with material depth, fresnel rim-glow and bloom"
+        "text": "A real-time WebGL build of your existing logo or symbol: extruded, lit and shaded with material depth, fresnel rim-glow and bloom"
       },
       {
         "text": "Cursor and pointer interaction so the mark responds as the visitor moves across it"
@@ -1757,11 +1757,11 @@ export const services = [
     "oneLiner": "Your flat icons rebuilt as light-responsive 3D gems for a dimensional brand system.",
     "format": "Fixed-scope set, priced per icon count, 2 to 3 weeks",
     "featured": false,
-    "outcome": "Every feature grid and pillar page gains physical depth — your brand reads as crafted, not assembled.",
+    "outcome": "Every feature grid and pillar page gains physical depth: your brand reads as crafted, not assembled.",
     "idealClient": "Brands with an existing icon set or methodology who want a dimensional upgrade across web, decks and product.",
     "bullets": [
       {
-        "text": "Each icon, logo or pictogram rebuilt as a real 3D relief element — extruded body, bevelled edges, a displaced face that catches light"
+        "text": "Each icon, logo or pictogram rebuilt as a real 3D relief element: extruded body, bevelled edges, a displaced face that catches light"
       },
       {
         "text": "A consistent set tuned to one palette so the whole system feels carved from the same material"
@@ -1781,10 +1781,10 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "Daily Brand Animation Service",
     "slug": "daily-brand-animation-service",
-    "oneLiner": "A fresh, on-brand generative motion study delivered every day, on autopilot — so you never run dry.",
+    "oneLiner": "A fresh, on-brand generative motion study delivered every day, on autopilot, so you never run dry.",
     "format": "Build-and-run subscription (daily cron plus gallery and catalogue), or a fixed-scope one-off signature piece",
     "featured": false,
-    "outcome": "You never run dry — there's always a fresh, unmistakably-you piece of motion ready to ship, and a signature animation that exists nowhere else.",
+    "outcome": "You never run dry: there's always a fresh, unmistakably-you piece of motion ready to ship, and a signature animation that exists nowhere else.",
     "idealClient": "Brands with an always-on content presence who need a steady supply of original motion without a studio retainer.",
     "bullets": [
       {
@@ -1808,10 +1808,10 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "AI Explainer & Product Videos",
     "slug": "ai-explainer-product-videos",
-    "oneLiner": "Branded explainer videos, product clips and social video generated from a script or a single asset — without a film crew.",
+    "oneLiner": "Branded explainer videos, product clips and social video generated from a script or a single asset, without a film crew.",
     "format": "Per-video build or a monthly video-content retainer",
     "featured": false,
-    "outcome": "Professional video your audience expects — explainers, demos and social clips — produced in days from words, not weeks from a shoot.",
+    "outcome": "Professional video your audience expects (explainers, demos and social clips) produced in days from words, not weeks from a shoot.",
     "idealClient": "Brands, educators and founders who need video to compete but can't justify a production team or agency rates.",
     "bullets": [
       {
@@ -1835,7 +1835,7 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "Branded Proposal & Document Builder",
     "slug": "branded-proposal-document-builder",
-    "oneLiner": "Branded proposals, decks, contracts and reports generated from a short brief in minutes — built to win and impossible to get wrong.",
+    "oneLiner": "Branded proposals, decks, contracts and reports generated from a short brief in minutes: built to win and impossible to get wrong.",
     "format": "Fixed-scope build per document type; embedded build-and-run for high-volume pipelines",
     "featured": false,
     "outcome": "Proposals and documents go out same-day, look unmistakably premium, are correct every time, and a faster, sharper pitch wins more of the work it chases.",
@@ -1862,10 +1862,10 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "Always-On Content Production",
     "slug": "always-on-content-production",
-    "oneLiner": "An always-on pipeline that turns your raw material — and your house voice — into a steady stream of on-brand content.",
+    "oneLiner": "An always-on pipeline that turns your raw material (and your house voice) into a steady stream of on-brand content.",
     "format": "Embedded build-and-run subscription, monthly fee",
     "featured": false,
-    "outcome": "A blank page becomes a full draft in minutes — the team moves from writing-from-scratch to editing-and-shipping, and a consistent, unmistakably-you presence keeps running when the team can't.",
+    "outcome": "A blank page becomes a full draft in minutes: the team moves from writing-from-scratch to editing-and-shipping, and a consistent, unmistakably-you presence keeps running when the team can't.",
     "idealClient": "Marketing teams, agencies and content-heavy brands capped by writer hours and needing a reliable cadence.",
     "bullets": [
       {
@@ -1892,7 +1892,7 @@ export const services = [
     "oneLiner": "A production line that turns one long asset into a month of branded, channel-ready cuts.",
     "format": "Repurposing pipeline plus a branded template and motion kit, with content-calendar handoff",
     "featured": false,
-    "outcome": "One asset becomes a month of content without a month of work — the studio shifts from manual slicing to creative direction.",
+    "outcome": "One asset becomes a month of content without a month of work: the studio shifts from manual slicing to creative direction.",
     "idealClient": "Content-heavy brands and agencies producing long-form material that should fuel many channels but doesn't.",
     "bullets": [
       {
@@ -1923,7 +1923,7 @@ export const services = [
     "idealClient": "Founders, finance and ops leaders, and consultancies needing to make a data point land with a board, client or investor.",
     "bullets": [
       {
-        "text": "A branded, interactive data visualisation built from your real data — charts, maps, leaderboards, dashboards"
+        "text": "A branded, interactive data visualisation built from your real data: charts, maps, leaderboards, dashboards"
       },
       {
         "text": "A narrative layer so the visual makes a point, not just shows numbers"
@@ -1943,10 +1943,10 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "Impact Storytelling Content",
     "slug": "impact-storytelling-content",
-    "oneLiner": "Turn the good you do every day into a steady stream of polished, on-brand content — without a comms hire.",
+    "oneLiner": "Turn the good you do every day into a steady stream of polished, on-brand content, without a comms hire.",
     "format": "Content-engine build plus a light monthly retainer for drafting and templates",
     "featured": false,
-    "outcome": "A consistent, professional voice in front of supporters every week, more reasons for them to keep giving — and not a single new salary on the books.",
+    "outcome": "A consistent, professional voice in front of supporters every week, more reasons for them to keep giving, and not a single new salary on the books.",
     "idealClient": "Mission-led nonprofits with real stories to tell but no spare capacity to turn them into fundraising content.",
     "bullets": [
       {
@@ -1970,10 +1970,10 @@ export const services = [
     "category": "Brand, Content & Media",
     "name": "Annual & Impact Report Design",
     "slug": "annual-impact-report-design",
-    "oneLiner": "The flagship annual or impact report that wins trust — written, designed and built from your data, not a month of agony.",
+    "oneLiner": "The flagship annual or impact report that wins trust: written, designed and built from your data, not a month of agony.",
     "format": "Annual project (content draft, design, web build), repeatable each year at lower cost",
     "featured": false,
-    "outcome": "A report that lands like a much larger organisation produced it and builds trust with the funders who matter most — without the month of dread or the designer bill.",
+    "outcome": "A report that lands like a much larger organisation produced it and builds trust with the funders who matter most, without the month of dread or the designer bill.",
     "idealClient": "Nonprofits and social enterprises whose annual or impact report is their key trust document but who lack the writing, design and budget.",
     "bullets": [
       {
@@ -1997,10 +1997,10 @@ export const services = [
     "category": "The Method",
     "name": "8-Pillar Digital Assessment",
     "slug": "8-pillar-digital-assessment",
-    "oneLiner": "Our 8-pillar read on exactly where your operating week drains — with a costed, sequenced plan to win it back.",
+    "oneLiner": "Our 8-pillar read on exactly where your operating week drains, with a costed, sequenced plan to win it back.",
     "format": "Fixed-fee assessment (2 to 3 weeks), delivered as a branded report and roadmap, creditable against the build that follows",
     "featured": true,
-    "outcome": "You stop guessing — an evidence-based map of where your hours go and a clear, ranked plan to buy them back, grounded in your real workflow not a vendor's wish list.",
+    "outcome": "You stop guessing: an evidence-based map of where your hours go and a clear, ranked plan to buy them back, grounded in your real workflow not a vendor's wish list.",
     "idealClient": "A leader who senses the inefficiency but needs it named, quantified and prioritised before committing budget.",
     "bullets": [
       {
@@ -2016,7 +2016,7 @@ export const services = [
         "text": "A quantified picture of time lost to manual work and what each leak costs"
       },
       {
-        "text": "A prioritised, costed build roadmap — the safe wins first, the ambitious builds sequenced — in a branded, board-ready report and leadership readout"
+        "text": "A prioritised, costed build roadmap (the safe wins first, the ambitious builds sequenced) in a branded, board-ready report and leadership readout"
       }
     ]
   },
@@ -2024,17 +2024,17 @@ export const services = [
     "category": "The Method",
     "name": "Operations Command-Centre Build",
     "slug": "operations-command-centre-build",
-    "oneLiner": "We map where your week drains, then build and run the command centre that takes the busywork off the founders entirely — assessment-led.",
+    "oneLiner": "We map where your week drains, then build and run the command centre that takes the busywork off the founders entirely, assessment-led.",
     "format": "DXP assessment then command-centre build then an embedded run-and-improve retainer",
     "featured": true,
-    "outcome": "The founders stop being the operating system — the business runs on a foundation Greatstone builds and runs, buying back the hours growth was waiting on. We don't advise; we become your foundation.",
+    "outcome": "The founders stop being the operating system: the business runs on a foundation Greatstone builds and runs, buying back the hours growth was waiting on. We don't advise; we become your foundation.",
     "idealClient": "A founder team that has hit a ceiling because every function still routes through them and wants a partner to take operations off their plate, starting from a full assessment.",
     "bullets": [
       {
         "text": "An 8-pillar Digital Excellence assessment to find exactly where the founders' hours leak"
       },
       {
-        "text": "A command centre — orders, inventory, suppliers, support, content — as one operating cockpit"
+        "text": "A command centre (orders, inventory, suppliers, support, content) as one operating cockpit"
       },
       {
         "text": "MCP integrations stitching the existing stack (Stripe, email, WhatsApp, calendar, support, social) into that cockpit"
@@ -2051,14 +2051,14 @@ export const services = [
     "category": "The Method",
     "name": "Outsourced Web Team (Retainer)",
     "slug": "outsourced-web-team-retainer",
-    "oneLiner": "We become the team that builds, hosts, runs and keeps improving your entire web presence — month after month, no assessment required to start.",
+    "oneLiner": "We become the team that builds, hosts, runs and keeps improving your entire web presence, month after month, no assessment required to start.",
     "format": "Embedded build-and-run monthly subscription, ongoing rolling scope, no DXP prerequisite",
     "featured": false,
-    "outcome": "You get the output of a tech team without the cost, the hiring or the risk — a foundation that grows with you instead of one you outgrow, and is always getting better.",
+    "outcome": "You get the output of a tech team without the cost, the hiring or the risk: a foundation that grows with you instead of one you outgrow, and is always getting better.",
     "idealClient": "Growing businesses and non-technical founders who already know what they want built and want a digital and engineering team without hiring one.",
     "bullets": [
       {
-        "text": "Your full stack — site, studio, portal, dashboards, commerce, AI, automations — built and hosted by us"
+        "text": "Your full stack (site, studio, portal, dashboards, commerce, AI, automations) built and hosted by us"
       },
       {
         "text": "A standing monthly cycle of fixes, improvements and new features, delivered sprint by sprint"
@@ -2070,7 +2070,7 @@ export const services = [
         "text": "Monitoring, security, backups and uptime owned end to end"
       },
       {
-        "text": "A direct channel — we operate as your embedded digital and engineering team, not a ticket queue"
+        "text": "A direct channel: we operate as your embedded digital and engineering team, not a ticket queue"
       },
       {
         "text": "Architecture and decisions made to scale, not to be rebuilt later"
@@ -2081,10 +2081,10 @@ export const services = [
     "category": "The Method",
     "name": "AI Training & Adoption Support",
     "slug": "ai-training-adoption-support",
-    "oneLiner": "We don't just build the AI — we get your team actually using it, with the training, playbooks and adoption support to make it stick.",
+    "oneLiner": "We don't just build the AI. We get your team actually using it, with the training, playbooks and adoption support to make it stick.",
     "format": "Enablement engagement (onboarding plus training) then a light monthly adoption retainer; bundles with any build",
     "featured": true,
-    "outcome": "The tools we built get used — adoption sticks, the hours actually come back, and the investment doesn't quietly die because nobody changed how they work.",
+    "outcome": "The tools we built get used: adoption sticks, the hours actually come back, and the investment doesn't quietly die because nobody changed how they work.",
     "idealClient": "Any organisation that has bought tools or AI before and watched them go unused because nobody owned the human change.",
     "bullets": [
       {
@@ -2115,7 +2115,7 @@ export const services = [
     "idealClient": "Support, ops and sales teams with a constant queue and a backlog that never quite clears.",
     "bullets": [
       {
-        "text": "A custom autonomous agent that runs on a schedule against a defined queue — tickets, leads, reconciliations, content"
+        "text": "A custom autonomous agent that runs on a schedule against a defined queue: tickets, leads, reconciliations, content"
       },
       {
         "text": "Plan-first execution: it reads the work, does the safe items end-to-end, and parks the high-stakes ones for a human"
@@ -2127,7 +2127,7 @@ export const services = [
         "text": "A morning brief showing exactly what it did, what it parked and why"
       },
       {
-        "text": "We run, monitor and tune it as an embedded service — you see results, not maintenance"
+        "text": "We run, monitor and tune it as an embedded service: you see results, not maintenance"
       }
     ]
   },
@@ -2135,17 +2135,17 @@ export const services = [
     "category": "The Method",
     "name": "Website Audit & Rebuild",
     "slug": "website-audit-rebuild",
-    "oneLiner": "A fixed-scope audit and rebuild of the site you already have — faster, clearer, converting — before you commit to a bigger build.",
+    "oneLiner": "A fixed-scope audit and rebuild of the site you already have (faster, clearer, converting) before you commit to a bigger build.",
     "format": "Quick fixed-scope engagement, 1 to 2 weeks, one-time fee",
     "featured": false,
-    "outcome": "A measurably faster, clearer, better-converting site — and a clear-eyed decision on what comes next.",
+    "outcome": "A measurably faster, clearer, better-converting site, and a clear-eyed decision on what comes next.",
     "idealClient": "Businesses unsure whether to fix or rebuild their existing site.",
     "bullets": [
       {
         "text": "A full audit of speed, SEO, accessibility, conversion and brand consistency"
       },
       {
-        "text": "A prioritised, plain-English findings report — ship-now wins and bigger plays"
+        "text": "A prioritised, plain-English findings report: ship-now wins and bigger plays"
       },
       {
         "text": "Hands-on fixes to the safe, high-impact issues within the engagement"
