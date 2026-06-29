@@ -263,6 +263,8 @@
 .gs-field input:focus,.gs-field textarea:focus{border-color:var(--gs-border)}
 .gs-preview-label{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-faint);margin:20px 0 10px}
 .gs-serp{background:#fff;border-radius:10px;padding:14px 16px}
+/* site-chrome preview (header/footer): the REAL dark chrome, so the light brand logo is visible (a white card hid it) */
+.gs-chrome-preview{background:var(--gs-bg,#2d2d2d);border:1px solid var(--gs-border-soft);border-radius:10px;padding:14px 16px;color:var(--gs-text)}
 .gs-serp-url{font-size:.74rem;color:#202124}
 .gs-serp-title{font-size:1.04rem;color:#1a0dab;font-weight:500;margin-top:3px;line-height:1.3}
 .gs-serp-desc{font-size:.8rem;color:#4d5156;margin-top:4px;line-height:1.5}

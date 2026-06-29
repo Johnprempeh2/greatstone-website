@@ -135,7 +135,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { DEFAULT_LOGO, load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock, addPageFromStarter, listStarters } from './store.js';
+import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock, addPageFromStarter, listStarters } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -584,8 +584,7 @@ export default function App() {
   const blockReport = useMemo(() => analyzeBlocks(state, Object.keys(config.components), config.categories), [state.pages, state.order]);
   // first-run studio setup checklist (read-only; "changed-from-default" semantics need the defaults injected).
   const onboardingReport = useMemo(() => deriveChecklist(state, {
-    defaultSiteName: 'Greatstone International', defaultLogo: DEFAULT_LOGO, defaultEmail: 'dx@greatstonesoftware.co.uk',
-    defaultCta: 'Book a Diagnostic', analyticsKnown: true, analyticsConfigured,
+    analyticsKnown: true, analyticsConfigured,
   }), [state.settings, state.navigation, state.order, state.pages]);
   // site health: one score rolling up the six audits — pure synthesis of the reports already computed above.
   const healthReport = useMemo(() => computeHealth({

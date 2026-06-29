@@ -12,20 +12,27 @@ const seedLike = (over = {}) => ({
 });
 const item = (r, key) => r.items.find((i) => i.key === key);
 
-test('false-positive guard: default-valued branded fields are NOT done (changed-from-default, not non-empty)', () => {
-  const r = deriveChecklist(seedLike(), D);
-  assert.equal(item(r, 'siteName').done, false);
-  assert.equal(item(r, 'logo').done, false);
-  assert.equal(item(r, 'cta').done, false);
-  assert.equal(item(r, 'footerEmail').done, false); // a valid email but still the default
-  // on the seed nav + published + seo ARE done:
+test('owner-operated: a FILLED branding field is done, even at the Greatstone default value', () => {
+  const r = deriveChecklist(seedLike(), D); // every field equals its Greatstone default
+  assert.equal(item(r, 'siteName').done, true);
+  assert.equal(item(r, 'logo').done, true);
+  assert.equal(item(r, 'cta').done, true);
+  assert.equal(item(r, 'footerEmail').done, true);
   assert.equal(item(r, 'nav').done, true);
   assert.equal(item(r, 'published').done, true);
   assert.equal(item(r, 'seo').done, true);
-  assert.equal(r.doneCount, 3);
+  assert.equal(r.doneCount, 7);
 });
 
-test('true positives: overriding each branded field flips it done', () => {
+test('a CLEARED branding field reads as still-to-do', () => {
+  const r = deriveChecklist(seedLike({ settings: { siteName: '', logo: '', headerCtaLabel: '', footerEmail: '' } }), D);
+  assert.equal(item(r, 'siteName').done, false);
+  assert.equal(item(r, 'logo').done, false);
+  assert.equal(item(r, 'cta').done, false);
+  assert.equal(item(r, 'footerEmail').done, false);
+});
+
+test('true positives: a custom branded value is also done', () => {
   const r = deriveChecklist(seedLike({ settings: { siteName: 'Acme Co', logo: 'data:image/png;base64,AAA', headerCtaLabel: 'Get a quote', footerEmail: 'hi@acme.com' } }), D);
   assert.equal(item(r, 'siteName').done, true);
   assert.equal(item(r, 'logo').done, true);

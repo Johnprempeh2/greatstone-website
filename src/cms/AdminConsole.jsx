@@ -20,35 +20,41 @@ const PER_PAGE = new Set(['seo', 'background', 'history', 'activity']);
 //   catalogue tab (#catalogue/<tab>) · link = leave the console · action = run a callback.
 function buildNav(attention = {}) {
   return [
-    { group: 'Content', note: 'website pages', items: [
-      { id: 'gettingstarted', label: 'Getting started', type: 'view', need: 'manage' },
+    // Authoring — what you make. (Audits live under Quality; going-live under Publishing.)
+    { group: 'Content', note: 'pages, media & SEO', items: [
       { id: 'overview', label: 'Overview', type: 'view' },
-      { id: 'sitehealth', label: 'Site health', type: 'view', need: 'edit', badge: attention.sitehealth },
-      { id: 'search', label: 'Search content', type: 'view', need: 'edit' },
       { id: 'editor', label: 'Page editor', type: 'editor', need: 'edit' },
       { id: 'pages', label: 'Pages', type: 'view', need: 'edit' },
       { id: 'navigation', label: 'Navigation', type: 'view', need: 'edit' },
+      { id: 'search', label: 'Search content', type: 'view', need: 'edit' },
+      { id: 'media', label: 'Media library', type: 'view', need: 'edit' },
+      { id: 'sections', label: 'Saved sections', type: 'view', need: 'edit' },
+      { id: 'templates', label: 'Templates', type: 'view', need: 'edit' },
+      { id: 'seo', label: 'SEO & social', type: 'view', need: 'edit' },
+      { id: 'background', label: '3D background', type: 'view', need: 'edit' },
+    ] },
+    // Publishing — going live + the trail of what changed.
+    { group: 'Publishing', note: 'going live & history', items: [
       { id: 'releases', label: 'Releases', type: 'view', need: 'edit', badge: attention.releases },
       { id: 'schedule', label: 'Publish schedule', type: 'view', need: 'edit', badge: attention.schedule },
       { id: 'notes', label: 'Editorial notes', type: 'view', need: 'edit', badge: attention.notes },
+      { id: 'history', label: 'Version history', type: 'view', need: 'edit' },
+      { id: 'activity', label: 'Activity log', type: 'view' },
+    ] },
+    // Quality — the read-only checks + audits (badges cluster here, not scattered through authoring).
+    { group: 'Quality', note: 'checks & audits', items: [
+      { id: 'sitehealth', label: 'Site health', type: 'view', need: 'edit', badge: attention.sitehealth },
+      { id: 'copy', label: 'Copy coach', type: 'view', need: 'edit', badge: attention.copy },
       { id: 'links', label: 'Link health', type: 'view', need: 'edit', badge: attention.links },
       { id: 'navcheck', label: 'Navigation health', type: 'view', need: 'edit', badge: attention.navcheck },
-      { id: 'copy', label: 'Copy coach', type: 'view', need: 'edit', badge: attention.copy },
       { id: 'access', label: 'Accessibility', type: 'view', need: 'edit', badge: attention.access },
       { id: 'outline', label: 'Document outline', type: 'view', need: 'edit', badge: attention.outline },
       { id: 'conversion', label: 'Conversion map', type: 'view', need: 'edit', badge: attention.conversion },
       { id: 'seohealth', label: 'SEO health', type: 'view', need: 'edit', badge: attention.seohealth },
       { id: 'inventory', label: 'Content inventory', type: 'view', need: 'edit', badge: attention.inventory },
       { id: 'blocks', label: 'Block usage', type: 'view', need: 'edit', badge: attention.blocks },
-      { id: 'redirects', label: 'Redirects', type: 'view', need: 'edit', badge: attention.redirects },
-      { id: 'sections', label: 'Saved sections', type: 'view', need: 'edit' },
-      { id: 'templates', label: 'Templates', type: 'view', need: 'edit' },
-      { id: 'seo', label: 'SEO & social', type: 'view', need: 'edit' },
-      { id: 'background', label: '3D background', type: 'view', need: 'edit' },
-      { id: 'media', label: 'Media library', type: 'view', need: 'edit' },
       { id: 'mediausage', label: 'Media usage', type: 'view', need: 'edit', badge: attention.mediausage },
-      { id: 'history', label: 'Version history', type: 'view', need: 'edit' },
-      { id: 'activity', label: 'Activity log', type: 'view' },
+      { id: 'redirects', label: 'Redirects', type: 'view', need: 'edit', badge: attention.redirects },
     ] },
     { group: 'Commerce', commerce: true, items: [
       { id: 'cat-offerings', label: 'Catalogue', type: 'commerce', tab: 'offerings' },
@@ -60,6 +66,7 @@ function buildNav(attention = {}) {
       { id: 'store', label: 'View live store', type: 'link' },
     ] },
     { group: 'People & settings', items: [
+      { id: 'gettingstarted', label: 'Getting started', type: 'view', need: 'manage' },
       { id: 'team', label: 'Team & roles', type: 'view', need: 'manage', badge: attention.team },
       { id: 'settings', label: 'Site settings', type: 'view', need: 'manage' },
       { id: 'account', label: 'Customer portal', type: 'link' },

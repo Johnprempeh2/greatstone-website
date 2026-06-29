@@ -49,8 +49,10 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
           <span className="gs-field-hint">Used in the footer copyright line.</span>
         </label>
 
+        {/* Previews sit on the real (dark) site chrome — the brand logo is a light wordmark, so a white card
+            would render it invisible. gs-chrome-preview mirrors what visitors actually see. */}
         <div className="gs-preview-label">Header preview</div>
-        <div className="gs-serp" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div className="gs-chrome-preview" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', height: 26 }}>
             {/* mirror the live chrome's fallback (empty logo → the default mark) so the preview shows what
                 visitors actually see; alt="" because this is a decorative duplicate of the fields above. */}
@@ -60,9 +62,9 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
         </div>
 
         <div className="gs-preview-label">Footer preview</div>
-        <div className="gs-serp" style={{ textAlign: 'center' }}>
+        <div className="gs-chrome-preview" style={{ textAlign: 'center' }}>
           <img src={s.logo || DEFAULT_LOGO} alt="" style={{ height: 20, width: 'auto', opacity: 0.8, display: 'block', margin: '0 auto 8px' }} />
-          <div style={{ fontWeight: 700, letterSpacing: '.04em', fontSize: '.9rem' }}>{s.footerTagline || 'The Foundation of Digital Excellence'}</div>
+          <div style={{ fontWeight: 700, letterSpacing: '.04em', fontSize: '.9rem', color: 'var(--gs-text)' }}>{s.footerTagline || 'The Foundation of Digital Excellence'}</div>
         </div>
       </div>
     </PanelFrame>
