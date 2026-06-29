@@ -440,6 +440,9 @@
 .gs-page-select input,.gs-page-selectall input{width:16px;height:16px;cursor:pointer;accent-color:var(--gs-accent)}
 .gs-bulkbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;padding:10px 12px;border:1px solid var(--gs-border);border-radius:12px;background:rgba(200,255,0,.05)}
 .gs-bulkbar-n{font-weight:700;font-size:.78rem;color:var(--gs-text)}
+.gs-bulkbar-sep{width:1px;align-self:stretch;min-height:20px;background:var(--gs-border)}
+.gs-bulkbar-sched{display:flex;align-items:center;gap:6px}
+.gs-bulk-dateinput{font:inherit;font-size:.82rem;padding:5px 8px;border:1px solid var(--gs-border);border-radius:8px;background:var(--gs-bg);color:var(--gs-text)}
 /* cycle 15 — content inventory sortable table */
 .gs-inv-tablewrap{overflow-x:auto}
 .gs-inv-table{width:100%;border-collapse:collapse;font-size:.84rem}

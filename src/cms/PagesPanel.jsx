@@ -8,8 +8,9 @@ import { bulkActions } from '../lib/bulk-status.mjs';
 const STATUS = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
 const FILTERS = [['all', 'All'], ['draft', 'Draft'], ['review', 'In review'], ['approved', 'Approved'], ['published', 'Published']];
 
-export default function PagesPanel({ order, pages, current, onOpen, onNew, onDelete, onDuplicate, onRename, onMove, onClose, embedded, onBulkStatus, canEdit }) {
+export default function PagesPanel({ order, pages, current, onOpen, onNew, onDelete, onDuplicate, onRename, onMove, onClose, embedded, onBulkStatus, onBulkSchedule, onBulkClearSchedule, onBulkNote, onBulkClearNote, onBulkAssign, onBulkClearAssign, canEdit }) {
   const [filter, setFilter] = useState('all');
+  const [bulkDate, setBulkDate] = useState(''); // datetime-local value for the bulk "Set date" action
   const counts = order.reduce((m, s) => { m[pages[s].status] = (m[pages[s].status] || 0) + 1; return m; }, {});
   const shown = order.filter((s) => filter === 'all' || pages[s].status === filter);
   // multi-select (cycle 14, bulk-safe status). Defined after `shown` — toggleAll closes over it.
@@ -79,7 +80,23 @@ export default function PagesPanel({ order, pages, current, onOpen, onNew, onDel
                 {to === 'review' ? 'Send ' + count + (count === 1 ? ' page' : ' pages') + ' to review' : 'Send ' + count + (count === 1 ? ' page' : ' pages') + ' back to draft'}
               </button>
             ))}
-            <button className="gs-btn ghost sm" onClick={() => setSelected(new Set())}>Clear</button>
+            {/* cycle 19 — bulk page metadata (additive + reversible): one publish date / note / assignee across the selection */}
+            <span className="gs-bulkbar-sep" aria-hidden="true" />
+            <span className="gs-bulkbar-sched">
+              <label htmlFor="gs-bulk-date" className="gs-sr-only">Publish date for the {selected.size} selected page{selected.size === 1 ? '' : 's'}</label>
+              <input id="gs-bulk-date" type="datetime-local" className="gs-bulk-dateinput" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
+              <button className="gs-btn primary sm" disabled={!bulkDate}
+                onClick={() => { const ts = Date.parse(bulkDate); if (Number.isFinite(ts)) { onBulkSchedule([...selected], ts); setBulkDate(''); setSelected(new Set()); } }}>
+                Set date
+              </button>
+            </span>
+            <button className="gs-btn ghost sm" onClick={() => { onBulkNote([...selected]); setSelected(new Set()); }}>Add note…</button>
+            <button className="gs-btn ghost sm" onClick={() => { onBulkAssign([...selected]); setSelected(new Set()); }}>Assign…</button>
+            <span className="gs-bulkbar-sep" aria-hidden="true" />
+            <button className="gs-btn ghost sm" onClick={() => { onBulkClearSchedule([...selected]); setSelected(new Set()); }}>Clear dates</button>
+            <button className="gs-btn ghost sm" onClick={() => { onBulkClearNote([...selected]); setSelected(new Set()); }}>Clear notes</button>
+            <button className="gs-btn ghost sm" onClick={() => { onBulkClearAssign([...selected]); setSelected(new Set()); }}>Unassign</button>
+            <button className="gs-btn ghost sm" onClick={() => setSelected(new Set())}>Deselect</button>
           </div>
         ) : null}
         <button className="gs-btn ghost sm gs-pages-new" onClick={onNew}>+ New page</button>

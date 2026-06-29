@@ -118,6 +118,7 @@ import { computeHealth } from './lib/site-health.mjs';
 import { setSchedule, clearSchedule, listSchedules } from './lib/schedule-model.mjs';
 import { setNote, clearNote, listNotes } from './lib/notes-model.mjs';
 import { bulkSetStatus } from './lib/bulk-status.mjs';
+import { bulkSetSchedule, bulkClearSchedule, bulkSetNote, bulkClearNote, bulkSetAssignee, bulkClearAssignee } from './lib/bulk-meta.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -708,6 +709,58 @@ export default function App() {
     setState((s) => bulkSetStatus(s, slugs, to, by, now).state);
     flash(moved + (moved === 1 ? ' page' : ' pages') + ' sent to ' + (to === 'review' ? 'review' : 'draft') + '.');
   }
+  // Bulk page metadata (cycle 19): list-level siblings of setSchedule/setNote/setAssignee. Pure folds over the
+  // c12/c13/c19 helpers — ADDITIVE + REVERSIBLE only; never publishes/approves/deletes (publishAt is a
+  // scheduled-DATE field, not a go-live trigger; publish() never reads it). canEdit-gated (defense in depth);
+  // count is taken off the `state` snapshot (NOT inside the updater, which React may batch); by+ts injected once.
+  function bulkScheduleMut(slugs, ts) {
+    if (!canEdit) return;
+    const { count } = bulkSetSchedule(state, slugs, ts);
+    if (!count) return flash('Nothing to schedule.');
+    setState((s) => bulkSetSchedule(s, slugs, ts).state);
+    flash('Publish date set on ' + count + (count === 1 ? ' page' : ' pages') + '.');
+  }
+  function bulkClearScheduleMut(slugs) {
+    if (!canEdit) return;
+    const { count } = bulkClearSchedule(state, slugs);
+    if (!count) return flash('Nothing to clear.');
+    setState((s) => bulkClearSchedule(s, slugs).state);
+    flash('Cleared the publish date on ' + count + (count === 1 ? ' page' : ' pages') + '.');
+  }
+  async function bulkNoteMut(slugs) {
+    if (!canEdit) return;
+    const text = await ask({ kind: 'prompt', title: 'Add a note to ' + slugs.length + (slugs.length === 1 ? ' page' : ' pages'), label: 'Note for the team (e.g. needs legal sign-off)', confirmLabel: 'Add note' });
+    if (text === null) return; // cancelled / Escape (Confirm is disabled while blank, so text is non-empty here)
+    const by = user ? user.email : null, now = Date.now();
+    const { count } = bulkSetNote(state, slugs, text, by, now);
+    if (!count) return flash('Nothing to note.');
+    setState((s) => bulkSetNote(s, slugs, text, by, now).state);
+    flash('Note added to ' + count + (count === 1 ? ' page' : ' pages') + '.');
+  }
+  function bulkClearNoteMut(slugs) {
+    if (!canEdit) return;
+    const { count } = bulkClearNote(state, slugs);
+    if (!count) return flash('Nothing to clear.');
+    setState((s) => bulkClearNote(s, slugs).state);
+    flash('Cleared the note on ' + count + (count === 1 ? ' page' : ' pages') + '.');
+  }
+  async function bulkAssignMut(slugs) {
+    if (!canEdit) return;
+    const who = await ask({ kind: 'prompt', title: 'Assign ' + slugs.length + (slugs.length === 1 ? ' page' : ' pages'), label: 'Owner (email or name)', defaultValue: user ? user.email : '', confirmLabel: 'Assign' });
+    if (who === null) return; // cancelled (Confirm is disabled while blank, so who is non-empty here)
+    const by = user ? user.email : null, now = Date.now();
+    const { count } = bulkSetAssignee(state, slugs, who, by, now);
+    if (!count) return flash('Nothing to assign.');
+    setState((s) => bulkSetAssignee(s, slugs, who, by, now).state);
+    flash('Assigned ' + count + (count === 1 ? ' page' : ' pages') + ' to ' + who.trim() + '.');
+  }
+  function bulkClearAssignMut(slugs) {
+    if (!canEdit) return;
+    const { count } = bulkClearAssignee(state, slugs);
+    if (!count) return flash('Nothing to unassign.');
+    setState((s) => bulkClearAssignee(s, slugs).state);
+    flash('Unassigned ' + count + (count === 1 ? ' page' : ' pages') + '.');
+  }
   function setSeo(seo) { patchPage(current, { seo }); }
   function setSettings(patch) { setState((s) => updateSettings(s, patch)); } // global site chrome (logo, name, footer, CTA)
   function setNav(tree) { setState((s) => setNavigation(s, tree)); } // editable header navigation tree
@@ -1143,7 +1196,7 @@ export default function App() {
     const onConsoleClose = () => {}; // embedded panels have no close ×; the rail/Back owns navigation
     const consolePanels = {
       overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
-      pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} onBulkStatus={bulkStatusMut} canEdit={canEdit} />,
+      pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
       ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
@@ -1210,7 +1263,7 @@ export default function App() {
         {panel && (
           <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
-            pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} canEdit={canEdit} />,
+            pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
