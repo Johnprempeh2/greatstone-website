@@ -115,6 +115,7 @@ import { checkA11y } from './lib/a11y-check.mjs';
 import { buildSiteOutline } from './lib/outline-model.mjs';
 import { headingsOf } from './lib/headings-of.mjs';
 import { buildCtaReport } from './lib/cta-consistency.mjs';
+import { buildReviewQueue } from './lib/review-model.mjs';
 import { checkSeo } from './lib/seo-check.mjs';
 import { auditNavCoverage } from './lib/nav-coverage.mjs';
 import { auditMedia } from './lib/media-audit.mjs';
@@ -572,6 +573,8 @@ export default function App() {
   const outlineReport = useMemo(() => buildSiteOutline(state, headingsOf, { dynamic: ['insights'] }), [state.pages, state.order]);
   // conversion map: CTA label consistency + hidden buttons + dead-end pages (deps include redirects — canonicalDest collapses aliases).
   const ctaReport = useMemo(() => buildCtaReport(state, { dynamic: ['insights'] }), [state.pages, state.order, state.redirects]);
+  // change-review queue (Releases): which pages have unpublished edits (drift) or were never published, + the diff.
+  const reviewReport = useMemo(() => buildReviewQueue(state), [state.pages, state.order]);
   // site-wide SEO health (meta presence/length + cross-page duplicates) — computed once, shared.
   const seoReport = useMemo(() => checkSeo(state), [state.pages, state.order]);
   // navigation health (menu → unpublished/dead targets + pages missing from the menu) — computed once.
@@ -636,35 +639,43 @@ export default function App() {
   // publishing needs the publish capability (admins). Admins can publish directly from any
   // status (the fast-path — they hold the authority); editors must route through review and
   // never reach this. The status history still records the jump, so the audit trail stays honest.
-  async function publish(data) {
-    if (!canPublish) return flash('Editors can’t publish directly. Request review, then an admin publishes.');
+  // publish a SPECIFIC page's draft → live (snapshot + status). Keyed by slug so the in-editor publish AND
+  // the Releases change-review queue (Approve) share one path. Returns true once published, false on cancel.
+  async function publishPage(slug, data) {
+    if (!canPublish) { flash('Editors can’t publish directly. Request review, then an admin publishes.'); return false; }
     // accessibility/SEO preflight: warn (don't hard-block) if any image is missing alt text
     const missing = findMissingAlt(data && data.content, state.products);
     if (missing.length) {
       const ok = await ask({ kind: 'confirm', title: 'Publish without alt text?',
         message: missing.length + (missing.length > 1 ? ' images have' : ' image has') + ' no alt text (' + missing.slice(0, 4).join(', ') + (missing.length > 4 ? '…' : '') + '). Alt text matters for accessibility and SEO. Publish anyway, or cancel to add it?',
         confirmLabel: 'Publish anyway' });
-      if (!ok) return;
+      if (!ok) return false;
     }
     // link preflight: warn (don't block) if a button on this page links nowhere or at a deleted page
-    const deadLinks = auditLinks({ ...state, pages: { ...state.pages, [current]: { ...state.pages[current], data } } })
-      .issues.filter((i) => i.pageSlug === current && i.severity === 'broken');
+    const deadLinks = auditLinks({ ...state, pages: { ...state.pages, [slug]: { ...state.pages[slug], data } } })
+      .issues.filter((i) => i.pageSlug === slug && i.severity === 'broken');
     if (deadLinks.length) {
       const ok = await ask({ kind: 'confirm', title: 'Publish with broken links?',
         message: deadLinks.length + (deadLinks.length > 1 ? ' buttons on this page link' : ' button on this page links') + ' nowhere or at a page that no longer exists. Publish anyway, or cancel to fix them under Link health?',
         confirmLabel: 'Publish anyway' });
-      if (!ok) return;
+      if (!ok) return false;
     }
     setState((s) => {
-      const p = s.pages[current];
+      const p = s.pages[slug];
       const versions = pushVersion(p.versions, { label: 'Published', data, by: user.email, status: 'published' });
       const statusHistory = [...(p.statusHistory || []), { from: p.status, to: 'published', by: user.email, ts: Date.now() }];
       // the 3D background is published alongside the content snapshot, so a scene change reaches the public only on publish (not live).
-      return { ...s, pages: { ...s.pages, [current]: { ...p, data, published: data, publishedBackground: p.background, status: 'published', approvedBy: p.approvedBy || user.email, versions, statusHistory } } };
+      return { ...s, pages: { ...s.pages, [slug]: { ...p, data, published: data, publishedBackground: p.background, status: 'published', approvedBy: p.approvedBy || user.email, versions, statusHistory } } };
     });
-    setMode('view'); setPanel(null);
     flash('Published. Snapshot saved to history.');
+    return true;
   }
+  async function publish(data) {
+    const ok = await publishPage(current, data);
+    if (ok) { setMode('view'); setPanel(null); }
+  }
+  // approve a drifted page straight from the Releases review queue (publish its current draft as-is).
+  function approvePage(slug) { return publishPage(slug, (state.pages[slug] || {}).data); }
   function saveDraft(data) {
     setState((s) => {
       const p = s.pages[current];
@@ -1031,14 +1042,20 @@ export default function App() {
     setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before restore', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: v.data, versions } } }; });
     setPuckKey((k) => k + 1); setPanel(null); flash('Restored into the draft. Request review to publish it.');
   }
-  async function discardDraft() {
+  // revert a SPECIFIC page's unpublished edits back to the live version (snapshotting the draft first).
+  // Keyed by slug so the in-editor discard AND the Releases review queue (Reject) share one path.
+  async function discardPage(slug) {
+    const target = state.pages[slug];
     // a never-published page has no live version to revert to — discarding would blank it; offer delete instead
-    if (page.published == null) return flash('This page has never been published, so there’s nothing to revert to. Delete it from Pages if you don’t want it.');
-    const ok = await ask({ kind: 'confirm', title: 'Discard changes', message: 'Discard unpublished changes and revert to the live version? The current draft is snapshotted to history first.', confirmLabel: 'Discard changes', danger: true });
-    if (!ok) return;
-    setState((s) => { const p = s.pages[current]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [current]: { ...p, data: p.published, background: p.publishedBackground ?? p.background, versions } } }; });
-    setPuckKey((k) => k + 1); flash('Reverted to the published version.');
+    if (!target || target.published == null) { flash('This page has never been published, so there’s nothing to revert to. Delete it from Pages if you don’t want it.'); return false; }
+    const ok = await ask({ kind: 'confirm', title: 'Discard changes', message: 'Discard the unpublished changes to “' + (target.title || slug) + '” and revert to the live version? The current draft is snapshotted to history first.', confirmLabel: 'Discard changes', danger: true });
+    if (!ok) return false;
+    setState((s) => { const p = s.pages[slug]; const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status }); return { ...s, pages: { ...s.pages, [slug]: { ...p, data: p.published, background: p.publishedBackground ?? p.background, versions } } }; });
+    if (slug === current) setPuckKey((k) => k + 1);
+    flash('Reverted to the published version.');
+    return true;
   }
+  function discardDraft() { return discardPage(current); }
   function addBlock(type) {
     const def = config.components[type];
     const block = { type, props: { id: rid(type), ...(def && def.defaultProps ? def.defaultProps : {}) } };
@@ -1220,7 +1237,7 @@ export default function App() {
       overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
       pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
       ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
-      releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
+      releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { copy: <CopyCoachPanel embedded report={voiceReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { access: <A11yPanel embedded report={a11yReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
@@ -1288,7 +1305,7 @@ export default function App() {
           <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
-            releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
+            releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,

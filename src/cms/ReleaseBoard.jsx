@@ -1,11 +1,10 @@
-// Releases: the only SITE-WIDE governance view. Per-page status lived in the toolbar and the Pages
-// list, but nothing showed the whole site's publish state at once — which pages have unpublished
-// changes (draft drift), which are awaiting review/approval, and when each last went live. This is
-// the lead's "what's ready / what's pending" board. Read-only overview; actions happen in-page.
+// Releases: the site-wide governance + CHANGE-REVIEW view. The top "Changes to review" queue shows every
+// page with unpublished edits (drift) or never published — what changed since it went live — so a lead can
+// APPROVE (publish that page's draft) or DISCARD (revert to the live version) without opening each one.
+// Below, the full per-page publish-state overview. Classification + diffs come from buildReviewQueue (App).
 import PanelFrame from './PanelFrame.jsx';
 
 const STATUS = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
-const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 function when(ts) {
   if (!ts) return null;
@@ -17,29 +16,26 @@ function when(ts) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function ReleaseBoard({ order, pages, current, onOpen, onClose, embedded }) {
-  const rows = order.map((slug) => {
-    const p = pages[slug];
-    // match the publish event by its dedicated label, not status: restore/discard snapshots copy the
-    // page's status (so a snapshot taken while Published also reads status:'published' and, being newest,
-    // would wrongly become the "last published" record). The 'Published' label is only written by publish().
-    const lastPub = (p.versions || []).find((v) => v.label === 'Published');
-    // a never-published page (published == null) has no real drift — !eq(data, null) is always true, which
-    // would wrongly flag a brand-new draft as having "unpublished changes" on top of counting as Draft.
-    // seeded/imported pages ship published with versions:[] (no 'Published' snapshot), so lastPub is
-    // undefined; treat a published page (published projection present) as "Published" without a timestamp
-    // rather than the contradictory "Never published" the status pill disagrees with.
-    const everPublished = !!lastPub || (p.status === 'published' && p.published != null);
-    return { slug, title: p.title, status: p.status, drift: p.published != null && !eq(p.data, p.published), everPublished, lastPubTs: lastPub ? lastPub.ts : null, lastPubBy: lastPub ? lastPub.by : null };
-  });
-  const counts = rows.reduce((m, r) => { m[r.status] = (m[r.status] || 0) + 1; return m; }, {});
-  const driftCount = rows.filter((r) => r.drift).length;
-  // attention first: in review, then approved, then anything with unpublished changes, then the rest
-  const score = (r) => (r.status === 'review' ? 4 : 0) + (r.status === 'approved' ? 3 : 0) + (r.drift ? 1 : 0);
-  const sorted = rows.slice().sort((a, b) => score(b) - score(a) || order.indexOf(a.slug) - order.indexOf(b.slug));
+// plain-language one-liner from a version-diff: "1 block edited · 1 added"
+function summarise(diff) {
+  if (!diff) return '';
+  const c = diff.counts, parts = [];
+  if (c.changed) parts.push(c.changed + (c.changed > 1 ? ' blocks edited' : ' block edited'));
+  if (c.added) parts.push(c.added + ' added');
+  if (c.removed) parts.push(c.removed + ' removed');
+  if (c.moved) parts.push(c.moved + ' reordered');
+  if (diff.titleChanged) parts.push('title changed');
+  return parts.join(' · ') || 'no content change';
+}
+
+export default function ReleaseBoard({ order, pages, current, review, canPublish, onApprove, onDiscard, onOpen, onClose, embedded }) {
+  const r = review || { items: [], review: [], counts: {} };
+  const items = r.items || [];
+  const queue = r.review || [];
+  const counts = items.reduce((m, it) => { m[it.status] = (m[it.status] || 0) + 1; return m; }, {});
 
   return (
-    <PanelFrame embedded={embedded} label="Releases" onClose={onClose}>
+    <PanelFrame embedded={embedded} label={<>Releases {queue.length ? <span className="gs-panel-count">{queue.length}</span> : null}</>} name="Releases" onClose={onClose}>
       <div className="gs-panel-body">
         <div className="gs-rel-summary">
           <div className="gs-rel-stat"><b>{counts.published || 0}</b><span>Published</span></div>
@@ -47,18 +43,59 @@ export default function ReleaseBoard({ order, pages, current, onOpen, onClose, e
           <div className="gs-rel-stat"><b>{counts.approved || 0}</b><span>Approved</span></div>
           <div className="gs-rel-stat"><b>{counts.draft || 0}</b><span>Draft</span></div>
         </div>
-        <p className={'gs-rel-note' + (driftCount ? '' : ' gs-rel-clean')}>
-          {driftCount ? (driftCount + (driftCount > 1 ? ' pages have' : ' page has') + ' unpublished changes.') : 'Every page is up to date. No unpublished changes.'}
-        </p>
+
+        <h3 className="gs-cs-h" style={{ marginTop: 18 }}>Changes to review {queue.length ? <span className="gs-cs-sub">{queue.length}</span> : null}</h3>
+        {queue.length === 0 ? (
+          <p className="gs-la-clean" role="status">✓ Everything live is up to date. No edits waiting for review.</p>
+        ) : (
+          <ul className="gs-rev-list">
+            {queue.map((it) => {
+              const hasDetail = it.diff && (it.diff.changed.length || it.diff.added.length || it.diff.removed.length || it.diff.moved.length);
+              return (
+                <li key={it.slug} className={'gs-rev-row' + (it.slug === current ? ' is-current' : '')}>
+                  <div className="gs-rev-head">
+                    <button className="gs-rev-title" onClick={() => onOpen(it.slug)} title="Open this page">{it.title}</button>
+                    <span className={'gs-page-status gs-st-' + it.status} title={STATUS[it.status] || it.status}><span className="gs-dot" />{STATUS[it.status] || it.status}</span>
+                  </div>
+                  <p className="gs-rev-what">
+                    {it.kind === 'drift'
+                      ? <>Unpublished edits: {summarise(it.diff)}{it.lastPub ? ' · live version from ' + when(it.lastPub.ts) : ''}</>
+                      : <>Never published · {it.blocks} block{it.blocks === 1 ? '' : 's'} ready to go live</>}
+                  </p>
+                  {hasDetail ? (
+                    <details className="gs-rev-detail">
+                      <summary>What changed</summary>
+                      <ul>
+                        {it.diff.changed.map((b, i) => <li key={'c' + i}><span className="gs-la-pill is-changed">edited</span> {b.type}{b.fields && b.fields.length ? ' (' + b.fields.map((f) => f.path).join(', ') + ')' : ''}</li>)}
+                        {it.diff.added.map((b, i) => <li key={'a' + i}><span className="gs-la-pill is-orphan">added</span> {b.type}</li>)}
+                        {it.diff.removed.map((b, i) => <li key={'x' + i}><span className="gs-la-pill is-broken">removed</span> {b.type}</li>)}
+                        {it.diff.moved.map((b, i) => <li key={'m' + i}><span className="gs-la-pill is-recoverable">reordered</span> {b.type}</li>)}
+                      </ul>
+                    </details>
+                  ) : null}
+                  <div className="gs-rev-acts">
+                    {canPublish
+                      ? <button className="gs-btn primary sm" onClick={() => onApprove(it.slug)}>{it.kind === 'drift' ? 'Approve & publish' : 'Publish'}</button>
+                      : <span className="gs-rev-locked">An admin publishes these</span>}
+                    {it.kind === 'drift' && canPublish ? <button className="gs-btn ghost sm" onClick={() => onDiscard(it.slug)}>Discard edits</button> : null}
+                    <button className="gs-btn ghost sm" onClick={() => onOpen(it.slug)}>Open</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <h3 className="gs-cs-h" style={{ marginTop: 22 }}>All pages</h3>
         <ul className="gs-rel-list">
-          {sorted.map((r) => (
-            <li key={r.slug} className={'gs-rel-row' + (r.slug === current ? ' is-current' : '')}>
-              <button className="gs-rel-open" onClick={() => onOpen(r.slug)} title="Open this page">
-                <span className="gs-rel-title">{r.title}{r.drift ? <em className="gs-rel-drift" title="Has unpublished changes">unpublished</em> : null}</span>
-                <span className="gs-rel-meta">{r.lastPubTs ? 'Published ' + when(r.lastPubTs) + (r.lastPubBy ? ' · ' + r.lastPubBy : '') : r.everPublished ? 'Published' : 'Never published'}</span>
+          {items.map((it) => (
+            <li key={it.slug} className={'gs-rel-row' + (it.slug === current ? ' is-current' : '')}>
+              <button className="gs-rel-open" onClick={() => onOpen(it.slug)} title="Open this page">
+                <span className="gs-rel-title">{it.title}{it.kind === 'drift' ? <em className="gs-rel-drift" title="Has unpublished changes">unpublished</em> : null}</span>
+                <span className="gs-rel-meta">{it.lastPub ? 'Published ' + when(it.lastPub.ts) + (it.lastPub.by ? ' · ' + it.lastPub.by : '') : it.everPublished ? 'Published' : 'Never published'}</span>
               </button>
-              <span className={'gs-page-status gs-st-' + r.status} title={STATUS[r.status] || r.status}>
-                <span className="gs-dot" />{STATUS[r.status] || r.status}
+              <span className={'gs-page-status gs-st-' + it.status} title={STATUS[it.status] || it.status}>
+                <span className="gs-dot" />{STATUS[it.status] || it.status}
               </span>
             </li>
           ))}
