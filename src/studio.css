@@ -440,6 +440,20 @@
 .gs-page-select input,.gs-page-selectall input{width:16px;height:16px;cursor:pointer;accent-color:var(--gs-accent)}
 .gs-bulkbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;padding:10px 12px;border:1px solid var(--gs-border);border-radius:12px;background:rgba(200,255,0,.05)}
 .gs-bulkbar-n{font-weight:700;font-size:.78rem;color:var(--gs-text)}
+/* cycle 15 — content inventory sortable table */
+.gs-inv-tablewrap{overflow-x:auto}
+.gs-inv-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.gs-inv-table th{text-align:left;border-bottom:1px solid var(--gs-border-soft);padding:0;vertical-align:bottom}
+.gs-inv-table td{padding:9px 10px;border-bottom:1px solid var(--gs-border-soft);vertical-align:middle;white-space:nowrap}
+.gs-inv-num{font-variant-numeric:tabular-nums}
+.gs-inv-th{display:inline-block;padding:6px 10px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-faint)}
+.gs-inv-sort{display:inline-flex;gap:4px;align-items:center;background:none;border:0;cursor:pointer;font:inherit;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-faint);padding:6px 10px}
+.gs-inv-sort:hover{color:var(--gs-text)}
+.gs-inv-sort:focus-visible{outline:2px solid var(--gs-accent);outline-offset:-2px;border-radius:4px}
+.gs-inv-link{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--gs-text);cursor:pointer;text-align:left}
+.gs-inv-link:hover{color:var(--gs-accent);text-decoration:underline}
+.gs-inv-slug{color:var(--gs-faint);font-size:.78rem}
+.gs-inv-ok{color:var(--gs-faint)}
 .gs-page-open{flex:1;min-width:0;text-align:left;background:none;border:0;cursor:pointer;padding:9px 8px;display:flex;flex-direction:column;gap:3px}
 .gs-page-title{font-size:.92rem;font-weight:700;color:var(--gs-text)}
 .gs-page-title em{font-style:normal;font-weight:700;color:var(--gs-accent);font-size:.78rem}
