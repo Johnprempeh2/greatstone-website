@@ -6,6 +6,7 @@ import { track } from './lib/analytics.js';
 import { safeHref } from './lib/safe-url.js';
 
 const LOGO = '/assets/greatstone-logo-web.png';
+const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is the built-in default (a CMS-overridden logo has no .webp sibling)
 // the view-mode 3D switcher flips to its light-surface variant when a light scene (tide family) sits
 // behind the header, so the control stays legible over a bright background
 const LIGHT_KINDS = new Set(['tide', 'tideRadial', 'tideCalm']);
@@ -213,7 +214,10 @@ export default function Header({ order, pages, navigation, current, query, onSea
   return (
     <header className="gs-header">
       <a className="gs-logo" href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
-        <img src={logoSrc} alt={brandName} width="800" height="160" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        <picture>
+          {logoSrc === LOGO && <source type="image/webp" srcSet={LOGO_WEBP} />}
+          <img src={logoSrc} alt={brandName} width="800" height="160" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        </picture>
       </a>
 
       <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>

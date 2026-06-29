@@ -9,6 +9,7 @@ import { resolveLink } from '../lib/link-resolver.mjs';
 // Content (the eight pillars, incl. each one's optional link) comes from the editable Pillar-cards block,
 // so marketing edits the cards and the breakdown follows.
 const LOGO = '/assets/greatstone-logo-web.png';
+const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin, always the built-in logo here
 const pad2 = (n) => String(n).padStart(2, '0');
 
 export default function MethodExplorer({ pillars = [], onClose }) {
@@ -102,7 +103,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
     <div className={'me' + (open ? ' is-open' : '')} ref={rootRef} role="dialog" aria-modal="true" aria-label="The eight pillars, interactive breakdown">
       <style>{CSS}</style>
       <div className="me-top">
-        <img className="me-logo" src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" />
+        <picture><source type="image/webp" srcSet={LOGO_WEBP} /><img className="me-logo" src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" /></picture>
         <div className="me-top-actions">
           {/* book from inside the explorer — the global #book handler opens the Calendly popup over it,
               so a visitor at peak interest never has to leave to convert (the popup overlays the explorer). */}

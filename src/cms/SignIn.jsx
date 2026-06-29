@@ -3,6 +3,7 @@ import { roleNotice } from './staffRoles.mjs'; // pure (no Supabase) — keeps t
 import PasswordInput from '../store/PasswordInput.jsx'; // pure (no Supabase) — show/hide toggle, shared with the storefront
 
 const LOGO = '/assets/greatstone-logo-web.png';
+const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin, always the built-in logo here
 
 // The admin sign-in (reached only via #admin). One account now controls the WHOLE admin — the
 // console, the page editor AND the catalogue — so this authenticates against Supabase staff (the same
@@ -70,7 +71,7 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
   return (
     <div style={S.screen}>
       <form style={S.card} onSubmit={submit} aria-label="Admin sign in">
-        <img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" style={S.logo} />
+        <picture><source type="image/webp" srcSet={LOGO_WEBP} /><img src={LOGO} alt="Greatstone International" width="800" height="160" decoding="async" style={S.logo} /></picture>
         <h1 style={S.h1}>{mode === 'forgot' ? 'Reset your password' : 'Admin sign in'}</h1>
         <p style={S.sub}>{mode === 'forgot'
           ? 'Enter your Greatstone admin email and we’ll send a link to set a new password.'

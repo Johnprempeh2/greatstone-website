@@ -13,6 +13,7 @@ import { useEffect, useRef } from 'react';
 // effect below, so the heavy Supabase client stays out of the eager bundle the public homepage loads.
 
 const LOGO = '/assets/greatstone-logo-web.png';
+const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is NOT CMS-overridden
 const PER_PAGE = new Set(['seo', 'background', 'history', 'activity']);
 
 // nav model — `type` decides what activating an item does:
@@ -122,7 +123,10 @@ export default function AdminConsole({
     <div className="ac">
       <header className="ac-topbar">
         <button className="ac-logo" onClick={() => onSection('overview')} aria-label="Admin home">
-          <img src={logo || LOGO} alt={siteName || 'Greatstone International'} width="800" height="160" decoding="async" />
+          <picture>
+            {!logo && <source type="image/webp" srcSet={LOGO_WEBP} />}
+            <img src={logo || LOGO} alt={siteName || 'Greatstone International'} width="800" height="160" decoding="async" />
+          </picture>
         </button>
         <span className="ac-topbar-tag">Admin</span>
         <span className="ac-spacer" />

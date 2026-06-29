@@ -2,6 +2,7 @@ import { publicNavOrder } from './lib/nav-order.js';
 import { safeMailto } from './lib/safe-url.js';
 
 const LOGO = '/assets/greatstone-logo-web.png';
+const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered for the built-in default logo
 
 // The real site footer (uses site.css .site-footer classes verbatim), so the studio closes
 // the page exactly like the live site. Global chrome, shown in view mode only.
@@ -25,7 +26,7 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
           <path d="M404 112 Q332 144 296 202 Q260 260 276 326 Q292 392 340 426" />
         </g>
       </svg>
-      <div className="logo"><a href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}><img src={logoSrc} alt={brandName} width="800" height="160" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} /></a></div>
+      <div className="logo"><a href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}><picture>{logoSrc === LOGO && <source type="image/webp" srcSet={LOGO_WEBP} />}<img src={logoSrc} alt={brandName} width="800" height="160" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} /></picture></a></div>
       <div className="tagline">{footTagline}</div>
       <nav className="foot-links" aria-label="Footer">
         {navOrder.filter((slug) => pages[slug]).map((slug) => (
