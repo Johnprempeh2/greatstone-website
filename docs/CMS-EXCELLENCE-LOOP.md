@@ -62,6 +62,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 13 — Collaboration (editorial notes).** An additive, reversible page.note ({text,by,ts}) an
   editor pins to a page for the team + a panel to set/clear/list them. A reminder, never a publish gate;
   fills the gap statusHistory (machine transitions) leaves — no human-authored standing intent existed.
+- **Cycle 14 — Safe-actions (bulk status).** The studio's FIRST multi-select: select pages on the Pages
+  list, flip status in one gesture — restricted by a hard allowlist to the reversible draft↔review edges.
+  Structurally can NEVER bulk-publish/approve/delete. First batch interaction.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -79,6 +82,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 11 | Holistic synthesis | **Site health** — ONE quality score (100 − 3·errors − 1·warnings, clamped; grade A-F) rolling up all six audits (links, copy, a11y, SEO, nav, media), with a worst-first per-dimension breakdown + Open deep-link into each. Pure `computeHealth(reports)` consuming the already-memoised reports (no re-walk/re-audit/writes); transparent scoring (no per-dimension weights, no magic thresholds, hand-reconstructable). Score block + dimension list + Error/Warning/OK pills; badge = roll-up error count, OUT of total (would double-count). Section id `sitehealth`, first under Overview | `cb11c4e` | NON-REDUNDANT: OverviewPanel imports ZERO audits (page-status/catalogue/team/activity only); the rail badges are siloed per-dimension counts with no score + no cross-dimension ranking. Adds a synthesised score + worst-first list nothing else provides. orphans EXCLUDED from links→warnings (owned by navcheck — avoids double-count) |
 | 12 | Publishing / scheduling | **Publish schedule** — set an optional, additive, REVERSIBLE page.publishAt date on any page; a read-only Scheduled/Overdue surface (overdue = embargo passed AND not already live & current, reusing the drift idea so a spent embargo on a live page reads 'none'). Pure schedule-model.mjs (12 tests; `now` always a param, never Date.now): classifySchedule/listSchedules/describeDue/setSchedule/clearSchedule. Per-page datetime-local set-control + Clear, text+colour pills; badge = overdue count, OUT of total. NOTHING auto-publishes — go-live stays the manual gated publish(). +1 line: duplicatePage strips publishAt. Section id `schedule` | `010f6a8` | NON-REDUNDANT: first NON-AUDIT family. ReleaseBoard's axis is status/drift; this is time/intent (no scheduling existed anywhere — grep clean). Version history is post-hoc; publishAt is forward-looking. Additive field, no SCHEMA bump, no migrate change, publish()/setStatus untouched (write-safe) |
 | 13 | Collaboration | **Editorial notes** — pin an additive, reversible page.note ({text,by,ts}) to any page for the team; a panel listing every page with an inline note textarea + Save/Clear + Note/None pill + author & relative age. Pure notes-model.mjs (10 tests; `now`/`by`/`ts` injected, never Date.now): pageNote/setNote/clearNote/listNotes/describeNoteAge (blank text routes to clear; absent/blank → null, never throws). +1 line: duplicatePage strips note. Badge = annotated-page count, OUT of total. A reminder, NEVER a publish gate; publish() untouched. Section id `notes` | `526e4fb` | NON-REDUNDANT: first COLLABORATION feature. statusHistory records machine transitions (with a transition `note`), activity log is system events — neither lets a human author STANDING intent on a page. No top-level page.note existed (grep clean). Additive, no SCHEMA bump, fully reversible (write-safe) |
+| 14 | Safe-actions | **Bulk-safe status** — the studio's FIRST multi-select, folded into the Pages list: per-row checkbox + tri-state select-all (respects the active filter) + an action-bar that offers the ONE applicable Send-to-review / Send-back-to-draft button (or none on a mixed selection). Pure bulk-status.mjs (10 tests, store-free): SAFE_STATUSES/SAFE_EDGES allowlist, canBulk/bulkSetStatus/bulkActions; mirrors setStatus's {from,to,by,ts} entry, touches ONLY status+statusHistory. canEdit-gated; flash count computed off the state snapshot (not inside the updater). New CSS gs-page-select/selectall/bulkbar | `99c4279` | NON-REDUNDANT: first MULTI-SELECT in the studio. setStatus is single-page + full graph + notes; this is list-level, two reversible edges only. Structurally CANNOT bulk-publish/approve/delete (allowlist narrower than canTransition — verified vs the live TRANSITIONS graph). No store change, no new admin section (folds in), reversible (write-safe) |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -99,15 +103,16 @@ re-validate redundancy against the current code before building.
      pre-flight** — ✅ cycle 7 (`56acaae`). **SEO Health scorecard** — ✅ cycle 8 (`62d0e4c`).
      **Navigation health** — ✅ cycle 9 (`1c9b637`). **Media usage** — ✅ cycle 10 (`71770a1`).
      **Site health** — ✅ cycle 11 (`cb11c4e`). **Publish schedule** — ✅ cycle 12 (`010f6a8`).
-     **Editorial notes** — ✅ cycle 13 (`526e4fb`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-13, favouring NEW families): **Content
+     **Editorial notes** — ✅ cycle 13 (`526e4fb`). **Bulk-safe status** — ✅ cycle 14 (`99c4279`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-14): **MORE safe-actions** now that
+     the multi-select harness exists (c14) — bulk SET-publish-date or bulk SET-note across selected pages
+     (reuse c12/c13 setSchedule/setNote, additive+reversible), or a per-row "add untracked image to library"
+     on c10 via addAsset; **Content
      depth** (content-analytics — thin/skeleton-page detection over content-search's walkText; READ-ONLY +
      safe, BUT scout A proved the real seed has ZERO thin pages at any defensible threshold, so it ships
      showing only its empty state + the ServiceCatalog block inflates `services` to ~13k words [floor-only
      flags + a "bulk" note mitigate] — lower live value, build only if a content-analytics angle is wanted),
-     **Bulk-safe status** (safe-actions — multi-select draft↔review on the Pages list; the studio's FIRST
-     multi-select; provably reversible bidirectional metadata flips, explicitly NOT publish/approved/delete;
-     scout C grounded it — strong if cycle 14 wants an action), **per-page collaboration extras** (assignee
+     ~~**Bulk-safe status**~~ (✅ SHIPPED c14), **per-page collaboration extras** (assignee
      / review-requested flag — extends c13's collaboration family with another additive field), or a
      **One-click "add untracked image to library"** on c10's untracked list via addAsset (additive+reversible
      safe action). DEAD/PARKED (verified): orphan finder (link-audit owns it); freshness/staleness (no
@@ -121,13 +126,16 @@ re-validate redundancy against the current code before building.
      strict-JSON; (2) NEW admin section ids LETTERS-ONLY (regex [a-z]+); (3) WRITE features: additive (no
      SCHEMA bump — absent reads as a safe default), reversible (clear fully removes), NEVER autonomous-
      irreversible (no go-live, no hard-delete that loses the only copy of data) — c12/c13 set/clear via a
-     tested model + duplicatePage strips the new field; (4) reminder/advisory/aggregate badges stay OUT of
-     the Studio `total` (only public-facing breakage counts); (5) WRITE features CAN be exercised live
-     (set→observe→clear) — do it; read-only audits over the seed often show only the empty state (lean on
-     unit tests). **Two families now open (publishing c12, collaboration c13) on top of the saturated audit
-     suite — keep pivoting to NEW families / safe actions, not more read-only audits. Gotchas: avoid the
-     backtick char in commit -m (zsh command-substitutes it — use git commit -F a file); and esbuild-ing
-     store.js in a scout can drop an `undefined/` outdir into the repo — check git status for stray dirs.**_
+     tested model + duplicatePage strips the new field; for BULK/ACTION features use a hard ALLOWLIST
+     narrower than what the model technically permits, so the dangerous ops are STRUCTURALLY impossible
+     (c14 SAFE_STATUSES, not a runtime check, vs the wider TRANSITIONS); (4) reminder/advisory/aggregate
+     badges stay OUT of the Studio `total`; (5) WRITE features CAN be exercised live (set→observe→clear) —
+     do it; read-only audits over the seed often show only the empty state (lean on unit tests); (6) a new
+     pure .mjs must be STORE-FREE (store.js imports puck.config.jsx → bare node --test can't load it; inline
+     the constant + a drift-guard comment instead of importing). **FOUR families now open (audit c1-11,
+     publishing c12, collaboration c13, safe-actions c14) — keep deepening these / safe actions, not more
+     read-only audits. Gotchas: no backtick in commit -m (zsh substitutes it — use git commit -F a file);
+     esbuild-ing store.js in a scout can drop an `undefined/` outdir into the repo (check git status).**_
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
