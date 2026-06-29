@@ -89,6 +89,10 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
   The cycle-20 parked lead, now shipped TRUTHFULLY: a per-block headingsOf extractor mirrors each block's real
   multi-heading emission, proven against the live DOM (6/7 block pages exact; the dynamic Intelligence hub
   page excluded + noted). Complements c7 (which owns heading PRESENCE); zero rule-id overlap.
+- **Cycle 22 — Conversion map (CTA label consistency).** The first CONVERSION lens: across the whole site,
+  which CTA LABELS point at the same destination (a brand smell + casing dupes), which CTAs have a real href
+  but a BLANK label (a hidden button), each page's conversion map, and dead-end pages. Net-new vs c1 (which
+  validates link TARGETS but never compares labels).
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -114,6 +118,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 19 | Safe-actions + collaboration | **Bulk page metadata** — the c14 multi-select bar (PagesPanel) extended from status-only to a three-verb metadata bar: Set date (datetime-local → bulkSetSchedule), Add note…, Assign… (both via the focus-trapping ask() modal → bulkSetNote / bulkSetAssignee), + reversible Clear dates / Clear notes / Unassign. Two pure STORE-FREE models: bulk-meta.mjs (10 tests) folds the c12/c13/c19 per-slug helpers across a selection → {state, count} (same-ref on 0, ghost-skip, NaN-ts no-op), + assignee-model.mjs (8 tests) — page.assignee={who,by,ts}, a clone of notes-model. Reuses the c14 selection state + ghost-drop useEffect AS-IS; 6 App *Mut handlers mirror bulkStatusMut. No new route/panel | `2008559` | NON-REDUNDANT: c14 mutates ONLY status+statusHistory (status-only by construction); c12 schedule / c13 note are SINGLE-page; bulk metadata-SET is net-new. assignee is a brand-new field (grep: zero prior hits) + a new persona (the editorial manager). Additive + REVERSIBLE (every set has a clear; publishAt never triggers go-live) |
 | 20 | Enablement (help) | **Keyboard shortcuts & command reference** — a searchable overlay (clone of CommandPalette's a11y shell: role=dialog/aria-modal, focus-restore, scroll-lock, Esc, Tab-trap) opened anywhere via "?" or a Cmd-K command, listing every studio shortcut grouped (Anywhere / In the editor / In the palette) as <kbd> chords. Pure shortcuts-model.mjs (8 tests, STORE-FREE): a frozen SHORTCUT_GROUPS catalogue + formatChord (⌘/⇧ on Mac, Ctrl/Shift else) + chordLabel (spoken aria form) + matchShortcuts(groups, query, isMac). "?" is canEdit-gated + suppressed while typing in a field. No new route/panel | `9555007` | NON-REDUNDANT: first HELP/reference surface. CommandPalette IS the palette (not a reference); Getting started (c16) is a setup checklist. Every chord grounded in a real handler (⌘K/⌘S/Esc App.jsx, ⌘Z/⌘⇧Z Puck via UndoRedo.jsx, palette keys) — no invented shortcuts. Read-only |
 | 21 | A11y / structure | **Document outline + skipped-heading checker** — a per-page heading TREE (h1→h2→h3 nested list, level shown as a text tag + indent per WCAG 1.4.1) + heading-ORDER audit (skipped-level = a down-jump of >1; not-h1-first; WCAG 1.3.1). Two new pure STORE-FREE libs: headings-of.mjs (headingsOf(block) → ordered [{level,text}] mirroring each block's REAL multi-heading DOM emission — h2+per-item-h3, conditional skips, className="h3"-on-h2-element, sr-only/hardcoded h2, per-post h3) + outline-model.mjs (12 tests; buildOutline/buildSiteOutline; opts.dynamic excludes pages that render a live component). Reuses H1_BLOCKS/headingText from a11y-check (now exported). Panel clones A11yPanel. Section id `outline`, badge OUT of total. PROVEN truthful by a full DOM cross-check (services 96 ⊆ DOM 105; climb/contact/industries/method/proof exact; Intelligence page = a live hub, marked dynamic) | `50eb9b6` | NON-REDUNDANT: c7 owns heading PRESENCE (no-h1/multi-h1/empty-h1); this owns heading ORDER (skipped-level/not-h1-first) + the TREE view (no analogue in 1-20). Zero rule-id overlap; badge excluded from studioAttention.total so it never double-counts c7. Read-only |
+| 22 | Conversion | **Conversion map (CTA label consistency)** — across the site, which CTA LABELS point at the same destination (INCONSISTENT, with a CASING-DUPE flag), CTAs with a real href but a BLANK label (HIDDEN buttons — the inverse of c1's dead-CTA), the per-page conversion map, + DEAD-END pages. Pure cta-consistency.mjs (9 tests, STORE-FREE): buildCtaReport(state, {dynamic}) walks the three label pairs (ctaLabel/ctaHref, ctaLabel2/ctaHref2, cardCtaLabel/cardCtaHref), canonicalises each href via linkPageSlug + resolveRedirect (redirect aliases collapse to one bucket) + resolveLink; excludes the dynamic insights hub. Panel clones OutlinePanel; label chips show ACTUAL casing (so the casing-dupe is legible). Section id `conversion`, badge (casing-dupes + dead-ends) OUT of total | `788f571` | NON-REDUNDANT: c1 reads a label only to ATTACH it to a dead-CTA issue + early-returns on non-page links — it NEVER compares labels, never maps conversion; its dead-CTA (label set, href empty) is the COMPLEMENT of this hidden-CTA (label empty, href set). Populated on seed (#go/method via 7 labels incl. a casing dupe). Read-only |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -138,9 +143,18 @@ re-validate redundancy against the current code before building.
      **Content inventory** — ✅ cycle 15 (`a4a0f25`). **Getting started** — ✅ cycle 16 (`3c02e4d`).
      **Page templates** — ✅ cycle 17 (`a0a5155`). **Block usage** — ✅ cycle 18 (`8f0dfa4`).
      **Bulk page metadata (schedule + note + assignee)** — ✅ cycle 19 (`2008559`).
-     **Keyboard shortcuts reference** — ✅ cycle 20 (`9555007`). **Document outline** — ✅ cycle 21 (`50eb9b6`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-21): **CTA / conversion inventory** —
-     the standing next lead (cycle-21 scouts A+C grounded it): per-page list of call-to-action links (label →
+     **Keyboard shortcuts reference** — ✅ cycle 20 (`9555007`). **Document outline** — ✅ cycle 21 (`50eb9b6`). **Conversion map** — ✅ cycle 22 (`788f571`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-22): **A "fix it" follow-through on
+     existing audits** — most audit panels (links, a11y, SEO, conversion) are READ-ONLY advisories; a few have
+     safe, deterministic one-click fixes worth a cycle (e.g. "apply the suggested redirect", "normalise this
+     casing-dupe CTA to the most-used label across the selection" — additive + reversible, the editor confirms
+     the canonical value). **A review-requested boolean** on the c19 assignee model (pairs with a demo flag so
+     it isn't empty). A **content/CTA "first-meaningful-action above the fold" depth** check (how far down the
+     first CTA sits per page — scout A noted some seed CTAs are buried). _Learning from c22: label-bearing UI
+     must not inherit the uppercase pill style when the finding is ABOUT casing; and any block-content walk must
+     exclude the dynamic insights page + reuse link-audit/link-resolver primitives, never re-parse hrefs._
+     RETIRED (verified dead/redundant): settings/brand completeness (scout B self-rejected — seed fully
+     configured, redundant with c16); ~~CTA / conversion inventory~~ (✅ SHIPPED c22). The earlier parked notes: per-page list of call-to-action links (label →
      resolved destination, reusing link-audit's LINK_PROPS walk + linkPageSlug) + a LABEL-CONSISTENCY finding
      (the seed reaches #go/method via 5 different labels incl. a casing dupe "See the Method" vs "See the
      method", and an empty-label CTA on About) + dead-end-page detection. POPULATED with real findings on seed;
