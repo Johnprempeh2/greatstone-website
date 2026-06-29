@@ -1224,7 +1224,17 @@ export default function App() {
         </div>
       )}
       {toast && (
-        <div className="gs-toast" role="status">
+        <div
+          className="gs-toast"
+          role="status"
+          /* an actionable toast (Undo) must not auto-dismiss while the user is hovering or keyboard-focused on
+             it, or the focused button vanishes mid-interaction and focus drops to <body>. Pause on enter/focus,
+             reschedule on leave/blur. */
+          onMouseEnter={() => { if (typeof toast === 'object' && toast.action && toastTimer.current) clearTimeout(toastTimer.current); }}
+          onMouseLeave={() => { if (typeof toast === 'object' && toast.action) { if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 6000); } }}
+          onFocus={() => { if (typeof toast === 'object' && toast.action && toastTimer.current) clearTimeout(toastTimer.current); }}
+          onBlur={() => { if (typeof toast === 'object' && toast.action) { if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 6000); } }}
+        >
           {typeof toast === 'string' ? toast : toast.msg}
           {toast && typeof toast === 'object' && toast.action ? (
             <button className="gs-toast-undo" onClick={() => { toast.action.onAction(); setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); }}>{toast.action.label}</button>

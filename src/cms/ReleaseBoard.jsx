@@ -42,7 +42,9 @@ export default function ReleaseBoard({ order, pages, current, review, canPublish
   const toggle = (slug) => setSelected((prev) => { const next = new Set(prev); next.has(slug) ? next.delete(slug) : next.add(slug); return next; });
   const toggleAll = () => setSelected((prev) => (eligibleSlugs.length > 0 && eligibleSlugs.every((s) => prev.has(s)) ? new Set() : new Set(eligibleSlugs)));
   // drop selections that leave the queue (page published or reverted) so a selection never points at a ghost.
-  useEffect(() => { setSelected((prev) => { const next = new Set([...prev].filter((s) => eligibleSlugs.includes(s))); return next.size === prev.size ? prev : next; }); }, [queue.length]);
+  // Keyed on `queue` identity (not queue.length): the report memo rebuilds the array on every page change, so an
+  // equal-length membership swap still re-runs the prune (a length key would miss it and strand a ghost slug).
+  useEffect(() => { setSelected((prev) => { const next = new Set([...prev].filter((s) => eligibleSlugs.includes(s))); return next.size === prev.size ? prev : next; }); }, [queue]); // eslint-disable-line react-hooks/exhaustive-deps
   const acts = reviewBulkActions(queue, [...selected]);
   const clearSel = () => setSelected(new Set());
 
@@ -68,9 +70,13 @@ export default function ReleaseBoard({ order, pages, current, review, canPublish
             </label>
           ) : null}
         </div>
+        {/* persistent live region: always mounted (when canPublish) so even the FIRST selection is announced
+            (a live region inserted already-populated is not reliably read). The visible count below is not a
+            live region, to avoid a double announcement. */}
+        {canPublish ? <span className="gs-sr-only" aria-live="polite">{selected.size ? selected.size + ' selected' : ''}</span> : null}
         {canPublish && selected.size > 0 ? (
           <div className="gs-bulkbar" role="region" aria-label="Bulk review actions">
-            <span className="gs-bulkbar-n" aria-live="polite">{selected.size} selected</span>
+            <span className="gs-bulkbar-n">{selected.size} selected</span>
             <button className="gs-btn primary sm" disabled={acts.approvable === 0} onClick={() => { onApproveMany(acts.approveSlugs); clearSel(); }}>Approve selected ({acts.approvable})</button>
             <button className="gs-btn ghost sm" disabled={acts.discardable === 0} onClick={() => { onDiscardMany(acts.discardSlugs); clearSel(); }}>Discard selected ({acts.discardable})</button>
             <button className="gs-btn ghost sm" onClick={clearSel}>Deselect</button>

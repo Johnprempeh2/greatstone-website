@@ -84,7 +84,9 @@ export default function InquiryDrawer({ email: inboxEmail = 'dx@greatstonesoftwa
     setMailHref(href);
     setPhase('sending');
     const res = await submitInquiry({ services, name, email, company, message });
-    if (res && res.ok) { setPhase('done'); return; }
+    // captured server-side: show the terminal success state and clear the basket so the same lead can't be
+    // re-submitted from the lingering FAB (the items were already passed to submitInquiry by value).
+    if (res && res.ok) { setPhase('done'); clearInquiry(); return; }
     // capture did not land (backend unconfigured, migration absent, rate-limited or offline): never lose the lead.
     if (href !== '#') {
       try { if (typeof window !== 'undefined') window.location.href = href; } catch (err) { /* ignore */ }
@@ -111,6 +113,16 @@ export default function InquiryDrawer({ email: inboxEmail = 'dx@greatstonesoftwa
               <h2>Your inquiry</h2>
               <button ref={closeRef} className="inq-x" onClick={() => setOpen(false)} aria-label="Close inquiry">✕</button>
             </div>
+
+            {/* one persistent live region (mounted with the drawer, before any phase text) so screen readers
+                reliably announce each transition; a role=status node inserted already-populated is not read. */}
+            <p className="gs-sr-only" role="status" aria-live="polite">{
+              phase === 'sending' ? 'Sending your inquiry.'
+                : phase === 'done' ? 'Thanks, your inquiry is in. We will come back within a day.'
+                  : phase === 'fallback' ? 'We have opened a prefilled email for you to send.'
+                    : phase === 'error' ? 'That did not go through. Please try again or email us directly.'
+                      : ''
+            }</p>
 
             {phase === 'done' ? (
               <div className="inq-sent" role="status" aria-live="polite">

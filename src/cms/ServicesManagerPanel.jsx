@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import PanelFrame from './PanelFrame.jsx';
 import { catalogStats, serviceSlug, duplicateSlugs, patchAt, removeAt, insertAt, moveAt, blankService, blankCategory } from '../lib/service-admin.mjs';
 
@@ -9,6 +9,7 @@ import { catalogStats, serviceSlug, duplicateSlugs, patchAt, removeAt, insertAt,
 export default function ServicesManagerPanel({ catalog, onChange, onNotify, onClose, embedded }) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(null); // index of the service whose editor is expanded
+  const servicesRef = useRef([]); // latest services array, so an Undo re-derives from current state, not a stale snapshot
 
   if (!catalog) {
     return (
@@ -21,6 +22,7 @@ export default function ServicesManagerPanel({ catalog, onChange, onNotify, onCl
   }
 
   const services = catalog.services;
+  servicesRef.current = services;
   const categories = catalog.categories;
   const stats = catalogStats(catalog);
   const dupes = duplicateSlugs(services);
@@ -36,8 +38,12 @@ export default function ServicesManagerPanel({ catalog, onChange, onNotify, onCl
     const next = removeAt(services, i);
     setServices(next);
     if (open === i) setOpen(null);
-    // offer an undo: re-insert the removed service at its original index (the toast is owned by App).
-    if (onNotify) onNotify({ message: 'Removed ' + (removed.name || 'service') + '.', undo: () => setServices(insertAt(next, i, removed)) });
+    // offer an undo: re-insert the removed service into the CURRENT array (read via the ref at click time),
+    // so any catalogue edits made during the toast window are preserved instead of clobbered by a stale snapshot.
+    if (onNotify) onNotify({
+      message: 'Removed ' + (removed.name || 'service') + '.',
+      undo: () => { const cur = servicesRef.current || []; setServices(insertAt(cur, Math.min(i, cur.length), removed)); },
+    });
   };
   const moveService = (i, d) => { setServices(moveAt(services, i, d)); if (open === i) setOpen(i + d); };
   const patchBullet = (si, bi, text) => patchService(si, { bullets: patchAt(services[si].bullets || [], bi, { text }) });
