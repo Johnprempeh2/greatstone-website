@@ -59,6 +59,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 12 — Publishing / scheduling (NEW family, first safe write).** An additive, reversible
   page.publishAt intent field + a read-only Scheduled/Overdue surface. NOTHING auto-publishes — go-live
   stays the manual gated publish(); publishAt is a reminder, not an actor. First non-audit capability.
+- **Cycle 13 — Collaboration (editorial notes).** An additive, reversible page.note ({text,by,ts}) an
+  editor pins to a page for the team + a panel to set/clear/list them. A reminder, never a publish gate;
+  fills the gap statusHistory (machine transitions) leaves — no human-authored standing intent existed.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -75,6 +78,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 10 | Asset governance | **Media usage** — read-only library audit: UNTRACKED page images (used but not in the library), MISSING ALT (known image field, blank alt — standing version of findMissingAlt), UNUSED library images (nothing references them, with reclaimable data-URI bytes). Key-gated image walker + per-page seo.ogImage + non-draft products; thumbnails, Open deep-links, three sorted sections; badge = untracked+missingAlt (errors:0, OUT of total) + ⌘K. Section id `mediausage`. Delete-unused action PARKED (read-only this cycle) | `71770a1` | NON-REDUNDANT: content-search's walkText explicitly SKIPS image keys; a11y-check excludes alt; findMissingAlt is publish-only + Storefront-gated + page-scoped; link-audit walks link targets never image URLs. First asset lens — unused/untracked/where-used has no prior home |
 | 11 | Holistic synthesis | **Site health** — ONE quality score (100 − 3·errors − 1·warnings, clamped; grade A-F) rolling up all six audits (links, copy, a11y, SEO, nav, media), with a worst-first per-dimension breakdown + Open deep-link into each. Pure `computeHealth(reports)` consuming the already-memoised reports (no re-walk/re-audit/writes); transparent scoring (no per-dimension weights, no magic thresholds, hand-reconstructable). Score block + dimension list + Error/Warning/OK pills; badge = roll-up error count, OUT of total (would double-count). Section id `sitehealth`, first under Overview | `cb11c4e` | NON-REDUNDANT: OverviewPanel imports ZERO audits (page-status/catalogue/team/activity only); the rail badges are siloed per-dimension counts with no score + no cross-dimension ranking. Adds a synthesised score + worst-first list nothing else provides. orphans EXCLUDED from links→warnings (owned by navcheck — avoids double-count) |
 | 12 | Publishing / scheduling | **Publish schedule** — set an optional, additive, REVERSIBLE page.publishAt date on any page; a read-only Scheduled/Overdue surface (overdue = embargo passed AND not already live & current, reusing the drift idea so a spent embargo on a live page reads 'none'). Pure schedule-model.mjs (12 tests; `now` always a param, never Date.now): classifySchedule/listSchedules/describeDue/setSchedule/clearSchedule. Per-page datetime-local set-control + Clear, text+colour pills; badge = overdue count, OUT of total. NOTHING auto-publishes — go-live stays the manual gated publish(). +1 line: duplicatePage strips publishAt. Section id `schedule` | `010f6a8` | NON-REDUNDANT: first NON-AUDIT family. ReleaseBoard's axis is status/drift; this is time/intent (no scheduling existed anywhere — grep clean). Version history is post-hoc; publishAt is forward-looking. Additive field, no SCHEMA bump, no migrate change, publish()/setStatus untouched (write-safe) |
+| 13 | Collaboration | **Editorial notes** — pin an additive, reversible page.note ({text,by,ts}) to any page for the team; a panel listing every page with an inline note textarea + Save/Clear + Note/None pill + author & relative age. Pure notes-model.mjs (10 tests; `now`/`by`/`ts` injected, never Date.now): pageNote/setNote/clearNote/listNotes/describeNoteAge (blank text routes to clear; absent/blank → null, never throws). +1 line: duplicatePage strips note. Badge = annotated-page count, OUT of total. A reminder, NEVER a publish gate; publish() untouched. Section id `notes` | `526e4fb` | NON-REDUNDANT: first COLLABORATION feature. statusHistory records machine transitions (with a transition `note`), activity log is system events — neither lets a human author STANDING intent on a page. No top-level page.note existed (grep clean). Additive, no SCHEMA bump, fully reversible (write-safe) |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -95,31 +99,35 @@ re-validate redundancy against the current code before building.
      pre-flight** — ✅ cycle 7 (`56acaae`). **SEO Health scorecard** — ✅ cycle 8 (`62d0e4c`).
      **Navigation health** — ✅ cycle 9 (`1c9b637`). **Media usage** — ✅ cycle 10 (`71770a1`).
      **Site health** — ✅ cycle 11 (`cb11c4e`). **Publish schedule** — ✅ cycle 12 (`010f6a8`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-12, favouring NEW capability
-     families over more audits): **Content depth** (content-analytics family — thin/skeleton-page detection
-     as the HEADLINE + reading-time secondary; words<threshold over content-search's walkText; live data
-     shows 2/6 seed pages thin; read-only, safe), **Delete-unused-media action** (asset-actions — a per-row
-     Delete on cycle-10's Unused list via the reversible removeAsset + confirm; the safe write that makes an
-     audit actionable, though it leans on the c10 surface), **Bulk-safe page ops** ONLY the reversible ones
-     (e.g. multi-select status draft↔review, NOT delete which hard-removes page+versions — park delete for
-     John), or **per-page editorial notes** (an additive page.note field + a notes surface — collaboration
-     family, additive+reversible like publishAt). DEAD/PARKED (verified): orphan-page finder (link-audit
-     owns it); content freshness/staleness (NO per-page edit timestamp); "what's unpublished" dashboard
-     (ReleaseBoard does it); bulk DELETE / removePage (irreversible — hard-removes page + versions[], PARK
-     FOR JOHN); auto-publish timer (autonomous write + tab-bound — a Laravel-backend job, OUT). Avoid Page
-     Health (overlaps the whole audit suite). Process notes: (1) SCOUT→spec→adversarial-review is the
-     strongest shape — used every cycle 9-12 to settle redundancy + write-safety BEFORE coding (c12: scout
-     proved nothing reads publishAt + patchPage is a shallow merge; review confirmed no auto-publish +
-     caught wrong handler names); keep it over strict-JSON; (2) NEW admin section ids LETTERS-ONLY (regex
-     [a-z]+); (3) for WRITE features: keep them additive (no SCHEMA bump — absent field reads as a safe
-     default), reversible (clear fully removes), and NEVER autonomous-irreversible (no go-live, no
-     hard-delete) — c12's publishAt set/clear via the tested model, duplicatePage strips it; (4) reminder/
-     advisory badges stay OUT of the Studio `total` (only public-facing breakage counts); (5) WRITE features
-     CAN be exercised live (set→observe→clear) since they mutate React state directly, unlike asset/media
-     audits whose populated path the seed can't show (lean on unit tests there). **The audit family is
-     SATURATED; cycle 12 opened the publishing family — keep pivoting to NEW families (content-depth,
-     safe actions, collaboration), not more read-only audits, AND avoid the backtick char in commit -m
-     messages (zsh command-substitutes it — use git commit -F a message file).**_
+     **Editorial notes** — ✅ cycle 13 (`526e4fb`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-13, favouring NEW families): **Content
+     depth** (content-analytics — thin/skeleton-page detection over content-search's walkText; READ-ONLY +
+     safe, BUT scout A proved the real seed has ZERO thin pages at any defensible threshold, so it ships
+     showing only its empty state + the ServiceCatalog block inflates `services` to ~13k words [floor-only
+     flags + a "bulk" note mitigate] — lower live value, build only if a content-analytics angle is wanted),
+     **Bulk-safe status** (safe-actions — multi-select draft↔review on the Pages list; the studio's FIRST
+     multi-select; provably reversible bidirectional metadata flips, explicitly NOT publish/approved/delete;
+     scout C grounded it — strong if cycle 14 wants an action), **per-page collaboration extras** (assignee
+     / review-requested flag — extends c13's collaboration family with another additive field), or a
+     **One-click "add untracked image to library"** on c10's untracked list via addAsset (additive+reversible
+     safe action). DEAD/PARKED (verified): orphan finder (link-audit owns it); freshness/staleness (no
+     per-page edit timestamp); "what's unpublished" (ReleaseBoard does it); DELETE-unused-media (removeAsset
+     loses the sole copy of an uploaded data-URI + NO store-level undo — irreversible hard-delete, AND already
+     half-built in MediaLibraryPanel; PARK FOR JOHN); bulk DELETE / removePage (irreversible, PARK); auto-
+     publish timer (autonomous+tab-bound — Laravel job, OUT). Avoid Page Health (overlaps the whole audit
+     suite). Process notes: (1) SCOUT→spec→adversarial-review is the strongest shape — used every cycle 9-13
+     to settle redundancy + safety BEFORE coding (c13: scouts proved no page.note exists + the seed ships
+     clean; review caught a stale test-count + a false "mirrors SchedulePanel" claim); keep it over
+     strict-JSON; (2) NEW admin section ids LETTERS-ONLY (regex [a-z]+); (3) WRITE features: additive (no
+     SCHEMA bump — absent reads as a safe default), reversible (clear fully removes), NEVER autonomous-
+     irreversible (no go-live, no hard-delete that loses the only copy of data) — c12/c13 set/clear via a
+     tested model + duplicatePage strips the new field; (4) reminder/advisory/aggregate badges stay OUT of
+     the Studio `total` (only public-facing breakage counts); (5) WRITE features CAN be exercised live
+     (set→observe→clear) — do it; read-only audits over the seed often show only the empty state (lean on
+     unit tests). **Two families now open (publishing c12, collaboration c13) on top of the saturated audit
+     suite — keep pivoting to NEW families / safe actions, not more read-only audits. Gotchas: avoid the
+     backtick char in commit -m (zsh command-substitutes it — use git commit -F a file); and esbuild-ing
+     store.js in a scout can drop an `undefined/` outdir into the repo — check git status for stray dirs.**_
    - _Note: the strict-JSON-schema workflows hit the StructuredOutput retry cap twice (cycles 2–3); cycle
      3 switched to a text-output spec+review workflow which worked cleanly — prefer that shape going forward._
 5. **Reusable Content Snippets** *(M, dev)* — synced saved blocks (a Snippet block + context). v2 of
