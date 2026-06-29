@@ -434,6 +434,12 @@
   transition:border-color .2s var(--gs-ease),background .2s var(--gs-ease)}
 .gs-page-row:hover{border-color:var(--gs-border);background:rgba(255,255,255,.02)}
 .gs-page-row.is-current{border-color:var(--gs-border);background:rgba(200,255,0,.05)}
+/* cycle 14 — bulk-safe status multi-select */
+.gs-page-select{flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:6px;cursor:pointer}
+.gs-page-selectall{display:inline-flex;align-items:center;margin-left:auto;padding:6px;cursor:pointer}
+.gs-page-select input,.gs-page-selectall input{width:16px;height:16px;cursor:pointer;accent-color:var(--gs-accent)}
+.gs-bulkbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;padding:10px 12px;border:1px solid var(--gs-border);border-radius:12px;background:rgba(200,255,0,.05)}
+.gs-bulkbar-n{font-weight:700;font-size:.78rem;color:var(--gs-text)}
 .gs-page-open{flex:1;min-width:0;text-align:left;background:none;border:0;cursor:pointer;padding:9px 8px;display:flex;flex-direction:column;gap:3px}
 .gs-page-title{font-size:.92rem;font-weight:700;color:var(--gs-text)}
 .gs-page-title em{font-style:normal;font-weight:700;color:var(--gs-accent);font-size:.78rem}

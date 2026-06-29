@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PanelFrame from './PanelFrame.jsx';
+import { bulkActions } from '../lib/bulk-status.mjs';
 
 // Pages hub (edit mode): every page with its path, section count and status, plus the full set
 // of management actions — open, duplicate, rename, reorder, delete — and a status filter so a
@@ -7,10 +8,19 @@ import PanelFrame from './PanelFrame.jsx';
 const STATUS = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
 const FILTERS = [['all', 'All'], ['draft', 'Draft'], ['review', 'In review'], ['approved', 'Approved'], ['published', 'Published']];
 
-export default function PagesPanel({ order, pages, current, onOpen, onNew, onDelete, onDuplicate, onRename, onMove, onClose, embedded }) {
+export default function PagesPanel({ order, pages, current, onOpen, onNew, onDelete, onDuplicate, onRename, onMove, onClose, embedded, onBulkStatus, canEdit }) {
   const [filter, setFilter] = useState('all');
   const counts = order.reduce((m, s) => { m[pages[s].status] = (m[pages[s].status] || 0) + 1; return m; }, {});
   const shown = order.filter((s) => filter === 'all' || pages[s].status === filter);
+  // multi-select (cycle 14, bulk-safe status). Defined after `shown` — toggleAll closes over it.
+  const [selected, setSelected] = useState(() => new Set());
+  const toggle = (slug) => setSelected((prev) => { const next = new Set(prev); next.has(slug) ? next.delete(slug) : next.add(slug); return next; });
+  const toggleAll = () => setSelected((prev) => {
+    const allShown = shown.length > 0 && shown.every((s) => prev.has(s));
+    return allShown ? new Set([...prev].filter((s) => !shown.includes(s))) : new Set([...prev, ...shown]);
+  });
+  // drop selected slugs that no longer exist (page deleted/renamed) so a selection never points at a ghost.
+  useEffect(() => { setSelected((prev) => { const next = new Set([...prev].filter((s) => pages[s])); return next.size === prev.size ? prev : next; }); }, [order, pages]);
 
   return (
     <PanelFrame embedded={embedded} label={<>Pages <span className="gs-panel-count">{order.length}</span></>} name="Pages" onClose={onClose}>
@@ -21,6 +31,14 @@ export default function PagesPanel({ order, pages, current, onOpen, onNew, onDel
               {label}{id !== 'all' && counts[id] ? <span className="gs-pagefilter-n">{counts[id]}</span> : null}
             </button>
           ))}
+          {canEdit && shown.length > 0 ? (
+            <label className="gs-page-selectall" title="Select all visible pages">
+              <input type="checkbox" aria-label="Select all visible pages"
+                checked={shown.every((s) => selected.has(s))}
+                ref={(el) => { if (el) el.indeterminate = shown.some((s) => selected.has(s)) && !shown.every((s) => selected.has(s)); }}
+                onChange={toggleAll} />
+            </label>
+          ) : null}
         </div>
         <ul className="gs-pages">
           {shown.map((slug, i) => {
@@ -29,6 +47,11 @@ export default function PagesPanel({ order, pages, current, onOpen, onNew, onDel
             const realIndex = order.indexOf(slug);
             return (
               <li key={slug} className={'gs-page-row' + (slug === current ? ' is-current' : '')}>
+                {canEdit ? (
+                  <label className="gs-page-select">
+                    <input type="checkbox" checked={selected.has(slug)} onChange={() => toggle(slug)} aria-label={'Select ' + p.title} />
+                  </label>
+                ) : null}
                 <button className="gs-page-open" onClick={() => onOpen(slug)} title="Edit this page">
                   <span className="gs-page-title">{p.title}{slug === current ? <em> · editing</em> : null}</span>
                   <span className="gs-page-meta">/{slug === 'home' ? '' : slug} · {sections} section{sections === 1 ? '' : 's'}</span>
@@ -48,6 +71,17 @@ export default function PagesPanel({ order, pages, current, onOpen, onNew, onDel
           })}
           {shown.length === 0 && <li className="gs-empty">No pages with that status.</li>}
         </ul>
+        {canEdit && selected.size > 0 ? (
+          <div className="gs-bulkbar" role="region" aria-label="Bulk actions">
+            <span className="gs-bulkbar-n" aria-live="polite">{selected.size} selected</span>
+            {bulkActions(pages, [...selected]).map(({ to, count }) => (
+              <button key={to} className="gs-btn primary sm" onClick={() => { onBulkStatus([...selected], to); setSelected(new Set()); }}>
+                {to === 'review' ? 'Send ' + count + (count === 1 ? ' page' : ' pages') + ' to review' : 'Send ' + count + (count === 1 ? ' page' : ' pages') + ' back to draft'}
+              </button>
+            ))}
+            <button className="gs-btn ghost sm" onClick={() => setSelected(new Set())}>Clear</button>
+          </div>
+        ) : null}
         <button className="gs-btn ghost sm gs-pages-new" onClick={onNew}>+ New page</button>
       </div>
     </PanelFrame>

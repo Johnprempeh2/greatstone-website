@@ -110,6 +110,7 @@ import { auditMedia } from './lib/media-audit.mjs';
 import { computeHealth } from './lib/site-health.mjs';
 import { setSchedule, clearSchedule, listSchedules } from './lib/schedule-model.mjs';
 import { setNote, clearNote, listNotes } from './lib/notes-model.mjs';
+import { bulkSetStatus } from './lib/bulk-status.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -679,6 +680,18 @@ export default function App() {
     });
     flash('Status: ' + (STATUSES.find((x) => x.id === to) || {}).label + (note ? ' · note added' : ''));
   }
+  // Bulk-safe status (cycle 14): the list-level sibling of setStatus. bulkSetStatus enforces a hard
+  // draft<->review allowlist by construction — it can NEVER publish, approve, or delete. canEdit-gated as
+  // defense-in-depth. `moved` is computed against the current state snapshot (NOT inside the updater, which
+  // React may defer/batch) so the flash count is always accurate; by+ts are injected once for both passes.
+  function bulkStatusMut(slugs, to) {
+    if (!canEdit) return;
+    const by = user ? user.email : null, now = Date.now();
+    const moved = bulkSetStatus(state, slugs, to, by, now).moved;
+    if (!moved) return flash('Nothing to move.');
+    setState((s) => bulkSetStatus(s, slugs, to, by, now).state);
+    flash(moved + (moved === 1 ? ' page' : ' pages') + ' sent to ' + (to === 'review' ? 'review' : 'draft') + '.');
+  }
   function setSeo(seo) { patchPage(current, { seo }); }
   function setSettings(patch) { setState((s) => updateSettings(s, patch)); } // global site chrome (logo, name, footer, CTA)
   function setNav(tree) { setState((s) => setNavigation(s, tree)); } // editable header navigation tree
@@ -1099,7 +1112,7 @@ export default function App() {
     const onConsoleClose = () => {}; // embedded panels have no close ×; the rail/Back owns navigation
     const consolePanels = {
       overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
-      pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} />,
+      pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} onBulkStatus={bulkStatusMut} canEdit={canEdit} />,
       ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
       releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
@@ -1162,7 +1175,7 @@ export default function App() {
         {panel && (
           <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
-            pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded />,
+            pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} canEdit={canEdit} />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
