@@ -584,6 +584,15 @@
 .gs-ol-none{color:var(--gs-faint)}
 .gs-ol-block{flex:none;font-size:.66rem;color:var(--gs-faint)}
 .gs-ol-empty{font-size:.8rem;color:var(--gs-faint);padding:3px 0}
+/* conversion map (cycle 22) */
+.gs-cta-sec{margin:0 0 22px}
+.gs-cs-h{font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gs-text);margin:0 0 10px;display:flex;align-items:baseline;gap:8px}
+.gs-cta-dest{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;color:var(--gs-accent);background:rgba(200,255,0,.07);border-radius:5px;padding:1px 6px}
+.gs-cta-chips{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.gs-cta-on{margin:0;font-size:.78rem;color:var(--gs-faint)}
+.gs-cta-map{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+/* label chips show the ACTUAL casing (the casing-dupe finding is about capitalisation — uppercasing would hide it) */
+.gs-cta-chips .gs-la-pill,.gs-cta-map .gs-la-pill{text-transform:none;font-weight:600;letter-spacing:normal;font-size:.74rem;color:var(--gs-text)}
 .gs-cs-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
 .gs-cs-row{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--gs-border-soft);border-radius:9px;background:rgba(255,255,255,.02)}
 .gs-cs-where{font-size:.7rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--gs-faint)}
