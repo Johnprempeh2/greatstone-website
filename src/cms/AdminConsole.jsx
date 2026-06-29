@@ -25,6 +25,7 @@ function buildNav(attention = {}) {
       { id: 'overview', label: 'Overview', type: 'view' },
       { id: 'editor', label: 'Page editor', type: 'editor', need: 'edit' },
       { id: 'pages', label: 'Pages', type: 'view', need: 'edit' },
+      { id: 'services', label: 'Services', type: 'view', need: 'edit' },
       { id: 'navigation', label: 'Navigation', type: 'view', need: 'edit' },
       { id: 'search', label: 'Search content', type: 'view', need: 'edit' },
       { id: 'media', label: 'Media library', type: 'view', need: 'edit' },
@@ -75,8 +76,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['gettingstarted', 'overview', 'sitehealth', 'search', 'pages', 'navigation', 'releases', 'schedule', 'notes', 'links', 'navcheck', 'copy', 'access', 'outline', 'conversion', 'seohealth', 'inventory', 'blocks', 'redirects', 'sections', 'templates', 'seo', 'background', 'media', 'mediausage', 'history', 'activity', 'team', 'settings'];
-const TITLES = { gettingstarted: 'Getting started', overview: 'Overview', sitehealth: 'Site health', search: 'Search content', pages: 'Pages', navigation: 'Navigation', releases: 'Releases', schedule: 'Publish schedule', notes: 'Editorial notes', links: 'Link health', navcheck: 'Navigation health', copy: 'Copy coach', access: 'Accessibility', outline: 'Document outline', conversion: 'Conversion map', seohealth: 'SEO health', inventory: 'Content inventory', blocks: 'Block usage', redirects: 'Redirects', sections: 'Saved sections', templates: 'Templates', seo: 'SEO & social', background: '3D background', media: 'Media library', mediausage: 'Media usage', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['gettingstarted', 'overview', 'sitehealth', 'search', 'pages', 'services', 'navigation', 'releases', 'schedule', 'notes', 'links', 'navcheck', 'copy', 'access', 'outline', 'conversion', 'seohealth', 'inventory', 'blocks', 'redirects', 'sections', 'templates', 'seo', 'background', 'media', 'mediausage', 'history', 'activity', 'team', 'settings'];
+const TITLES = { gettingstarted: 'Getting started', overview: 'Overview', sitehealth: 'Site health', search: 'Search content', pages: 'Pages', services: 'Services', navigation: 'Navigation', releases: 'Releases', schedule: 'Publish schedule', notes: 'Editorial notes', links: 'Link health', navcheck: 'Navigation health', copy: 'Copy coach', access: 'Accessibility', outline: 'Document outline', conversion: 'Conversion map', seohealth: 'SEO health', inventory: 'Content inventory', blocks: 'Block usage', redirects: 'Redirects', sections: 'Saved sections', templates: 'Templates', seo: 'SEO & social', background: '3D background', media: 'Media library', mediausage: 'Media usage', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',

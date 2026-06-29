@@ -98,6 +98,8 @@ import CopyCoachPanel from './cms/CopyCoachPanel.jsx';
 import A11yPanel from './cms/A11yPanel.jsx';
 import OutlinePanel from './cms/OutlinePanel.jsx';
 import CtaConsistencyPanel from './cms/CtaConsistencyPanel.jsx';
+import ServicesManagerPanel from './cms/ServicesManagerPanel.jsx';
+import { findCatalog } from './lib/service-admin.mjs';
 import SeoHealthPanel from './cms/SeoHealthPanel.jsx';
 import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
 import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
@@ -575,6 +577,8 @@ export default function App() {
   const ctaReport = useMemo(() => buildCtaReport(state, { dynamic: ['insights'] }), [state.pages, state.order, state.redirects]);
   // change-review queue (Releases): which pages have unpublished edits (drift) or were never published, + the diff.
   const reviewReport = useMemo(() => buildReviewQueue(state), [state.pages, state.order]);
+  // the Managed Services catalogue (the ServiceCatalog block's services[]/categories[]) for the Services manager.
+  const serviceCatalog = useMemo(() => findCatalog(state), [state.pages, state.order]);
   // site-wide SEO health (meta presence/length + cross-page duplicates) — computed once, shared.
   const seoReport = useMemo(() => checkSeo(state), [state.pages, state.order]);
   // navigation health (menu → unpublished/dead targets + pages missing from the menu) — computed once.
@@ -628,6 +632,20 @@ export default function App() {
   function resolveModal(value) { if (modal && modal.resolve) modal.resolve(value); setModal(null); }
   function patchPage(slug, patch) {
     setState((s) => ({ ...s, pages: { ...s.pages, [slug]: { ...s.pages[slug], ...patch } } }));
+  }
+  // Services manager → write a {services|categories|inquiryEmail} patch into the ServiceCatalog block's props,
+  // as a DRAFT edit (reopens a live page to draft like saveDraft, so it flows through the review/publish queue).
+  function setCatalog(patch) {
+    setState((s) => {
+      const loc = findCatalog(s);
+      if (!loc) return s;
+      const p = s.pages[loc.slug];
+      const content = (p.data.content || []).map((b, i) => (i === loc.index ? { ...b, props: { ...b.props, ...patch } } : b));
+      const data = { ...p.data, content };
+      const reopen = (p.status === 'published' || p.status === 'approved') && p.published != null && !eq(data, p.published);
+      const statusPatch = reopen ? { status: 'draft', statusHistory: [...(p.statusHistory || []), { from: p.status, to: 'draft', by: user ? user.email : null, ts: Date.now(), note: 'Service catalogue edited' }] } : {};
+      return { ...s, pages: { ...s.pages, [loc.slug]: { ...p, data, ...statusPatch } } };
+    });
   }
   // publish-schedule intent (reversible metadata; NEVER auto-publishes — go-live stays the gated publish()).
   const onSchedule = (slug, ts) => setState((s) => setSchedule(s, slug, ts));
@@ -1113,6 +1131,7 @@ export default function App() {
       cmds.push({ id: 'access', group: 'Admin', label: 'Check accessibility', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/access'; } });
       cmds.push({ id: 'outline', group: 'Admin', label: 'View document outline (heading structure)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/outline'; } });
       cmds.push({ id: 'conversion', group: 'Admin', label: 'Conversion map (CTA label consistency, hidden buttons)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/conversion'; } });
+      cmds.push({ id: 'services', group: 'Admin', label: 'Services (manage the catalogue)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/services'; } });
       cmds.push({ id: 'seohealth', group: 'Admin', label: 'Check SEO health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/seohealth'; } });
       cmds.push({ id: 'navcheck', group: 'Admin', label: 'Check navigation health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/navcheck'; } });
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
@@ -1243,6 +1262,7 @@ export default function App() {
       ...(canEdit ? { access: <A11yPanel embedded report={a11yReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { outline: <OutlinePanel embedded report={outlineReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { conversion: <CtaConsistencyPanel embedded report={ctaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { services: <ServicesManagerPanel embedded catalog={serviceCatalog} onChange={setCatalog} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { seohealth: <SeoHealthPanel embedded report={seoReport} pages={state.pages} onFix={(slug) => goAdmin('seo', slug)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
