@@ -87,6 +87,23 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 .gs-surround-outline { border:1px solid var(--gs-border,rgba(255,255,255,.14)); }
 .gs-pad-snug  { padding:clamp(12px,2vw,20px); }
 .gs-pad-roomy { padding:clamp(30px,4.5vw,56px); }
+/* Universal "Section" group (block-style.mjs sectionClass, applied on the .gs-blk wrapper). Enum-only classes:
+   added spacing, a brand background surface band, and a palette-only accent re-tint. Defaults emit no class. */
+.gs-sec-spt-sm { margin-top:clamp(24px,4vw,48px); }
+.gs-sec-spt-md { margin-top:clamp(48px,7vw,96px); }
+.gs-sec-spt-lg { margin-top:clamp(80px,11vw,160px); }
+.gs-sec-spb-sm { margin-bottom:clamp(24px,4vw,48px); }
+.gs-sec-spb-md { margin-bottom:clamp(48px,7vw,96px); }
+.gs-sec-spb-lg { margin-bottom:clamp(80px,11vw,160px); }
+.gs-sec-surface-panel   { background:#1c1c1c; }
+.gs-sec-surface-emerald { background:linear-gradient(180deg,#0e3122,#0b2419); }
+.gs-sec-surface-deep    { background:#0a0a0a; }
+/* re-point the whole --gs-accent family to teal for this section, so every accent (kickers, rules, CTAs)
+   re-tints coherently and stays AA. Palette-only: there is no free-colour path. */
+.gs-sec-accent-teal {
+  --gs-accent: var(--gs-teal); --gs-accent-dim: rgba(78,205,196,0.10);
+  --gs-accent-soft: rgba(78,205,196,0.05); --gs-accent-glow: rgba(78,205,196,0.22); --gs-accent-mid: rgba(78,205,196,0.40);
+}
 .kicker { font-size:0.72rem; font-weight:700; letter-spacing:0.32em; text-transform:uppercase; color:var(--gs-accent); }
 .lead { font-size:clamp(1.05rem,1.6vw,1.35rem); color:var(--gs-text-muted); max-width:60ch; }
 .muted { color:var(--gs-text-muted); }

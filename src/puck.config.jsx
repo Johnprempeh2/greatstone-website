@@ -36,6 +36,8 @@ import * as Faq from './blocks/Faq.jsx';
 import * as TimeSavingsCalculator from './blocks/TimeSavingsCalculator.jsx';
 import * as LogoWall from './blocks/LogoWall.jsx';
 import * as ComparisonMatrix from './blocks/ComparisonMatrix.jsx';
+import { sectionClass } from './lib/block-style.mjs';
+import { SECTION_FIELD, SECTION_DEFAULT } from './cms/style-field.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
@@ -44,8 +46,19 @@ const MODULES = { Hero, Prose, Chapter, Pillars, PillarCards, PillarExplorer, In
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
-// element's scroll position. The wrapper is a plain block element, layout-transparent.
-const withAnchor = (puck) => ({ ...puck, render: (props) => <div id={'gs-blk-' + props.id} className="gs-blk">{puck.render(props)}</div> });
+// element's scroll position. This single wrapper is also the universal seam for the "Section" group
+// (background surface band, palette accent re-tint, spacing rhythm): merging the field + default here
+// gives EVERY block the controls in one place, and every default maps to no class so pages are unchanged.
+const withAnchor = (puck) => ({
+  ...puck,
+  fields: { ...(puck.fields || {}), _section: SECTION_FIELD },
+  defaultProps: { ...(puck.defaultProps || {}), _section: SECTION_DEFAULT },
+  render: (props) => (
+    <div id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section)).trim()}>
+      {puck.render(props)}
+    </div>
+  ),
+});
 
 export const config = {
   components: Object.fromEntries(Object.entries(MODULES).map(([name, m]) => [name, withAnchor(m.puck)])),

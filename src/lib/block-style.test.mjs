@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appearanceClass, SURROUNDS, PADS } from './block-style.mjs';
+import { appearanceClass, SURROUNDS, PADS, sectionClass, SECTION_SURFACES, SECTION_SPACES, SECTION_ACCENTS, SECTION_TEXT_HEX, SECTION_SURFACE_HEX, SECTION_ACCENT_TEAL_HEX } from './block-style.mjs';
+import { contrastRatio } from './richtext-marks.mjs';
 
 test('defaults map to no class, so existing pages render byte-identically', () => {
   assert.equal(appearanceClass({}), '');
@@ -34,4 +35,34 @@ test('every declared option produces a class token (no dead options)', () => {
     if (p.id === 'standard') assert.equal(cls, '');
     else assert.equal(cls, 'gs-pad-' + p.id);
   }
+});
+
+// ── universal Section group ──
+test('sectionClass defaults map to no class (existing pages byte-identical)', () => {
+  assert.equal(sectionClass({}), '');
+  assert.equal(sectionClass(undefined), '');
+  assert.equal(sectionClass({ spaceTop: 'default', spaceBottom: 'default', surface: 'none', accent: 'default' }), '');
+});
+
+test('sectionClass maps each enum to its safe class; unknown values are dropped (no injection)', () => {
+  assert.equal(sectionClass({ spaceTop: 'lg' }), 'gs-sec-spt-lg');
+  assert.equal(sectionClass({ spaceBottom: 'sm' }), 'gs-sec-spb-sm');
+  assert.equal(sectionClass({ surface: 'emerald' }), 'gs-sec-surface gs-sec-surface-emerald');
+  assert.equal(sectionClass({ accent: 'teal' }), 'gs-sec-accent-teal');
+  assert.equal(sectionClass({ spaceTop: 'lg', surface: 'panel', accent: 'teal' }), 'gs-sec-spt-lg gs-sec-surface gs-sec-surface-panel gs-sec-accent-teal');
+  // garbage / injection attempts produce no class
+  assert.equal(sectionClass({ surface: 'evil"></div><script>', accent: 'red', spaceTop: '999' }), '');
+});
+
+test('every Section surface keeps the body text AA-readable (>=4.5:1)', () => {
+  for (const s of SECTION_SURFACES) {
+    if (s.id === 'none') continue;
+    const ratio = contrastRatio(SECTION_TEXT_HEX, SECTION_SURFACE_HEX[s.id]);
+    assert.ok(ratio >= 4.5, 'surface ' + s.id + ' text contrast ' + ratio.toFixed(2) + ' must be >= 4.5');
+  }
+});
+
+test('the teal accent re-tint passes AA on the darkest surface', () => {
+  const ratio = contrastRatio(SECTION_ACCENT_TEAL_HEX, SECTION_SURFACE_HEX.deep);
+  assert.ok(ratio >= 4.5, 'teal accent on deep surface ' + ratio.toFixed(2) + ' must be >= 4.5');
 });
