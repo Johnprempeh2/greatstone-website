@@ -6,7 +6,7 @@ import { catalogStats, serviceSlug, duplicateSlugs, patchAt, removeAt, insertAt,
 // the page editor. Reads/writes the ServiceCatalog block's services[] + categories[] (the single source the
 // public listing, the per-service detail pages and the inquiry all share). onChange(patch) writes the patch
 // back to that block's DRAFT — so changes flow through the normal review/publish queue before going live.
-export default function ServicesManagerPanel({ catalog, onChange, onClose, embedded }) {
+export default function ServicesManagerPanel({ catalog, onChange, onNotify, onClose, embedded }) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(null); // index of the service whose editor is expanded
 
@@ -31,7 +31,14 @@ export default function ServicesManagerPanel({ catalog, onChange, onClose, embed
   const patchService = (i, patch) => setServices(patchAt(services, i, patch));
   const addService = () => { const next = insertAt(services, services.length, blankService(catNames[0] || '')); setServices(next); setOpen(next.length - 1); };
   const dupService = (i) => { const copy = { ...services[i], name: services[i].name + ' (copy)', slug: '' }; setServices(insertAt(services, i + 1, copy)); };
-  const removeService = (i) => { setServices(removeAt(services, i)); if (open === i) setOpen(null); };
+  const removeService = (i) => {
+    const removed = services[i];
+    const next = removeAt(services, i);
+    setServices(next);
+    if (open === i) setOpen(null);
+    // offer an undo: re-insert the removed service at its original index (the toast is owned by App).
+    if (onNotify) onNotify({ message: 'Removed ' + (removed.name || 'service') + '.', undo: () => setServices(insertAt(next, i, removed)) });
+  };
   const moveService = (i, d) => { setServices(moveAt(services, i, d)); if (open === i) setOpen(i + d); };
   const patchBullet = (si, bi, text) => patchService(si, { bullets: patchAt(services[si].bullets || [], bi, { text }) });
 
@@ -82,7 +89,11 @@ export default function ServicesManagerPanel({ catalog, onChange, onClose, embed
         </div>
 
         <ul className="gs-svc-list">
-          {shown.length === 0 ? <li className="gs-empty">No services match “{q}”.</li> : shown.map(({ s, i }) => (
+          {services.length === 0
+            ? <li className="gs-empty">No services yet. Add your first service to build the Managed Services catalogue.</li>
+            : shown.length === 0
+              ? <li className="gs-empty">No services match “{q}”.</li>
+              : shown.map(({ s, i }) => (
             <li key={i} className={'gs-svc-row' + (open === i ? ' is-open' : '')}>
               <div className="gs-svc-head">
                 <button className="gs-svc-name" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>

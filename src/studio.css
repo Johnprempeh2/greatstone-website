@@ -498,6 +498,9 @@
 .gs-bulkbar-n{font-weight:700;font-size:.78rem;color:var(--gs-text)}
 .gs-bulkbar-sep{width:1px;align-self:stretch;min-height:20px;background:var(--gs-border)}
 .gs-bulkbar-sched{display:flex;align-items:center;gap:6px}
+.gs-rev-head-row{display:flex;align-items:center;gap:10px}
+.gs-rev-head-row .gs-cs-h{flex:1 1 auto}
+.gs-selectall-lbl{font-size:.76rem;font-weight:700;color:var(--gs-faint);text-transform:uppercase;letter-spacing:.04em;margin-left:4px}
 .gs-bulk-dateinput{font:inherit;font-size:.82rem;padding:5px 8px;border:1px solid var(--gs-border);border-radius:8px;background:var(--gs-bg);color:var(--gs-text)}
 /* cycle 15 — content inventory sortable table */
 .gs-inv-tablewrap{overflow-x:auto}
@@ -784,7 +787,10 @@
 /* ---------- toast ---------- */
 .gs-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2500;background:#1a1c1a;border:1px solid var(--gs-border);
   color:var(--gs-text);font-size:.84rem;font-weight:600;padding:12px 20px;border-radius:100px;box-shadow:0 20px 60px -20px rgba(0,0,0,.7);
-  animation:gsToastIn .2s var(--gs-ease)}
+  animation:gsToastIn .2s var(--gs-ease);display:inline-flex;align-items:center;gap:6px}
+.gs-toast-undo{margin-left:6px;background:none;border:0;color:var(--gs-accent);font-weight:700;cursor:pointer;text-decoration:underline;font-size:.84rem;padding:2px 4px;border-radius:6px}
+.gs-toast-undo:focus-visible{outline:2px solid var(--gs-accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.gs-toast{animation:none}}
 
 @keyframes gsFade{from{opacity:0}to{opacity:1}}
 @keyframes gsPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}

@@ -2,7 +2,9 @@
 // page with unpublished edits (drift) or never published — what changed since it went live — so a lead can
 // APPROVE (publish that page's draft) or DISCARD (revert to the live version) without opening each one.
 // Below, the full per-page publish-state overview. Classification + diffs come from buildReviewQueue (App).
+import { useState, useEffect } from 'react';
 import PanelFrame from './PanelFrame.jsx';
+import { reviewBulkActions } from '../lib/review-bulk.mjs';
 
 const STATUS = { draft: 'Draft', review: 'In review', approved: 'Approved', published: 'Published' };
 
@@ -28,11 +30,21 @@ function summarise(diff) {
   return parts.join(' · ') || 'no content change';
 }
 
-export default function ReleaseBoard({ order, pages, current, review, canPublish, onApprove, onDiscard, onOpen, onClose, embedded }) {
+export default function ReleaseBoard({ order, pages, current, review, canPublish, onApprove, onDiscard, onApproveMany, onDiscardMany, onOpen, onClose, embedded }) {
   const r = review || { items: [], review: [], counts: {} };
   const items = r.items || [];
   const queue = r.review || [];
   const counts = items.reduce((m, it) => { m[it.status] = (m[it.status] || 0) + 1; return m; }, {});
+
+  // multi-select over the review queue (mirrors PagesPanel). The queue IS the full selectable set.
+  const eligibleSlugs = queue.map((it) => it.slug);
+  const [selected, setSelected] = useState(() => new Set());
+  const toggle = (slug) => setSelected((prev) => { const next = new Set(prev); next.has(slug) ? next.delete(slug) : next.add(slug); return next; });
+  const toggleAll = () => setSelected((prev) => (eligibleSlugs.length > 0 && eligibleSlugs.every((s) => prev.has(s)) ? new Set() : new Set(eligibleSlugs)));
+  // drop selections that leave the queue (page published or reverted) so a selection never points at a ghost.
+  useEffect(() => { setSelected((prev) => { const next = new Set([...prev].filter((s) => eligibleSlugs.includes(s))); return next.size === prev.size ? prev : next; }); }, [queue.length]);
+  const acts = reviewBulkActions(queue, [...selected]);
+  const clearSel = () => setSelected(new Set());
 
   return (
     <PanelFrame embedded={embedded} label={<>Releases {queue.length ? <span className="gs-panel-count">{queue.length}</span> : null}</>} name="Releases" onClose={onClose}>
@@ -44,7 +56,26 @@ export default function ReleaseBoard({ order, pages, current, review, canPublish
           <div className="gs-rel-stat"><b>{counts.draft || 0}</b><span>Draft</span></div>
         </div>
 
-        <h3 className="gs-cs-h" style={{ marginTop: 18 }}>Changes to review {queue.length ? <span className="gs-cs-sub">{queue.length}</span> : null}</h3>
+        <div className="gs-rev-head-row">
+          <h3 className="gs-cs-h" style={{ marginTop: 18 }}>Changes to review {queue.length ? <span className="gs-cs-sub">{queue.length}</span> : null}</h3>
+          {canPublish && queue.length > 0 ? (
+            <label className="gs-page-selectall" title="Select all changes">
+              <input type="checkbox" aria-label="Select all changes"
+                checked={eligibleSlugs.every((s) => selected.has(s))}
+                ref={(el) => { if (el) el.indeterminate = eligibleSlugs.some((s) => selected.has(s)) && !eligibleSlugs.every((s) => selected.has(s)); }}
+                onChange={toggleAll} />
+              <span className="gs-selectall-lbl">Select all</span>
+            </label>
+          ) : null}
+        </div>
+        {canPublish && selected.size > 0 ? (
+          <div className="gs-bulkbar" role="region" aria-label="Bulk review actions">
+            <span className="gs-bulkbar-n" aria-live="polite">{selected.size} selected</span>
+            <button className="gs-btn primary sm" disabled={acts.approvable === 0} onClick={() => { onApproveMany(acts.approveSlugs); clearSel(); }}>Approve selected ({acts.approvable})</button>
+            <button className="gs-btn ghost sm" disabled={acts.discardable === 0} onClick={() => { onDiscardMany(acts.discardSlugs); clearSel(); }}>Discard selected ({acts.discardable})</button>
+            <button className="gs-btn ghost sm" onClick={clearSel}>Deselect</button>
+          </div>
+        ) : null}
         {queue.length === 0 ? (
           <p className="gs-la-clean" role="status">✓ Everything live is up to date. No edits waiting for review.</p>
         ) : (
@@ -54,6 +85,11 @@ export default function ReleaseBoard({ order, pages, current, review, canPublish
               return (
                 <li key={it.slug} className={'gs-rev-row' + (it.slug === current ? ' is-current' : '')}>
                   <div className="gs-rev-head">
+                    {canPublish ? (
+                      <label className="gs-page-select">
+                        <input type="checkbox" checked={selected.has(it.slug)} onChange={() => toggle(it.slug)} aria-label={'Select ' + it.title} />
+                      </label>
+                    ) : null}
                     <button className="gs-rev-title" onClick={() => onOpen(it.slug)} title="Open this page">{it.title}</button>
                     <span className={'gs-page-status gs-st-' + it.status} title={STATUS[it.status] || it.status}><span className="gs-dot" />{STATUS[it.status] || it.status}</span>
                   </div>
@@ -88,7 +124,7 @@ export default function ReleaseBoard({ order, pages, current, review, canPublish
 
         <h3 className="gs-cs-h" style={{ marginTop: 22 }}>All pages</h3>
         <ul className="gs-rel-list">
-          {items.map((it) => (
+          {items.length === 0 ? <li className="gs-empty">No pages yet. Create one from the Pages panel to start.</li> : items.map((it) => (
             <li key={it.slug} className={'gs-rel-row' + (it.slug === current ? ' is-current' : '')}>
               <button className="gs-rel-open" onClick={() => onOpen(it.slug)} title="Open this page">
                 <span className="gs-rel-title">{it.title}{it.kind === 'drift' ? <em className="gs-rel-drift" title="Has unpublished changes">unpublished</em> : null}</span>

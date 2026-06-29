@@ -621,10 +621,13 @@ export default function App() {
     return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, notes: listNotes(state).length, inventory: contentReport.summary.thinCount, blocks: blockReport.summary.unusedTypes, outline: outlineReport.total, conversion: ctaReport.summary.casingDupeCount + ctaReport.summary.deadEndCount, total: pagesNeedingAction + pendingInvites + brokenLinks };
   }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, blockReport, outlineReport, ctaReport, canManageUsers]);
 
-  function flash(msg) {
-    setToast(msg);
+  // flash a toast. msg is a string; pass an optional action { label, onAction } to attach an Undo-style
+  // button (the toast then carries { msg, action } and lingers a little longer so there is time to click).
+  // Backward-compatible: every existing string call site keeps working unchanged.
+  function flash(msg, action) {
+    setToast(action ? { msg, action } : msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
+    toastTimer.current = setTimeout(() => setToast(null), action ? 6000 : 2600);
   }
   // on-brand prompt/confirm: ask() opens the modal and resolves with the input string (prompt) or
   // true/false (confirm); resolveModal closes it and settles the promise. Replaces window.* dialogs.
@@ -1074,6 +1077,39 @@ export default function App() {
     return true;
   }
   function discardDraft() { return discardPage(current); }
+  // Bulk approve from the Releases queue: publish each selected page's current draft. publishPage runs its
+  // own per-page alt-text/broken-link preflight and reads the render-closure `state`, so we go sequentially
+  // (never parallel — parallel reads would be stale). One summary toast at the end.
+  async function approveAll(slugs) {
+    let n = 0;
+    for (const slug of (slugs || [])) {
+      const ok = await publishPage(slug, (state.pages[slug] || {}).data);
+      if (ok) n++;
+    }
+    if (n) flash(n + (n === 1 ? ' page published.' : ' pages published.'));
+  }
+  // Bulk discard: ONE confirm, then one atomic setState that snapshots + reverts every eligible page. Only
+  // pages with a live version (published != null) can revert; never-published selections are skipped.
+  async function discardAll(slugs) {
+    const eligible = (slugs || []).filter((slug) => { const p = state.pages[slug]; return p && p.published != null; });
+    if (!eligible.length) { flash('Nothing to discard. The selected pages have never been published.'); return; }
+    const ok = await ask({ kind: 'confirm', danger: true, title: 'Discard selected changes',
+      message: 'Discard the unpublished changes to ' + eligible.length + ' page' + (eligible.length === 1 ? '' : 's') + ' and revert each to its live version? Each draft is snapshotted to history first.',
+      confirmLabel: 'Discard changes' });
+    if (!ok) return;
+    const set = new Set(eligible);
+    setState((s) => {
+      const pages = { ...s.pages };
+      for (const slug of eligible) {
+        const p = pages[slug]; if (!p) continue;
+        const versions = pushVersion(p.versions, { label: 'Before discard', data: p.data, by: user ? user.email : null, status: p.status });
+        pages[slug] = { ...p, data: p.published, background: p.publishedBackground ?? p.background, versions };
+      }
+      return { ...s, pages };
+    });
+    if (set.has(current)) setPuckKey((k) => k + 1);
+    flash('Reverted ' + eligible.length + ' page' + (eligible.length === 1 ? '' : 's') + ' to the published version.');
+  }
   function addBlock(type) {
     const def = config.components[type];
     const block = { type, props: { id: rid(type), ...(def && def.defaultProps ? def.defaultProps : {}) } };
@@ -1185,7 +1221,14 @@ export default function App() {
           Storage is full. Recent changes won’t survive a reload — trim version history or publish to free space.
         </div>
       )}
-      {toast && <div className="gs-toast" role="status">{toast}</div>}
+      {toast && (
+        <div className="gs-toast" role="status">
+          {typeof toast === 'string' ? toast : toast.msg}
+          {toast && typeof toast === 'object' && toast.action ? (
+            <button className="gs-toast-undo" onClick={() => { toast.action.onAction(); setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); }}>{toast.action.label}</button>
+          ) : null}
+        </div>
+      )}
       <Modal modal={modal} onResolve={resolveModal} />
     </>
   );
@@ -1256,13 +1299,13 @@ export default function App() {
       overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
       pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
       ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
-      releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onOpen={openPageInEditor} onClose={onConsoleClose} />,
+      releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onApproveMany={approveAll} onDiscardMany={discardAll} onOpen={openPageInEditor} onClose={onConsoleClose} />,
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { copy: <CopyCoachPanel embedded report={voiceReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { access: <A11yPanel embedded report={a11yReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { outline: <OutlinePanel embedded report={outlineReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { conversion: <CtaConsistencyPanel embedded report={ctaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { services: <ServicesManagerPanel embedded catalog={serviceCatalog} onChange={setCatalog} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { services: <ServicesManagerPanel embedded catalog={serviceCatalog} onChange={setCatalog} onNotify={(n) => flash(n.message, { label: 'Undo', onAction: n.undo })} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { seohealth: <SeoHealthPanel embedded report={seoReport} pages={state.pages} onFix={(slug) => goAdmin('seo', slug)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
@@ -1325,7 +1368,7 @@ export default function App() {
           <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
-            releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
+            releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onApproveMany={approveAll} onDiscardMany={discardAll} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
             ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
