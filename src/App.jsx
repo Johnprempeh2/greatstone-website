@@ -99,6 +99,7 @@ import SeoHealthPanel from './cms/SeoHealthPanel.jsx';
 import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
 import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
 import ContentInventoryPanel from './cms/ContentInventoryPanel.jsx';
+import BlockUsagePanel from './cms/BlockUsagePanel.jsx';
 import SiteHealthPanel from './cms/SiteHealthPanel.jsx';
 import GettingStartedPanel from './cms/GettingStartedPanel.jsx';
 import StartersPanel from './cms/StartersPanel.jsx';
@@ -112,6 +113,7 @@ import { checkSeo } from './lib/seo-check.mjs';
 import { auditNavCoverage } from './lib/nav-coverage.mjs';
 import { auditMedia } from './lib/media-audit.mjs';
 import { analyzeContent } from './lib/content-stats.mjs';
+import { analyzeBlocks } from './lib/block-usage-model.mjs';
 import { computeHealth } from './lib/site-health.mjs';
 import { setSchedule, clearSchedule, listSchedules } from './lib/schedule-model.mjs';
 import { setNote, clearNote, listNotes } from './lib/notes-model.mjs';
@@ -564,6 +566,8 @@ export default function App() {
   const mediaReport = useMemo(() => auditMedia(state), [state.pages, state.order, state.assets, state.products]);
   // content inventory (word counts / read time / thin+skeleton flags) — computed once, shared.
   const contentReport = useMemo(() => analyzeContent(state), [state.pages, state.order]);
+  // block/component usage (which block types are placed where + which are unused) — computed once, shared.
+  const blockReport = useMemo(() => analyzeBlocks(state, Object.keys(config.components), config.categories), [state.pages, state.order]);
   // first-run studio setup checklist (read-only; "changed-from-default" semantics need the defaults injected).
   const onboardingReport = useMemo(() => deriveChecklist(state, {
     defaultSiteName: 'Greatstone International', defaultLogo: DEFAULT_LOGO, defaultEmail: 'dx@greatstonesoftware.co.uk',
@@ -594,8 +598,8 @@ export default function App() {
     // schedule badge = overdue count (a reminder, never a blocking defect, never auto-acts) — also OUT of total.
     const overdue = listSchedules(state, Date.now()).overdue.length;
     // notes badge = count of annotated pages (informational, OUT of total — a note is intent, not a defect).
-    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, notes: listNotes(state).length, inventory: contentReport.summary.thinCount, total: pagesNeedingAction + pendingInvites + brokenLinks };
-  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, canManageUsers]);
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, notes: listNotes(state).length, inventory: contentReport.summary.thinCount, blocks: blockReport.summary.unusedTypes, total: pagesNeedingAction + pendingInvites + brokenLinks };
+  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, blockReport, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -1023,6 +1027,7 @@ export default function App() {
       cmds.push({ id: 'navcheck', group: 'Admin', label: 'Check navigation health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/navcheck'; } });
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
       cmds.push({ id: 'inventory', group: 'Admin', label: 'Content inventory (word counts, read time, thin pages)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/inventory'; } });
+      cmds.push({ id: 'blocks', group: 'Admin', label: 'Block usage (which components are used / unused)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/blocks'; } });
       cmds.push({ id: 'templates', group: 'Admin', label: 'New page from template', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/templates'; } });
       cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
       if (canManageUsers) cmds.push({ id: 'gettingstarted', group: 'Admin', label: 'Getting started (studio setup guide)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/gettingstarted'; } });
@@ -1148,6 +1153,7 @@ export default function App() {
       ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { inventory: <ContentInventoryPanel embedded report={contentReport} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { blocks: <BlockUsagePanel embedded report={blockReport} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { templates: <StartersPanel embedded starters={listStarters()} onPick={startFromTemplate} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sitehealth: <SiteHealthPanel embedded report={healthReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canManageUsers ? { gettingstarted: <GettingStartedPanel embedded report={onboardingReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
