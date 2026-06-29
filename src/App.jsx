@@ -3,7 +3,7 @@ import { config, blockCss } from './puck.config.jsx';
 import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { publicNavOrder } from './lib/nav-order.js';
-import { initAnalytics, pageview, track } from './lib/analytics.js';
+import { initAnalytics, pageview, track, analyticsConfigured } from './lib/analytics.js';
 import { openBooking } from './lib/booking.js';
 import { siteOrigin } from './lib/site-origin.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
@@ -100,6 +100,8 @@ import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
 import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
 import ContentInventoryPanel from './cms/ContentInventoryPanel.jsx';
 import SiteHealthPanel from './cms/SiteHealthPanel.jsx';
+import GettingStartedPanel from './cms/GettingStartedPanel.jsx';
+import { deriveChecklist } from './lib/onboarding-model.mjs';
 import SchedulePanel from './cms/SchedulePanel.jsx';
 import NotesPanel from './cms/NotesPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
@@ -123,7 +125,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock } from './store.js';
+import { DEFAULT_LOGO, load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -561,6 +563,11 @@ export default function App() {
   const mediaReport = useMemo(() => auditMedia(state), [state.pages, state.order, state.assets, state.products]);
   // content inventory (word counts / read time / thin+skeleton flags) — computed once, shared.
   const contentReport = useMemo(() => analyzeContent(state), [state.pages, state.order]);
+  // first-run studio setup checklist (read-only; "changed-from-default" semantics need the defaults injected).
+  const onboardingReport = useMemo(() => deriveChecklist(state, {
+    defaultSiteName: 'Greatstone International', defaultLogo: DEFAULT_LOGO, defaultEmail: 'dx@greatstonesoftware.co.uk',
+    defaultCta: 'Book a Diagnostic', analyticsKnown: true, analyticsConfigured,
+  }), [state.settings, state.navigation, state.order, state.pages]);
   // site health: one score rolling up the six audits — pure synthesis of the reports already computed above.
   const healthReport = useMemo(() => computeHealth({
     links: auditLinks(state), navcheck: navCoverageReport, access: a11yReport,
@@ -1005,6 +1012,7 @@ export default function App() {
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
       cmds.push({ id: 'inventory', group: 'Admin', label: 'Content inventory (word counts, read time, thin pages)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/inventory'; } });
       cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
+      if (canManageUsers) cmds.push({ id: 'gettingstarted', group: 'Admin', label: 'Getting started (studio setup guide)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/gettingstarted'; } });
       cmds.push({ id: 'schedule', group: 'Admin', label: 'Publish schedule (set a publish date)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/schedule'; } });
       cmds.push({ id: 'notes', group: 'Admin', label: 'Editorial notes (pin a note to a page)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/notes'; } });
       cmds.push({ id: 'redirects', group: 'Admin', label: 'Manage redirects', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/redirects'; } });
@@ -1128,6 +1136,7 @@ export default function App() {
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { inventory: <ContentInventoryPanel embedded report={contentReport} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sitehealth: <SiteHealthPanel embedded report={healthReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
+      ...(canManageUsers ? { gettingstarted: <GettingStartedPanel embedded report={onboardingReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { schedule: <SchedulePanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSchedule={onSchedule} onClear={onClear} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { notes: <NotesPanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSetNote={onSetNote} onClearNote={onClearNote} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
