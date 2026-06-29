@@ -1,7 +1,9 @@
 // Shared UI for the multi-select service inquiry: the per-service "Add to inquiry" toggle, the little
-// "N in your inquiry" bar, and the floating drawer (FAB → slide-out) that lists the chosen services and
-// composes ONE prefilled email for all of them (client-side mailto, no backend — same path the booking
-// form uses). Mirrors the store basket's FAB/drawer feel so services behave like the product space.
+// "N in your inquiry" bar, and the floating drawer (FAB to slide-out) that lists the chosen services.
+// Submitting LOGS the inquiry server-side (the Supabase submit_service_inquiry rpc, the primary path) and
+// shows a real in-page confirmation; a prefilled email is offered beneath it as a fallback link. If the
+// backend is unconfigured or unreachable, it degrades to opening that prefilled email so a lead is never
+// lost. Mirrors the store basket's FAB/drawer feel so services behave like the product space.
 import { useState, useRef, useEffect, useId } from 'react';
 import {
   useInquiry, addInquiry, removeInquiry, toggleInquiry, inInquiry, clearInquiry,
@@ -10,6 +12,7 @@ import {
 import { serviceSlug } from './services.mjs';
 import { bumpService } from './popularity.mjs';
 import { safeMailto } from '../lib/safe-url.js';
+import { buildInquiryMailto } from '../lib/inquiry-email.mjs';
 import { track } from '../lib/analytics.js';
 import './service-detail.css';
 
@@ -51,14 +54,16 @@ export function InquiryBar() {
 }
 
 // The floating button + slide-out drawer. Mount once (App) on the services routes.
-export default function InquiryDrawer({ email = 'dx@greatstonesoftware.co.uk' }) {
+export default function InquiryDrawer({ email: inboxEmail = 'dx@greatstonesoftware.co.uk' }) {
   const items = useInquiry();
   const [open, setOpen] = useState(false);
-  const [sent, setSent] = useState(false);
+  // phase: 'form' (entering) | 'sending' | 'done' (captured server-side) | 'fallback' (email opened) | 'error'
+  const [phase, setPhase] = useState('form');
+  const [mailHref, setMailHref] = useState('#');
   const uid = useId();
   const closeRef = useRef(null);
 
-  useEffect(() => onOpenInquiryDrawer(() => { setOpen(true); setSent(false); }), []);
+  useEffect(() => onOpenInquiryDrawer(() => { setOpen(true); setPhase('form'); }), []);
   useEffect(() => { if (open && closeRef.current) closeRef.current.focus(); }, [open]);
   // close on Escape
   useEffect(() => {
@@ -67,42 +72,32 @@ export default function InquiryDrawer({ email = 'dx@greatstonesoftware.co.uk' })
     addEventListener('keydown', onKey); return () => removeEventListener('keydown', onKey);
   }, [open]);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const g = (k) => (fd.get(k) || '').toString().trim();
-    const company = g('company'), name = g('name');
-    const subject = items.length === 1
-      ? 'Service inquiry · ' + items[0].name
-      : 'Services inquiry · ' + items.length + ' services';
-    const lines = [
-      'I would like to inquire about the following Greatstone service' + (items.length === 1 ? '' : 's') + ':',
-      '',
-      ...items.map((it, i) => (i + 1) + '. ' + it.name + (it.category ? ' — ' + it.category : '')),
-      '',
-      '— About us —',
-      company ? 'Company: ' + company : '',
-      name ? 'Name: ' + name : '',
-      g('email') ? 'Work email: ' + g('email') : '',
-      '',
-      'What we are trying to solve:',
-      g('message') || '',
-    ].filter((l) => l !== undefined);
-    track('generate_lead', { form: 'service_inquiry', count: items.length, services: items.map((i) => i.slug).join(',') });
-    // best-effort capture into the studio inbox (no-op until migration 0023 is applied); never blocks the email
-    submitInquiry({ services: items, name, email: g('email'), company, message: g('message') });
-    const to = safeMailto(email);
-    if (to !== '#') {
-      const href = to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\n'));
+    const name = g('name'), company = g('company'), email = g('email'), message = g('message');
+    const services = items;
+    track('generate_lead', { form: 'service_inquiry', count: services.length, services: services.map((i) => i.slug).join(',') });
+    // the prefilled email is composed up front: offered as a fallback link on success, auto-opened on degradation.
+    const href = buildInquiryMailto(inboxEmail, services, { name, company, email, message });
+    setMailHref(href);
+    setPhase('sending');
+    const res = await submitInquiry({ services, name, email, company, message });
+    if (res && res.ok) { setPhase('done'); return; }
+    // capture did not land (backend unconfigured, migration absent, rate-limited or offline): never lose the lead.
+    if (href !== '#') {
       try { if (typeof window !== 'undefined') window.location.href = href; } catch (err) { /* ignore */ }
+      setPhase('fallback');
+    } else {
+      setPhase('error');
     }
-    setSent(true);
   };
 
   return (
     <>
       {items.length > 0 && (
-        <button className="inq-fab" onClick={() => { setOpen(true); setSent(false); }} aria-label={'Open your inquiry, ' + items.length + ' service' + (items.length === 1 ? '' : 's')}>
+        <button className="inq-fab" onClick={() => { setOpen(true); setPhase('form'); }} aria-label={'Open your inquiry, ' + items.length + ' service' + (items.length === 1 ? '' : 's')}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" /></svg>
           <span className="inq-fab-label">Inquiry</span>
           <span className="inq-fab-badge">{items.length}</span>
@@ -117,15 +112,28 @@ export default function InquiryDrawer({ email = 'dx@greatstonesoftware.co.uk' })
               <button ref={closeRef} className="inq-x" onClick={() => setOpen(false)} aria-label="Close inquiry">✕</button>
             </div>
 
-            {sent ? (
-              <div className="inq-sent" role="status">
+            {phase === 'done' ? (
+              <div className="inq-sent" role="status" aria-live="polite">
+                <div className="inq-sent-ico" aria-hidden="true">✓</div>
+                <h3>Thanks, we have it.</h3>
+                <p>Your inquiry is in. We will come back within a day with where each service fits, and what it is worth.</p>
+                <p className="inq-sent-alt">Prefer email? <a href={mailHref}>Open a prefilled message instead</a>.</p>
+              </div>
+            ) : phase === 'fallback' ? (
+              <div className="inq-sent" role="status" aria-live="polite">
                 <h3>Your email is ready.</h3>
-                <p>We’ve opened your email with the {items.length} service{items.length === 1 ? '' : 's'} listed and ready to send. If nothing opened, write to us directly:</p>
-                <a className="gs-btn primary" href={safeMailto(email)}>{email}</a>
+                <p>We could not log it directly just now, so we have opened a prefilled message with your {items.length} service{items.length === 1 ? '' : 's'} listed. Send it and we will pick it up.</p>
+                <a className="gs-btn primary" href={mailHref}>{inboxEmail}</a>
+              </div>
+            ) : phase === 'error' ? (
+              <div className="inq-sent" role="alert">
+                <h3>That did not go through.</h3>
+                <p>Please try again, or email us directly:</p>
+                <a className="gs-btn primary" href={safeMailto(inboxEmail)}>{inboxEmail}</a>
               </div>
             ) : items.length === 0 ? (
               <div className="inq-empty">
-                <p>Nothing here yet. Browse the catalogue and add the services you’d like to talk about — one, or several together.</p>
+                <p>Nothing here yet. Browse the catalogue and add the services you’d like to talk about, one or several together.</p>
                 <a className="gs-btn ghost" href="#go/services" onClick={() => setOpen(false)}>Browse services</a>
               </div>
             ) : (
@@ -142,7 +150,7 @@ export default function InquiryDrawer({ email = 'dx@greatstonesoftware.co.uk' })
                 <button className="inq-clear" type="button" onClick={clearInquiry}>Clear all</button>
 
                 <form className="inq-form" onSubmit={onSubmit} noValidate>
-                  <p className="inq-form-lead">Tell us a little about you and we’ll come back with where each one fits — and what it’s worth.</p>
+                  <p className="inq-form-lead">Tell us a little about you and we’ll come back with where each one fits, and what it’s worth.</p>
                   <div className="inq-row">
                     <label>Company<input className="inq-fld" name="company" type="text" autoComplete="organization" placeholder="Stonewell &amp; Co." /></label>
                     <label>Your name<input className="inq-fld" name="name" type="text" autoComplete="name" placeholder="Jane Stonewell" /></label>
@@ -150,8 +158,8 @@ export default function InquiryDrawer({ email = 'dx@greatstonesoftware.co.uk' })
                   <label>Work email<input className="inq-fld" name="email" type="email" autoComplete="email" placeholder="jane@stonewell.co" /></label>
                   <label>What are you trying to solve? <span className="inq-opt">(optional)</span>
                     <textarea className="inq-fld" name="message" rows={3} placeholder="A line on where the time goes, or what prompted this." /></label>
-                  <button className="gs-btn primary inq-send" type="submit">Send inquiry ({items.length})</button>
-                  <p className="inq-fine">Opens your email client with the service list filled in, ready to send. No obligation.</p>
+                  <button className="gs-btn primary inq-send" type="submit" disabled={phase === 'sending'} aria-busy={phase === 'sending'}>{phase === 'sending' ? 'Sending…' : 'Send inquiry (' + items.length + ')'}</button>
+                  <p className="inq-fine">We log your inquiry securely and reply within a day. No obligation.</p>
                 </form>
               </>
             )}

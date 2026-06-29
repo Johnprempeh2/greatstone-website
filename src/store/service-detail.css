@@ -1,5 +1,5 @@
 /* Service detail page (#service/<slug>) + the multi-select inquiry UI (toggle, bar, FAB, drawer).
-   Reuses store.css's sp-*/st-*/gs-btn product-detail classes; this file adds only the service-specific
+   Reuses store.css's sp-x / st-x / gs-btn product-detail classes; this file adds only the service-specific
    bits and the inquiry list. Brand tokens (--gs-*) come from the global site stylesheet. */
 
 /* ---- detail head ---- */
@@ -80,4 +80,9 @@ textarea.inq-fld{resize:vertical;line-height:1.5}
 .inq-empty,.inq-sent{text-align:center;padding:30px 6px;color:var(--gs-text-muted);line-height:1.6}
 .inq-empty .gs-btn,.inq-sent .gs-btn{margin-top:16px}
 .inq-sent h3{font-size:1.2rem;font-weight:800;color:var(--gs-text);margin-bottom:8px}
+.inq-sent-ico{display:inline-grid;place-items:center;width:46px;height:46px;margin:0 auto 14px;border-radius:999px;background:var(--gs-accent-soft,rgba(200,255,0,.12));color:var(--gs-accent);font-size:1.4rem;font-weight:800}
+.inq-sent-alt{margin-top:14px;font-size:.85rem;color:var(--gs-faint)}
+.inq-sent-alt a{color:var(--gs-accent);border-bottom:1px solid transparent}
+.inq-sent-alt a:hover,.inq-sent-alt a:focus-visible{border-bottom-color:var(--gs-accent)}
+.inq-send[disabled]{opacity:.6;cursor:progress}
 @media(prefers-reduced-motion:reduce){.inq-overlay,.inq-drawer{animation:none}}

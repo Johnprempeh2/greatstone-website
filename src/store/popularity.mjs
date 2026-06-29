@@ -5,7 +5,9 @@
 // DEFINER — no direct table writes). Also mirrors each event to GA4. Module singleton +
 // useSyncExternalStore so the catalogue's "Popular" surface re-derives the moment counts move.
 import { useSyncExternalStore } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+// The Supabase client is imported DYNAMICALLY (inside loadGlobalPopularity + bumpService) rather than
+// statically: the public service catalogue pulls this module, so a static import would ship the ~120 KB
+// Supabase client to every visitor. Deferring it loads the client only on the first global read/write.
 
 const KEY = 'gs_service_pop_v1';   // local cache of the global scores (warm start + offline fallback)
 const SEEN = 'gs_service_pop_seen_v1'; // per-session view dedupe so a refresh can't inflate a view
@@ -34,10 +36,11 @@ let loadPromise = null;
 // Pull the global aggregate once (idempotent — repeated calls reuse the in-flight/last promise). Sets it
 // as the authoritative base; the session's optimistic bumps stay layered on top.
 export function loadGlobalPopularity() {
-  if (!supabase) return Promise.resolve();
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
     try {
+      const { supabase } = await import('../lib/supabase.mjs');
+      if (!supabase) return;
       const { data, error } = await supabase.from('service_popularity').select('slug,views,inquiries');
       if (error || !Array.isArray(data)) return;
       const g = {};
@@ -63,8 +66,12 @@ export function bumpService(slug, kind = 'view') {
   const w = kind === 'inquiry' ? 3 : 1;
   optimistic[slug] = (optimistic[slug] || 0) + w; // session delta — recompute() persists the merged snapshot
   recompute();
-  // write through to the global counter (fire-and-forget; failures are non-fatal)
-  if (supabase) { try { supabase.rpc('bump_service_popularity', { p_slug: GTM_SAFE(slug), p_kind: kind }).then(() => {}, () => {}); } catch { /* ignore */ } }
+  // write through to the global counter (fire-and-forget; failures are non-fatal). Dynamic import keeps the
+  // Supabase client out of the eager public bundle; it loads on the first write.
+  import('../lib/supabase.mjs').then(({ supabase }) => {
+    if (!supabase) return;
+    try { supabase.rpc('bump_service_popularity', { p_slug: GTM_SAFE(slug), p_kind: kind }).then(() => {}, () => {}); } catch { /* ignore */ }
+  }, () => {});
 }
 
 // the most-interacted slugs, highest first (only those with any interaction)

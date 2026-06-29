@@ -4,7 +4,10 @@
 // the drawer all share one source of truth without a provider. Mirrors store/cart.mjs, kept deliberately
 // simpler: dedupe by slug, no quantity, no backend.
 import { useSyncExternalStore } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+// NOTE: the Supabase client is imported DYNAMICALLY inside submitInquiry (below), not statically. The public
+// service catalogue pulls this module via the InquiryToggle, so a static import would ship the whole Supabase
+// client (~120 KB) to every visitor who lands on a services page. Deferring it keeps it out of first paint;
+// it loads only when a visitor actually submits an inquiry.
 
 const KEY = 'gs_service_inquiry_v1';
 const subs = new Set();
@@ -47,8 +50,10 @@ export function onOpenInquiryDrawer(f) { openSubs.add(f); return () => openSubs.
 // isn't applied yet — the drawer keeps its prefilled-email flow regardless, so a submission never DEPENDS
 // on this succeeding (the email is the guaranteed path; this just also logs it for the admin inbox).
 export async function submitInquiry({ services = [], name, email, company, message } = {}) {
-  if (!supabase || !Array.isArray(services) || !services.length) return { ok: false };
+  if (!Array.isArray(services) || !services.length) return { ok: false };
   try {
+    const { supabase } = await import('../lib/supabase.mjs');
+    if (!supabase) return { ok: false };
     const { data, error } = await supabase.rpc('submit_service_inquiry', {
       p_services: services.map((s) => ({ slug: s.slug, name: s.name, category: s.category || '' })),
       p_name: name || null, p_email: email || null, p_company: company || null, p_message: message || null,
