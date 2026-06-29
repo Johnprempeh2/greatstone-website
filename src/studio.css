@@ -205,6 +205,19 @@
 .gs-cmd-item.is-sel .gs-cmd-label{color:#fff}
 .gs-cmd-hint{font-size:.72rem;color:var(--gs-accent);font-weight:700}
 .gs-cmd-empty{padding:22px 14px;text-align:center;color:var(--gs-faint);font-size:.86rem}
+/* keyboard-shortcuts overlay (cycle 20) — shares the gs-cmd shell */
+.gs-sc-body{max-height:64vh;overflow-y:auto;padding:6px 18px 18px}
+.gs-sc-intro{margin:10px 0 14px;font-size:.8rem;color:var(--gs-faint)}
+.gs-sc-intro kbd{font-size:.66rem;font-weight:800;color:var(--gs-text);border:1px solid var(--gs-border-soft);border-radius:6px;padding:1px 6px}
+.gs-sc-group{margin:0 0 18px}
+.gs-sc-grouptitle{margin:0 0 8px;font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-accent)}
+.gs-sc-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.gs-sc-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 10px;border-radius:9px}
+.gs-sc-row:hover{background:rgba(255,255,255,.03)}
+.gs-sc-label{font-size:.88rem;font-weight:600;color:var(--gs-text)}
+.gs-sc-hint{font-weight:500;color:var(--gs-faint)}
+.gs-sc-keys{display:inline-flex;gap:4px;flex:0 0 auto}
+.gs-sc-keys kbd{min-width:22px;text-align:center;font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:800;color:var(--gs-text);background:#242724;border:1px solid var(--gs-border-soft);border-bottom-width:2px;border-radius:6px;padding:3px 7px}
 
 /* ---------- slide-over panels (SEO, history) ---------- */
 .gs-panel{position:fixed;top:0;right:0;bottom:0;z-index:1500;width:min(420px,94vw);background:#161816;

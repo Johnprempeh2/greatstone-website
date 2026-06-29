@@ -80,6 +80,7 @@ function IntelBoot() {
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
+import ShortcutsOverlay from './cms/ShortcutsOverlay.jsx';
 import SeoPanel from './cms/SeoPanel.jsx';
 import VersionHistory from './cms/VersionHistory.jsx';
 import ActivityPanel from './cms/ActivityPanel.jsx';
@@ -331,6 +332,7 @@ export default function App() {
   const [mode, setMode] = useState('view');
   const [query, setQuery] = useState('');
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [panel, setPanel] = useState(null);        // 'seo' | 'history' | null
   const [savedAt, setSavedAt] = useState(null);
   const [sectionBrowse, setSectionBrowse] = useState(''); // which page the Saved-sections block browser shows
@@ -1037,7 +1039,8 @@ export default function App() {
     flash('Added ' + (def ? def.label : type));
   }
 
-  // Cmd/Ctrl-K palette, Cmd/Ctrl-S publish (intercepts the browser save), Escape closes overlays
+  // Cmd/Ctrl-K palette, Cmd/Ctrl-S publish (intercepts the browser save), "?" shortcuts reference,
+  // Escape closes the topmost overlay.
   useEffect(() => {
     const onKey = (e) => {
       const k = e.key.toLowerCase();
@@ -1047,11 +1050,16 @@ export default function App() {
         if (mode !== 'edit') return;
         if (canPublish) publish(page.data);
         else flash('Changes autosave. Request review to get it published.');
-      } else if (k === 'escape') { if (cmdOpen) setCmdOpen(false); else if (panel) setPanel(null); }
+      } else if (e.key === '?' && canEdit && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        // open the shortcuts reference — but never while the editor is typing into a field
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+        e.preventDefault(); setShortcutsOpen(true);
+      } else if (k === 'escape') { if (shortcutsOpen) setShortcutsOpen(false); else if (cmdOpen) setCmdOpen(false); else if (panel) setPanel(null); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [panel, cmdOpen, mode, page, canPublish]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [panel, cmdOpen, shortcutsOpen, mode, page, canPublish, canEdit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commands = useMemo(() => {
     if (!cmdOpen) return []; // the palette is the only consumer; don't rebuild this list on every edit keystroke
@@ -1081,6 +1089,7 @@ export default function App() {
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
       cmds.push({ id: 'inventory', group: 'Admin', label: 'Content inventory (word counts, read time, thin pages)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/inventory'; } });
       cmds.push({ id: 'blocks', group: 'Admin', label: 'Block usage (which components are used / unused)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/blocks'; } });
+      cmds.push({ id: 'shortcuts', group: 'Help', label: 'Keyboard shortcuts', hint: '?', run: () => setShortcutsOpen(true) });
       cmds.push({ id: 'templates', group: 'Admin', label: 'New page from template', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/templates'; } });
       cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
       if (canManageUsers) cmds.push({ id: 'gettingstarted', group: 'Admin', label: 'Getting started (studio setup guide)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/gettingstarted'; } });
@@ -1122,6 +1131,7 @@ export default function App() {
       {styleTag}
       <ConsentBanner />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={commands} />
+      <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       {storageError && (
         <div className="gs-banner gs-banner-warn" role="alert">
           Storage is full. Recent changes won’t survive a reload — trim version history or publish to free space.
