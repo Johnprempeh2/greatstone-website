@@ -694,3 +694,8 @@
     min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center;
   }
 }
+
+/* service inquiries detail row (cycle: inquiries inbox) */
+.ca-inq-detail{padding:12px 16px;background:rgba(255,255,255,.02);font-size:.85rem;color:var(--gs-text,#f5f5f5)}
+.ca-inq-detail ul{margin:6px 0 10px;padding-left:18px}
+.ca-inq-detail p{margin:6px 0}

@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect, useId } from 'react';
 import {
   useInquiry, addInquiry, removeInquiry, toggleInquiry, inInquiry, clearInquiry,
-  openInquiryDrawer, onOpenInquiryDrawer,
+  openInquiryDrawer, onOpenInquiryDrawer, submitInquiry,
 } from './inquiry.mjs';
 import { serviceSlug } from './services.mjs';
 import { bumpService } from './popularity.mjs';
@@ -89,6 +89,8 @@ export default function InquiryDrawer({ email = 'dx@greatstonesoftware.co.uk' })
       g('message') || '',
     ].filter((l) => l !== undefined);
     track('generate_lead', { form: 'service_inquiry', count: items.length, services: items.map((i) => i.slug).join(',') });
+    // best-effort capture into the studio inbox (no-op until migration 0023 is applied); never blocks the email
+    submitInquiry({ services: items, name, email: g('email'), company, message: g('message') });
     const to = safeMailto(email);
     if (to !== '#') {
       const href = to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\n'));

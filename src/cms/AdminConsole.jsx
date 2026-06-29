@@ -63,6 +63,7 @@ function buildNav(attention = {}) {
       { id: 'cat-fx', label: 'Currency (FX)', type: 'commerce', tab: 'fx' },
       { id: 'cat-orders', label: 'Orders', type: 'commerce', tab: 'orders' },
       { id: 'cat-quotes', label: 'Quotes', type: 'commerce', tab: 'quotes' },
+      { id: 'cat-inquiries', label: 'Service inquiries', type: 'commerce', tab: 'inquiries' },
       { id: 'cat-bulk', label: 'Import / export', type: 'commerce', tab: 'bulk' },
       { id: 'store', label: 'View live store', type: 'link' },
     ] },

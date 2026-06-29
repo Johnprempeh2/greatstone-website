@@ -4,6 +4,7 @@
 // the drawer all share one source of truth without a provider. Mirrors store/cart.mjs, kept deliberately
 // simpler: dedupe by slug, no quantity, no backend.
 import { useSyncExternalStore } from 'react';
+import { supabase } from '../lib/supabase.mjs';
 
 const KEY = 'gs_service_inquiry_v1';
 const subs = new Set();
@@ -40,3 +41,18 @@ export function clearInquiry() { if (items.length) commit([]); }
 const openSubs = new Set();
 export function openInquiryDrawer() { openSubs.forEach((f) => f()); }
 export function onOpenInquiryDrawer(f) { openSubs.add(f); return () => openSubs.delete(f); }
+
+// Best-effort capture of an inquiry into the studio inbox (Supabase rpc submit_service_inquiry, migration
+// 0023). Returns { ok, id?, error? }. A graceful no-op when the backend isn't configured or the migration
+// isn't applied yet — the drawer keeps its prefilled-email flow regardless, so a submission never DEPENDS
+// on this succeeding (the email is the guaranteed path; this just also logs it for the admin inbox).
+export async function submitInquiry({ services = [], name, email, company, message } = {}) {
+  if (!supabase || !Array.isArray(services) || !services.length) return { ok: false };
+  try {
+    const { data, error } = await supabase.rpc('submit_service_inquiry', {
+      p_services: services.map((s) => ({ slug: s.slug, name: s.name, category: s.category || '' })),
+      p_name: name || null, p_email: email || null, p_company: company || null, p_message: message || null,
+    });
+    return error ? { ok: false, error } : { ok: true, id: data };
+  } catch (error) { return { ok: false, error }; }
+}

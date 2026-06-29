@@ -9,6 +9,7 @@ import PricingRules from './PricingRules.jsx';
 import BulkImport from './BulkImport.jsx';
 import OrdersManager from './OrdersManager.jsx';
 import QuotesManager from './QuotesManager.jsx';
+import InquiriesManager from './InquiriesManager.jsx';
 import FxRateEditor from './FxRateEditor.jsx';
 import ClientsManager from './ClientsManager.jsx';
 import './store.css';
@@ -44,6 +45,7 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
           <button className={tab === 'fx' ? 'on' : ''} onClick={() => setTab('fx')}>Currency (FX)</button>
           <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>Orders</button>
           <button className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
+          <button className={tab === 'inquiries' ? 'on' : ''} onClick={() => setTab('inquiries')}>Inquiries</button>
           <button className={tab === 'clients' ? 'on' : ''} onClick={() => setTab('clients')}>Clients &amp; DX</button>
           <button className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
         </div>
@@ -54,7 +56,7 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
       </div>
-      {tab === 'pricing' ? <PricingRules staff={staff} /> : tab === 'fx' ? <FxRateEditor staff={staff} /> : tab === 'orders' ? <OrdersManager staff={staff} /> : tab === 'quotes' ? <QuotesManager staff={staff} /> : tab === 'clients' ? <ClientsManager staff={staff} /> : tab === 'bulk' ? <BulkImport staff={staff} /> : <OfferingsManager staff={staff} />}
+      {tab === 'pricing' ? <PricingRules staff={staff} /> : tab === 'fx' ? <FxRateEditor staff={staff} /> : tab === 'orders' ? <OrdersManager staff={staff} /> : tab === 'quotes' ? <QuotesManager staff={staff} /> : tab === 'inquiries' ? <InquiriesManager staff={staff} /> : tab === 'clients' ? <ClientsManager staff={staff} /> : tab === 'bulk' ? <BulkImport staff={staff} /> : <OfferingsManager staff={staff} />}
     </>
   );
 }
