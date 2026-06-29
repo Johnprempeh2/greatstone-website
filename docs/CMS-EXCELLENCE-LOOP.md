@@ -84,6 +84,11 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 20 — Keyboard shortcuts & command reference (enablement).** A searchable shortcuts overlay opened
   from anywhere with "?" (or a Cmd-K command). Every chord is grounded in a real handler so the reference
   never lies. First HELP/reference surface; the studio's command set had grown with nowhere to discover it.
+- **Cycle 21 — Document outline + skipped-heading checker (a11y / structure).** A per-page heading TREE
+  (h1→h2→h3, built from the placed sections) + a WCAG 1.3.1 heading-ORDER audit (skipped-level, not-h1-first).
+  The cycle-20 parked lead, now shipped TRUTHFULLY: a per-block headingsOf extractor mirrors each block's real
+  multi-heading emission, proven against the live DOM (6/7 block pages exact; the dynamic Intelligence hub
+  page excluded + noted). Complements c7 (which owns heading PRESENCE); zero rule-id overlap.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -108,6 +113,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 18 | Composition analytics | **Block usage** — a read-only, SORTABLE table of every registered block TYPE: instances, page count, the pages that use it (deep-links), category, + an Unused chip & "Never placed" callout. Pure block-usage-model.mjs (10 tests, STORE-FREE): analyzeBlocks(state, knownTypes, categories) → {rows, extras, summary}; seeds every known type at 0 so unused surface; knownTypes = Object.keys(config.components) injected by App. Walks the UNION of order + Object.keys(pages) so the off-order `products`/Storefront isn't a false "unused". WCAG-AA sortable table (clone of ContentInventoryPanel). Badge = unused count, OUT of total. Section id `blocks` | `8f0dfa4` | NON-REDUNDANT: first block-type→pages map. Content inventory (c15) counts WORDS not types (its only type touch is maxBlockType for the BULK flag); PagesPanel shows a block COUNT; link-audit orphans are PAGES not component types. Read-only |
 | 19 | Safe-actions + collaboration | **Bulk page metadata** — the c14 multi-select bar (PagesPanel) extended from status-only to a three-verb metadata bar: Set date (datetime-local → bulkSetSchedule), Add note…, Assign… (both via the focus-trapping ask() modal → bulkSetNote / bulkSetAssignee), + reversible Clear dates / Clear notes / Unassign. Two pure STORE-FREE models: bulk-meta.mjs (10 tests) folds the c12/c13/c19 per-slug helpers across a selection → {state, count} (same-ref on 0, ghost-skip, NaN-ts no-op), + assignee-model.mjs (8 tests) — page.assignee={who,by,ts}, a clone of notes-model. Reuses the c14 selection state + ghost-drop useEffect AS-IS; 6 App *Mut handlers mirror bulkStatusMut. No new route/panel | `2008559` | NON-REDUNDANT: c14 mutates ONLY status+statusHistory (status-only by construction); c12 schedule / c13 note are SINGLE-page; bulk metadata-SET is net-new. assignee is a brand-new field (grep: zero prior hits) + a new persona (the editorial manager). Additive + REVERSIBLE (every set has a clear; publishAt never triggers go-live) |
 | 20 | Enablement (help) | **Keyboard shortcuts & command reference** — a searchable overlay (clone of CommandPalette's a11y shell: role=dialog/aria-modal, focus-restore, scroll-lock, Esc, Tab-trap) opened anywhere via "?" or a Cmd-K command, listing every studio shortcut grouped (Anywhere / In the editor / In the palette) as <kbd> chords. Pure shortcuts-model.mjs (8 tests, STORE-FREE): a frozen SHORTCUT_GROUPS catalogue + formatChord (⌘/⇧ on Mac, Ctrl/Shift else) + chordLabel (spoken aria form) + matchShortcuts(groups, query, isMac). "?" is canEdit-gated + suppressed while typing in a field. No new route/panel | `9555007` | NON-REDUNDANT: first HELP/reference surface. CommandPalette IS the palette (not a reference); Getting started (c16) is a setup checklist. Every chord grounded in a real handler (⌘K/⌘S/Esc App.jsx, ⌘Z/⌘⇧Z Puck via UndoRedo.jsx, palette keys) — no invented shortcuts. Read-only |
+| 21 | A11y / structure | **Document outline + skipped-heading checker** — a per-page heading TREE (h1→h2→h3 nested list, level shown as a text tag + indent per WCAG 1.4.1) + heading-ORDER audit (skipped-level = a down-jump of >1; not-h1-first; WCAG 1.3.1). Two new pure STORE-FREE libs: headings-of.mjs (headingsOf(block) → ordered [{level,text}] mirroring each block's REAL multi-heading DOM emission — h2+per-item-h3, conditional skips, className="h3"-on-h2-element, sr-only/hardcoded h2, per-post h3) + outline-model.mjs (12 tests; buildOutline/buildSiteOutline; opts.dynamic excludes pages that render a live component). Reuses H1_BLOCKS/headingText from a11y-check (now exported). Panel clones A11yPanel. Section id `outline`, badge OUT of total. PROVEN truthful by a full DOM cross-check (services 96 ⊆ DOM 105; climb/contact/industries/method/proof exact; Intelligence page = a live hub, marked dynamic) | `50eb9b6` | NON-REDUNDANT: c7 owns heading PRESENCE (no-h1/multi-h1/empty-h1); this owns heading ORDER (skipped-level/not-h1-first) + the TREE view (no analogue in 1-20). Zero rule-id overlap; badge excluded from studioAttention.total so it never double-counts c7. Read-only |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -132,9 +138,18 @@ re-validate redundancy against the current code before building.
      **Content inventory** — ✅ cycle 15 (`a4a0f25`). **Getting started** — ✅ cycle 16 (`3c02e4d`).
      **Page templates** — ✅ cycle 17 (`a0a5155`). **Block usage** — ✅ cycle 18 (`8f0dfa4`).
      **Bulk page metadata (schedule + note + assignee)** — ✅ cycle 19 (`2008559`).
-     **Keyboard shortcuts reference** — ✅ cycle 20 (`9555007`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-20): **Document outline + skipped-heading
-     checker** — PARKED-with-a-plan (cycle 20 review RESCOPED it, did NOT reject): genuinely fresh vs c7 (which is
+     **Keyboard shortcuts reference** — ✅ cycle 20 (`9555007`). **Document outline** — ✅ cycle 21 (`50eb9b6`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-21): **CTA / conversion inventory** —
+     the standing next lead (cycle-21 scouts A+C grounded it): per-page list of call-to-action links (label →
+     resolved destination, reusing link-audit's LINK_PROPS walk + linkPageSlug) + a LABEL-CONSISTENCY finding
+     (the seed reaches #go/method via 5 different labels incl. a casing dupe "See the Method" vs "See the
+     method", and an empty-label CTA on About) + dead-end-page detection. POPULATED with real findings on seed;
+     the non-redundancy bar is vs c1 (which checks link VALIDITY + INBOUND orphans, NOT outbound conversion
+     completeness or label consistency) — a review must confirm it clears it. A **review-requested boolean** on
+     the c19 assignee model (pairs with a demo flag so it isn't empty). _Learning from c21: any feature that
+     reads block CONTENT must mirror the REAL per-block DOM emission AND exclude pages that render live/runtime
+     components (e.g. `current === 'insights'` → the AI hub); verify against the live DOM before shipping._
+     PARKED-FYI (now SHIPPED c21): ~~document outline~~. The original parked notes: genuinely fresh vs c7 (which is
      H1-only) AND populated on seed, BUT a TRUTHFUL build needs `headingsOf(block) → [{level,text}]` reading each
      block's REAL multi-heading emission (most section blocks render an h2 PLUS per-item h3s — FeatureGrid/Steps/
      Faq/ServiceCards/CaseStudy etc.; some headings are conditional on a non-empty prop; MaturityMap has an sr-only
