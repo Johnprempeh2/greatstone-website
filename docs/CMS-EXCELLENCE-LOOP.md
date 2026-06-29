@@ -77,6 +77,10 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 18 — Composition analytics (block usage).** A read-only, sortable table mapping each registered
   block TYPE → the pages that use it, with instance counts + an UNUSED-component list. A new content-analytics
   axis (which components, where) orthogonal to cycle 15's word-volume; spans every page.
+- **Cycle 19 — Bulk page metadata (safe-actions + collaboration).** The c14 multi-select bar grows from
+  status-only to a three-verb bulk-metadata bar — set ONE publish date / note / assignee across the selection
+  + reversible clears — and introduces a net-new collaboration field (page.assignee, a directed owner). The
+  freshest non-redundant multi-page write; additive + fully reversible.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -99,6 +103,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 16 | Enablement | **Getting started** — a read-only first-run setup guide (first in the Content rail): a % meter + a checklist deriving each task's done-ness from real state, with a "Set up" deep-link per unfinished task + a studio map. Pure onboarding-model.mjs (8 tests, STORE-FREE): deriveChecklist(state, opts) → {items, doneCount, total, pct, allDone}; `done` for branded fields = CHANGED FROM the injected Greatstone default (DEFAULT_SETTINGS ships them pre-filled, so non-empty would falsely read 100%). Clones SiteHealthPanel; manager-gated (most tasks are Site settings = need:'manage'); badgeless, OUT of total. Section id `gettingstarted` | `3c02e4d` | NON-REDUNDANT: first ENABLEMENT/orientation surface. OverviewPanel shows live-work counts (published/drift/invites/activity) — no notion of "unconfigured"; Site health (c11) scores content DEFECTS, never reads settings/nav/published-count. Disjoint quadrant. Read-only, no schema bump |
 | 17 | Authoring | **Page templates / starters** — a Templates gallery (cards: label/blurb/block-type chips) that seeds a brand-NEW draft from a curated recipe (Blank/Landing/Article/Service/Proof) + opens it in the editor. Pure templates-model.mjs (5 tests, STORE-FREE, imports only sections-model): a frozen STARTERS array of REAL puck.config block types + buildStarterContent(starter, mintId) (remapIds per block; the test pins types vs a 37-entry MODULES copy so a typo can't ship a dead block). ONE store fn addPageFromStarter (near-clone of addPageTo; draft, published=null, deletable); addPageTo/blk/seedPage unchanged. Section id `templates` | `a0a5155` | NON-REDUNDANT: first AUTHORING/create-a-page feature. Saved sections inserts ONE block; duplicatePage clones a LIVE page (needs an exemplar + carries its copy/SEO); a starter is a page recipe with ZERO exemplar. Static-in-code (no schema bump, no user-saved templates), creates a reversible draft (write-safe) |
 | 18 | Composition analytics | **Block usage** — a read-only, SORTABLE table of every registered block TYPE: instances, page count, the pages that use it (deep-links), category, + an Unused chip & "Never placed" callout. Pure block-usage-model.mjs (10 tests, STORE-FREE): analyzeBlocks(state, knownTypes, categories) → {rows, extras, summary}; seeds every known type at 0 so unused surface; knownTypes = Object.keys(config.components) injected by App. Walks the UNION of order + Object.keys(pages) so the off-order `products`/Storefront isn't a false "unused". WCAG-AA sortable table (clone of ContentInventoryPanel). Badge = unused count, OUT of total. Section id `blocks` | `8f0dfa4` | NON-REDUNDANT: first block-type→pages map. Content inventory (c15) counts WORDS not types (its only type touch is maxBlockType for the BULK flag); PagesPanel shows a block COUNT; link-audit orphans are PAGES not component types. Read-only |
+| 19 | Safe-actions + collaboration | **Bulk page metadata** — the c14 multi-select bar (PagesPanel) extended from status-only to a three-verb metadata bar: Set date (datetime-local → bulkSetSchedule), Add note…, Assign… (both via the focus-trapping ask() modal → bulkSetNote / bulkSetAssignee), + reversible Clear dates / Clear notes / Unassign. Two pure STORE-FREE models: bulk-meta.mjs (10 tests) folds the c12/c13/c19 per-slug helpers across a selection → {state, count} (same-ref on 0, ghost-skip, NaN-ts no-op), + assignee-model.mjs (8 tests) — page.assignee={who,by,ts}, a clone of notes-model. Reuses the c14 selection state + ghost-drop useEffect AS-IS; 6 App *Mut handlers mirror bulkStatusMut. No new route/panel | `2008559` | NON-REDUNDANT: c14 mutates ONLY status+statusHistory (status-only by construction); c12 schedule / c13 note are SINGLE-page; bulk metadata-SET is net-new. assignee is a brand-new field (grep: zero prior hits) + a new persona (the editorial manager). Additive + REVERSIBLE (every set has a clear; publishAt never triggers go-live) |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -122,18 +127,18 @@ re-validate redundancy against the current code before building.
      **Editorial notes** — ✅ cycle 13 (`526e4fb`). **Bulk-safe status** — ✅ cycle 14 (`99c4279`).
      **Content inventory** — ✅ cycle 15 (`a4a0f25`). **Getting started** — ✅ cycle 16 (`3c02e4d`).
      **Page templates** — ✅ cycle 17 (`a0a5155`). **Block usage** — ✅ cycle 18 (`8f0dfa4`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-18): **Bulk schedule / bulk note**
-     (the strong c19 lead — scout B grounded it; reuse the c14 multi-select harness on PagesPanel so the
-     action-bar also offers "Set publish date…" → setSchedule on each selected page [c12] and "Add note…" →
-     setNote on each [c13]; a pure bulk-meta.mjs + node --test; additive+reversible, genuinely new capability
-     [c14 is status-only], multi-page; DEEPENS safe-actions but high value); **per-page collaboration extras**
-     (an additive page.assignee / review-requested flag — extends c13); a **keyboard-shortcuts / power-user
-     reference** (enablement-adjacent, low-risk). DEAD/PARKED for cycle 18 (verified): backlinks report (scout
-     A — genuinely distinct from c1 orphans BUT the seed inbound map is nav-dominated so the "story" is thin,
-     and a spatial graph has a heavy a11y cost; a LIST-based version is a fine future cycle). ~~**Page
-     templates**~~ (✅ c17), ~~**Content depth**~~ (✅ c15), ~~**Block usage**~~ (✅ c18),
-     **per-page collaboration extras** (assignee
-     / review-requested flag — extends c13's collaboration family with another additive field), or a
+     **Bulk page metadata (schedule + note + assignee)** — ✅ cycle 19 (`2008559`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-19): **Assignee / "my work" collaboration
+     panel** — a read-only surface over the NEW page.assignee field (c19): listAssignees() already exists; an
+     "Assigned to <me>" / "Review requested" filter on PagesPanel + an admin panel + optional rail badge. (It's
+     a VIEW so empty-on-seed until pages are assigned — best paired with seeding a couple of demo assignments,
+     or shipped as a PagesPanel filter rather than a standalone panel.) A **review-requested boolean** extending
+     the same assignee model (a lighter "needs a look" flag, distinct from a named owner). A **keyboard-shortcuts /
+     power-user reference** (enablement; thin but valid as a small add). DEAD/PARKED (verified): backlinks report
+     (REJECTED cycle 19 — redundant with nav-coverage's missingFromNav + OUT_OF_NAV=['contact','products'], and
+     degenerate on the seed: 8/9 pages flat at inbound=1, the only flag is the already-excluded contact; revisit
+     only if the seed gains real page-to-page body links). ~~**Page templates**~~ (✅ c17), ~~**Content depth**~~
+     (✅ c15), ~~**Block usage**~~ (✅ c18), ~~**Bulk schedule/note**~~ (✅ c19, folded assignee in), or a
      **One-click "add untracked image to library"** on c10's untracked list via addAsset (additive+reversible
      safe action). DEAD/PARKED (verified): orphan finder (link-audit owns it); freshness/staleness (no
      per-page edit timestamp); "what's unpublished" (ReleaseBoard does it); DELETE-unused-media (removeAsset
