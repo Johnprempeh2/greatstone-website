@@ -64,6 +64,27 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 .h2 { font-size:clamp(2rem,4.5vw,3.6rem); }
 .h3 { font-size:clamp(1.3rem,2.4vw,2rem); }
 .accent { color:var(--gs-accent); }
+/* Inline rich-text runs (RichTextField). The closed brand-class set lives in lib/richtext-marks.mjs and is
+   the ONLY span class the inline sanitiser permits, so colour stays on-brand and AA by construction. The
+   highlight boxes ("text box behind text") bake a dark ink so they pass contrast on any background. */
+.gs-rt-c-accent { color:var(--gs-accent); }
+.gs-rt-c-teal   { color:var(--gs-teal); }
+.gs-rt-c-muted  { color:var(--gs-text-muted); }
+.gs-rt-bg-accent, .gs-rt-bg-teal {
+  color:#0e1611; padding:0.04em 0.32em; border-radius:0.22em; font-weight:600;
+  -webkit-box-decoration-break:clone; box-decoration-break:clone;
+}
+.gs-rt-bg-accent { background:var(--gs-accent); }
+.gs-rt-bg-teal   { background:var(--gs-teal); }
+/* Per-block "surround / text box" (block-style.mjs Appearance group). Enum-only classes, so a block box is
+   always on-brand. Default (none) adds no class, so untouched blocks render identically. */
+.gs-surround { border-radius:16px; padding:clamp(20px,3vw,36px); }
+.gs-surround-card    { background:var(--gs-bg-card,#1a1a1a); border:1px solid var(--gs-border,rgba(255,255,255,.1)); }
+.gs-surround-soft    { background:var(--gs-accent-soft,rgba(200,255,0,.06)); border:1px solid var(--gs-accent-dim,rgba(200,255,0,.16)); }
+.gs-surround-emerald { background:var(--gs-emerald-deep,#0e3122); border:1px solid rgba(78,205,196,.22); }
+.gs-surround-outline { border:1px solid var(--gs-border,rgba(255,255,255,.14)); }
+.gs-pad-snug  { padding:clamp(12px,2vw,20px); }
+.gs-pad-roomy { padding:clamp(30px,4.5vw,56px); }
 .kicker { font-size:0.72rem; font-weight:700; letter-spacing:0.32em; text-transform:uppercase; color:var(--gs-accent); }
 .lead { font-size:clamp(1.05rem,1.6vw,1.35rem); color:var(--gs-text-muted); max-width:60ch; }
 .muted { color:var(--gs-text-muted); }

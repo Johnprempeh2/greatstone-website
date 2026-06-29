@@ -1,6 +1,9 @@
 import { useState, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { ldScript } from '../lib/ld-json.mjs';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import RichText from './RichText.jsx';
+import { stripTags } from '../lib/richtext-normalise.mjs';
 
 // FAQ: an accessible accordion that answers the objections a buyer raises before booking. Each row is
 // a real disclosure (button aria-expanded → region), independently togg*able, keyboard + screen-reader
@@ -17,7 +20,7 @@ export function Faq({ kicker, heading, intro, items = [], showSchema = true }) {
   // emit FAQPage schema only when this is the canonical FAQ for the page (showSchema); a secondary
   // instance (e.g. a recap FAQ on the home page) suppresses it so two FAQPage blobs never compete.
   const schema = showSchema && qa.length
-    ? ldScript({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })) })
+    ? ldScript({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: stripTags(it.a) } })) })
     : '';
   return (
     <section ref={ref} className="b-faq section--tight">
@@ -42,7 +45,7 @@ export function Faq({ kicker, heading, intro, items = [], showSchema = true }) {
                     height transition with no JS measurement; `inert` (not `hidden`) keeps the collapsed
                     panel out of the focus order and a11y tree while still allowing the open animation. */}
                 <div className="b-faq-a" id={uid + 'a' + i} role="region" aria-labelledby={uid + 'q' + i} inert={!isOpen ? '' : undefined}>
-                  <div className="b-faq-a-inner"><p>{it.a}</p></div>
+                  <div className="b-faq-a-inner"><RichText as="p" html={it.a} /></div>
                 </div>
               </div>
             );
@@ -94,7 +97,7 @@ export const puck = {
       type: 'array', label: 'Questions',
       arrayFields: {
         q: { type: 'text', label: 'Question' },
-        a: { type: 'textarea', label: 'Answer' },
+        a: { type: 'custom', label: 'Answer', render: (props) => <RichTextField {...props} /> },
       },
       defaultItemProps: { q: 'A question buyers ask?', a: 'A straight, concrete answer.' },
       getItemSummary: (it) => it.q || 'Question',

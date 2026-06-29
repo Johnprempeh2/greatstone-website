@@ -2,24 +2,26 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
-import { emphasize } from './emphasis.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import RichText from './RichText.jsx';
+import { APPEARANCE_FIELD, APPEARANCE_DEFAULT } from '../cms/style-field.jsx';
+import { appearanceClass } from '../lib/block-style.mjs';
 
 // The editorial "chapter" section the live homepage leans on: a numbered eyebrow, a big
 // honest headline, a paragraph, an optional accent coda line, and an optional ghost CTA
 // (e.g. home §03 "Explore the eight pillars" → method). Reused for several chapters.
-export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', puck }) {
+export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', appearance }) {
   const ref = useReveal();
-  const editing = puck?.isEditing;
   return (
     <section ref={ref} className={`b-chapter align-${align}`}>
-      <div className="wrap b-chapter-inner">
+      <div className={('wrap b-chapter-inner ' + appearanceClass(appearance)).trim()}>
         <div className="b-chapter-eyebrow" data-reveal>
           {index ? <span className="b-chapter-num">{index}</span> : null}
           {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
         </div>
         <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-chapter-body" data-reveal>{emphasize(body, editing)}</p> : null}
-        {coda ? <p className="b-chapter-coda" data-reveal>{emphasize(coda, editing)}</p> : null}
+        {body ? <RichText as="p" className="b-chapter-body" data-reveal html={body} /> : null}
+        {coda ? <RichText as="p" className="b-chapter-coda" data-reveal html={coda} /> : null}
         {ctaLabel ? <a className={'b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost')} {...resolveLink(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
@@ -61,8 +63,8 @@ export const puck = {
     eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
     headline: { type: 'text', label: 'Headline', contentEditable: true },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
-    coda: { type: 'textarea', label: 'Coda line (optional)', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
+    coda: { type: 'custom', label: 'Coda line (optional)', render: (props) => <RichTextField {...props} /> },
     align: { type: 'radio', label: 'Alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},
@@ -71,6 +73,7 @@ export const puck = {
     ctaVariant: { type: 'radio', label: 'Button style', options: [
       { label: 'Ghost', value: 'ghost' }, { label: 'Primary (solid)', value: 'primary' },
     ]},
+    appearance: APPEARANCE_FIELD,
   },
   defaultProps: {
     index: '01', eyebrow: 'Twenty Years Deep',
@@ -78,6 +81,7 @@ export const puck = {
     body: 'For two decades our team has modernised how organisations actually work (their tools, their processes, their people), and now the intelligent layer above them all.',
     coda: 'Digital transformation first. AI as the accelerator.',
     align: 'left', ctaLabel: '', ctaHref: '#', ctaVariant: 'ghost',
+    appearance: APPEARANCE_DEFAULT,
   },
   render: (props) => <Chapter {...props} />,
 };

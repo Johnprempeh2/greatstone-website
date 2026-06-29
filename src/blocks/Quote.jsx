@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
+import { APPEARANCE_FIELD, APPEARANCE_DEFAULT } from '../cms/style-field.jsx';
+import { appearanceClass } from '../lib/block-style.mjs';
 
 // initials fallback for the avatar when no photo is set (first letters of up to two words)
 const initials = (name) => String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -26,14 +28,14 @@ function QuoteAvatar({ photo, name }) {
 // face (photo or initials), a structured name/role/company, and an optional company logo, so a page can
 // close on a real, credible, attributed voice instead of an anonymous line or another CTA. The plain
 // variant (text + attr) is unchanged and fully backward-compatible.
-export function Quote({ text, attr, align = 'center', variant = 'plain', photo, name, role, company, companyLogo }) {
+export function Quote({ text, attr, align = 'center', variant = 'plain', photo, name, role, company, companyLogo, appearance }) {
   const ref = useReveal();
   // require an identity anchor (name or photo) so role/company alone never render a faceless empty card
   const hasCard = variant === 'card' && (name || photo);
   const roleLine = [role, company].filter(Boolean).join(', ');
   return (
     <section ref={ref} className={`b-quote align-${align}${hasCard ? ' has-card' : ''}`}>
-      <div className="wrap quote-wrap">
+      <div className={('wrap quote-wrap ' + appearanceClass(appearance)).trim()}>
         <blockquote className="quote" data-reveal><span className="mark" aria-hidden="true">“</span>{text}<span className="mark" aria-hidden="true">”</span></blockquote>
         {hasCard ? (
           <div className="quote-card" data-reveal>
@@ -83,12 +85,13 @@ export const puck = {
     photo: { type: 'custom', label: 'Photo (card, optional)', render: (props) => <MediaField {...props} /> },
     companyLogo: { type: 'custom', label: 'Company logo (card, optional)', render: (props) => <MediaField {...props} /> },
     align: { type: 'radio', label: 'Alignment', options: [{ label: 'Centre', value: 'center' }, { label: 'Left', value: 'left' }] },
+    appearance: APPEARANCE_FIELD,
   },
   defaultProps: {
     text: 'They didn’t hand us a deck and leave. They moved in, found the hours we were losing, and gave them back.',
     attr: 'Operations Director, national real-estate group',
     variant: 'plain', name: '', role: '', company: '', photo: '', companyLogo: '',
-    align: 'center',
+    align: 'center', appearance: APPEARANCE_DEFAULT,
   },
   render: (props) => <Quote {...props} />,
 };

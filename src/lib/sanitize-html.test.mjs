@@ -5,7 +5,8 @@
 // silently widen the allowlist. Runs under plain `node --test` (no DOM dependency).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ALLOWED, DROP_ENTIRELY, DEMOTE, isSafeHref, sanitizeHtml } from './sanitize-html.mjs';
+import { ALLOWED, DROP_ENTIRELY, DEMOTE, isSafeHref, sanitizeHtml, ALLOWED_INLINE, sanitizeInline } from './sanitize-html.mjs';
+import { RT_SPAN_CLASSES } from './richtext-marks.mjs';
 
 test('foreign-content / rawtext tags are dropped entirely and never allowed (mutation-XSS vectors)', () => {
   for (const tag of ['SCRIPT', 'STYLE', 'SVG', 'MATH', 'NOSCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'TEXTAREA', 'XMP']) {
@@ -45,4 +46,26 @@ test('sanitizeHtml returns empty string without a DOM (SSR / node guard)', () =>
   assert.equal(sanitizeHtml('<p>hi<script>alert(1)</script></p>'), ''); // no window in node → guarded
   assert.equal(sanitizeHtml(''), '');
   assert.equal(sanitizeHtml(null), '');
+});
+
+// ── inline rich-text profile ──
+test('the inline allowlist holds ONLY inline marks (no block/heading/list/foreign tags)', () => {
+  for (const t of ALLOWED_INLINE) assert.ok(!DROP_ENTIRELY.has(t), t + ' cannot be both inline-allowed and dropped');
+  for (const t of ['STRONG', 'EM', 'U', 'SPAN', 'A', 'BR']) assert.ok(ALLOWED_INLINE.has(t), t + ' should be inline-allowed');
+  // block/heading/list tags must NOT be inline-allowed (they unwrap to their text)
+  for (const t of ['P', 'DIV', 'H1', 'H2', 'H5', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'CODE', 'HR', 'IMG', 'B', 'I']) {
+    assert.ok(!ALLOWED_INLINE.has(t), t + ' must not be inline-allowed (b/i are aliased, blocks unwrap)');
+  }
+});
+
+test('the inline span-class allowlist is exactly the shared brand enum (single source of truth, no drift)', () => {
+  // sanitize-html.mjs imports RT_SPAN_CLASSES from richtext-marks.mjs, so this asserts they cannot diverge
+  assert.ok(RT_SPAN_CLASSES.size >= 5);
+  assert.ok(RT_SPAN_CLASSES.has('gs-rt-c-accent') && RT_SPAN_CLASSES.has('gs-rt-bg-teal'));
+});
+
+test('sanitizeInline returns empty string without a DOM (SSR / node guard)', () => {
+  assert.equal(sanitizeInline('<strong>hi</strong><script>alert(1)</script>'), ''); // no window in node → guarded
+  assert.equal(sanitizeInline(''), '');
+  assert.equal(sanitizeInline(null), '');
 });
