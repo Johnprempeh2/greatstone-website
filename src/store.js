@@ -953,6 +953,7 @@ export function duplicatePage(state, slug) {
   clone.published = null; // a duplicate is a draft — it must not inherit the source's live (public) projection
   clone.publishedBackground = null; // nor its source's published 3D scene
   clone.publishAt = null; // nor its source's publish embargo — a fresh draft is unscheduled
+  clone.note = null; // nor its source's editorial note — a fresh draft starts unannotated
   const i = state.order.indexOf(slug);
   const order = [...state.order]; order.splice(i + 1, 0, dup);
   return { ...state, order, pages: { ...state.pages, [dup]: clone }, _goto: dup };

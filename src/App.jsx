@@ -100,6 +100,7 @@ import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
 import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
 import SiteHealthPanel from './cms/SiteHealthPanel.jsx';
 import SchedulePanel from './cms/SchedulePanel.jsx';
+import NotesPanel from './cms/NotesPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import { checkVoice } from './lib/voice-check.mjs';
 import { checkA11y } from './lib/a11y-check.mjs';
@@ -108,6 +109,7 @@ import { auditNavCoverage } from './lib/nav-coverage.mjs';
 import { auditMedia } from './lib/media-audit.mjs';
 import { computeHealth } from './lib/site-health.mjs';
 import { setSchedule, clearSchedule, listSchedules } from './lib/schedule-model.mjs';
+import { setNote, clearNote, listNotes } from './lib/notes-model.mjs';
 import BackgroundPanel from './cms/BackgroundPanel.jsx';
 import StudioPanel from './cms/StudioPanel.jsx';
 import AdminConsole from './cms/AdminConsole.jsx';
@@ -578,7 +580,8 @@ export default function App() {
     // counted via links/access/seohealth/navcheck — adding it would double-count the same defects.
     // schedule badge = overdue count (a reminder, never a blocking defect, never auto-acts) — also OUT of total.
     const overdue = listSchedules(state, Date.now()).overdue.length;
-    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, total: pagesNeedingAction + pendingInvites + brokenLinks };
+    // notes badge = count of annotated pages (informational, OUT of total — a note is intent, not a defect).
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, notes: listNotes(state).length, total: pagesNeedingAction + pendingInvites + brokenLinks };
   }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, canManageUsers]);
 
   function flash(msg) {
@@ -596,6 +599,9 @@ export default function App() {
   // publish-schedule intent (reversible metadata; NEVER auto-publishes — go-live stays the gated publish()).
   const onSchedule = (slug, ts) => setState((s) => setSchedule(s, slug, ts));
   const onClear = (slug) => setState((s) => clearSchedule(s, slug));
+  // editorial notes (additive, reversible; a reminder, never a publish gate). Same actor source as publish().
+  const onSetNote = (slug, text) => setState((s) => setNote(s, slug, text, user ? user.email : null, Date.now()));
+  const onClearNote = (slug) => setState((s) => clearNote(s, slug));
 
   // publishing needs the publish capability (admins). Admins can publish directly from any
   // status (the fast-path — they hold the authority); editors must route through review and
@@ -982,6 +988,7 @@ export default function App() {
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
       cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
       cmds.push({ id: 'schedule', group: 'Admin', label: 'Publish schedule (set a publish date)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/schedule'; } });
+      cmds.push({ id: 'notes', group: 'Admin', label: 'Editorial notes (pin a note to a page)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/notes'; } });
       cmds.push({ id: 'redirects', group: 'Admin', label: 'Manage redirects', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/redirects'; } });
       cmds.push({ id: 'sections', group: 'Admin', label: 'Saved sections', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sections'; } });
       cmds.push({ id: 'new', group: 'Pages', label: 'New page…', run: newPage });
@@ -1103,6 +1110,7 @@ export default function App() {
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sitehealth: <SiteHealthPanel embedded report={healthReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { schedule: <SchedulePanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSchedule={onSchedule} onClear={onClear} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { notes: <NotesPanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSetNote={onSetNote} onClearNote={onClearNote} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { redirects: <RedirectsPanel embedded rows={listRedirects(state)} pages={state.pages} order={state.order} error={state._redirectError} onAdd={addRedirectMut} onRepoint={repointRedirect} onRemove={dropRedirect} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sections: <SavedSectionsPanel embedded sections={listSections(state)} pages={state.pages} order={state.order} current={current} browseSlug={browseSlug} browseBlocks={sectionBrowseBlocks} labelFor={labelFor} onBrowse={setSectionBrowse} onSave={saveSection} onInsert={insertSection} onRename={renameSavedSection} onRemove={removeSavedSection} onClose={onConsoleClose} /> } : {}),

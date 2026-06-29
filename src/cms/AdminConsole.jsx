@@ -29,6 +29,7 @@ function buildNav(attention = {}) {
       { id: 'navigation', label: 'Navigation', type: 'view', need: 'edit' },
       { id: 'releases', label: 'Releases', type: 'view', need: 'edit', badge: attention.releases },
       { id: 'schedule', label: 'Publish schedule', type: 'view', need: 'edit', badge: attention.schedule },
+      { id: 'notes', label: 'Editorial notes', type: 'view', need: 'edit', badge: attention.notes },
       { id: 'links', label: 'Link health', type: 'view', need: 'edit', badge: attention.links },
       { id: 'navcheck', label: 'Navigation health', type: 'view', need: 'edit', badge: attention.navcheck },
       { id: 'copy', label: 'Copy coach', type: 'view', need: 'edit', badge: attention.copy },
@@ -61,8 +62,8 @@ function buildNav(attention = {}) {
   ];
 }
 
-const ALL_VIEWS = ['overview', 'sitehealth', 'search', 'pages', 'navigation', 'releases', 'schedule', 'links', 'navcheck', 'copy', 'access', 'seohealth', 'redirects', 'sections', 'seo', 'background', 'media', 'mediausage', 'history', 'activity', 'team', 'settings'];
-const TITLES = { overview: 'Overview', sitehealth: 'Site health', search: 'Search content', pages: 'Pages', navigation: 'Navigation', releases: 'Releases', schedule: 'Publish schedule', links: 'Link health', navcheck: 'Navigation health', copy: 'Copy coach', access: 'Accessibility', seohealth: 'SEO health', redirects: 'Redirects', sections: 'Saved sections', seo: 'SEO & social', background: '3D background', media: 'Media library', mediausage: 'Media usage', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
+const ALL_VIEWS = ['overview', 'sitehealth', 'search', 'pages', 'navigation', 'releases', 'schedule', 'notes', 'links', 'navcheck', 'copy', 'access', 'seohealth', 'redirects', 'sections', 'seo', 'background', 'media', 'mediausage', 'history', 'activity', 'team', 'settings'];
+const TITLES = { overview: 'Overview', sitehealth: 'Site health', search: 'Search content', pages: 'Pages', navigation: 'Navigation', releases: 'Releases', schedule: 'Publish schedule', notes: 'Editorial notes', links: 'Link health', navcheck: 'Navigation health', copy: 'Copy coach', access: 'Accessibility', seohealth: 'SEO health', redirects: 'Redirects', sections: 'Saved sections', seo: 'SEO & social', background: '3D background', media: 'Media library', mediausage: 'Media usage', history: 'Version history', activity: 'Activity log', team: 'Team & roles', settings: 'Site settings' };
 
 export default function AdminConsole({
   user, canEdit, canManageUsers, attention = {}, section = 'overview',
