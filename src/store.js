@@ -9,6 +9,8 @@ import { STAGE_OPTIONS } from './stage-presets.js';
 export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
 export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './lib/redirects-model.mjs';
 export { addSection, removeSection, renameSection, listSections, buildInsertBlock } from './lib/sections-model.mjs';
+export { listStarters, getStarter } from './lib/templates-model.mjs'; // page-starter recipes (cycle 17)
+import { getStarter as starterById, buildStarterContent } from './lib/templates-model.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped
@@ -917,6 +919,25 @@ export function addPageTo(state, title) {
   ], null, 'draft');
   page.published = null; // a brand-new page is a true draft — not public until it's published
   page.publishedBackground = null; // its 3D scene is likewise unpublished until the first publish
+  return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
+}
+
+// Seed a new DRAFT from a curated starter recipe (cycle 17). Mirrors addPageTo exactly — unique-slug mint,
+// deep-cloned default bg, seedPage status 'draft', published/publishedBackground nulled, _goto — the ONLY
+// difference is the content array comes from a starter instead of a hardcoded single Hero. Each built block
+// runs through blk() so component defaultProps backfill (no undefined field). Uniqueness comes from passing
+// rid as mintId (blk spreads ...props last, so the mintId-minted props.id survives). Unknown id → addPageTo.
+export function addPageFromStarter(state, title, starterId, mintId = rid) {
+  const starter = starterById(starterId);
+  if (!starter) return addPageTo(state, title);
+  let slug = slugify(title); let n = 2;
+  while (state.pages[slug]) slug = slugify(title) + '-' + n++;
+  const dflt = state.settings.background || 'stone-summit';
+  const bg = typeof dflt === 'object' ? JSON.parse(JSON.stringify(dflt)) : dflt;
+  const content = buildStarterContent(starter, mintId).map((b) => blk(b.type, b.props));
+  const page = seedPage(title, bg, content, null, 'draft');
+  page.published = null;
+  page.publishedBackground = null;
   return { ...state, order: [...state.order, slug], pages: { ...state.pages, [slug]: page }, _goto: slug };
 }
 

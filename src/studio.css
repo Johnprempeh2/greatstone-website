@@ -454,6 +454,15 @@
 .gs-inv-link:hover{color:var(--gs-accent);text-decoration:underline}
 .gs-inv-slug{color:var(--gs-faint);font-size:.78rem}
 .gs-inv-ok{color:var(--gs-faint)}
+/* cycle 17 — page templates gallery */
+.gs-tmpl-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.gs-tmpl-card{border:1px solid var(--gs-border-soft);border-radius:12px;padding:14px}
+.gs-tmpl-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.gs-tmpl-label{font-weight:700;font-size:.95rem}
+.gs-tmpl-n{font-size:.7rem;color:var(--gs-faint);white-space:nowrap}
+.gs-tmpl-blurb{margin:4px 0 8px;font-size:.84rem;opacity:.8}
+.gs-tmpl-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.gs-tmpl-chip{font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:100px;border:1px solid var(--gs-border-soft);color:var(--gs-muted)}
 .gs-page-open{flex:1;min-width:0;text-align:left;background:none;border:0;cursor:pointer;padding:9px 8px;display:flex;flex-direction:column;gap:3px}
 .gs-page-title{font-size:.92rem;font-weight:700;color:var(--gs-text)}
 .gs-page-title em{font-style:normal;font-weight:700;color:var(--gs-accent);font-size:.78rem}

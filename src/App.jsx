@@ -101,6 +101,7 @@ import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
 import ContentInventoryPanel from './cms/ContentInventoryPanel.jsx';
 import SiteHealthPanel from './cms/SiteHealthPanel.jsx';
 import GettingStartedPanel from './cms/GettingStartedPanel.jsx';
+import StartersPanel from './cms/StartersPanel.jsx';
 import { deriveChecklist } from './lib/onboarding-model.mjs';
 import SchedulePanel from './cms/SchedulePanel.jsx';
 import NotesPanel from './cms/NotesPanel.jsx';
@@ -125,7 +126,7 @@ import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
-import { DEFAULT_LOGO, load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock } from './store.js';
+import { DEFAULT_LOGO, load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock, addPageFromStarter, listStarters } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
 import SiteChrome from './cms/SiteChrome.jsx';
 import EditorBoundary from './cms/EditorBoundary.jsx';
@@ -774,6 +775,17 @@ export default function App() {
     if (!title || !title.trim()) return;
     setState((s) => { const next = addPageTo(s, title.trim()); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
   }
+  // Create a NEW DRAFT from a curated starter recipe (cycle 17), then open it in the editor. 'blank' routes
+  // to the unchanged newPage path. Same create-then-open sequence as newPage/clonePage; the new page is a
+  // deletable draft (reversible). rid is passed as the id factory so each block gets a unique id.
+  async function startFromTemplate(starterId) {
+    if (starterId === 'blank') return newPage();
+    const title = await ask({ kind: 'prompt', title: 'New page from template', label: 'Page title', defaultValue: 'New page', confirmLabel: 'Create page' });
+    if (!title || !title.trim()) return;
+    setState((s) => { const next = addPageFromStarter(s, title.trim(), starterId, rid); setCurrent(next._goto); setMode('edit'); setPuckKey((k) => k + 1); return next; });
+    const st = listStarters().find((x) => x.id === starterId);
+    flash('Created a draft from the ' + (st ? st.label : 'template') + ' template.');
+  }
   async function deletePage(slug) {
     if (state.order.length <= 1) return flash('You can’t delete the only page.');
     const ok = await ask({ kind: 'confirm', title: 'Delete page', message: 'Delete “' + state.pages[slug].title + '”? This removes the page and all of its version history.', confirmLabel: 'Delete page', danger: true });
@@ -1011,6 +1023,7 @@ export default function App() {
       cmds.push({ id: 'navcheck', group: 'Admin', label: 'Check navigation health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/navcheck'; } });
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
       cmds.push({ id: 'inventory', group: 'Admin', label: 'Content inventory (word counts, read time, thin pages)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/inventory'; } });
+      cmds.push({ id: 'templates', group: 'Admin', label: 'New page from template', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/templates'; } });
       cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
       if (canManageUsers) cmds.push({ id: 'gettingstarted', group: 'Admin', label: 'Getting started (studio setup guide)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/gettingstarted'; } });
       cmds.push({ id: 'schedule', group: 'Admin', label: 'Publish schedule (set a publish date)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/schedule'; } });
@@ -1135,6 +1148,7 @@ export default function App() {
       ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { inventory: <ContentInventoryPanel embedded report={contentReport} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { templates: <StartersPanel embedded starters={listStarters()} onPick={startFromTemplate} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { sitehealth: <SiteHealthPanel embedded report={healthReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canManageUsers ? { gettingstarted: <GettingStartedPanel embedded report={onboardingReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { schedule: <SchedulePanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSchedule={onSchedule} onClear={onClear} onClose={onConsoleClose} /> } : {}),
