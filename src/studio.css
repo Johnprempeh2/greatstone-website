@@ -573,6 +573,17 @@
 .gs-cs-grouph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px}
 .gs-cs-grouph h3{font-size:.9rem;font-weight:800;color:var(--gs-text);margin:0;display:flex;align-items:baseline;gap:8px}
 .gs-cs-sub{font-size:.72rem;font-weight:600;color:var(--gs-faint)}
+.gs-cs-sub.gs-ok{color:var(--gs-accent)}
+/* document-outline heading tree (cycle 21) — level shown as a TEXT tag + indent, never colour-only (WCAG 1.4.1) */
+.gs-ol-tree{list-style:none;padding:0;margin:6px 0 10px}
+.gs-ol-item{display:flex;gap:8px;align-items:baseline;padding:3px 0;line-height:1.4}
+.gs-ol-tag{flex:none;font-size:.62rem;font-weight:800;letter-spacing:.04em;color:var(--gs-faint);border:1px solid var(--gs-border-soft);border-radius:4px;padding:1px 5px}
+.gs-ol-l1 .gs-ol-tag{color:var(--gs-text);border-color:var(--gs-border)}
+.gs-ol-text{flex:1;font-size:.84rem;color:var(--gs-text)}
+.gs-ol-l1 .gs-ol-text{font-weight:700}
+.gs-ol-none{color:var(--gs-faint)}
+.gs-ol-block{flex:none;font-size:.66rem;color:var(--gs-faint)}
+.gs-ol-empty{font-size:.8rem;color:var(--gs-faint);padding:3px 0}
 .gs-cs-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
 .gs-cs-row{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--gs-border-soft);border-radius:9px;background:rgba(255,255,255,.02)}
 .gs-cs-where{font-size:.7rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--gs-faint)}

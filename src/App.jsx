@@ -96,6 +96,7 @@ import RedirectsPanel from './cms/RedirectsPanel.jsx';
 import SavedSectionsPanel from './cms/SavedSectionsPanel.jsx';
 import CopyCoachPanel from './cms/CopyCoachPanel.jsx';
 import A11yPanel from './cms/A11yPanel.jsx';
+import OutlinePanel from './cms/OutlinePanel.jsx';
 import SeoHealthPanel from './cms/SeoHealthPanel.jsx';
 import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
 import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
@@ -110,6 +111,8 @@ import NotesPanel from './cms/NotesPanel.jsx';
 import { diffVersions } from './lib/version-diff.mjs';
 import { checkVoice } from './lib/voice-check.mjs';
 import { checkA11y } from './lib/a11y-check.mjs';
+import { buildSiteOutline } from './lib/outline-model.mjs';
+import { headingsOf } from './lib/headings-of.mjs';
 import { checkSeo } from './lib/seo-check.mjs';
 import { auditNavCoverage } from './lib/nav-coverage.mjs';
 import { auditMedia } from './lib/media-audit.mjs';
@@ -561,6 +564,10 @@ export default function App() {
   const voiceReport = useMemo(() => checkVoice(state), [state.pages, state.order]);
   // content accessibility pre-flight (A11y coach) — computed once, shared by the panel + the rail badge.
   const a11yReport = useMemo(() => checkA11y(state), [state.pages, state.order]);
+  // document outline (per-page heading tree + skipped-level/not-h1-first order check) — computed once, shared.
+  // 'insights' renders the live AI Intelligence hub (LazyIntelHub), NOT its authored blocks (see the
+  // `current === 'insights'` render special-case) — so it's marked dynamic, never given a fictional outline.
+  const outlineReport = useMemo(() => buildSiteOutline(state, headingsOf, { dynamic: ['insights'] }), [state.pages, state.order]);
   // site-wide SEO health (meta presence/length + cross-page duplicates) — computed once, shared.
   const seoReport = useMemo(() => checkSeo(state), [state.pages, state.order]);
   // navigation health (menu → unpublished/dead targets + pages missing from the menu) — computed once.
@@ -601,8 +608,8 @@ export default function App() {
     // schedule badge = overdue count (a reminder, never a blocking defect, never auto-acts) — also OUT of total.
     const overdue = listSchedules(state, Date.now()).overdue.length;
     // notes badge = count of annotated pages (informational, OUT of total — a note is intent, not a defect).
-    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, notes: listNotes(state).length, inventory: contentReport.summary.thinCount, blocks: blockReport.summary.unusedTypes, total: pagesNeedingAction + pendingInvites + brokenLinks };
-  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, blockReport, canManageUsers]);
+    return { releases: pagesNeedingAction, team: pendingInvites, links: brokenLinks, redirects: badRedirects, copy: voiceReport.hard, access: a11yReport.errors, seohealth: seoReport.errors, navcheck: navCoverageReport.errors, mediausage: mediaReport.counts.untracked + mediaReport.counts.missingAlt, sitehealth: healthReport.errors, schedule: overdue, notes: listNotes(state).length, inventory: contentReport.summary.thinCount, blocks: blockReport.summary.unusedTypes, outline: outlineReport.total, total: pagesNeedingAction + pendingInvites + brokenLinks };
+  }, [state.order, state.pages, state.team, state.navigation, state.redirects, voiceReport, a11yReport, seoReport, navCoverageReport, mediaReport, healthReport, blockReport, outlineReport, canManageUsers]);
 
   function flash(msg) {
     setToast(msg);
@@ -1084,6 +1091,7 @@ export default function App() {
       cmds.push({ id: 'links', group: 'Admin', label: 'Check link health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/links'; } });
       cmds.push({ id: 'copy', group: 'Admin', label: 'Coach my copy (voice check)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/copy'; } });
       cmds.push({ id: 'access', group: 'Admin', label: 'Check accessibility', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/access'; } });
+      cmds.push({ id: 'outline', group: 'Admin', label: 'View document outline (heading structure)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/outline'; } });
       cmds.push({ id: 'seohealth', group: 'Admin', label: 'Check SEO health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/seohealth'; } });
       cmds.push({ id: 'navcheck', group: 'Admin', label: 'Check navigation health', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/navcheck'; } });
       cmds.push({ id: 'mediausage', group: 'Admin', label: 'Check media usage (unused / untracked images)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/mediausage'; } });
@@ -1212,6 +1220,7 @@ export default function App() {
       ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { copy: <CopyCoachPanel embedded report={voiceReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { access: <A11yPanel embedded report={a11yReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
+      ...(canEdit ? { outline: <OutlinePanel embedded report={outlineReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { seohealth: <SeoHealthPanel embedded report={seoReport} pages={state.pages} onFix={(slug) => goAdmin('seo', slug)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
       ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),

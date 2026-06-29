@@ -84,3 +84,7 @@ export function checkA11y(state) {
   groups.sort((a, b) => b.count - a.count);
   return { total, errors, warnings, groups };
 }
+
+// Surfaced (additive, no behaviour change) so the cycle-20/21 document-outline shares ONE source of truth
+// for the H1 vocabulary + heading-text logic — the two surfaces can never drift on "what is an H1".
+export { H1_BLOCKS, headingText };
