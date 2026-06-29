@@ -74,6 +74,9 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 - **Cycle 17 — Authoring (page templates).** A static, curated set of named page recipes (Landing/Article/
   Service/Proof) seeded into a brand-new draft via a Templates gallery. The first feature to touch the
   create-a-page moment (cycles 1-16 all act on pages that already exist).
+- **Cycle 18 — Composition analytics (block usage).** A read-only, sortable table mapping each registered
+  block TYPE → the pages that use it, with instance counts + an UNUSED-component list. A new content-analytics
+  axis (which components, where) orthogonal to cycle 15's word-volume; spans every page.
 
 ## Features shipped (this loop)
 | Cycle | Angle | Feature | Commit | Redundancy check |
@@ -95,6 +98,7 @@ discounts · FX · SKU bulk import · Customer accounts · Orders · Quotes/POs/
 | 15 | Content-analytics | **Content inventory** — a read-only, SORTABLE table: per page word count / est. read time / block count / words-per-block / status + advisory THIN (words<120) / SKELETON (4+ blocks, <25 words/block) / BULK (one of ≥2 blocks >70% of a ≥120-word page) chips + a site summary. Pure content-stats.mjs (12 tests, STORE-FREE, reuses content-search's walkText/stripMarks so counts == search's index): analyzeContent → {rows, summary}; floor-only flags + exported thresholds. WCAG-AA sortable native <table> (aria-sort, <th scope=col>, focusable sort buttons, sr-only caption); reuses is-changed/is-orphan pills (no new pill). Badge = thin count, OUT of total. Section id `inventory` | `a4a0f25` | NON-REDUNDANT: first content-VOLUME measure. PagesPanel shows block COUNT not words; ReleaseBoard is status; Copy Coach is voice; SEO is meta-length not body; Site health rolls up DEFECTS. The only `readTime` in the tree is an editor-TYPED card string, not a metric. Always-populated dashboard framing (not an empty defect audit). Read-only |
 | 16 | Enablement | **Getting started** — a read-only first-run setup guide (first in the Content rail): a % meter + a checklist deriving each task's done-ness from real state, with a "Set up" deep-link per unfinished task + a studio map. Pure onboarding-model.mjs (8 tests, STORE-FREE): deriveChecklist(state, opts) → {items, doneCount, total, pct, allDone}; `done` for branded fields = CHANGED FROM the injected Greatstone default (DEFAULT_SETTINGS ships them pre-filled, so non-empty would falsely read 100%). Clones SiteHealthPanel; manager-gated (most tasks are Site settings = need:'manage'); badgeless, OUT of total. Section id `gettingstarted` | `3c02e4d` | NON-REDUNDANT: first ENABLEMENT/orientation surface. OverviewPanel shows live-work counts (published/drift/invites/activity) — no notion of "unconfigured"; Site health (c11) scores content DEFECTS, never reads settings/nav/published-count. Disjoint quadrant. Read-only, no schema bump |
 | 17 | Authoring | **Page templates / starters** — a Templates gallery (cards: label/blurb/block-type chips) that seeds a brand-NEW draft from a curated recipe (Blank/Landing/Article/Service/Proof) + opens it in the editor. Pure templates-model.mjs (5 tests, STORE-FREE, imports only sections-model): a frozen STARTERS array of REAL puck.config block types + buildStarterContent(starter, mintId) (remapIds per block; the test pins types vs a 37-entry MODULES copy so a typo can't ship a dead block). ONE store fn addPageFromStarter (near-clone of addPageTo; draft, published=null, deletable); addPageTo/blk/seedPage unchanged. Section id `templates` | `a0a5155` | NON-REDUNDANT: first AUTHORING/create-a-page feature. Saved sections inserts ONE block; duplicatePage clones a LIVE page (needs an exemplar + carries its copy/SEO); a starter is a page recipe with ZERO exemplar. Static-in-code (no schema bump, no user-saved templates), creates a reversible draft (write-safe) |
+| 18 | Composition analytics | **Block usage** — a read-only, SORTABLE table of every registered block TYPE: instances, page count, the pages that use it (deep-links), category, + an Unused chip & "Never placed" callout. Pure block-usage-model.mjs (10 tests, STORE-FREE): analyzeBlocks(state, knownTypes, categories) → {rows, extras, summary}; seeds every known type at 0 so unused surface; knownTypes = Object.keys(config.components) injected by App. Walks the UNION of order + Object.keys(pages) so the off-order `products`/Storefront isn't a false "unused". WCAG-AA sortable table (clone of ContentInventoryPanel). Badge = unused count, OUT of total. Section id `blocks` | `8f0dfa4` | NON-REDUNDANT: first block-type→pages map. Content inventory (c15) counts WORDS not types (its only type touch is maxBlockType for the BULK flag); PagesPanel shows a block COUNT; link-audit orphans are PAGES not component types. Read-only |
 
 ## Parked shortlist (next cycles — refreshed each run)
 Ranked by the cycle-1 discovery workflow (8 agents, 6 personas). Pick a fresh angle each cycle;
@@ -117,13 +121,17 @@ re-validate redundancy against the current code before building.
      **Site health** — ✅ cycle 11 (`cb11c4e`). **Publish schedule** — ✅ cycle 12 (`010f6a8`).
      **Editorial notes** — ✅ cycle 13 (`526e4fb`). **Bulk-safe status** — ✅ cycle 14 (`99c4279`).
      **Content inventory** — ✅ cycle 15 (`a4a0f25`). **Getting started** — ✅ cycle 16 (`3c02e4d`).
-     **Page templates** — ✅ cycle 17 (`a0a5155`).
-   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-17): **MORE safe-actions** reusing
-     the c14 multi-select harness — bulk SET-publish-date or bulk SET-note across selected pages (reuse
-     c12/c13 setSchedule/setNote, additive+reversible), or a per-row "add untracked image to library" on c10
-     via addAsset; **per-page collaboration extras** (an additive page.assignee / review-requested flag —
-     extends c13); a **keyboard-shortcuts / power-user reference** (enablement-adjacent, low-risk); ~~**Page
-     templates**~~ (✅ SHIPPED c17), ~~**Content depth**~~ (✅ SHIPPED c15 as Content inventory),
+     **Page templates** — ✅ cycle 17 (`a0a5155`). **Block usage** — ✅ cycle 18 (`8f0dfa4`).
+   - _Lead remaining fresh-angle candidates (all distinct from cycles 1-18): **Bulk schedule / bulk note**
+     (the strong c19 lead — scout B grounded it; reuse the c14 multi-select harness on PagesPanel so the
+     action-bar also offers "Set publish date…" → setSchedule on each selected page [c12] and "Add note…" →
+     setNote on each [c13]; a pure bulk-meta.mjs + node --test; additive+reversible, genuinely new capability
+     [c14 is status-only], multi-page; DEEPENS safe-actions but high value); **per-page collaboration extras**
+     (an additive page.assignee / review-requested flag — extends c13); a **keyboard-shortcuts / power-user
+     reference** (enablement-adjacent, low-risk). DEAD/PARKED for cycle 18 (verified): backlinks report (scout
+     A — genuinely distinct from c1 orphans BUT the seed inbound map is nav-dominated so the "story" is thin,
+     and a spatial graph has a heavy a11y cost; a LIST-based version is a fine future cycle). ~~**Page
+     templates**~~ (✅ c17), ~~**Content depth**~~ (✅ c15), ~~**Block usage**~~ (✅ c18),
      **per-page collaboration extras** (assignee
      / review-requested flag — extends c13's collaboration family with another additive field), or a
      **One-click "add untracked image to library"** on c10's untracked list via addAsset (additive+reversible
