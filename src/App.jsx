@@ -81,36 +81,38 @@ import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CommandPalette from './cms/CommandPalette.jsx';
 import ShortcutsOverlay from './cms/ShortcutsOverlay.jsx';
-import SeoPanel from './cms/SeoPanel.jsx';
-import VersionHistory from './cms/VersionHistory.jsx';
-import ActivityPanel from './cms/ActivityPanel.jsx';
-import OverviewPanel from './cms/OverviewPanel.jsx';
-import ReleaseBoard from './cms/ReleaseBoard.jsx';
-import ProductsPanel from './cms/ProductsPanel.jsx';
-import TeamPanel from './cms/TeamPanel.jsx';
-import PagesPanel from './cms/PagesPanel.jsx';
-import NavigationPanel from './cms/NavigationPanel.jsx';
-import LinkAuditPanel from './cms/LinkAuditPanel.jsx';
-import ContentSearchPanel from './cms/ContentSearchPanel.jsx';
-import RedirectsPanel from './cms/RedirectsPanel.jsx';
-import SavedSectionsPanel from './cms/SavedSectionsPanel.jsx';
-import CopyCoachPanel from './cms/CopyCoachPanel.jsx';
-import A11yPanel from './cms/A11yPanel.jsx';
-import OutlinePanel from './cms/OutlinePanel.jsx';
-import CtaConsistencyPanel from './cms/CtaConsistencyPanel.jsx';
-import ServicesManagerPanel from './cms/ServicesManagerPanel.jsx';
+// Admin studio panels: lazy-loaded so they ship in the on-demand 'studio' chunk (vite.config manualChunks),
+// never in a public visitor's first paint. Every one of these renders ONLY inside the admin console or the
+// editor's StudioPanel, both wrapped in Suspense below.
+const SeoPanel = lazy(() => import('./cms/SeoPanel.jsx'));
+const VersionHistory = lazy(() => import('./cms/VersionHistory.jsx'));
+const ActivityPanel = lazy(() => import('./cms/ActivityPanel.jsx'));
+const OverviewPanel = lazy(() => import('./cms/OverviewPanel.jsx'));
+const ReleaseBoard = lazy(() => import('./cms/ReleaseBoard.jsx'));
+const TeamPanel = lazy(() => import('./cms/TeamPanel.jsx'));
+const PagesPanel = lazy(() => import('./cms/PagesPanel.jsx'));
+const NavigationPanel = lazy(() => import('./cms/NavigationPanel.jsx'));
+const LinkAuditPanel = lazy(() => import('./cms/LinkAuditPanel.jsx'));
+const ContentSearchPanel = lazy(() => import('./cms/ContentSearchPanel.jsx'));
+const RedirectsPanel = lazy(() => import('./cms/RedirectsPanel.jsx'));
+const SavedSectionsPanel = lazy(() => import('./cms/SavedSectionsPanel.jsx'));
+const CopyCoachPanel = lazy(() => import('./cms/CopyCoachPanel.jsx'));
+const A11yPanel = lazy(() => import('./cms/A11yPanel.jsx'));
+const OutlinePanel = lazy(() => import('./cms/OutlinePanel.jsx'));
+const CtaConsistencyPanel = lazy(() => import('./cms/CtaConsistencyPanel.jsx'));
+const ServicesManagerPanel = lazy(() => import('./cms/ServicesManagerPanel.jsx'));
 import { findCatalog } from './lib/service-admin.mjs';
-import SeoHealthPanel from './cms/SeoHealthPanel.jsx';
-import NavCoveragePanel from './cms/NavCoveragePanel.jsx';
-import MediaUsagePanel from './cms/MediaUsagePanel.jsx';
-import ContentInventoryPanel from './cms/ContentInventoryPanel.jsx';
-import BlockUsagePanel from './cms/BlockUsagePanel.jsx';
-import SiteHealthPanel from './cms/SiteHealthPanel.jsx';
-import GettingStartedPanel from './cms/GettingStartedPanel.jsx';
-import StartersPanel from './cms/StartersPanel.jsx';
+const SeoHealthPanel = lazy(() => import('./cms/SeoHealthPanel.jsx'));
+const NavCoveragePanel = lazy(() => import('./cms/NavCoveragePanel.jsx'));
+const MediaUsagePanel = lazy(() => import('./cms/MediaUsagePanel.jsx'));
+const ContentInventoryPanel = lazy(() => import('./cms/ContentInventoryPanel.jsx'));
+const BlockUsagePanel = lazy(() => import('./cms/BlockUsagePanel.jsx'));
+const SiteHealthPanel = lazy(() => import('./cms/SiteHealthPanel.jsx'));
+const GettingStartedPanel = lazy(() => import('./cms/GettingStartedPanel.jsx'));
+const StartersPanel = lazy(() => import('./cms/StartersPanel.jsx'));
 import { deriveChecklist } from './lib/onboarding-model.mjs';
-import SchedulePanel from './cms/SchedulePanel.jsx';
-import NotesPanel from './cms/NotesPanel.jsx';
+const SchedulePanel = lazy(() => import('./cms/SchedulePanel.jsx'));
+const NotesPanel = lazy(() => import('./cms/NotesPanel.jsx'));
 import { diffVersions } from './lib/version-diff.mjs';
 import { checkVoice } from './lib/voice-check.mjs';
 import { checkA11y } from './lib/a11y-check.mjs';
@@ -128,11 +130,11 @@ import { setSchedule, clearSchedule, listSchedules } from './lib/schedule-model.
 import { setNote, clearNote, listNotes } from './lib/notes-model.mjs';
 import { bulkSetStatus } from './lib/bulk-status.mjs';
 import { bulkSetSchedule, bulkClearSchedule, bulkSetNote, bulkClearNote, bulkSetAssignee, bulkClearAssignee } from './lib/bulk-meta.mjs';
-import BackgroundPanel from './cms/BackgroundPanel.jsx';
-import StudioPanel from './cms/StudioPanel.jsx';
-import AdminConsole from './cms/AdminConsole.jsx';
-import SiteSettingsPanel from './cms/SiteSettingsPanel.jsx';
-import MediaLibraryPanel from './cms/MediaLibraryPanel.jsx';
+const BackgroundPanel = lazy(() => import('./cms/BackgroundPanel.jsx'));
+const StudioPanel = lazy(() => import('./cms/StudioPanel.jsx'));
+const AdminConsole = lazy(() => import('./cms/AdminConsole.jsx'));
+const SiteSettingsPanel = lazy(() => import('./cms/SiteSettingsPanel.jsx'));
+const MediaLibraryPanel = lazy(() => import('./cms/MediaLibraryPanel.jsx'));
 import SignIn from './cms/SignIn.jsx';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
@@ -1335,6 +1337,7 @@ export default function App() {
         {overlays}
         <a className="gs-skip" href="#admin-main">Skip to content</a>
         {section === 'background' && <Stage background={page.background || state.settings.background} previewP={previewP} />}
+        <Suspense fallback={<div className="gs-editor-loading" role="status">Opening the studio…</div>}>
         <AdminConsole
           user={user} canEdit={canEdit} canManageUsers={canManageUsers} attention={studioAttention}
           section={section} panels={consolePanels}
@@ -1349,6 +1352,7 @@ export default function App() {
           onSite={() => navigate(current)}
           logo={state.settings.logo} siteName={state.settings.siteName}
         />
+        </Suspense>
       </div>
       </LinkContext.Provider>
       </MediaContext.Provider>
@@ -1365,6 +1369,7 @@ export default function App() {
         {overlays}
         <Stage background={bg} previewP={previewP} />
         {panel && (
+          <Suspense fallback={null}>
           <StudioPanel tab={panel} onTab={setPanel} badges={{ releases: studioAttention.releases, team: studioAttention.team }} onClose={() => { setPreviewP(null); setPanel(null); }} panels={{
             home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
@@ -1375,6 +1380,7 @@ export default function App() {
             history: <VersionHistory versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
             activity: <ActivityPanel statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={() => setPanel(null)} embedded />,
           }} />
+          </Suspense>
         )}
         <EditorBoundary key={'eb:' + current + ':' + puckKey} label="editor" onReset={discardDraft} resetLabel="Discard draft & recover">
         <Suspense fallback={<div className="gs-editor-loading" role="status">Opening the studio…</div>}>
