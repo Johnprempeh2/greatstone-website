@@ -3,12 +3,14 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
+import { ctaStyleClass } from '../lib/cta-style.mjs';
 
 // MethodTieIn: climb.html's "(4) method tie-in" — a two-column band. LEFT: kicker + headline (accented
 // "lowest first") + lead + a ghost link to the method. RIGHT: a 4×2 mini bar chart of the eight pillars
 // (each a square with a bottom-anchored bar at its score), the single "lowest" one lime-highlighted —
 // "we climb the lowest first". Faithful port of .tiein / .pillars-mini; bars grow on scroll-in.
-export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHref = '#', pillars = [] }) {
+export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, pillars = [] }) {
   const ref = useReveal([pillars.length]);
   const chartRef = useRef(null);
   const [grown, setGrown] = useState(false);
@@ -36,7 +38,7 @@ export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHre
               <h2 className="b-tiein-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
             ) : null}
             {body ? <p className="lead b-tiein-lead">{body}</p> : null}
-            {ctaLabel ? <a className="b-cta ghost b-tiein-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+            {ctaLabel ? <a className={('b-cta ghost b-tiein-cta ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
           </div>
 
           <div ref={chartRef} className={'b-tiein-chart' + (grown ? ' is-grown' : '')} data-reveal aria-hidden="true">
@@ -80,6 +82,7 @@ export const puck = {
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Ghost button label' },
     ctaHref: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
+    ctaStyle: CTA_STYLE_FIELD,
     pillars: {
       type: 'array', label: 'Pillars (mini bar chart)',
       arrayFields: {
@@ -95,7 +98,7 @@ export const puck = {
     kicker: 'The climb meets the method',
     heading: 'We score all eight. Then climb the', highlight: 'lowest first.',
     body: 'Your altitude isn’t one number, it’s eight. We assess you across all eight pillars of the method, find the one holding the whole climb back, and start there. We leave no stone unturned.',
-    ctaLabel: 'See the 8 pillars', ctaHref: '#go/method',
+    ctaLabel: 'See the 8 pillars', ctaHref: '#go/method', ctaStyle: CTA_STYLE_DEFAULT,
     pillars: [
       { label: 'People', height: 42, lowest: false },
       { label: 'Communication', height: 58, lowest: false },

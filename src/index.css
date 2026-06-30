@@ -10,6 +10,9 @@
 .b-cta{display:inline-flex;align-items:center;gap:.6em;background:var(--gs-accent);color:#0e1611;font-weight:700;font-size:.95rem;
   padding:.9em 1.7em;border-radius:100px;transition:transform var(--gs-dur) var(--gs-ease),box-shadow var(--gs-dur) var(--gs-ease)}
 .b-cta:hover{transform:translateY(-2px);box-shadow:0 12px 44px -12px var(--gs-accent-glow)}
+/* CTA style modifiers (cta-style.mjs ctaStyleClass): Large grows the target; full-width-on-mobile. */
+.b-cta.gs-cta-lg{font-size:1.06rem;padding:1.05em 2em}
+@media(max-width:560px){.b-cta.gs-cta-fill{display:flex;width:100%;justify-content:center}}
 /* ===== public desktop chrome (SiteChrome): scroll progress + custom cursor (port of the live site) ===== */
 .gs-progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:80;transform-origin:left center;transform:scaleX(0);
   background:linear-gradient(90deg,var(--gs-accent),#8fbf00);box-shadow:0 0 10px rgba(200,255,0,.5);pointer-events:none}

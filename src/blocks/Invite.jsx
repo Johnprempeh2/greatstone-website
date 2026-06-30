@@ -3,10 +3,12 @@ import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
+import { ctaStyleClass } from '../lib/cta-style.mjs';
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
-export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false }) {
+export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false }) {
   const ref = useReveal();
   const framed = variant === 'framed';
   const band = variant === 'band';
@@ -16,7 +18,7 @@ export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref =
       <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
       {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
       <div className="b-invite-actions" data-reveal>
-        {ctaLabel ? <a className="b-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
+        {ctaLabel ? <a className={('b-cta ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
         {ctaLabel2 ? <a className="b-cta ghost" {...resolveLink(ctaHref2)}>{ctaLabel2}</a> : null}
         {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
       </div>
@@ -75,6 +77,7 @@ export const puck = {
     body: { type: 'textarea', label: 'Body', contentEditable: true },
     ctaLabel: { type: 'text', label: 'Primary button label' },
     ctaHref: { type: 'custom', label: 'Primary button link', render: (props) => <LinkField {...props} /> },
+    ctaStyle: CTA_STYLE_FIELD,
     ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
     ctaHref2: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
     email: { type: 'text', label: 'Contact email (optional)' },
@@ -89,7 +92,7 @@ export const puck = {
     eyebrow: 'Start the Conversation',
     headline: 'The first step', highlight: 'costs nothing.',
     body: 'A Diagnostic: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-    ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
+    ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaStyle: CTA_STYLE_DEFAULT, ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
   },
   render: (props) => <Invite {...props} />,
 };

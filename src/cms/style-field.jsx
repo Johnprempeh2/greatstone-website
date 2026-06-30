@@ -1,4 +1,5 @@
 import { SURROUNDS, PADS, SECTION_SPACES, SECTION_SURFACES, SECTION_ACCENTS } from '../lib/block-style.mjs';
+import { CTA_SIZES, CTA_FILLS } from '../lib/cta-style.mjs';
 
 // One shared "Appearance" field group, imported by every block that offers a surround/text-box look, so the
 // control is identical everywhere and the sidebar stays a single collapsible group rather than a wall of
@@ -30,3 +31,17 @@ export const SECTION_FIELD = {
 };
 
 export const SECTION_DEFAULT = { surface: 'none', accent: 'default', spaceTop: 'default', spaceBottom: 'default' };
+
+// Shared "Button style" group for CTA-bearing blocks: size + full-width-on-mobile. ctaStyleClass() turns the
+// choice into a modifier on the existing .b-cta class; default = no class (button unchanged). Variant (solid
+// vs ghost) stays the block's own existing control, so this adds the new controls without a migration.
+export const CTA_STYLE_FIELD = {
+  type: 'object',
+  label: 'Button style',
+  objectFields: {
+    size: { type: 'radio', label: 'Size', options: CTA_SIZES.map((s) => ({ label: s.label, value: s.id })) },
+    fillMobile: { type: 'radio', label: 'Full width on mobile', options: CTA_FILLS.map((f) => ({ label: f.label, value: f.id })) },
+  },
+};
+
+export const CTA_STYLE_DEFAULT = { size: 'default', fillMobile: 'no' };
