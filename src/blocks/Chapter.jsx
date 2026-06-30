@@ -4,15 +4,17 @@ import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import RichText from './RichText.jsx';
-import { APPEARANCE_FIELD, APPEARANCE_DEFAULT, CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
+import { APPEARANCE_FIELD, APPEARANCE_DEFAULT, CTA_STYLE_FIELD, CTA_STYLE_DEFAULT, HEADING_LEVEL_FIELD } from '../cms/style-field.jsx';
 import { appearanceClass } from '../lib/block-style.mjs';
 import { ctaStyleClass } from '../lib/cta-style.mjs';
+import { headingTag } from '../lib/heading-level.mjs';
 
 // The editorial "chapter" section the live homepage leans on: a numbered eyebrow, a big
 // honest headline, a paragraph, an optional accent coda line, and an optional ghost CTA
 // (e.g. home §03 "Explore the eight pillars" → method). Reused for several chapters.
-export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, appearance }) {
+export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, headingLevel, appearance }) {
   const ref = useReveal();
+  const HeadTag = headingTag(headingLevel);
   return (
     <section ref={ref} className={`b-chapter align-${align}`}>
       <div className={('wrap b-chapter-inner ' + appearanceClass(appearance)).trim()}>
@@ -20,7 +22,7 @@ export function Chapter({ index, eyebrow, headline, highlight, body, coda, align
           {index ? <span className="b-chapter-num">{index}</span> : null}
           {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
         </div>
-        <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        <HeadTag className="b-chapter-h" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</HeadTag>
         {body ? <RichText as="p" className="b-chapter-body" data-reveal html={body} /> : null}
         {coda ? <RichText as="p" className="b-chapter-coda" data-reveal html={coda} /> : null}
         {ctaLabel ? <a className={('b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost') + ' ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
@@ -45,7 +47,7 @@ export const css = `
   text-transform:uppercase;color:var(--gs-faint)}
 .b-chapter-name::before{content:"";position:absolute;left:0;top:50%;width:1px;height:13px;transform:translateY(-50%);
   background:var(--gs-border-soft)}
-.b-chapter h2{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em}
+.b-chapter .b-chapter-h{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em}
 .b-chapter-body{margin-top:24px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-chapter.align-center .b-chapter-body{margin-inline:auto}
 /* coda is just a follow-on body paragraph (the live .ch-copy is one muted block, no lime callout) */
@@ -75,6 +77,7 @@ export const puck = {
       { label: 'Ghost', value: 'ghost' }, { label: 'Primary (solid)', value: 'primary' },
     ]},
     ctaStyle: CTA_STYLE_FIELD,
+    headingLevel: HEADING_LEVEL_FIELD,
     appearance: APPEARANCE_FIELD,
   },
   defaultProps: {
@@ -83,7 +86,7 @@ export const puck = {
     body: 'For two decades our team has modernised how organisations actually work (their tools, their processes, their people), and now the intelligent layer above them all.',
     coda: 'Digital transformation first. AI as the accelerator.',
     align: 'left', ctaLabel: '', ctaHref: '#', ctaVariant: 'ghost', ctaStyle: CTA_STYLE_DEFAULT,
-    appearance: APPEARANCE_DEFAULT,
+    headingLevel: 'h2', appearance: APPEARANCE_DEFAULT,
   },
   render: (props) => <Chapter {...props} />,
 };

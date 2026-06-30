@@ -6,6 +6,7 @@
 // Every entry is grounded in the real src/blocks/*.jsx (verified file:line in the cycle-21 workflow) and
 // cross-checked against the live DOM. `level` is the ELEMENT level (NOT the className).
 import { headingText } from './a11y-check.mjs'; // reuse the grounded Hero/H1 text logic (single source of truth)
+import { headingLevelNum } from './heading-level.mjs'; // blocks with an editor-set heading level report it here too
 
 const join = (...xs) => xs.filter(Boolean).map(String).join(' ').trim();
 const arr = (x) => (Array.isArray(x) ? x : []);
@@ -16,7 +17,7 @@ const HEADINGS = {
   TimeCounter: (p) => [{ level: 1, text: join(p.headline, p.highlight) }],
 
   // --- always-rendered H2 (no guard in JSX) ---
-  Chapter:   (p) => [{ level: 2, text: join(p.headline, p.highlight) }],
+  Chapter:   (p) => [{ level: headingLevelNum(p.headingLevel), text: join(p.headline, p.highlight) }], // editor-set H2/H3/H4
   Invite:    (p) => [{ level: 2, text: join(p.headline, p.highlight) }],
   Terrace:   (p) => [{ level: 2, text: join(p.headline, p.highlight) }],
   IntelBand: (p) => [{ level: 2, text: join(p.heading, p.highlight) }],

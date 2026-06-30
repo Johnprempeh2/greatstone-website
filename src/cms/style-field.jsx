@@ -1,5 +1,6 @@
 import { SURROUNDS, PADS, SECTION_SPACES, SECTION_SURFACES, SECTION_ACCENTS } from '../lib/block-style.mjs';
 import { CTA_SIZES, CTA_FILLS } from '../lib/cta-style.mjs';
+import { HEADING_LEVELS } from '../lib/heading-level.mjs';
 
 // One shared "Appearance" field group, imported by every block that offers a surround/text-box look, so the
 // control is identical everywhere and the sidebar stays a single collapsible group rather than a wall of
@@ -45,3 +46,12 @@ export const CTA_STYLE_FIELD = {
 };
 
 export const CTA_STYLE_DEFAULT = { size: 'default', fillMobile: 'no' };
+
+// Shared "Heading level" control for blocks whose main heading may sit as a sub-section. headingTag()/
+// headingLevelNum() (heading-level.mjs) turn the choice into the element + the outline level so the DOM and
+// the document-outline tooling stay in lockstep. Default 'h2' keeps the current element.
+export const HEADING_LEVEL_FIELD = {
+  type: 'radio',
+  label: 'Heading level',
+  options: HEADING_LEVELS.map((h) => ({ label: h.label, value: h.id })),
+};
