@@ -53,6 +53,9 @@ const HEADINGS = {
 
   // --- per-post H3, NO own H2 ---
   InsightsGrid: (p) => arr(p.posts).filter((x) => x.title).map((x) => ({ level: 3, text: String(x.title) })),
+  Columns:      (p) => arr(p.columns).filter((c) => c.heading).map((c) => ({ level: 3, text: String(c.heading) })), // per-column sub-headings
+
+
 
   // --- special cases ---
   MaturityMap:    (p) => [{ level: 2, text: 'Digital maturity tiers' }, ...arr(p.tiers).map((t) => ({ level: 3, text: String(t.title || '') }))], // hardcoded sr-only h2
