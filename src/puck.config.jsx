@@ -51,10 +51,17 @@ const MODULES = { Hero, Prose, Chapter, Pillars, PillarCards, PillarExplorer, In
 // gives EVERY block the controls in one place, and every default maps to no class so pages are unchanged.
 const withAnchor = (puck) => ({
   ...puck,
-  fields: { ...(puck.fields || {}), _section: SECTION_FIELD },
-  defaultProps: { ...(puck.defaultProps || {}), _section: SECTION_DEFAULT },
+  fields: {
+    ...(puck.fields || {}),
+    _section: SECTION_FIELD,
+    _note: { type: 'textarea', label: 'Internal note (private, never shown on the site)' },
+  },
+  defaultProps: { ...(puck.defaultProps || {}), _section: SECTION_DEFAULT, _note: '' },
   render: (props) => (
     <div id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section)).trim()}>
+      {/* editor-only memo ribbon: visible while building, never rendered on the public site */}
+      {props.puck && props.puck.isEditing && props._note
+        ? <div className="gs-blk-note" contentEditable={false}>{props._note}</div> : null}
       {puck.render(props)}
     </div>
   ),

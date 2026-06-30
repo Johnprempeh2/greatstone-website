@@ -922,3 +922,10 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
 .gs-rt-hint{margin:0;font-size:.72rem;color:var(--gs-text-faint,#9ca29b);line-height:1.4}
 @media(prefers-reduced-motion:reduce){.gs-rt-btn,.gs-rt-sw{transition:none}}
 .gs-rt-sw.is-on{border-color:var(--gs-accent,#c8ff00);box-shadow:0 0 0 1px var(--gs-accent,#c8ff00)}
+
+/* Per-block internal note (puck.config withAnchor): an editor-only memo ribbon. Gated by puck.isEditing in
+   the render, so it never reaches the public site; styled here in the editor stylesheet. */
+.gs-blk-note{display:block;width:max-content;max-width:100%;margin:0 0 10px;padding:4px 10px;font-size:.72rem;font-weight:600;
+  color:var(--gs-text-faint,#9ca29b);background:rgba(200,255,0,.06);border:1px dashed var(--gs-border,rgba(255,255,255,.18));
+  border-radius:6px;white-space:pre-wrap;line-height:1.4}
+.gs-blk-note::before{content:"\270E  ";opacity:.7}
