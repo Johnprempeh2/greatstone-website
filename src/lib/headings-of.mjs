@@ -7,10 +7,10 @@
 // cross-checked against the live DOM. `level` is the ELEMENT level (NOT the className).
 import { headingText } from './a11y-check.mjs'; // reuse the grounded Hero/H1 text logic (single source of truth)
 import { headingLevelNum } from './heading-level.mjs'; // blocks with an editor-set heading level report it here too
-import { stripTags } from './richtext-normalise.mjs'; // headlines can now be rich HTML; the outline wants plain text
+import { toPlainText } from './richtext-normalise.mjs'; // headlines can now be rich HTML; the outline wants plain text
 
-// strip tags so a now-rich headline/eyebrow contributes clean text to the document outline (no-op on a plain string)
-const join = (...xs) => xs.filter(Boolean).map((x) => stripTags(String(x))).join(' ').trim();
+// project each part to plain text (strips tags ONLY when it is rich HTML, so a plain "5 < 10" is left intact)
+const join = (...xs) => xs.filter(Boolean).map((x) => toPlainText(x)).join(' ').trim();
 const arr = (x) => (Array.isArray(x) ? x : []);
 
 const HEADINGS = {

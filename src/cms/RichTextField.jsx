@@ -47,7 +47,16 @@ export function RichTextField({ value, onChange, variant = 'body' }) {
   // (no highlight box or line breaks on a title), so the same formatting surface reads correctly on a headline.
   const singleLine = variant !== 'body';
   const allow = { bold: variant !== 'eyebrow', italic: variant === 'body', underline: variant === 'body', highlight: variant === 'body', color: true };
-  const cleanFor = (h) => (singleLine ? String(h).replace(/<br\s*\/?>/gi, ' ').replace(/\s{2,}/g, ' ').trim() : h);
+  const cleanFor = (h) => {
+    let s = String(h);
+    // unwrap marks this variant does not allow, so a legacy value (or a paste) can't carry e.g. bold into an
+    // eyebrow that has no bold control to remove it. (Tags are already canonical strong/em/u post-sanitise.)
+    if (!allow.bold) s = s.replace(/<\/?(strong|b)\b[^>]*>/gi, '');
+    if (!allow.italic) s = s.replace(/<\/?(em|i)\b[^>]*>/gi, '');
+    if (!allow.underline) s = s.replace(/<\/?u\b[^>]*>/gi, '');
+    if (singleLine) s = s.replace(/<br\s*\/?>/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+    return s;
+  };
   const ref = useRef(null);
   const lastEmitted = useRef(undefined); // the last value WE emitted, so an echo from Puck never re-seeds (caret)
   const [marks, setMarks] = useState({ bold: false, italic: false, underline: false, colorClass: '', hiClass: '' });

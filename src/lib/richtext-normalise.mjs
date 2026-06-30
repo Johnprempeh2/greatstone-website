@@ -29,6 +29,16 @@ export function plainToRichHtml(s) {
   return applyLegacyBold(escapeHtml(s));
 }
 
+// Project ANY stored value to clean PLAIN text (for the search index, document outline, a11y heading checks,
+// word counts, voice coach): strip tags + entities when the value is actually rich HTML, else just drop the
+// legacy ** markers. The looksLikeHtml gate is load-bearing: it means a plain string with a bare angle bracket
+// (e.g. "margins < 5%") is NEVER mangled as if "< 5%" were a tag. One projection, used by every plain-text
+// consumer so they can't drift from each other.
+export function toPlainText(s) {
+  const str = String(s == null ? '' : s);
+  return looksLikeHtml(str) ? stripTags(str) : str.replace(/\*\*/g, '');
+}
+
 // Rich HTML -> plain text (tags removed, basic entities decoded). For places that need a STRING not markup:
 // the FAQ JSON-LD answer text, a search index, an aria-label. Legacy ** markers are also dropped.
 export function stripTags(html) {

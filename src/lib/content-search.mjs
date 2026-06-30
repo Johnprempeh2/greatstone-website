@@ -1,4 +1,5 @@
 import { LINK_PROPS } from './link-audit.mjs';
+import { toPlainText } from './richtext-normalise.mjs';
 
 // In-studio content search. A pure, read-only full-text search across every page's block PROSE plus the
 // page titles — the words an editor actually wrote (headlines, body, FAQ answers, step text). The ⌘K
@@ -33,8 +34,11 @@ export function isSearchableText(key, value) {
   return true;
 }
 
-// strip the inline **bold** markers (src/blocks/emphasis.jsx) so we search + show the words, not markup
-export function stripMarks(s) { return String(s).replace(/\*\*/g, ''); }
+// Project a stored value to the words an editor actually wrote: drop legacy **bold** markers AND strip inline
+// rich-text HTML (so search never matches on tag/class names like "span"/"gs-rt", and snippets never show raw
+// tags). Conditional on looksLikeHtml inside toPlainText, so plain text with a bare '<' is left intact. Shared
+// by voice-check + content-stats, which import this, so all three stay consistent with the outline/a11y views.
+export function stripMarks(s) { return toPlainText(s); }
 
 // recurse props, invoking cb(fieldPath, text) for every searchable prose string; fieldPath is a dotted
 // trail ('body', 'items.0.q', 'slabs.1.title') used for display + ranking only.

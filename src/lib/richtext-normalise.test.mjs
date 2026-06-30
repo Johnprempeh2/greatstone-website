@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeHtml, applyLegacyBold, looksLikeHtml, plainToRichHtml, stripTags } from './richtext-normalise.mjs';
+import { escapeHtml, applyLegacyBold, looksLikeHtml, plainToRichHtml, stripTags, toPlainText } from './richtext-normalise.mjs';
 
 test('escapeHtml neutralises angle brackets, ampersands and quotes', () => {
   assert.equal(escapeHtml('<script>alert("x")&'), '&lt;script&gt;alert(&quot;x&quot;)&amp;');
@@ -54,4 +54,15 @@ test('stripTags yields clean plain text for JSON-LD / search (tags + entities + 
   assert.equal(stripTags('legacy **bold** answer'), 'legacy bold answer');
   assert.equal(stripTags('plain answer'), 'plain answer');
   assert.equal(stripTags(''), '');
+});
+
+test('toPlainText strips tags ONLY for rich HTML, never mangles a plain bare angle bracket', () => {
+  // rich → clean words (so search/outline/word-count never see tag or class names)
+  assert.equal(toPlainText('A <strong>bold</strong> <span class="gs-rt-c-accent">word</span>'), 'A bold word');
+  // plain with a bare '<' is NOT rich → left intact (the load-bearing guard)
+  assert.equal(toPlainText('margins < 5% vs > 10%'), 'margins < 5% vs > 10%');
+  // legacy ** markers still dropped on plain text
+  assert.equal(toPlainText('a **bold** word'), 'a bold word');
+  assert.equal(toPlainText(''), '');
+  assert.equal(toPlainText(null), '');
 });
