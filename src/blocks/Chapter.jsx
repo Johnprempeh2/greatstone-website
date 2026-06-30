@@ -20,9 +20,9 @@ export function Chapter({ index, eyebrow, headline, highlight, body, coda, align
       <div className={('wrap b-chapter-inner ' + appearanceClass(appearance)).trim()}>
         <div className="b-chapter-eyebrow" data-reveal>
           {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          {eyebrow ? <RichText as="span" className="b-chapter-name" html={eyebrow} /> : null}
         </div>
-        <HeadTag className="b-chapter-h" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</HeadTag>
+        <HeadTag className="b-chapter-h" data-reveal><RichText as="span" html={headline} /> {highlight ? <span className="accent">{highlight}</span> : null}</HeadTag>
         {body ? <RichText as="p" className="b-chapter-body" data-reveal html={body} /> : null}
         {coda ? <RichText as="p" className="b-chapter-coda" data-reveal html={coda} /> : null}
         {ctaLabel ? <a className={('b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost') + ' ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
@@ -63,8 +63,8 @@ export const puck = {
   label: 'Chapter',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     coda: { type: 'custom', label: 'Coda line (optional)', render: (props) => <RichTextField {...props} /> },

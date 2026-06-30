@@ -929,3 +929,4 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
   color:var(--gs-text-faint,#9ca29b);background:rgba(200,255,0,.06);border:1px dashed var(--gs-border,rgba(255,255,255,.18));
   border-radius:6px;white-space:pre-wrap;line-height:1.4}
 .gs-blk-note::before{content:"\270E  ";opacity:.7}
+.gs-rt-edit.is-oneline{min-height:40px}

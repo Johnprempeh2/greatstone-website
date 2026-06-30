@@ -42,7 +42,12 @@ function wrapSelection(className) {
 
 const cmd = (name) => { try { document.execCommand('styleWithCSS', false, false); document.execCommand(name); } catch { /* unsupported */ } };
 
-export function RichTextField({ value, onChange }) {
+export function RichTextField({ value, onChange, variant = 'body' }) {
+  // 'body' = full controls + multi-line. 'heading' / 'eyebrow' = single line with a constrained mark set
+  // (no highlight box or line breaks on a title), so the same formatting surface reads correctly on a headline.
+  const singleLine = variant !== 'body';
+  const allow = { bold: variant !== 'eyebrow', italic: variant === 'body', underline: variant === 'body', highlight: variant === 'body', color: true };
+  const cleanFor = (h) => (singleLine ? String(h).replace(/<br\s*\/?>/gi, ' ').replace(/\s{2,}/g, ' ').trim() : h);
   const ref = useRef(null);
   const lastEmitted = useRef(undefined); // the last value WE emitted, so an echo from Puck never re-seeds (caret)
   const [marks, setMarks] = useState({ bold: false, italic: false, underline: false, colorClass: '', hiClass: '' });
@@ -53,13 +58,13 @@ export function RichTextField({ value, onChange }) {
     const el = ref.current; if (!el) return;
     if (value === lastEmitted.current) return;
     const raw = value == null ? '' : String(value);
-    el.innerHTML = sanitizeInline(looksLikeHtml(raw) ? raw : plainToRichHtml(raw));
+    el.innerHTML = cleanFor(sanitizeInline(looksLikeHtml(raw) ? raw : plainToRichHtml(raw)));
     lastEmitted.current = value;
   }, [value]);
 
   const sync = useCallback(() => {
     const el = ref.current; if (!el) return;
-    const clean = sanitizeInline(el.innerHTML);
+    const clean = cleanFor(sanitizeInline(el.innerHTML));
     lastEmitted.current = clean;
     onChange(clean);
   }, [onChange]);
@@ -87,13 +92,14 @@ export function RichTextField({ value, onChange }) {
     // inline sanitiser would otherwise turn into a break anyway; doing it here keeps the caret predictable.
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      if (singleLine) return; // a title / eyebrow is a single line
       try { document.execCommand('insertLineBreak'); } catch { document.execCommand('insertHTML', false, '<br>'); }
       sync();
       return;
     }
     if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
     const k = e.key.toLowerCase();
-    if (k === 'b' || k === 'i' || k === 'u') {
+    if ((k === 'b' && allow.bold) || (k === 'i' && allow.italic) || (k === 'u' && allow.underline)) {
       e.preventDefault();
       cmd(k === 'b' ? 'bold' : k === 'i' ? 'italic' : 'underline');
       sync();
@@ -121,10 +127,10 @@ export function RichTextField({ value, onChange }) {
   return (
     <div className="gs-rt">
       <div className="gs-rt-bar" role="toolbar" aria-label="Text formatting">
-        <button type="button" className={'gs-rt-btn' + (marks.bold ? ' is-on' : '')} aria-pressed={marks.bold} title="Bold (Cmd/Ctrl+B)" aria-label="Bold" onMouseDown={noBlur} onClick={() => apply('bold')}><b>B</b></button>
-        <button type="button" className={'gs-rt-btn' + (marks.italic ? ' is-on' : '')} aria-pressed={marks.italic} title="Italic (Cmd/Ctrl+I)" aria-label="Italic" onMouseDown={noBlur} onClick={() => apply('italic')}><i>I</i></button>
-        <button type="button" className={'gs-rt-btn' + (marks.underline ? ' is-on' : '')} aria-pressed={marks.underline} title="Underline (Cmd/Ctrl+U)" aria-label="Underline" onMouseDown={noBlur} onClick={() => apply('underline')}><u>U</u></button>
-        <span className="gs-rt-sep" aria-hidden="true" />
+        {allow.bold && <button type="button" className={'gs-rt-btn' + (marks.bold ? ' is-on' : '')} aria-pressed={marks.bold} title="Bold (Cmd/Ctrl+B)" aria-label="Bold" onMouseDown={noBlur} onClick={() => apply('bold')}><b>B</b></button>}
+        {allow.italic && <button type="button" className={'gs-rt-btn' + (marks.italic ? ' is-on' : '')} aria-pressed={marks.italic} title="Italic (Cmd/Ctrl+I)" aria-label="Italic" onMouseDown={noBlur} onClick={() => apply('italic')}><i>I</i></button>}
+        {allow.underline && <button type="button" className={'gs-rt-btn' + (marks.underline ? ' is-on' : '')} aria-pressed={marks.underline} title="Underline (Cmd/Ctrl+U)" aria-label="Underline" onMouseDown={noBlur} onClick={() => apply('underline')}><u>U</u></button>}
+        {allow.bold && <span className="gs-rt-sep" aria-hidden="true" />}
         <span className="gs-rt-swatches" role="group" aria-label="Text colour">
           {RT_COLORS.map((c) => {
             const on = marks.colorClass === c.className;
@@ -134,34 +140,38 @@ export function RichTextField({ value, onChange }) {
             );
           })}
         </span>
-        <span className="gs-rt-sep" aria-hidden="true" />
-        <span className="gs-rt-swatches" role="group" aria-label="Highlight">
-          {RT_HIGHLIGHTS.map((h) => {
-            const on = marks.hiClass === h.className;
-            return (
-              <button key={'h' + h.id} type="button" className={'gs-rt-sw gs-rt-hi' + (h.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on} title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label}
-                style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined} onMouseDown={noBlur} onClick={() => setHi(h.className)}>{h.id ? '■' : '✕'}</button>
-            );
-          })}
-        </span>
+        {allow.highlight && (
+          <>
+            <span className="gs-rt-sep" aria-hidden="true" />
+            <span className="gs-rt-swatches" role="group" aria-label="Highlight">
+              {RT_HIGHLIGHTS.map((h) => {
+                const on = marks.hiClass === h.className;
+                return (
+                  <button key={'h' + h.id} type="button" className={'gs-rt-sw gs-rt-hi' + (h.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on} title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label}
+                    style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined} onMouseDown={noBlur} onClick={() => setHi(h.className)}>{h.id ? '■' : '✕'}</button>
+                );
+              })}
+            </span>
+          </>
+        )}
         <span className="gs-rt-sep" aria-hidden="true" />
         <button type="button" className="gs-rt-btn gs-rt-clear" title="Clear formatting" aria-label="Clear formatting" onMouseDown={noBlur}
           onClick={() => { const el = ref.current; if (!el) return; el.focus(); cmd('removeFormat'); clearBrand(el, 'gs-rt-c-'); clearBrand(el, 'gs-rt-bg-'); sync(); }}>Clear</button>
       </div>
       <div
         ref={ref}
-        className="gs-rt-edit"
+        className={'gs-rt-edit' + (singleLine ? ' is-oneline' : '')}
         contentEditable
         suppressContentEditableWarning
         role="textbox"
-        aria-multiline="true"
-        aria-label="Rich text body"
+        aria-multiline={!singleLine}
+        aria-label={variant === 'body' ? 'Rich text body' : 'Rich text ' + variant}
         onInput={sync}
-        onBlur={() => { const el = ref.current; if (el) el.innerHTML = sanitizeInline(el.innerHTML); }}
+        onBlur={() => { const el = ref.current; if (el) el.innerHTML = cleanFor(sanitizeInline(el.innerHTML)); }}
         onKeyDown={onKeyDown}
         onPaste={onPaste}
       />
-      <p className="gs-rt-hint">Select text, then Bold/Italic/Underline (Cmd/Ctrl+B/I/U), a colour, or a highlight box.</p>
+      <p className="gs-rt-hint">{singleLine ? 'Select a word, then a colour' + (allow.bold ? ' or Bold (Cmd/Ctrl+B)' : '') + '.' : 'Select text, then Bold/Italic/Underline (Cmd/Ctrl+B/I/U), a colour, or a highlight box.'}</p>
     </div>
   );
 }

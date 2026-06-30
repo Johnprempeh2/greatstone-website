@@ -1,5 +1,6 @@
 import { stripMarks, fieldLabel, buildSnippet } from './content-search.mjs';
 import { hasLink } from './link-resolver.mjs';
+import { stripTags } from './richtext-normalise.mjs'; // headline/eyebrow can be rich HTML; heading checks want plain text
 
 // Greatstone "A11y coach": a pure, read-only accessibility pre-flight over editor-controlled content,
 // BEYOND the publish-time image-alt check (App.findMissingAlt) and distinct from the house-voice Copy
@@ -27,7 +28,7 @@ const H1_BLOCKS = new Set(['Hero', 'TimeCounter']);
 function headingText(block) {
   const p = (block && block.props) || {};
   if (block.type === 'Hero' && Array.isArray(p.lines) && p.lines.length) return p.lines.map((l) => (l && l.text) || '').join(' ').trim();
-  return [p.headline, p.highlight, p.headlineSuffix].filter(Boolean).map(String).join(' ').trim();
+  return [p.headline, p.highlight, p.headlineSuffix].filter(Boolean).map((x) => stripTags(String(x))).join(' ').trim();
 }
 
 const snippetFor = (text) => { const hay = stripMarks(text); return buildSnippet(hay, { start: 0, end: hay.length }); };

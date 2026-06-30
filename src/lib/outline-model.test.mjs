@@ -83,3 +83,11 @@ test('buildSiteOutline sorts worst-first + totals across pages', () => {
   assert.equal(r.total, 1);
   assert.equal(r.groups[0].pageSlug, 'b'); // worst-first
 });
+
+test('a rich (HTML) Chapter headline contributes CLEAN text to the outline (no tags leak in)', () => {
+  const heads = headingsOf({ type: 'Chapter', props: { headline: 'A <strong>bold</strong> <span class="gs-rt-c-accent">word</span>', highlight: '', headingLevel: 'h2' } });
+  assert.equal(heads.length, 1);
+  assert.equal(heads[0].level, 2);
+  assert.equal(heads[0].text, 'A bold word');
+  assert.doesNotMatch(heads[0].text, /[<>]/);
+});
