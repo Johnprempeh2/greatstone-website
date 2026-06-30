@@ -47,6 +47,7 @@ function collectMissingAlt(content, pageSlug, out) {
     }
     if (bt === 'Team' && Array.isArray(p.items)) p.items.forEach((m) => { if (m && normUrl(m.photo) && noAlt(m.name)) out.push({ pageSlug, blockType: 'Team', field: 'photo', url: normUrl(m.photo), where: 'Team photo (no name)' }); });
     if (bt === 'InsightsGrid' && Array.isArray(p.posts)) p.posts.forEach((post) => { if (post && normUrl(post.image) && noAlt(post.alt)) out.push({ pageSlug, blockType: 'InsightsGrid', field: 'image', url: normUrl(post.image), where: 'Insight: ' + (post.title || 'post') }); });
+    if (bt === 'Columns' && Array.isArray(p.columns)) p.columns.forEach((c) => { if (c && normUrl(c.image) && noAlt(c.alt)) out.push({ pageSlug, blockType: 'Columns', field: 'image', url: normUrl(c.image), where: 'Column: ' + (c.heading || 'column') }); });
   });
 }
 

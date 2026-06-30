@@ -328,6 +328,9 @@ function findMissingAlt(content, products) {
     if (b.type === 'InsightsGrid' && Array.isArray(p.posts)) {
       p.posts.forEach((post) => { if (post && post.image && noAlt(post.alt)) issues.push('Insight: ' + (post.title || 'post')); });
     }
+    if (b.type === 'Columns' && Array.isArray(p.columns)) {
+      p.columns.forEach((c) => { if (c && c.image && noAlt(c.alt)) issues.push('Column: ' + (c.heading || 'column')); });
+    }
   });
   // a page that shows the storefront also surfaces every product image — flag any with no alt text
   if (list.some((b) => b.type === 'Storefront')) {

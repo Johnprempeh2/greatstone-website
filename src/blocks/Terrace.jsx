@@ -30,7 +30,7 @@ export function Terrace({ index, eyebrow, headline, highlight, body, slabs = [] 
           {index ? <span className="b-chapter-num">{index}</span> : null}
           {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
         </div>
-        <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        <h2 className="b-chapter-h" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         {body ? <p className="b-chapter-body" data-reveal>{body}</p> : null}
 
         <ol ref={stackRef} className={'b-terrace-stack' + (settled ? ' is-settled' : '')}>

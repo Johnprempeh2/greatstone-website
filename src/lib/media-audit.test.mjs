@@ -123,3 +123,17 @@ test('library with assets + zero page usages → every asset unused; errors alwa
   assert.equal(r.counts.unused, 2);
   assert.equal(r.errors, 0);
 });
+
+test('a Columns column with an image but blank alt is flagged missing-alt (regression: coverage hole)', () => {
+  const r = auditMedia(S({ pages: { home: page('home', [
+    blk('Columns', { columns: [
+      { image: 'https://x/c0.png', alt: '', heading: 'Left' },   // flagged
+      { image: 'https://x/c1.png', alt: 'has alt', heading: 'Right' }, // fine
+      { image: '', alt: '', heading: 'No image' },               // no image → not flagged
+    ] }),
+  ]) } }));
+  const cols = r.missingAlt.filter((m) => m.blockType === 'Columns');
+  assert.equal(cols.length, 1);
+  assert.equal(cols[0].url, 'https://x/c0.png');
+  assert.equal(cols[0].where, 'Column: Left');
+});
