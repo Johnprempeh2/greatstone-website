@@ -21,6 +21,7 @@ const PuckEditor = lazy(() => import('./EditorMount.jsx'));
 // undo/redo buttons live in their own lazy module (they call usePuck → @measured/puck); kept off
 // the public bundle, loaded with the editor and rendered inside Puck's context via headerActions.
 const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
+const ContextBar = lazy(() => import('./cms/ContextBar.jsx')); // universal contextual style strip (editor-only)
 // Live storefront — reads Supabase (@supabase/supabase-js); lazy so the public bundle stays lean
 // (the chunk arrives only on the #shop route).
 const LazyStoreBrowse = lazy(() => import('./store/StoreBrowse.jsx'));
@@ -1448,6 +1449,7 @@ export default function App() {
             // wrap Puck's block drawer so the guided tour has a stable anchor for its "add a block" step
             drawer: ({ children }) => <div data-tour="puck-add" className="gs-puck-drawer">{children}</div>,
             headerActions: ({ children }) => (
+              <div className="gs-edit-chrome">
               <div className="gs-edit-actions">
                 {/* consolidated nav + account menu — frees the bar so the editing controls lead */}
                 <EditorTopMenu user={user} onHub={goHub} onSite={() => navigate(current)} onCmd={() => setCmdOpen(true)} onSignOut={doSignOut}
@@ -1484,6 +1486,9 @@ export default function App() {
                       title={page.status === 'draft' ? 'Send to an admin for review' : ({ review: 'In review with an admin', approved: 'Approved; an admin can publish it', published: 'This page is live. Reopen it as a draft to request changes' }[page.status] || 'Already submitted for review')}>Request review</button>
                   )}
                 </span>
+              </div>
+              {/* the universal contextual style strip — a pinned second row reflecting the selected block */}
+              <Suspense fallback={null}><ContextBar /></Suspense>
               </div>
             ),
           }}

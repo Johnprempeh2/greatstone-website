@@ -948,6 +948,25 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
 
 /* ── Editor top-bar: consolidated nav + account menu (frees the toolbar for editing) ───────────────── */
 .gs-edit-spacer{flex:1 1 auto;min-width:8px}
+/* the top bar is now two stacked rows: the actions row + the universal contextual style strip */
+.gs-edit-chrome{display:flex;flex-direction:column;gap:8px;width:100%}
+/* the contextual strip: reflects the selected block, offers its block-level style controls (Canva-style) */
+.gs-ctx-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--gs-border-soft,rgba(255,255,255,.08));
+  border-radius:9px;background:rgba(255,255,255,.03);min-height:40px}
+.gs-ctx-bar.is-empty{background:transparent;border-style:dashed}
+.gs-ctx-hint{font-size:.8rem;color:var(--gs-text-faint,#9ca29b)}
+.gs-ctx-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gs-accent,#c8ff00);
+  padding:2px 8px;border:1px solid var(--gs-border,#3a3a3a);border-radius:100px;background:rgba(200,255,0,.06)}
+.gs-ctx-sep{width:1px;align-self:stretch;min-height:18px;background:var(--gs-border,#3a3a3a);margin:0 2px}
+.gs-ctx-group{display:inline-flex;align-items:center;gap:4px}
+.gs-ctx-glabel{font-size:.7rem;font-weight:700;color:var(--gs-text-faint,#9ca29b);margin-right:2px}
+.gs-ctx-pill{height:28px;padding:0 10px;border:1px solid var(--gs-border,#3a3a3a);border-radius:100px;background:transparent;
+  color:var(--gs-text,#f5f5f5);font:inherit;font-size:.78rem;font-weight:600;line-height:1;cursor:pointer;
+  transition:background var(--gs-dur-micro,150ms) var(--gs-ease),border-color var(--gs-dur-micro,150ms) var(--gs-ease)}
+.gs-ctx-pill:hover{background:rgba(255,255,255,.08);border-color:var(--gs-border-strong,rgba(200,255,0,.18))}
+.gs-ctx-pill.is-on{background:var(--gs-accent,#c8ff00);color:#0e1611;border-color:var(--gs-accent,#c8ff00)}
+.gs-ctx-pill:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.gs-ctx-pill{transition:none}}
 .gs-em{position:relative;display:inline-flex}
 .gs-em-btn{display:inline-flex;align-items:center;gap:6px}
 .gs-em-diamond{color:var(--gs-accent,#c8ff00);font-size:.9em}
