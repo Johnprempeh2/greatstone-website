@@ -44,9 +44,7 @@ export function AiCostCalculator({
   const [unlocked, setUnlocked] = useState(false);
   const [err, setErr] = useState('');
   // keep live inputs in step with editable defaults in the Puck editor (no remount there); no-op for visitors
-  useEffect(() => { setTeam(defaultTeam); }, [defaultTeam]);
-  useEffect(() => { setHours(defaultHours); }, [defaultHours]);
-  useEffect(() => { setCost(defaultCost); }, [defaultCost]);
+  useEffect(() => { setTeam(defaultTeam); setHours(defaultHours); setCost(defaultCost); }, [defaultTeam, defaultHours, defaultCost]);
 
   const { hoursYr, costYr, saving, pct } = useMemo(() => {
     const t = clampNum(team, 1, 100000), h = clampNum(hours, 0, 80), c = clampNum(cost, 0, 100000);
@@ -90,7 +88,7 @@ export function AiCostCalculator({
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     } catch (e) { /* download unsupported — the on-screen figures still stand */ }
-  }, [lead, team, hours, cost, weeksPerYear, hoursYr, costYr, saving, pct, currency]);
+  }, [lead, team, hours, cost, weeksPerYear, recoveryPct, currency]);
 
   return (
     <section ref={ref} className="b-acc">

@@ -199,7 +199,7 @@
 .sc-quote { display:flex; flex-direction:column; gap:10px; }
 .sc-quote label { display:flex; flex-direction:column; gap:4px; font-size:.76rem; font-weight:700; color:var(--gs-text-muted); }
 .sc-quote input, .sc-quote textarea { padding:.6em .8em; border-radius:9px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.14)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.9rem; }
-.sc-quote input:focus, .sc-quote textarea:focus { outline:none; border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); }
+.sc-quote input:focus, .sc-quote textarea:focus { outline:none; border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); box-shadow:0 0 0 3px var(--gs-accent-dim,rgba(200,255,0,.12)); }
 
 /* ── Checkout: two first-class payment methods (card + purchase order) ── */
 .sc-methods { display:flex; flex-direction:column; gap:10px; margin-top:2px; }
@@ -207,6 +207,7 @@
   background:rgba(255,255,255,.04); border:1px solid var(--gs-border-soft,rgba(255,255,255,.12));
   transition:transform var(--gs-dur-micro,150ms) var(--gs-ease,ease), border-color var(--gs-dur-micro,150ms) var(--gs-ease,ease), background var(--gs-dur-micro,150ms) var(--gs-ease,ease); }
 .sc-method:hover:not(:disabled) { transform:translateY(-2px); border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); background:rgba(255,255,255,.06); }
+.sc-method:focus-visible { outline:2px solid var(--gs-accent); outline-offset:3px; }
 .sc-method:disabled { opacity:.6; cursor:progress; }
 .sc-method-card { border-color:var(--gs-accent); background:var(--gs-accent-dim,rgba(200,255,0,.1)); }
 .sc-method-card:hover:not(:disabled) { border-color:var(--gs-accent); background:var(--gs-accent-glow,rgba(200,255,0,.22)); }

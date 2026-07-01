@@ -105,8 +105,8 @@ export default function StoreCart({ confirmed = false }) {
               <form className="sc-quote" onSubmit={submitQuote}>
                 <p className="sc-note sc-po-intro">The way most teams buy. Send us your purchase order and we&rsquo;ll invoice you on your terms, no card needed. Volume discounts and bespoke pricing welcome.</p>
                 <label className="sc-po-num">Purchase order number
-                  <input value={q.po} onChange={(e) => setQf('po', e.target.value)} placeholder="e.g. PO-10432" />
-                  <span className="sc-po-hint">Have a PO number? Enter it here. Don&rsquo;t have one yet? Leave it blank and we&rsquo;ll raise the paperwork with you.</span>
+                  <input value={q.po} onChange={(e) => setQf('po', e.target.value)} placeholder="e.g. PO-10432" aria-describedby="sc-po-hint" />
+                  <span className="sc-po-hint" id="sc-po-hint">Have a PO number? Enter it here. Don&rsquo;t have one yet? Leave it blank and we&rsquo;ll raise the paperwork with you.</span>
                 </label>
                 <label>Company<input value={q.company} onChange={(e) => setQf('company', e.target.value)} autoComplete="organization" /></label>
                 <label>Your name<input value={q.name} onChange={(e) => setQf('name', e.target.value)} autoComplete="name" /></label>

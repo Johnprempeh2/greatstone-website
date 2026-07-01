@@ -175,7 +175,7 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
                 <div className="b-abs-score" aria-hidden="true"><b>{result.avg}</b><span>/ {SCALE} overall</span></div>
               </div>
 
-              <div className="b-abs-chart" role="img" aria-label={'Your AI readiness by pillar, scored 1 to 4, against an industry benchmark. Overall ' + result.avg + ' of 4, ' + result.phase.label + '.'}>
+              <div className="b-abs-chart" role="img" aria-label={'Your AI readiness by pillar, scored 1 to 4, against an industry benchmark. Overall ' + result.avg + ' of 4, ' + result.phase.label + '. ' + result.rows.map((r) => r.name + ': ' + (r.phase ? r.phase.label : 'not scored') + ', ' + r.score + ' of 4, industry benchmark ' + r.bench + '.').join(' ')}>
                 {result.rows.map((r) => (
                   <div className="b-abs-row" key={r.key}>
                     <div className="b-abs-row-top"><span className="b-abs-row-name">{r.name}</span><span className="b-abs-row-lvl">{r.phase ? r.phase.label : '—'}</span></div>

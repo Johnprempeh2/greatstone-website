@@ -352,3 +352,41 @@ Found a genuine conversion gap: the home page (primary landing page) had **no FA
 - **Home FAQ**: a focused **3-item** subset (the top objections), placed before the home closing Invite, `showSchema:false`. Pure reuse of the exact Services answers (no fabrication). Implemented as a shared module const `HOME_FAQ` used by BOTH `seedState` (fresh visitors) and a guarded `_homeFaqSeeded` migrate (returning visitors), so the two never drift; idempotent + respects hand-removal.
 
 **Verified:** 58/58 tests, clean build (`index-VkAt5jNe.js`), live-preview — home renders the 3-item FAQ with **0 FAQPage schema**, Services keeps **1 canonical** FAQPage schema (+ the C19 ComparisonMatrix), 0 console errors. Committed `35eee24` (scoped to Faq.jsx + store.js; foreign App.jsx/ProductDetail re-checked = same safe cleanup, never staged). **Deployed live** (deploy `6a3990a6bf1ec83653a19129`, ready) and verified: greatstone-home.netlify.app/puck-proof/ serves `index-VkAt5jNe.js` (HTTP 200), home FAQ live.
+
+---
+
+## Cycle 21 — 2026-07-02 — fresh multi-lens sweep after the 1 Jul Ben build (NOT deployed)
+
+Resumed by John: "excellence loop for the whole website." Ran a 6-lens assessment (a11y, voice, UI craft, UX
+states, performance, correctness) focused on the newest work from this session (the AI Baseline Survey + AI
+Cost Calculator lead-magnet blocks, the PO-checkout reframe, the service-catalogue category nav) plus a fresh
+public sweep. Read: the new blocks are already strong (focus management, `role=img` charts, sr-only live
+regions, reduced-motion guards); the real wins were accessibility-consistency gaps where the newest checkout
+lagged the site's own pattern, plus contained code-quality fixes.
+
+**Shipped (safe, verified — NOT deployed):**
+- **Keyboard focus ring on the checkout payment-method buttons** (`store.css` `.sc-method:focus-visible`) — a
+  real WCAG 2.4.7 gap on a money path; card / purchase-order buttons had hover but no visible keyboard focus.
+- **Stronger PO quote-form focus ring** (`store.css` `.sc-quote input:focus` accent box-shadow) to match the
+  survey + calculator gate fields.
+- **Reduced-motion guard on the service category tiles + cards** (`ServiceCatalog` CSS hover `translateY`).
+- **PO number hint linked to its input** (`StoreCart` `aria-describedby`).
+- **Per-pillar breakdown added to the survey chart `aria-label`** (`AiBaselineSurvey`) so AT gets each pillar's
+  level/score/benchmark (a per-marker label would be ignored inside `role="img"`).
+- **Hoisted category counts out of two render loops** into a memoised map (`ServiceCatalog`) — pure refactor,
+  verified identical (9 tiles, correct counts).
+- **Consolidated three default-sync effects into one + trimmed the download callback deps** (`AiCostCalculator`).
+
+**Verified:** `npm test` 571 green, `npm run build` clean, secret scan clean; live on `#shop` the focus rules
+are present in the loaded `store.css`, category tiles show correct counts, 0 console errors. Commit scoped to
+the touched files (`.claude/launch.json` + `ProductDetail.jsx` left unstaged as always). **Not deployed.**
+
+**Skipped (reason):** em dashes in a few code comments — non-user-facing (comments, not copy); the voice rule
+governs output.
+
+**Proposed to John (design / money-path calls, not auto-shipped):** (1) client-side required-field validation
+on the PO quote form (name/company blank posts silently today); (2) replace the native `confirm()` dropped-items
+dialog with a styled in-drawer `aria-modal`; (3) inline "Try again" on Stripe checkout failure; (4) mobile
+treatment of the prominent category nav (collapse/toggle — trades against Ben's "categories up top" ask);
+(5) measured contrast check on the highlighted payment-method card + muted text on dark; (6) pre-fill a
+signed-in buyer's company/name (not just email) in the PO form.

@@ -63,6 +63,12 @@ export function ServiceCatalog({
   const blurbFor = useMemo(() => {
     const m = new Map(); categories.forEach((c) => m.set(c.name, c.blurb)); return m;
   }, [categories]);
+  // per-category counts, memoised once, so the nav tiles + chips don't each re-filter the whole list per render
+  const catCounts = useMemo(() => {
+    const m = new Map();
+    for (const s of services) { const c = (s && s.category) || 'Other'; m.set(c, (m.get(c) || 0) + 1); }
+    return m;
+  }, [services]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -111,7 +117,7 @@ export function ServiceCatalog({
           // that category's browse view (chips + grid below). Hidden once a category or search is active.
           <nav className="b-cat-nav" aria-label="Browse services by category" data-reveal>
             {catNames.map((c) => {
-              const n = services.filter((s) => s.category === c).length;
+              const n = catCounts.get(c) || 0;
               return (
                 <button key={c} type="button" className="b-cat-navtile"
                   onClick={() => { setActive(c); if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(() => { const el = ref.current && ref.current.querySelector('.b-cat-controls'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); }}>
@@ -158,7 +164,7 @@ export function ServiceCatalog({
               All <span className="b-cat-chip-n">{services.length}</span>
             </button>
             {catNames.map((c) => {
-              const n = services.filter((s) => s.category === c).length;
+              const n = catCounts.get(c) || 0;
               return (
                 <button key={c} type="button" className={'b-cat-chip' + (active === c ? ' is-on' : '')}
                   aria-pressed={active === c} onClick={() => setActive(c)}>
@@ -279,6 +285,7 @@ export const css = `
 .b-cat-foot{text-align:center;margin-top:clamp(32px,5vw,56px);display:flex;flex-direction:column;align-items:center;gap:14px}
 .b-cat-foot p{color:var(--gs-text-muted);font-size:.98rem}
 @media(max-width:520px){.b-cat-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.b-cat-navtile:hover,.b-cat-card:hover{transform:none}}
 `;
 
 export const puck = {
