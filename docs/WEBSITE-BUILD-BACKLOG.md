@@ -19,11 +19,12 @@ missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only,
   `track('generate_lead', { form: 'ai_baseline_survey' })`. Content authored in Greatstone voice, kept in
   `src/data/ai-baseline-survey.mjs`. Placeable via Puck (Proof category). Not deployed.
 
-- **AI Cost Calculator lead magnet — rename + email-gate wrapper** — [PARTIAL]. `TimeSavingsCalculator.jsx`
-  is already built and production-ready; Ben's framing is "how much money am I leaving on the table with AI."
-  Rename/relabel to "AI Cost Calculator", wrap it in an `EmailGate` (name/company/email before reveal, reusing
-  the `BookDeepDive` form pattern), emit `track('generate_lead', { form: 'ai_cost_calc' })`, expose as a Puck
-  block / tool page. Pure frontend.
+- **AI Cost Calculator lead magnet** — [BUILT] (iteration 5). New `AiCostCalculator` Puck block (Proof
+  category), distinct from `TimeSavingsCalculator` (left untouched for existing pages). Three inputs show the
+  live "money on the table" figure (ungated hook); a name/company/email gate then reveals "AI could recover
+  about £X a year" (an editable recovery %) plus a Book-a-diagnostic CTA and a downloadable CSV estimate.
+  Emits `track('generate_lead', { form: 'ai_cost_calc' })`. Pure frontend. Completes the lead-magnet pair with
+  the AI Baseline Survey.
 
 - **Per-product-range activation-instructions authoring UI** — [MISSING] (authoring + account display are
   frontend-only; email injection is gated). Ben: activation instructions are authored **per product RANGE, not
@@ -185,5 +186,20 @@ introduces the first Supabase Storage bucket):
 - **Assurance:** a 4-agent adversarial security review (RLS / client / integrity) ran; all 7 findings fixed
   (query-omission data-loss, orphaned-file cleanup, double-email, path-scope CHECK, filename sanitise, TTL,
   email wording). `npm test` 561 green, `npm run build` clean, secret scan clean. NOT deployed.
+
+### Iteration 5 — AI Cost Calculator lead magnet
+
+New `AiCostCalculator` block (Proof category), a gated companion to the AI Baseline Survey. Ben/John framing:
+"how much money am I leaving on the table with AI." Three inputs (people, hours lost/week, hourly cost) show
+the live annual cost of the manual work (ungated hook); a name/company/email gate then reveals the estimated
+AI saving (`cost × recovery%`, recovery editable, default 55%) with a Book-a-diagnostic CTA and a CSV estimate
+download. Built as a NEW block rather than renaming `TimeSavingsCalculator`, so existing pages are untouched.
+
+- Files: `src/blocks/AiCostCalculator.jsx`, `src/puck.config.jsx` (register + Proof category). Emits
+  `track('generate_lead', { form: 'ai_cost_calc' })`. Pure frontend.
+- Verify: `npm test` 561 green, `npm run build` clean (secret scan passed). Live preview (injected into home):
+  live figure £105,984 correct (12×6×46×32); empty gate submit blocked; valid submit revealed £58,291/yr (55%),
+  hid the gate, showed CTA + download (Blob created); screenshot on-brand; zero console errors. Test block removed.
+- Not deployed (awaiting John's OK).
 
 _(next iterations appended below)_
