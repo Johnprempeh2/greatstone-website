@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
-import { emphasize } from './emphasis.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // coerce first: a stat value persisted as a string (legacy store, re-imported export, or a future
 // backend payload) would otherwise throw on .toFixed or render NaN on the static + screen-reader path.
@@ -9,8 +10,9 @@ const fmt = (n, dec) => { n = Number(n) || 0; return dec > 0 ? n.toFixed(dec) : 
 // Proof, not promises: an intro, a clients line, and a row of stats that count up once on
 // entry (and honour reduced-motion by showing the final figure immediately). The counter
 // drives DOM text directly so the figures are real text content for accessibility/SEO.
-export function StatStrip({ index, eyebrow, headline, highlight, body, clients, stats = [], columns = 4, variant = 'aurora', footnote, puck }) {
+export function StatStrip({ id, index, eyebrow, headline, highlight, body, clients, stats = [], columns = 4, variant = 'aurora', footnote, puck }) {
   const reveal = useReveal([stats.length]);
+  const editing = puck && puck.isEditing;
   const countRef = useRef(null);
   const band = variant === 'band';
   const cards = variant === 'cards';
@@ -33,26 +35,26 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
     return () => obs.disconnect();
   }, [JSON.stringify(stats), plain]);
 
-  const hasHeader = index || eyebrow || headline || highlight || body || clients;
+  const hasHeader = index || eyebrow || headline || highlight || body || clients || editing;
   return (
     <section ref={reveal} className={'b-proof' + (band ? ' b-proof-band' : '') + (cards ? ' b-proof-cards' : '') + (plain ? ' b-proof-plain' : '')}>
       {(band || cards || plain) ? null : <div className="b-proof-aurora" aria-hidden="true" />}
       <div className="wrap">
         {hasHeader ? (
           <>
-            {(index || eyebrow) ? (
+            {(index || eyebrow || editing) ? (
               plain
-                ? (eyebrow ? <span className="kicker" data-reveal>{eyebrow}</span> : null)
+                ? <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="kicker" singleLine placeholder="Eyebrow…" data-reveal />
                 : (
                   <div className="b-chapter-eyebrow" data-reveal>
                     {index ? <span className="b-chapter-num">{index}</span> : null}
-                    {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+                    <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
                   </div>
                 )
             ) : null}
-            {(headline || highlight) ? <h2 className="b-proof-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
-            {body ? <p className="b-proof-body" data-reveal>{emphasize(body, puck?.isEditing)}</p> : null}
-            {clients ? <p className="b-proof-clients" data-reveal>{clients}</p> : null}
+            {(headline || highlight || editing) ? <h2 className="b-proof-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-proof-body" placeholder="Body…" data-reveal />
+            <EditableText editing={editing} id={id} field="clients" value={clients} as="p" className="b-proof-clients" singleLine placeholder="Clients line…" data-reveal />
           </>
         ) : null}
         {stats.length > 0 && (
@@ -72,7 +74,7 @@ export function StatStrip({ index, eyebrow, headline, highlight, body, clients, 
             ))}
           </div>
         )}
-        {footnote ? <p className="b-stat-foot" data-reveal>{footnote}</p> : null}
+        <EditableText editing={editing} id={id} field="footnote" value={footnote} as="p" className="b-stat-foot" singleLine placeholder="Footnote (optional)…" data-reveal />
       </div>
     </section>
   );
@@ -152,16 +154,16 @@ export const puck = {
   label: 'Proof / stats',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
-    clients: { type: 'text', label: 'Clients line', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
+    clients: { type: 'custom', label: 'Clients line', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     columns: { type: 'number', label: 'Columns', min: 2, max: 4 },
     variant: { type: 'radio', label: 'Style', options: [
       { label: 'Aurora (with header)', value: 'aurora' }, { label: 'Band (headerless stat row)', value: 'band' }, { label: 'Cards (2-up glass)', value: 'cards' }, { label: 'Plain (centered + dividers)', value: 'plain' },
     ]},
-    footnote: { type: 'text', label: 'Footnote (optional)', contentEditable: true },
+    footnote: { type: 'custom', label: 'Footnote (optional)', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     stats: {
       type: 'array', label: 'Stats',
       arrayFields: {
