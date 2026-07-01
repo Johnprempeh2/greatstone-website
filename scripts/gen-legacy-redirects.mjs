@@ -9,18 +9,28 @@
 // the SPA fallback, which MUST stay last) is preserved untouched. Idempotent: re-running with the same input
 // changes nothing. When Ben supplies the migrated product-slug map, add exact /vendor/product → /#product/<slug>
 // lines above the vendor wildcards (they win by being earlier) and the vendor fallback still covers the rest.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { renderBlock, auditCoverage, BLOCK_BEGIN, BLOCK_END } from '../src/lib/legacy-redirects.mjs';
+import { renderBlock, auditCoverage, productRedirectRules, BLOCK_BEGIN, BLOCK_END } from '../src/lib/legacy-redirects.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const URLS = join(DIR, 'legacy-urls.txt');
 const REDIRECTS = join(DIR, '..', 'public', '_redirects');
 const mode = process.argv.includes('--check') ? 'check' : process.argv.includes('--audit') ? 'audit' : 'write';
+// Optional migrated slug map for exact per-product redirects: --product-map <file>, else the default path
+// if it exists. Absent → vendor wildcards cover every product (the default until Ben supplies the map).
+const pmIdx = process.argv.indexOf('--product-map');
+const PRODUCT_MAP = pmIdx >= 0 ? process.argv[pmIdx + 1] : join(DIR, 'legacy-product-map.json');
 
 function readPaths() {
   return readFileSync(URLS, 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+}
+
+function readProductMap() {
+  if (!PRODUCT_MAP || !existsSync(PRODUCT_MAP)) return null;
+  try { return JSON.parse(readFileSync(PRODUCT_MAP, 'utf8')); }
+  catch (e) { console.error('✗ could not parse product map ' + PRODUCT_MAP + ': ' + e.message); process.exit(2); }
 }
 
 // Replace the marked block in the current _redirects, or insert it before the /puck-proof or /* rules.
@@ -38,7 +48,9 @@ function spliceBlock(current, block) {
 }
 
 const paths = readPaths();
-const block = renderBlock(paths);
+const productMap = readProductMap();
+const block = renderBlock(paths, productMap);
+const productCount = productRedirectRules(productMap).length;
 
 if (mode === 'audit') {
   const cov = auditCoverage(paths);
@@ -53,6 +65,7 @@ if (mode === 'audit') {
   }
   const toHome = (cov.blog || []).length + (cov.content || []).length;
   console.log(`\n${total} known URLs · ${total - toHome} to a specific destination · ${toHome} to home (blog + content).`);
+  console.log(productCount ? `Product-exact overrides from the slug map: ${productCount}.` : 'No product slug map yet — every product falls back to its vendor catalogue.');
   process.exit(0);
 }
 
@@ -68,4 +81,4 @@ if (mode === 'check') {
 if (current === next) { console.log('public/_redirects already up to date (no change).'); process.exit(0); }
 writeFileSync(REDIRECTS, next, 'utf8');
 const n = block.split('\n').filter((l) => /\s301/.test(l)).length;
-console.log(`Wrote ${n} legacy redirect rules into public/_redirects.`);
+console.log(`Wrote ${n} legacy redirect rules into public/_redirects` + (productCount ? ` (incl. ${productCount} product-exact overrides).` : '.'));

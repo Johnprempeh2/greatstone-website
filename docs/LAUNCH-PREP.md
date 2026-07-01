@@ -176,6 +176,30 @@ interim DB: the 3 seeded staff (1 owner, 1 admin, 1 editor, 2 managers) validate
 customers it surfaces a single genuine orphan Auth user (a personal email that is neither staff nor customer).
 This closes the last self-contained launch-prep item; what remains is Ben/counsel/credential-gated.
 
+## Backlog cleared — enhancements
+
+The nine locked items (a–i) are all shipped. Further iterations refine what plugs in at cutover.
+
+### Iteration 10 — Redirect map: product-exact override support
+Completed the redirect tooling so Ben's migrated product-slug map drops straight in. Until it lands the vendor
+wildcards send every old product URL to the right catalogue; with the map, each old product URL 301s to its
+exact new product page.
+- `src/lib/legacy-redirects.mjs`: `productRedirectRules(map)` maps `{ "<old product path>": "<new slug>" }`
+  → `/#product/<slug>` rules; `renderBlock(paths, map)` emits them ABOVE the vendor wildcards so first-match
+  reaches the exact product. Skips `_comment` metadata + blank slugs; tolerates a full `/#product/x` value.
+- `scripts/gen-legacy-redirects.mjs`: reads `scripts/legacy-product-map.json` (or `--product-map <file>`) when
+  present; `--audit` reports the override count. `scripts/legacy-product-map.sample.json` documents the format.
+  With no map present the generated block is byte-identical to before, so nothing changes until the map exists.
+
+Verified: 3 new unit tests (mapping, metadata/blank skipping, product-before-wildcard ordering); 548 total,
+build + secret scan clean; `--check` still reports in sync (public/_redirects untouched); `--audit` against the
+sample map reports 6 product-exact overrides. Cutover step: save Ben's map as `scripts/legacy-product-map.json`
+and run `npm run redirects`.
+
+Still teed up for John's steer (needs a hash-vs-path decision, so not built unsupervised): making CONTENT pages
+(about/method/insights/legal) deep-linkable, which would also let the redirect map target them precisely instead
+of sending them to home.
+
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
 **by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real

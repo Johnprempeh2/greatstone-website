@@ -1,0 +1,9 @@
+{
+  "_comment": "Migrated product-slug map for exact per-product 301s. Key = the OLD product path on greatstonesoftware.co.uk; value = the NEW product's slug (the #product/<slug> route, i.e. its slug in the new catalogue). Save the real map as scripts/legacy-product-map.json (same folder) and run `npm run redirects` — those rules land ABOVE the vendor wildcards, so a buyer reaches the exact product instead of the vendor catalogue. Any old product NOT listed here still falls back to its vendor catalogue via the wildcard. Delete this _comment key in the real file (it is ignored, but keep it clean).",
+  "/aspose/aspose-total-for-net": "aspose-total-product-family",
+  "/aspose/aspose-pdf-for--net": "aspose-pdf-for-net",
+  "/aspose/aspose-words-for--net": "aspose-words-for-net",
+  "/groupdocs/groupdocs-total-for--net": "groupdocs-total-for-net",
+  "/ironsoftware/ironpdf": "ironpdf",
+  "/pdflib/pdflib-tet": "pdflib-tet"
+}
