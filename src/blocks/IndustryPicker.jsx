@@ -3,6 +3,8 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // IndustryPicker: industries.html's signature interaction. A role=tablist of sector chips with a
 // travelling lime underline; choosing a sector crossfades the right-hand "specific drains" card and
@@ -28,8 +30,10 @@ export function IndustryPicker({
   specificFoot = '', specificFootAccent = '',
   ctaLabel = '', ctaHref = '#book',
   industries = [],
+  id, puck,
 }) {
   const ref = useReveal([industries.length]);
+  const editing = puck && puck.isEditing;
   const n = industries.length;
   const [active, setActive] = useState(0);     // chip + underline track this immediately
   const uid = useId();                         // stable id base for the tab ↔ tabpanel wiring
@@ -112,26 +116,28 @@ export function IndustryPicker({
 
             <article className="card b-ind-card universal">
               <span className="b-ind-num" aria-hidden="true">⊘</span>
-              <p className="b-ind-head">{universalHead}</p>
-              <h3>{universalTitle}</h3>
+              <EditableText editing={editing} id={id} field="universalHead" value={universalHead} as="p" className="b-ind-head" singleLine placeholder="Eyebrow…" />
+              <EditableText editing={editing} id={id} field="universalTitle" value={universalTitle} as="h3" singleLine placeholder="Title…" />
               <ul className="b-ind-drains">
-                {universal.map((d, i) => <li key={i}>{d.text}</li>)}
+                {universal.map((d, i) => <li key={i}><EditableText editing={editing} id={id} arrayField="universal" index={i} field="text" value={d.text} as="span" placeholder="Drain…" /></li>)}
               </ul>
-              {(universalFoot || universalFootAccent) ? (
-                <p className="b-ind-foot">{universalFoot} <span className="accent">{universalFootAccent}</span></p>
+              {(universalFoot || universalFootAccent || editing) ? (
+                <p className="b-ind-foot"><EditableText editing={editing} id={id} field="universalFoot" value={universalFoot} as="span" singleLine placeholder="Footer lead…" /> <span className="accent">{universalFootAccent}</span></p>
               ) : null}
             </article>
 
             <article className="card b-ind-card specific">
               <span className="b-ind-num" aria-hidden="true">◆</span>
-              <p className="b-ind-head">{specificHead}</p>
-              <h3>{cur.specificTitle}</h3>
+              <EditableText editing={editing} id={id} field="specificHead" value={specificHead} as="p" className="b-ind-head" singleLine placeholder="Eyebrow…" />
+              {/* the specific card shows the ACTIVE industry (index=display); editing writes back to that
+                  tab's own title/drains via the nested path */}
+              <EditableText editing={editing} id={id} arrayField="industries" index={display} field="specificTitle" value={cur.specificTitle} as="h3" singleLine placeholder="Title…" />
               {/* re-key on the shown industry so the row-in stagger re-fires on each swap */}
               <ul className="b-ind-drains" key={display}>
-                {curDrains.map((d, i) => <li key={i}>{d.text}</li>)}
+                {curDrains.map((d, i) => <li key={i}><EditableText editing={editing} id={id} path={[{ key: 'industries', index: display }, { key: 'drains', index: i }]} field="text" value={d.text} as="span" placeholder="Drain…" /></li>)}
               </ul>
-              {(specificFoot || specificFootAccent) ? (
-                <p className="b-ind-foot">{specificFoot} <span className="accent">{specificFootAccent}</span></p>
+              {(specificFoot || specificFootAccent || editing) ? (
+                <p className="b-ind-foot"><EditableText editing={editing} id={id} field="specificFoot" value={specificFoot} as="span" singleLine placeholder="Footer lead…" /> <span className="accent">{specificFootAccent}</span></p>
               ) : null}
               {/* capture intent at the peak moment: the visitor has just seen their sector's drains.
                   #book is routed to the booking flow by App's global interceptor. */}
@@ -204,30 +210,32 @@ const DRAIN = (arr) => arr.map((text) => ({ text }));
 export const puck = {
   label: 'Industry picker',
   fields: {
-    universalHead: { type: 'text', label: 'Universal card · eyebrow', contentEditable: true },
-    universalTitle: { type: 'text', label: 'Universal card · title', contentEditable: true },
-    universal: {
-      type: 'array', label: 'Universal drains',
-      arrayFields: { text: { type: 'text', label: 'Drain' } },
-      defaultItemProps: { text: 'A drain every business pays.' },
-      getItemSummary: (i) => i.text || 'Drain',
-    },
-    universalFoot: { type: 'text', label: 'Universal footer · lead' },
+    universalHead: { type: 'custom', label: 'Universal card · eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    universalTitle: { type: 'custom', label: 'Universal card · title', render: (props) => <RichTextField {...props} variant="heading" /> },
+    universalFoot: { type: 'custom', label: 'Universal footer · lead', render: (props) => <RichTextField {...props} /> },
     universalFootAccent: { type: 'text', label: 'Universal footer · accent' },
-    specificHead: { type: 'text', label: 'Specific card · eyebrow', contentEditable: true },
-    specificFoot: { type: 'text', label: 'Specific footer · lead' },
+    specificHead: { type: 'custom', label: 'Specific card · eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    specificFoot: { type: 'custom', label: 'Specific footer · lead', render: (props) => <RichTextField {...props} /> },
     specificFootAccent: { type: 'text', label: 'Specific footer · accent' },
     ctaLabel: { type: 'text', label: 'Specific card · CTA label (blank to hide)' },
     ctaHref: { type: 'custom', label: 'Specific card · CTA link', render: (props) => <LinkField {...props} /> },
+    // array fields LAST — Puck mis-slots custom fields placed before an array when other fields follow
+    // it (see memory "puck-slot-misdetection-inline-editing")
+    universal: {
+      type: 'array', label: 'Universal drains',
+      arrayFields: { text: { type: 'custom', label: 'Drain', render: (props) => <RichTextField {...props} /> } },
+      defaultItemProps: { text: 'A drain every business pays.' },
+      getItemSummary: (i) => i.text || 'Drain',
+    },
     industries: {
       type: 'array', label: 'Industries (tabs)',
       arrayFields: {
         label: { type: 'text', label: 'Tab label' },
         headline: { type: 'text', label: 'Headline (sentences after the first are accented)' },
-        specificTitle: { type: 'text', label: 'Specific card title' },
+        specificTitle: { type: 'custom', label: 'Specific card title', render: (props) => <RichTextField {...props} variant="heading" /> },
         drains: {
           type: 'array', label: 'Sector drains',
-          arrayFields: { text: { type: 'text', label: 'Drain' } },
+          arrayFields: { text: { type: 'custom', label: 'Drain', render: (props) => <RichTextField {...props} /> } },
           defaultItemProps: { text: 'A sector-specific drain.' },
           getItemSummary: (i) => i.text || 'Drain',
         },
