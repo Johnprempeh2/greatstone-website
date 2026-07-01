@@ -14,11 +14,15 @@ export const RT_COLORS = [
 ];
 
 // highlight (background-behind-text) runs. Each ships a baked dark ink so the run passes AA regardless of the
-// page background (the "text box" look John asked for).
+// page background (the "text box" look John asked for). `shape` gives the background box a form: a square-ish box
+// or a rounded pill, so an editor can change the SHAPE of the background behind specific text (John's ask). The
+// baked dark ink is identical across shapes, so every shape stays AA by construction; `colour` keys the swatch.
 export const RT_HIGHLIGHTS = [
-  { id: '', label: 'None', className: '' },
-  { id: 'accent', label: 'Accent box', className: 'gs-rt-bg-accent' },
-  { id: 'teal', label: 'Teal box', className: 'gs-rt-bg-teal' },
+  { id: '', label: 'None', className: '', shape: null, colour: '' },
+  { id: 'accent', label: 'Accent box', className: 'gs-rt-bg-accent', shape: 'box', colour: 'accent' },
+  { id: 'teal', label: 'Teal box', className: 'gs-rt-bg-teal', shape: 'box', colour: 'teal' },
+  { id: 'accent-pill', label: 'Accent pill', className: 'gs-rt-bg-accent-pill', shape: 'pill', colour: 'accent' },
+  { id: 'teal-pill', label: 'Teal pill', className: 'gs-rt-bg-teal-pill', shape: 'pill', colour: 'teal' },
 ];
 
 // the full closed allowlist of span classes the inline sanitiser permits.
@@ -32,10 +36,13 @@ export const RT_INK = '#0e1611';            // dark ink baked into highlight box
 export const RT_PAGE_BG = '#1f1f1f';        // the darkest realistic surface a foreground run sits on
 export const RT_HEX = { accent: '#c8ff00', teal: '#4ecdc4', muted: '#c4c8c1' };
 
-// highlight pairings (background + the ink that sits on it) the .gs-rt-bg-* CSS must honour.
+// highlight pairings (background + the ink that sits on it) the .gs-rt-bg-* CSS must honour. Every shape of a
+// given colour bakes the SAME dark ink, so box and pill share the pairing (and both stay AA).
 export const RT_BG_PAIRS = {
   'gs-rt-bg-accent': { bg: RT_HEX.accent, ink: RT_INK },
   'gs-rt-bg-teal': { bg: RT_HEX.teal, ink: RT_INK },
+  'gs-rt-bg-accent-pill': { bg: RT_HEX.accent, ink: RT_INK },
+  'gs-rt-bg-teal-pill': { bg: RT_HEX.teal, ink: RT_INK },
 };
 
 // --- WCAG contrast maths (relative luminance + ratio), pure ---

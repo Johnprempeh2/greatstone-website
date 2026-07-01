@@ -131,7 +131,7 @@ export function RichTextField({ value, onChange, variant = 'body' }) {
                 const on = marks.hiClass === h.className;
                 return (
                   <button key={'h' + h.id} type="button" className={'gs-rt-sw gs-rt-hi' + (h.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on} title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label}
-                    style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined} onMouseDown={noBlur} onClick={() => setHi(h.className)}>{h.id ? '■' : '✕'}</button>
+                    style={h.id ? { background: RT_HEX[h.colour], color: '#0e1611', borderRadius: h.shape === 'pill' ? '999px' : undefined } : undefined} onMouseDown={noBlur} onClick={() => setHi(h.className)}>{h.id ? '■' : '✕'}</button>
                 );
               })}
             </span>

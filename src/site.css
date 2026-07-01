@@ -78,6 +78,13 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 }
 .gs-rt-bg-accent { background:var(--gs-accent); }
 .gs-rt-bg-teal   { background:var(--gs-teal); }
+/* pill shape: same baked dark ink (stays AA), rounder + a touch more horizontal padding */
+.gs-rt-bg-accent-pill, .gs-rt-bg-teal-pill {
+  color:#0e1611 !important; padding:0.06em 0.5em; border-radius:1em; font-weight:600;
+  -webkit-box-decoration-break:clone; box-decoration-break:clone;
+}
+.gs-rt-bg-accent-pill { background:var(--gs-accent); }
+.gs-rt-bg-teal-pill   { background:var(--gs-teal); }
 /* Per-block "surround / text box" (block-style.mjs Appearance group). Enum-only classes, so a block box is
    always on-brand. Default (none) adds no class, so untouched blocks render identically. */
 .gs-surround { border-radius:16px; padding:clamp(20px,3vw,36px); }

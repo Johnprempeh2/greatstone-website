@@ -5,7 +5,7 @@ import { RT_COLORS, RT_HIGHLIGHTS, RT_SPAN_CLASSES, RT_BG_PAIRS, RT_HEX, RT_PAGE
 test('the span-class allowlist is exactly the toolbar swatch classes (closed set, no drift)', () => {
   const fromToolbar = [...RT_COLORS, ...RT_HIGHLIGHTS].map((x) => x.className).filter(Boolean).sort();
   assert.deepEqual([...RT_SPAN_CLASSES].sort(), fromToolbar);
-  assert.deepEqual([...RT_SPAN_CLASSES].sort(), ['gs-rt-bg-accent', 'gs-rt-bg-teal', 'gs-rt-c-accent', 'gs-rt-c-teal', 'gs-rt-c-muted'].sort());
+  assert.deepEqual([...RT_SPAN_CLASSES].sort(), ['gs-rt-bg-accent', 'gs-rt-bg-accent-pill', 'gs-rt-bg-teal', 'gs-rt-bg-teal-pill', 'gs-rt-c-accent', 'gs-rt-c-teal', 'gs-rt-c-muted'].sort());
 });
 
 test('swatches expose CLASSES only, never a raw colour string (brand-constrained by construction)', () => {

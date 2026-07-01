@@ -76,7 +76,7 @@ export default function ContextBar() {
         {RT_HIGHLIGHTS.map((h) => {
           const on = marks.hiClass === h.className;
           return <button key={'h' + h.id} type="button" className={'gs-ctx-sw gs-ctx-hi' + (h.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on}
-            title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label} disabled={!ed} style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined}
+            title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label} disabled={!ed} style={h.id ? { background: RT_HEX[h.colour], color: '#0e1611', borderRadius: h.shape === 'pill' ? '999px' : undefined } : undefined}
             onMouseDown={noBlur} onClick={() => doHi(h.className)}>{h.id ? '■' : '✕'}</button>;
         })}
       </span>
