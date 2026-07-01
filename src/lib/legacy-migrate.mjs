@@ -155,6 +155,13 @@ export function buildOrder(o, orgId = DEFAULT_ORG_ID, customerId = null) {
   };
 }
 
+// values that appear more than once, in first-seen order (for duplicate-key reporting)
+function duplicates(arr) {
+  const counts = new Map();
+  for (const x of arr) counts.set(x, (counts.get(x) || 0) + 1);
+  return [...counts.entries()].filter(([, n]) => n > 1).map(([x]) => x);
+}
+
 // validate the whole export shape up-front and return a normalised { orgId, customers, orders }
 export function validateExport(raw) {
   if (!raw || typeof raw !== 'object') throw new Error('export must be a JSON object');
@@ -170,7 +177,12 @@ export function validateExport(raw) {
   const orphans = orders
     .filter((o) => o.customer_legacy_id != null && !known.has(String(o.customer_legacy_id)))
     .map((o) => orderReference(o));
-  return { orgId, customers, orders, builtCustomers, builtOrders, orphanOrders: orphans };
+  // duplicate idempotency keys: two source records that collapse onto ONE upsert key would silently merge
+  // (the second overwrites the first) — data loss in a one-shot migration. Surface them so the export is
+  // fixed before we apply, not discovered after.
+  const duplicateCustomerSlugs = duplicates(builtCustomers.map((c) => c.company.slug));
+  const duplicateOrderReferences = duplicates(builtOrders.map((o) => o.order.reference));
+  return { orgId, customers, orders, builtCustomers, builtOrders, orphanOrders: orphans, duplicateCustomerSlugs, duplicateOrderReferences };
 }
 
 // a dry-run summary: what the import would touch (no DB access)
@@ -184,5 +196,7 @@ export function summarise(raw) {
     orderItems: v.builtOrders.reduce((n, o) => n + o.items.length, 0),
     licenceKeys: v.builtOrders.reduce((n, o) => n + o.keys.length, 0),
     orphanOrders: v.orphanOrders,
+    duplicateCustomerSlugs: v.duplicateCustomerSlugs,
+    duplicateOrderReferences: v.duplicateOrderReferences,
   };
 }

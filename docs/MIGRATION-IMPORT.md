@@ -76,6 +76,11 @@ Always dry-run first — it validates every record and reports the plan without 
 node scripts/migrate-legacy-store.mjs ./ben-export.json --dry-run
 ```
 
+The dry-run also flags **duplicate idempotency keys** — two customers that derive the same slug, or two orders
+that derive the same reference. Because the import upserts on those keys, duplicates would silently merge into
+one row (data loss). If any are reported, de-duplicate the source export before applying; the importer will
+**refuse to apply** while duplicates remain.
+
 Then apply, with the target project's credentials in the environment (server-side only, never the client
 bundle):
 

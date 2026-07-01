@@ -112,3 +112,36 @@ test('summarise counts everything without touching a DB', () => {
   assert.equal(s.licenceKeys, 1);
   assert.deepEqual(s.orphanOrders, []);
 });
+
+test('validateExport flags duplicate customer slugs (would silently merge on import)', () => {
+  const v = validateExport({
+    customers: [
+      { legacy_id: 1, company: 'Acme', slug: 'acme' },
+      { legacy_id: 2, company: 'Acme Renamed', slug: 'acme' }, // same explicit slug → same upsert key
+    ],
+    orders: [],
+  });
+  assert.deepEqual(v.duplicateCustomerSlugs, ['acme']);
+});
+
+test('validateExport flags duplicate order references (would silently merge on import)', () => {
+  const v = validateExport({
+    customers: [{ legacy_id: 1, company: 'Acme' }],
+    orders: [
+      { legacy_id: 100, customer_legacy_id: 1, items: [{ offering_name: 'X', unit_price_minor: 1 }] },
+      { legacy_id: 100, customer_legacy_id: 1, items: [{ offering_name: 'Y', unit_price_minor: 2 }] }, // same legacy_id → same reference
+    ],
+  });
+  assert.deepEqual(v.duplicateOrderReferences, ['legacy:100']);
+});
+
+test('summarise surfaces duplicate keys; a clean export reports none', () => {
+  const dup = summarise({
+    customers: [{ legacy_id: 1, company: 'A', slug: 'x' }, { legacy_id: 2, company: 'B', slug: 'x' }],
+    orders: [],
+  });
+  assert.deepEqual(dup.duplicateCustomerSlugs, ['x']);
+  const clean = summarise({ customers: [{ legacy_id: 1, company: 'A' }], orders: [] });
+  assert.deepEqual(clean.duplicateCustomerSlugs, []);
+  assert.deepEqual(clean.duplicateOrderReferences, []);
+});

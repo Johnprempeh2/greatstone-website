@@ -222,6 +222,22 @@ and copy it there.
 Verified: 8 new unit tests; 556 total, build + secret scan clean; sample email rendered on-brand in the preview.
 The send path is dormant until the function is deployed + Resend configured (both Ben/credential-gated).
 
+### Iteration 12 — Migration importer: duplicate-key guard (cutover-safety hardening)
+Adversarial pass on the highest-stakes cutover artifact — the importer runs ONCE against real customer/order/
+money data, upserting on derived keys (customer slug, order reference). Found a real gap: it checked for orphan
+orders but NOT for duplicate keys. Two source customers that derive the same slug, or two orders that derive the
+same reference (e.g. the same legacy id twice), would upsert onto each other — the second silently overwriting
+the first. In a one-shot money migration that is undetected data loss.
+- `validateExport`/`summarise` now compute `duplicateCustomerSlugs` + `duplicateOrderReferences`.
+- The importer reports them in the dry-run and **refuses to apply** while any remain (before it touches the DB),
+  so a data-quality problem in Ben's export is caught up-front, not after a partial write.
+- `docs/MIGRATION-IMPORT.md` documents the check.
+
+Verified: 3 new unit tests; 559 total, build + secret scan clean. End-to-end against a crafted duplicate export:
+the dry-run names the offending keys (`acme`, `legacy:100`) and apply refuses with exit 1 before the credentials
+check; the real sample export stays clean. Content-page routing remains the one deliberately parked item (the
+codebase's own seo-files.mjs notes it needs path routing + prerender — John's call).
+
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
 **by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real
