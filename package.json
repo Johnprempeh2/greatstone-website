@@ -14,7 +14,8 @@
     "check:dist": "node scripts/check-dist-secrets.mjs",
     "redirects": "node scripts/gen-legacy-redirects.mjs",
     "redirects:check": "node scripts/gen-legacy-redirects.mjs --check",
-    "redirects:audit": "node scripts/gen-legacy-redirects.mjs --audit"
+    "redirects:audit": "node scripts/gen-legacy-redirects.mjs --audit",
+    "verify:staff": "node scripts/verify-staff.mjs"
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",

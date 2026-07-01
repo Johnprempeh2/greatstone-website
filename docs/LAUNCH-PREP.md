@@ -17,7 +17,7 @@ legal wording.
 - [x] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
 - [x] Auth email templates → self-contained CSS wordmark (no remote image) + single canonical-domain placeholder.
 - [x] FX-rate staleness guard / admin visibility (last-updated signal in the FX editor).
-- [ ] Staff provisioning seed/verify.
+- [x] Staff provisioning validator + read-only verifier CLI + provisioning runbook.
 
 ## Log
 
@@ -153,6 +153,28 @@ prices) and `#shop/iron-software` activates the Iron Software filter (0 products
 seeded in the interim DB — the slug is correct). Remaining for cutover: a fresh crawl (catch any new URLs) and,
 when Ben supplies the migrated product-slug map, exact `/vendor/product → /#product/<slug>` lines above the
 vendor wildcards. Refining content-page redirects needs hash-addressable content pages (a separate enhancement).
+
+### Iteration 9 — Staff provisioning validator + verifier + runbook
+A staff member signs in as a Supabase Auth user; the app then maps `auth.uid()` → a `public.users` profile
+(`auth_subject`) to learn their org + role (`app_staff_org()`, migration 0004). If that link, role, org or
+active flag is wrong, the person can't sign in or signs in with no powers — a failure invisible until someone
+tries it. Built the pieces to provision that reproducibly and catch the faults before launch:
+- `src/lib/staff-provision.mjs` (pure, 13 unit tests): `validateStaff(rows, {orgId, authUsers, customerAuthIds})`
+  flags, as launch-blocking errors, a profile with no `auth_subject`, an unknown role, the wrong org, duplicate
+  `auth_subject`/email, a profile pointing at a missing Auth user, and no active owner/admin; as warnings, an
+  inactive/soft-deleted-but-live account, no CMS-capable user, an email mismatch, and a true orphan Auth user.
+  Customers (their own Auth users) are excluded from the orphan check via `customer_users.auth_subject`, so it
+  stays quiet at production scale. Reuses `staffRoles.mjs` as the single role source of truth.
+- `scripts/verify-staff.mjs`: read-only CLI (service-role) that pulls `public.users`, the Auth user list and the
+  customer Auth ids, runs the validator and prints a report. Writes nothing; exits 1 on blocking errors so it
+  can gate a cutover. `npm run verify:staff`.
+- `docs/STAFF-PROVISIONING.md`: the two-step provisioning process (Auth user → linked profile row), the role
+  table, an idempotent SQL template, off-boarding, and how to run the verifier.
+
+Verified: 13 new unit tests; 545 total, build + secret scan clean. Ran the verifier read-only against the
+interim DB: the 3 seeded staff (1 owner, 1 admin, 1 editor, 2 managers) validate clean; after excluding
+customers it surfaces a single genuine orphan Auth user (a personal email that is neither staff nor customer).
+This closes the last self-contained launch-prep item; what remains is Ben/counsel/credential-gated.
 
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
