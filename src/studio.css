@@ -945,6 +945,12 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
   border-radius:6px;white-space:pre-wrap;line-height:1.4}
 .gs-blk-note::before{content:"\270E  ";opacity:.7}
 .gs-rt-edit.is-oneline{min-height:40px}
+/* inline-on-canvas editor (InlineRichText): keeps the .gs-rt-edit hook (so the top Text tab formats it) but drops
+   the side-panel box styling, so the text reads as the block's own — you edit it in place. */
+.gs-rt-edit.gs-rt-inline{min-height:0;max-height:none;overflow:visible;padding:0;border:0;background:none;font:inherit;color:inherit;line-height:inherit}
+.gs-rt-edit.gs-rt-inline:focus{outline:2px dashed var(--gs-accent,#c8ff00);outline-offset:3px;border-radius:3px;box-shadow:none}
+.gs-rt-edit.gs-rt-inline:hover:not(:focus){outline:1px dashed var(--gs-border-strong,rgba(200,255,0,.3));outline-offset:3px;border-radius:3px}
+.gs-rt-edit.gs-rt-inline:empty::before{content:attr(data-rt-placeholder);color:var(--gs-text-faint,#9ca29b);opacity:.7}
 
 /* ── Editor top-bar: consolidated nav + account menu (frees the toolbar for editing) ───────────────── */
 .gs-edit-spacer{flex:1 1 auto;min-width:8px}

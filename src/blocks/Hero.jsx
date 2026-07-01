@@ -1,10 +1,12 @@
 import { useReveal } from './reveal.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import RichText from './RichText.jsx';
+// inline-on-canvas rich editor: lazy + editor-only, so @measured/puck never reaches the public bundle
+const InlineRichText = lazy(() => import('../cms/InlineRichText.jsx'));
 
 // THE BLOCK CONTRACT (every block file follows this):
 //   export function X(props)      — the React component; renders public + editor canvas.
@@ -13,7 +15,7 @@ import RichText from './RichText.jsx';
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false }) {
+export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false }) {
   const ref = useReveal();
   // home-hero only (opt-in): hide the scroll indicator once the visitor scrolls past the fold so it
   // doesn't linger over the content below. Passive listener, removed on unmount; inert unless scrollCue.
@@ -41,7 +43,9 @@ export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, p
             ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
             : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
         </h1>
-        {body ? <RichText as="p" className="lede" data-reveal html={body} /> : null}
+        {puck && puck.isEditing
+          ? <Suspense fallback={<p className="lede">{body}</p>}><InlineRichText id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" /></Suspense>
+          : (body ? <RichText as="p" className="lede" data-reveal html={body} /> : null)}
         {Array.isArray(meta) && meta.length ? (
           <div className="b-hero-meta" data-reveal>
             {meta.map((m, i) => (
