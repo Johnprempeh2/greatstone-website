@@ -3,6 +3,8 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { track } from '../lib/analytics.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 const DEFAULT_SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
@@ -17,7 +19,8 @@ const ICONS = {
 // The "Book a Diagnostic" page: the booking form beside a short framing aside. On submit it composes a
 // prefilled mailto to the contact address from the entered fields (client-side, no backend) and shows a
 // confirmation with the address as a fallback. A future build may POST to a backend; that decision is open.
-export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk' }) {
+export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk' }) {
+  const editing = puck && puck.isEditing;
   // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
   // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
   const sectorList = (Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS)
@@ -61,9 +64,9 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
       <div className="wrap">
         <div className="grid b-book-grid" data-reveal>
           <div className="card book-card">
-            {eyebrow && eyebrow !== headline ? <span className="kicker b-book-eyebrow">{eyebrow}</span> : null}
-            <h2 className="h3 b-book-card-head">{headline}{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
-            {body ? <p className="b-book-card-intro muted">{body}</p> : null}
+            {(editing || (eyebrow && eyebrow !== headline)) ? <span className="kicker b-book-eyebrow"><EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" singleLine placeholder="Eyebrow…" /></span> : null}
+            <h2 className="h3 b-book-card-head"><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" />{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-book-card-intro muted" placeholder="Body…" />
             {sent ? (
               <div className="book-sent" role="status">
                 <h3 ref={sentRef} tabIndex={-1}>Thanks. Your email is ready.</h3>
@@ -96,16 +99,16 @@ export function BookDeepDive({ eyebrow, headline, highlight, body, submitLabel, 
           </div>
 
           <aside className="book-aside">
-            {asideKicker ? <span className="kicker">{asideKicker}</span> : null}
-            {asideHeading ? <h3 className="h3">{asideHeading}</h3> : null}
-            {asideBody ? <p className="b-book-aside-body">{asideBody}</p> : null}
+            <EditableText editing={editing} id={id} field="asideKicker" value={asideKicker} as="span" className="kicker" singleLine placeholder="Aside kicker…" />
+            <EditableText editing={editing} id={id} field="asideHeading" value={asideHeading} as="h3" className="h3" singleLine placeholder="Aside heading…" />
+            <EditableText editing={editing} id={id} field="asideBody" value={asideBody} as="p" className="b-book-aside-body" placeholder="Aside intro…" />
             <div className="b-book-assure-list">
               {asidePoints.map((p, i) => (
                 <div className="b-book-assure" key={i}>
                   <span className="b-book-ai" aria-hidden="true">{ICONS[p.icon] || ICONS.check}</span>
                   <div>
-                    <div className="b-book-at">{p.title}</div>
-                    {p.text ? <div className="b-book-ad">{p.text}</div> : null}
+                    <EditableText editing={editing} id={id} arrayField="asidePoints" index={i} field="title" value={p.title} as="div" className="b-book-at" singleLine placeholder="Title…" />
+                    <EditableText editing={editing} id={id} arrayField="asidePoints" index={i} field="text" value={p.text} as="div" className="b-book-ad" placeholder="Description…" />
                   </div>
                 </div>
               ))}
@@ -163,20 +166,23 @@ const PT = (title, text) => ({ title, text });
 export const puck = {
   label: 'Book a Diagnostic (form)',
   fields: {
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     submitLabel: { type: 'text', label: 'Submit button' },
-    asideKicker: { type: 'text', label: 'Aside kicker', contentEditable: true },
-    asideHeading: { type: 'text', label: 'Aside heading', contentEditable: true },
-    asideBody: { type: 'textarea', label: 'Aside intro', contentEditable: true },
+    asideKicker: { type: 'custom', label: 'Aside kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    asideHeading: { type: 'custom', label: 'Aside heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    asideBody: { type: 'custom', label: 'Aside intro', render: (props) => <RichTextField {...props} /> },
+    email: { type: 'text', label: 'Contact email' },
+    // array fields LAST — Puck mis-slots custom fields placed before an array when other fields
+    // follow it (see memory "puck-slot-misdetection-inline-editing")
     asidePoints: {
       type: 'array', label: 'Assurance rows',
       arrayFields: {
         icon: { type: 'select', label: 'Icon', options: [{ label: 'Check', value: 'check' }, { label: 'Clock', value: 'clock' }, { label: 'Scan', value: 'scan' }] },
-        title: { type: 'text', label: 'Title' },
-        text: { type: 'text', label: 'Description' },
+        title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> },
+        text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> },
       },
       defaultItemProps: { icon: 'check', title: 'A point', text: 'detail.' },
       getItemSummary: (item) => item.title || 'Point',
@@ -187,7 +193,6 @@ export const puck = {
       defaultItemProps: { label: 'Sector' },
       getItemSummary: (item) => item.label || 'Sector',
     },
-    email: { type: 'text', label: 'Contact email' },
   },
   defaultProps: {
     eyebrow: 'Tell us where the week goes',
