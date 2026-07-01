@@ -16,7 +16,7 @@ legal wording.
 - [ ] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), wired to footer/nav.
 - [x] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
 - [x] Auth email templates → self-contained CSS wordmark (no remote image) + single canonical-domain placeholder.
-- [ ] FX-rate staleness guard / admin visibility.
+- [x] FX-rate staleness guard / admin visibility (last-updated signal in the FX editor).
 - [ ] Staff provisioning seed/verify.
 
 ## Log
@@ -101,3 +101,23 @@ Verified: generated HTML has **zero** `<img>` tags and **zero** `netlify.app` re
 remaining URL is the wordmark's link to the canonical domain and the `{{ .ConfirmationURL }}` action link.
 Rendered `confirmation.html` in the browser — wordmark and lime CTA display correctly. 508 tests green, build
 clean (secret scan clean). Templates still need applying to the Supabase project (Ben-owned, deferred).
+
+### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
+Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
+**by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real
+market moves, every price silently drifts and a live order gets charged at a stale rate. Added a clear
+staleness signal so a forgotten rate gets caught before it prices a real sale:
+- `src/lib/fx-staleness.mjs` (pure, unit-tested): turns the rate's `updated_at` into `{ days, level, label,
+  warn }`. `fresh` under 14 days, `ageing` at 14, `stale` at 30 (named constants). Clamps future
+  timestamps (clock skew) to 0 and returns `unknown` for a missing/unparseable date rather than throwing.
+- `FxRateEditor` now loads `org_settings.updated_at` and shows a banner under the intro: teal when fresh,
+  amber/coral with a "check it still matches the market before it prices a live order" nudge once it ages.
+  `role="alert"` at the stale tier, `role="status"` otherwise. No schema change — `updated_at` already
+  exists on the row; the whole feature is read-only over existing data.
+- `admin.css`: `.fx-stale-{fresh,ageing,stale}` reusing the proven `.lk-exp-*` token pattern (teal / warning /
+  danger).
+
+Verified: 7 new unit tests green (thresholds, day-floor, skew clamp, labels, unknown); 515 tests total,
+build + secret scan clean. Live in `#catalogue/fx`: the banner shows the real interim rate as "last updated
+13 days ago" (teal — one day from the amber nudge, so the signal is already doing its job); toggled the class
+live to confirm the amber ageing state renders with the full nudge. Zero console errors.

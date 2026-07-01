@@ -168,6 +168,11 @@
 .lk-expbadge { font-size:.68rem; font-weight:700; letter-spacing:.02em; padding:2px 8px; border-radius:999px; white-space:nowrap; }
 .lk-exp-soon { color:var(--gs-warning,#ffc800); background:rgba(255,200,0,.12); border:1px solid rgba(255,200,0,.35); }
 .lk-exp-over { color:var(--gs-danger,#ff6b6b); background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); }
+/* FX rate staleness: the rate is set by hand, so surface how long since it was last touched */
+.fx-stale { font-size:.82rem; line-height:1.5; padding:.6em .85em; border-radius:8px; margin:.2em 0 .4em; border:1px solid transparent; }
+.fx-stale-fresh { color:var(--gs-teal,#4ecdc4); background:rgba(78,205,196,.1); border-color:rgba(78,205,196,.28); }
+.fx-stale-ageing { color:var(--gs-warning,#ffc800); background:rgba(255,200,0,.1); border-color:rgba(255,200,0,.35); }
+.fx-stale-stale { color:var(--gs-danger,#ff6b6b); background:rgba(255,107,107,.1); border-color:rgba(255,107,107,.4); }
 .lk-keyrow { display:flex; align-items:center; gap:8px; }
 /* staff Clients & DX key cell: keep the code + copy button on one row, wrap on narrow */
 .ci-keycell { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }

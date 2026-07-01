@@ -4,12 +4,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { usdToGbpMinor, fmtMoney } from '../lib/pricing.mjs';
+import { fxStaleness, FX_AGEING_DAYS } from '../lib/fx-staleness.mjs';
 
 const MIN_RATE = 0.10, MAX_RATE = 100;
 
 export default function FxRateEditor({ staff }) {
   const [current, setCurrent] = useState(null);   // saved rate
   const [rowVersion, setRowVersion] = useState(null); // optimistic-lock token captured at load
+  const [updatedAt, setUpdatedAt] = useState(null); // when the rate was last set (for staleness)
   const [draft, setDraft] = useState('');          // editable string
   const [sample, setSample] = useState([]);        // ~10 representative products (USD from-price)
   const [history, setHistory] = useState([]);
@@ -18,8 +20,8 @@ export default function FxRateEditor({ staff }) {
   const [toast, setToast] = useState(null);
 
   const load = useCallback(() => {
-    supabase.from('org_settings').select('usd_to_gbp_display_rate, row_version').limit(1).maybeSingle()
-      .then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate) || 1.30; setCurrent(r); setDraft(String(r)); setRowVersion(data?.row_version ?? null); });
+    supabase.from('org_settings').select('usd_to_gbp_display_rate, row_version, updated_at').limit(1).maybeSingle()
+      .then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate) || 1.30; setCurrent(r); setDraft(String(r)); setRowVersion(data?.row_version ?? null); setUpdatedAt(data?.updated_at ?? null); });
     supabase.from('offerings').select('id,name,from_price_minor').eq('status', 'published')
       .not('from_price_minor', 'is', null).order('from_price_minor', { ascending: false }).limit(10)
       .then(({ data }) => setSample(data || []));
@@ -28,6 +30,8 @@ export default function FxRateEditor({ staff }) {
   }, []);
   useEffect(() => { load(); }, [load]);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
+
+  const stale = useMemo(() => fxStaleness(updatedAt), [updatedAt]);
 
   const draftRate = Number(draft);
   const valid = draftRate >= MIN_RATE && draftRate <= MAX_RATE;
@@ -73,6 +77,11 @@ export default function FxRateEditor({ staff }) {
         <div className="pr-form">
           <h2>USD → GBP rate</h2>
           <p className="ca-note">Products are stored in their vendor USD list price. The site shows GBP, computed as <b>USD ÷ rate</b>, rounded to the whole pound. Change the rate and every price updates at once. You control the rate; nothing is fetched automatically.</p>
+          {updatedAt && stale.level !== 'unknown' && (
+            <div className={`fx-stale fx-stale-${stale.level}`} role={stale.level === 'stale' ? 'alert' : 'status'}>
+              {stale.label}.{stale.warn && <> Nothing updates it automatically, so check it still matches the market before it prices a live order.</>}
+            </div>
+          )}
           <label>Rate ($ to the £)
             <input type="number" step="0.01" min={MIN_RATE} max={MAX_RATE} value={draft} onChange={e => setDraft(e.target.value)} placeholder="1.30" />
           </label>
