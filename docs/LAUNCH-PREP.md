@@ -238,6 +238,22 @@ the dry-run names the offending keys (`acme`, `legacy:100`) and apply refuses wi
 check; the real sample export stays clean. Content-page routing remains the one deliberately parked item (the
 codebase's own seo-files.mjs notes it needs path routing + prerender — John's call).
 
+### Iteration 13 — Migration importer: duplicate customer legacy_id guard (mis-linkage)
+Continued the adversarial pass into the importer's I/O flow. Found a second, subtler gap the iteration-12 guard
+missed: the apply loop resolves an order's customer via `customerIdByLegacy.set(String(c.legacy_id), id)` —
+LAST write wins. Two customers sharing a `legacy_id` but with DIFFERENT slugs slip past the slug check, and every
+order for that id then links to the WRONG company (silent money/history mis-attribution).
+- `validateExport`/`summarise` now also compute `duplicateCustomerLegacyIds`; the importer warns on it in the
+  dry-run and includes it in the refuse-to-apply guard.
+Verified: 1 new unit test (asserts the legacy_id dup is caught while the slug check correctly is NOT triggered);
+560 total, build + secret scan clean. End-to-end: an export with legacy_id 1 on two differently-slugged customers
+is flagged and apply refuses; the real sample stays clean.
+
+Noted-but-not-built (completeness, not correctness): a migrated *refunded* order doesn't carry its refund amount
+(`refunded_minor` isn't mapped) — worth adding when Ben's export format is known. The importer isn't
+transactional (Supabase JS has no multi-statement tx), but it's idempotent, so a mid-run failure is safe to
+re-run — already documented.
+
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
 **by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real

@@ -182,7 +182,13 @@ export function validateExport(raw) {
   // fixed before we apply, not discovered after.
   const duplicateCustomerSlugs = duplicates(builtCustomers.map((c) => c.company.slug));
   const duplicateOrderReferences = duplicates(builtOrders.map((o) => o.order.reference));
-  return { orgId, customers, orders, builtCustomers, builtOrders, orphanOrders: orphans, duplicateCustomerSlugs, duplicateOrderReferences };
+  // duplicate customer legacy_ids: the importer resolves an order's customer via customer_legacy_id, keeping
+  // the LAST customer with that id. Two customers sharing a legacy_id (even with different slugs, so the slug
+  // check misses them) would silently link that customer's orders to the wrong company. Flag it too.
+  const duplicateCustomerLegacyIds = duplicates(
+    customers.map((c) => (c.legacy_id != null && String(c.legacy_id).trim() !== '' ? String(c.legacy_id) : null)).filter(Boolean),
+  );
+  return { orgId, customers, orders, builtCustomers, builtOrders, orphanOrders: orphans, duplicateCustomerSlugs, duplicateOrderReferences, duplicateCustomerLegacyIds };
 }
 
 // a dry-run summary: what the import would touch (no DB access)
@@ -198,5 +204,6 @@ export function summarise(raw) {
     orphanOrders: v.orphanOrders,
     duplicateCustomerSlugs: v.duplicateCustomerSlugs,
     duplicateOrderReferences: v.duplicateOrderReferences,
+    duplicateCustomerLegacyIds: v.duplicateCustomerLegacyIds,
   };
 }

@@ -45,14 +45,16 @@ if (plan.orphanOrders.length) console.warn('⚠ %d order(s) reference an unknown
   plan.orphanOrders.length, plan.orphanOrders.join(', '));
 const dupCustomers = plan.duplicateCustomerSlugs || [];
 const dupOrders = plan.duplicateOrderReferences || [];
+const dupLegacyIds = plan.duplicateCustomerLegacyIds || [];
 if (dupCustomers.length) console.warn('⚠ %d duplicate customer key(s) — these records would MERGE into one on import (data loss): %s', dupCustomers.length, dupCustomers.join(', '));
 if (dupOrders.length) console.warn('⚠ %d duplicate order reference(s) — these orders would MERGE into one on import (data loss): %s', dupOrders.length, dupOrders.join(', '));
+if (dupLegacyIds.length) console.warn('⚠ %d duplicate customer legacy_id(s) — orders for these would link to the WRONG customer: %s', dupLegacyIds.length, dupLegacyIds.join(', '));
 
 if (dryRun) { console.log('\n--dry-run: nothing written. Re-run without --dry-run to apply.'); process.exit(0); }
 
-// A one-shot money migration must never silently merge two distinct records. Refuse to apply until the
-// export is de-duplicated; the dry-run above names the offending keys.
-if (dupCustomers.length || dupOrders.length) fail('Refusing to apply: the export has duplicate idempotency keys (listed above). De-duplicate the source records, then re-run.');
+// A one-shot money migration must never silently merge two distinct records or mis-link an order. Refuse to
+// apply until the export is de-duplicated; the dry-run above names the offending keys.
+if (dupCustomers.length || dupOrders.length || dupLegacyIds.length) fail('Refusing to apply: the export has duplicate idempotency keys (listed above). De-duplicate the source records, then re-run.');
 
 if (!URL || !KEY) fail('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server-side) to apply. See docs/MIGRATION-IMPORT.md.');
 const db = createClient(URL, KEY, { auth: { persistSession: false } });

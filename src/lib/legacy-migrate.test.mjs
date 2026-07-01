@@ -145,3 +145,15 @@ test('summarise surfaces duplicate keys; a clean export reports none', () => {
   assert.deepEqual(clean.duplicateCustomerSlugs, []);
   assert.deepEqual(clean.duplicateOrderReferences, []);
 });
+
+test('validateExport flags duplicate customer legacy_ids even when slugs differ (silent mis-linkage)', () => {
+  const v = validateExport({
+    customers: [
+      { legacy_id: 1, company: 'Acme', slug: 'acme' },
+      { legacy_id: 1, company: 'Beta', slug: 'beta' }, // same legacy_id, DIFFERENT slug → slug check misses it
+    ],
+    orders: [],
+  });
+  assert.deepEqual(v.duplicateCustomerLegacyIds, ['1']);
+  assert.deepEqual(v.duplicateCustomerSlugs, []); // proves the slug check alone would NOT have caught this
+});
