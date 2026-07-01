@@ -1,20 +1,23 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // services.html's "Start with the problem, then pick the tool" band: a tinted full-spectrum strip.
 // LEFT = the statement (kicker + headline + lead + a muted aside). RIGHT = a bordered glass
 // .tool-figure listing tool-first (one grey "bad" row) vs problem-first (lime "good" rows), each with
 // a term + a right-aligned note, closing on a caption. Faithful port of .spectrum / .tool-figure.
-export function Spectrum({ kicker, headline, highlight, body, coda, rows = [], caption }) {
+export function Spectrum({ id, puck, kicker, headline, highlight, body, coda, rows = [], caption }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-spectrum">
       <div className="wrap">
         <div className="grid cols-2 b-spectrum-grid">
           <div data-reveal>
-            {kicker ? <span className="kicker">{kicker}</span> : null}
-            {(headline || highlight) ? (<h2 className="h2 b-spectrum-head">{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>) : null}
-            {body ? <p className="lead b-spectrum-lead">{body}</p> : null}
-            {coda ? <p className="b-spectrum-coda">{coda}</p> : null}
+            <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+            {(headline || highlight || editing) ? (<h2 className="h2 b-spectrum-head"><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>) : null}
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-spectrum-lead" placeholder="Lead…" />
+            <EditableText editing={editing} id={id} field="coda" value={coda} as="p" className="b-spectrum-coda" placeholder="Aside (optional)…" />
           </div>
 
           <div data-reveal>
@@ -27,7 +30,7 @@ export function Spectrum({ kicker, headline, highlight, body, coda, rows = [], c
                 </li>
               ))}
             </ul>
-            {caption ? <p className="b-spectrum-cap">{caption}</p> : null}
+            <EditableText editing={editing} id={id} field="caption" value={caption} as="p" className="b-spectrum-cap" placeholder="Caption…" />
           </div>
         </div>
       </div>
@@ -58,11 +61,17 @@ const R = (tone, term, meta) => ({ tone, term, meta });
 export const puck = {
   label: 'Spectrum band',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    // NOTE: the `rows` array field is declared LAST on purpose. Puck mis-resolves text/custom
+    // fields that sit BEFORE an array field when another field follows the array (it wraps their
+    // string value in a SlotRender element → the inline editor renders "[object Object]"). Keeping
+    // every array/complex field at the end of the list avoids the mis-slotting. See the memory note
+    // "puck-slot-misdetection-inline-editing".
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Lead', contentEditable: true },
-    coda: { type: 'textarea', label: 'Aside (muted, optional)', contentEditable: true },
+    body: { type: 'custom', label: 'Lead', render: (props) => <RichTextField {...props} /> },
+    coda: { type: 'custom', label: 'Aside (muted, optional)', render: (props) => <RichTextField {...props} /> },
+    caption: { type: 'custom', label: 'Caption', render: (props) => <RichTextField {...props} /> },
     rows: {
       type: 'array', label: 'Tool-figure rows',
       arrayFields: {
@@ -73,7 +82,6 @@ export const puck = {
       defaultItemProps: { tone: 'good', term: 'Option', meta: 'when it fits' },
       getItemSummary: (i) => i.term || 'Row',
     },
-    caption: { type: 'text', label: 'Caption' },
   },
   defaultProps: {
     kicker: 'Full-spectrum DX',
