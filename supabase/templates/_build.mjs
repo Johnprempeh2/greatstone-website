@@ -4,10 +4,12 @@
 //
 // Design notes:
 // - Table-based, fully inline-styled, ~560px: the only HTML email layout that survives Gmail/Outlook/Apple Mail.
-// - Brand logo is the real hosted wordmark PNG (greatstone-home.netlify.app/assets/greatstone-logo-web.png)
-//   with alt="Greatstone" so it degrades to the brand name if a client blocks images. (Earlier a CSS text
-//   wordmark was used to dodge image-blocking, but it only approximated the mark; the hosted PNG is the
-//   actual logo and renders identically across clients incl. dark mode.)
+// - Brand logo is a self-contained CSS TEXT wordmark (GREATSTONE with a lime "O"), NOT a hosted image.
+//   The previous hosted PNG pointed at the interim host (greatstone-home.netlify.app) — it would break in
+//   every transactional email the moment that host is retired or the domain cuts over, and images are
+//   blocked by default in many clients anyway. A styled text wordmark renders everywhere, never 404s, and
+//   needs no remote dependency. This is the pre-launch resilience fix.
+// - Site + contact live in single SITE / CONTACT constants below, so the domain is one edit at cutover.
 // - Lime button carries DARK text (#0e1611), per the brand rule "never white text on lime".
 // - Every email shows the raw action URL as a fallback for clients that strip the button.
 // - Voice: British English, sentence case, no em-dashes, no banned words.
@@ -22,6 +24,12 @@ const ACTION = '{{ .ConfirmationURL }}';
 // Body/footer text colour: passes WCAG AA (~5.9:1 on the #1f1f1f card). #707070 (3.3:1) failed.
 const MUTED = '#9a9a9a';
 const LINK = '#aeb4ad';
+
+// Single canonical domain + contact. One edit here at the real-domain cutover; nothing else in the
+// templates hardcodes a host. Kept as the live .co.uk so the emails are correct today and stay correct
+// after cutover (the placeholder IS the launch domain).
+const SITE = 'https://greatstonesoftware.co.uk';
+const CONTACT = 'dx@greatstonesoftware.co.uk';
 
 // VML roundrect width must fit the CTA text (Outlook ignores the <a>'s padding, so the modern button
 // and the Outlook button are built separately; this sizes the Outlook one).
@@ -48,7 +56,7 @@ const shell = ({ preheader, heading, body, cta, safety }) => `<!doctype html>
 <tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" bgcolor="#1f1f1f" style="width:100%;max-width:560px;background:#1f1f1f;border-radius:16px;border:1px solid #2c2c2c">
 <tr><td style="padding:32px 32px 0">
-<a href="https://greatstonesoftware.co.uk" style="text-decoration:none"><img src="https://greatstone-home.netlify.app/assets/greatstone-logo-web.png" alt="Greatstone" width="180" height="36" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:36px"></a>
+<a href="${SITE}" style="text-decoration:none;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:23px;line-height:1;font-weight:800;letter-spacing:3px;color:#f5f5f5">GREATST<span style="color:#c8ff00">O</span>NE</a>
 </td></tr>
 <tr><td style="padding:18px 32px 0">
 <h1 style="font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.25;font-weight:800;color:#f5f5f5;margin:0 0 10px">${heading}</h1>
@@ -67,7 +75,7 @@ const shell = ({ preheader, heading, body, cta, safety }) => `<!doctype html>
 <tr><td style="padding:26px 32px 32px">
 <div style="border-top:1px solid #2c2c2c;padding-top:18px">
 <p style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};margin:0 0 4px">${safety}</p>
-<p style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};margin:0">Questions? <a href="mailto:dx@greatstonesoftware.co.uk" style="color:${LINK}">dx@greatstonesoftware.co.uk</a> · Greatstone International · The Foundation of Digital Excellence</p>
+<p style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};margin:0">Questions? <a href="mailto:${CONTACT}" style="color:${LINK}">${CONTACT}</a> · Greatstone International · The Foundation of Digital Excellence</p>
 </div>
 </td></tr>
 </table>

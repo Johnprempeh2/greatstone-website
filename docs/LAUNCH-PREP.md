@@ -15,7 +15,7 @@ legal wording.
 - [ ] ~400-URL 301 redirect map from a crawl of the old site → public/_redirects.
 - [ ] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), wired to footer/nav.
 - [x] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
-- [ ] Auth email templates → bundled/CSS logo (no remote image) + single canonical-domain placeholder.
+- [x] Auth email templates → self-contained CSS wordmark (no remote image) + single canonical-domain placeholder.
 - [ ] FX-rate staleness guard / admin visibility.
 - [ ] Staff provisioning seed/verify.
 
@@ -82,3 +82,22 @@ Housekeeping the audit flagged, all no-external-service:
 - **Refreshed GO-LIVE-RUNBOOK** pre-flight: migrations 0001–0010 → 0001–0023, plus the new secret-scan gate.
 
 Verified: `npm run build` runs the guard automatically (clean); 508 tests green.
+
+### Iteration 5 — Auth email templates: remote-image → self-contained wordmark
+The five branded auth emails (confirm, reset, magic link, invite, email change) are generated from one
+shared shell in `supabase/templates/_build.mjs`. The shell embedded the logo as a **remote PNG** on the
+interim host (`greatstone-home.netlify.app/assets/greatstone-logo-web.png`). That is a live launch risk:
+the moment that host is retired or the domain cuts over, the logo 404s in every transactional email, and
+most clients block remote images by default anyway. Removed the dependency:
+- Swapped the `<img>` for a **self-contained CSS text wordmark** — `GREATST`·lime `O`·`NE`, styled inline
+  (Arial 800, 3px tracking, cream with the brand lime on the O). Renders identically across Gmail / Outlook /
+  Apple Mail, never 404s, needs nothing remote. The brand guide's "embed the real PNG" rule is for HTML
+  deliverables; email is the one place a resilient text mark beats an image, so this is a deliberate exception.
+- Pulled the host + contact into single `SITE` / `CONTACT` constants at the top of `_build.mjs`, so the
+  canonical domain is **one edit** at cutover (nothing else in the templates hardcodes a host).
+- Regenerated all five templates.
+
+Verified: generated HTML has **zero** `<img>` tags and **zero** `netlify.app` references (grep); the only
+remaining URL is the wordmark's link to the canonical domain and the `{{ .ConfirmationURL }}` action link.
+Rendered `confirmation.html` in the browser — wordmark and lime CTA display correctly. 508 tests green, build
+clean (secret scan clean). Templates still need applying to the Supabase project (Ben-owned, deferred).
