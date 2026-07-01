@@ -1,22 +1,25 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // A numbered process: how a Diagnostic works. Each step settles before the next lands (the
 // stagger does the talking). Numbering is derived; marketing edits titles and copy.
-export function Steps({ index, eyebrow, headline, highlight, body, items = [], align = 'left', numberStyle = 'badge' }) {
+export function Steps({ id, puck, index, eyebrow, headline, highlight, body, items = [], align = 'left', numberStyle = 'badge' }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-steps" data-align={align}>
       <div className="wrap">
-        {(index || eyebrow) ? (
+        {(index || eyebrow || editing) ? (
           <div className="b-chapter-eyebrow" data-reveal>
             {index ? <span className="b-chapter-num">{index}</span> : null}
-            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+            <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
           </div>
         ) : null}
-        {(headline || highlight) ? (
-          <h2 className="b-steps-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        {(headline || highlight || editing) ? (
+          <h2 className="b-steps-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
         ) : null}
-        {body ? <p className="b-steps-body" data-reveal>{body}</p> : null}
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-steps-body" placeholder="Body…" data-reveal />
         <ol className="b-steps-grid">
           {items.map((it, i) => {
             const num = String(i + 1).padStart(2, '0');
@@ -72,10 +75,10 @@ export const puck = {
   label: 'Steps',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     align: { type: 'radio', label: 'Header alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },
     ]},

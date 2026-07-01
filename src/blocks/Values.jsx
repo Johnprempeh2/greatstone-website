@@ -1,15 +1,18 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // Values: the about page's "Four values. No slideware." grid — auto-numbered cards with a big faded
 // lime index and a left accent bar that wipes up (scaleY) on hover. Faithful port of the live
 // .grid.cols-4 of .card.value-card. Lighter than Pillars (no 3D sweep); use for principle/value sets.
-export function Values({ kicker, heading, items = [] }) {
+export function Values({ id, puck, kicker, heading, items = [] }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-values">
       <div className="wrap">
-        {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
-        {heading ? <h2 className="b-values-head" data-reveal>{heading}</h2> : null}
+        <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" data-reveal />
+        <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-values-head" singleLine placeholder="Heading…" data-reveal />
         <div className="b-values-grid">
           {items.map((it, i) => (
             <div className="b-value-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
@@ -46,8 +49,8 @@ export const css = `
 export const puck = {
   label: 'Values',
   fields: {
-    kicker: { type: 'text', label: 'Kicker (optional)', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker (optional)', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     items: {
       type: 'array', label: 'Values',
       arrayFields: { title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
