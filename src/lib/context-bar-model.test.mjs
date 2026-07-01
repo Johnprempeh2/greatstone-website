@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { capsFor, nextSection, sectionValue, hasTextStyles, nextAppearance, appearanceValue, nextCta, ctaValue,
-  SECTION_FALLBACK, APPEARANCE_FALLBACK, CTA_FALLBACK, CTA_BLOCKS, APPEARANCE_BLOCKS, RICHTEXT_BLOCKS } from './context-bar-model.mjs';
+  nextAlign, alignValue, SECTION_FALLBACK, APPEARANCE_FALLBACK, CTA_FALLBACK, CTA_BLOCKS, APPEARANCE_BLOCKS, RICHTEXT_BLOCKS, ALIGN_BLOCKS } from './context-bar-model.mjs';
 import { SECTION_SURFACES } from './block-style.mjs';
 
 test('capsFor: Section is universal; CTA + Appearance are gated to their blocks', () => {
@@ -65,6 +65,18 @@ test('nextAppearance / appearanceValue: safe-merge + read, unknown key/value is 
   assert.equal(appearanceValue(null, 'surround'), 'none');
   assert.equal(appearanceValue({ pad: 'roomy' }, 'pad'), 'roomy');
   assert.equal(appearanceValue(null, 'textScale'), 'default');
+});
+
+test('capsFor.align + nextAlign / alignValue: horizontal align on the blocks that carry it', () => {
+  assert.equal(capsFor('Hero').align, true);
+  assert.equal(capsFor('Columns').align, false); // Columns uses valign, deliberately excluded
+  assert.equal(capsFor('Faq').align, false);
+  for (const t of ALIGN_BLOCKS) assert.equal(capsFor(t).align, true);
+  assert.equal(nextAlign('left', 'center'), 'center');
+  assert.equal(nextAlign('left', 'bogus'), 'left');   // unknown value keeps the block's current align
+  assert.equal(nextAlign('center', 'bogus'), 'center');
+  assert.equal(alignValue('center'), 'center');
+  assert.equal(alignValue(null), 'left');
 });
 
 test('nextCta / ctaValue: safe-merge + read, unknown key/value is a no-op', () => {

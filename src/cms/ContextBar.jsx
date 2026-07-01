@@ -3,8 +3,8 @@ import { createUsePuck } from '@measured/puck';
 import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS, TEXT_SCALES } from '../lib/block-style.mjs';
 import { CTA_SIZES } from '../lib/cta-style.mjs';
 import {
-  capsFor, hasTextStyles,
-  nextSection, sectionValue, nextAppearance, appearanceValue, nextCta, ctaValue,
+  capsFor, hasTextStyles, ALIGNS,
+  nextSection, sectionValue, nextAppearance, appearanceValue, nextCta, ctaValue, nextAlign, alignValue,
 } from '../lib/context-bar-model.mjs';
 
 // The universal contextual toolbar: a compact strip pinned as the second row of the editor top bar that reflects
@@ -117,6 +117,12 @@ export default function ContextBar() {
       {pills('Background', SECTION_SURFACES, sectionValue(section, 'surface'), (id) => setSection('surface', id), 'Background')}
       <span className="gs-ctx-sep" aria-hidden="true" />
       {pills('Accent', SECTION_ACCENTS, sectionValue(section, 'accent'), (id) => setSection('accent', id), 'Accent')}
+      {caps.align ? (
+        <>
+          <span className="gs-ctx-sep" aria-hidden="true" />
+          {pills('Align', ALIGNS, alignValue(props.align), (id) => setProp('align', nextAlign(props.align, id)), 'Align')}
+        </>
+      ) : null}
       <span className="gs-ctx-sep" aria-hidden="true" />
       {/* the denser, less-frequent controls live behind a compact popover so the strip stays neat */}
       <span className="gs-ctx-more" ref={moreWrapRef}>
