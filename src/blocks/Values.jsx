@@ -17,8 +17,8 @@ export function Values({ id, puck, kicker, heading, items = [] }) {
           {items.map((it, i) => (
             <div className="b-value-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
               <div className="b-value-idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
-              <h3>{it.title}</h3>
-              <p>{it.text}</p>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as="h3" singleLine placeholder="Title…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" placeholder="Description…" />
             </div>
           ))}
         </div>
@@ -53,7 +53,7 @@ export const puck = {
     heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     items: {
       type: 'array', label: 'Values',
-      arrayFields: { title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
+      arrayFields: { title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> }, text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> } },
       defaultItemProps: { title: 'A value', text: 'What it means in practice.' },
       getItemSummary: (item) => item.title || 'Value',
     },

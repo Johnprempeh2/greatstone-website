@@ -31,8 +31,8 @@ export function Steps({ id, puck, index, eyebrow, headline, highlight, body, ite
               <li className="b-step" data-reveal style={{ transitionDelay: `${i * 90}ms` }} key={i}>
                 <span className={textMode ? 'b-step-n is-text' : 'b-step-n'}>{textMode && it.phase ? `${num} · ${it.phase}` : num}</span>
                 {it.phase && !textMode ? <span className="b-step-phase">{it.phase}</span> : null}
-                <h3>{it.title}</h3>
-                <p>{it.text}</p>
+                <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as="h3" singleLine placeholder="Title…" />
+                <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" placeholder="Description…" />
                 {it.timing ? <p className="b-step-timing">{it.timing}</p> : null}
               </li>
             );
@@ -89,8 +89,8 @@ export const puck = {
       type: 'array', label: 'Steps',
       arrayFields: {
         phase: { type: 'text', label: 'Phase label (optional)' },
-        title: { type: 'text', label: 'Title' },
-        text: { type: 'textarea', label: 'Description' },
+        title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> },
+        text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> },
         timing: { type: 'text', label: 'Timing line (optional)' },
       },
       defaultItemProps: { phase: '', title: 'Step', text: 'What happens here.', timing: '' },
