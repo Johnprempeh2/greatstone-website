@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The about page's signature: a scroll-tracking timeline spine. A lime fill grows down the rail
 // as you scroll, and each milestone "lights" as it arrives. Honours reduced-motion (all lit,
 // fill full) and shows everything flat inside the editor.
-export function Timeline({ index, eyebrow, headline, highlight, body, items = [] }) {
+export function Timeline({ id, puck, index, eyebrow, headline, highlight, body, items = [] }) {
   const headRef = useReveal();
+  const editing = puck && puck.isEditing;
   const tlRef = useRef(null);
   useEffect(() => {
     const tl = tlRef.current; if (!tl) return;
@@ -39,14 +42,14 @@ export function Timeline({ index, eyebrow, headline, highlight, body, items = []
   return (
     <section ref={headRef} className="b-timeline">
       <div className="wrap">
-        {(index || eyebrow) ? (
+        {(index || eyebrow || editing) ? (
           <div className="b-chapter-eyebrow" data-reveal>
             {index ? <span className="b-chapter-num">{index}</span> : null}
-            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+            <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
           </div>
         ) : null}
-        <h2 className="b-timeline-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-timeline-body" data-reveal>{body}</p> : null}
+        <h2 className="b-timeline-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-timeline-body" placeholder="Body…" data-reveal />
         <div className="timeline" ref={tlRef}>
           <div className="tl-track" aria-hidden="true"><div className="tl-fill" /></div>
           {items.map((it, i) => (
@@ -93,10 +96,11 @@ export const puck = {
   label: 'Timeline',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Milestones',
       arrayFields: { year: { type: 'text', label: 'Year' }, head: { type: 'text', label: 'Heading' }, text: { type: 'textarea', label: 'Description' } },

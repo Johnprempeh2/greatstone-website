@@ -1,16 +1,19 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The organisation-posture strip: laggard to pioneer, read as a posture rather than a verdict.
 // The dim-to-lime colour progression is code-owned (by position); marketing edits the copy.
-export function Ladder({ kicker, headline, highlight, body, items = [] }) {
+export function Ladder({ id, puck, kicker, headline, highlight, body, items = [] }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-ladder">
       <div className="wrap">
         <div className="center" data-reveal>
-          {kicker ? <span className="kicker">{kicker}</span> : null}
-          {(headline || highlight) ? (<h2 className="h2 b-ladder-head">{headline}{headline && highlight ? ' ' : ''}{highlight ? <span className="accent">{highlight}</span> : null}</h2>) : null}
-          {body ? <p className="lead b-ladder-body">{body}</p> : null}
+          <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+          {(headline || highlight || editing) ? (<h2 className="h2 b-ladder-head"><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>) : null}
+          <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-ladder-body" placeholder="Body…" />
         </div>
         <div className="phases">
           {items.map((it, i) => (
@@ -57,10 +60,12 @@ const P = (rank, name, range, text) => ({ rank, name, range, text });
 export const puck = {
   label: 'Ladder (posture)',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
+    // array field stays LAST (Puck mis-slots text fields placed before an array when another
+    // field follows it — see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Phases (dim → lime)',
       arrayFields: {
