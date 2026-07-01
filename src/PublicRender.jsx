@@ -1,5 +1,9 @@
 import { Fragment } from 'react';
 
+// The public site never edits, so this stub is constant — define it once at module scope so every block on
+// every page spreads the SAME object identity (stable props help large blocks skip needless child re-renders).
+const PUCK_PUBLIC = { isEditing: false, renderDropZone: () => null, dragRef: null };
+
 // Lightweight public renderer. The public site only needs to PAINT saved content; it does not need
 // the @measured/puck editor (~432KB) that Puck's own <Render> drags onto every visitor's first load.
 // Our blocks are flat (no Puck zones/slots) and never read the `puck` render prop, so rendering is
@@ -19,7 +23,7 @@ export default function PublicRender({ config, data }) {
           if (import.meta.env && import.meta.env.DEV) console.warn('PublicRender: unknown block type "' + item.type + '" skipped');
           return null;
         }
-        const props = { ...item.props, puck: { isEditing: false, renderDropZone: () => null, dragRef: null } };
+        const props = { ...item.props, puck: PUCK_PUBLIC };
         return <Fragment key={item.props && item.props.id ? item.props.id : item.type + '-' + i}>{def.render(props)}</Fragment>;
       })}
     </>

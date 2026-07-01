@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
 import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
@@ -21,7 +21,7 @@ export function InsightsGrid({ id, puck, categories = [], posts = [], emptyNote 
   const timer = useRef(null);
   useEffect(() => () => clearTimeout(timer.current), []); // clear the crossfade timer on unmount
 
-  const chips = [{ label: 'All', value: 'all' }, ...categories.map((c) => ({ label: c.label, value: c.value }))];
+  const chips = useMemo(() => [{ label: 'All', value: 'all' }, ...categories.map((c) => ({ label: c.label, value: c.value }))], [categories]);
 
   const select = (value) => {
     if (value === selected) return;

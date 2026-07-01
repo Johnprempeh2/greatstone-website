@@ -580,7 +580,12 @@ export default function App() {
   // the catalogue has a draft → published gate: the editor (Storefront preview in the Puck canvas, the
   // Products tab) sees the DRAFT; the public site renders the PUBLISHED projection. So an in-progress
   // price or status change never reaches visitors until an admin publishes the catalogue.
-  const draftCatalog = { products: state.products || [], categories: state.categories || [] };
+  const draftCatalog = useMemo(() => ({ products: state.products || [], categories: state.categories || [] }), [state.products, state.categories]);
+  // Stable context values so the editor-only Media/Link providers don't invalidate every consumer (media
+  // field, link field, Puck internals) on unrelated App re-renders. registerAsset dispatches via a state
+  // updater so a captured reference is always current — safe to omit from deps.
+  const mediaCtxValue = useMemo(() => ({ assets: listAssets(state), addAsset: registerAsset }), [state]); // eslint-disable-line react-hooks/exhaustive-deps
+  const linkCtxValue = useMemo(() => ({ pages: state.pages, order: state.order }), [state.pages, state.order]);
   const pubProducts = state.publishedProducts || [];
   const pubCategories = state.publishedCategories || [];
   const publishedCatalog = { products: pubProducts, categories: pubCategories };
@@ -1385,8 +1390,8 @@ export default function App() {
     };
     return (
       <CatalogContext.Provider value={draftCatalog}>
-      <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
-      <LinkContext.Provider value={{ pages: state.pages, order: state.order }}>
+      <MediaContext.Provider value={mediaCtxValue}>
+      <LinkContext.Provider value={linkCtxValue}>
       <div className={'is-view ac-root' + (section === 'background' ? ' ac-has-stage' : '')}>
         {overlays}
         <a className="gs-skip" href="#admin-main">Skip to content</a>
@@ -1417,8 +1422,8 @@ export default function App() {
   if (canEdit && (mode === 'edit' || (onAdmin && adminSection === 'editor'))) {
     return (
       <CatalogContext.Provider value={draftCatalog}>
-      <MediaContext.Provider value={{ assets: listAssets(state), addAsset: registerAsset }}>
-      <LinkContext.Provider value={{ pages: state.pages, order: state.order }}>
+      <MediaContext.Provider value={mediaCtxValue}>
+      <LinkContext.Provider value={linkCtxValue}>
       <div className="is-edit">
         {overlays}
         <Stage background={bg} previewP={previewP} />

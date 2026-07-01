@@ -471,3 +471,41 @@ the onboarding-checklist dismissal transient/data-aware; rework the `#account` p
 dismissal isn't irreversibly destructive; a keyboard/AT-navigable data-table alternative for the Maturity Radar
 SVG; reframe the "Activate your licences" band copy + drop "unlock"; rename the "Invested" stat to "Total
 spent" (a positioning word, so your call).
+
+---
+
+## Cycle 24 — 2026-07-02 — performance deep-dive (NOT deployed)
+
+Slice 4: a performance pass. Build inspection first, then a 2-lens workflow (render-path + bundle). The read:
+the app is already in good shape. The build is well split (three.js 728KB and puck 287KB are lazy chunks;
+`App.jsx` `lazy()`-loads Stage, the editor, StoreBrowse/Product, CatalogueAdmin, StoreCart, Account, Org),
+fonts load non-blocking, and 4 of the 5 flagged images already reserve space (Storefront `aspect-ratio:16/9`,
+LogoWall fixed height, FeaturedArticle + InsightsGrid absolute-in-a-sized-parent). The safe wins are all
+reference-identity stabilisations (memoise inline objects/arrays), behaviour-identical.
+
+**Shipped (3, verified, NOT deployed):**
+- **App.jsx**: memoised the `MediaContext` + `LinkContext` provider values (and `draftCatalog`) so the
+  editor-only providers no longer hand every consumer (media field, link field, Puck internals) a fresh object
+  on unrelated re-renders. The hottest editor path; `registerAsset` dispatches via a state updater so the
+  captured reference is always current. Behaviour-identical.
+- **PublicRender.jsx**: hoisted the constant public `puck` stub to module scope, so every block on every public
+  page spreads the same object identity (helps large blocks skip needless child re-renders).
+- **InsightsGrid.jsx**: memoised the `chips` array on `[categories]` (a stable prop), stabilising the
+  filter-button list.
+
+Verify: `npm test` 571 green, `npm run build` clean, secret scan clean; live home render clean (115 blocks,
+correct title, 0 console errors — confirms the new App hooks are correctly placed on the render path). Not
+deployed.
+
+**Deferred (coupled, needs the fuller refactor):** the Storefront `chips`/category-lookup memos are only
+effective if the upstream `listed`/`cats` arrays are memoised first, so shipping the chip memo alone is a
+no-op. Left for the Storefront refactor (below).
+
+**Proposed to John (big levers / behaviour-changing):** (1) Columns-block image CLS — the one genuine
+layout-shift; a proper fix stores intrinsic image dimensions at upload (schema + upload-path change) rather
+than a distorting aspect-ratio guess. (2) Split the 644KB eager entry further. (3) Split `studio.css` so the
+editor-chrome CSS doesn't ship to public visitors (the public header shares the file, so it needs care).
+(4) A fuller Storefront refactor: `React.memo` the block + move the filter/sort pipeline into one `useMemo`
+keyed on `[products, categories, cat, q, sort]` to cut recompute on the 159-product catalogue. (5) The
+`App.jsx` studio-attention audit chain recomputes ~9 report memos on every edit keystroke (correct, but it's
+why the studio feels heavy); consider a debounced/idle or panel-open-gated recompute.
