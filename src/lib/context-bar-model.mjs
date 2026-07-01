@@ -22,11 +22,15 @@ const VALID = {
 // block via withAnchor, so its cap is always true. Keep these lists in step with style-field.jsx wiring.
 export const CTA_BLOCKS = new Set(['Chapter', 'Columns', 'Invite', 'MethodTieIn']);
 export const APPEARANCE_BLOCKS = new Set(['Prose', 'Chapter', 'Quote']);
+// blocks that render a RichTextField Body, so the strip can offer a "Text styles" deep-link to it
+export const RICHTEXT_BLOCKS = new Set(['Faq', 'Prose', 'Chapter', 'Columns']);
 
 // which strip groups apply to a selected block type
 export function capsFor(type) {
-  return { section: true, cta: CTA_BLOCKS.has(type), appearance: APPEARANCE_BLOCKS.has(type) };
+  return { section: true, cta: CTA_BLOCKS.has(type), appearance: APPEARANCE_BLOCKS.has(type), text: RICHTEXT_BLOCKS.has(type) };
 }
+// does this block have inline text formatting (in its sidebar Body field) to deep-link to?
+export function hasTextStyles(type) { return RICHTEXT_BLOCKS.has(type); }
 
 // merge ONE Section key, keeping the others, defaulting any missing, and DROPPING an unknown key or value (a
 // stray write is a no-op rather than corrupting the block). Returns a fresh object; never mutates the input.

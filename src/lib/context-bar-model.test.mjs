@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { capsFor, nextSection, sectionValue, SECTION_FALLBACK, CTA_BLOCKS, APPEARANCE_BLOCKS } from './context-bar-model.mjs';
+import { capsFor, nextSection, sectionValue, hasTextStyles, SECTION_FALLBACK, CTA_BLOCKS, APPEARANCE_BLOCKS, RICHTEXT_BLOCKS } from './context-bar-model.mjs';
 import { SECTION_SURFACES } from './block-style.mjs';
 
 test('capsFor: Section is universal; CTA + Appearance are gated to their blocks', () => {
@@ -13,6 +13,15 @@ test('capsFor: Section is universal; CTA + Appearance are gated to their blocks'
   // the gate lists are the source of truth
   for (const t of CTA_BLOCKS) assert.equal(capsFor(t).cta, true);
   for (const t of APPEARANCE_BLOCKS) assert.equal(capsFor(t).appearance, true);
+});
+
+test('hasTextStyles / caps.text: true only for blocks with a rich-text Body', () => {
+  assert.equal(hasTextStyles('Prose'), true);
+  assert.equal(hasTextStyles('Chapter'), true);
+  assert.equal(hasTextStyles('Hero'), false);
+  assert.equal(capsFor('Faq').text, true);
+  assert.equal(capsFor('Hero').text, false);
+  for (const t of RICHTEXT_BLOCKS) assert.equal(hasTextStyles(t), true);
 });
 
 test('nextSection: sets one key, preserves the rest, never mutates the input', () => {
