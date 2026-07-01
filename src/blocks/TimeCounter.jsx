@@ -3,13 +3,16 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // contact.html's signature hero: "You still can't buy time. Let's save yours." over a compact bordered
 // time-cost chip — a blinking dot + a live MM:SS clock counting the visitor's time on the page + an
 // escalating narrative line ("you won't get them back"). Faithful port of .timecost / tcPulse. The
 // clock ticks once per second (paused when the tab is hidden); reduced-motion only stills the dot.
-export function TimeCounter({ kicker, headline, highlight, body, clockLabel, ctaLabel, ctaHref = '#book' }) {
+export function TimeCounter({ id, puck, kicker, headline, highlight, body, clockLabel, ctaLabel, ctaHref = '#book' }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   const clockRef = useRef(null);
   const lineRef = useRef(null);
   useEffect(() => {
@@ -42,15 +45,15 @@ export function TimeCounter({ kicker, headline, highlight, body, clockLabel, cta
   return (
     <section ref={ref} className="b-time">
       <div className="wrap b-time-inner">
-        {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
-        <h1 className="b-time-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h1>
-        {body ? <p className="lead b-time-body" data-reveal>{body}</p> : null}
+        <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" data-reveal />
+        <h1 className="b-time-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h1>
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-time-body" placeholder="Lead…" data-reveal />
 
         <div className="b-tc-chip" data-reveal role="status" aria-live="off">
           <div className="b-tc-top">
             <span className="b-tc-dot" aria-hidden="true" />
             <span className="b-tc-clock" ref={clockRef}>00:00</span>
-            {clockLabel ? <span className="b-tc-label">{clockLabel}</span> : null}
+            <EditableText editing={editing} id={id} field="clockLabel" value={clockLabel} as="span" className="b-tc-label" singleLine placeholder="Clock label…" />
           </div>
           <p className="b-tc-line" ref={lineRef}>The clock’s already running. You won’t get this second back, now imagine a year of them.</p>
         </div>
@@ -84,11 +87,11 @@ export const css = `
 export const puck = {
   label: 'Time counter (live)',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted line', contentEditable: true },
-    body: { type: 'textarea', label: 'Lead', contentEditable: true },
-    clockLabel: { type: 'text', label: 'Clock label', contentEditable: true },
+    body: { type: 'custom', label: 'Lead', render: (props) => <RichTextField {...props} /> },
+    clockLabel: { type: 'custom', label: 'Clock label', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     ctaLabel: { type: 'text', label: 'Button label (optional)' },
     ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
   },
