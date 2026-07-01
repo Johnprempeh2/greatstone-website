@@ -133,6 +133,8 @@
 .ca-ord-keys { margin:8px 0 4px; padding:10px 12px; border:1px solid var(--gs-border,rgba(200,255,0,.08)); border-radius:10px; background:var(--gs-accent-soft,rgba(200,255,0,.05)); display:flex; flex-direction:column; gap:6px; }
 .ca-ord-keys-h { font-size:.68rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--gs-accent,#c8ff00); }
 .ca-ord-key { display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center; font-size:.84rem; }
+/* "migrated" tag on orders imported from the old store (no Stripe session) */
+.ca-ord-migrated, .acct-migrated { display:inline-block; margin-left:8px; font-size:.6rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--gs-purple,#b197fc); border:1px solid var(--gs-purple,#b197fc); border-radius:100px; padding:1px 7px; vertical-align:middle; }
 .ca-lk-issued { color:var(--gs-accent,#c8ff00); }
 .ca-lk-expired { color:var(--gs-warning,#ffc800); }
 .ca-lk-revoked { color:var(--gs-text-faint,#707070); text-decoration:line-through; }

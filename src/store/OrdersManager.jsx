@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
+import { orderRefDisplay } from '../lib/order-ref.mjs';
 import { KeyEditor } from './ClientsManager.jsx';
 
 // show the key as its shape, not its secret: keep the tail so staff can eyeball-match, mask the rest
@@ -76,7 +77,7 @@ export default function OrdersManager({ staff }) {
                   <React.Fragment key={o.id}>
                     <tr>
                       <td>{fmtDate(o.placed_at || o.created_at)}</td>
-                      <td className="ca-name"><code className="ca-ref">{(o.reference || '').replace(/^cs_(test|live)_/, '').slice(0, 14)}…</code></td>
+                      <td className="ca-name"><code className="ca-ref">{orderRefDisplay(o.reference).label}</code>{orderRefDisplay(o.reference).migrated && <span className="ca-ord-migrated" title="Imported from the old store — no Stripe session">migrated</span>}</td>
                       <td>{items.length}</td>
                       <td>{keys.length}/{totalQty}{needsKeys ? <span className="ca-ord-refund" title="Some purchased items have no licence key yet">issue</span> : null}</td>
                       <td className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
@@ -119,7 +120,9 @@ export default function OrdersManager({ staff }) {
                           <div className="ca-ord-tot"><span>Subtotal (ex VAT)</span><span>{fmtMoney(o.subtotal_minor, o.currency)}</span></div>
                           <div className="ca-ord-tot total"><span>Total (inc VAT)</span><span>{fmtMoney(o.total_minor, o.currency)}</span></div>
                           {o.refunded_minor > 0 && <div className="ca-ord-tot"><span>Refunded</span><span>−{fmtMoney(o.refunded_minor, o.currency)}</span></div>}
-                          <div className="ca-ord-ref">Stripe session: <code>{o.reference}</code></div>
+                          {orderRefDisplay(o.reference).migrated
+                            ? <div className="ca-ord-ref">Migrated order — no Stripe session (old ref <code>{orderRefDisplay(o.reference).label}</code>)</div>
+                            : <div className="ca-ord-ref">Stripe session: <code>{o.reference}</code></div>}
                         </div>
                       </td></tr>
                     )}

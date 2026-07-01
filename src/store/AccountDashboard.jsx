@@ -9,6 +9,7 @@ import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
 import { isExpiringSoon, daysUntil } from './licence-expiry.mjs';
+import { orderRefDisplay } from '../lib/order-ref.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
 import './store.css';
@@ -272,7 +273,7 @@ function Dashboard({ session, profile, onProfile }) {
   const company = profile?.customer?.name || '';
   const tier = profile?.customer?.tier?.name;
   const admin = isCompanyAdmin(profile);
-  const ref = (s) => (s || '').replace(/^cs_(test|live)_/, '').slice(0, 12) + '…';
+  const ref = (s) => orderRefDisplay(s).label; // friendly label; migrated orders read as "#<legacy id>"
   // at-a-glance, from data already fetched
   const liveOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'refunded');
   // sum only orders in the display currency — a cross-currency minor-units sum is meaningless and would
@@ -427,7 +428,7 @@ function Dashboard({ session, profile, onProfile }) {
                           <React.Fragment key={o.id}>
                             <tr className="acct-ordrow" onClick={() => setOpen(expanded ? null : o.id)}>
                               <td data-label="Date">{fmtDate(o.placed_at || o.created_at)}</td>
-                              <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code></td>
+                              <td data-label="Reference" className="ca-name"><code className="ca-ref">{ref(o.reference)}</code>{orderRefDisplay(o.reference).migrated && <span className="acct-migrated" title="Brought over from your account on the previous site">Migrated</span>}</td>
                               <td data-label="Items">{(o.order_items || []).length}</td>
                               <td data-label="Total" className="ca-amt">{fmtMoney(o.total_minor, o.currency)}</td>
                               <td data-label="Status"><span className={'ca-status ca-ord-' + o.status}>{o.status}</span>{o.refunded_minor > 0 && o.status !== 'refunded' && <span className="ca-ord-refund">−{fmtMoney(o.refunded_minor, o.currency)}</span>}</td>

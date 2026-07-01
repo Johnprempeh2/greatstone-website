@@ -11,7 +11,7 @@ legal wording.
 ## Backlog (highest value first)
 - [x] **Admin licence-key issuance, order-driven.** Issue the key that fulfils a paid order, from the order.
 - [x] **Existing-data migration tooling** (idempotent importer + documented input format + dry-run).
-- [ ] Migrated/historical order display (orders with no Stripe session, marked migrated).
+- [x] **Migrated/historical order display** (orders with no Stripe session, marked migrated).
 - [ ] ~400-URL 301 redirect map from a crawl of the old site → public/_redirects.
 - [ ] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), wired to footer/nav.
 - [ ] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
@@ -53,3 +53,18 @@ into our schema, ready to run the moment Ben supplies an export. Needs no live s
 Verified: 8 new unit tests (mapping, totals, idempotency keys, orphan detection) all green; the CLI dry-run
 runs against the sample ("2 companies, 3 users, 2 orders, 3 line items, 1 licence key"). 505 tests, build clean.
 Remaining: run against Ben's real export into the production DB (waiting on the export + prod credentials).
+
+### Iteration 3 — Migrated/historical order display
+So the imported orders read as real history, not raw data, in both the customer account and the admin.
+- `src/lib/order-ref.mjs` (pure, unit-tested): `orderRefDisplay(reference)` → a friendly label and a
+  `migrated` flag. Migrated orders (reference `legacy:<id>`) read as "#<id>"; live orders keep the
+  Stripe-session truncation. No `orders.metadata` column added (that would break the interim DB's order
+  queries until applied) — provenance is read from the reference prefix instead.
+- Customer account (AccountDashboard): the order reference now uses the shared label + shows a purple
+  **Migrated** tag ("brought over from your previous account"). Invoice links stay gated on invoice_number,
+  so migrated orders (no invoice) correctly show none; re-order still works from the stored line items.
+- Admin (OrdersManager): reference cell shows the friendly label + a "migrated" tag; the detail line reads
+  "Migrated order — no Stripe session (old ref …)" instead of a blank Stripe session.
+
+Verified: 3 new unit tests green; live regression check in #catalogue/orders — existing orders render their
+references cleanly, zero false migrated badges. 508 tests, build clean.
