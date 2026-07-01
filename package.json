@@ -8,8 +8,10 @@
     "dev": "vite",
     "prebuild": "node scripts/gen-seo-files.mjs",
     "build": "vite build",
+    "postbuild": "node scripts/check-dist-secrets.mjs",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "check:dist": "node scripts/check-dist-secrets.mjs"
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",

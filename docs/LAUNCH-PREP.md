@@ -14,7 +14,7 @@ legal wording.
 - [x] **Migrated/historical order display** (orders with no Stripe session, marked migrated).
 - [ ] ~400-URL 301 redirect map from a crawl of the old site → public/_redirects.
 - [ ] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), wired to footer/nav.
-- [ ] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
+- [x] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
 - [ ] Auth email templates → bundled/CSS logo (no remote image) + single canonical-domain placeholder.
 - [ ] FX-rate staleness guard / admin visibility.
 - [ ] Staff provisioning seed/verify.
@@ -68,3 +68,17 @@ So the imported orders read as real history, not raw data, in both the customer 
 
 Verified: 3 new unit tests green; live regression check in #catalogue/orders — existing orders render their
 references cleanly, zero false migrated badges. 508 tests, build clean.
+
+### Iteration 4 — Secret hygiene + config reconcile
+Housekeeping the audit flagged, all no-external-service:
+- **dist secret-scan guard** (`scripts/check-dist-secrets.mjs`, wired as `postbuild` + `npm run check:dist`):
+  fails the build if a server-secret shape (sk_/whsec_/sbp_/service_role/postgres URL) reaches the client
+  bundle. Ran clean against the current dist (71 files). Publishable/anon keys are intentionally allowed.
+- **Config reconcile:** confirmed the app reads only `VITE_SITE_ORIGIN` (src/lib/site-origin.mjs); `VITE_APP_URL`
+  is dead config (nothing reads it) — noted in `.env.example`, which is now the complete template (added the
+  Resend, SUPABASE_ACCESS_TOKEN, SUPABASE_DB_URL and VITE_VAT_RATE vars that existed only in the live .env).
+- **Secret exposure check:** `.env` is gitignored (`.env`, `.env.*`) and was **never committed** (verified via
+  git history) — the leak risk is contained to local disk; rotation is still advised at production provisioning.
+- **Refreshed GO-LIVE-RUNBOOK** pre-flight: migrations 0001–0010 → 0001–0023, plus the new secret-scan gate.
+
+Verified: `npm run build` runs the guard automatically (clean); 508 tests green.

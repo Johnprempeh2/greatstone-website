@@ -3,8 +3,14 @@
 Everything below moves the platform from Stripe **test** to **live**. Do it in order; nothing here is reversible-by-accident if you follow the rollback notes. Keep test mode running until the live smoke test passes.
 
 ## 0. Pre-flight (must be true before starting)
-- All migrations 0001–0010 applied to the production Supabase project.
-- `npm test` green, `npm run build` green.
+- All migrations **0001–0023** applied to the production Supabase project (the full set — the customer
+  accounts, refunds, quotes/invoicing, licence keys, FX, service inquiries and later tables all matter).
+- `npm test` green, `npm run build` green. The build runs `postbuild` → `scripts/check-dist-secrets.mjs`,
+  which scans `dist/` for server-secret shapes (sk_/whsec_/sbp_/service_role/DB URLs) and fails if any leak
+  into the client bundle. A clean build is your leak guard.
+- `.env` is gitignored (`.env`, `.env.*`) and has never been committed (verified). It holds only TEST/dev
+  values today; rotate every secret when you provision production and store them in the host's encrypted
+  env + Supabase Edge Function secrets, never the repo.
 - Supabase Auth → **Confirm email = ON** (closes the by-email account-link edge case).
 - Stripe **Customer Portal** configured in **both** test and live modes (Dashboard → Settings → Billing → Customer portal). Until live is configured, the account "Manage billing & cards" button errors in live.
 - A transactional email sender is ready: a verified domain in Resend (or your provider) and an API key.
