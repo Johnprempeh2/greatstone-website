@@ -1,19 +1,22 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The Methodology section: an intro, then the eight pillars as an interactive emerald grid.
 // Marketing edits the pillar copy in the panel; the card treatment, hover lift and accent
 // sweep are code-owned (brand-locked). The numbering is derived, never hand-typed.
-export function Pillars({ index, eyebrow, headline, highlight, body, items = [] }) {
+export function Pillars({ id, puck, index, eyebrow, headline, highlight, body, items = [] }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-pillars">
       <div className="wrap">
         <div className="b-chapter-eyebrow" data-reveal>
           {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
         </div>
-        <h2 className="b-pillars-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-pillars-body" data-reveal>{body}</p> : null}
+        <h2 className="b-pillars-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-pillars-body" placeholder="Body…" data-reveal />
         <div className="b-pillars-grid">
           {items.map((it, i) => (
             <article
@@ -22,8 +25,8 @@ export function Pillars({ index, eyebrow, headline, highlight, body, items = [] 
               onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`); }}
             >
               <span className="b-pillar-n">{String(i + 1).padStart(2, '0')}</span>
-              <h3>{it.title}</h3>
-              <p>{it.text}</p>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as="h3" singleLine placeholder="Title…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" placeholder="Description…" />
               <span className="b-pillar-sweep" aria-hidden="true" />
             </article>
           ))}
@@ -63,13 +66,14 @@ export const puck = {
   label: 'Pillars',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Pillars',
-      arrayFields: { title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
+      arrayFields: { title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> }, text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> } },
       defaultItemProps: { title: 'Pillar', text: 'A short, honest read.' },
       getItemSummary: (item) => item.title || 'Pillar',
     },
