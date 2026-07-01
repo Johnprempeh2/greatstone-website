@@ -3,6 +3,8 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
 import { ctaStyleClass } from '../lib/cta-style.mjs';
 
@@ -10,8 +12,9 @@ import { ctaStyleClass } from '../lib/cta-style.mjs';
 // "lowest first") + lead + a ghost link to the method. RIGHT: a 4×2 mini bar chart of the eight pillars
 // (each a square with a bottom-anchored bar at its score), the single "lowest" one lime-highlighted —
 // "we climb the lowest first". Faithful port of .tiein / .pillars-mini; bars grow on scroll-in.
-export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, pillars = [] }) {
+export function MethodTieIn({ id, puck, kicker, heading, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, pillars = [] }) {
   const ref = useReveal([pillars.length]);
+  const editing = puck && puck.isEditing;
   const chartRef = useRef(null);
   const [grown, setGrown] = useState(false);
 
@@ -33,11 +36,11 @@ export function MethodTieIn({ kicker, heading, highlight, body, ctaLabel, ctaHre
       <div className="wrap">
         <div className="b-tiein">
           <div data-reveal>
-            {kicker ? <span className="kicker">{kicker}</span> : null}
-            {(heading || highlight) ? (
-              <h2 className="b-tiein-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+            <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+            {(heading || highlight || editing) ? (
+              <h2 className="b-tiein-h2"><EditableText editing={editing} id={id} field="heading" value={heading} as="span" singleLine placeholder="Heading…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
             ) : null}
-            {body ? <p className="lead b-tiein-lead">{body}</p> : null}
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-tiein-lead" placeholder="Body…" />
             {ctaLabel ? <a className={('b-cta ghost b-tiein-cta ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
           </div>
 
@@ -76,10 +79,10 @@ export const css = `
 export const puck = {
   label: 'Method tie-in (pillar bars)',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted phrase', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     ctaLabel: { type: 'text', label: 'Ghost button label' },
     ctaHref: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
     ctaStyle: CTA_STYLE_FIELD,

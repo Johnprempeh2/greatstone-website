@@ -2,28 +2,31 @@ import { useReveal } from './reveal.js';
 import { safeMailto } from '../lib/safe-url.js';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { Arrow } from './icons.jsx';
 
 // The direct-contact close: a big mailto on one side, a "before you book" prompt card on the
 // other. No gatekeeping. The card echoes the live .calc-card (radial glow + a ghost link out
 // to the time-savings calculator).
-export function ContactBand({ kicker, heading, body, email = 'dx@greatstonesoftware.co.uk', cardKicker, cardStat, cardStatUnit, cardHeading, cardBody, cardCtaLabel, cardCtaHref = '#' }) {
+export function ContactBand({ id, puck, kicker, heading, body, email = 'dx@greatstonesoftware.co.uk', cardKicker, cardStat, cardStatUnit, cardHeading, cardBody, cardCtaLabel, cardCtaHref = '#' }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-contactband">
       <div className="wrap">
         <div className="contact-band">
           <div data-reveal>
-            {kicker ? <p className="kicker">{kicker}</p> : null}
-            {heading ? <h2 className="h2 b-cb-head">{heading}</h2> : null}
-            {body ? <p className="muted b-cb-body">{body}</p> : null}
+            <EditableText editing={editing} id={id} field="kicker" value={kicker} as="p" className="kicker" singleLine placeholder="Kicker…" />
+            <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="h2 b-cb-head" singleLine placeholder="Heading…" />
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="muted b-cb-body" placeholder="Body…" />
             <a className="big-mail" href={safeMailto(email)}>{email}</a>
           </div>
           <div className="card calc-card" data-reveal>
-            {cardKicker ? <p className="kicker">{cardKicker}</p> : null}
+            <EditableText editing={editing} id={id} field="cardKicker" value={cardKicker} as="p" className="kicker" singleLine placeholder="Card kicker…" />
             {cardStat ? <div className="calc-time"><b>{cardStat}</b><span>{cardStatUnit}</span></div> : null}
-            {cardHeading ? <h3 className="h3 b-cb-cardhead">{cardHeading}</h3> : null}
-            {cardBody ? <p className="muted">{cardBody}</p> : null}
+            <EditableText editing={editing} id={id} field="cardHeading" value={cardHeading} as="h3" className="h3 b-cb-cardhead" singleLine placeholder="Card heading…" />
+            <EditableText editing={editing} id={id} field="cardBody" value={cardBody} as="p" className="muted" placeholder="Card body…" />
             {cardCtaLabel ? <a className="b-cta ghost b-cb-cardcta" {...resolveLink(cardCtaHref)}>{cardCtaLabel}<Arrow /></a> : null}
           </div>
         </div>
@@ -54,15 +57,15 @@ export const css = `
 export const puck = {
   label: 'Contact band',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     email: { type: 'text', label: 'Email' },
-    cardKicker: { type: 'text', label: 'Card kicker', contentEditable: true },
+    cardKicker: { type: 'custom', label: 'Card kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     cardStat: { type: 'text', label: 'Card figure' },
     cardStatUnit: { type: 'text', label: 'Card figure unit' },
-    cardHeading: { type: 'text', label: 'Card heading', contentEditable: true },
-    cardBody: { type: 'textarea', label: 'Card body', contentEditable: true },
+    cardHeading: { type: 'custom', label: 'Card heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    cardBody: { type: 'custom', label: 'Card body', render: (props) => <RichTextField {...props} /> },
     cardCtaLabel: { type: 'text', label: 'Card button label (optional)' },
     cardCtaHref: { type: 'custom', label: 'Card button link', render: (props) => <LinkField {...props} /> },
   },
