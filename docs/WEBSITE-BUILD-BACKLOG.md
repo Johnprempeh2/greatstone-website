@@ -1,91 +1,151 @@
-# Website build backlog — 1 Jul Ben meeting
+# Website build backlog — 1 Jul Ben meetings (corrected against full transcripts)
 
-Working list from the 1 Jul 2026 sessions with Ben: the **Website Build Technical Review** and the
-**Marketing Strategy & Deep Dive** session (Notion Meeting Notes, 2026-07-01). Autonomous build loop works
-the highest-value unbuilt item each iteration; verify (npm test + build + live preview), commit scoped, do
-not deploy without asking. Live at greatstoneint.com / greatstone-home.netlify.app.
+Two 1 Jul 2026 sessions with Ben: the **Website Build Technical Review** and the **Marketing Strategy &
+Deep Dive**. This version was re-checked against both full transcripts and a codebase audit (workflow
+`ben-1jul-rescope`, 30 Jun/1 Jul) after the first distillation under-scoped the licence-file and
+activation-instruction requirements. The loop builds the highest-value genuinely frontend-only item each
+iteration; verify (npm test + build + live preview), commit scoped, do not deploy without asking. Live at
+greatstoneint.com / greatstone-home.netlify.app.
 
-## Build now (frontend/CMS, no external dependency)
+Status tags: **[BUILT]** shipped this session or already live · **[PARTIAL]** part shipped, a named piece
+missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only, blocker named.
 
-- [x] **1. Purchase-order checkout** — make "Pay by purchase order" a first-class checkout payment method
-  alongside Stripe: a business buyer can either UPLOAD a PO document or fill/create one online (with a PO
-  number), submitting to sales@ for manual review + fulfilment. StoreCart already has a quote-with-PO-reference
-  flow; add the document upload + the payment-method framing (most B2B buyers pay by PO, not card). **[Ben's #1]**
-  **DONE (online path) — iteration 2.** The card-vs-PO payment-method framing + the online PO submission are
-  shipped. Native in-app PO-document upload is gated (needs a Supabase Storage bucket + a `request-quote`
-  edge-function change to store/attach the file — both need a deploy I can't run). Tracked below.
-- [x] **2. Services page — categories at the top** — surface the high-level categories (Websites & Web Apps,
-  Commerce & Storefronts, AI Agents & Assistants, Automation & Integration, Comms, …) as prominent, clickable
-  navigation at the TOP of the Services page. Ben expected them there and did not see them (they were small
-  filter chips below the Featured strip). **DONE — iteration 1.**
-- [ ] **3. Post-order + welcome emails** — rework the order-confirmation email (what was ordered, next steps,
-  timeframe) and add a branded welcome/onboarding email on registration. Builds on the order-confirmation +
-  licence-delivery (notify-licence-issued) emails already in place.
-- [ ] **4. Per-product-range activation instructions** — an admin place to author activation steps per product
-  range (Aspose, GroupDocs, …), included automatically in the fulfilment email + the customer account; add
-  .lic licence-FILE support alongside key strings.
-- [ ] **5. AI Baseline Survey + Cost Calculator lead magnet** — a free, gated tool (name/company/email) that
-  returns a quick AI-readiness benchmark (laggard → pioneer) with simple charts. Dovetails with the parked AI
-  Intelligence Hub.
+## Build now (frontend-only, no external dependency)
 
-## Gated on Ben / credentials (flag + track, do not build)
+- **AI Baseline Survey lead magnet** — [MISSING]. A free, gated survey a company can run internally to
+  self-assess AI readiness, returning simple bar/pie charts and a **laggard → pioneer** benchmark against the
+  8 Greatstone maturity pillars. Two Ben/John nuances to honour: (1) it must be **downloadable / importable
+  into Google Forms, Typeform or Formstack** (an export step, not only an on-page quiz), and (2) it is gated
+  behind name/company/email as the value exchange. Build `SurveyQuiz` + `SurveyResults` (reuse the
+  `MaturityRadar` SVG pattern and `maturity-seed.mjs` pillars/benchmarks), all frontend, localStorage session
+  state. **The best next fully-buildable item.**
 
-- Email deliverability: SPF/DKIM/DMARC + a dedicated sender (sales@…) via Cloudflare (emails landing in spam).
-- Domain/DNS cutover: Cloudflare → Netlify, both domains in parallel. Partly done (live on greatstoneint.com).
-- Auth: 2FA (pending provider choice) + rebrand the "Powered by Klondare" login screen to Greatstone (needs the
-  Klondare contract).
-- Native in-app PO-document upload: the PO checkout (item 1) ships the online path now. To let a buyer attach a
-  signed PO PDF *inside* the drawer, we need a Supabase Storage bucket (`po-documents`) with an anon-insert RLS
-  policy + a `request-quote` edge-function change to record the file URL on the quote. Both need a deploy
-  (migration + `supabase functions deploy`), which the loop can't run. Interim path is live: the confirmation
-  screen tells the buyer to email their PO to dx@ quoting the reference. Ready to wire when John can deploy.
-- Hosting/DB decisions: Netlify Pro ($19, can downgrade post-launch); Supabase free to ~1–2k users, Pro ~$25.
+- **AI Cost Calculator lead magnet — rename + email-gate wrapper** — [PARTIAL]. `TimeSavingsCalculator.jsx`
+  is already built and production-ready; Ben's framing is "how much money am I leaving on the table with AI."
+  Rename/relabel to "AI Cost Calculator", wrap it in an `EmailGate` (name/company/email before reveal, reusing
+  the `BookDeepDive` form pattern), emit `track('generate_lead', { form: 'ai_cost_calc' })`, expose as a Puck
+  block / tool page. Pure frontend.
+
+- **Per-product-range activation-instructions authoring UI** — [MISSING] (authoring + account display are
+  frontend-only; email injection is gated). Ben: activation instructions are authored **per product RANGE, not
+  per product** ("each product range... it will be only six or seven"; the 9 ranges are Aspose, GroupDocs,
+  IronSoftware, Apryse, DevExpress, Conholdate, ActivePDF, I.R.I.S., PDFlib), in "a word editor window." Build
+  the admin authoring surface in `CatalogueAdmin` (one card per vendor range, textarea), persist to localStorage
+  for the frontend-only phase, and render read-only under each key in `LicenceKeys.jsx` ("How to activate").
+
+- **User-portal engagement polish** — [PARTIAL]. Ben wants the user area "a lot more engaging." It already has
+  individual + company registration, team access, company purchases, a QBR-capable engagement timeline, and an
+  onboarding checklist (book kickoff / place first order). Frontend-only wins remain: empty-state heroes (no
+  orders / no team / no engagements), a first-visit welcome banner, surfacing the latest `review` engagement as
+  a "Next QBR" callout, an onboarding-complete moment.
+
+- **Post-order confirmation + welcome/onboarding email templates (authoring only)** — [PARTIAL]. Confirmation
+  HTML lives in `stripe-webhook`; a licence-issued builder is `src/lib/licence-email.mjs`. Ben's gaps: (a)
+  confirmation copy improved to state **what was ordered, next steps, timeframe**, and (b) a **branded
+  welcome/onboarding email** on registration, which does not exist. Author both as pure `.mjs` builders with
+  tests now (zero-deploy repo change). Dispatch is gated (below).
+
+- **Purchase-order checkout as a first-class payment method (online path)** — [BUILT] this session (iteration
+  2). Card-vs-PO framing + online PO submission via `request-quote`. Native document upload is gated (below).
+
+- **Services page — high-level categories at the top** — [BUILT] this session (iteration 1). Category-tile nav
+  at the top of `ServiceCatalog`.
+
+## Gated on Ben / credentials / deploy (flag + track, do not build to completion)
+
+- **Admin `.lic` licence-FILE upload on fulfilment** — [MISSING] **(gated)**. *The nuance the first backlog
+  under-scoped.* Ben: most products ship as a licence **key string**, but some ship as a `.lic` licence **FILE**
+  ("a text file, .lic extension... you'll have to upload physical [file]"). Admin flow he described: order
+  management → open order → it follows the product-range format → **upload the licence file** or paste the key →
+  add a download link if present → **mark as fulfilled → automated email triggers**. Today `KeyEditor` accepts
+  only a key string + optional `download_url`; there is no file input, no Storage bucket, no file column, and
+  `markFulfilled()` does not trigger the email. Real build needs a Supabase **Storage bucket** (`licence-files`)
+  + a `licence_keys.file_storage_path` column + `markFulfilled → notify-licence-issued` wiring + a `.lic`
+  download button on the account. A frontend-only localStorage/JSONB proof-of-concept is possible but does not
+  match the "physical file, delivered as an artifact" model. **Blocker: Storage bucket + edge-function deploy +
+  DB migration.**
+
+- **Activation instructions in the fulfilment email + DB persistence** — [MISSING] **(gated)**. The authoring
+  UI + account display ship frontend-only (above); injecting per-range instructions into the licence email and
+  persisting them needs a `vendors.activation_instructions` column + a `notify-licence-issued` change.
+  **Blocker: DB migration + edge-function deploy.**
+
+- **Native in-app PO-document upload at checkout** — [MISSING] **(gated)**. Ben: "there should be an option to
+  upload the purchase order." Online path is live; attaching the PDF in-drawer needs a `po-documents` Storage
+  bucket + anon-insert RLS + a `request-quote` change to record the file URL. Interim live fallback: the
+  confirmation screen tells the buyer to email the PO to dx@ quoting the reference. Also ties to a
+  "company registration must be complete before ordering" gate Ben mentioned. **Blocker: Storage bucket +
+  edge-function deploy.**
+
+- **Order / licence / welcome email DISPATCH** — [PARTIAL] **(gated)**. Templates author frontend-only; sending
+  needs the edge functions deployed to live Supabase with `RESEND_API_KEY` + `RESEND_FROM`. **Blocker:
+  edge-function deploy + secrets.**
+
+- **Email deliverability / spam prevention** — [MISSING] **(gated)**. Ben flagged automated emails landing in
+  spam (a real sales order hit spam, reported not-spam). Needs SPF/DKIM/DMARC + a dedicated sender (sales@ /
+  dx@) via Cloudflare, plus resolving the SSL-on-sending-server concern. **Blocker: Cloudflare DNS + Resend
+  domain verification (Ben to share Cloudflare details).**
+
+- **Domain / DNS cutover** — [PARTIAL] **(gated)**. Live on greatstoneint.com; both domains run in parallel, no
+  SEO conflict (content differs); Cloudflare records shared via WhatsApp. **Blocker: registrar/Cloudflare record
+  entry + propagation.**
+
+- **2FA** — [MISSING] **(gated)**. Not set up, pending auth-provider decision.
+
+- **Rebrand "Powered by Klondare" login → Greatstone** — [MISSING] **(gated)**. Blocker: Klondare contract.
+
+- **Hosting/DB plan** — [tracking only]. Netlify Pro ($19/mo, can downgrade post-launch); Supabase free to
+  ~1–2k MAU (500MB), Pro ~$25/mo. Ben to provide traffic projections for a tailored Netlify estimate.
 
 ## Bigger bets / phase 2
 
-- PO-email → AI agent: an agent on the sales inbox that reads incoming POs, auto-creates the customer account,
-  logs the order, and feeds Stripe/product-sales dashboards.
-- MCP interview agent (Everest): install a Greatstone MCP into the client's own AI to run the baseline interview.
+- **PO-email → AI agent** — an agent on the sales inbox that reads emailed POs, auto-creates the customer
+  account (admin issues credentials), logs the order, and feeds Stripe/product-sales dashboards. Ben confirmed
+  the emailed-PO path is currently manual and unlinked to the site.
+
+- **MCP interview-agent lead magnet (Everest-style)** — a Greatstone MCP installed into the client's own AI
+  (Claude/Copilot) that interviews them in their own environment, gathering the same baseline-survey data at
+  near-zero run cost, optionally summarising how they already use AI. Ben's caution: how much trust is
+  pre-established to warrant that access? A next-level enhancement to the survey, not the MVP.
+
+- **Customer-perspective marketing/journey map** — Charlie's flow is internal/marketing-ops; Ben wants it
+  re-mapped from the customer's perspective, background processes (content/production calendars) separated,
+  per-segment paths. Owned by Charlie/John; shapes where the lead magnets sit in the funnel.
+
+- **Deep-dive pricing estimator** — pricing a deep dive should lead with an overview then a figure linked to a
+  variable the client applies themselves (company size / complexity). A small interactive estimator could
+  productise this later.
 
 ## Log
 
-### Iteration 1 — item #2, Services page categories at the top
+### Iteration 1 — item, Services page categories at the top
 
-Ben expected the high-level service categories to greet him at the top of the Services page and
-instead found small filter chips below the Featured strip. Fixed by adding a prominent
-category-tile grid (`.b-cat-nav`) at the top of `ServiceCatalog`, shown only in the default
-state (`active === 'All'`, no search query, more than one category). Each tile shows the
-category name, its blurb, and a live service count, and clicking it sets that category active,
-smooth-scrolls to the controls, and reveals the filtered grid (the nav hides itself once a
-category is active, so it reads as navigation rather than a permanent header).
+Ben expected the high-level service categories at the top of the Services page; they were only small filter
+chips below the Featured strip. Added a prominent category-tile grid (name, blurb, live service count) that
+filters the grid on click and hides itself once a category is active.
 
 - File: `src/blocks/ServiceCatalog.jsx` (tile nav JSX + `.b-cat-nav*` CSS, single-column under 520px).
-- Verify: `npm test` 561 green, `npm run build` clean (secret scan passed). Live preview on the
-  Services page: 9 tiles render in order; clicking "Commerce & Storefronts" set active, hid the
-  nav, showed the category blurb, filtered to 6 cards; zero console errors.
-- Not deployed (awaiting John's OK).
+- Verify: `npm test` 561 green, `npm run build` clean. Live preview: 9 tiles render; clicking a tile filters
+  the grid; zero console errors. Commit `e42d960`. Not deployed.
 
-### Iteration 2 — item #1, Purchase-order checkout (first-class payment method)
+### Iteration 2 — item, Purchase-order checkout (first-class payment method, online path)
 
-Ben's #1: most B2B buyers pay by PO, not card, so PO should be a first-class checkout method, not a buried
-"request a quote" afterthought. Reframed the basket footer into an explicit two-method choice, "Pay by card"
-(Stripe, existing) and "Pay by purchase order" (invoice on your terms), each a prominent tappable card with
-icon, one-line descriptor, and arrow. The PO path is a dedicated "Pay by purchase order" view leading with a
-prominent PO-number field (accent border + hint that covers both "have a PO number" and "don't have one yet"),
-then contact + notes, submitting via the existing `request-quote` edge function (creates a quote row with
-`po_reference` that staff see in QuotesManager, `source: 'product_page'`). The confirmation screen tells the
-buyer how to send a signed PO document today (email dx@ quoting the reference), which needs no backend.
+Reframed the basket footer into an explicit two-method choice, Pay by card (Stripe) and Pay by purchase order
+(invoice on your terms), each a prominent card. The PO path leads with a prominent PO-number field and submits
+via the existing `request-quote` flow (staff see `po_reference` in QuotesManager). The confirmation screen tells
+the buyer how to send a signed PO document.
 
-- Files: `src/store/StoreCart.jsx` (payment-method cards, PO view + copy, sent-view document step, analytics
-  label `purchase_order`), `src/store/store.css` (`.sc-method*`, `.sc-po-*`; removed the now-orphaned `.sc-pay`
-  and `.sc-quote-btn`).
-- Scope note: **no** change to price computation, Stripe, or the edge functions — the money math and server
-  validation are untouched; this is a UI/framing change over the existing, verified quote contract.
-- Verify: `npm test` 561 green, `npm run build` clean (secret scan passed). Live preview (seeded basket): basket
-  shows the two payment methods; "Pay by purchase order" opens the PO view with PO-number field first (accent
-  border confirmed), 6 labelled fields, "Submit purchase order"; zero console errors. Test cart cleared after.
-- Native in-app PO-document upload deferred as gated (see "Gated" section) — it needs a Storage bucket + edge-fn
-  deploy. The online PO path + the email-your-PO fallback are both complete and live-verified.
-- Not deployed (awaiting John's OK).
+- Files: `src/store/StoreCart.jsx`, `src/store/store.css`. No change to price maths, Stripe, or edge functions.
+- Verify: `npm test` 561 green, `npm run build` clean. Live preview verified both methods + the PO view; zero
+  console errors. Commit `b7fba9f`. Not deployed.
+
+### Re-scope — 1 Jul, corrected against full transcripts
+
+Re-read both full transcripts and ran a 6-agent codebase audit. Corrections captured above: the `.lic`
+licence-FILE upload is a core (gated) admin fulfilment feature, not a footnote; activation instructions are
+per product RANGE (~9 vendors) authored in a plain editor; the AI Cost Calculator already exists
+(`TimeSavingsCalculator.jsx`) and needs only a rename + email-gate; the AI Baseline Survey needs a
+Google Forms/Typeform export, not just an on-page quiz; welcome/onboarding email is a distinct, non-existent
+artefact; `markFulfilled()` does not currently trigger the licence email.
 
 _(next iterations appended below)_
