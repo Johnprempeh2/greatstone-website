@@ -3,13 +3,16 @@ import { Arrow } from './icons.jsx';
 import { MediaField } from '../cms/MediaField.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The insights hero post: a two-up card. A real hero image if one is set, otherwise the
 // stone-echo media panel (giant glyph + ridges + corner wave). Editable meta + read time.
 const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
 
-export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', readTime, image, alt, ctaLabel, ctaHref = '#' }) {
+export function FeaturedArticle({ id, puck, label, title, excerpt, meta, glyph = 'G', readTime, image, alt, ctaLabel, ctaHref = '#' }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-featured-sec">
       <div className="wrap">
@@ -22,11 +25,11 @@ export function FeaturedArticle({ label, title, excerpt, meta, glyph = 'G', read
             {image ? <img className="featured__img" src={image} alt={alt || ''} loading="lazy" decoding="async" onError={hideOnError} /> : <span className="featured__glyph">{glyph}</span>}
           </div>
           <div className="featured__body">
-            {label ? <span className="pill">{label}</span> : null}
-            {title ? <h2 className="h3">{title}</h2> : null}
-            {excerpt ? <p className="muted">{excerpt}</p> : null}
+            <EditableText editing={editing} id={id} field="label" value={label} as="span" className="pill" singleLine placeholder="Label…" />
+            <EditableText editing={editing} id={id} field="title" value={title} as="h2" className="h3" singleLine placeholder="Title…" />
+            <EditableText editing={editing} id={id} field="excerpt" value={excerpt} as="p" className="muted" placeholder="Excerpt…" />
             <div className="featured__meta">
-              {meta ? <span className="faint">{meta}</span> : null}
+              <EditableText editing={editing} id={id} field="meta" value={meta} as="span" className="faint" singleLine placeholder="Meta…" />
               {readTime ? <span className="pill">{readTime}</span> : null}
             </div>
             {ctaLabel ? <p className="featured__cta"><a className="b-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a></p> : null}
@@ -72,10 +75,10 @@ export const css = `
 export const puck = {
   label: 'Featured article',
   fields: {
-    label: { type: 'text', label: 'Label', contentEditable: true },
-    title: { type: 'text', label: 'Title', contentEditable: true },
-    excerpt: { type: 'textarea', label: 'Excerpt', contentEditable: true },
-    meta: { type: 'text', label: 'Meta (category etc.)', contentEditable: true },
+    label: { type: 'custom', label: 'Label', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> },
+    excerpt: { type: 'custom', label: 'Excerpt', render: (props) => <RichTextField {...props} /> },
+    meta: { type: 'custom', label: 'Meta (category etc.)', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     readTime: { type: 'text', label: 'Read time' },
     image: { type: 'custom', label: 'Hero image', render: (props) => <MediaField {...props} /> },
     alt: { type: 'text', label: 'Image alt text (accessibility)' },

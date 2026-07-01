@@ -3,6 +3,8 @@ import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
 import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // InsightsGrid: insights.html's filtered article wall. A row of category chips (aria-pressed, "All"
 // auto-prepended) crossfades the grid of post cards by data-cat; each card is a gradient-ink (or image)
@@ -10,8 +12,9 @@ import { LinkField } from '../cms/LinkField.jsx';
 // port of .chips + #postGrid (.post / .post__media / .ink / .tag), with an empty-state note.
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
+export function InsightsGrid({ id, puck, categories = [], posts = [], emptyNote = '' }) {
   const ref = useReveal([posts.length, categories.length]);
+  const editing = puck && puck.isEditing;
   const [selected, setSelected] = useState('all'); // chip pressed state — updates immediately
   const [filter, setFilter] = useState('all');      // applied to the posts — lags by the crossfade
   const [fading, setFading] = useState(false);
@@ -57,16 +60,18 @@ export function InsightsGrid({ categories = [], posts = [], emptyNote = '' }) {
                     : <div className={'b-ins-ink b-ins-g' + n} />}
                   {catLabel ? <span className="b-ins-tag">{catLabel}</span> : null}
                 </div>
-                {p.title ? <h3>{p.title}</h3> : null}
-                {p.excerpt ? <p className="b-ins-excerpt">{p.excerpt}</p> : null}
+                <EditableText editing={editing} id={id} arrayField="posts" index={i} field="title" value={p.title} as="h3" singleLine placeholder="Title…" />
+                <EditableText editing={editing} id={id} arrayField="posts" index={i} field="excerpt" value={p.excerpt} as="p" className="b-ins-excerpt" placeholder="Excerpt…" />
                 {p.readTime ? <span className="b-ins-readtime">{p.readTime}</span> : null}
               </>
             );
             // A post with a link becomes a real, focusable card-link (with a "Read" affordance); one
-            // without a link stays a plain preview card, exactly as before. No nested interactive els.
-            return hasLink(p.href)
+            // without a link stays a plain preview card. In the EDITOR we never render the <a> (its click
+            // would be swallowed instead of focusing the inline title/excerpt editors) — the card is a
+            // plain <article> so the text is editable in place.
+            return (hasLink(p.href) && !editing)
               ? <a key={i} className={cls + ' is-link'} {...resolveLink(p.href)} data-reveal>{inner}<span className="b-ins-more" aria-hidden="true">Read &rarr;</span></a>
-              : <article key={i} className={cls} data-reveal>{inner}</article>;
+              : <article key={i} className={cls + (hasLink(p.href) ? ' is-link' : '')} data-reveal>{inner}</article>;
           })}
         </div>
 
@@ -132,8 +137,8 @@ export const puck = {
       type: 'array', label: 'Posts',
       arrayFields: {
         cat: { type: 'text', label: 'Category value (matches a chip)' },
-        title: { type: 'text', label: 'Title' },
-        excerpt: { type: 'textarea', label: 'Excerpt' },
+        title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> },
+        excerpt: { type: 'custom', label: 'Excerpt', render: (props) => <RichTextField {...props} /> },
         readTime: { type: 'text', label: 'Read time' },
         href: { type: 'custom', label: 'Link (optional, makes the card clickable)', render: (props) => <LinkField {...props} /> },
         image: { type: 'custom', label: 'Image (optional)', render: (props) => <MediaField {...props} /> },
