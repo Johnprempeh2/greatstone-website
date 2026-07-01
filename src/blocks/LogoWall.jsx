@@ -1,6 +1,8 @@
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
 import { safeHref } from '../lib/safe-url.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // LogoWall: a "trusted by" client-logo strip, the trust signal a skeptical buyer scans for near the
 // top of the funnel. Deliberately content-safe: it ships with empty slots and renders nothing until an
@@ -9,13 +11,14 @@ import { safeHref } from '../lib/safe-url.js';
 // so empty slots never show a broken glyph. Logos sit muted and lift to full strength on hover/focus.
 const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
 
-export function LogoWall({ eyebrow, logos = [] }) {
+export function LogoWall({ id, puck, eyebrow, logos = [] }) {
   const shown = logos.filter((l) => l && l.image);
   const ref = useReveal([shown.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-logos">
       <div className="wrap b-logos-wrap">
-        {eyebrow ? <p className="b-logos-eyebrow" data-reveal>{eyebrow}</p> : null}
+        <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="b-logos-eyebrow" singleLine placeholder="Eyebrow…" data-reveal />
         {shown.length ? (
           <ul className="b-logos-row" data-reveal>
             {shown.map((l, i) => {
@@ -53,7 +56,7 @@ const LOGO = (alt, image, href) => ({ alt, image, href });
 export const puck = {
   label: 'Logo wall (trusted by)',
   fields: {
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     logos: {
       type: 'array', label: 'Logos (add real, permissioned client marks)',
       arrayFields: {

@@ -1,6 +1,8 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeHref } from '../lib/safe-url.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // MaturityModel: method.html's "We meet you where you are." section — a row of three graduated tier
 // cards (Surviving / Organised / Compounding, lime tint deepening) over a four-up band of score
@@ -8,21 +10,22 @@ import { safeHref } from '../lib/safe-url.js';
 const tierClass = (i, n) => (i < n ? ' t' + (i + 1) : '');
 const phaseClass = (i, n) => (i < n ? ' p' + (i + 1) : '');
 
-export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], ctaLabel, ctaHref = '#' }) {
+export function MaturityModel({ id, puck, kicker, heading, body, tiers = [], phases = [], ctaLabel, ctaHref = '#' }) {
   const ref = useReveal([tiers.length, phases.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-mat">
       <div className="wrap">
-        {kicker ? <span className="kicker b-mat-kicker" data-reveal>{kicker}</span> : null}
-        {heading ? <h2 className="b-mat-head" data-reveal>{heading}</h2> : null}
-        {body ? <p className="b-mat-lead" data-reveal>{body}</p> : null}
+        <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker b-mat-kicker" singleLine placeholder="Kicker…" data-reveal />
+        <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-mat-head" singleLine placeholder="Heading…" data-reveal />
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-mat-lead" placeholder="Intro…" data-reveal />
 
         <div className="b-mat-tiers">
           {tiers.map((t, i) => (
             <div className={'b-mat-tier' + tierClass(i, 3)} data-reveal style={{ transitionDelay: `${i * 80}ms` }} key={i}>
               {t.range ? <span className="b-mat-rng">{t.range}</span> : null}
-              <h3>{t.label}</h3>
-              <p>{t.body}</p>
+              <EditableText editing={editing} id={id} arrayField="tiers" index={i} field="label" value={t.label} as="h3" singleLine placeholder="Label…" />
+              <EditableText editing={editing} id={id} arrayField="tiers" index={i} field="body" value={t.body} as="p" placeholder="Description…" />
             </div>
           ))}
         </div>
@@ -31,8 +34,8 @@ export function MaturityModel({ kicker, heading, body, tiers = [], phases = [], 
           {phases.map((p, i) => (
             <div className={'b-mat-phase' + phaseClass(i, 4)} data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
               <span className="b-mat-pscore">{p.score}</span>
-              <h3>{p.label}</h3>
-              <p>{p.body}</p>
+              <EditableText editing={editing} id={id} arrayField="phases" index={i} field="label" value={p.label} as="h3" singleLine placeholder="Label…" />
+              <EditableText editing={editing} id={id} arrayField="phases" index={i} field="body" value={p.body} as="p" placeholder="Description…" />
             </div>
           ))}
         </div>
@@ -75,23 +78,25 @@ export const css = `
 export const puck = {
   label: 'Maturity model',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
-    body: { type: 'textarea', label: 'Intro', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    body: { type: 'custom', label: 'Intro', render: (props) => <RichTextField {...props} /> },
+    ctaLabel: { type: 'text', label: 'Ghost button label (optional)' },
+    ctaHref: { type: 'text', label: 'Ghost button link' },
+    // array fields LAST — Puck mis-slots the custom header fields placed before an array when other
+    // fields follow it (see memory "puck-slot-misdetection-inline-editing")
     tiers: {
       type: 'array', label: 'Tiers (3)',
-      arrayFields: { range: { type: 'text', label: 'Score band' }, label: { type: 'text', label: 'Label' }, body: { type: 'textarea', label: 'Description' } },
+      arrayFields: { range: { type: 'text', label: 'Score band' }, label: { type: 'custom', label: 'Label', render: (props) => <RichTextField {...props} variant="heading" /> }, body: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> } },
       defaultItemProps: { range: 'SCORE 0–0 · TIER', label: 'Tier', body: 'What this tier looks like.' },
       getItemSummary: (i) => i.label || 'Tier',
     },
     phases: {
       type: 'array', label: 'Phases (4)',
-      arrayFields: { score: { type: 'text', label: 'Score range' }, label: { type: 'text', label: 'Label' }, body: { type: 'textarea', label: 'Description' } },
+      arrayFields: { score: { type: 'text', label: 'Score range' }, label: { type: 'custom', label: 'Label', render: (props) => <RichTextField {...props} variant="heading" /> }, body: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> } },
       defaultItemProps: { score: '0 – 0', label: 'Phase', body: 'A short line.' },
       getItemSummary: (i) => i.label || 'Phase',
     },
-    ctaLabel: { type: 'text', label: 'Ghost button label (optional)' },
-    ctaHref: { type: 'text', label: 'Ghost button link' },
   },
   defaultProps: {
     kicker: 'Pebble · Plateau · Peak',
