@@ -4,7 +4,7 @@ import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { MediaField } from '../cms/MediaField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
-import RichText from './RichText.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { ctaStyleClass } from '../lib/cta-style.mjs';
 
 // Columns: the missing layout primitive — place 2 to 4 things SIDE BY SIDE (media one side, copy the other;
@@ -14,8 +14,9 @@ import { ctaStyleClass } from '../lib/cta-style.mjs';
 // media library, and the safe link resolver. Stacks to a single column on mobile.
 const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
 
-export function Columns({ columns = [], valign = 'top', ctaStyle }) {
+export function Columns({ id, puck, columns = [], valign = 'top', ctaStyle }) {
   const ref = useReveal([columns.length]);
+  const editing = puck && puck.isEditing;
   const n = Math.max(1, Math.min(4, columns.length || 1));
   return (
     <section ref={ref} className={'b-cols valign-' + valign}>
@@ -26,8 +27,8 @@ export function Columns({ columns = [], valign = 'top', ctaStyle }) {
               {c.image
                 ? <img className="b-col-img" src={c.image} alt={c.alt || ''} loading="lazy" decoding="async" onError={hideOnError} />
                 : null}
-              {c.heading ? <h3 className="b-col-h">{c.heading}</h3> : null}
-              {c.body ? <RichText as="div" className="b-col-body" html={c.body} /> : null}
+              <EditableText editing={editing} id={id} arrayField="columns" index={i} field="heading" value={c.heading} as="h3" className="b-col-h" singleLine placeholder="Sub-heading…" />
+              <EditableText editing={editing} id={id} arrayField="columns" index={i} field="body" value={c.body} as="div" className="b-col-body" placeholder="Body…" />
               {c.ctaLabel ? <a className={('b-cta ghost b-col-cta ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(c.ctaHref || '#')}>{c.ctaLabel}<Arrow /></a> : null}
             </div>
           ))}
@@ -58,7 +59,7 @@ export const puck = {
       arrayFields: {
         image: { type: 'custom', label: 'Image (optional)', render: (props) => <MediaField {...props} /> },
         alt: { type: 'text', label: 'Image alt text' },
-        heading: { type: 'text', label: 'Sub-heading (optional)' },
+        heading: { type: 'custom', label: 'Sub-heading (optional)', render: (props) => <RichTextField {...props} variant="heading" /> },
         body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
         ctaLabel: { type: 'text', label: 'Button label (optional)' },
         ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },

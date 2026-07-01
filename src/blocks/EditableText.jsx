@@ -9,11 +9,11 @@ import RichText from './RichText.jsx';
 // reaches the public bundle and usePuck() is never called outside the Puck provider. `editing` = props.puck?.isEditing.
 const InlineRichText = lazy(() => import('../cms/InlineRichText.jsx'));
 
-export default function EditableText({ editing, id, field, value, as = 'span', className, singleLine = false, placeholder, ...rest }) {
+export default function EditableText({ editing, id, field, value, as = 'span', className, singleLine = false, placeholder, arrayField, index, ...rest }) {
   if (editing) {
     return (
       <Suspense fallback={<RichText as={as} className={className} singleLine={singleLine} html={value} />}>
-        <InlineRichText id={id} field={field} value={value} as={as} className={className} singleLine={singleLine} placeholder={placeholder} />
+        <InlineRichText id={id} field={field} value={value} as={as} className={className} singleLine={singleLine} placeholder={placeholder} arrayField={arrayField} index={index} />
       </Suspense>
     );
   }

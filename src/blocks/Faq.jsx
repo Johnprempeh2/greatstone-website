@@ -2,7 +2,7 @@ import { useState, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { ldScript } from '../lib/ld-json.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
-import RichText from './RichText.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { stripTags } from '../lib/richtext-normalise.mjs';
 
 // FAQ: an accessible accordion that answers the objections a buyer raises before booking. Each row is
@@ -10,8 +10,9 @@ import { stripTags } from '../lib/richtext-normalise.mjs';
 // sound, reduced-motion aware. Questions/answers are fully editable (Puck array field). The block also
 // emits FAQPage JSON-LD built from the same items, so the answers earn rich results once the site is
 // indexable (dormant under the prototype noindex; correct + ready for the domain cutover).
-export function Faq({ kicker, heading, intro, items = [], showSchema = true }) {
+export function Faq({ id, puck, kicker, heading, intro, items = [], showSchema = true }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   const [open, setOpen] = useState(() => new Set());
   const uid = useId();
   const toggle = (i) => setOpen((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
@@ -26,9 +27,9 @@ export function Faq({ kicker, heading, intro, items = [], showSchema = true }) {
     <section ref={ref} className="b-faq section--tight">
       <div className="wrap b-faq-wrap">
         <div className="b-faq-head" data-reveal>
-          {kicker ? <span className="kicker">{kicker}</span> : null}
-          {heading ? <h2 className="h2 b-faq-h">{heading}</h2> : null}
-          {intro ? <p className="b-faq-intro muted">{intro}</p> : null}
+          <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+          <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="h2 b-faq-h" singleLine placeholder="Heading…" />
+          <EditableText editing={editing} id={id} field="intro" value={intro} as="p" className="b-faq-intro muted" placeholder="Intro…" />
         </div>
         <div className="b-faq-list" data-reveal>
           {items.map((it, i) => {
@@ -45,7 +46,7 @@ export function Faq({ kicker, heading, intro, items = [], showSchema = true }) {
                     height transition with no JS measurement; `inert` (not `hidden`) keeps the collapsed
                     panel out of the focus order and a11y tree while still allowing the open animation. */}
                 <div className="b-faq-a" id={uid + 'a' + i} role="region" aria-labelledby={uid + 'q' + i} inert={!isOpen ? '' : undefined}>
-                  <div className="b-faq-a-inner"><RichText as="p" html={it.a} /></div>
+                  <div className="b-faq-a-inner"><EditableText editing={editing} id={id} arrayField="items" index={i} field="a" value={it.a} as="p" placeholder="Answer…" /></div>
                 </div>
               </div>
             );
@@ -90,9 +91,12 @@ export const css = `
 export const puck = {
   label: 'FAQ (accordion)',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
-    intro: { type: 'textarea', label: 'Intro', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    intro: { type: 'custom', label: 'Intro', render: (props) => <RichTextField {...props} /> },
+    showSchema: { type: 'radio', label: 'FAQ rich-result schema (one per page)', options: [{ label: 'Emit', value: true }, { label: 'Suppress', value: false }] },
+    // array field stays LAST — Puck mis-slots top-level custom fields (kicker/heading/intro) placed
+    // before an array when another field follows it (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Questions',
       arrayFields: {
@@ -102,7 +106,6 @@ export const puck = {
       defaultItemProps: { q: 'A question buyers ask?', a: 'A straight, concrete answer.' },
       getItemSummary: (it) => it.q || 'Question',
     },
-    showSchema: { type: 'radio', label: 'FAQ rich-result schema (one per page)', options: [{ label: 'Emit', value: true }, { label: 'Suppress', value: false }] },
   },
   defaultProps: {
     showSchema: true,

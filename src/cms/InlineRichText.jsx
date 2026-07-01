@@ -12,7 +12,9 @@ import { looksLikeHtml, plainToRichHtml } from '../lib/richtext-normalise.mjs';
 // reaches the public bundle and usePuck() is never called outside the Puck provider. On the public site the block
 // renders the static <RichText> instead. SAFETY: the same sanitising chokepoint as RichTextField — every edit is
 // run through sanitizeInline() before it is stored, so only the closed brand-class set + allowlisted marks persist.
-export default function InlineRichText({ id, field, value, as: Tag = 'span', className = '', singleLine = false, placeholder = 'Type here…' }) {
+// `arrayField` + `index` target a repeated item's sub-field (e.g. arrayField="items", index=2, field="a"
+// writes back to props.items[2].a). Omit them to edit a top-level prop (props[field]).
+export default function InlineRichText({ id, field, value, as: Tag = 'span', className = '', singleLine = false, placeholder = 'Type here…', arrayField = null, index = null }) {
   const { dispatch, getItemById, getSelectorForId } = usePuck();
   const ref = useRef(null);
   const lastEmitted = useRef(undefined); // the value WE emitted, so Puck's echo never re-seeds (which would jump the caret)
@@ -34,8 +36,16 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
     lastEmitted.current = html;
     const item = getItemById(id); const sel = getSelectorForId(id);
     if (!item || !sel) return;
-    dispatch({ type: 'replace', destinationIndex: sel.index, destinationZone: sel.zone, data: { ...item, props: { ...item.props, [field]: html } } });
-  }, [dispatch, getItemById, getSelectorForId, id, field, singleLine]);
+    let props;
+    if (arrayField != null && index != null) {
+      // nested: rewrite only items[index][field], leaving the rest of the array untouched
+      const arr = Array.isArray(item.props[arrayField]) ? item.props[arrayField] : [];
+      props = { ...item.props, [arrayField]: arr.map((el, i) => (i === index ? { ...el, [field]: html } : el)) };
+    } else {
+      props = { ...item.props, [field]: html };
+    }
+    dispatch({ type: 'replace', destinationIndex: sel.index, destinationZone: sel.zone, data: { ...item, props } });
+  }, [dispatch, getItemById, getSelectorForId, id, field, singleLine, arrayField, index]);
 
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -63,7 +73,7 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
       suppressContentEditableWarning
       role="textbox"
       aria-multiline={!singleLine}
-      aria-label={'Edit ' + field}
+      aria-label={'Edit ' + field + (index != null ? ' ' + (index + 1) : '')}
       data-rt-placeholder={placeholder}
       spellCheck
       onInput={sync}
