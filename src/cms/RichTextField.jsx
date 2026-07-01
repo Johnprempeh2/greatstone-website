@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { sanitizeInline } from '../lib/sanitize-html.mjs';
 import { looksLikeHtml, plainToRichHtml } from '../lib/richtext-normalise.mjs';
 import { RT_COLORS, RT_HIGHLIGHTS, RT_HEX } from '../lib/richtext-marks.mjs';
+// the low-level selection ops are shared with the top ContextBar "Text" tab (same formatting everywhere)
+import { clearBrand, wrapSelection, cmd } from '../lib/rich-text-format.mjs';
 
 // A custom Puck field giving inline rich text: bold / italic / underline (+ Cmd/Ctrl+B/I/U), plus brand
 // colour and highlight ("text box") runs. Registered exactly like MediaField/LinkField:
@@ -13,34 +15,6 @@ import { RT_COLORS, RT_HIGHLIGHTS, RT_HEX } from '../lib/richtext-marks.mjs';
 // brand-class set are ever stored. Colour/highlight are applied as CLASS spans (never inline style or a raw
 // colour picker), which is what keeps them on-brand and AA. Relies on Puck's iframe being disabled (selection
 // lives in the main document); see App.jsx PuckEditor iframe:{enabled:false}.
-
-// --- selection helpers (DOM ops; the security guarantees live in the tested sanitiser, not here) ---
-function spansInSelection(editor) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return [];
-  return Array.from(editor.querySelectorAll('span')).filter((s) => { try { return sel.containsNode(s, true); } catch { return false; } });
-}
-function clearBrand(editor, prefix) {
-  for (const s of spansInSelection(editor)) {
-    const kept = (s.className || '').split(/\s+/).filter((c) => c && !c.startsWith(prefix)).join(' ');
-    if (kept) s.className = kept; else s.replaceWith(...s.childNodes);
-  }
-}
-function wrapSelection(className) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return false;
-  const range = sel.getRangeAt(0);
-  if (range.collapsed) return false;
-  const span = document.createElement('span');
-  span.className = className;
-  try { range.surroundContents(span); }
-  catch { span.appendChild(range.extractContents()); range.insertNode(span); }
-  sel.removeAllRanges();
-  const r = document.createRange(); r.selectNodeContents(span); sel.addRange(r);
-  return true;
-}
-
-const cmd = (name) => { try { document.execCommand('styleWithCSS', false, false); document.execCommand(name); } catch { /* unsupported */ } };
 
 export function RichTextField({ value, onChange, variant = 'body' }) {
   // 'body' = full controls + multi-line. 'heading' / 'eyebrow' = single line with a constrained mark set

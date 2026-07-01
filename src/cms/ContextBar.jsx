@@ -2,104 +2,105 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createUsePuck } from '@measured/puck';
 import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS, TEXT_SCALES } from '../lib/block-style.mjs';
 import { CTA_SIZES } from '../lib/cta-style.mjs';
+import { RT_COLORS, RT_HIGHLIGHTS, RT_HEX } from '../lib/richtext-marks.mjs';
 import {
-  capsFor, hasTextStyles, ALIGNS,
+  capsFor, ALIGNS,
   nextSection, sectionValue, nextAppearance, appearanceValue, nextCta, ctaValue, nextAlign, alignValue,
 } from '../lib/context-bar-model.mjs';
+import { focusedEditor, activeMarks, applyMark, applyColor, applyHighlight, applyList, applyIndent, clearFormat } from '../lib/rich-text-format.mjs';
 
-// The universal contextual toolbar: a compact strip pinned as the second row of the editor top bar that reflects
-// the CURRENTLY selected block and offers its block-level style controls one click from the top, Canva-style.
+// The universal editing dashboard: a tabbed strip pinned as the second row of the editor top bar, Word/Canva
+// style. THREE tabs:
+//   Text       — formats whatever rich-text field you are editing (bold/italic/underline, brand colour, a
+//                highlight "text box", bullets, indent). Works on ANY text field, in any block; the caret lives
+//                in the side-panel field (Puck's on-canvas text is plaintext-only), so this drives that field.
+//   Background — the selected BLOCK's surface band + palette accent.
+//   Layout     — the selected block's alignment, spacing, surround/padding, text size and button size.
 //
-// Why a strip and not a floating on-canvas bar: Puck runs with the iframe disabled so the sidebar RichTextField
-// owns the text caret in the main document; Puck's own on-canvas editing is plaintext-only, so a bar over the
-// canvas would have no rich-text selection to format. Text run colour/highlight/B-I-U therefore stay solely in
-// RichTextField (the "Text styles" deep-link jumps there); THIS strip governs the selected BLOCK.
-//
-// Neatness: the two quick, visual choices (Background surface + Accent) stay inline as pills; the denser, less
-// frequent controls (spacing, surround/padding, button size) live behind a compact "More" popover so the strip
-// stays uncluttered on even the busiest block. Everything is enum-only and writes the SAME props the sidebar
-// fields write, via a `replace` dispatch through the tested resolvers, so undo/redo + autosave + the sidebar all
-// stay in lockstep and no new sanitiser surface is introduced.
-//
-// Rendered INSIDE Puck's context (headerActions), like UndoRedo, so createUsePuck works. Lives in its own module
-// so it loads with the lazy editor chunk and never touches the public bundle.
+// Everything is enum-only and writes through the tested resolvers (block controls) or the shared, sanitised
+// rich-text ops (text controls), so undo/redo + autosave + the side panel all stay in lockstep and no new
+// security surface is introduced. Rendered INSIDE Puck's context (headerActions), lazy, editor-only.
 const usePuckSel = createUsePuck();
 
-// Puck RE-MOUNTS the headerActions override subtree on every edit (App autosaves → setState → a fresh inline
-// `overrides={{...}}` object → Puck remounts the override components). So component-local state here is wiped on
-// each keystroke. We persist the one piece of UI state (is the More popover open?) in module scope so it survives
-// those remounts; the panel's control VALUES are always derived from the Puck selection, so they need no persist.
-let moreOpenPersist = false;
-// which popover control the keyboard user was last on. The remount above blows away DOM focus (it lands on
-// <body>), so we restore it to this control after the remount, keeping the popover keyboard-operable across edits.
-let lastFocusKey = null;
+// Puck REMOUNTS the headerActions subtree on every edit (App autosaves -> new inline overrides object), wiping
+// component state. Persist the one bit of UI state (the active tab) in module scope so it survives the remounts.
+let activeTabPersist = 'text';
 
 export default function ContextBar() {
   const selectedItem = usePuckSel((s) => s.selectedItem);
   const dispatch = usePuckSel((s) => s.dispatch);
   const getSelectorForId = usePuckSel((s) => s.getSelectorForId);
-  const [moreOpen, setMoreOpenState] = useState(moreOpenPersist);
-  const setMoreOpen = useCallback((v) => {
-    setMoreOpenState((cur) => { const nv = typeof v === 'function' ? v(cur) : v; moreOpenPersist = nv; return nv; });
+  const [tab, setTabState] = useState(activeTabPersist);
+  const setTab = useCallback((t) => { activeTabPersist = t; setTabState(t); }, []);
+  // bump on selectionchange so the Text tab reflects the caret's active marks (bold/colour/highlight)
+  const [, setSelTick] = useState(0);
+  useEffect(() => {
+    const on = () => setSelTick((n) => (n + 1) & 1023);
+    document.addEventListener('selectionchange', on);
+    return () => document.removeEventListener('selectionchange', on);
   }, []);
-  const moreWrapRef = useRef(null);
-  const moreBtnRef = useRef(null);
 
-  // close the More popover on Escape (return focus to the trigger) or a click outside it. No auto-focus into the
-  // panel: because the subtree remounts on every edit, moving focus on open would yank it away mid-change.
-  useEffect(() => {
-    if (!moreOpen) return;
-    const onDoc = (e) => { if (moreWrapRef.current && !moreWrapRef.current.contains(e.target)) setMoreOpen(false); };
-    const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      // a native <select> uses Escape to cancel its own option list; let it, rather than closing the whole popover
-      if (e.target && e.target.tagName === 'SELECT') return;
-      setMoreOpen(false); moreBtnRef.current && moreBtnRef.current.focus();
-    };
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
-  }, [moreOpen, setMoreOpen]);
+  const noBlur = (e) => e.preventDefault(); // keep the editor's live selection alive while a control is pressed
 
-  // restore keyboard focus after a Puck remount (which drops focus to <body>) to the popover control the user was
-  // last on, so changing several values in a row stays keyboard-operable. Runs each render; acts only when focus
-  // was actually lost, so it never fights a user who has moved focus deliberately.
-  useEffect(() => {
-    if (!moreOpen || !lastFocusKey) return;
-    const ae = document.activeElement;
-    if (ae && ae !== document.body) return;
-    const el = moreWrapRef.current && moreWrapRef.current.querySelector('[data-cbk="' + lastFocusKey + '"]');
-    if (el) el.focus();
-  });
+  // ── Text tab: drive the focused rich-text field ──────────────────────────────────────────────────────────
+  const ed = focusedEditor();
+  const marks = activeMarks(ed);
+  const doMark = (m) => { const e = focusedEditor(); if (e) applyMark(e, m); };
+  const doColor = (cls) => { const e = focusedEditor(); if (e) applyColor(e, cls); };
+  const doHi = (cls) => { const e = focusedEditor(); if (e) applyHighlight(e, cls); };
+  const doList = () => { const e = focusedEditor(); if (e) applyList(e); };
+  const doIndent = (out) => { const e = focusedEditor(); if (e) applyIndent(e, out); };
+  const doClear = () => { const e = focusedEditor(); if (e) clearFormat(e); };
 
-  // close a stale popover only when the user selects a genuinely DIFFERENT block. Editing a value dispatches a
-  // `replace` that momentarily re-resolves the selection (same id), which must NOT close the popover mid-edit;
-  // tracking the previous non-null id ignores those null/same-id blips and reacts only to a real block switch.
-  const selId = selectedItem && selectedItem.props ? selectedItem.props.id : null;
-  const prevIdRef = useRef(selId);
-  useEffect(() => {
-    if (selId && selId !== prevIdRef.current) setMoreOpen(false);
-    if (selId) prevIdRef.current = selId;
-  }, [selId]);
+  const textTab = (
+    <div className="gs-ctx-panel" role="group" aria-label="Text formatting">
+      {!ed ? <span className="gs-ctx-hint">Click into any text on the page, then format it here.</span> : null}
+      <span className="gs-ctx-group">
+        <button type="button" className={'gs-ctx-btn' + (marks.bold ? ' is-on' : '')} aria-pressed={marks.bold} title="Bold (Cmd/Ctrl+B)" aria-label="Bold" disabled={!ed} onMouseDown={noBlur} onClick={() => doMark('bold')}><b>B</b></button>
+        <button type="button" className={'gs-ctx-btn' + (marks.italic ? ' is-on' : '')} aria-pressed={marks.italic} title="Italic (Cmd/Ctrl+I)" aria-label="Italic" disabled={!ed} onMouseDown={noBlur} onClick={() => doMark('italic')}><i>I</i></button>
+        <button type="button" className={'gs-ctx-btn' + (marks.underline ? ' is-on' : '')} aria-pressed={marks.underline} title="Underline (Cmd/Ctrl+U)" aria-label="Underline" disabled={!ed} onMouseDown={noBlur} onClick={() => doMark('underline')}><u>U</u></button>
+      </span>
+      <span className="gs-ctx-sep" aria-hidden="true" />
+      <span className="gs-ctx-group" role="group" aria-label="Text colour">
+        <span className="gs-ctx-glabel">Colour</span>
+        {RT_COLORS.map((c) => {
+          const on = marks.colorClass === c.className;
+          return <button key={'c' + c.id} type="button" className={'gs-ctx-sw' + (c.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on}
+            title={'Text colour: ' + c.label} aria-label={'Text colour ' + c.label} disabled={!ed} style={c.id ? { color: RT_HEX[c.id] } : undefined}
+            onMouseDown={noBlur} onClick={() => doColor(c.className)}>A</button>;
+        })}
+      </span>
+      <span className="gs-ctx-sep" aria-hidden="true" />
+      <span className="gs-ctx-group" role="group" aria-label="Highlight">
+        <span className="gs-ctx-glabel">Highlight</span>
+        {RT_HIGHLIGHTS.map((h) => {
+          const on = marks.hiClass === h.className;
+          return <button key={'h' + h.id} type="button" className={'gs-ctx-sw gs-ctx-hi' + (h.id ? '' : ' is-clear') + (on ? ' is-on' : '')} aria-pressed={on}
+            title={'Highlight: ' + h.label} aria-label={'Highlight ' + h.label} disabled={!ed} style={h.id ? { background: RT_HEX[h.id], color: '#0e1611' } : undefined}
+            onMouseDown={noBlur} onClick={() => doHi(h.className)}>{h.id ? '■' : '✕'}</button>;
+        })}
+      </span>
+      <span className="gs-ctx-sep" aria-hidden="true" />
+      <span className="gs-ctx-group" role="group" aria-label="Lists and indent">
+        <button type="button" className="gs-ctx-btn" title="Bulleted list" aria-label="Bulleted list" disabled={!ed} onMouseDown={noBlur} onClick={doList}>&#8226;&#8226;</button>
+        <button type="button" className="gs-ctx-btn" title="Decrease indent" aria-label="Decrease indent" disabled={!ed} onMouseDown={noBlur} onClick={() => doIndent(true)}>&#8676;</button>
+        <button type="button" className="gs-ctx-btn" title="Increase indent" aria-label="Increase indent" disabled={!ed} onMouseDown={noBlur} onClick={() => doIndent(false)}>&#8677;</button>
+      </span>
+      <span className="gs-ctx-sep" aria-hidden="true" />
+      <button type="button" className="gs-ctx-btn gs-ctx-clear" title="Clear formatting" aria-label="Clear formatting" disabled={!ed} onMouseDown={noBlur} onClick={doClear}>Clear</button>
+    </div>
+  );
 
-  if (!selectedItem) {
-    return (
-      <div className="gs-ctx-bar is-empty" role="toolbar" aria-label="Block styling">
-        <span className="gs-ctx-hint">Select a block to style it.</span>
-      </div>
-    );
-  }
+  // ── Block tabs: need a selected block ────────────────────────────────────────────────────────────────────
+  const props = selectedItem ? (selectedItem.props || {}) : null;
+  const type = selectedItem ? selectedItem.type : null;
+  const section = props ? props._section : null;
+  const appearance = props ? props.appearance : null;
+  const ctaStyle = props ? props.ctaStyle : null;
+  const caps = type ? capsFor(type) : {};
 
-  const type = selectedItem.type;
-  const props = selectedItem.props || {};
-  const section = props._section;
-  const appearance = props.appearance;
-  const ctaStyle = props.ctaStyle;
-  const caps = capsFor(type);
-
-  // one write path for every group: set a prop object on the selected block via a Puck `replace` (goes through
-  // the block's own tested resolver on render). getSelectorForId resolves the zone even at page root.
   const setProp = (propName, value) => {
+    if (!props) return;
     const sel = getSelectorForId(props.id);
     if (!sel) return;
     dispatch({ type: 'replace', destinationIndex: sel.index, destinationZone: sel.zone, data: { ...selectedItem, props: { ...props, [propName]: value } } });
@@ -108,94 +109,69 @@ export default function ContextBar() {
   const setAppearance = (key, id) => setProp('appearance', nextAppearance(appearance, key, id));
   const setCta = (key, id) => setProp('ctaStyle', nextCta(ctaStyle, key, id));
 
-  // deep-link to the block's inline text formatting (colour/highlight/B-I-U live in the sidebar Body field, the
-  // only place a text caret exists) rather than duplicate a second colour system on the strip
-  const openTextStyles = () => {
-    const el = document.querySelector('[data-tour="rt-edit"]');
-    if (el) { try { el.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch { /* ignore */ } el.focus(); }
-  };
-  const noBlur = (e) => e.preventDefault(); // keep any live text selection alive while a strip control is pressed
-  const trackFocus = (key) => ({ 'data-cbk': key, onFocus: () => { lastFocusKey = key; } }); // for focus-restore after remount
-
   const pills = (label, options, current, onPick, titlePrefix) => (
     <span className="gs-ctx-group" role="group" aria-label={label}>
       <span className="gs-ctx-glabel">{label}</span>
       {options.map((o) => {
         const on = current === o.id;
-        return (
-          <button key={o.id} type="button" className={'gs-ctx-pill' + (on ? ' is-on' : '')} aria-pressed={on}
-            title={titlePrefix + ': ' + o.label} onMouseDown={noBlur} onClick={() => onPick(o.id)}>{o.label}</button>
-        );
+        return <button key={o.id} type="button" className={'gs-ctx-pill' + (on ? ' is-on' : '')} aria-pressed={on}
+          title={titlePrefix + ': ' + o.label} onMouseDown={noBlur} onClick={() => onPick(o.id)}>{o.label}</button>;
       })}
     </span>
   );
+  const selectField = (label, options, current, onPick) => (
+    <label className="gs-ctx-field"><span>{label}</span>
+      <select value={current} onChange={(e) => onPick(e.target.value)}>
+        {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+      </select>
+    </label>
+  );
 
-  return (
-    <div className="gs-ctx-bar" role="toolbar" aria-label={'Style the selected ' + type + ' block'}>
+  const backgroundTab = !selectedItem ? (
+    <div className="gs-ctx-panel"><span className="gs-ctx-hint">Select a block to set its background.</span></div>
+  ) : (
+    <div className="gs-ctx-panel" role="group" aria-label="Block background">
       <span className="gs-ctx-label" title="The selected block">{type}</span>
       <span className="gs-ctx-sep" aria-hidden="true" />
       {pills('Background', SECTION_SURFACES, sectionValue(section, 'surface'), (id) => setSection('surface', id), 'Background')}
       <span className="gs-ctx-sep" aria-hidden="true" />
       {pills('Accent', SECTION_ACCENTS, sectionValue(section, 'accent'), (id) => setSection('accent', id), 'Accent')}
-      {caps.align ? (
+      {caps.appearance ? (
         <>
           <span className="gs-ctx-sep" aria-hidden="true" />
-          {pills('Align', ALIGNS, alignValue(props.align, type), (id) => setProp('align', nextAlign(props.align, id, type)), 'Align')}
+          {selectField('Text box', SURROUNDS, appearanceValue(appearance, 'surround'), (v) => setAppearance('surround', v))}
         </>
       ) : null}
+    </div>
+  );
+
+  const layoutTab = !selectedItem ? (
+    <div className="gs-ctx-panel"><span className="gs-ctx-hint">Select a block to change its layout.</span></div>
+  ) : (
+    <div className="gs-ctx-panel" role="group" aria-label="Block layout">
+      <span className="gs-ctx-label" title="The selected block">{type}</span>
+      {caps.align ? (<><span className="gs-ctx-sep" aria-hidden="true" />{pills('Align', ALIGNS, alignValue(props.align, type), (id) => setProp('align', nextAlign(props.align, id, type)), 'Align')}</>) : null}
       <span className="gs-ctx-sep" aria-hidden="true" />
-      {/* the denser, less-frequent controls live behind a compact popover so the strip stays neat */}
-      <span className="gs-ctx-more" ref={moreWrapRef}>
-        <button ref={moreBtnRef} type="button" className={'gs-ctx-pill gs-ctx-morebtn' + (moreOpen ? ' is-on' : '')}
-          aria-haspopup="dialog" aria-expanded={moreOpen} aria-controls="gs-ctx-pop" onMouseDown={noBlur} onClick={() => setMoreOpen((o) => !o)}>More ▾</button>
-        {moreOpen ? (
-          <div id="gs-ctx-pop" className="gs-ctx-pop" role="group" aria-label="More block styles">
-            <div className="gs-ctx-poprow">
-              <label className="gs-ctx-field"><span>Space above</span>
-                <select {...trackFocus('spaceTop')} value={sectionValue(section, 'spaceTop')} onChange={(e) => setSection('spaceTop', e.target.value)}>
-                  {SECTION_SPACES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-                </select>
-              </label>
-              <label className="gs-ctx-field"><span>Space below</span>
-                <select {...trackFocus('spaceBottom')} value={sectionValue(section, 'spaceBottom')} onChange={(e) => setSection('spaceBottom', e.target.value)}>
-                  {SECTION_SPACES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-                </select>
-              </label>
-            </div>
-            {caps.appearance ? (
-              <div className="gs-ctx-poprow">
-                <label className="gs-ctx-field"><span>Text box</span>
-                  <select {...trackFocus('surround')} value={appearanceValue(appearance, 'surround')} onChange={(e) => setAppearance('surround', e.target.value)}>
-                    {SURROUNDS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-                  </select>
-                </label>
-                <label className="gs-ctx-field"><span>Padding</span>
-                  <select {...trackFocus('pad')} value={appearanceValue(appearance, 'pad')} onChange={(e) => setAppearance('pad', e.target.value)}>
-                    {PADS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-                  </select>
-                </label>
-                <label className="gs-ctx-field"><span>Text size</span>
-                  <select {...trackFocus('textScale')} value={appearanceValue(appearance, 'textScale')} onChange={(e) => setAppearance('textScale', e.target.value)}>
-                    {TEXT_SCALES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-                  </select>
-                </label>
-              </div>
-            ) : null}
-            {caps.cta ? (
-              <div className="gs-ctx-poprow">
-                {pills('Button size', CTA_SIZES, ctaValue(ctaStyle, 'size'), (id) => setCta('size', id), 'Button size')}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </span>
-      {hasTextStyles(type) ? (
+      {selectField('Space above', SECTION_SPACES, sectionValue(section, 'spaceTop'), (v) => setSection('spaceTop', v))}
+      {selectField('Space below', SECTION_SPACES, sectionValue(section, 'spaceBottom'), (v) => setSection('spaceBottom', v))}
+      {caps.appearance ? (
         <>
-          <span className="gs-edit-spacer" aria-hidden="true" />
-          <button type="button" className="gs-ctx-link" title="Jump to inline text formatting (bold, colour, highlight)"
-            onMouseDown={noBlur} onClick={openTextStyles}><span aria-hidden="true">✎</span> Text styles</button>
+          {selectField('Padding', PADS, appearanceValue(appearance, 'pad'), (v) => setAppearance('pad', v))}
+          {selectField('Text size', TEXT_SCALES, appearanceValue(appearance, 'textScale'), (v) => setAppearance('textScale', v))}
         </>
       ) : null}
+      {caps.cta ? (<>{pills('Button size', CTA_SIZES, ctaValue(ctaStyle, 'size'), (id) => setCta('size', id), 'Button size')}</>) : null}
+    </div>
+  );
+
+  return (
+    <div className="gs-ctx-bar" role="toolbar" aria-label="Editing dashboard">
+      <div className="gs-ctx-tabs" role="tablist" aria-label="What to edit">
+        <button type="button" role="tab" aria-selected={tab === 'text'} className={'gs-ctx-tab' + (tab === 'text' ? ' is-on' : '')} onMouseDown={noBlur} onClick={() => setTab('text')}>Text</button>
+        <button type="button" role="tab" aria-selected={tab === 'background'} className={'gs-ctx-tab' + (tab === 'background' ? ' is-on' : '')} onMouseDown={noBlur} onClick={() => setTab('background')}>Background</button>
+        <button type="button" role="tab" aria-selected={tab === 'layout'} className={'gs-ctx-tab' + (tab === 'layout' ? ' is-on' : '')} onMouseDown={noBlur} onClick={() => setTab('layout')}>Layout</button>
+      </div>
+      {tab === 'text' ? textTab : tab === 'background' ? backgroundTab : layoutTab}
     </div>
   );
 }

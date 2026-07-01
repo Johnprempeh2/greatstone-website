@@ -950,10 +950,31 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
 .gs-edit-spacer{flex:1 1 auto;min-width:8px}
 /* the top bar is now two stacked rows: the actions row + the universal contextual style strip */
 .gs-edit-chrome{display:flex;flex-direction:column;gap:8px;width:100%}
-/* the contextual strip: reflects the selected block, offers its block-level style controls (Canva-style) */
-.gs-ctx-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--gs-border-soft,rgba(255,255,255,.08));
-  border-radius:9px;background:rgba(255,255,255,.03);min-height:40px}
+/* the tabbed editing dashboard: a Text/Background/Layout tab bar + the active tab's controls (Word/Canva style) */
+.gs-ctx-bar{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:7px 8px;border:1px solid var(--gs-border-soft,rgba(255,255,255,.08));
+  border-radius:10px;background:rgba(255,255,255,.03)}
 .gs-ctx-bar.is-empty{background:transparent;border-style:dashed}
+.gs-ctx-tabs{display:inline-flex;gap:3px;padding:3px;border-radius:100px;background:rgba(0,0,0,.25);align-self:flex-start}
+.gs-ctx-tab{height:26px;padding:0 14px;border:0;border-radius:100px;background:transparent;color:var(--gs-text-muted,#c4c8c1);
+  font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:background var(--gs-dur-micro,150ms) var(--gs-ease),color var(--gs-dur-micro,150ms) var(--gs-ease)}
+.gs-ctx-tab:hover{color:var(--gs-text,#f5f5f5)}
+.gs-ctx-tab.is-on{background:var(--gs-accent,#c8ff00);color:#0e1611}
+.gs-ctx-tab:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:2px}
+.gs-ctx-panel{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:34px}
+/* rich-text formatting buttons in the Text tab (B/I/U, list, indent, clear) — mirror the RichTextField toolbar */
+.gs-ctx-btn{min-width:30px;height:28px;padding:0 8px;border:1px solid transparent;border-radius:7px;background:transparent;
+  color:var(--gs-text,#f5f5f5);font-size:.9rem;line-height:1;cursor:pointer}
+.gs-ctx-btn:hover:not(:disabled){background:rgba(255,255,255,.08)}
+.gs-ctx-btn.is-on{background:var(--gs-accent,#c8ff00);color:#0e1611;border-color:var(--gs-accent,#c8ff00)}
+.gs-ctx-btn:disabled{opacity:.4;cursor:default}
+.gs-ctx-btn:focus-visible,.gs-ctx-sw:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:2px}
+.gs-ctx-clear{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gs-text-faint,#9ca29b)}
+.gs-ctx-sw{width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--gs-border,#3a3a3a);border-radius:6px;background:transparent;
+  font-weight:800;font-size:.82rem;cursor:pointer;color:var(--gs-text,#f5f5f5)}
+.gs-ctx-sw.is-clear{color:var(--gs-text-faint,#9ca29b)}
+.gs-ctx-sw.gs-ctx-hi{font-size:.7rem}
+.gs-ctx-sw.is-on{border-color:var(--gs-accent,#c8ff00);box-shadow:0 0 0 1px var(--gs-accent,#c8ff00)}
+.gs-ctx-sw:disabled{opacity:.4;cursor:default}
 .gs-ctx-hint{font-size:.8rem;color:var(--gs-text-faint,#9ca29b)}
 .gs-ctx-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gs-accent,#c8ff00);
   padding:2px 8px;border:1px solid var(--gs-border,#3a3a3a);border-radius:100px;background:rgba(200,255,0,.06)}
@@ -979,12 +1000,12 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
   display:flex;flex-direction:column;gap:10px;padding:12px;background:#1a1c1a;border:1px solid var(--gs-border,#3a3a3a);border-radius:12px;
   box-shadow:0 24px 60px -20px rgba(0,0,0,.8);animation:gsPop .14s var(--gs-ease,ease)}
 .gs-ctx-poprow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-.gs-ctx-field{display:flex;flex-direction:column;gap:4px;flex:1 1 110px;min-width:0}
+.gs-ctx-field{display:flex;flex-direction:column;gap:3px;flex:0 1 130px;min-width:0}
 .gs-ctx-field>span{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gs-text-faint,#9ca29b)}
 .gs-ctx-field select{height:30px;padding:0 8px;border:1px solid var(--gs-border,#3a3a3a);border-radius:8px;background:var(--gs-bg,#1c1c1c);
   color:var(--gs-text,#f5f5f5);font:inherit;font-size:.82rem;cursor:pointer}
 .gs-ctx-field select:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:1px}
-@media(prefers-reduced-motion:reduce){.gs-ctx-pill,.gs-ctx-link,.gs-ctx-pop{transition:none;animation:none}}
+@media(prefers-reduced-motion:reduce){.gs-ctx-pill,.gs-ctx-link,.gs-ctx-pop,.gs-ctx-tab,.gs-ctx-btn{transition:none;animation:none}}
 .gs-em{position:relative;display:inline-flex}
 .gs-em-btn{display:inline-flex;align-items:center;gap:6px}
 .gs-em-diamond{color:var(--gs-accent,#c8ff00);font-size:.9em}
