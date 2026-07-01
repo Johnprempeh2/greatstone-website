@@ -137,6 +137,8 @@ const SiteSettingsPanel = lazy(() => import('./cms/SiteSettingsPanel.jsx'));
 const MediaLibraryPanel = lazy(() => import('./cms/MediaLibraryPanel.jsx'));
 import SignIn from './cms/SignIn.jsx';
 import EditorTopMenu from './cms/EditorTopMenu.jsx';
+import Tour from './cms/Tour.jsx';
+import { useTour } from './cms/useTour.mjs';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
@@ -354,6 +356,9 @@ export default function App() {
   const [puckKey, setPuckKey] = useState(0);        // bump to force Puck to re-read data
   const [previewP, setPreviewP] = useState(null);   // background editor scrubber (0..1) → Stage
   const [user, setUser] = useState(null);           // signed-in Supabase staff { email, name, role } (null = public)
+  const [catalogueStaff, setCatalogueStaff] = useState(null); // the catalogue console reports its own staff up (it owns its auth)
+  const tourEmail = (user && user.email) || (catalogueStaff && catalogueStaff.email) || ''; // whoever we know is signed in
+  const tour = useTour(tourEmail);                  // guided onboarding tours (active id + per-user seen-state)
   const [authChecked, setAuthChecked] = useState(false); // resolved the Supabase session yet (lazy, on #admin)
   const [authNotice, setAuthNotice] = useState(null); // why an authenticated session can't use the CMS (no/read-only role)
   const authSubRef = useRef(null);                  // the onAuthStateChange subscription (set up once)
@@ -384,6 +389,21 @@ export default function App() {
 
   const onAdmin = !!adminNav;                          // anywhere under #admin (console or editor)
   const adminSection = adminNav ? adminNav.section : 'overview';
+
+  // auto-start the right guided tour the first time a signed-in user enters a surface (each fires once, ever;
+  // maybeAutoStart is a no-op if a tour is already running or this one has been seen). Replay lives in Help.
+  useEffect(() => {
+    // the catalogue owns its own auth, so we wait for it to report its staff (catalogueStaff) before offering
+    // its guide; the rest of the admin uses App's resolved `user`.
+    if (catalogueAdmin) { if (catalogueStaff || user) tour.maybeAutoStart('catalogue'); return; }
+    if (!user) return;
+    if (mode === 'edit') tour.maybeAutoStart('editor');
+    // the quality guide is entirely edit-gated, so only offer it to a user who can act on it (a viewer would
+    // otherwise auto-start a guide with zero visible steps). staffCan(user,'edit') inline — `canEdit` is declared
+    // below this effect, so referencing it here would be a temporal-dead-zone error.
+    else if (staffCan(user, 'edit') && (adminSection === 'releases' || adminSection === 'sitehealth')) tour.maybeAutoStart('quality');
+    else tour.maybeAutoStart('hub');
+  }, [user, catalogueStaff, onAdmin, mode, adminSection, catalogueAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
   // skip the decorative 561KB three.js stage on data-saver / 2g connections — the .gs-scrim + CSS
   // background leave the page visually complete without it (the brand 3D is a progressive enhancement).
   const saveData = typeof navigator !== 'undefined' && navigator.connection && (navigator.connection.saveData || /(^|-)2g$/.test(navigator.connection.effectiveType || ''));
@@ -393,6 +413,8 @@ export default function App() {
   const canEdit = staffCan(user, 'edit');
   const canPublish = staffCan(user, 'publish');
   const canManageUsers = staffCan(user, 'manageUsers'); // owners/admins — gates the Team panel
+  // stable object so the Tour's role-filtering + effects don't re-run on every unrelated App render
+  const tourCaps = useMemo(() => ({ edit: canEdit, manage: canManageUsers }), [canEdit, canManageUsers]);
 
   // persist() now trims old version snapshots and retries before failing; a failure here means the
   // store is genuinely full, so raise a STICKY banner (not a 2.6s toast) — those edits won't survive a reload
@@ -457,7 +479,8 @@ export default function App() {
   // Resolve the signed-in Greatstone staff user LAZILY — only once you enter the admin area (#admin),
   // so a public visitor never loads the Supabase client (it stays out of the eager bundle). The same
   // account controls the console, the editor and the catalogue. We resolve once, then stay subscribed
-  // to sign-in/out so the chrome updates live.
+  // to sign-in/out so the chrome updates live. (The catalogue owns its own auth and reports its staff up
+  // via onStaff → catalogueStaff, so the catalogue tour has an identity without loading auth twice here.)
   useEffect(() => {
     if (!onAdmin || authChecked) return;
     let alive = true;
@@ -1131,13 +1154,14 @@ export default function App() {
   useEffect(() => {
     const onKey = (e) => {
       const k = e.key.toLowerCase();
-      if ((e.metaKey || e.ctrlKey) && k === 'k') { e.preventDefault(); setCmdOpen((o) => !o); }
+      // a guided tour is a modal walkthrough: don't let ⌘K / ? open a second focus-trapped overlay on top of it
+      if ((e.metaKey || e.ctrlKey) && k === 'k' && !tour.active) { e.preventDefault(); setCmdOpen((o) => !o); }
       else if ((e.metaKey || e.ctrlKey) && k === 's') {
         e.preventDefault();
         if (mode !== 'edit') return;
         if (canPublish) publish(page.data);
         else flash('Changes autosave. Request review to get it published.');
-      } else if (e.key === '?' && canEdit && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      } else if (e.key === '?' && (canEdit || catalogueStaff) && !tour.active && !e.metaKey && !e.ctrlKey && !e.altKey) {
         // open the shortcuts reference — but never while the editor is typing into a field
         const t = e.target;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
@@ -1146,7 +1170,17 @@ export default function App() {
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [panel, cmdOpen, shortcutsOpen, mode, page, canPublish, canEdit]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [panel, cmdOpen, shortcutsOpen, mode, page, canPublish, canEdit, catalogueStaff, tour.active]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // replay a guide from the start: first go to the surface it spotlights (so its targets exist), then arm the
+  // tour. Used by the Help commands, the ? overlay's Guides list, and the editor menu.
+  const replayGuide = (id) => {
+    if (id === 'editor') { openPageInEditor(current); }
+    else if (id === 'catalogue') { if (typeof location !== 'undefined') location.hash = 'catalogue'; }
+    else if (id === 'quality') { if (typeof location !== 'undefined') location.hash = 'admin/releases'; }
+    else if (typeof location !== 'undefined') { location.hash = 'admin'; }
+    tour.replayTour(id);
+  };
 
   const commands = useMemo(() => {
     if (!cmdOpen) return []; // the palette is the only consumer; don't rebuild this list on every edit keystroke
@@ -1180,6 +1214,10 @@ export default function App() {
       cmds.push({ id: 'inventory', group: 'Admin', label: 'Content inventory (word counts, read time, thin pages)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/inventory'; } });
       cmds.push({ id: 'blocks', group: 'Admin', label: 'Block usage (which components are used / unused)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/blocks'; } });
       cmds.push({ id: 'shortcuts', group: 'Help', label: 'Keyboard shortcuts', hint: '?', run: () => setShortcutsOpen(true) });
+      cmds.push({ id: 'tour-hub', group: 'Help', label: 'Guide: tour the admin hub', run: () => replayGuide('hub') });
+      cmds.push({ id: 'tour-editor', group: 'Help', label: 'Guide: using the page editor', run: () => replayGuide('editor') });
+      cmds.push({ id: 'tour-catalogue', group: 'Help', label: 'Guide: the catalogue console', run: () => replayGuide('catalogue') });
+      cmds.push({ id: 'tour-quality', group: 'Help', label: 'Guide: quality checks and releases', run: () => replayGuide('quality') });
       cmds.push({ id: 'templates', group: 'Admin', label: 'New page from template', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/templates'; } });
       cmds.push({ id: 'sitehealth', group: 'Admin', label: 'Site health overview (overall score)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/sitehealth'; } });
       if (canManageUsers) cmds.push({ id: 'gettingstarted', group: 'Admin', label: 'Getting started (studio setup guide)', run: () => { if (typeof location !== 'undefined') location.hash = 'admin/gettingstarted'; } });
@@ -1221,7 +1259,7 @@ export default function App() {
       {styleTag}
       <ConsentBanner />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={commands} />
-      <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} onReplay={replayGuide} />
       {storageError && (
         <div className="gs-banner gs-banner-warn" role="alert">
           Storage is full. Recent changes won’t survive a reload — trim version history or publish to free space.
@@ -1246,6 +1284,7 @@ export default function App() {
         </div>
       )}
       <Modal modal={modal} onResolve={resolveModal} />
+      {tour.active ? <Tour tourId={tour.active} caps={tourCaps} onNavigate={goAdmin} onClose={tour.close} onAbort={tour.abort} /> : null}
     </>
   );
 
@@ -1406,23 +1445,26 @@ export default function App() {
           onPublish={publish}
           onChange={saveDraft}
           overrides={{
+            // wrap Puck's block drawer so the guided tour has a stable anchor for its "add a block" step
+            drawer: ({ children }) => <div data-tour="puck-add" className="gs-puck-drawer">{children}</div>,
             headerActions: ({ children }) => (
               <div className="gs-edit-actions">
                 {/* consolidated nav + account menu — frees the bar so the editing controls lead */}
-                <EditorTopMenu user={user} onHub={goHub} onSite={() => navigate(current)} onCmd={() => setCmdOpen(true)} onSignOut={doSignOut} />
+                <EditorTopMenu user={user} onHub={goHub} onSite={() => navigate(current)} onCmd={() => setCmdOpen(true)} onSignOut={doSignOut}
+                  items={[{ label: 'Replay the page editor guide', icon: '?', onClick: () => tour.replayTour('editor') }]} />
                 {/* page context */}
                 <label className="gs-pagesel" title="Switch page">
                   <select value={current} onChange={(e) => switchPage(e.target.value)} aria-label="Switch page">
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
                   </select>
                 </label>
-                <button className={'gs-btn ghost sm gs-studio-btn' + (panel ? ' is-on' : '')} onClick={() => setPanel(panel ? null : 'home')}
+                <button data-tour="studio-btn" className={'gs-btn ghost sm gs-studio-btn' + (panel ? ' is-on' : '')} onClick={() => setPanel(panel ? null : 'home')}
                   aria-expanded={!!panel} title="Open the Studio (pages, products, team, releases, background, SEO, history, activity)">
                   Studio{studioAttention.total ? <span className="gs-studio-btnbadge" aria-label={studioAttention.total + (studioAttention.total === 1 ? ' item needing attention' : ' items needing attention')}>{studioAttention.total}</span> : null}
                 </button>
                 <span className="gs-edit-sep" aria-hidden="true" />
                 {/* state */}
-                <label className="gs-statusctl" data-status={page.status} title="Page status">
+                <label data-tour="status-ctl" className="gs-statusctl" data-status={page.status} title="Page status">
                   <span className="gs-dot" />
                   <select value={page.status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
                     {[page.status, ...(TRANSITIONS[page.status] || []).filter((t) => ((t === 'approved' || t === 'published') ? canPublish : true))]
@@ -1436,10 +1478,12 @@ export default function App() {
                 <Suspense fallback={null}><UndoRedo /></Suspense>
                 {/* flexible gap keeps the primary publish action to the right, with room for the editor */}
                 <span className="gs-edit-spacer" aria-hidden="true" />
-                {canPublish ? children : (
-                  <button className="gs-btn primary" onClick={() => setStatus('review')} disabled={page.status !== 'draft'}
-                    title={page.status === 'draft' ? 'Send to an admin for review' : ({ review: 'In review with an admin', approved: 'Approved; an admin can publish it', published: 'This page is live. Reopen it as a draft to request changes' }[page.status] || 'Already submitted for review')}>Request review</button>
-                )}
+                <span data-tour="publish-btn" className="gs-edit-publish">
+                  {canPublish ? children : (
+                    <button className="gs-btn primary" onClick={() => setStatus('review')} disabled={page.status !== 'draft'}
+                      title={page.status === 'draft' ? 'Send to an admin for review' : ({ review: 'In review with an admin', approved: 'Approved; an admin can publish it', published: 'This page is live. Reopen it as a draft to request changes' }[page.status] || 'Already submitted for review')}>Request review</button>
+                  )}
+                </span>
               </div>
             ),
           }}
@@ -1483,7 +1527,7 @@ export default function App() {
             : confirmRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreCart confirmed /></Suspense>
             : catalogueAdmin
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyCatalogueAdmin initialTab={typeof catalogueAdmin === 'string' ? catalogueAdmin : 'offerings'} onHub={goHub} /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyCatalogueAdmin initialTab={typeof catalogueAdmin === 'string' ? catalogueAdmin : 'offerings'} onHub={goHub} onStaff={setCatalogueStaff} /></Suspense>
             : shopRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreBrowse initialVendor={shopRoute.vendor} /></Suspense>
             : productSlug

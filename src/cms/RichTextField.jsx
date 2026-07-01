@@ -135,7 +135,7 @@ export function RichTextField({ value, onChange, variant = 'body' }) {
 
   return (
     <div className="gs-rt">
-      <div className="gs-rt-bar" role="toolbar" aria-label="Text formatting">
+      <div data-tour="rt-bar" className="gs-rt-bar" role="toolbar" aria-label="Text formatting">
         {allow.bold && <button type="button" className={'gs-rt-btn' + (marks.bold ? ' is-on' : '')} aria-pressed={marks.bold} title="Bold (Cmd/Ctrl+B)" aria-label="Bold" onMouseDown={noBlur} onClick={() => apply('bold')}><b>B</b></button>}
         {allow.italic && <button type="button" className={'gs-rt-btn' + (marks.italic ? ' is-on' : '')} aria-pressed={marks.italic} title="Italic (Cmd/Ctrl+I)" aria-label="Italic" onMouseDown={noBlur} onClick={() => apply('italic')}><i>I</i></button>}
         {allow.underline && <button type="button" className={'gs-rt-btn' + (marks.underline ? ' is-on' : '')} aria-pressed={marks.underline} title="Underline (Cmd/Ctrl+U)" aria-label="Underline" onMouseDown={noBlur} onClick={() => apply('underline')}><u>U</u></button>}
@@ -169,6 +169,7 @@ export function RichTextField({ value, onChange, variant = 'body' }) {
       </div>
       <div
         ref={ref}
+        data-tour="rt-edit"
         className={'gs-rt-edit' + (singleLine ? ' is-oneline' : '')}
         contentEditable
         suppressContentEditableWarning

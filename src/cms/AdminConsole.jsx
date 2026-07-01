@@ -122,7 +122,7 @@ export default function AdminConsole({
   return (
     <div className="ac">
       <header className="ac-topbar">
-        <button className="ac-logo" onClick={() => onSection('overview')} aria-label="Admin home">
+        <button data-tour="logo" className="ac-logo" onClick={() => onSection('overview')} aria-label="Admin home">
           <picture>
             {!logo && <source type="image/webp" srcSet={LOGO_WEBP} />}
             <img src={logo || LOGO} alt={siteName || 'Greatstone International'} width="800" height="160" decoding="async" />
@@ -138,7 +138,7 @@ export default function AdminConsole({
       <div className="ac-shell">
         <nav className="ac-rail" aria-label="Admin sections">
           {nav.map((g) => (
-            <div className="ac-railgroup" key={g.group}>
+            <div className="ac-railgroup" key={g.group} data-tour={'group-' + g.group.toLowerCase().split(' ')[0]}>
               <div className="ac-raillabel">{g.group}{g.note ? <span className="ac-railnote"> · {g.note}</span> : null}</div>
               {g.commerce && <div className="ac-railhint">Same sign-in · opens the live catalogue &amp; store</div>}
               <ul className="ac-railitems">
@@ -149,6 +149,7 @@ export default function AdminConsole({
                     <li key={it.id}>
                       <button
                         type="button"
+                        data-tour={'rail-' + it.id}
                         className={'ac-railitem' + (active ? ' is-active' : '') + (locked ? ' is-locked' : '')}
                         onClick={() => activate(it)}
                         disabled={locked}
@@ -156,7 +157,7 @@ export default function AdminConsole({
                         title={locked ? 'Your role doesn’t have access' : undefined}
                       >
                         <span className="ac-railitem-l">{it.label}</span>
-                        {it.badge ? <span className="ac-railbadge" aria-label={it.badge + ' needing attention'}>{it.badge}</span> : null}
+                        {it.badge ? <span data-tour="rail-badge" className="ac-railbadge" aria-label={it.badge + ' needing attention'}>{it.badge}</span> : null}
                         {it.type === 'editor' ? <span className="ac-railitem-go" aria-hidden="true">✎</span>
                           : it.type === 'commerce' || it.type === 'link' ? <span className="ac-railitem-go" aria-hidden="true">↗</span> : null}
                       </button>

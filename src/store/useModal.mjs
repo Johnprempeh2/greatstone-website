@@ -14,7 +14,8 @@ export function useModal(ref, open, onClose) {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';                       // scroll lock
 
-    const focusables = () => Array.from(node.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null || el === node);
+    // getClientRects() (not offsetParent, which is null under a position:fixed ancestor) is the robust visible check
+    const focusables = () => Array.from(node.querySelectorAll(FOCUSABLE)).filter((el) => el.getClientRects().length > 0 || el === node);
     const first = focusables()[0];
     const t = setTimeout(() => (first || node).focus(), 20);        // move focus in
 

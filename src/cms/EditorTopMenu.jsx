@@ -19,14 +19,16 @@ export default function EditorTopMenu({ user, onHub, onSite, onCmd, onSignOut, i
     const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
     const onKey = (e) => {
       if (e.key === 'Escape') { setOpen(false); btnRef.current && btnRef.current.focus(); return; }
+      // Tab must not leave focus stranded behind an open menu: close it and let focus flow to the next control
+      if (e.key === 'Tab') { setOpen(false); return; }
+      const els = Array.from(popRef.current ? popRef.current.querySelectorAll('[role="menuitem"]') : []);
+      if (!els.length) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const els = Array.from(popRef.current ? popRef.current.querySelectorAll('[role="menuitem"]') : []);
-        if (!els.length) return;
         const i = els.indexOf(document.activeElement);
-        const next = e.key === 'ArrowDown' ? (i + 1) % els.length : (i - 1 + els.length) % els.length;
-        els[next].focus();
-      }
+        els[e.key === 'ArrowDown' ? (i + 1) % els.length : (i - 1 + els.length) % els.length].focus();
+      } else if (e.key === 'Home') { e.preventDefault(); els[0].focus(); }
+      else if (e.key === 'End') { e.preventDefault(); els[els.length - 1].focus(); }
     };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
@@ -41,7 +43,8 @@ export default function EditorTopMenu({ user, onHub, onSite, onCmd, onSignOut, i
   return (
     <div className="gs-em" ref={wrapRef}>
       <button ref={btnRef} type="button" className={'gs-btn ghost sm gs-em-btn' + (open ? ' is-on' : '')}
-        aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Menu and account">
+        aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Menu and account"
+        onKeyDown={(e) => { if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); setOpen(true); } }}>
         <span className="gs-em-diamond" aria-hidden="true">◇</span> Menu
       </button>
       {open ? (

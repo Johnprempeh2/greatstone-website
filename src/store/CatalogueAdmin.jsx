@@ -15,7 +15,7 @@ import ClientsManager from './ClientsManager.jsx';
 import './store.css';
 import './admin.css';
 
-export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
+export default function CatalogueAdmin({ initialTab = 'offerings', onHub, onStaff }) {
   const [session, setSession] = useState(undefined); // undefined = checking
   const [staff, setStaff] = useState(null);
   const [tab, setTab] = useState(initialTab);
@@ -26,6 +26,10 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
     return () => data?.subscription?.unsubscribe?.();
   }, []);
   useEffect(() => { if (session) getStaffUser().then(setStaff); else setStaff(null); }, [session]);
+  // report the resolved staff up so the host (App) can offer the catalogue's guided tour once, keyed to this user
+  useEffect(() => { if (onStaff) onStaff(isStaff(staff) ? staff : null); }, [staff, onStaff]);
+  // and clear it on unmount, so leaving the catalogue does not leave a stale identity keying later tours
+  useEffect(() => () => { if (onStaff) onStaff(null); }, [onStaff]);
 
   if (session === undefined) return <div className="ca-wrap"><div className="ca-center">Checking session…</div></div>;
   if (!session) return <SignInGate />;
@@ -38,16 +42,16 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub }) {
   );
   return (
     <>
-      <div className="ca-tabbar">
+      <div data-tour="ca-tabbar" className="ca-tabbar">
         <div className="ca-tabs">
-          <button className={tab === 'offerings' ? 'on' : ''} onClick={() => setTab('offerings')}>Offerings</button>
-          <button className={tab === 'pricing' ? 'on' : ''} onClick={() => setTab('pricing')}>Pricing &amp; discounts</button>
+          <button data-tour="catab-offerings" className={tab === 'offerings' ? 'on' : ''} onClick={() => setTab('offerings')}>Offerings</button>
+          <button data-tour="catab-pricing" className={tab === 'pricing' ? 'on' : ''} onClick={() => setTab('pricing')}>Pricing &amp; discounts</button>
           <button className={tab === 'fx' ? 'on' : ''} onClick={() => setTab('fx')}>Currency (FX)</button>
           <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>Orders</button>
           <button className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
-          <button className={tab === 'inquiries' ? 'on' : ''} onClick={() => setTab('inquiries')}>Inquiries</button>
+          <button data-tour="catab-inquiries" className={tab === 'inquiries' ? 'on' : ''} onClick={() => setTab('inquiries')}>Inquiries</button>
           <button className={tab === 'clients' ? 'on' : ''} onClick={() => setTab('clients')}>Clients &amp; DX</button>
-          <button className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
+          <button data-tour="catab-bulk" className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
         </div>
         <div className="ca-tabtools">
           <span className="ca-who">{staff.full_name || staff.email} · {staff.role}</span>
