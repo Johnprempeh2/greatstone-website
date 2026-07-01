@@ -1,12 +1,10 @@
 import { useReveal } from './reveal.js';
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
-import RichText from './RichText.jsx';
-// inline-on-canvas rich editor: lazy + editor-only, so @measured/puck never reaches the public bundle
-const InlineRichText = lazy(() => import('../cms/InlineRichText.jsx'));
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // THE BLOCK CONTRACT (every block file follows this):
 //   export function X(props)      — the React component; renders public + editor canvas.
@@ -37,15 +35,13 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}${gridBackdrop ? ' has-grid' : ''}`}>
       <div className="wrap b-hero-inner">
-        {kicker ? <span className={pillEyebrow ? 'pill' : 'kicker'} data-reveal>{kicker}</span> : null}
+        <EditableText editing={puck && puck.isEditing} id={id} field="kicker" value={kicker} as="span" className={pillEyebrow ? 'pill' : 'kicker'} singleLine placeholder="Eyebrow…" data-reveal />
         <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
           {stacked
             ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
             : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
         </h1>
-        {puck && puck.isEditing
-          ? <Suspense fallback={<p className="lede">{body}</p>}><InlineRichText id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" /></Suspense>
-          : (body ? <RichText as="p" className="lede" data-reveal html={body} /> : null)}
+        <EditableText editing={puck && puck.isEditing} id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" data-reveal />
         {Array.isArray(meta) && meta.length ? (
           <div className="b-hero-meta" data-reveal>
             {meta.map((m, i) => (
@@ -141,7 +137,7 @@ export const puck = {
   label: 'Hero',
   permissions: { delete: false }, // the page hero is structural; protected in code, not trust
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     headline: { type: 'text', label: 'Headline', contentEditable: true },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     headlineSuffix: { type: 'text', label: 'Headline suffix (after highlight, optional)' },
