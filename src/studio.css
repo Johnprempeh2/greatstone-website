@@ -115,7 +115,10 @@
    button, and every .gs-btn (incl. the customer #account sign-in submit, which is .gs-btn primary). */
 @media (pointer:coarse){
   .gs-navmenu-btn,.gs-cmdbtn,.gs-btn{min-height:44px}
-  .gs-btn{display:inline-flex;align-items:center;justify-content:center}
+  /* EXCLUDE .gs-book: it's display:none on phones (max-width:760px above). Because this coarse block
+     comes later with equal specificity, a bare `.gs-btn{display:inline-flex}` would UN-HIDE the header
+     "Book a Diagnostic" on touch phones and crowd the collapsed nav. :not(.gs-book) keeps it hidden. */
+  .gs-btn:not(.gs-book){display:inline-flex;align-items:center;justify-content:center}
   .gs-accountbtn{width:44px;height:44px}
   .gs-navmenu-item{min-height:44px;display:flex;align-items:center}
 }
