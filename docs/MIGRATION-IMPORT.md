@@ -17,6 +17,23 @@ It is **idempotent**: companies upsert on their slug and orders on their referen
 legacy id, so re-running the same export updates in place rather than creating duplicates. Order line items
 are fully derived from the export, so they are replaced on each run.
 
+## How a migrated customer reclaims their account
+
+The import brings across each customer's **email**, not a password (the old site's passwords don't transfer).
+So a migrated customer has an order history but **no login yet**. The reclaim path is built in and needs no
+extra step at import time:
+
+- The customer **creates an account** on the new site with the **same email** they used before. On sign-up (and
+  every sign-in) the app calls `ensure_customer_account`, which re-links an existing `customer_users` row by
+  email and stamps it with the new auth user. They immediately see their migrated orders.
+- "Sign in" and "Forgot password" both dead-end for them (there's no auth user to match yet), so the customer
+  sign-in screen carries a hint telling returning buyers to **create an account with the same email**.
+
+**Launch comms must say "create your account with the same email you used before", not "we've made you an
+account" or "reset your password".** Getting this wrong (e.g. importing auth users, or telling people to sign
+up with a different address) is what orphans a customer from their own history. The go-live smoke test verifies
+it: create an account for a known migrated email and confirm the historical orders appear.
+
 ## The export format
 
 One JSON file. Amounts are in **minor units** (pence) via the `*_minor` fields; if that is inconvenient, the

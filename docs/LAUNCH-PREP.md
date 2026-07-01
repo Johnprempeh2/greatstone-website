@@ -282,6 +282,25 @@ launch risk isn't a missing feature — it's running these out of order or forge
 This is the operational capstone for the launch-prep work. Everything that remains is Ben/counsel/credential-
 gated, and content-page routing stays parked for John (hash vs path).
 
+### Iteration 16 — Migrated-customer account reclaim (verify + make discoverable)
+Pressure-tested the launch-critical path: can a migrated customer sign in and see their history? Traced it end
+to end and it is **sound** — `ensure_customer_account` (migration 0008) re-links an existing `customer_users`
+row by email, and `customerAuth.ensureAccount` runs it on every sign-up AND sign-in, so a migrated buyer who
+creates an account with their old email is adopted onto their migrated record and immediately sees their orders.
+No code gap. But it surfaced a real UX/comms trap: the import brings emails, not passwords, so a migrated
+customer has no login yet — "Sign in" and "Forgot password" both dead-end, and only "create an account with the
+same email" works. Made that discoverable + documented:
+- `AccountDashboard` sign-in gate now shows a quiet lime callout (`.ca-reclaim`): "Bought from Greatstone before
+  the new store? Create your account with the same email you used then, and your order history comes with it."
+  Shown in sign-in + create-account views, hidden in forgot-password.
+- `MIGRATION-IMPORT.md` documents the reclaim path and warns that launch comms must say "create your account with
+  the same email", never "we've made you an account" / "reset your password" (either orphans history).
+- `CUTOVER-CHECKLIST.md` smoke test now explicitly verifies it (create an account for a known migrated email →
+  history appears).
+
+Verified: 561 tests, build + secret scan clean; live on the public `#account` gate the callout renders with the
+lime border and correct copy, and is correctly absent in forgot-password mode; zero console errors.
+
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
 **by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real

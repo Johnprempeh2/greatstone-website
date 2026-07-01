@@ -90,6 +90,15 @@ export function AuthGate({ initialError = null } = {}) {
       <h1>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Sign in'}</h1>
       <p className="ca-sub">Order history, saved cards and faster checkout for the Greatstone software store.</p>
       {mode !== 'forgot' && (
+        // Migrated customers arrive with a real order history but no password (only their email came across
+        // from the old site). "Sign in" and "Forgot password" both dead-end for them — the reclaim path is to
+        // CREATE an account with the same email, which adopts their existing record (ensure_customer_account
+        // re-links a contact by email). This note makes that discoverable so history is never orphaned.
+        <p className="ca-note ca-reclaim" style={{ marginTop: -4, marginBottom: 12 }}>
+          Bought from Greatstone before the new store? <strong>Create your account with the same email</strong> you used then, and your order history comes with it.
+        </p>
+      )}
+      {mode !== 'forgot' && (
         // A segmented toggle, not an ARIA tablist: role="tab" without aria-controls, a tabpanel and
         // arrow-key navigation sets up a broken expectation (a screen reader announces "tab, 1 of 2"
         // and arrow keys do nothing). aria-pressed toggle buttons are the honest, conformant pattern

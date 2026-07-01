@@ -37,8 +37,9 @@ Detailed procedures: **GO-LIVE-RUNBOOK.md** (Stripe/email/functions/deploy/smoke
    live origin (DOMAIN-CUTOVER.md). Confirm the live URL serves the new bundle.
 8. **DNS** cutover to the new host. *[external]*
 9. **Live smoke test** (GO-LIVE-RUNBOOK §5): a £1 order end-to-end; issue a licence key against it and confirm
-   the customer gets the "ready to collect" email and sees the key in their account; open a **migrated**
-   customer's account and confirm their historical orders show; refund the test order and confirm it reconciles.
+   the customer gets the "ready to collect" email and sees the key in their account; **create an account with a
+   known migrated customer's email** and confirm their historical orders appear (the reclaim path, MIGRATION-
+   IMPORT.md); refund the test order and confirm it reconciles.
 10. **Post-launch:** enable PITR backups + run one restore drill (GO-LIVE-RUNBOOK §6); take the old site down.
 
 ## Go / no-go gates
