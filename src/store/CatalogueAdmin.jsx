@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
+import DrawerScrim from './DrawerScrim.jsx';
 import { signIn, signOut, getSession, onAuth, getStaffUser, isStaff } from './adminAuth.mjs';
 import { fmtMoney, usdToGbpMinor } from '../lib/pricing.mjs';
 import PricingRules from './PricingRules.jsx';
@@ -169,7 +170,7 @@ function EditDrawer({ offering, onClose, onSaved }) {
   };
 
   return (
-    <div className="ca-drawer-scrim" onClick={onClose}>
+    <DrawerScrim onClose={onClose}>
       <div ref={drawerRef} tabIndex={-1} className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={'Edit ' + offering.name}>
         <h2>Edit offering</h2>
         <label>Name<input value={name} onChange={e => setName(e.target.value)} /></label>
@@ -187,6 +188,6 @@ function EditDrawer({ offering, onClose, onSaved }) {
         </div>
         <p className="ca-note">Editions/pricing, specs, media and bulk import come next. Saves write straight to the live catalogue (admin-only).</p>
       </div>
-    </div>
+    </DrawerScrim>
   );
 }

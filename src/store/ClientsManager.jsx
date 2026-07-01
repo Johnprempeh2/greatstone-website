@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
+import DrawerScrim from './DrawerScrim.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { portfolioHealth, quietFirstRank, recencyBucket } from './client-recency.mjs';
 import { engagementView } from './engagement-view.mjs';
@@ -362,7 +363,7 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
   };
 
   return (
-    <div className="ca-drawer-scrim" onClick={onClose}>
+    <DrawerScrim onClose={onClose}>
       <div ref={ref} tabIndex={-1} className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={isNew ? 'Issue licence key' : 'Edit licence key'}>
         <h2>{isNew ? 'Issue a licence key' : 'Edit licence key'}</h2>
         <p className="ca-note" style={{ marginTop: -2 }}>Delivered to {customer.name} — they'll see it on their account → Licence keys.</p>
@@ -398,7 +399,7 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
           <button className="gs-btn primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : isNew ? 'Issue key' : 'Save'}</button>
         </div>
       </div>
-    </div>
+    </DrawerScrim>
   );
 }
 
@@ -456,7 +457,7 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
   };
 
   return (
-    <div className="ca-drawer-scrim" onClick={onClose}>
+    <DrawerScrim onClose={onClose}>
       <div ref={ref} tabIndex={-1} className="ca-drawer" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={isNew ? 'New engagement' : 'Edit engagement'}>
         <h2>{isNew ? 'New engagement' : 'Edit engagement'}</h2>
         <p className="ca-note" style={{ marginTop: -2 }}>For {customer.name}'s DX timeline.</p>
@@ -531,6 +532,6 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
           <button className="gs-btn primary" onClick={save} disabled={busy || (status === 'shared' && !shareReady)} title={status === 'shared' && !shareReady ? 'Finish the share checklist first, or save it as a draft.' : undefined}>{busy ? 'Saving…' : isNew ? 'Add to timeline' : 'Save'}</button>
         </div>
       </div>
-    </div>
+    </DrawerScrim>
   );
 }
