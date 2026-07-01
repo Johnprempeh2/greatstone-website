@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import RichText from './RichText.jsx';
 
 // THE BLOCK CONTRACT (every block file follows this):
 //   export function X(props)      — the React component; renders public + editor canvas.
@@ -39,7 +41,7 @@ export function Hero({ kicker, headline, highlight, headlineSuffix = '', body, p
             ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
             : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
         </h1>
-        {body ? <p className="lede" data-reveal>{body}</p> : null}
+        {body ? <RichText as="p" className="lede" data-reveal html={body} /> : null}
         {Array.isArray(meta) && meta.length ? (
           <div className="b-hero-meta" data-reveal>
             {meta.map((m, i) => (
@@ -139,7 +141,7 @@ export const puck = {
     headline: { type: 'text', label: 'Headline', contentEditable: true },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     headlineSuffix: { type: 'text', label: 'Headline suffix (after highlight, optional)' },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     prompt: { type: 'text', label: 'Cursor prompt (optional)', contentEditable: true },
     cueStyle: { type: 'radio', label: 'Cue style', options: [
       { label: 'Text line', value: 'text' }, { label: 'Mouse capsule (scroll)', value: 'mouse' },
