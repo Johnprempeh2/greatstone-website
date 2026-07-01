@@ -39,11 +39,13 @@ missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only,
   orders / no team / no engagements), a first-visit welcome banner, surfacing the latest `review` engagement as
   a "Next QBR" callout, an onboarding-complete moment.
 
-- **Post-order confirmation + welcome/onboarding email templates (authoring only)** — [PARTIAL]. Confirmation
-  HTML lives in `stripe-webhook`; a licence-issued builder is `src/lib/licence-email.mjs`. Ben's gaps: (a)
-  confirmation copy improved to state **what was ordered, next steps, timeframe**, and (b) a **branded
-  welcome/onboarding email** on registration, which does not exist. Author both as pure `.mjs` builders with
-  tests now (zero-deploy repo change). Dispatch is gated (below).
+- **Post-order confirmation + welcome/onboarding email templates** — [BUILT authoring] (iteration 6;
+  **dispatch gated on deploy**). New tested `.mjs` builders: `src/lib/welcome-email.mjs` (the missing
+  registration welcome, brand intro + three next steps) and `src/lib/order-confirmation-email.mjs` (reworked
+  confirmation: what was ordered, totals, a clear "what happens next" + timeframe, account CTA). The
+  order-confirmation content is mirrored into `stripe-webhook` (like licence-email ↔ notify-licence-issued),
+  so it takes effect on the next deploy of that function. The welcome email needs a send trigger (auth hook or
+  a small edge fn on `customer_users` insert) + Resend secrets to actually send.
 
 - **Purchase-order checkout as a first-class payment method (online path)** — [BUILT] this session (iteration
   2). Card-vs-PO framing + online PO submission via `request-quote`. Native document upload is gated (below).
@@ -201,5 +203,25 @@ download. Built as a NEW block rather than renaming `TimeSavingsCalculator`, so 
   live figure £105,984 correct (12×6×46×32); empty gate submit blocked; valid submit revealed £58,291/yr (55%),
   hid the gate, showed CTA + download (Blob created); screenshot on-brand; zero console errors. Test block removed.
 - Not deployed (awaiting John's OK).
+
+### Iteration 6 — Post-order + welcome email templates (deploy-ready authoring)
+
+Ben: the order-confirmation email was "old school" and a welcome email did not exist. Built both as pure,
+tested `.mjs` builders in the house voice (mirroring the `licence-email.mjs` pattern):
+
+- `src/lib/welcome-email.mjs` (+ test): the missing registration welcome. Brand intro + three concrete next
+  steps (browse the catalogue, place your first order, book a diagnostic), account CTA. HTML + plain-text.
+- `src/lib/order-confirmation-email.mjs` (+ test): reworked confirmation stating clearly what was ordered
+  (itemised + totals), a numbered "what happens next" with the one-business-day timeframe, and a "view your
+  order" account CTA. Currency-aware, VAT clamped non-negative, HTML-escaped.
+- Mirrored the order-confirmation content into `supabase/functions/stripe-webhook` (kept in step, same as
+  licence-email ↔ notify-licence-issued), so it takes effect on the next deploy of that function.
+
+- Verify: `npm test` 571 green (10 new), `npm run build` clean, secret scan clean. Pure builders, so verified
+  by unit tests + build (not exercised by the browser preview).
+- **Gated (dispatch):** the welcome email needs a send trigger (a Supabase auth hook or a small edge fn on
+  `customer_users` insert) + the Resend secrets (`docs/AUTH-EMAILS.md`). The reworked order email sends once
+  `stripe-webhook` is deployed with those secrets. Templates are real, reviewable, deploy-ready artifacts.
+- Not deployed.
 
 _(next iterations appended below)_

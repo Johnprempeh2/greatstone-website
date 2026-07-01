@@ -134,23 +134,39 @@ async function sendOrderEmail(o: { to: string | null; reference: string; items: 
   const FROM = Deno.env.get('RESEND_FROM') || 'Greatstone <onboarding@resend.dev>';
   if (!KEY) { console.log('order email skipped — RESEND_API_KEY not set'); return; }
   if (!o.to) { console.log('order email skipped — no customer email'); return; }
-  const money = (m: number) => '£' + (m / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const rows = o.items.map((it) => `<tr><td style="padding:6px 0;color:#cfd3cb">${it.offering_name}${it.variant_name ? ' · ' + it.variant_name : ''} ×${it.qty}</td><td style="padding:6px 0;text-align:right;color:#fff">${money(it.line_total_minor)}</td></tr>`).join('');
-  const vat = o.total - o.subtotal;
+  // MIRROR of src/lib/order-confirmation-email.mjs buildOrderConfirmationEmail — keep the two in step.
+  const SYMBOL: Record<string, string> = { GBP: '£', USD: '$', EUR: '€' };
+  const sym = SYMBOL[(o.currency || 'GBP').toUpperCase()] || ((o.currency || 'GBP').toUpperCase() + ' ');
+  const money = (m: number) => sym + (Number(m || 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const ref = /^cs_(test|live)_/.test(o.reference) ? o.reference.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 12) : o.reference;
+  const account = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstonesoftware.co.uk').replace(/\/+$/, '') + '/#account';
+  const itemLabel = (it: any) => esc((it.offering_name || 'Item') + (it.variant_name ? ' · ' + it.variant_name : '') + (it.qty && it.qty > 1 ? ' ×' + it.qty : ''));
+  const rows = o.items.map((it) => `<tr><td style="padding:6px 0;color:#cfd3cb;font-size:14px">${itemLabel(it)}</td><td style="padding:6px 0;text-align:right;color:#f5f5f5;font-size:14px">${money(it.line_total_minor)}</td></tr>`).join('');
+  const vat = Math.max(0, o.total - o.subtotal);
+  const nextSteps = [
+    'Our licensing team issues your licences (keys or files) and they appear in your account, normally within one business day.',
+    'We email you the moment they are ready to collect. You do not need to do anything until then.',
+    'Need it sooner, or want to pay by purchase order next time? Just reply to this email.',
+  ];
+  const nextRows = nextSteps.map((s) => `<li style="margin:0 0 8px;line-height:1.55">${esc(s)}</li>`).join('');
   const html = `<div style="background:#1f1f1f;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif;padding:28px;max-width:560px;margin:0 auto;border-radius:14px">
     <div style="font-weight:800;font-size:18px;letter-spacing:.04em">GREATST<span style="color:#c8ff00">O</span>NE</div>
-    <h1 style="font-size:20px;margin:18px 0 6px">Thanks for your order</h1>
-    <p style="color:#b0b0b0;font-size:14px;margin:0 0 18px">Order reference <b style="color:#fff">${o.reference}</b>. Your licence keys will be issued by our team and will appear in your account, normally within one business day.</p>
-    <table style="width:100%;border-collapse:collapse;font-size:14px">${rows}
-      <tr><td style="padding:10px 0 0;border-top:1px solid #333;color:#b0b0b0">Subtotal (ex VAT)</td><td style="padding:10px 0 0;border-top:1px solid #333;text-align:right;color:#b0b0b0">${money(o.subtotal)}</td></tr>
-      <tr><td style="color:#b0b0b0">VAT</td><td style="text-align:right;color:#b0b0b0">${money(vat)}</td></tr>
+    <h1 style="font-size:20px;margin:18px 0 6px">Thank you, your order is confirmed</h1>
+    <p style="color:#b0b0b0;font-size:14px;margin:0 0 18px">Order reference <b style="color:#f5f5f5">${esc(ref)}</b>. Here is what you ordered.</p>
+    <table style="width:100%;border-collapse:collapse">${rows}
+      <tr><td style="padding:10px 0 0;border-top:1px solid #333;color:#b0b0b0;font-size:14px">Subtotal (ex VAT)</td><td style="padding:10px 0 0;border-top:1px solid #333;text-align:right;color:#b0b0b0;font-size:14px">${money(o.subtotal)}</td></tr>
+      <tr><td style="color:#b0b0b0;font-size:14px">VAT</td><td style="text-align:right;color:#b0b0b0;font-size:14px">${money(vat)}</td></tr>
       <tr><td style="padding-top:6px;font-weight:800">Total</td><td style="padding-top:6px;text-align:right;font-weight:800;color:#c8ff00">${money(o.total)}</td></tr>
     </table>
-    <p style="color:#707070;font-size:12px;margin-top:22px">Greatstone International · The Foundation of Digital Excellence</p>
+    <h2 style="font-size:15px;margin:22px 0 8px">What happens next</h2>
+    <ol style="color:#b0b0b0;font-size:14px;padding-left:18px;margin:0 0 18px">${nextRows}</ol>
+    <a href="${esc(account)}" style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:#c8ff00;text-decoration:none;border-radius:100px">View your order</a>
+    <p style="color:#707070;font-size:12px;margin-top:22px">Questions? Just reply to this email. Greatstone International · The Foundation of Digital Excellence</p>
   </div>`;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: 'Bearer ' + KEY, 'content-type': 'application/json' },
-    body: JSON.stringify({ from: FROM, to: o.to, subject: 'Your Greatstone order ' + o.reference.replace(/^cs_(test|live)_/, '').slice(0, 12), html }),
+    body: JSON.stringify({ from: FROM, to: o.to, subject: 'Your Greatstone order ' + ref, html }),
   });
   if (!res.ok) throw new Error('resend ' + res.status + ' ' + (await res.text()).slice(0, 140));
   console.log('order email sent to', o.to);
