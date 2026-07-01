@@ -12,13 +12,12 @@ missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only,
 
 ## Build now (frontend-only, no external dependency)
 
-- **AI Baseline Survey lead magnet** — [MISSING]. A free, gated survey a company can run internally to
-  self-assess AI readiness, returning simple bar/pie charts and a **laggard → pioneer** benchmark against the
-  8 Greatstone maturity pillars. Two Ben/John nuances to honour: (1) it must be **downloadable / importable
-  into Google Forms, Typeform or Formstack** (an export step, not only an on-page quiz), and (2) it is gated
-  behind name/company/email as the value exchange. Build `SurveyQuiz` + `SurveyResults` (reuse the
-  `MaturityRadar` SVG pattern and `maturity-seed.mjs` pillars/benchmarks), all frontend, localStorage session
-  state. **The best next fully-buildable item.**
+- **AI Baseline Survey lead magnet** — [BUILT] (iteration 3). A free, gated survey (`AiBaselineSurvey` block):
+  8 questions, one per Greatstone pillar, graded 1..4; email-gated results with a **Laggard → Pioneer**
+  benchmark, a per-pillar bar chart against an illustrative industry average, and two downloads (your scored
+  result + the blank survey as a CSV to adapt into Google Forms / Typeform / Formstack). All frontend,
+  `track('generate_lead', { form: 'ai_baseline_survey' })`. Content authored in Greatstone voice, kept in
+  `src/data/ai-baseline-survey.mjs`. Placeable via Puck (Proof category). Not deployed.
 
 - **AI Cost Calculator lead magnet — rename + email-gate wrapper** — [PARTIAL]. `TimeSavingsCalculator.jsx`
   is already built and production-ready; Ben's framing is "how much money am I leaving on the table with AI."
@@ -147,5 +146,21 @@ per product RANGE (~9 vendors) authored in a plain editor; the AI Cost Calculato
 (`TimeSavingsCalculator.jsx`) and needs only a rename + email-gate; the AI Baseline Survey needs a
 Google Forms/Typeform export, not just an on-page quiz; welcome/onboarding email is a distinct, non-existent
 artefact; `markFulfilled()` does not currently trigger the licence email.
+
+### Iteration 3 — AI Baseline Survey lead magnet
+
+Built the `AiBaselineSurvey` Puck block (Proof category): an intro card, an 8-question quiz (one per
+Greatstone pillar, four graded answers auto-advancing with a progress bar), a name/company/email gate, and a
+results screen with a Laggard→Pioneer verdict, an 8-pillar bar chart against an illustrative industry
+benchmark, strongest/weakest reads, and two CSV downloads (the scored result + the blank survey to adapt into
+Google Forms / Typeform / Formstack). Survey content authored in Greatstone voice via a design workflow (two
+drafts + synthesis), kept in `src/data/ai-baseline-survey.mjs`; pillars/phases reuse `maturity-seed.mjs`.
+
+- Files: `src/blocks/AiBaselineSurvey.jsx`, `src/data/ai-baseline-survey.mjs`, `src/puck.config.jsx` (register
+  + Proof category). Emits `track('generate_lead', { form: 'ai_baseline_survey' })`. Pure frontend.
+- Verify: `npm test` 561 green, `npm run build` clean (secret scan passed). Live preview (block injected into a
+  page): intro → 8 questions → gate (empty submit blocked) → results rendered Leader 2.8 with 8 bars + 8
+  benchmark markers; both downloads produced Blobs; zero console errors. Test block removed after.
+- Not deployed (awaiting John's OK).
 
 _(next iterations appended below)_
