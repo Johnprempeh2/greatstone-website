@@ -27,7 +27,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
   container.appendChild(canvas);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:o.transparent, powerPreference:'high-performance' });
   renderer.debug.checkShaderErrors = false;   // some backends return null from getProgramInfoLog(); three .trim()s it
-  renderer.setPixelRatio(Math.min(devicePixelRatio, coarsePointer ? 2 : o.dpr)); // clamp DPR on mobile (MSAA below carries edge quality)
+  renderer.setPixelRatio(Math.min(devicePixelRatio, coarsePointer ? 1.5 : o.dpr)); // desktop full DPR; phones/tablets render at 1.5x (masked by their high physical density + the centre scrim)
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
 
   const scene = new THREE.Scene();
@@ -96,7 +96,8 @@ export function mountGreatstoneLogo(container, opts = {}) {
      as the stone turns. On mobile (DPR clamped + ~3x physical density) it reads as flicker + poor
      quality. A multisampled target antialiases the edges; the resolved (smooth) image also feeds the
      alpha-key pass below, so the transparency edge stops popping too. setSize() resizes it on mount. */
-  const _msaaRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: o.samples });
+  const _samples = coarsePointer ? Math.min(o.samples, 2) : o.samples; // 2x MSAA on phones (edges masked at their density); full samples on desktop
+  const _msaaRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: _samples });
   const composer=new EffectComposer(renderer, _msaaRT); composer.addPass(new RenderPass(scene,camera));
   const bloom=new UnrealBloomPass(new THREE.Vector2(1,1), o.bloom, 0.6, 0.66); composer.addPass(bloom); composer.addPass(new OutputPass());
   /* TRANSPARENT BLEND: the bloom chain forces an opaque (black) frame even on an alpha canvas. Final
@@ -176,7 +177,10 @@ export function mountGreatstoneLogo(container, opts = {}) {
   // render only when on-screen, the tab is foreground, AND this layer is contributing (a faded-out
   // scene in a multi-scene track stops rendering — it's invisible). rAF keeps spinning (it's cheap);
   // only the expensive frame() is gated. dt is capped in frame(), so resuming never jumps.
-  function loop(){ if(visible && active && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
+  // Frame-rate cap: the stone turns slowly, so 60fps is indistinguishable from an uncapped 120Hz ProMotion
+  // loop but roughly halves its GPU/CPU cost. Only the expensive frame() is throttled; rAF still spins.
+  const _frameMin = 1000 / 60; let _lastFrame = -1e9;
+  function loop(now){ const t = now || 0; if (visible && active && !document.hidden && (t - _lastFrame) >= _frameMin) { _lastFrame = t; frame(); } raf = requestAnimationFrame(loop); }
   loop();
   return {
     setClimb(p){ scrollT = clamp(p,0,1); },   /* Stage drives this from scroll position */

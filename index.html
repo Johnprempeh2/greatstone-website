@@ -14,7 +14,11 @@
     <meta name="twitter:image" content="/og-default.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- Load the Montserrat CSS off the critical path: media="print" means it doesn't block first paint,
+         and onload swaps it to all so it applies once fetched. display=swap keeps text visible in the
+         system fallback until then (no invisible-text flash). <noscript> covers no-JS. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" /></noscript>
   </head>
   <body>
     <div id="root"></div>
