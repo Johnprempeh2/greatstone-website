@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { APPEARANCE_FIELD, APPEARANCE_DEFAULT } from '../cms/style-field.jsx';
 import { appearanceClass } from '../lib/block-style.mjs';
 
@@ -28,15 +30,16 @@ function QuoteAvatar({ photo, name }) {
 // face (photo or initials), a structured name/role/company, and an optional company logo, so a page can
 // close on a real, credible, attributed voice instead of an anonymous line or another CTA. The plain
 // variant (text + attr) is unchanged and fully backward-compatible.
-export function Quote({ text, attr, align = 'center', variant = 'plain', photo, name, role, company, companyLogo, appearance }) {
+export function Quote({ id, puck, text, attr, align = 'center', variant = 'plain', photo, name, role, company, companyLogo, appearance }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   // require an identity anchor (name or photo) so role/company alone never render a faceless empty card
   const hasCard = variant === 'card' && (name || photo);
   const roleLine = [role, company].filter(Boolean).join(', ');
   return (
     <section ref={ref} className={`b-quote align-${align}${hasCard ? ' has-card' : ''}`}>
       <div className={('wrap quote-wrap ' + appearanceClass(appearance)).trim()}>
-        <blockquote className="quote" data-reveal><span className="mark" aria-hidden="true">“</span>{text}<span className="mark" aria-hidden="true">”</span></blockquote>
+        <blockquote className="quote" data-reveal><span className="mark" aria-hidden="true">“</span><EditableText editing={editing} id={id} field="text" value={text} as="span" placeholder="Quote…" /><span className="mark" aria-hidden="true">”</span></blockquote>
         {hasCard ? (
           <div className="quote-card" data-reveal>
             <QuoteAvatar photo={photo} name={name} />
@@ -76,7 +79,7 @@ export const css = `
 export const puck = {
   label: 'Quote',
   fields: {
-    text: { type: 'textarea', label: 'Quote', contentEditable: true },
+    text: { type: 'custom', label: 'Quote', render: (props) => <RichTextField {...props} /> },
     variant: { type: 'radio', label: 'Style', options: [{ label: 'Plain (attribution line)', value: 'plain' }, { label: 'Card (face + name)', value: 'card' }] },
     attr: { type: 'text', label: 'Attribution (plain style)', contentEditable: true },
     name: { type: 'text', label: 'Name (card style)' },

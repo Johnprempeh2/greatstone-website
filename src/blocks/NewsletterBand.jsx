@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { track } from '../lib/analytics.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // NewsletterBand: insights.html's closing ".signup" — a contained glass card (lime radial glow, blur)
 // with a kicker, headline, lead, an email pill + Subscribe, and a legal note. Honest prototype: the
 // submit transmits nothing; it swaps to an inline confirmation and the legal note says so.
-export function NewsletterBand({ kicker, heading, highlight, body, placeholder, ctaLabel, legal, confirm }) {
+export function NewsletterBand({ id, puck, kicker, heading, highlight, body, placeholder, ctaLabel, legal, confirm }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   const [done, setDone] = useState(false);
   const [email, setEmail] = useState('');
   // on submit the form (incl. the button just pressed) is replaced by the confirmation, so move focus to
@@ -25,11 +28,11 @@ export function NewsletterBand({ kicker, heading, highlight, body, placeholder, 
     <section ref={ref} className="b-news section">
       <div className="wrap">
         <div className="b-news-card" data-reveal>
-          {kicker ? <span className="kicker">{kicker}</span> : null}
-          {(heading || highlight) ? (
-            <h2 className="b-news-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+          <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+          {(heading || highlight || editing) ? (
+            <h2 className="b-news-h2"><EditableText editing={editing} id={id} field="heading" value={heading} as="span" singleLine placeholder="Heading…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
           ) : null}
-          {body ? <p className="lead b-news-lead">{body}</p> : null}
+          <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-news-lead" placeholder="Body…" />
 
           {done ? (
             <p className="b-news-confirm" role="status" ref={confirmRef} tabIndex={-1}>{confirm}</p>
@@ -69,10 +72,10 @@ export const css = `
 export const puck = {
   label: 'Newsletter band',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     placeholder: { type: 'text', label: 'Input placeholder' },
     ctaLabel: { type: 'text', label: 'Button label' },
     legal: { type: 'text', label: 'Legal note' },
