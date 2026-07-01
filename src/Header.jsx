@@ -48,7 +48,9 @@ function resolveNavItem(item, pages, canEdit) {
 // groups and filter by label so every match surfaces.
 function buildNavModel(navigation, order, pages, canEdit, q) {
   let nav = navigation;
-  if (!Array.isArray(nav) || !nav.length) nav = (order || []).map((slug) => ({ type: 'page', pageSlug: slug }));
+  // footerOnly pages (Terms, Privacy, …) belong in the footer's legal row, never the header — so the
+  // order-fallback (used when no nav tree is configured) skips them just as the configured tree omits them.
+  if (!Array.isArray(nav) || !nav.length) nav = (order || []).filter((slug) => !(pages[slug] && pages[slug].footerOnly)).map((slug) => ({ type: 'page', pageSlug: slug }));
   const items = nav.map((i) => resolveNavItem(i, pages, canEdit)).filter(Boolean);
   if (!q) return items;
   const flat = [];

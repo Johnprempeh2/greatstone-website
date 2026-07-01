@@ -80,6 +80,69 @@ function seedPage(title, background, content, seo, status = 'published') {
 export const TRANSITIONS = { draft: ['review'], review: ['approved', 'draft'], approved: ['published', 'draft'], published: ['draft'] };
 export const canTransition = (from, to) => !!(TRANSITIONS[from] && TRANSITIONS[from].includes(to));
 
+// ---- launch legal scaffolds (footer-only, draft) ----
+// Editable placeholder pages (Terms, Privacy, Cookies, Refunds) so the structure, routing and footer wiring
+// are ready for launch and a solicitor's final wording drops straight into the CMS. They ship as DRAFT and
+// footerOnly: never in the primary nav or ⌘K, hidden from the PUBLIC footer until someone publishes them (so
+// placeholder text can't reach a customer), but reachable by staff to edit. Nothing here is legal copy — every
+// page says so in bold at the top. Seeded for fresh stores AND backfilled into existing ones (no re-seed).
+const LEGAL_DRAFT_BANNER = '<strong>Draft placeholder, not yet in force.</strong> This page is a launch scaffold. Our solicitor’s final wording replaces everything here before we sell, and nothing on this page is legal advice or a binding term.';
+export const LEGAL_SCAFFOLDS = [
+  { slug: 'terms', title: 'Terms of sale', desc: 'The terms on which Greatstone sells software licences. Draft scaffold, final wording pending.', sections: [
+    { h: 'Who we are', b: 'Greatstone International Ltd, and how to reach us. [Company number and registered address to be confirmed.]' },
+    { h: 'What you are buying', b: 'We resell hand-picked third-party software licences. Each product’s vendor, edition and licence term are shown on its page.' },
+    { h: 'Orders and acceptance', b: 'When an order becomes a contract, and our right to decline or cancel an order before a licence is issued.' },
+    { h: 'Price, currency and VAT', b: 'Prices show in pounds, converted from the vendor list price, with VAT added at checkout where it applies.' },
+    { h: 'Licence delivery', b: 'Licence keys are issued once payment clears and appear in your account. [Expected delivery window to be confirmed.]' },
+    { h: 'Cancellations and refunds', b: 'How cancelling works for digital licences. See the <a href="#go/refunds">refunds and returns policy</a>.' },
+    { h: 'Liability and governing law', b: 'The limits of our liability, and the law that governs these terms. [Final wording from counsel.]' },
+  ] },
+  { slug: 'privacy', title: 'Privacy policy', desc: 'How Greatstone collects, uses and protects your personal data. Draft scaffold, final wording pending.', sections: [
+    { h: 'Who controls your data', b: 'Greatstone International Ltd is the data controller, and here is how to contact us about your data.' },
+    { h: 'What we collect', b: 'Your account details, order history and how you use the site. We never store card numbers; payments are handled by our payment provider.' },
+    { h: 'How we use it, and our lawful basis', b: 'To take orders, deliver licences, support you and improve the site, under the UK GDPR lawful bases.' },
+    { h: 'Who we share it with', b: 'Our processors for hosting, payments and email, each under contract. We do not sell your data.' },
+    { h: 'Cookies', b: 'How we use cookies, and your choices. See the <a href="#go/cookies">cookie policy</a>.' },
+    { h: 'Your rights', b: 'Access, correction, deletion and the rest of your UK GDPR rights, and how to exercise them.' },
+    { h: 'Retention, security and complaints', b: 'How long we keep data, how we protect it, and your right to complain to the ICO.' },
+  ] },
+  { slug: 'cookies', title: 'Cookie policy', desc: 'The cookies Greatstone uses, and how to control them. Draft scaffold, final wording pending.', sections: [
+    { h: 'What cookies are', b: 'Small files a site stores on your device, and why sites use them.' },
+    { h: 'Essential cookies', b: 'Sign-in and basket cookies the site needs to work. These always run.' },
+    { h: 'Analytics cookies', b: 'Usage measurement that runs only with your consent, so we can see what to improve.' },
+    { h: 'Managing your choices', b: 'Change your cookie choices at any time from the banner or your browser settings.' },
+  ] },
+  { slug: 'refunds', title: 'Refunds and returns', desc: 'When and how Greatstone refunds a software licence purchase. Draft scaffold, final wording pending.', sections: [
+    { h: 'Digital licences and your right to cancel', b: 'How the right to cancel applies to digital licence keys, including where it ends once a key has been supplied.' },
+    { h: 'When a refund applies', b: 'The cases where we refund, in full or in part. [Final policy from counsel.]' },
+    { h: 'Faulty or misdescribed licences', b: 'What to do if a licence does not work, or was not as described.' },
+    { h: 'How to request a refund', b: 'Email us from your account with your order reference, and we will confirm the next steps and the timeframe.' },
+  ] },
+];
+function buildLegalPage({ title, desc, sections }) {
+  const blocks = [
+    // ctaLabel/prompt set empty so the Hero's defaults ("Book a Diagnostic", the cursor prompt) don't bleed
+    // onto a legal page — it wants just the title + the draft banner.
+    blk('Hero', { kicker: 'Legal', headline: title, highlight: '', body: LEGAL_DRAFT_BANNER, align: 'left', size: 'compact', scrollCue: false, ctaLabel: '', ctaLabel2: '', prompt: '' }),
+    ...sections.map((s) => blk('Prose', { kicker: s.h, body: s.b, align: 'left', width: 'reading' })),
+  ];
+  const page = seedPage(title, 'stone', blocks, { title: title + ' · Greatstone International', description: desc, ogImage: '' }, 'draft');
+  // A true draft has NO published projection (mirrors addPageTo), so the public "published" gate hides it
+  // until a real publish. Without this, seedPage's default published-snapshot would leak the placeholder.
+  page.published = null;
+  page.publishedBackground = null;
+  return { ...page, footerOnly: true };
+}
+// Add every legal scaffold to a pages map + return the slugs (in declared order) for the nav order.
+export function seedLegalPages(pages) {
+  const slugs = [];
+  for (const spec of LEGAL_SCAFFOLDS) {
+    if (!pages[spec.slug]) pages[spec.slug] = buildLegalPage(spec);
+    slugs.push(spec.slug);
+  }
+  return slugs;
+}
+
 // ---- product catalogue (north-star: Products + e-commerce) ----
 // A CMS-native catalogue: products organised by category, managed from inside the studio. This is
 // the prototype data model that maps 1:1 onto the dev team's Laravel Products/Categories tables.
@@ -388,7 +451,8 @@ export function seedState() {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
-  const order = ['home', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact'].filter((s) => pages[s]);
+  const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
+  const order = ['home', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
@@ -502,6 +566,11 @@ function migrate(state) {
   // backfill the editable navigation tree (additive: only when absent, so an admin's edits are kept)
   if (!Array.isArray(state.navigation)) state.navigation = DEFAULT_NAVIGATION();
   if (!Array.isArray(state.redirects)) state.redirects = []; // slug-rename forwarding table (read by the #go self-heal + link audit)
+  // launch legal scaffolds (additive: adds any missing Terms/Privacy/Cookies/Refunds page + appends to the
+  // order, never overwriting one an admin has already edited). footerOnly keeps them out of the primary nav.
+  if (state.pages && Array.isArray(state.order)) {
+    for (const slug of seedLegalPages(state.pages)) if (!state.order.includes(slug)) state.order.push(slug);
+  }
   if (!Array.isArray(state.sections)) state.sections = []; // saved-section library (reusable named block presets)
   if (!state.assets) state.assets = {};
   // catalogue (additive): seed the product model + a Products page on first upgrade, never overwrite

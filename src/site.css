@@ -226,6 +226,10 @@ body.nav-locked { overflow:hidden; }
 .site-footer .foot-links a:hover { color:var(--gs-accent); }
 .site-footer .legal { font-size:.74rem; color:var(--gs-text-faint); margin-top:8px; }
 .site-footer a.mail { color:var(--gs-accent); font-weight:600; }
+/* legal row: quieter + smaller than the main footer links, sits just above the copyright line */
+.site-footer .foot-legal { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin:18px 0 4px; }
+.site-footer .foot-legal a { font-size:.74rem; color:var(--gs-text-faint); transition:color var(--gs-dur); }
+.site-footer .foot-legal a:hover { color:var(--gs-accent); }
 
 /* ---- scroll reveals (IntersectionObserver toggles .in) ---- */
 .reveal { opacity:0; transform:translateY(26px); transition:opacity .7s var(--gs-ease), transform .7s var(--gs-ease); }

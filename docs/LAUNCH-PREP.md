@@ -13,7 +13,7 @@ legal wording.
 - [x] **Existing-data migration tooling** (idempotent importer + documented input format + dry-run).
 - [x] **Migrated/historical order display** (orders with no Stripe session, marked migrated).
 - [ ] ~400-URL 301 redirect map from a crawl of the old site → public/_redirects.
-- [ ] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), wired to footer/nav.
+- [x] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), footer-wired, draft until a solicitor's wording lands.
 - [x] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
 - [x] Auth email templates → self-contained CSS wordmark (no remote image) + single canonical-domain placeholder.
 - [x] FX-rate staleness guard / admin visibility (last-updated signal in the FX editor).
@@ -101,6 +101,31 @@ Verified: generated HTML has **zero** `<img>` tags and **zero** `netlify.app` re
 remaining URL is the wordmark's link to the canonical domain and the `{{ .ConfirmationURL }}` action link.
 Rendered `confirmation.html` in the browser — wordmark and lime CTA display correctly. 508 tests green, build
 clean (secret scan clean). Templates still need applying to the Supabase project (Ben-owned, deferred).
+
+### Iteration 7 — Editable legal-page scaffolds (Terms / Privacy / Cookies / Refunds)
+A live store selling to consumers needs Terms, Privacy, Cookies and Refunds reachable from the footer. Built
+the structure, routing and wiring now so a solicitor's final wording drops straight into the CMS at launch
+(the wording itself stays Ben/counsel-owned). Nothing here commits a legal position: every page opens with a
+bold "Draft placeholder, not yet in force" banner, and the pages ship as DRAFT so a real visitor never sees
+placeholder wording.
+- `store.js`: `LEGAL_SCAFFOLDS` (4 pages, each a compact Hero draft-banner + one Prose section per clause) +
+  `seedLegalPages()`. Seeded into fresh stores AND backfilled into existing ones (additive, never overwriting
+  an edited page) — so no `SEED_VERSION` bump and no wiped drafts. Pages are `status: 'draft'`, `published:
+  null` (a true draft, mirroring `addPageTo`) and flagged `footerOnly`.
+- New page flag `footerOnly`: kept out of the primary nav, the footer's main links AND the ⌘K palette, shown
+  only in a dedicated footer legal row. Enforced in `nav-order.js` (`publicNavOrder` filter + new
+  `footerLegalOrder`) and `Header.jsx` (the order-fallback nav model). The public sees a legal page in that
+  row only once its status is `published`; editors see all four (drafts tagged "(draft)") so they're reachable
+  to fill in. Gate keys off `status`, never the `published` snapshot (a seeded draft can still carry one).
+- `Footer.jsx` renders the `.foot-legal` row; `site.css` styles it quieter than the main links. Cross-links
+  between policies use the existing `#go/<slug>` SPA route.
+
+Verified: 7 new `nav-order` unit tests (public vs editor visibility, footerOnly exclusion, draft gating);
+522 tests total, build + secret scan clean. Live in the preview: the four pages backfill into the store and
+sit in `order`; the public footer shows **no** legal links and the top nav is unchanged (draft-gated); after
+locally publishing one, the Terms page renders with its LEGAL kicker, title, bold draft banner, seven clause
+sections and a working `#go/refunds` cross-link, and no stray hero CTA/prompt. Zero console errors. Applying
+the real wording + publishing is the launch-day plug-in step (counsel-owned).
 
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
