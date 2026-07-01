@@ -688,7 +688,7 @@ function Item({ e, companyName, isNew, open, onToggle }) {
         <div className="dx-card-head">
           <span className={'dx-kind k-' + e.kind}>{KIND_LABEL[e.kind]}</span>
           {e.phase && <span className="dx-phase">{e.phase}</span>}
-          {isNew && <span className="dx-new">New</span>}
+          {isNew && <span className="dx-new" aria-label="Added since your last visit">New</span>}
         </div>
         <h4 className="dx-title">{e.title}</h4>
         <div className="dx-meta">
@@ -718,7 +718,7 @@ function Item({ e, companyName, isNew, open, onToggle }) {
             </a>
           )}
           <button type="button" className="dx-copy" onClick={copyLink} aria-label={copied ? 'Link copied to clipboard' : 'Copy a link to “' + e.title + '”'}>{copied ? 'Copied ✓' : 'Copy link'}</button>
-          <a className="dx-copy dx-discuss" href={discussHref} aria-label={'Email the Greatstone team about “' + e.title + '”'}>Discuss this →</a>
+          <a className="dx-copy dx-discuss" href={discussHref} aria-label={'Email the Greatstone team about “' + e.title + '”'}>Email the team →</a>
           <input type="text" className={'dx-copy-src' + (needsManual ? ' is-shown' : '')} ref={linkRef} value={url} readOnly tabIndex={-1} aria-hidden={!needsManual} aria-label={'Link to “' + e.title + '”'} onFocus={(ev) => ev.target.select()} />
           <span className="gs-sr-only" role="status" aria-live="polite">{copyMsg}</span>
         </div>

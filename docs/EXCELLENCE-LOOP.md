@@ -433,3 +433,41 @@ array blocks (touches Puck field/seed layer); gate CTA rendering on a valid link
 `safeHref`; standardise divergent grid-gap clamp tokens; a pause/dismiss for the Hero scroll-cue; move Team
 broken-image state to a shared parent cache; document the h1/h2 hierarchy in puck.config; confirm NewsletterBand
 keeps a 16px input floor (iOS auto-zoom).
+
+---
+
+## Cycle 23 — 2026-07-02 — account + org customer dashboards (NOT deployed)
+
+Slice 3: a 4-lens assessment (a11y, UX-states, voice, correctness) over `#account` (AccountDashboard) and
+`#org` (OrgDashboard, LicenceKeys, MaturityRadar, admin.css). 18 safe wins + 6 proposals surfaced (the panel
+dropped 6 self-validated false positives). These surfaces are auth-gated (a signed-in customer + org), so they
+can't be driven from the preview here, so I shipped only the highest-confidence, zero-control-flow-risk changes
+(copy, additive ARIA, contained guards) verified by build + tests, and deferred anything that changes
+state/focus semantics to a pass that can be live-verified.
+
+**Shipped (6, verified, NOT deployed):**
+- **LicenceKeys**: `aria-busy` on the file-download button while a signed URL is prepared; the empty state
+  reworded (warmer, and it carried a stray em dash + a negative "Nothing to activate yet" closer, both cleared).
+- **OrgDashboard**: the "New" engagement badge now says "Added since your last visit" to screen readers
+  (visible text unchanged); the vague "Discuss this" link is now "Email the team" (its aria-label was already
+  precise).
+- **AccountDashboard**: "Your organization" link is now "Go to your organisation" (verb phrase + fixes a
+  US-spelling regression); the quote validity countdown guards against corrupt far-future dates (>10 years
+  renders nothing rather than "N days left").
+
+Verify: `npm test` 571 green, `npm run build` clean, secret scan clean. Not deployed.
+
+**Deferred (real safe wins, but need a signed-in live test or a component-level change, next account pass):**
+quotes table loading skeleton (init `null`); render section headings outside `aria-hidden` skeletons + add
+`aria-busy`; `#org` failed-fetch should stay in loading state so a load error isn't shown as a genuinely-empty
+org; move tab-change focus to the panel `h2` (not the `tabindex=-1` div); visible focus on a deep-linked
+engagement item; `aria-busy` on the stat tiles; profile/security form error `aria-describedby`/`aria-invalid`;
+keyboard focus for the invite fallback-copy input; EngagementTimeline skeleton min-height. **Skipped:** the
+"Licence keys" tab casing (sentence case is the house style, not a regression).
+
+**Proposed to John (design / data-model / positioning):** per-fetch error + retry model for the four parallel
+`#org` reads; add `file_path`/`file_name` to the order-detail licence-key query + split copy-vs-download; make
+the onboarding-checklist dismissal transient/data-aware; rework the `#account` pending-attention banner so
+dismissal isn't irreversibly destructive; a keyboard/AT-navigable data-table alternative for the Maturity Radar
+SVG; reframe the "Activate your licences" band copy + drop "unlock"; rename the "Invested" stat to "Total
+spent" (a positioning word, so your call).

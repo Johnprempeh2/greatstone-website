@@ -342,7 +342,7 @@ function Dashboard({ session, profile, onProfile }) {
           </div>
         </div>
         <div className="acct-id-actions">
-          {profile?.customer && <a className="gs-btn ghost sm" href="#org">Your organization →</a>}
+          {profile?.customer && <a className="gs-btn ghost sm" href="#org">Go to your organisation →</a>}
           <a className="gs-btn ghost sm" href="#shop">Continue shopping</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
@@ -505,7 +505,7 @@ function Dashboard({ session, profile, onProfile }) {
                       <td data-label="Total" className="ca-amt">
                         {qt.quoted_total_minor != null
                           ? <>{fmtMoney(qt.quoted_total_minor, qt.currency)} <span className="ca-muted">(quoted, inc VAT)</span>{qt.valid_until ? <span className="ca-muted"> · valid until {fmtDate(qt.valid_until)}</span> : ''}{qt.valid_until && !['won', 'lost', 'cancelled'].includes(qt.status) && (() => {
-                              const d = daysUntil(qt.valid_until); if (d === null) return null;
+                              const d = daysUntil(qt.valid_until); if (d === null || d > 3650) return null;
                               const cls = d < 0 ? ' is-over' : d <= 7 ? ' is-soon' : '';
                               return <span className={'acct-qcd' + cls}>{d < 0 ? 'Expired' : d === 0 ? 'Expires today' : `${d} day${d === 1 ? '' : 's'} left`}</span>;
                             })()}</>

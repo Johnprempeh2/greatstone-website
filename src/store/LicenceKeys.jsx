@@ -79,7 +79,7 @@ export default function LicenceKeys() {
         <p className="ca-note" role="alert">Couldn't load your licence keys. <button className="ca-link" onClick={load}>Try again</button></p>
       ) : keys.length === 0 ? (
         <div className="lk-empty">
-          <p>Your licence keys appear here as soon as our team delivers them after a purchase — each with the product, your seats and any expiry. Nothing to activate yet.</p>
+          <p>Your licence keys land here the moment our team delivers them after a purchase, each with its product, your seats and any expiry. Nothing to do until then; we&rsquo;ll email you the moment your first one is ready.</p>
           <p className="ca-note">When a key arrives, copy it and paste it into the product's licence or activation screen to unlock your seats. Stuck? <a className="ca-link" href="#go/contact">Our team will help you set it up</a>.</p>
         </div>
       ) : (
@@ -102,7 +102,7 @@ export default function LicenceKeys() {
                   <span className="lk-key lk-key-file" aria-label="This licence is delivered as a file">Licence file</span>
                 )}
                 {kk.file_path && kk.status === 'issued' && (
-                  <button type="button" className="gs-btn ghost sm" onClick={() => downloadFile(kk)} disabled={fileBusy === kk.id}
+                  <button type="button" className="gs-btn ghost sm" onClick={() => downloadFile(kk)} disabled={fileBusy === kk.id} aria-busy={fileBusy === kk.id}
                     aria-label={'Download the licence file for ' + kk.offering_name}>
                     {fileBusy === kk.id ? 'Preparing…' : fileBusy === 'fail:' + kk.id ? 'Try again' : 'Licence file ↓'}
                   </button>
