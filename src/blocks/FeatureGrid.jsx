@@ -18,13 +18,13 @@ export function FeatureGrid({ id, puck, kicker, heading, body, items = [], varia
           {items.map((it, i) => principles ? (
             <div className="b-feat-principle" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
               {it.n ? <div className="b-feat-n">{it.n}</div> : null}
-              <h3>{it.title}</h3>
-              <p>{it.text}</p>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as="h3" singleLine placeholder="Title…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" placeholder="Description…" />
             </div>
           ) : (
             <article className="b-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
-              <h3>{it.title}</h3>
-              <p>{it.text}</p>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as="h3" singleLine placeholder="Title…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" placeholder="Description…" />
             </article>
           ))}
         </div>
@@ -63,7 +63,7 @@ export const puck = {
     // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Features',
-      arrayFields: { n: { type: 'text', label: 'Number (principles)' }, title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
+      arrayFields: { n: { type: 'text', label: 'Number (principles)' }, title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> }, text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> } },
       defaultItemProps: { n: '', title: 'Pillar', text: 'A short description.' },
       getItemSummary: (item) => item.title || 'Feature',
     },

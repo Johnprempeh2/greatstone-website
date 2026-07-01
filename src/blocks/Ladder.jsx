@@ -19,9 +19,9 @@ export function Ladder({ id, puck, kicker, headline, highlight, body, items = []
           {items.map((it, i) => (
             <article className="phase" data-p={i + 1} data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
               <div className="rank">{it.rank}</div>
-              <h3>{it.name}</h3>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="name" value={it.name} as="h3" singleLine placeholder="Name…" />
               <div className="range">{it.range}</div>
-              <p>{it.text}</p>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" placeholder="Description…" />
               <div className="bar" aria-hidden="true" />
             </article>
           ))}
@@ -70,9 +70,9 @@ export const puck = {
       type: 'array', label: 'Phases (dim → lime)',
       arrayFields: {
         rank: { type: 'text', label: 'Rank' },
-        name: { type: 'text', label: 'Name' },
+        name: { type: 'custom', label: 'Name', render: (props) => <RichTextField {...props} variant="heading" /> },
         range: { type: 'text', label: 'Score range' },
-        text: { type: 'textarea', label: 'Description' },
+        text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> },
       },
       defaultItemProps: { rank: 'Phase 0', name: 'Stage', range: 'Score', text: 'What it looks like here.' },
       getItemSummary: (item) => item.name || 'Phase',

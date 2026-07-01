@@ -56,8 +56,8 @@ export function Timeline({ id, puck, index, eyebrow, headline, highlight, body, 
             <article className="tl-item" key={i}>
               <span className="tl-dot" />
               <div className="tl-year">{it.year}</div>
-              <h3 className="tl-head">{it.head}</h3>
-              <p className="tl-body">{it.text}</p>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="head" value={it.head} as="h3" className="tl-head" singleLine placeholder="Heading…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" className="tl-body" placeholder="Description…" />
             </article>
           ))}
         </div>
@@ -103,7 +103,7 @@ export const puck = {
     // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Milestones',
-      arrayFields: { year: { type: 'text', label: 'Year' }, head: { type: 'text', label: 'Heading' }, text: { type: 'textarea', label: 'Description' } },
+      arrayFields: { year: { type: 'text', label: 'Year' }, head: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> }, text: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> } },
       defaultItemProps: { year: '2025', head: 'A milestone', text: 'What happened.' },
       getItemSummary: (item) => (item.year ? item.year + ' · ' : '') + (item.head || 'Milestone'),
     },
