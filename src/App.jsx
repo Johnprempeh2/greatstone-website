@@ -532,7 +532,7 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, svcSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute]);
+  }, [current, state.pages, productSlug, svcSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, confirmRoute, catalogueAdmin, shopRoute, authLanding]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
@@ -570,7 +570,7 @@ export default function App() {
     return () => document.removeEventListener('click', onClick);
   }, [state.order, state.pages, state.redirects]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const page = state.pages[current] || state.pages[state.order[0]];
+  const page = state.pages[current] || state.pages[state.order[0]] || {};
   // human block label for the version-compare diff (e.g. "Hero", not the raw type), without making
   // VersionHistory import the Puck config directly.
   const labelFor = (type) => (config.components[type] && config.components[type].label) || type;

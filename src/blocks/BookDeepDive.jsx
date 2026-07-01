@@ -68,7 +68,7 @@ export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, sub
             <h2 className="h3 b-book-card-head"><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" />{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
             <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-book-card-intro muted" placeholder="Body…" />
             {sent ? (
-              <div className="book-sent" role="status">
+              <div className="book-sent" role="status" aria-live="polite">
                 <h3 ref={sentRef} tabIndex={-1}>Thanks. Your email is ready.</h3>
                 <p>We’ve opened your email with these details filled in. Send it and we’ll reply with times. If nothing opened, write to us directly:</p>
                 <a className="b-cta" href={safeMailto(email)}>{email}</a>
@@ -84,9 +84,9 @@ export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, sub
                   <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} name="name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
                   <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
                 </div>
-                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" placeholder="jane@stonewell.co" autoComplete="email" /></div>
+                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email" /></div>
                 <div className="field"><label htmlFor={uid + 'industry'}>Industry</label>
-                  <select className="fld" id={uid + 'industry'} name="industry" defaultValue=""><option value="" disabled>Choose your sector…</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
+                  <select className="fld" id={uid + 'industry'} name="industry" required aria-required="true" defaultValue=""><option value="" disabled>Choose your sector…</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
                 </div>
                 <div className="field"><label htmlFor={uid + 'week'}>Where does your week go?</label>
                   <textarea className="fld" id={uid + 'week'} name="week" placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />

@@ -13,7 +13,12 @@ export default function PublicRender({ config, data }) {
     <>
       {content.map((item, i) => {
         const def = config.components[item.type];
-        if (!def || typeof def.render !== 'function') return null;
+        if (!def || typeof def.render !== 'function') {
+          // In dev, name the block type that failed to render so a deleted/corrupted type is debuggable
+          // instead of vanishing silently. On the public build this stays a clean no-op.
+          if (import.meta.env && import.meta.env.DEV) console.warn('PublicRender: unknown block type "' + item.type + '" skipped');
+          return null;
+        }
         const props = { ...item.props, puck: { isEditing: false, renderDropZone: () => null, dragRef: null } };
         return <Fragment key={item.props && item.props.id ? item.props.id : item.type + '-' + i}>{def.render(props)}</Fragment>;
       })}

@@ -49,7 +49,7 @@ export function TimeCounter({ id, puck, kicker, headline, highlight, body, clock
         <h1 className="b-time-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h1>
         <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-time-body" placeholder="Lead…" data-reveal />
 
-        <div className="b-tc-chip" data-reveal role="status" aria-live="off">
+        <div className="b-tc-chip" data-reveal role="status" aria-live="polite">
           <div className="b-tc-top">
             <span className="b-tc-dot" aria-hidden="true" />
             <span className="b-tc-clock" ref={clockRef}>00:00</span>

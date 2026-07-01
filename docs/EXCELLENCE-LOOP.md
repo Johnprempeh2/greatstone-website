@@ -390,3 +390,46 @@ dialog with a styled in-drawer `aria-modal`; (3) inline "Try again" on Stripe ch
 treatment of the prominent category nav (collapse/toggle — trades against Ben's "categories up top" ask);
 (5) measured contrast check on the highlighted payment-method card + muted text on dark; (6) pre-fill a
 signed-in buyer's company/name (not just email) in the PO form.
+
+---
+
+## Cycle 22 — 2026-07-02 — public marketing pages + shared chrome (NOT deployed)
+
+Slice 2 of the resumed excellence loop: a 4-lens assessment (a11y, voice, UI craft, correctness/perf) over
+the shared chrome (Header/Footer/ConsentBanner/App routing + head/SEO/PublicRender) and the marketing-page
+blocks. The chrome + blocks are mature after 20+ prior cycles, so the wins were contained a11y + correctness
+gaps missed earlier.
+
+**Shipped (11 safe wins, verified, NOT deployed):**
+- **TimeCounter live region was silenced** (`aria-live="off"` on a `role="status"`) → `polite`, so the
+  escalating clock/narrative is actually announced.
+- **AI Baseline Survey**: the per-pillar level fallback em dash (`—`) → `Not scored`, matching the aria-label
+  and clearing the voice hard-rule.
+- **App.jsx**: `authLanding` added to the `applyHead` effect deps (head/SEO now refreshes on auth-link landings);
+  the page lookup falls back to `|| {}` so a corrupted/missing state can't crash the background read.
+- **BookDeepDive**: `aria-live="polite"` on the confirmation panel; `required` + `aria-required` on the email +
+  industry fields so AT announces which are mandatory.
+- **ConsentBanner**: buttons linked to the explanatory text (`aria-describedby`) and "Decline" given a clear
+  accessible name ("Decline analytics cookies").
+- **PublicRender**: a dev-only `console.warn` naming any unknown block type (public build stays a clean no-op).
+- **Faq**: icon transition synced to the panel's `.32s`; **ServiceCards**: long bullets now wrap
+  (`overflow-wrap`); **ConsentBanner buttons**: `min-width:44px` tap target.
+
+Verify: `npm test` 571 green, `npm run build` clean, secret scan clean; live home render clean (correct title,
+hero + blocks present, 0 console errors). Commit scoped. Not deployed.
+
+**Assessed and skipped (reason):** InsightsGrid timer (already cleared before re-set); CSS-var numbers in
+Columns/StatStrip (React passes custom-property numbers through fine); ContactBand email link (its text is the
+address, already a clear name); IndustryPicker tab panel `aria-live` (standard tab pattern; would be verbose);
+Footer coarse min-width (inline text links are exempt from the target-size rule and min-width wouldn't apply).
+
+**Deferred (need care, next pass):** image `width`/`height` for CLS across 5 blocks (needs per-image CSS check
+to avoid distortion); ComparisonMatrix mobile column labels for AT (the ≤620px `content:attr()` reflow isn't
+read by screen readers — needs an sr-only per-cell context).
+
+**Proposed to John (design / cross-cutting, not auto-shipped):** index-based React keys → stable IDs across
+array blocks (touches Puck field/seed layer); gate CTA rendering on a valid link vs defaulting `href` to `#`
+(dead-end buttons); harden the Faq `inert` binding + browser fallback; confirm Hero CTA passes through
+`safeHref`; standardise divergent grid-gap clamp tokens; a pause/dismiss for the Hero scroll-cue; move Team
+broken-image state to a shared parent cache; document the h1/h2 hierarchy in puck.config; confirm NewsletterBand
+keeps a 16px input floor (iOS auto-zoom).

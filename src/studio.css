@@ -62,6 +62,7 @@
   animation:gsConsentUp .3s var(--gs-ease)}
 .gs-consent-text{margin:0;font-size:.82rem;line-height:1.5;color:var(--gs-text-muted);max-width:64ch}
 .gs-consent-actions{display:flex;gap:10px;flex:none}
+.gs-consent-actions .gs-btn{min-width:44px}
 @keyframes gsConsentUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media (prefers-reduced-motion: reduce){.gs-consent{animation:none}}
 .gs-cmdbtn{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);

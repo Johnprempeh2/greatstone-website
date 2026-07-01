@@ -72,7 +72,7 @@ export const css = `
 .b-svc-title{margin-bottom:.55em;font-size:clamp(1.2rem,1.9vw,1.5rem);font-weight:800}
 .b-svc-card p{color:var(--gs-text-muted);margin-bottom:1.2em}
 .b-svc-list{list-style:none;margin-top:auto;display:grid;gap:.55em;padding:0}
-.b-svc-list li{position:relative;padding-left:1.4em;font-size:.92rem;color:var(--gs-text)}
+.b-svc-list li{position:relative;padding-left:1.4em;font-size:.92rem;color:var(--gs-text);overflow-wrap:anywhere;word-break:break-word}
 .b-svc-list li::before{content:'';position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:50%;
   background:var(--gs-accent);box-shadow:0 0 10px var(--gs-accent-glow)}
 .b-svc-scan{position:absolute;left:0;right:0;top:0;height:2px;z-index:2;pointer-events:none;opacity:0;transform:translateY(-4px);

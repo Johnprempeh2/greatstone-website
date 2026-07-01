@@ -79,7 +79,7 @@ export const css = `
 .b-faq-q:focus-visible{outline:2px solid var(--gs-accent);outline-offset:-3px;border-radius:14px}
 .b-faq-ico{flex:0 0 auto;width:22px;height:22px;position:relative}
 .b-faq-ico::before,.b-faq-ico::after{content:"";position:absolute;background:var(--gs-accent);border-radius:2px;
-  transition:transform .3s var(--gs-ease),opacity .3s var(--gs-ease)}
+  transition:transform .32s var(--gs-ease),opacity .32s var(--gs-ease)}
 .b-faq-ico::before{top:10px;left:3px;right:3px;height:2px}
 .b-faq-ico::after{left:10px;top:3px;bottom:3px;width:2px}
 .b-faq-item.is-open .b-faq-ico::after{transform:scaleY(0);opacity:0}
