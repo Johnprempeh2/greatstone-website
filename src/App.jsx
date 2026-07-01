@@ -136,6 +136,7 @@ const AdminConsole = lazy(() => import('./cms/AdminConsole.jsx'));
 const SiteSettingsPanel = lazy(() => import('./cms/SiteSettingsPanel.jsx'));
 const MediaLibraryPanel = lazy(() => import('./cms/MediaLibraryPanel.jsx'));
 import SignIn from './cms/SignIn.jsx';
+import EditorTopMenu from './cms/EditorTopMenu.jsx';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
 import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
@@ -1407,9 +1408,9 @@ export default function App() {
           overrides={{
             headerActions: ({ children }) => (
               <div className="gs-edit-actions">
+                {/* consolidated nav + account menu — frees the bar so the editing controls lead */}
+                <EditorTopMenu user={user} onHub={goHub} onSite={() => navigate(current)} onCmd={() => setCmdOpen(true)} onSignOut={doSignOut} />
                 {/* page context */}
-                <button className="gs-btn ghost sm" onClick={goHub} title="Back to the admin console">◇ Hub</button>
-                <button className="gs-btn ghost sm" onClick={() => navigate(current)} title="View the live site">← Site</button>
                 <label className="gs-pagesel" title="Switch page">
                   <select value={current} onChange={(e) => switchPage(e.target.value)} aria-label="Switch page">
                     {state.order.map((slug) => <option key={slug} value={slug}>{state.pages[slug].title}</option>)}
@@ -1432,13 +1433,9 @@ export default function App() {
                   {hasUnpublished ? <>Unpublished · <button className="gs-link" onClick={discardDraft}>discard</button></> : 'Saved'}
                 </span>
                 <span className="gs-edit-sep" aria-hidden="true" />
-                {/* tools */}
                 <Suspense fallback={null}><UndoRedo /></Suspense>
-                <button className="gs-btn ghost sm" onClick={() => setCmdOpen(true)} aria-label="Command palette" title="Command palette (⌘K)">⌘K</button>
-                <span className="gs-edit-sep" aria-hidden="true" />
-                {/* account + publish */}
-                <span className="gs-userchip" title={user.email + ' · ' + (ROLE_LABEL[user.role] || user.role)}>{user.name}</span>
-                <button className="gs-signout" onClick={doSignOut} title="Sign out">Sign out</button>
+                {/* flexible gap keeps the primary publish action to the right, with room for the editor */}
+                <span className="gs-edit-spacer" aria-hidden="true" />
                 {canPublish ? children : (
                   <button className="gs-btn primary" onClick={() => setStatus('review')} disabled={page.status !== 'draft'}
                     title={page.status === 'draft' ? 'Send to an admin for review' : ({ review: 'In review with an admin', approved: 'Approved; an admin can publish it', published: 'This page is live. Reopen it as a draft to request changes' }[page.status] || 'Already submitted for review')}>Request review</button>

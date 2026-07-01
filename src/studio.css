@@ -930,3 +930,25 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
   border-radius:6px;white-space:pre-wrap;line-height:1.4}
 .gs-blk-note::before{content:"\270E  ";opacity:.7}
 .gs-rt-edit.is-oneline{min-height:40px}
+
+/* ── Editor top-bar: consolidated nav + account menu (frees the toolbar for editing) ───────────────── */
+.gs-edit-spacer{flex:1 1 auto;min-width:8px}
+.gs-em{position:relative;display:inline-flex}
+.gs-em-btn{display:inline-flex;align-items:center;gap:6px}
+.gs-em-diamond{color:var(--gs-accent,#c8ff00);font-size:.9em}
+.gs-em-pop{position:absolute;top:100%;left:0;margin-top:8px;z-index:60;min-width:248px;padding:6px;
+  background:#1a1c1a;border:1px solid var(--gs-border,#3a3a3a);border-radius:12px;
+  box-shadow:0 24px 60px -24px rgba(0,0,0,.8);animation:gsPop .14s var(--gs-ease,ease)}
+.gs-em-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;
+  background:none;color:var(--gs-text,#f5f5f5);font:inherit;font-size:.9rem;text-align:left;cursor:pointer}
+.gs-em-item:hover{background:rgba(255,255,255,.07)}
+.gs-em-item:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:-2px}
+.gs-em-ico{flex:0 0 18px;text-align:center;color:var(--gs-text-faint,#9ca29b)}
+.gs-em-kbd{margin-left:auto;font-size:.72rem;color:var(--gs-text-faint,#9ca29b);border:1px solid var(--gs-border,#3a3a3a);border-radius:5px;padding:1px 5px}
+.gs-em-sep{height:1px;margin:6px 4px;background:var(--gs-border,#3a3a3a)}
+.gs-em-who{display:flex;flex-direction:column;gap:1px;padding:6px 10px 8px}
+.gs-em-name{font-weight:700;font-size:.88rem;color:var(--gs-text,#f5f5f5)}
+.gs-em-role{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gs-accent,#c8ff00)}
+.gs-em-email{font-size:.74rem;color:var(--gs-text-faint,#9ca29b)}
+.gs-em-signout .gs-em-ico,.gs-em-signout{color:var(--gs-danger,#ff6b6b)}
+@media(prefers-reduced-motion:reduce){.gs-em-pop{animation:none}}
