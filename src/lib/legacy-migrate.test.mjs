@@ -157,3 +157,16 @@ test('validateExport flags duplicate customer legacy_ids even when slugs differ 
   assert.deepEqual(v.duplicateCustomerLegacyIds, ['1']);
   assert.deepEqual(v.duplicateCustomerSlugs, []); // proves the slug check alone would NOT have caught this
 });
+
+test('buildOrder carries an explicit refund amount, clamped to the order total, else 0', () => {
+  const base = { legacy_id: 5, items: [{ offering_name: 'X', unit_price_minor: 10000 }], total_minor: 10000 };
+  // explicit minor amount
+  assert.equal(buildOrder({ ...base, refunded_minor: 4000 }).order.refunded_minor, 4000);
+  // major (pounds) amount converts to minor
+  assert.equal(buildOrder({ ...base, refunded: 5 }).order.refunded_minor, 500);
+  // a refund larger than the total is clamped to the total (cannot refund more than was paid)
+  assert.equal(buildOrder({ ...base, refunded_minor: 99999 }).order.refunded_minor, 10000);
+  // no refund field → 0, and NOT inferred from a 'refunded' status (faithful, not guessed)
+  assert.equal(buildOrder({ ...base, status: 'refunded' }).order.refunded_minor, 0);
+  assert.equal(buildOrder(base).order.refunded_minor, 0);
+});

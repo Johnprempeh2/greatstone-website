@@ -129,6 +129,12 @@ export function buildOrder(o, orgId = DEFAULT_ORG_ID, customerId = null) {
     ? toMinor(o.subtotal_minor, o.subtotal)
     : items.reduce((n, it) => n + it.line_total_minor, 0);
   const total = o.total_minor != null || o.total != null ? toMinor(o.total_minor, o.total) : subtotal;
+  // order history completeness: carry a refund amount when the export gives one (orders.refunded_minor, 0011).
+  // Faithful only — NEVER inferred from the status (that would over/under-state a real money figure); clamped
+  // to the order total since a refund cannot exceed what was paid.
+  const refunded_minor = o.refunded_minor != null || o.refunded != null
+    ? Math.min(toMinor(o.refunded_minor, o.refunded), total)
+    : 0;
   const keys = (Array.isArray(o.licence_keys) ? o.licence_keys : []).map((k) => {
     const licence_key = String(k.licence_key || k.key || '').trim();
     if (!licence_key) throw new Error('order ' + reference + ' has a licence key with no code');
@@ -147,7 +153,7 @@ export function buildOrder(o, orgId = DEFAULT_ORG_ID, customerId = null) {
     order: {
       org_id: orgId, reference, customer_id: customerId,
       status: mapOrderStatus(o.status),
-      currency, subtotal_minor: subtotal, total_minor: total,
+      currency, subtotal_minor: subtotal, total_minor: total, refunded_minor,
       placed_at: iso(o.placed_at || o.date || o.created_at) || null,
       customer_email: (o.buyer_email || o.email || '').toString().trim().toLowerCase() || null,
     },

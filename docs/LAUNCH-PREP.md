@@ -250,9 +250,21 @@ Verified: 1 new unit test (asserts the legacy_id dup is caught while the slug ch
 is flagged and apply refuses; the real sample stays clean.
 
 Noted-but-not-built (completeness, not correctness): a migrated *refunded* order doesn't carry its refund amount
-(`refunded_minor` isn't mapped) — worth adding when Ben's export format is known. The importer isn't
-transactional (Supabase JS has no multi-statement tx), but it's idempotent, so a mid-run failure is safe to
-re-run — already documented.
+(`refunded_minor` isn't mapped) — worth adding when Ben's export format is known. [Closed in iteration 14.] The
+importer isn't transactional (Supabase JS has no multi-statement tx), but it's idempotent, so a mid-run failure
+is safe to re-run — already documented.
+
+### Iteration 14 — Migration importer: carry the refund amount (order-history completeness)
+Closed the completeness gap flagged in iteration 13. "Full order history" includes refunds, so `buildOrder` now
+maps `refunded_minor` (orders.refunded_minor, migration 0011) from the export. Faithful only: taken from an
+explicit `refunded_minor`/`refunded` field, never inferred from the status (inferring a full refund from a
+'refunded' status would over/under-state a real money figure), and clamped to the order total since a refund
+cannot exceed what was paid. Absent → 0.
+- The importer already upserts the whole order object, so no CLI change; and both order displays
+  (`OrdersManager`, `AccountDashboard`) already read `refunded_minor` (Track 3), so a migrated refund shows its
+  "−£X" badge + a Refunded total line with no further work.
+Verified: 1 new unit test (explicit minor + major amounts, clamp-to-total, absent→0, no status inference); 561
+total, build + secret scan clean; the sample export still imports clean.
 
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
