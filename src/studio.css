@@ -971,7 +971,20 @@ button.gs-ov-tile:hover{border-color:var(--gs-border);background:rgba(255,255,25
   transition:background var(--gs-dur-micro,150ms) var(--gs-ease),border-color var(--gs-dur-micro,150ms) var(--gs-ease)}
 .gs-ctx-link:hover{background:var(--gs-accent-dim,rgba(200,255,0,.1));border-color:var(--gs-border-strong,rgba(200,255,0,.18))}
 .gs-ctx-link:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:2px}
-@media(prefers-reduced-motion:reduce){.gs-ctx-pill,.gs-ctx-link{transition:none}}
+/* the "More" popover holding the denser, less-frequent block controls (spacing, surround, button size) */
+.gs-ctx-more{position:relative;display:inline-flex}
+.gs-ctx-morebtn{font-weight:700}
+/* right-anchored (the More button sits right-of-centre, so opening leftward keeps the panel on screen) */
+.gs-ctx-pop{position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:60;width:280px;max-width:calc(100vw - 24px);
+  display:flex;flex-direction:column;gap:10px;padding:12px;background:#1a1c1a;border:1px solid var(--gs-border,#3a3a3a);border-radius:12px;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.8);animation:gsPop .14s var(--gs-ease,ease)}
+.gs-ctx-poprow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.gs-ctx-field{display:flex;flex-direction:column;gap:4px;flex:1 1 110px;min-width:0}
+.gs-ctx-field>span{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gs-text-faint,#9ca29b)}
+.gs-ctx-field select{height:30px;padding:0 8px;border:1px solid var(--gs-border,#3a3a3a);border-radius:8px;background:var(--gs-bg,#1c1c1c);
+  color:var(--gs-text,#f5f5f5);font:inherit;font-size:.82rem;cursor:pointer}
+.gs-ctx-field select:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:1px}
+@media(prefers-reduced-motion:reduce){.gs-ctx-pill,.gs-ctx-link,.gs-ctx-pop{transition:none;animation:none}}
 .gs-em{position:relative;display:inline-flex}
 .gs-em-btn{display:inline-flex;align-items:center;gap:6px}
 .gs-em-diamond{color:var(--gs-accent,#c8ff00);font-size:.9em}

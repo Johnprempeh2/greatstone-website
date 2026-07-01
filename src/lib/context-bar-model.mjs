@@ -6,10 +6,13 @@
 // LOAD-BEARING invariant it protects: every value the strip writes must be a known enum id, so a stray write can
 // never put a non-enum value onto a block. That mirrors sectionClass()'s unknown -> '' policy (block-style.mjs):
 // the strip sets a prop, the block's render re-derives the safe class, so there is no new sanitiser surface.
-import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES } from './block-style.mjs';
+import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS } from './block-style.mjs';
+import { CTA_SIZES, CTA_FILLS } from './cta-style.mjs';
 
-// mirrors SECTION_DEFAULT in cms/style-field.jsx (kept here, not imported, so this stays a .mjs node can parse)
+// mirror the *_DEFAULT constants in cms/style-field.jsx (kept here, not imported, so this stays a .mjs node parses)
 export const SECTION_FALLBACK = { surface: 'none', accent: 'default', spaceTop: 'default', spaceBottom: 'default' };
+export const APPEARANCE_FALLBACK = { surround: 'none', pad: 'standard' };
+export const CTA_FALLBACK = { size: 'default', fillMobile: 'no' };
 
 const VALID = {
   surface: new Set(SECTION_SURFACES.map((s) => s.id)),
@@ -17,6 +20,8 @@ const VALID = {
   spaceTop: new Set(SECTION_SPACES.map((s) => s.id)),
   spaceBottom: new Set(SECTION_SPACES.map((s) => s.id)),
 };
+const APP_VALID = { surround: new Set(SURROUNDS.map((s) => s.id)), pad: new Set(PADS.map((p) => p.id)) };
+const CTA_VALID = { size: new Set(CTA_SIZES.map((s) => s.id)), fillMobile: new Set(CTA_FILLS.map((f) => f.id)) };
 
 // blocks that carry the shared groups beyond the universal Section (used by later slices). Section is on EVERY
 // block via withAnchor, so its cap is always true. Keep these lists in step with style-field.jsx wiring.
@@ -43,5 +48,27 @@ export function nextSection(prev, key, value) {
 // the current value of a Section key on a block's props, defaulted (so the strip can reflect the active pill)
 export function sectionValue(prev, key) {
   const base = { ...SECTION_FALLBACK, ...(prev && typeof prev === 'object' ? prev : {}) };
+  return base[key];
+}
+
+// the same safe-merge + read pattern for the Appearance group (surround + pad, on Prose/Chapter/Quote)
+export function nextAppearance(prev, key, value) {
+  const base = { ...APPEARANCE_FALLBACK, ...(prev && typeof prev === 'object' ? prev : {}) };
+  if (!Object.prototype.hasOwnProperty.call(APP_VALID, key) || !APP_VALID[key].has(value)) return base;
+  return { ...base, [key]: value };
+}
+export function appearanceValue(prev, key) {
+  const base = { ...APPEARANCE_FALLBACK, ...(prev && typeof prev === 'object' ? prev : {}) };
+  return base[key];
+}
+
+// and for the CTA "Button style" group (size + fillMobile, on Chapter/Columns/Invite/MethodTieIn)
+export function nextCta(prev, key, value) {
+  const base = { ...CTA_FALLBACK, ...(prev && typeof prev === 'object' ? prev : {}) };
+  if (!Object.prototype.hasOwnProperty.call(CTA_VALID, key) || !CTA_VALID[key].has(value)) return base;
+  return { ...base, [key]: value };
+}
+export function ctaValue(prev, key) {
+  const base = { ...CTA_FALLBACK, ...(prev && typeof prev === 'object' ? prev : {}) };
   return base[key];
 }

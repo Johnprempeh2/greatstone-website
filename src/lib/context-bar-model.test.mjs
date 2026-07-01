@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { capsFor, nextSection, sectionValue, hasTextStyles, SECTION_FALLBACK, CTA_BLOCKS, APPEARANCE_BLOCKS, RICHTEXT_BLOCKS } from './context-bar-model.mjs';
+import { capsFor, nextSection, sectionValue, hasTextStyles, nextAppearance, appearanceValue, nextCta, ctaValue,
+  SECTION_FALLBACK, APPEARANCE_FALLBACK, CTA_FALLBACK, CTA_BLOCKS, APPEARANCE_BLOCKS, RICHTEXT_BLOCKS } from './context-bar-model.mjs';
 import { SECTION_SURFACES } from './block-style.mjs';
 
 test('capsFor: Section is universal; CTA + Appearance are gated to their blocks', () => {
@@ -53,4 +54,21 @@ test('sectionValue: reflects the current value, defaulting a missing/empty secti
   assert.equal(sectionValue({}, 'surface'), 'none');
   assert.equal(sectionValue({ surface: 'panel' }, 'surface'), 'panel');
   assert.equal(sectionValue({ surface: 'panel' }, 'accent'), 'default'); // missing key defaults
+});
+
+test('nextAppearance / appearanceValue: safe-merge + read, unknown key/value is a no-op', () => {
+  assert.deepEqual(nextAppearance(null, 'surround', 'card'), { ...APPEARANCE_FALLBACK, surround: 'card' });
+  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'pad', 'snug'), { surround: 'card', pad: 'snug' });
+  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'surround', 'bogus'), { surround: 'card', pad: 'roomy' });
+  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'bogusKey', 'card'), { surround: 'card', pad: 'roomy' });
+  assert.equal(appearanceValue(null, 'surround'), 'none');
+  assert.equal(appearanceValue({ pad: 'roomy' }, 'pad'), 'roomy');
+});
+
+test('nextCta / ctaValue: safe-merge + read, unknown key/value is a no-op', () => {
+  assert.deepEqual(nextCta(null, 'size', 'lg'), { ...CTA_FALLBACK, size: 'lg' });
+  assert.deepEqual(nextCta({ size: 'lg', fillMobile: 'no' }, 'fillMobile', 'yes'), { size: 'lg', fillMobile: 'yes' });
+  assert.deepEqual(nextCta({ size: 'lg', fillMobile: 'no' }, 'size', 'huge'), { size: 'lg', fillMobile: 'no' });
+  assert.equal(ctaValue(null, 'size'), 'default');
+  assert.equal(ctaValue({ size: 'lg' }, 'size'), 'lg');
 });
