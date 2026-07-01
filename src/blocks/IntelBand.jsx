@@ -2,21 +2,29 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // IntelBand: the prominent entry point to the AI Intelligence Hub from the Insights page. A glass band
 // with a live pulse, the hub's pitch + a primary CTA that opens #intel, and a radar motif on the right
 // echoing the hub's signature visual. Static SVG (no three.js) to keep the public page light.
-export function IntelBand({ kicker, heading, highlight, body, ctaLabel, ctaHref = '#intel', themes = [], stat1, stat2 }) {
+export function IntelBand({ id, puck, kicker, heading, highlight, body, ctaLabel, ctaHref = '#intel', themes = [], stat1, stat2 }) {
   const ref = useReveal([themes.length]);
+  const editing = puck && puck.isEditing;
+  // In the editor the whole card is a link, which would swallow clicks meant for the inline text
+  // editors inside it (and contentEditable-in-<a> is invalid). So render a <div> while editing and the
+  // real <a> to the AI hub on the public site.
+  const Card = editing ? 'div' : 'a';
+  const cardLink = editing ? {} : resolveLink(ctaHref);
   return (
     <section ref={ref} className="b-intel section">
       <div className="wrap">
-        <a className="b-intel-card" {...resolveLink(ctaHref)} data-reveal>
+        <Card className="b-intel-card" {...cardLink} data-reveal>
           <div className="b-intel-glow" aria-hidden="true" />
           <div className="b-intel-main">
-            {kicker ? <span className="b-intel-live"><span className="b-intel-dot" aria-hidden="true" />{kicker}</span> : null}
-            <h2 className="b-intel-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-            {body ? <p className="b-intel-body">{body}</p> : null}
+            {(kicker || editing) ? <span className="b-intel-live"><span className="b-intel-dot" aria-hidden="true" /><EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" singleLine placeholder="Live label…" /></span> : null}
+            <h2 className="b-intel-h2"><EditableText editing={editing} id={id} field="heading" value={heading} as="span" singleLine placeholder="Heading…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-intel-body" placeholder="Body…" />
             {themes.length ? (
               <div className="b-intel-themes" aria-hidden="true">
                 {themes.map((t, i) => <span className="b-intel-theme" key={i}>{typeof t === 'string' ? t : t.label}</span>)}
@@ -38,7 +46,7 @@ export function IntelBand({ kicker, heading, highlight, body, ctaLabel, ctaHref 
               <circle className="b-intel-sweep" cx="100" cy="100" r="3" fill="#c8ff00" />
             </svg>
           </div>
-        </a>
+        </Card>
       </div>
     </section>
   );
@@ -78,15 +86,17 @@ export const css = `
 export const puck = {
   label: 'AI Intelligence Hub band (entry)',
   fields: {
-    kicker: { type: 'text', label: 'Live label', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
+    kicker: { type: 'custom', label: 'Live label', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted phrase', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     ctaLabel: { type: 'text', label: 'Button label' },
     ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
-    themes: { type: 'array', label: 'Theme chips', arrayFields: { label: { type: 'text', label: 'Theme' } }, defaultItemProps: { label: 'Theme' }, getItemSummary: (i) => i.label || 'Theme' },
     stat1: { type: 'object', label: 'Stat 1', objectFields: { value: { type: 'text', label: 'Value' }, label: { type: 'text', label: 'Label' } } },
     stat2: { type: 'object', label: 'Stat 2', objectFields: { value: { type: 'text', label: 'Value' }, label: { type: 'text', label: 'Label' } } },
+    // array field LAST — Puck mis-slots top-level custom fields placed before an array when other
+    // fields follow it (see memory "puck-slot-misdetection-inline-editing")
+    themes: { type: 'array', label: 'Theme chips', arrayFields: { label: { type: 'text', label: 'Theme' } }, defaultItemProps: { label: 'Theme' }, getItemSummary: (i) => i.label || 'Theme' },
   },
   defaultProps: {
     kicker: 'Live · rebuilt each working day',
