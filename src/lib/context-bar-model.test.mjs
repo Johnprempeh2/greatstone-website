@@ -58,11 +58,13 @@ test('sectionValue: reflects the current value, defaulting a missing/empty secti
 
 test('nextAppearance / appearanceValue: safe-merge + read, unknown key/value is a no-op', () => {
   assert.deepEqual(nextAppearance(null, 'surround', 'card'), { ...APPEARANCE_FALLBACK, surround: 'card' });
-  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'pad', 'snug'), { surround: 'card', pad: 'snug' });
-  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'surround', 'bogus'), { surround: 'card', pad: 'roomy' });
-  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'bogusKey', 'card'), { surround: 'card', pad: 'roomy' });
+  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'pad', 'snug'), { ...APPEARANCE_FALLBACK, surround: 'card', pad: 'snug' });
+  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'surround', 'bogus'), { ...APPEARANCE_FALLBACK, surround: 'card', pad: 'roomy' });
+  assert.deepEqual(nextAppearance({ surround: 'card', pad: 'roomy' }, 'bogusKey', 'card'), { ...APPEARANCE_FALLBACK, surround: 'card', pad: 'roomy' });
+  assert.deepEqual(nextAppearance({ surround: 'card' }, 'textScale', 'lg'), { ...APPEARANCE_FALLBACK, surround: 'card', textScale: 'lg' });
   assert.equal(appearanceValue(null, 'surround'), 'none');
   assert.equal(appearanceValue({ pad: 'roomy' }, 'pad'), 'roomy');
+  assert.equal(appearanceValue(null, 'textScale'), 'default');
 });
 
 test('nextCta / ctaValue: safe-merge + read, unknown key/value is a no-op', () => {

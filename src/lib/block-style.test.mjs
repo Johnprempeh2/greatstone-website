@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appearanceClass, SURROUNDS, PADS, sectionClass, SECTION_SURFACES, SECTION_SPACES, SECTION_ACCENTS, SECTION_TEXT_HEX, SECTION_SURFACE_HEX, SECTION_ACCENT_TEAL_HEX } from './block-style.mjs';
+import { appearanceClass, SURROUNDS, PADS, TEXT_SCALES, sectionClass, SECTION_SURFACES, SECTION_SPACES, SECTION_ACCENTS, SECTION_TEXT_HEX, SECTION_SURFACE_HEX, SECTION_ACCENT_TEAL_HEX } from './block-style.mjs';
 import { contrastRatio } from './richtext-marks.mjs';
 
 test('defaults map to no class, so existing pages render byte-identically', () => {
@@ -17,6 +17,14 @@ test('a chosen surround maps to its safe class pair', () => {
 test('padding maps only when non-default', () => {
   assert.equal(appearanceClass({ pad: 'snug' }), 'gs-pad-snug');
   assert.equal(appearanceClass({ pad: 'standard' }), '');
+});
+
+test('text size maps only when non-default, and every scale is a real option', () => {
+  assert.equal(appearanceClass({ textScale: 'default' }), '');
+  assert.equal(appearanceClass({ textScale: 'lg' }), 'gs-textscale-lg');
+  assert.equal(appearanceClass({ surround: 'card', textScale: 'sm' }), 'gs-surround gs-surround-card gs-textscale-sm');
+  assert.equal(appearanceClass({ textScale: 'gigantic' }), ''); // unknown dropped
+  for (const t of TEXT_SCALES) assert.equal(appearanceClass({ textScale: t.id }), t.id === 'default' ? '' : 'gs-textscale-' + t.id);
 });
 
 test('unknown / garbage enum values are dropped (no injection)', () => {

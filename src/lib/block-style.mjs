@@ -15,18 +15,30 @@ export const PADS = [
   { id: 'standard', label: 'Standard' },
   { id: 'roomy', label: 'Roomy' },
 ];
+// Text size: a CLOSED, bounded set (never a free px/numeric input, so contrast + rhythm can't be broken). Scales
+// the block's text proportionally via a small em factor in site.css; 'default' = no class (font-size unchanged).
+export const TEXT_SCALES = [
+  { id: 'sm', label: 'Small' },
+  { id: 'default', label: 'Default' },
+  { id: 'lg', label: 'Large' },
+  { id: 'xl', label: 'Extra large' },
+];
 
 const SURROUND_IDS = new Set(SURROUNDS.map((s) => s.id));
 const PAD_IDS = new Set(PADS.map((p) => p.id));
+const TEXT_SCALE_IDS = new Set(TEXT_SCALES.map((t) => t.id));
 
 // Build the wrapper className for a block's Appearance group. 'none'/unknown surround -> no surround class;
-// 'standard'/unknown pad -> no pad class (the block's own default padding stands).
+// 'standard'/unknown pad -> no pad class (the block's own default padding stands); 'default'/unknown text size
+// -> no scale class (the block's own type scale stands).
 export function appearanceClass(style = {}) {
   const out = [];
   const s = style && style.surround;
   if (s && s !== 'none' && SURROUND_IDS.has(s)) out.push('gs-surround', 'gs-surround-' + s);
   const p = style && style.pad;
   if (p && p !== 'standard' && PAD_IDS.has(p)) out.push('gs-pad-' + p);
+  const t = style && style.textScale;
+  if (t && t !== 'default' && TEXT_SCALE_IDS.has(t)) out.push('gs-textscale-' + t);
   return out.join(' ');
 }
 

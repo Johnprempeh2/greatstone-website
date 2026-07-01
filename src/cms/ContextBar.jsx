@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createUsePuck } from '@measured/puck';
-import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS } from '../lib/block-style.mjs';
+import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS, TEXT_SCALES } from '../lib/block-style.mjs';
 import { CTA_SIZES } from '../lib/cta-style.mjs';
 import {
   capsFor, hasTextStyles,
@@ -146,6 +146,11 @@ export default function ContextBar() {
                 <label className="gs-ctx-field"><span>Padding</span>
                   <select value={appearanceValue(appearance, 'pad')} onChange={(e) => setAppearance('pad', e.target.value)}>
                     {PADS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </select>
+                </label>
+                <label className="gs-ctx-field"><span>Text size</span>
+                  <select value={appearanceValue(appearance, 'textScale')} onChange={(e) => setAppearance('textScale', e.target.value)}>
+                    {TEXT_SCALES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
                 </label>
               </div>

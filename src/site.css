@@ -87,6 +87,11 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 .gs-surround-outline { border:1px solid var(--gs-border,rgba(255,255,255,.14)); }
 .gs-pad-snug  { padding:clamp(12px,2vw,20px); }
 .gs-pad-roomy { padding:clamp(30px,4.5vw,56px); }
+/* Text size (Appearance group): a bounded em factor scales the block's text proportionally. Enum-only, small
+   steps so brand type rhythm holds; 'default' emits no class (unchanged). em keeps it relative + responsive. */
+.gs-textscale-sm { font-size:0.9em; }
+.gs-textscale-lg { font-size:1.14em; }
+.gs-textscale-xl { font-size:1.3em; }
 /* Universal "Section" group (block-style.mjs sectionClass, applied on the .gs-blk wrapper). Enum-only classes:
    added spacing, a brand background surface band, and a palette-only accent re-tint. Defaults emit no class. */
 .gs-sec-spt-sm { margin-top:clamp(24px,4vw,48px); }

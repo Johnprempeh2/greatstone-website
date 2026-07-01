@@ -1,4 +1,4 @@
-import { SURROUNDS, PADS, SECTION_SPACES, SECTION_SURFACES, SECTION_ACCENTS } from '../lib/block-style.mjs';
+import { SURROUNDS, PADS, TEXT_SCALES, SECTION_SPACES, SECTION_SURFACES, SECTION_ACCENTS } from '../lib/block-style.mjs';
 import { CTA_SIZES, CTA_FILLS } from '../lib/cta-style.mjs';
 import { HEADING_LEVELS } from '../lib/heading-level.mjs';
 
@@ -12,10 +12,11 @@ export const APPEARANCE_FIELD = {
   objectFields: {
     surround: { type: 'select', label: 'Surround (text box)', options: SURROUNDS.map((s) => ({ label: s.label, value: s.id })) },
     pad: { type: 'radio', label: 'Padding', options: PADS.map((p) => ({ label: p.label, value: p.id })) },
+    textScale: { type: 'select', label: 'Text size', options: TEXT_SCALES.map((t) => ({ label: t.label, value: t.id })) },
   },
 };
 
-export const APPEARANCE_DEFAULT = { surround: 'none', pad: 'standard' };
+export const APPEARANCE_DEFAULT = { surround: 'none', pad: 'standard', textScale: 'default' };
 
 // The universal "Section" group — merged into EVERY block by withAnchor (puck.config.jsx), so any section can
 // be spaced, given a background surface band, or re-tinted to a palette accent, with one identical control.

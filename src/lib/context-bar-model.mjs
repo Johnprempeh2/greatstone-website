@@ -6,12 +6,12 @@
 // LOAD-BEARING invariant it protects: every value the strip writes must be a known enum id, so a stray write can
 // never put a non-enum value onto a block. That mirrors sectionClass()'s unknown -> '' policy (block-style.mjs):
 // the strip sets a prop, the block's render re-derives the safe class, so there is no new sanitiser surface.
-import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS } from './block-style.mjs';
+import { SECTION_SURFACES, SECTION_ACCENTS, SECTION_SPACES, SURROUNDS, PADS, TEXT_SCALES } from './block-style.mjs';
 import { CTA_SIZES, CTA_FILLS } from './cta-style.mjs';
 
 // mirror the *_DEFAULT constants in cms/style-field.jsx (kept here, not imported, so this stays a .mjs node parses)
 export const SECTION_FALLBACK = { surface: 'none', accent: 'default', spaceTop: 'default', spaceBottom: 'default' };
-export const APPEARANCE_FALLBACK = { surround: 'none', pad: 'standard' };
+export const APPEARANCE_FALLBACK = { surround: 'none', pad: 'standard', textScale: 'default' };
 export const CTA_FALLBACK = { size: 'default', fillMobile: 'no' };
 
 const VALID = {
@@ -20,7 +20,7 @@ const VALID = {
   spaceTop: new Set(SECTION_SPACES.map((s) => s.id)),
   spaceBottom: new Set(SECTION_SPACES.map((s) => s.id)),
 };
-const APP_VALID = { surround: new Set(SURROUNDS.map((s) => s.id)), pad: new Set(PADS.map((p) => p.id)) };
+const APP_VALID = { surround: new Set(SURROUNDS.map((s) => s.id)), pad: new Set(PADS.map((p) => p.id)), textScale: new Set(TEXT_SCALES.map((t) => t.id)) };
 const CTA_VALID = { size: new Set(CTA_SIZES.map((s) => s.id)), fillMobile: new Set(CTA_FILLS.map((f) => f.id)) };
 
 // blocks that carry the shared groups beyond the universal Section (used by later slices). Section is on EVERY
