@@ -105,6 +105,25 @@ export function ServiceCatalog({
           </div>
         ) : null}
 
+        {active === 'All' && !query.trim() && catNames.length > 1 ? (
+          // Ben (1 Jul): landing on Services, people expect the high-level categories up top, not buried as
+          // filter chips. Prominent, clickable category tiles are the primary entry; picking one drops into
+          // that category's browse view (chips + grid below). Hidden once a category or search is active.
+          <nav className="b-cat-nav" aria-label="Browse services by category" data-reveal>
+            {catNames.map((c) => {
+              const n = services.filter((s) => s.category === c).length;
+              return (
+                <button key={c} type="button" className="b-cat-navtile"
+                  onClick={() => { setActive(c); if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(() => { const el = ref.current && ref.current.querySelector('.b-cat-controls'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); }}>
+                  <span className="b-cat-navtile-name">{c}</span>
+                  {blurbFor.get(c) ? <span className="b-cat-navtile-blurb">{blurbFor.get(c)}</span> : null}
+                  <span className="b-cat-navtile-foot"><span className="b-cat-navtile-n">{n} service{n === 1 ? '' : 's'}</span><Arrow /></span>
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
+
         {showFeatured ? (
           <div className="b-cat-featured">
             <div className="b-cat-feat-head">
@@ -187,6 +206,20 @@ export const css = `
 .b-cat-head{text-align:center;max-width:60ch;margin:0 auto clamp(28px,4vw,44px)}
 .b-cat-h2{margin-top:.4em;font-size:clamp(1.9rem,4.2vw,3.2rem);font-weight:900;letter-spacing:-.025em;line-height:1.05}
 .b-cat-intro{margin-top:1rem;color:var(--gs-text-muted);font-size:1.02rem;line-height:1.6}
+/* prominent category navigation — the primary entry to the catalogue (Ben: categories up top, not chips) */
+.b-cat-nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:clamp(12px,1.4vw,16px);
+  margin:0 0 clamp(30px,4.5vw,46px)}
+.b-cat-navtile{display:flex;flex-direction:column;gap:8px;text-align:left;height:100%;padding:clamp(18px,2vw,24px);
+  background:rgba(255,255,255,.02);border:1px solid var(--gs-border-soft);border-radius:14px;cursor:pointer;
+  font-family:inherit;transition:transform .18s var(--gs-ease),border-color .18s var(--gs-ease),background .18s var(--gs-ease)}
+.b-cat-navtile:hover{transform:translateY(-3px);border-color:var(--gs-accent-mid,rgba(200,255,0,.4));background:rgba(200,255,0,.03)}
+.b-cat-navtile:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
+.b-cat-navtile-name{font-size:1.1rem;font-weight:800;letter-spacing:-.01em;line-height:1.2;color:var(--gs-text)}
+.b-cat-navtile-blurb{color:var(--gs-text-muted);font-size:.88rem;line-height:1.5;flex:1}
+.b-cat-navtile-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;
+  font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-accent)}
+.b-cat-navtile-foot svg{width:14px;height:14px}
+@media(max-width:520px){.b-cat-nav{grid-template-columns:1fr}}
 /* controls: search + chips */
 .b-cat-controls{display:flex;flex-direction:column;gap:16px;margin-bottom:14px}
 .b-cat-search{position:relative;max-width:420px;margin:0 auto;width:100%}
