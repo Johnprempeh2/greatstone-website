@@ -50,7 +50,7 @@ export function ServiceCards({ id, puck, kicker, heading, highlight, cards = [] 
               <EditableText editing={editing} id={id} arrayField="cards" index={i} field="body" value={c.body} as="p" placeholder="Body…" />
               {Array.isArray(c.bullets) && c.bullets.length ? (
                 <ul className="b-svc-list">
-                  {c.bullets.map((b, j) => <li key={j}>{b.text}</li>)}
+                  {c.bullets.map((b, j) => <li key={j}><EditableText editing={editing} id={id} path={[{ key: 'cards', index: i }, { key: 'bullets', index: j }]} field="text" value={b.text} as="span" placeholder="Bullet…" /></li>)}
                 </ul>
               ) : null}
             </article>
@@ -107,7 +107,7 @@ export const puck = {
         body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
         bullets: {
           type: 'array', label: 'Bullets',
-          arrayFields: { text: { type: 'text', label: 'Bullet' } },
+          arrayFields: { text: { type: 'custom', label: 'Bullet', render: (props) => <RichTextField {...props} /> } },
           defaultItemProps: { text: 'A capability.' },
           getItemSummary: (i) => i.text || 'Bullet',
         },

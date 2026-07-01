@@ -36,7 +36,7 @@ export function PillarCards({ id, puck, kicker, heading, body, pillars = [] }) {
                 <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="tag" value={p.tag} as="div" className="b-pc-tag" singleLine placeholder="Tagline…" />
                 <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="def" value={p.def} as="p" className="b-pc-def" placeholder="Definition…" />
                 {Array.isArray(p.chips) && p.chips.length ? (
-                  <ul className="b-pc-assess">{p.chips.map((c, j) => <li key={j}>{c.text}</li>)}</ul>
+                  <ul className="b-pc-assess">{p.chips.map((c, j) => <li key={j}><EditableText editing={editing} id={id} path={[{ key: 'pillars', index: i }, { key: 'chips', index: j }]} field="text" value={c.text} as="span" singleLine placeholder="Chip…" /></li>)}</ul>
                 ) : null}
               </Tag>
             );
@@ -93,7 +93,7 @@ export const puck = {
         href: { type: 'custom', label: 'Deep-link (optional)', render: (props) => <LinkField {...props} /> },
         chips: {
           type: 'array', label: 'Assessment chips',
-          arrayFields: { text: { type: 'text', label: 'Chip' } },
+          arrayFields: { text: { type: 'custom', label: 'Chip', render: (props) => <RichTextField {...props} /> } },
           defaultItemProps: { text: 'Facet' },
           getItemSummary: (i) => i.text || 'Chip',
         },
