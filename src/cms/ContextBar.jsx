@@ -30,6 +30,9 @@ const usePuckSel = createUsePuck();
 // each keystroke. We persist the one piece of UI state (is the More popover open?) in module scope so it survives
 // those remounts; the panel's control VALUES are always derived from the Puck selection, so they need no persist.
 let moreOpenPersist = false;
+// which popover control the keyboard user was last on. The remount above blows away DOM focus (it lands on
+// <body>), so we restore it to this control after the remount, keeping the popover keyboard-operable across edits.
+let lastFocusKey = null;
 
 export default function ContextBar() {
   const selectedItem = usePuckSel((s) => s.selectedItem);
@@ -47,11 +50,27 @@ export default function ContextBar() {
   useEffect(() => {
     if (!moreOpen) return;
     const onDoc = (e) => { if (moreWrapRef.current && !moreWrapRef.current.contains(e.target)) setMoreOpen(false); };
-    const onKey = (e) => { if (e.key === 'Escape') { setMoreOpen(false); moreBtnRef.current && moreBtnRef.current.focus(); } };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      // a native <select> uses Escape to cancel its own option list; let it, rather than closing the whole popover
+      if (e.target && e.target.tagName === 'SELECT') return;
+      setMoreOpen(false); moreBtnRef.current && moreBtnRef.current.focus();
+    };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
   }, [moreOpen, setMoreOpen]);
+
+  // restore keyboard focus after a Puck remount (which drops focus to <body>) to the popover control the user was
+  // last on, so changing several values in a row stays keyboard-operable. Runs each render; acts only when focus
+  // was actually lost, so it never fights a user who has moved focus deliberately.
+  useEffect(() => {
+    if (!moreOpen || !lastFocusKey) return;
+    const ae = document.activeElement;
+    if (ae && ae !== document.body) return;
+    const el = moreWrapRef.current && moreWrapRef.current.querySelector('[data-cbk="' + lastFocusKey + '"]');
+    if (el) el.focus();
+  });
 
   // close a stale popover only when the user selects a genuinely DIFFERENT block. Editing a value dispatches a
   // `replace` that momentarily re-resolves the selection (same id), which must NOT close the popover mid-edit;
@@ -96,6 +115,7 @@ export default function ContextBar() {
     if (el) { try { el.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch { /* ignore */ } el.focus(); }
   };
   const noBlur = (e) => e.preventDefault(); // keep any live text selection alive while a strip control is pressed
+  const trackFocus = (key) => ({ 'data-cbk': key, onFocus: () => { lastFocusKey = key; } }); // for focus-restore after remount
 
   const pills = (label, options, current, onPick, titlePrefix) => (
     <span className="gs-ctx-group" role="group" aria-label={label}>
@@ -120,24 +140,24 @@ export default function ContextBar() {
       {caps.align ? (
         <>
           <span className="gs-ctx-sep" aria-hidden="true" />
-          {pills('Align', ALIGNS, alignValue(props.align), (id) => setProp('align', nextAlign(props.align, id)), 'Align')}
+          {pills('Align', ALIGNS, alignValue(props.align, type), (id) => setProp('align', nextAlign(props.align, id, type)), 'Align')}
         </>
       ) : null}
       <span className="gs-ctx-sep" aria-hidden="true" />
       {/* the denser, less-frequent controls live behind a compact popover so the strip stays neat */}
       <span className="gs-ctx-more" ref={moreWrapRef}>
         <button ref={moreBtnRef} type="button" className={'gs-ctx-pill gs-ctx-morebtn' + (moreOpen ? ' is-on' : '')}
-          aria-haspopup="true" aria-expanded={moreOpen} onMouseDown={noBlur} onClick={() => setMoreOpen((o) => !o)}>More ▾</button>
+          aria-haspopup="dialog" aria-expanded={moreOpen} aria-controls="gs-ctx-pop" onMouseDown={noBlur} onClick={() => setMoreOpen((o) => !o)}>More ▾</button>
         {moreOpen ? (
-          <div className="gs-ctx-pop" role="group" aria-label="More block styles">
+          <div id="gs-ctx-pop" className="gs-ctx-pop" role="group" aria-label="More block styles">
             <div className="gs-ctx-poprow">
               <label className="gs-ctx-field"><span>Space above</span>
-                <select value={sectionValue(section, 'spaceTop')} onChange={(e) => setSection('spaceTop', e.target.value)}>
+                <select {...trackFocus('spaceTop')} value={sectionValue(section, 'spaceTop')} onChange={(e) => setSection('spaceTop', e.target.value)}>
                   {SECTION_SPACES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
               </label>
               <label className="gs-ctx-field"><span>Space below</span>
-                <select value={sectionValue(section, 'spaceBottom')} onChange={(e) => setSection('spaceBottom', e.target.value)}>
+                <select {...trackFocus('spaceBottom')} value={sectionValue(section, 'spaceBottom')} onChange={(e) => setSection('spaceBottom', e.target.value)}>
                   {SECTION_SPACES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
               </label>
@@ -145,17 +165,17 @@ export default function ContextBar() {
             {caps.appearance ? (
               <div className="gs-ctx-poprow">
                 <label className="gs-ctx-field"><span>Text box</span>
-                  <select value={appearanceValue(appearance, 'surround')} onChange={(e) => setAppearance('surround', e.target.value)}>
+                  <select {...trackFocus('surround')} value={appearanceValue(appearance, 'surround')} onChange={(e) => setAppearance('surround', e.target.value)}>
                     {SURROUNDS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
                 </label>
                 <label className="gs-ctx-field"><span>Padding</span>
-                  <select value={appearanceValue(appearance, 'pad')} onChange={(e) => setAppearance('pad', e.target.value)}>
+                  <select {...trackFocus('pad')} value={appearanceValue(appearance, 'pad')} onChange={(e) => setAppearance('pad', e.target.value)}>
                     {PADS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                   </select>
                 </label>
                 <label className="gs-ctx-field"><span>Text size</span>
-                  <select value={appearanceValue(appearance, 'textScale')} onChange={(e) => setAppearance('textScale', e.target.value)}>
+                  <select {...trackFocus('textScale')} value={appearanceValue(appearance, 'textScale')} onChange={(e) => setAppearance('textScale', e.target.value)}>
                     {TEXT_SCALES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
                 </label>

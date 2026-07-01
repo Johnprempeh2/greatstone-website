@@ -72,11 +72,19 @@ test('capsFor.align + nextAlign / alignValue: horizontal align on the blocks tha
   assert.equal(capsFor('Columns').align, false); // Columns uses valign, deliberately excluded
   assert.equal(capsFor('Faq').align, false);
   for (const t of ALIGN_BLOCKS) assert.equal(capsFor(t).align, true);
-  assert.equal(nextAlign('left', 'center'), 'center');
-  assert.equal(nextAlign('left', 'bogus'), 'left');   // unknown value keeps the block's current align
-  assert.equal(nextAlign('center', 'bogus'), 'center');
-  assert.equal(alignValue('center'), 'center');
-  assert.equal(alignValue(null), 'left');
+  assert.equal(nextAlign('left', 'center', 'Prose'), 'center');
+  assert.equal(nextAlign('left', 'bogus', 'Prose'), 'left');   // unknown value keeps the block's current align
+  assert.equal(nextAlign('center', 'bogus', 'Prose'), 'center');
+  assert.equal(alignValue('center', 'Prose'), 'center');
+  assert.equal(alignValue(null, 'Prose'), 'left');
+});
+
+test('align default is per-block: Quote defaults centre, not a blanket left', () => {
+  // an undefined-align Quote (legacy data) must reflect + preserve its true default of 'center', never flip to left
+  assert.equal(alignValue(undefined, 'Quote'), 'center');
+  assert.equal(alignValue(undefined, 'Prose'), 'left');
+  assert.equal(nextAlign(undefined, 'bogus', 'Quote'), 'center'); // a stray write keeps the quote centred
+  assert.equal(nextAlign(undefined, 'left', 'Quote'), 'left');    // an explicit choice still applies
 });
 
 test('nextCta / ctaValue: safe-merge + read, unknown key/value is a no-op', () => {

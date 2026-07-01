@@ -34,6 +34,11 @@ export const RICHTEXT_BLOCKS = new Set(['Faq', 'Prose', 'Chapter', 'Columns']);
 export const ALIGN_BLOCKS = new Set(['Hero', 'Prose', 'Chapter', 'Quote', 'Steps']);
 export const ALIGNS = [{ id: 'left', label: 'Left' }, { id: 'center', label: 'Centre' }];
 const ALIGN_IDS = new Set(ALIGNS.map((a) => a.id));
+// most align-bearing blocks default to 'left', but Quote's own field defaults to 'center'. When a block's align
+// prop is genuinely undefined (legacy data predating the field), the strip must reflect the block's TRUE default,
+// not a blanket 'left' (which would both mis-show the active pill and, if re-clicked, flip a centred quote left).
+const ALIGN_DEFAULTS = { Quote: 'center' };
+export function alignDefault(type) { return ALIGN_DEFAULTS[type] || 'left'; }
 
 // which strip groups apply to a selected block type
 export function capsFor(type) {
@@ -41,9 +46,9 @@ export function capsFor(type) {
 }
 
 // `align` is a bare string prop (not an object), so these validate the single value; an unknown value is left as
-// the block's current one rather than corrupting it.
-export function nextAlign(prev, value) { return ALIGN_IDS.has(value) ? value : (ALIGN_IDS.has(prev) ? prev : 'left'); }
-export function alignValue(prev) { return ALIGN_IDS.has(prev) ? prev : 'left'; }
+// the block's current one (or its per-type default) rather than corrupting it. `type` supplies the right default.
+export function alignValue(prev, type) { return ALIGN_IDS.has(prev) ? prev : alignDefault(type); }
+export function nextAlign(prev, value, type) { return ALIGN_IDS.has(value) ? value : alignValue(prev, type); }
 // does this block have inline text formatting (in its sidebar Body field) to deep-link to?
 export function hasTextStyles(type) { return RICHTEXT_BLOCKS.has(type); }
 
