@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { MediaField } from '../cms/MediaField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 const initials = (name) => (name || '').trim().split(/\s+/).map((w) => w[0] || '').slice(0, 2).join('').toUpperCase();
 
@@ -14,14 +16,15 @@ function TeamAvatar({ photo, name }) {
 
 // The people strip: senior hands, named. A real photo if one is set, otherwise an initials
 // badge derived from the name (so it always reads, even before headshots are added).
-export function Team({ kicker, heading, body, items = [] }) {
+export function Team({ id, puck, kicker, heading, body, items = [] }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-team">
       <div className="wrap">
-        {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
-        {heading ? <h2 className="b-team-head" data-reveal>{heading}</h2> : null}
-        {body ? <p className="b-team-body lead" data-reveal>{body}</p> : null}
+        <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" data-reveal />
+        <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-team-head" singleLine placeholder="Heading…" data-reveal />
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-team-body lead" placeholder="Intro (optional)…" data-reveal />
         <div className="team-grid">
           {items.map((m, i) => (
             <div className="card team-card" data-reveal style={{ transitionDelay: `${i * 55}ms` }} key={i}>
@@ -56,9 +59,10 @@ const T = (name, role) => ({ name, role });
 export const puck = {
   label: 'Team',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
-    body: { type: 'textarea', label: 'Intro (optional)', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    body: { type: 'custom', label: 'Intro (optional)', render: (props) => <RichTextField {...props} /> },
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'People',
       arrayFields: { name: { type: 'text', label: 'Name' }, role: { type: 'text', label: 'Role' }, photo: { type: 'custom', label: 'Photo', render: (props) => <MediaField {...props} /> } },

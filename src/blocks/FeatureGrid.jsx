@@ -1,16 +1,19 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // A general three-up card grid for when a section just needs parallel points. Lighter than
 // Pillars (no numbering, no sweep) — use it for tiers, services, anything that comes in threes.
-export function FeatureGrid({ kicker, heading, body, items = [], variant = 'cards' }) {
+export function FeatureGrid({ id, puck, kicker, heading, body, items = [], variant = 'cards' }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   const principles = variant === 'principles';
   return (
     <section ref={ref} className={'b-features' + (principles ? ' b-features-center' : '')}>
       <div className="wrap">
-        {kicker ? <span className="kicker" data-reveal>{kicker}</span> : null}
-        {heading ? <h2 className="b-features-head" data-reveal>{heading}</h2> : null}
-        {body ? <p className="b-features-intro" data-reveal>{body}</p> : null}
+        <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" data-reveal />
+        <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-features-head" singleLine placeholder="Heading…" data-reveal />
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-features-intro" placeholder="Intro (optional)…" data-reveal />
         <div className="b-grid">
           {items.map((it, i) => principles ? (
             <div className="b-feat-principle" data-reveal style={{ transitionDelay: `${i * 60}ms` }} key={i}>
@@ -51,12 +54,13 @@ export const css = `
 export const puck = {
   label: 'Feature grid',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
-    body: { type: 'textarea', label: 'Intro (optional)', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    body: { type: 'custom', label: 'Intro (optional)', render: (props) => <RichTextField {...props} /> },
     variant: { type: 'radio', label: 'Style', options: [
       { label: 'Cards', value: 'cards' }, { label: 'Principles (centered)', value: 'principles' },
     ]},
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Features',
       arrayFields: { n: { type: 'text', label: 'Number (principles)' }, title: { type: 'text', label: 'Title' }, text: { type: 'textarea', label: 'Description' } },
