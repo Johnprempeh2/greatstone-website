@@ -1,35 +1,40 @@
 import { useReveal } from './reveal.js';
 import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // PillarCards: method.html's "The Eight Pillars / Every facet, examined." — a 4-up wall of examinable
 // pillar cards (P·01…P·08), each with a number + "Inspect" affordance, a name, a one-line tag, a short
 // definition, and a row of assessment chips, with a lime top-border sweep on hover. Faithful port of
 // .pillars / .pillar-card. Cards link only when a target is set, so defaults never dead-link.
-export function PillarCards({ kicker, heading, body, pillars = [] }) {
+export function PillarCards({ id, puck, kicker, heading, body, pillars = [] }) {
   const ref = useReveal([pillars.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-pc-section section">
       <div className="wrap">
         <div className="b-pc-head center" data-reveal>
-          {kicker ? <span className="kicker">{kicker}</span> : null}
-          {heading ? <h2 className="b-pc-h2">{heading}</h2> : null}
-          {body ? <p className="lead b-pc-lead">{body}</p> : null}
+          <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+          <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-pc-h2" singleLine placeholder="Heading…" />
+          <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead b-pc-lead" placeholder="Intro…" />
         </div>
         <div className="b-pc-grid">
           {pillars.map((p, i) => {
             const linked = hasLink(p.href);
-            const Tag = linked ? 'a' : 'article';
-            const extra = linked ? resolveLink(p.href) : {};
+            // in the editor render each card as a <div> (not a link) so its inline text editors are
+            // clickable; the public site keeps the <a> deep-link when one is set.
+            const Tag = editing ? 'div' : (linked ? 'a' : 'article');
+            const extra = (!editing && linked) ? resolveLink(p.href) : {};
             return (
               <Tag key={i} className="b-pc-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} {...extra}>
                 <div className="b-pc-top">
                   {p.n ? <span className="b-pc-n">{p.n}</span> : null}
                   {linked ? <span className="b-pc-go">Inspect →</span> : null}
                 </div>
-                {p.name ? <div className="b-pc-name">{p.name}</div> : null}
-                {p.tag ? <div className="b-pc-tag">{p.tag}</div> : null}
-                {p.def ? <p className="b-pc-def">{p.def}</p> : null}
+                <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="name" value={p.name} as="div" className="b-pc-name" singleLine placeholder="Name…" />
+                <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="tag" value={p.tag} as="div" className="b-pc-tag" singleLine placeholder="Tagline…" />
+                <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="def" value={p.def} as="p" className="b-pc-def" placeholder="Definition…" />
                 {Array.isArray(p.chips) && p.chips.length ? (
                   <ul className="b-pc-assess">{p.chips.map((c, j) => <li key={j}>{c.text}</li>)}</ul>
                 ) : null}
@@ -72,23 +77,26 @@ const CHIPS = (arr) => arr.map((text) => ({ text }));
 export const puck = {
   label: 'Pillar cards (8-up wall)',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
-    body: { type: 'textarea', label: 'Intro', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    body: { type: 'custom', label: 'Intro', render: (props) => <RichTextField {...props} /> },
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     pillars: {
       type: 'array', label: 'Pillars',
+      // within the item, the nested `chips` array is declared LAST so the custom name/tag/def fields
+      // before it don't mis-slot (same rule applied at the sub-field level, to be safe).
       arrayFields: {
         n: { type: 'text', label: 'Number' },
-        name: { type: 'text', label: 'Name' },
-        tag: { type: 'text', label: 'Tagline' },
-        def: { type: 'textarea', label: 'Definition' },
+        name: { type: 'custom', label: 'Name', render: (props) => <RichTextField {...props} variant="heading" /> },
+        tag: { type: 'custom', label: 'Tagline', render: (props) => <RichTextField {...props} /> },
+        def: { type: 'custom', label: 'Definition', render: (props) => <RichTextField {...props} /> },
+        href: { type: 'custom', label: 'Deep-link (optional)', render: (props) => <LinkField {...props} /> },
         chips: {
           type: 'array', label: 'Assessment chips',
           arrayFields: { text: { type: 'text', label: 'Chip' } },
           defaultItemProps: { text: 'Facet' },
           getItemSummary: (i) => i.text || 'Chip',
         },
-        href: { type: 'custom', label: 'Deep-link (optional)', render: (props) => <LinkField {...props} /> },
       },
       defaultItemProps: { n: 'P·00', name: 'Pillar', tag: 'A one-line tag.', def: 'What we examine here.', chips: [], href: '' },
       getItemSummary: (i) => i.name || 'Pillar',

@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // ServiceCards: services.html's "Three moves. One foundation." — three framed cards, each badged
 // 01/02/03 with an accent sub-eyebrow, glowing-dot bullets pinned to the foot, corner ticks, and the
 // signature lime "scan line" that sweeps top→bottom once when the card reveals (staggered L→R).
 // Faithful port of .svc-grid / .svc-card (.scan + .tick + svc-scan keyframes, --scan-h per card).
-export function ServiceCards({ kicker, heading, highlight, cards = [] }) {
+export function ServiceCards({ id, puck, kicker, heading, highlight, cards = [] }) {
   const ref = useReveal([cards.length]);
+  const editing = puck && puck.isEditing;
   const cardRefs = useRef([]);
 
   // size each card's scan sweep to its own height so the line travels edge-to-edge whatever the
@@ -22,11 +25,11 @@ export function ServiceCards({ kicker, heading, highlight, cards = [] }) {
   return (
     <section ref={ref} className="b-svc section--tight">
       <div className="wrap">
-        {(kicker || heading || highlight) ? (
+        {(kicker || heading || highlight || editing) ? (
           <div className="b-svc-head" data-reveal>
-            {kicker ? <span className="kicker">{kicker}</span> : null}
-            {(heading || highlight) ? (
-              <h2 className="b-svc-h2">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+            <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
+            {(heading || highlight || editing) ? (
+              <h2 className="b-svc-h2"><EditableText editing={editing} id={id} field="heading" value={heading} as="span" singleLine placeholder="Heading…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
             ) : null}
           </div>
         ) : null}
@@ -43,8 +46,8 @@ export function ServiceCards({ kicker, heading, highlight, cards = [] }) {
               <span className="b-svc-scan" aria-hidden="true" />
               {c.badge ? <div className="b-svc-badge">{c.badge}</div> : null}
               {c.sub ? <div className="b-svc-sub">{c.sub}</div> : null}
-              {c.title ? <h3 className="b-svc-title">{c.title}</h3> : null}
-              {c.body ? <p>{c.body}</p> : null}
+              <EditableText editing={editing} id={id} arrayField="cards" index={i} field="title" value={c.title} as="h3" className="b-svc-title" singleLine placeholder="Title…" />
+              <EditableText editing={editing} id={id} arrayField="cards" index={i} field="body" value={c.body} as="p" placeholder="Body…" />
               {Array.isArray(c.bullets) && c.bullets.length ? (
                 <ul className="b-svc-list">
                   {c.bullets.map((b, j) => <li key={j}>{b.text}</li>)}
@@ -92,16 +95,16 @@ const BULLETS = (arr) => arr.map((text) => ({ text }));
 export const puck = {
   label: 'Service cards',
   fields: {
-    kicker: { type: 'text', label: 'Kicker', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
+    kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     cards: {
       type: 'array', label: 'Cards (3)',
       arrayFields: {
         badge: { type: 'text', label: 'Badge (01/02/03)' },
         sub: { type: 'text', label: 'Eyebrow' },
-        title: { type: 'text', label: 'Title' },
-        body: { type: 'textarea', label: 'Body' },
+        title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> },
+        body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
         bullets: {
           type: 'array', label: 'Bullets',
           arrayFields: { text: { type: 'text', label: 'Bullet' } },
