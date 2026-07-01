@@ -33,7 +33,9 @@ export function Faq({ id, puck, kicker, heading, intro, items = [], showSchema =
         </div>
         <div className="b-faq-list" data-reveal>
           {items.map((it, i) => {
-            const isOpen = open.has(i);
+            // in the editor every item is expanded (and NOT inert) so its answer is visible + clickable to
+            // edit in place; on the public site the accordion behaves normally (collapsed = inert).
+            const isOpen = open.has(i) || editing;
             return (
               <div className={'b-faq-item' + (isOpen ? ' is-open' : '')} key={i}>
                 <h3 className="b-faq-qh">
