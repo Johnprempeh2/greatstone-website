@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The payback viz: a bar that fills to the break-even point on entry, with the rest of the year
 // read as pure return. The figures are editable; the bar width follows the payback percentage.
-export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct = 29, markerLabel = 'Payback', s1, s2, s3, paybackNum = '', paybackCap, legendCost, legendReturn }) {
+export function RoiBar({ id, puck, index, eyebrow, headline, highlight, body, paybackPct = 29, markerLabel = 'Payback', s1, s2, s3, paybackNum = '', paybackCap, legendCost, legendReturn }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   const roiRef = useRef(null);
   useEffect(() => {
     const el = roiRef.current; if (!el) return;
@@ -15,10 +18,10 @@ export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct =
   return (
     <section ref={ref} className="b-roi">
       <div className="wrap">
-        {(index || eyebrow) ? (
+        {(index || eyebrow || editing) ? (
           <div className="b-chapter-eyebrow" data-reveal>
             {index ? <span className="b-chapter-num">{index}</span> : null}
-            {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+            <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
           </div>
         ) : null}
         <div className="roi" ref={roiRef} style={{ '--roi-w': `${paybackPct}%` }}>
@@ -30,8 +33,8 @@ export function RoiBar({ index, eyebrow, headline, highlight, body, paybackPct =
             <div className="roi-scale"><span>{s1}</span><span>{s2}</span><span>{s3}</span></div>
           </div>
           <div className="roi-copy">
-            <h2 className="h3" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-            {body ? <p className="lead" data-reveal>{body}</p> : null}
+            <h2 className="h3" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+            <EditableText editing={editing} id={id} field="body" value={body} as="p" className="lead" placeholder="Body…" data-reveal />
             <div className="roi-payback" data-reveal>{paybackNum ? <span className="p-num">{paybackNum}</span> : null}<span className="p-cap">{paybackCap}</span></div>
             <div className="roi-legend" data-reveal>
               <span><i className="l-cost" />{legendCost}</span>
@@ -73,10 +76,10 @@ export const puck = {
   label: 'ROI / payback',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     paybackPct: { type: 'number', label: 'Payback point (%)', min: 5, max: 95 },
     markerLabel: { type: 'text', label: 'Marker label' },
     s1: { type: 'text', label: 'Scale start' },

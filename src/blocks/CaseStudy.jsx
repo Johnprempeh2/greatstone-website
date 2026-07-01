@@ -1,24 +1,27 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // Selected engagements as case cards: the drain we found, the foundation we left, and the
 // number that came back. Names withheld, outcomes intact.
-export function CaseStudy({ index, eyebrow, headline, highlight, body, items = [] }) {
+export function CaseStudy({ id, puck, index, eyebrow, headline, highlight, body, items = [] }) {
   const ref = useReveal([items.length]);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className="b-cases">
       <div className="wrap">
-        {(index || eyebrow) ? (
+        {(index || eyebrow || editing) ? (
           index
             ? (
               <div className="b-chapter-eyebrow" data-reveal>
                 <span className="b-chapter-num">{index}</span>
-                {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+                <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
               </div>
             )
-            : (eyebrow ? <span className="kicker" data-reveal>{eyebrow}</span> : null)
+            : <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="kicker" singleLine placeholder="Eyebrow…" data-reveal />
         ) : null}
-        {(headline || highlight) ? <h2 className="b-cases-head" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
-        {body ? <p className="b-cases-body" data-reveal>{body}</p> : null}
+        {(headline || highlight || editing) ? <h2 className="b-cases-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-cases-body" placeholder="Body…" data-reveal />
         <div className="b-cases-grid">
           {items.map((c, i) => (
             <article className="card case" data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
@@ -61,10 +64,11 @@ export const puck = {
   label: 'Case studies',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     items: {
       type: 'array', label: 'Cases',
       arrayFields: {
