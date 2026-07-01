@@ -12,7 +12,7 @@ legal wording.
 - [x] **Admin licence-key issuance, order-driven.** Issue the key that fulfils a paid order, from the order.
 - [x] **Existing-data migration tooling** (idempotent importer + documented input format + dry-run).
 - [x] **Migrated/historical order display** (orders with no Stripe session, marked migrated).
-- [ ] ~400-URL 301 redirect map from a crawl of the old site → public/_redirects.
+- [x] 301 redirect map from the old-site crawl → public/_redirects (generated + audited; product-exact deferred to Ben's slug map).
 - [x] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), footer-wired, draft until a solicitor's wording lands.
 - [x] Secret hygiene + config reconcile (VITE_SITE_ORIGIN vs VITE_APP_URL; dist secret-grep guard; refresh GO-LIVE-RUNBOOK to 0001–0023).
 - [x] Auth email templates → self-contained CSS wordmark (no remote image) + single canonical-domain placeholder.
@@ -126,6 +126,33 @@ sit in `order`; the public footer shows **no** legal links and the top nav is un
 locally publishing one, the Terms page renders with its LEGAL kicker, title, bold draft banner, seven clause
 sections and a working `#go/refunds` cross-link, and no stray hero CTA/prompt. Zero console errors. Applying
 the real wording + publishing is the launch-day plug-in step (counsel-owned).
+
+### Iteration 8 — 301 redirect map (old site → new SPA)
+The old greatstonesoftware.co.uk comes fully down, so every inbound link and every indexed URL needs a 301
+into the new site or the cutover throws away years of SEO. Crawled the old sitemap (an iCandy reseller
+storefront) and built the map, grounded in its real URLs. Key constraint: the new site is a HASH-routing SPA,
+so a redirect target must be a route that resolves on FIRST load. That rules out content pages
+(about/method/insights/legal are not yet hash-addressable), so those 301 to home for now; the commerce URLs,
+which are the ones with buyer intent, map precisely.
+- `src/lib/legacy-redirects.mjs` (pure, 10 unit tests): `classifyLegacyPath` maps an old path to a
+  load-honoured destination. Vendor pages (`/aspose`) and every product under them (`/aspose/aspose-pdf-for--net`)
+  → that vendor's storefront (`/#shop/<slug>`); only `ironsoftware` remaps (→ `iron-software`), the rest are
+  identity. Basket/checkout/search → `/#shop`; login/callback/order-confirmation → `/#account`; blog + info +
+  legal → home. Emits compact `_redirects` rules (vendor exact + wildcard, so ~200 product URLs collapse into
+  10 vendor wildcards) plus an explicit 301 per known content path so nothing soft-404s on the SPA fallback.
+- `scripts/gen-legacy-redirects.mjs` writes the block into `public/_redirects` between markers (the
+  `/puck-proof` rules and the SPA fallback stay put, fallback LAST). `--check` (CI drift guard), `--audit`
+  (coverage report). `scripts/legacy-urls.txt` is the crawled URL list (reference + audit input). npm scripts
+  `redirects`, `redirects:check`, `redirects:audit`.
+- 70 forced 301 rules written. Audit: 108 known URLs, 72 to a specific destination, 36 to home (blog + info).
+
+Verified: 10 new unit tests; 532 total, build + secret scan clean; `--check` reports in sync; the built
+`dist/_redirects` keeps the SPA fallback last. `_redirects` is a Netlify feature (inactive in the dev server),
+so I verified the DESTINATIONS resolve: `#shop/aspose` loads the Aspose-filtered storefront (86 results, real
+prices) and `#shop/iron-software` activates the Iron Software filter (0 products only because that vendor isn't
+seeded in the interim DB — the slug is correct). Remaining for cutover: a fresh crawl (catch any new URLs) and,
+when Ben supplies the migrated product-slug map, exact `/vendor/product → /#product/<slug>` lines above the
+vendor wildcards. Refining content-page redirects needs hash-addressable content pages (a separate enhancement).
 
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
