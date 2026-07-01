@@ -145,7 +145,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
     supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
-    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url, order_id').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
+    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url, file_path, file_name, order_id').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { setKeysErr(error || null); setKeys(error ? [] : (data || [])); });
     supabase.from('orders').select('id, reference, placed_at, created_at').is('deleted_at', null).eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setOrders(data || []); });
@@ -322,6 +322,7 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
   const [expires, setExpires] = useState(lkey.expires_at ? String(lkey.expires_at).slice(0, 10) : '');
   const [status, setStatus] = useState(lkey.status || 'issued');
   const [download, setDownload] = useState(lkey.download_url || '');
+  const [file, setFile] = useState(null);   // a new .lic licence FILE to upload (some products activate by file, not key)
   const [orderId, setOrderId] = useState(lkey.order_id || '');
   const [notes, setNotes] = useState(lkey.notes || '');
   const [busy, setBusy] = useState(false);
@@ -332,34 +333,56 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
   const save = async () => {
     setErr(null);
     if (!offering.trim()) { setErr('Which product is this key for?'); return; }
-    if (!key.trim()) { setErr('Paste the licence key.'); return; }
+    // A licence can be delivered three ways: a key string, a .lic FILE, or a download link. Require at
+    // least one (matches the DB check constraint in 0024). Products like Aspose activate by .lic file.
+    const hasExistingFile = !!lkey.file_path;
+    if (!key.trim() && !file && !hasExistingFile && !download.trim()) {
+      setErr('Add a licence key, a licence file, or a download link — a licence needs at least one.'); return;
+    }
+    if (file && file.size > 5 * 1024 * 1024) { setErr('The licence file must be 5 MB or smaller.'); return; }
     const seatsN = seats.trim() === '' ? null : parseInt(seats, 10);
     if (seatsN !== null && (!Number.isInteger(seatsN) || seatsN < 1)) { setErr('Seats must be a whole number of 1 or more, or left blank.'); return; }
     if (download.trim() && !/^https?:\/\//i.test(download.trim())) { setErr('The download link must start with http:// or https://'); return; }
     setBusy(true);
+    // If a new licence file was chosen, upload it to the private 'licence-files' bucket first. The path is
+    // scoped to this customer's folder ('<customer_id>/…') so Storage RLS (0024) lets only this buyer read
+    // it later via a signed URL. Bail out clearly if the upload fails so we never save a dangling file_path.
+    let filePath = lkey.file_path || null;
+    let fileNm = lkey.file_name || null;
+    let uploadedPath = null; // set only when we upload a NEW object this save — for rollback + replace cleanup
+    if (file) {
+      let safe = (file.name || 'licence').replace(/[^\w.\-]+/g, '_').replace(/^\.+/, '').replace(/\.{2,}/g, '.').slice(-80);
+      if (!safe || safe === '.') safe = 'licence.lic';
+      const rand = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2));
+      const path = customer.id + '/' + rand + '-' + safe;
+      const { error: upErr } = await supabase.storage.from('licence-files').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+      if (upErr) { setBusy(false); setErr('Could not upload the licence file: ' + upErr.message); return; }
+      uploadedPath = path; filePath = path; fileNm = file.name || safe;
+    }
     const payload = {
-      offering_name: offering.trim(), variant_name: variant.trim() || null, licence_key: key.trim(),
+      offering_name: offering.trim(), variant_name: variant.trim() || null, licence_key: key.trim() || null,
       seats: seatsN, status, notes: notes.trim() || null, download_url: download.trim() || null,
+      file_path: filePath, file_name: fileNm,
       order_id: orderId || null,
       expires_at: expires ? new Date(expires + 'T00:00:00').toISOString() : null,
     };
     let error;
     if (isNew) ({ error } = await supabase.from('licence_keys').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
     else ({ error } = await supabase.from('licence_keys').update(payload).eq('id', lkey.id));
-    if (error) { setBusy(false); setErr(error.message); return; }
-    // Best-effort "your licence key is ready" email to the customer (email hook for manual fulfilment). Only
-    // when the key fulfils an order (the notify function is order-scoped). Non-blocking and failure-tolerant:
-    // if the edge function isn't deployed or email isn't configured yet, the key still shows in the account
-    // and we simply skip the note — issuing must never depend on email being live.
-    let emailed = false;
-    if (isNew && orderId) {
-      try { const { data } = await supabase.functions.invoke('notify-licence-issued', { body: { order_id: orderId } }); emailed = !!(data && data.sent); }
-      catch { /* function not deployed / email off — silent, non-blocking */ }
+    if (error) {
+      // roll back a just-uploaded object so a failed save never leaves an orphan in the private bucket
+      if (uploadedPath) { try { await supabase.storage.from('licence-files').remove([uploadedPath]); } catch { /* best effort */ } }
+      setBusy(false); setErr(error.message); return;
     }
+    // a replaced file supersedes the old object — remove it (best effort; a leftover stays private + scoped)
+    if (uploadedPath && lkey.file_path && lkey.file_path !== uploadedPath) {
+      try { await supabase.storage.from('licence-files').remove([lkey.file_path]); } catch { /* best effort */ }
+    }
+    // The buyer is emailed when the ORDER is marked fulfilled (OrdersManager), not here — a single trigger,
+    // so issuing a key then fulfilling the order never double-sends. The key/file is visible on the account
+    // the instant it is saved regardless of email.
     setBusy(false);
-    onSaved(!isNew ? 'Licence key saved.'
-      : emailed ? 'Licence key issued and emailed to the client — it’s on their account now.'
-      : 'Licence key issued — the client can see it on their account now.');
+    onSaved(isNew ? 'Licence issued — the client can see it on their account now.' : 'Licence saved.');
   };
 
   return (
@@ -369,7 +392,11 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
         <p className="ca-note" style={{ marginTop: -2 }}>Delivered to {customer.name} — they'll see it on their account → Licence keys.</p>
         <label>Product<input value={offering} onChange={e => setOffering(e.target.value)} placeholder="e.g. Aspose.Total for .NET" /></label>
         <label>Edition / licence type <span style={{ fontWeight: 400 }}>(optional)</span><input value={variant} onChange={e => setVariant(e.target.value)} placeholder="e.g. Developer Small Business" /></label>
-        <label>Licence key<textarea rows="2" value={key} onChange={e => setKey(e.target.value)} placeholder="Paste the activation code" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.86rem' }} /></label>
+        <label>Licence key <span style={{ fontWeight: 400 }}>(optional if you attach a file or link)</span><textarea rows="2" value={key} onChange={e => setKey(e.target.value)} placeholder="Paste the activation code" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.86rem' }} /></label>
+        <label>Licence file <span style={{ fontWeight: 400 }}>(optional — a .lic file for products that activate by file)</span>
+          <input type="file" accept=".lic,.txt,.xml,.dat,.key,application/octet-stream,text/plain" onChange={e => setFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} />
+        </label>
+        {(file || lkey.file_name) && <p className="ca-note" style={{ marginTop: -6 }}>{file ? 'Selected: ' + file.name + (lkey.file_name ? ' (replaces the current file)' : '') : 'Current file: ' + lkey.file_name}</p>}
         <label>Download link <span style={{ fontWeight: 400 }}>(optional — where the client gets the software)</span><input type="url" value={download} onChange={e => setDownload(e.target.value)} placeholder="https://…" /></label>
         {orders.length > 0 && (
           <label>Purchase this fulfils <span style={{ fontWeight: 400 }}>(optional — links the key to an order)</span>

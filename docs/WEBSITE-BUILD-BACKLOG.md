@@ -52,7 +52,9 @@ missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only,
 
 ## Gated on Ben / credentials / deploy (flag + track, do not build to completion)
 
-- **Admin `.lic` licence-FILE upload on fulfilment** — [MISSING] **(gated)**. *The nuance the first backlog
+- **Admin `.lic` licence-FILE upload on fulfilment** — [BUILT deploy-ready] **(gated on deploy)**. Iteration 4:
+  code committed, awaiting the migration + deploy John runs (Supabase Storage can't be created/tested from the
+  loop). Handoff: `docs/LICENCE-FILE-FULFILMENT.md`. *The nuance the first backlog
   under-scoped.* Ben: most products ship as a licence **key string**, but some ship as a `.lic` licence **FILE**
   ("a text file, .lic extension... you'll have to upload physical [file]"). Admin flow he described: order
   management → open order → it follows the product-range format → **upload the licence file** or paste the key →
@@ -162,5 +164,26 @@ drafts + synthesis), kept in `src/data/ai-baseline-survey.mjs`; pillars/phases r
   page): intro → 8 questions → gate (empty submit blocked) → results rendered Leader 2.8 with 8 bars + 8
   benchmark markers; both downloads produced Blobs; zero console errors. Test block removed after.
 - Not deployed (awaiting John's OK).
+
+### Iteration 4 — Admin `.lic` licence-file fulfilment (DEPLOY-READY)
+
+John chose "build it deploy-ready". Built the full real feature (can't be live-tested until deployed, since it
+introduces the first Supabase Storage bucket):
+
+- **Migration** `supabase/migrations/0024_licence_files.sql`: private `licence-files` bucket (5 MB cap),
+  `licence_keys.file_path` / `file_name` columns, relaxed `licence_key` NOT NULL with a `chk_licence_has_delivery`
+  check (key OR file OR link), a `chk_licence_file_path_scope` check pinning the path to the row's own customer,
+  and Storage RLS (staff manage; a buyer reads only their own `customer_id/` folder).
+- **KeyEditor** (`src/store/ClientsManager.jsx`): licence-file upload alongside key/link; uploads to the
+  customer-scoped path; rolls back the object on DB failure and deletes the superseded file on replace.
+- **Account** (`src/store/LicenceKeys.jsx`): a `.lic` download via a short-lived signed URL; file-only licences
+  render cleanly (no empty key/Copy).
+- **Fulfilment email** (`src/store/OrdersManager.jsx`): marking an order fulfilled sends the single "licences
+  ready" email (the key-issue auto-email was removed to avoid a double-send). Email copy neutralised for files
+  (`src/lib/licence-email.mjs` + edge-fn mirror + test).
+- **Handoff:** `docs/LICENCE-FILE-FULFILMENT.md` (deploy order + security model + decisions).
+- **Assurance:** a 4-agent adversarial security review (RLS / client / integrity) ran; all 7 findings fixed
+  (query-omission data-loss, orphaned-file cleanup, double-email, path-scope CHECK, filename sanitise, TTL,
+  email wording). `npm test` 561 green, `npm run build` clean, secret scan clean. NOT deployed.
 
 _(next iterations appended below)_

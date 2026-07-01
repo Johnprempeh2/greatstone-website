@@ -180,6 +180,8 @@
 /* staff Clients & DX key cell: keep the code + copy button on one row, wrap on narrow */
 .ci-keycell { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .lk-key { flex:1 1 auto; min-width:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9rem; letter-spacing:.04em; color:var(--gs-accent); background:rgba(200,255,0,.06); border:1px solid var(--gs-border,rgba(200,255,0,.16)); border-radius:8px; padding:.5em .7em; overflow-x:auto; white-space:nowrap; }
+/* a licence delivered as a FILE (no key string) — reads as a quiet label, not a copyable code */
+.lk-key-file { font-family:inherit; letter-spacing:normal; color:var(--gs-text-faint); background:rgba(255,255,255,.03); border-style:dashed; }
 .lk-meta { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:10px; font-size:.78rem; color:var(--gs-text-faint); }
 /* Security & sessions rows (account → Security tab) */
 .acct-seclist { display:flex; flex-direction:column; border-top:1px solid var(--gs-border-soft,rgba(255,255,255,.08)); margin-top:6px; }

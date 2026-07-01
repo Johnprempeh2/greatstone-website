@@ -36,7 +36,7 @@ function buildEmail(opts: { customerName?: string; items: any[]; orderRef?: stri
     <div style="font-weight:800;font-size:18px;letter-spacing:.04em">GREATST<span style="color:#c8ff00">O</span>NE</div>
     <h1 style="font-size:20px;margin:18px 0 6px">${many ? 'Your licence keys are ready' : 'Your licence key is ready'}</h1>
     <p style="color:#b0b0b0;font-size:14px;margin:0 0 8px">${greeting}</p>
-    <p style="color:#b0b0b0;font-size:14px;margin:0 0 14px">${many ? 'Your licence keys are ready to collect.' : 'Your licence key is ready to collect.'} ${orderLine} Sign in to your account to view and copy ${many ? 'them' : 'it'}. For your security we never send ${many ? 'keys' : 'a key'} by email.</p>
+    <p style="color:#b0b0b0;font-size:14px;margin:0 0 14px">${many ? 'Your licence keys are ready to collect.' : 'Your licence key is ready to collect.'} ${orderLine} Sign in to your account to view and access ${many ? 'them' : 'it'} (a key to copy, or a licence file to download). For your security we never send licences by email.</p>
     <ul style="color:#f5f5f5;font-size:14px;padding-left:18px;margin:0 0 18px">${rows}</ul>
     <a href="${esc(opts.accountUrl)}" style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:#c8ff00;text-decoration:none;border-radius:100px">${many ? 'View your licence keys' : 'View your licence key'}</a>
     <p style="color:#707070;font-size:12px;margin-top:22px">Questions? Just reply to this email. Greatstone International · The Foundation of Digital Excellence</p>

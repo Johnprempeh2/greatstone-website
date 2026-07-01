@@ -51,7 +51,7 @@ export function buildLicenceEmail(opts = {}) {
     <div style="font-weight:800;font-size:18px;letter-spacing:.04em">GREATST<span style="color:${ACCENT}">O</span>NE</div>
     <h1 style="font-size:20px;margin:18px 0 6px">${many ? 'Your licence keys are ready' : 'Your licence key is ready'}</h1>
     <p style="color:${MUTED};font-size:14px;margin:0 0 8px">${greeting}</p>
-    <p style="color:${MUTED};font-size:14px;margin:0 0 14px">${lead} ${orderLine} Sign in to your account to view and copy ${many ? 'them' : 'it'}. For your security we never send ${many ? 'keys' : 'a key'} by email.</p>
+    <p style="color:${MUTED};font-size:14px;margin:0 0 14px">${lead} ${orderLine} Sign in to your account to view and access ${many ? 'them' : 'it'} (a key to copy, or a licence file to download). For your security we never send licences by email.</p>
     <ul style="color:${TEXT};font-size:14px;padding-left:18px;margin:0 0 18px">${rows}</ul>
     <a href="${escapeHtml(accountUrl)}" style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:${ACCENT};text-decoration:none;border-radius:100px">${many ? 'View your licence keys' : 'View your licence key'}</a>
     <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email. Greatstone International · The Foundation of Digital Excellence</p>
@@ -61,7 +61,7 @@ export function buildLicenceEmail(opts = {}) {
     many ? 'Your Greatstone licence keys are ready' : 'Your Greatstone licence key is ready', '',
     (name ? 'Hi ' + name + ',' : 'Hello,'),
     lead + (orderRef ? ' This is for order ' + orderRef + '.' : ''),
-    'Sign in to your account to view and copy ' + (many ? 'them' : 'it') + '. We never send ' + (many ? 'keys' : 'a key') + ' by email.', '',
+    'Sign in to your account to view and access ' + (many ? 'them' : 'it') + ' (a key to copy, or a licence file to download). We never send licences by email.', '',
     ...items.map((it) => '- ' + itemLabel(it)), '',
     (many ? 'View your licence keys: ' : 'View your licence key: ') + accountUrl, '',
     'Greatstone International · The Foundation of Digital Excellence',

@@ -34,7 +34,14 @@ export default function OrdersManager({ staff }) {
   const markFulfilled = async (id) => {
     const { error } = await supabase.from('orders').update({ status: 'fulfilled' }).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
-    flash('Order marked fulfilled.'); load();
+    // Ben's fulfilment flow: marking an order fulfilled tells the buyer their licences are ready to collect.
+    // Best-effort + non-blocking — if the edge fn isn't deployed or email is off, the status change stands.
+    // (The email never carries keys/files; it links the buyer to their account. Note: issuing a key already
+    // sends this same email, so a staffer who issues then marks fulfilled may trigger two — see the handoff.)
+    let emailed = false;
+    try { const { data } = await supabase.functions.invoke('notify-licence-issued', { body: { order_id: id } }); emailed = !!(data && data.sent); }
+    catch { /* function not deployed / email off — silent */ }
+    flash(emailed ? 'Order fulfilled — the buyer has been emailed.' : 'Order marked fulfilled.'); load();
   };
   const cancelOrder = async (id) => {
     if (typeof confirm === 'function' && !confirm('Mark this order cancelled? This records the status only. Issue any refund in Stripe (it will reconcile back here automatically).')) return;

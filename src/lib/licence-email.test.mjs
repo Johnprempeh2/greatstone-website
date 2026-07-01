@@ -40,7 +40,7 @@ test('SECURITY: the key value is never placed in the email', () => {
   const { html, text } = buildLicenceEmail({ items: [{ offering_name: 'A', licence_key: 'SECRET-KEY-123' }] });
   assert.ok(!html.includes('SECRET-KEY-123'));
   assert.ok(!text.includes('SECRET-KEY-123'));
-  assert.match(html, /never send a key by email/);
+  assert.match(html, /never send licences by email/);
 });
 
 test('product names are HTML-escaped (no injection through offering_name)', () => {

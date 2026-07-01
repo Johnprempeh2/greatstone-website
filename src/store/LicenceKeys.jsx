@@ -14,14 +14,30 @@ export default function LicenceKeys() {
   const [keys, setKeys] = useState(null);   // null = loading
   const [err, setErr] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [fileBusy, setFileBusy] = useState(null); // id being fetched, or 'fail:<id>'
   const load = useCallback(() => {
     setErr(null);
     supabase.from('licence_keys')
-      .select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, download_url, order:orders(reference)')
+      .select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, download_url, file_path, file_name, order:orders(reference)')
       .is('deleted_at', null).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { setErr(error || null); setKeys(data || []); });
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Download a .lic licence FILE: mint a short-lived signed URL for the private object (Storage RLS lets a
+  // buyer read only their own customer folder, 0024), then trigger the download. No file bytes touch our JS.
+  const downloadFile = useCallback(async (kk) => {
+    if (!kk.file_path) return;
+    setFileBusy(kk.id);
+    try {
+      const { data, error } = await supabase.storage.from('licence-files').createSignedUrl(kk.file_path, 600, { download: kk.file_name || true });
+      if (error || !data || !data.signedUrl) throw error || new Error('no url');
+      const a = document.createElement('a');
+      a.href = data.signedUrl; a.download = kk.file_name || 'licence.lic';
+      document.body.appendChild(a); a.click(); a.remove();
+      setFileBusy(null);
+    } catch { setFileBusy('fail:' + kk.id); setTimeout(() => setFileBusy(null), 4000); }
+  }, []);
 
   const copy = async (kk, codeEl) => {
     try {
@@ -76,11 +92,21 @@ export default function LicenceKeys() {
                 <span className={'ca-status ' + statusClass(kk.status)}>{kk.status}</span>
               </div>
               <div className="lk-keyrow" style={{ flexWrap: 'wrap' }}>
-                <code className="lk-key" aria-label="Licence key">{kk.licence_key}</code>
-                <button type="button" className="gs-btn ghost sm" onClick={(e) => copy(kk, e.currentTarget.previousElementSibling)}
-                  aria-label={(copied === kk.id ? 'Copied' : copied === 'fail:' + kk.id ? 'Selected — press Cmd or Ctrl and C to copy' : 'Copy') + ' licence key for ' + kk.offering_name}>
-                  {copied === kk.id ? 'Copied ✓' : copied === 'fail:' + kk.id ? 'Press ⌘/Ctrl+C' : 'Copy'}
-                </button>
+                {kk.licence_key ? (<>
+                  <code className="lk-key" aria-label="Licence key">{kk.licence_key}</code>
+                  <button type="button" className="gs-btn ghost sm" onClick={(e) => copy(kk, e.currentTarget.previousElementSibling)}
+                    aria-label={(copied === kk.id ? 'Copied' : copied === 'fail:' + kk.id ? 'Selected — press Cmd or Ctrl and C to copy' : 'Copy') + ' licence key for ' + kk.offering_name}>
+                    {copied === kk.id ? 'Copied ✓' : copied === 'fail:' + kk.id ? 'Press ⌘/Ctrl+C' : 'Copy'}
+                  </button>
+                </>) : (
+                  <span className="lk-key lk-key-file" aria-label="This licence is delivered as a file">Licence file</span>
+                )}
+                {kk.file_path && kk.status === 'issued' && (
+                  <button type="button" className="gs-btn ghost sm" onClick={() => downloadFile(kk)} disabled={fileBusy === kk.id}
+                    aria-label={'Download the licence file for ' + kk.offering_name}>
+                    {fileBusy === kk.id ? 'Preparing…' : fileBusy === 'fail:' + kk.id ? 'Try again' : 'Licence file ↓'}
+                  </button>
+                )}
                 {kk.download_url && kk.status === 'issued' && <a className="gs-btn ghost sm" href={kk.download_url} target="_blank" rel="noopener noreferrer" aria-label={'Download ' + kk.offering_name + ' (opens in a new tab)'}>Download ↗</a>}
               </div>
               <div className="lk-meta">
