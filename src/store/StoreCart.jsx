@@ -13,7 +13,7 @@ const VAT_RATE = Number((typeof import.meta !== 'undefined' && import.meta.env &
 export default function StoreCart({ confirmed = false }) {
   const items = useCart();
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState('cart'); // cart | quote | sent
+  const [view, setView] = useState('cart'); // cart | po | sent
   const [email, setEmail] = useState('');
   const [q, setQ] = useState({ name: '', email: '', company: '', phone: '', po: '', message: '' });
   const [quoteRef, setQuoteRef] = useState('');
@@ -32,7 +32,7 @@ export default function StoreCart({ confirmed = false }) {
 
   // prefill the quote contact email from the signed-in account, if any (guard against setState after unmount)
   useEffect(() => {
-    if (view !== 'quote' || q.email) return;
+    if (view !== 'po' || q.email) return;
     let alive = true;
     getSession().then(s => { const e = s?.user?.email; if (alive && e) setQ(v => ({ ...v, email: e })); });
     return () => { alive = false; };
@@ -63,7 +63,7 @@ export default function StoreCart({ confirmed = false }) {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
       const ref = await requestQuote({ contact: { name: q.name.trim(), email: q.email.trim(), company: q.company.trim(), phone: q.phone.trim() }, poReference: q.po.trim() || undefined, message: q.message.trim() || undefined });
-      track('generate_lead', { form: 'quote' });
+      track('generate_lead', { form: 'purchase_order' });
       setQuoteRef(ref); setView('sent'); clearCart();
     } catch (e2) { setErr(e2.message || 'Could not submit the quote.'); }
     setBusy(false);
@@ -90,27 +90,31 @@ export default function StoreCart({ confirmed = false }) {
             <header className="sc-head">
               {/* the title tracks the active view, so the dialog's accessible name (aria-labelledby) and the
                   visible header both reflect where you are — not a stale "Your basket" over the quote form. */}
-              <h2 id="sc-title">{view === 'quote' ? 'Request a quote' : view === 'sent' ? 'Quote request sent' : 'Your basket' + (count ? ' · ' + count : '')}</h2>
+              <h2 id="sc-title">{view === 'po' ? 'Pay by purchase order' : view === 'sent' ? 'Purchase order received' : 'Your basket' + (count ? ' · ' + count : '')}</h2>
               <button className="sc-x" onClick={closeCart} aria-label="Close basket">✕</button>
             </header>
 
             {view === 'sent' ? (
               <div className="sc-empty">
                 <div className="sc-tick" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></div>
-                <p>Reference <b>{quoteRef}</b>. Our team will price it (volume discounts, bespoke terms) and send your quote, normally within one business day.</p>
+                <p>Purchase order received. Reference <b>{quoteRef}</b>. Our team will confirm pricing (volume discounts, bespoke terms) and send your invoice, normally within one business day.</p>
+                <p className="sc-note">Already have a signed PO document? Email it to <a href={'mailto:dx@greatstonesoftware.co.uk?subject=' + encodeURIComponent('Purchase order ' + quoteRef)}>dx@greatstonesoftware.co.uk</a> quoting <b>{quoteRef}</b> and we&rsquo;ll match it to your order.</p>
                 <button className="gs-btn primary" onClick={() => { setView('cart'); setOpen(false); }}>Done</button>
               </div>
-            ) : view === 'quote' ? (
+            ) : view === 'po' ? (
               <form className="sc-quote" onSubmit={submitQuote}>
-                <p className="sc-note">Tell us where to send the quote. We'll price it and invoice on a purchase order. No card needed.</p>
+                <p className="sc-note sc-po-intro">The way most teams buy. Send us your purchase order and we&rsquo;ll invoice you on your terms, no card needed. Volume discounts and bespoke pricing welcome.</p>
+                <label className="sc-po-num">Purchase order number
+                  <input value={q.po} onChange={(e) => setQf('po', e.target.value)} placeholder="e.g. PO-10432" />
+                  <span className="sc-po-hint">Have a PO number? Enter it here. Don&rsquo;t have one yet? Leave it blank and we&rsquo;ll raise the paperwork with you.</span>
+                </label>
                 <label>Company<input value={q.company} onChange={(e) => setQf('company', e.target.value)} autoComplete="organization" /></label>
                 <label>Your name<input value={q.name} onChange={(e) => setQf('name', e.target.value)} autoComplete="name" /></label>
                 <label>Email<input type="email" required value={q.email} onChange={(e) => setQf('email', e.target.value)} autoComplete="email" /></label>
                 <label>Phone (optional)<input value={q.phone} onChange={(e) => setQf('phone', e.target.value)} autoComplete="tel" /></label>
-                <label>PO reference (optional)<input value={q.po} onChange={(e) => setQf('po', e.target.value)} /></label>
                 <label>Notes (optional)<textarea rows="2" value={q.message} onChange={(e) => setQf('message', e.target.value)} placeholder="Team size, timing, anything specific…" /></label>
                 {err && <div className="sc-err" role="alert">{err}</div>}
-                <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Sending…' : 'Send quote request'}</button>
+                <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Submitting…' : 'Submit purchase order'}</button>
                 <button type="button" className="sc-clear" onClick={() => { setView('cart'); setErr(null); }}>Back to basket</button>
               </form>
             ) : !items.length ? (
@@ -146,15 +150,33 @@ export default function StoreCart({ confirmed = false }) {
                   <div className="row total"><span>Total</span><span>{fmtMoney(sub + vat, cur)}</span></div>
                 </div>
 
-                <label className="sc-email">Email for your receipt (optional)
+                <label className="sc-email">Email for your card receipt (optional)
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
                 </label>
 
                 {err && <div className="sc-err" role="alert">{err}</div>}
-                <button className="gs-btn primary sc-pay" onClick={checkout} disabled={busy}>{busy ? 'Opening secure checkout…' : 'Checkout securely'}</button>
-                <button className="gs-btn ghost sc-quote-btn" onClick={() => { setView('quote'); setErr(null); }} disabled={busy}>Request a quote · pay on invoice</button>
+
+                <div className="sc-methods" role="group" aria-label="Choose how to pay">
+                  <button type="button" className="sc-method sc-method-card" onClick={checkout} disabled={busy}>
+                    <span className="sc-method-ic" aria-hidden="true"><svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg></span>
+                    <span className="sc-method-tx">
+                      <span className="sc-method-t">{busy ? 'Opening secure checkout…' : 'Pay by card'}</span>
+                      <span className="sc-method-d">Instant and secure, via Stripe.</span>
+                    </span>
+                    <span className="sc-method-go" aria-hidden="true">→</span>
+                  </button>
+                  <button type="button" className="sc-method sc-method-po" onClick={() => { setView('po'); setErr(null); }} disabled={busy}>
+                    <span className="sc-method-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" /></svg></span>
+                    <span className="sc-method-tx">
+                      <span className="sc-method-t">Pay by purchase order</span>
+                      <span className="sc-method-d">Invoice on your terms. No card needed.</span>
+                    </span>
+                    <span className="sc-method-go" aria-hidden="true">→</span>
+                  </button>
+                </div>
+
                 <button className="sc-clear" onClick={() => clearCart()} disabled={busy}>Empty basket</button>
-                <p className="sc-note">Pay securely by card via Stripe, or request a quote and we'll invoice you on a purchase order (volume discounts, bespoke terms). Prices reconfirmed before charging.</p>
+                <p className="sc-note">Most teams buy on a purchase order, and we invoice on your terms with volume discounts and bespoke pricing on request. Card payments are handled securely by Stripe; prices are reconfirmed before charging.</p>
               </>
             )}
           </aside>

@@ -146,7 +146,6 @@
 .sc-email { display:flex; flex-direction:column; gap:6px; font-size:.78rem; color:var(--gs-text-faint); margin:6px 0 14px; }
 .sc-email input { padding:.7em 1em; border-radius:10px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.04); color:var(--gs-text); font:inherit; font-size:.9rem; }
 .sc-email input:focus { outline:none; border-color:var(--gs-accent-mid); }
-.sc-pay { width:100%; justify-content:center; }
 .sc-clear { width:100%; margin-top:10px; background:none; border:none; color:var(--gs-text-faint); font-size:.8rem; cursor:pointer; padding:6px; }
 .sc-clear:hover { color:var(--gs-text-muted); }
 .sc-err { background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); color:#ffb3b3; padding:.7em 1em; border-radius:10px; font-size:.84rem; margin-bottom:12px; }
@@ -200,7 +199,31 @@
 .sc-quote { display:flex; flex-direction:column; gap:10px; }
 .sc-quote label { display:flex; flex-direction:column; gap:4px; font-size:.76rem; font-weight:700; color:var(--gs-text-muted); }
 .sc-quote input, .sc-quote textarea { padding:.6em .8em; border-radius:9px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.14)); background:rgba(255,255,255,.05); color:var(--gs-text); font:inherit; font-size:.9rem; }
-.sc-quote-btn { margin-top:6px; }
+.sc-quote input:focus, .sc-quote textarea:focus { outline:none; border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); }
+
+/* ── Checkout: two first-class payment methods (card + purchase order) ── */
+.sc-methods { display:flex; flex-direction:column; gap:10px; margin-top:2px; }
+.sc-method { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:14px 16px; border-radius:12px; cursor:pointer; font:inherit; color:var(--gs-text);
+  background:rgba(255,255,255,.04); border:1px solid var(--gs-border-soft,rgba(255,255,255,.12));
+  transition:transform var(--gs-dur-micro,150ms) var(--gs-ease,ease), border-color var(--gs-dur-micro,150ms) var(--gs-ease,ease), background var(--gs-dur-micro,150ms) var(--gs-ease,ease); }
+.sc-method:hover:not(:disabled) { transform:translateY(-2px); border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); background:rgba(255,255,255,.06); }
+.sc-method:disabled { opacity:.6; cursor:progress; }
+.sc-method-card { border-color:var(--gs-accent); background:var(--gs-accent-dim,rgba(200,255,0,.1)); }
+.sc-method-card:hover:not(:disabled) { border-color:var(--gs-accent); background:var(--gs-accent-glow,rgba(200,255,0,.22)); }
+.sc-method-ic { flex-shrink:0; width:38px; height:38px; border-radius:9px; display:grid; place-items:center; background:rgba(0,0,0,.18); border:1px solid var(--gs-border,rgba(200,255,0,.08)); }
+.sc-method-ic svg { width:20px; height:20px; stroke:var(--gs-accent); fill:none; }
+.sc-method-tx { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+.sc-method-t { font-weight:800; font-size:.94rem; line-height:1.2; }
+.sc-method-d { font-size:.76rem; color:var(--gs-text-muted); line-height:1.35; }
+.sc-method-go { flex-shrink:0; color:var(--gs-text-faint); font-size:1.1rem; }
+.sc-method:hover:not(:disabled) .sc-method-go, .sc-method-card .sc-method-go { color:var(--gs-accent); }
+@media (pointer:coarse){ .sc-method { min-height:56px; } }
+@media (prefers-reduced-motion:reduce){ .sc-method:hover { transform:none; } }
+
+/* PO form: prominent PO-number field */
+.sc-po-intro { margin-top:0; margin-bottom:4px; color:var(--gs-text-muted); }
+.sc-quote .sc-po-num input { border-color:var(--gs-accent-mid,rgba(200,255,0,.4)); background:var(--gs-accent-soft,rgba(200,255,0,.05)); }
+.sc-po-hint { font-weight:400; font-size:.72rem; color:var(--gs-text-faint); line-height:1.45; margin-top:2px; }
 
 /* ── Printable VAT invoice (#invoice/<id>) — white "paper" sheet over the dark site ─ */
 .inv-wrap { position:relative; z-index:1; max-width:820px; margin:0 auto; padding:clamp(90px,12vh,130px) clamp(18px,4vw,40px) 80px; }
