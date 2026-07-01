@@ -1,0 +1,48 @@
+{
+  "org_id": "11111111-1111-4111-8111-111111111111",
+  "customers": [
+    {
+      "legacy_id": "1042",
+      "company": "Northwind Trading Ltd",
+      "domain": "northwind.co.uk",
+      "currency": "GBP",
+      "notes": "Migrated from the old store.",
+      "users": [
+        { "email": "jane@northwind.co.uk", "full_name": "Jane Fowler", "phone": "+44 20 7946 0000", "is_primary": true },
+        { "email": "ops@northwind.co.uk", "full_name": "Ops Team" }
+      ]
+    },
+    {
+      "legacy_id": "1043",
+      "company": "Cobalt Studios",
+      "users": [{ "email": "buyer@cobalt.io", "full_name": "Sam Reyes" }]
+    }
+  ],
+  "orders": [
+    {
+      "legacy_id": "50231",
+      "customer_legacy_id": "1042",
+      "buyer_email": "jane@northwind.co.uk",
+      "reference": "GS-2023-0042",
+      "status": "completed",
+      "currency": "GBP",
+      "placed_at": "2023-05-01T10:15:00Z",
+      "items": [
+        { "offering_name": "Aspose.Total for .NET", "variant_name": "Developer Small Business", "qty": 1, "unit_price_minor": 239900 },
+        { "offering_name": "IronPDF", "variant_name": "Professional", "qty": 2, "unit_price": 499.00 }
+      ],
+      "licence_keys": [
+        { "offering_name": "Aspose.Total for .NET", "variant_name": "Developer Small Business", "licence_key": "ASP-TOTAL-9F2K-...", "download_url": "https://vendor.example/download/aspose" }
+      ]
+    },
+    {
+      "legacy_id": "50244",
+      "customer_legacy_id": "1043",
+      "buyer_email": "buyer@cobalt.io",
+      "status": "Paid",
+      "currency": "GBP",
+      "placed_at": "2024-01-18",
+      "items": [{ "offering_name": "Apryse WebViewer", "qty": 1, "unit_price": 1200.00 }]
+    }
+  ]
+}

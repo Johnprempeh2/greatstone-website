@@ -10,7 +10,7 @@ legal wording.
 
 ## Backlog (highest value first)
 - [x] **Admin licence-key issuance, order-driven.** Issue the key that fulfils a paid order, from the order.
-- [ ] Existing-data migration tooling (idempotent importer + documented input format + dry-run).
+- [x] **Existing-data migration tooling** (idempotent importer + documented input format + dry-run).
 - [ ] Migrated/historical order display (orders with no Stripe session, marked migrated).
 - [ ] ~400-URL 301 redirect map from a crawl of the old site → public/_redirects.
 - [ ] Editable legal-page scaffolds (Terms / Privacy / Cookie / Refund), wired to footer/nav.
@@ -36,3 +36,20 @@ was a bare status flip. Closed that gap:
 
 Verified live in `#catalogue/orders` against the interim DB (4 real orders): Keys column renders (1/1),
 expanded detail shows the buyer, the issued key (masked) and the per-item Issue button. 497 tests, build clean.
+
+### Iteration 2 — Legacy-store data migration tooling
+For the full-replacement decision: the importer that brings the old store's customers, orders and history
+into our schema, ready to run the moment Ben supplies an export. Needs no live service to build or test.
+- `src/lib/legacy-migrate.mjs`: pure, unit-tested transforms — maps an export dataset to our
+  customers / customer_users / orders / order_items / licence_keys row shapes, maps old order statuses onto
+  our enum (paid→confirmed, completed→fulfilled, unknown→confirmed since a migrated order was paid),
+  normalises money (minor units, or major→minor), and derives the idempotency keys: companies upsert on
+  `slug` ("legacy-<id>"), orders on `reference` ("legacy:<id>", which also marks them no-Stripe-session).
+  Validates the whole export up-front and flags orphan orders.
+- `scripts/migrate-legacy-store.mjs`: the CLI (I/O + upserts only). `--dry-run` validates + reports the plan
+  without writing; apply mode upserts idempotently with the service-role key. Re-runnable safely.
+- `docs/MIGRATION-IMPORT.md` + `scripts/legacy-export.sample.json`: documented input format + a working sample.
+
+Verified: 8 new unit tests (mapping, totals, idempotency keys, orphan detection) all green; the CLI dry-run
+runs against the sample ("2 companies, 3 users, 2 orders, 3 line items, 1 licence key"). 505 tests, build clean.
+Remaining: run against Ben's real export into the production DB (waiting on the export + prod credentials).
