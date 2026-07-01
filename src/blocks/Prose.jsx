@@ -1,6 +1,6 @@
 import { useReveal } from './reveal.js';
 import { RichTextField } from '../cms/RichTextField.jsx';
-import RichText from './RichText.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { APPEARANCE_FIELD, APPEARANCE_DEFAULT } from '../cms/style-field.jsx';
 import { appearanceClass } from '../lib/block-style.mjs';
 
@@ -8,13 +8,14 @@ import { appearanceClass } from '../lib/block-style.mjs';
 // underline + brand colour / highlight runs. The daily-driver text block, and the zero-migration proving
 // ground for RichTextField (no existing page depends on it, so adopting it is risk-free). Existing blocks opt
 // in to the same field one at a time. Body is rendered through the sanitising <RichText> chokepoint.
-export function Prose({ kicker, body, align = 'left', width = 'reading', appearance }) {
+export function Prose({ id, puck, kicker, body, align = 'left', width = 'reading', appearance }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className={'b-prose align-' + align + ' w-' + width}>
       <div className={('wrap b-prose-inner ' + appearanceClass(appearance)).trim()}>
-        {kicker ? <p className="b-prose-kicker" data-reveal>{kicker}</p> : null}
-        <RichText as="div" className="b-prose-body" html={body} data-reveal />
+        <EditableText editing={editing} id={id} field="kicker" value={kicker} as="p" className="b-prose-kicker" singleLine placeholder="Kicker (optional)…" data-reveal />
+        <EditableText editing={editing} id={id} field="body" value={body} as="div" className="b-prose-body" placeholder="Write the body copy…" data-reveal />
       </div>
     </section>
   );
@@ -37,7 +38,7 @@ export const css = `
 export const puck = {
   label: 'Prose',
   fields: {
-    kicker: { type: 'text', label: 'Kicker (optional)' },
+    kicker: { type: 'custom', label: 'Kicker (optional)', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     align: { type: 'radio', label: 'Alignment', options: [
       { label: 'Left', value: 'left' }, { label: 'Centre', value: 'center' },

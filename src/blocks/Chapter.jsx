@@ -3,7 +3,7 @@ import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
-import RichText from './RichText.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { APPEARANCE_FIELD, APPEARANCE_DEFAULT, CTA_STYLE_FIELD, CTA_STYLE_DEFAULT, HEADING_LEVEL_FIELD } from '../cms/style-field.jsx';
 import { appearanceClass } from '../lib/block-style.mjs';
 import { ctaStyleClass } from '../lib/cta-style.mjs';
@@ -12,19 +12,20 @@ import { headingTag } from '../lib/heading-level.mjs';
 // The editorial "chapter" section the live homepage leans on: a numbered eyebrow, a big
 // honest headline, a paragraph, an optional accent coda line, and an optional ghost CTA
 // (e.g. home §03 "Explore the eight pillars" → method). Reused for several chapters.
-export function Chapter({ index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, headingLevel, appearance }) {
+export function Chapter({ id, puck, index, eyebrow, headline, highlight, body, coda, align = 'left', ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, headingLevel, appearance }) {
   const ref = useReveal();
   const HeadTag = headingTag(headingLevel);
+  const editing = puck && puck.isEditing;
   return (
     <section ref={ref} className={`b-chapter align-${align}`}>
       <div className={('wrap b-chapter-inner ' + appearanceClass(appearance)).trim()}>
         <div className="b-chapter-eyebrow" data-reveal>
           {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <RichText as="span" className="b-chapter-name" singleLine html={eyebrow} /> : null}
+          <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
         </div>
-        <HeadTag className="b-chapter-h" data-reveal><RichText as="span" singleLine html={headline} /> {highlight ? <span className="accent">{highlight}</span> : null}</HeadTag>
-        {body ? <RichText as="p" className="b-chapter-body" data-reveal html={body} /> : null}
-        {coda ? <RichText as="p" className="b-chapter-coda" data-reveal html={coda} /> : null}
+        <HeadTag className="b-chapter-h" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</HeadTag>
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-chapter-body" placeholder="Body…" data-reveal />
+        <EditableText editing={editing} id={id} field="coda" value={coda} as="p" className="b-chapter-coda" placeholder="Coda line (optional)…" data-reveal />
         {ctaLabel ? <a className={('b-cta b-chapter-cta' + (ctaVariant === 'primary' ? '' : ' ghost') + ' ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)} data-reveal>{ctaLabel}<Arrow /></a> : null}
       </div>
     </section>
