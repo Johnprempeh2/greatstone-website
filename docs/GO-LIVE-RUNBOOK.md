@@ -26,7 +26,10 @@ Without these the webhook records the order and logs "email skipped" — no cras
 1. Client (build-time, in `.env` / Netlify env): `VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...`
 2. Function secrets: `supabase secrets set STRIPE_SECRET_KEY=sk_live_... --project-ref <ref>`
 3. Redeploy the functions so they pick up the new secret:
-   `supabase functions deploy stripe-checkout stripe-webhook stripe-portal --no-verify-jwt --project-ref <ref>`
+   `supabase functions deploy stripe-checkout stripe-webhook stripe-portal notify-licence-issued --no-verify-jwt --project-ref <ref>`
+   (`notify-licence-issued` emails the customer when staff issue a licence key against their order; it uses the
+   same `RESEND_API_KEY`/`RESEND_FROM` as the order email and no-ops cleanly until they are set. Optional
+   `APP_SITE_ORIGIN` sets the account link's domain.)
 
 ## 3. Re-register the webhook against LIVE
 The test webhook secret does NOT work in live. Create a live endpoint and capture a new signing secret:

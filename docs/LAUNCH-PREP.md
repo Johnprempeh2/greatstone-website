@@ -200,6 +200,28 @@ Still teed up for John's steer (needs a hash-vs-path decision, so not built unsu
 (about/method/insights/legal) deep-linkable, which would also let the redirect map target them precisely instead
 of sending them to home.
 
+### Iteration 11 — Licence-key delivery email (completes item (a)'s email hook)
+Item (a) called for a licence-key admin surface AND an email hook; issuance was built (LP1) but the customer
+was never told their key was ready. Closed that, in the manual-fulfilment model (staff upload the key, the buyer
+is told to collect it). SECURITY: the email never contains the key — email is not a secure channel and the
+order-confirmation email already says keys live in the account — it links the customer to their account to view
+and copy it there.
+- `src/lib/licence-email.mjs` (pure, 8 unit tests): `buildLicenceEmail({customerName, items, orderRef,
+  accountUrl})` → `{subject, html, text}`. Self-contained CSS wordmark (no remote image), single canonical
+  domain, British voice; singular/plural handling; HTML-escapes product names; a test asserts a stray
+  `licence_key` value is never rendered. Rendered a sample in the browser to confirm the branding.
+- `supabase/functions/notify-licence-issued/index.ts`: staff-only edge function (verifies the caller is a
+  `public.users` row) that loads the order's buyer + issued keys (offering/variant only) and sends via Resend,
+  no-op when `RESEND_API_KEY` is unset — mirrors `sendOrderEmail` in stripe-webhook. Its email HTML mirrors the
+  pure builder (kept in step, same convention as pricing.mjs ↔ stripe-checkout). Deploy-pending.
+- `ClientsManager` KeyEditor: after issuing a key that fulfils an order, best-effort invokes the function
+  (non-blocking, failure-tolerant). If it isn't deployed or email isn't configured yet, the key still shows in
+  the account and the note is skipped; when live, the toast reads "issued and emailed to the client".
+- Runbook: added the function to the deploy list; it reuses the order email's Resend secrets.
+
+Verified: 8 new unit tests; 556 total, build + secret scan clean; sample email rendered on-brand in the preview.
+The send path is dormant until the function is deployed + Resend configured (both Ben/credential-gated).
+
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
 **by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real

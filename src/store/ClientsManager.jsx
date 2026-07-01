@@ -345,9 +345,20 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
     let error;
     if (isNew) ({ error } = await supabase.from('licence_keys').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
     else ({ error } = await supabase.from('licence_keys').update(payload).eq('id', lkey.id));
+    if (error) { setBusy(false); setErr(error.message); return; }
+    // Best-effort "your licence key is ready" email to the customer (email hook for manual fulfilment). Only
+    // when the key fulfils an order (the notify function is order-scoped). Non-blocking and failure-tolerant:
+    // if the edge function isn't deployed or email isn't configured yet, the key still shows in the account
+    // and we simply skip the note — issuing must never depend on email being live.
+    let emailed = false;
+    if (isNew && orderId) {
+      try { const { data } = await supabase.functions.invoke('notify-licence-issued', { body: { order_id: orderId } }); emailed = !!(data && data.sent); }
+      catch { /* function not deployed / email off — silent, non-blocking */ }
+    }
     setBusy(false);
-    if (error) { setErr(error.message); return; }
-    onSaved(isNew ? 'Licence key issued — the client can see it on their account now.' : 'Licence key saved.');
+    onSaved(!isNew ? 'Licence key saved.'
+      : emailed ? 'Licence key issued and emailed to the client — it’s on their account now.'
+      : 'Licence key issued — the client can see it on their account now.');
   };
 
   return (
