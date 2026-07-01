@@ -1,4 +1,6 @@
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // ComparisonMatrix: turns the site's pervasive "we don't advise, we become your foundation" wedge into
 // a scannable side-by-side a skeptical buyer reads in five seconds. A real <table> (tabular data, with
@@ -6,16 +8,17 @@ import { useReveal } from './reveal.js';
 // On narrow screens it reflows to one card per criterion (each cell labelled from its column). Content
 // is fully editable; the defaults only restate positioning the site already asserts in prose, and the
 // "alternative" column stays a generic archetype, never a named competitor (no invented claims).
-export function ComparisonMatrix({ eyebrow, heading, highlight, colA = 'Greatstone', colB = 'The typical alternative', rows = [] }) {
+export function ComparisonMatrix({ id, puck, eyebrow, heading, highlight, colA = 'Greatstone', colB = 'The typical alternative', rows = [] }) {
   const ref = useReveal([rows.length]);
+  const editing = puck && puck.isEditing;
   const qa = rows.filter((r) => r && r.dimension);
   return (
     <section ref={ref} className="b-cmp">
       <div className="wrap">
-        {(eyebrow || heading || highlight) ? (
+        {(eyebrow || heading || highlight || editing) ? (
           <div className="b-cmp-head" data-reveal>
-            {eyebrow ? <span className="kicker">{eyebrow}</span> : null}
-            {(heading || highlight) ? <h2 className="h2 b-cmp-h">{heading} {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
+            <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="kicker" singleLine placeholder="Eyebrow…" />
+            {(heading || highlight || editing) ? <h2 className="h2 b-cmp-h"><EditableText editing={editing} id={id} field="heading" value={heading} as="span" singleLine placeholder="Heading…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
           </div>
         ) : null}
         {qa.length ? (
@@ -29,13 +32,16 @@ export function ComparisonMatrix({ eyebrow, heading, highlight, colA = 'Greatsto
                 </tr>
               </thead>
               <tbody>
-                {qa.map((r, i) => (
+                {qa.map((r, i) => {
+                  const ri = rows.indexOf(r); // map filtered row back to its real index for nested writes
+                  return (
                   <tr key={i}>
-                    <th scope="row">{r.dimension}</th>
-                    <td className="b-cmp-cell b-cmp-us" data-label={colA}><span className="b-cmp-dot good" aria-hidden="true" />{r.a}</td>
-                    <td className="b-cmp-cell" data-label={colB}><span className="b-cmp-dot bad" aria-hidden="true" />{r.b}</td>
+                    <th scope="row"><EditableText editing={editing} id={id} arrayField="rows" index={ri} field="dimension" value={r.dimension} as="span" singleLine placeholder="Criterion…" /></th>
+                    <td className="b-cmp-cell b-cmp-us" data-label={colA}><span className="b-cmp-dot good" aria-hidden="true" /><EditableText editing={editing} id={id} arrayField="rows" index={ri} field="a" value={r.a} as="span" placeholder="Your column…" /></td>
+                    <td className="b-cmp-cell" data-label={colB}><span className="b-cmp-dot bad" aria-hidden="true" /><EditableText editing={editing} id={id} arrayField="rows" index={ri} field="b" value={r.b} as="span" placeholder="Alternative…" /></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -79,17 +85,17 @@ const ROW = (dimension, a, b) => ({ dimension, a, b });
 export const puck = {
   label: 'Comparison matrix (us vs the alternative)',
   fields: {
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    heading: { type: 'text', label: 'Heading', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     colA: { type: 'text', label: 'Your column label' },
     colB: { type: 'text', label: 'Alternative column label (keep generic, no named competitors)' },
     rows: {
       type: 'array', label: 'Rows',
       arrayFields: {
-        dimension: { type: 'text', label: 'Criterion' },
-        a: { type: 'textarea', label: 'Your column' },
-        b: { type: 'textarea', label: 'Alternative column' },
+        dimension: { type: 'custom', label: 'Criterion', render: (props) => <RichTextField {...props} variant="heading" /> },
+        a: { type: 'custom', label: 'Your column', render: (props) => <RichTextField {...props} /> },
+        b: { type: 'custom', label: 'Alternative column', render: (props) => <RichTextField {...props} /> },
       },
       defaultItemProps: { dimension: 'Criterion', a: 'What we do', b: 'What they do' },
       getItemSummary: (it) => it.dimension || 'Row',
