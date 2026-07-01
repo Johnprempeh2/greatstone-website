@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReveal } from './reveal.js';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // Terrace: home §06 "How a Diagnostic works" — a centered chapter (reusing the .b-chapter framing) over
 // a stack of slabs that grow WIDER as they descend (calc(70% + i*15%)), each a lime trapezoid that
 // settles up from below in a top-down stagger when the stack scrolls in. Faithful port of .dd-stack /
 // .dd-slab. The chapter copy lands first, then "each layer settles before the next one lands".
-export function Terrace({ index, eyebrow, headline, highlight, body, slabs = [] }) {
+export function Terrace({ id, puck, index, eyebrow, headline, highlight, body, slabs = [] }) {
   const ref = useReveal([slabs.length]);
+  const editing = puck && puck.isEditing;
   const stackRef = useRef(null);
   const [settled, setSettled] = useState(false);
 
@@ -28,10 +31,10 @@ export function Terrace({ index, eyebrow, headline, highlight, body, slabs = [] 
       <div className="wrap b-chapter-inner">
         <div className="b-chapter-eyebrow" data-reveal>
           {index ? <span className="b-chapter-num">{index}</span> : null}
-          {eyebrow ? <span className="b-chapter-name">{eyebrow}</span> : null}
+          <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
         </div>
-        <h2 className="b-chapter-h" data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-        {body ? <p className="b-chapter-body" data-reveal>{body}</p> : null}
+        <h2 className="b-chapter-h" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-chapter-body" placeholder="Intro…" data-reveal />
 
         <ol ref={stackRef} className={'b-terrace-stack' + (settled ? ' is-settled' : '')}>
           {slabs.map((s, i) => (
@@ -67,10 +70,10 @@ export const puck = {
   label: 'Terrace (slab stack)',
   fields: {
     index: { type: 'text', label: 'Number', contentEditable: true },
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Intro', contentEditable: true },
+    body: { type: 'custom', label: 'Intro', render: (props) => <RichTextField {...props} /> },
     slabs: {
       type: 'array', label: 'Slabs',
       arrayFields: {

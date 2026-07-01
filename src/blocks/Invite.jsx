@@ -5,18 +5,21 @@ import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
 import { ctaStyleClass } from '../lib/cta-style.mjs';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
-export function Invite({ eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false }) {
+export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false }) {
   const ref = useReveal();
+  const editing = puck && puck.isEditing;
   const framed = variant === 'framed';
   const band = variant === 'band';
   const inner = (
     <>
-      {eyebrow ? (pill ? <span className="pill" data-reveal>{eyebrow}</span> : <span className="kicker" data-reveal>{eyebrow}</span>) : null}
-      <h2 data-reveal>{headline} {highlight ? <span className="accent">{highlight}</span> : null}</h2>
-      {body ? <p className="b-invite-body" data-reveal>{body}</p> : null}
+      <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className={pill ? 'pill' : 'kicker'} singleLine placeholder="Eyebrow…" data-reveal />
+      <h2 data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2>
+      <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-invite-body" placeholder="Body…" data-reveal />
       <div className="b-invite-actions" data-reveal>
         {ctaLabel ? <a className={('b-cta ' + ctaStyleClass(ctaStyle)).trim()} {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
         {ctaLabel2 ? <a className="b-cta ghost" {...resolveLink(ctaHref2)}>{ctaLabel2}</a> : null}
@@ -71,10 +74,10 @@ export const css = `
 export const puck = {
   label: 'Invite (closing CTA)',
   fields: {
-    eyebrow: { type: 'text', label: 'Eyebrow', contentEditable: true },
-    headline: { type: 'text', label: 'Headline', contentEditable: true },
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
-    body: { type: 'textarea', label: 'Body', contentEditable: true },
+    body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     ctaLabel: { type: 'text', label: 'Primary button label' },
     ctaHref: { type: 'custom', label: 'Primary button link', render: (props) => <LinkField {...props} /> },
     ctaStyle: CTA_STYLE_FIELD,
