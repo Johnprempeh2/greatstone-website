@@ -26,10 +26,10 @@ export function CaseStudy({ id, puck, index, eyebrow, headline, highlight, body,
           {items.map((c, i) => (
             <article className="card case" data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
               {c.tag ? <span className="pill case-tag">{c.tag}</span> : null}
-              <h3>{c.head}</h3>
+              <EditableText editing={editing} id={id} arrayField="items" index={i} field="head" value={c.head} as="h3" singleLine placeholder="Heading…" />
               <div className="case-rows">
-                <div className="case-row"><span className="case-key">The drain</span><span className="case-val">{c.drain}</span></div>
-                <div className="case-row"><span className="case-key">We built</span><span className="case-val">{c.built}</span></div>
+                <div className="case-row"><span className="case-key">The drain</span><EditableText editing={editing} id={id} arrayField="items" index={i} field="drain" value={c.drain} as="span" className="case-val" placeholder="The drain…" /></div>
+                <div className="case-row"><span className="case-key">We built</span><EditableText editing={editing} id={id} arrayField="items" index={i} field="built" value={c.built} as="span" className="case-val" placeholder="We built…" /></div>
               </div>
               <div className="case-out"><span className="o-num">{c.outNum}</span><span className="o-cap">{c.outCap}</span></div>
             </article>
@@ -73,9 +73,9 @@ export const puck = {
       type: 'array', label: 'Cases',
       arrayFields: {
         tag: { type: 'text', label: 'Tag' },
-        head: { type: 'text', label: 'Heading' },
-        drain: { type: 'textarea', label: 'The drain' },
-        built: { type: 'textarea', label: 'We built' },
+        head: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+        drain: { type: 'custom', label: 'The drain', render: (props) => <RichTextField {...props} /> },
+        built: { type: 'custom', label: 'We built', render: (props) => <RichTextField {...props} /> },
         outNum: { type: 'text', label: 'Outcome figure' },
         outCap: { type: 'text', label: 'Outcome caption' },
       },

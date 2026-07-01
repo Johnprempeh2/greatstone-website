@@ -40,8 +40,8 @@ export function Terrace({ id, puck, index, eyebrow, headline, highlight, body, s
           {slabs.map((s, i) => (
             <li className="b-terrace-slab" style={{ '--i': i }} key={i}>
               <span className="b-terrace-n">{s.n}</span>
-              <span className="b-terrace-h">{s.title}</span>
-              <span className="b-terrace-d">{s.body}</span>
+              <EditableText editing={editing} id={id} arrayField="slabs" index={i} field="title" value={s.title} as="span" className="b-terrace-h" singleLine placeholder="Title…" />
+              <EditableText editing={editing} id={id} arrayField="slabs" index={i} field="body" value={s.body} as="span" className="b-terrace-d" placeholder="Description…" />
             </li>
           ))}
         </ol>
@@ -78,8 +78,8 @@ export const puck = {
       type: 'array', label: 'Slabs',
       arrayFields: {
         n: { type: 'text', label: 'Number' },
-        title: { type: 'text', label: 'Title' },
-        body: { type: 'text', label: 'Description' },
+        title: { type: 'custom', label: 'Title', render: (props) => <RichTextField {...props} variant="heading" /> },
+        body: { type: 'custom', label: 'Description', render: (props) => <RichTextField {...props} /> },
       },
       defaultItemProps: { n: '0', title: 'Step', body: 'What happens here.' },
       getItemSummary: (i) => i.title || 'Slab',
