@@ -312,7 +312,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   );
 }
 
-function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved }) {
+export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved }) {
   const isNew = !lkey.id;
   const [offering, setOffering] = useState(lkey.offering_name || '');
   const [variant, setVariant] = useState(lkey.variant_name || '');

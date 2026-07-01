@@ -124,10 +124,18 @@
 .ca-ord-pending { background:rgba(255,200,0,.12); color:#ffc800; }
 .ca-ord-detailrow > td { background:rgba(255,255,255,.02); }
 .ca-ord-items { display:flex; flex-direction:column; gap:6px; padding:6px 4px; }
-.ca-ord-item { display:grid; grid-template-columns:1fr auto auto; gap:14px; align-items:center; font-size:.86rem; }
+.ca-ord-item { display:grid; grid-template-columns:1fr auto auto auto; gap:14px; align-items:center; font-size:.86rem; }
 .ca-ord-item .oi-name { color:var(--gs-text); }
 .ca-ord-item .oi-qty { color:var(--gs-text-faint); font-variant-numeric:tabular-nums; }
 .ca-ord-item .oi-amt { font-variant-numeric:tabular-nums; min-width:90px; text-align:right; }
+.ca-ord-item .oi-issue { white-space:nowrap; }
+/* licence keys already issued against an order (fulfilment record) */
+.ca-ord-keys { margin:8px 0 4px; padding:10px 12px; border:1px solid var(--gs-border,rgba(200,255,0,.08)); border-radius:10px; background:var(--gs-accent-soft,rgba(200,255,0,.05)); display:flex; flex-direction:column; gap:6px; }
+.ca-ord-keys-h { font-size:.68rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--gs-accent,#c8ff00); }
+.ca-ord-key { display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center; font-size:.84rem; }
+.ca-lk-issued { color:var(--gs-accent,#c8ff00); }
+.ca-lk-expired { color:var(--gs-warning,#ffc800); }
+.ca-lk-revoked { color:var(--gs-text-faint,#707070); text-decoration:line-through; }
 .ca-ord-tot { display:flex; justify-content:space-between; font-size:.86rem; color:var(--gs-text-muted); border-top:1px solid var(--gs-border,rgba(200,255,0,.08)); padding-top:8px; margin-top:4px; }
 .ca-ord-tot span:last-child { font-variant-numeric:tabular-nums; }
 .ca-ord-tot.total { font-weight:800; color:var(--gs-text); border-top:none; padding-top:2px; }
