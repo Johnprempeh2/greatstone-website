@@ -266,6 +266,22 @@ cannot exceed what was paid. Absent → 0.
 Verified: 1 new unit test (explicit minor + major amounts, clamp-to-total, absent→0, no status inference); 561
 total, build + secret scan clean; the sample export still imports clean.
 
+### Iteration 15 — Cutover consolidation: one preflight gate + one ordered checklist
+Fourteen iterations produced four separate operational tools (migration importer, redirect generator, staff
+verifier, dist secret scan) scattered across docs, plus a GO-LIVE-RUNBOOK that predated them. The remaining
+launch risk isn't a missing feature — it's running these out of order or forgetting one on the day. Closed that:
+- `npm run preflight` chains the automated gates into one green/red command: `npm test` → `npm run build`
+  (SEO files + the dist secret scan) → `npm run redirects:check` (drift guard). Verified: exit 0, ends on
+  "public/_redirects legacy block is in sync".
+- `docs/CUTOVER-CHECKLIST.md`: the single ordered launch-day runbook — prep (Ben's inputs, migrations, publish
+  legal), then the T-0 sequence (freeze old site → preflight → redirects with product map → migration dry-run
+  then apply → verify:staff → deploy functions+secrets → front-end deploy → DNS → £1 smoke test → backups),
+  with explicit go/no-go gates and rollback. It sequences + cross-references the detailed docs rather than
+  duplicating them; GO-LIVE-RUNBOOK now points at it as the master checklist.
+
+This is the operational capstone for the launch-prep work. Everything that remains is Ben/counsel/credential-
+gated, and content-page routing stays parked for John (hash vs path).
+
 ### Iteration 6 — FX-rate staleness signal (mis-pricing guard)
 Whole catalogue is stored in USD and shown in GBP as `USD ÷ rate`, where the rate is a single value set
 **by hand** (no automatic feed — a deliberate choice). The gap: if nobody refreshes it while the real

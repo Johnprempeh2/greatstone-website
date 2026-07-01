@@ -15,7 +15,8 @@
     "redirects": "node scripts/gen-legacy-redirects.mjs",
     "redirects:check": "node scripts/gen-legacy-redirects.mjs --check",
     "redirects:audit": "node scripts/gen-legacy-redirects.mjs --audit",
-    "verify:staff": "node scripts/verify-staff.mjs"
+    "verify:staff": "node scripts/verify-staff.mjs",
+    "preflight": "npm test && npm run build && npm run redirects:check"
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",

@@ -1,5 +1,8 @@
 # Go-live runbook — Greatstone commerce platform
 
+> For the full launch-day sequence (data migration, redirects, staff verify, then the steps below, in order),
+> follow **CUTOVER-CHECKLIST.md** — it's the master checklist; this runbook is the detailed reference it links to.
+
 Everything below moves the platform from Stripe **test** to **live**. Do it in order; nothing here is reversible-by-accident if you follow the rollback notes. Keep test mode running until the live smoke test passes.
 
 ## 0. Pre-flight (must be true before starting)
