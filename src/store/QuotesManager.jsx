@@ -17,7 +17,7 @@ export default function QuotesManager({ staff }) {
   const load = useCallback(() => {
     setLoading(true);
     supabase.from('quotes')
-      .select('id, reference, status, contact_company, contact_name, contact_email, contact_phone, po_reference, message, indicative_total_minor, quoted_total_minor, valid_until, currency, created_at, orders(id, invoice_number), quote_items(id, offering_name, variant_name, qty, list_price_minor, captured_price_minor)')
+      .select('id, reference, status, contact_company, contact_name, contact_email, contact_phone, po_reference, po_document_path, po_document_name, message, indicative_total_minor, quoted_total_minor, valid_until, currency, created_at, orders(id, invoice_number), quote_items(id, offering_name, variant_name, qty, list_price_minor, captured_price_minor)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(200)
       .then(({ data, error }) => { if (error) { console.error('quotes load', error); setLoadErr(error.message || 'load failed'); } else setLoadErr(null); setQuotes(data || []); setLoading(false); });
   }, []);
@@ -45,6 +45,15 @@ export default function QuotesManager({ staff }) {
   };
 
   const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
+  // Download the buyer's uploaded PO via a short-lived signed URL (private po-documents bucket, staff-read RLS, 0026).
+  const downloadPo = async (qt) => {
+    try {
+      const { data, error } = await supabase.storage.from('po-documents').createSignedUrl(qt.po_document_path, 120, { download: qt.po_document_name || true });
+      if (error || !data?.signedUrl) throw error || new Error('no url');
+      const a = document.createElement('a'); a.href = data.signedUrl; a.download = qt.po_document_name || 'purchase-order';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch { flash('Could not open the PO document.'); }
+  };
 
   return (
     <div className="ca-wrap">
@@ -85,6 +94,9 @@ export default function QuotesManager({ staff }) {
                               <b>{qt.contact_name || '–'}</b> · {qt.contact_email}{qt.contact_phone ? ' · ' + qt.contact_phone : ''}
                               {qt.po_reference && <> · PO <b>{qt.po_reference}</b></>}
                             </div>
+                            {qt.po_document_path && (
+                              <div className="q-contact"><button type="button" className="gs-btn ghost sm" onClick={() => downloadPo(qt)} aria-label={'Download the uploaded PO document for quote ' + qt.reference}>PO document ↓</button> <span className="ca-muted">{qt.po_document_name || 'attached'}</span></div>
+                            )}
                             {(qt.quote_items || []).map(it => (
                               <div key={it.id} className="ca-ord-item">
                                 <span className="oi-name">{it.offering_name}{it.variant_name ? ' · ' + it.variant_name : ''}</span>

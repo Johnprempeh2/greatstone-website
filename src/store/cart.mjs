@@ -86,7 +86,10 @@ export async function startCheckout({ email } = {}) {
 // Submit the basket as a B2B quote request (pay on invoice). Server captures indicative prices + the
 // contact/PO details; staff finalise and invoice. Forwards the JWT so a signed-in buyer's quote links
 // to their account. Returns the human quote reference (Q-YYYY-NNNNNN).
-export async function requestQuote({ contact, poReference, message } = {}) {
+// poDocument (optional): { name, type, dataBase64 } — an uploaded PO the service-role edge fn stores in the
+// private 'po-documents' bucket (migration 0026). Older server builds ignore the field, so it degrades to the
+// online-PO + email fallback until request-quote is redeployed.
+export async function requestQuote({ contact, poReference, message, poDocument } = {}) {
   const payload = getCart().map((x) => ({ variantId: x.variantId, quantity: x.qty }));
   if (!payload.length) throw new Error('Your basket is empty.');
   if (!SUPA_URL || !ANON) throw new Error('Store is not configured.');
@@ -95,7 +98,7 @@ export async function requestQuote({ contact, poReference, message } = {}) {
   const res = await fetch(SUPA_URL + '/functions/v1/request-quote', {
     method: 'POST',
     headers: { 'content-type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + token },
-    body: JSON.stringify({ items: payload, contact, poReference, message }),
+    body: JSON.stringify({ items: payload, contact, poReference, message, poDocument: poDocument || undefined }),
   });
   let data = {};
   try { data = await res.json(); } catch { /* non-JSON error body */ }

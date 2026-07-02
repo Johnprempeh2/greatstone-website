@@ -609,3 +609,48 @@ live-tested here (the column doesn't exist until the migration is applied); veri
 **Deploy-ready features now awaiting John's deploy:** licence-file fulfilment (0024) and activation
 instructions (0025). Two migrations + the frontend + (optionally) the `notify-licence-issued` email change ship
 them all in one pass.
+
+---
+
+## Cycle 28 — 2026-07-02 — DEPLOY-READY: native PO-document upload at checkout (NOT deployed)
+
+The last of Ben's 1 Jul fulfilment items. "Pay by purchase order" now lets a buyer **attach** their PO, not
+only type a number. Built deploy-ready like the licence-file feature (no live bucket to test against), with an
+adversarial security review; the one real bug it exposed is fixed.
+
+**Built (deploy-ready, NOT deployed):**
+- **Migration** `0026_po_documents.sql`: `quotes.po_document_path` + `po_document_name` columns; a **private**
+  `po-documents` bucket (10 MB); a staff-only Storage read policy (`po_documents_staff_read` via
+  `app_staff_org()`). Deliberately **no** anon/authenticated write policy.
+- **`request-quote` (service role)**: decodes `poDocument.dataBase64` (size-guarded) and uploads it to
+  `‹quote_id›/‹file›`, then records the path. Best-effort — a failed upload never fails the quote.
+- **`StoreCart`**: a file input in the PO view (FileReader base64, 10 MB client guard, clears on close);
+  **`cart.mjs`** threads `poDocument` through `requestQuote`.
+- **`QuotesManager`**: staff download the PO via a 120s signed URL.
+- **Handoff** `docs/PO-DOCUMENT-UPLOAD.md` (design, security rationale, migration-first deploy order).
+
+**Why no buyer-facing write policy:** checkout is guest-reachable, so an anon Storage INSERT policy would be an
+open upload endpoint. The service-role edge fn is the only writer; the path uses the server-generated quote id,
+so a buyer can't target another quote's folder.
+
+**Review + fixes (workflow `po-upload-review`, security + correctness lenses):**
+- **BUG (dead-on-arrival) — fixed:** the upload block read `body.poDocument`, but the body is destructured
+  inline, so `body` was undefined; the `ReferenceError` was swallowed by the best-effort catch and the file
+  would have **silently never uploaded**. Fixed by destructuring `poDocument` and using it directly. (The review
+  lenses under-flagged this; caught on re-read of the edge fn.)
+- LOW — the pre-`atob` base64 length guard was loose (`14_000_000`); tightened to `13_981_016` (max for a 10 MB
+  file). The decoded-byte check stays the authoritative limit.
+- MEDIUM (observability) — the swallowed catch left no trail on upload failure; now `console.error`s on both the
+  upload-error branch and the catch (behaviour unchanged, still best-effort).
+- LOW (accepted) — `po_document_path` is visible to the buyer via the `quotes` `customer_self` SELECT, but the
+  file itself is staff-read-only, so the path is valueless metadata. Documented.
+- MEDIUM (documented) — a frontend ahead of the migration errors QuotesManager into its "Couldn't load" state;
+  the migration-first deploy order in the handoff prevents the window.
+- Triage agent died on a 529 overload; findings recovered from the lens transcripts and triaged by hand.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. Cannot be live-tested (bucket/columns
+don't exist until deploy); verified by tests + build + review.
+
+**Deploy-ready features now awaiting John's deploy (the full Ben fulfilment trilogy):** licence-file (0024),
+activation instructions (0025), PO-document upload (0026). Three migrations + the frontend + one `request-quote`
++ `notify-licence-issued` function deploy ship them all in one pass.

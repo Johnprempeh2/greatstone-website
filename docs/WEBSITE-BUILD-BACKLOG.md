@@ -75,12 +75,18 @@ missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only,
   persisting them needs a `vendors.activation_instructions` column + a `notify-licence-issued` change.
   **Blocker: DB migration + edge-function deploy.**
 
-- **Native in-app PO-document upload at checkout** — [MISSING] **(gated)**. Ben: "there should be an option to
-  upload the purchase order." Online path is live; attaching the PDF in-drawer needs a `po-documents` Storage
-  bucket + anon-insert RLS + a `request-quote` change to record the file URL. Interim live fallback: the
-  confirmation screen tells the buyer to email the PO to dx@ quoting the reference. Also ties to a
-  "company registration must be complete before ordering" gate Ben mentioned. **Blocker: Storage bucket +
-  edge-function deploy.**
+- **Native in-app PO-document upload at checkout** — [BUILT deploy-ready] (excellence Cycle 28; **gated on the
+  migration + `request-quote` deploy**). Ben: "there should be an option to upload the purchase order." The
+  buyer attaches their PO in the "Pay by purchase order" view; the file is base64-encoded and sent with the
+  quote, and the **service-role** `request-quote` edge fn uploads it to a private `po-documents` bucket at
+  `‹quote_id›/‹file›` and records `quotes.po_document_path`. Staff download it from `QuotesManager` via a
+  short-lived signed URL. Security crux: checkout is guest-reachable, so there is **no buyer-facing Storage
+  write policy** (an anon INSERT policy would be an open upload endpoint); the edge fn is the only writer, and
+  the path uses the server-generated quote id so a buyer can't target another quote. Migration
+  `0026_po_documents.sql`; handoff `docs/PO-DOCUMENT-UPLOAD.md`. Cannot be live-tested (no bucket until deploy);
+  verified by build + tests + an adversarial security review. Interim fallback until deploy: the online PO
+  number + the email-the-PO-to-dx@ note still stand. (The "company registration before ordering" gate Ben
+  mentioned remains a separate, unbuilt item.) **Blocker: Storage bucket + edge-function deploy + DB migration.**
 
 - **Order / licence / welcome email DISPATCH** — [PARTIAL] **(gated)**. Templates author frontend-only; sending
   needs the edge functions deployed to live Supabase with `RESEND_API_KEY` + `RESEND_FROM`. **Blocker:

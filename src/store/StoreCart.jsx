@@ -16,6 +16,7 @@ export default function StoreCart({ confirmed = false }) {
   const [view, setView] = useState('cart'); // cart | po | sent
   const [email, setEmail] = useState('');
   const [q, setQ] = useState({ name: '', email: '', company: '', phone: '', po: '', message: '' });
+  const [poFile, setPoFile] = useState(null); // optional uploaded PO document (base64'd on submit)
   const [quoteRef, setQuoteRef] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -24,7 +25,7 @@ export default function StoreCart({ confirmed = false }) {
   const drawerRef = useRef(null);
   // reset the drawer to the basket view + clear any stale error on every close, so reopening the FAB
   // never resurfaces the quote form or a stale "sent"/error state from a previous session.
-  const closeCart = useCallback(() => { setOpen(false); setView('cart'); setErr(null); }, []);
+  const closeCart = useCallback(() => { setOpen(false); setView('cart'); setErr(null); setPoFile(null); }, []);
   useModal(drawerRef, open, closeCart); // focus-in, Tab-trap, scroll-lock, Escape, focus-restore
 
   // let a "View basket" affordance elsewhere (e.g. the product page) open this drawer
@@ -62,12 +63,25 @@ export default function StoreCart({ confirmed = false }) {
   const submitQuote = useCallback(async (e) => {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
-      const ref = await requestQuote({ contact: { name: q.name.trim(), email: q.email.trim(), company: q.company.trim(), phone: q.phone.trim() }, poReference: q.po.trim() || undefined, message: q.message.trim() || undefined });
+      // Read an attached PO document to base64 (the service-role edge fn stores it; migration 0026). Guard the
+      // size client-side so we never send a huge body; the server also caps it and treats the doc as best-effort.
+      let poDocument;
+      if (poFile) {
+        if (poFile.size > 10 * 1024 * 1024) { setErr('That PO file is over 10 MB. Attach a smaller one, or email it to us with your reference.'); setBusy(false); return; }
+        const dataBase64 = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => { const s = String(r.result || ''); res(s.slice(s.indexOf(',') + 1)); };
+          r.onerror = () => rej(new Error('Could not read that file.'));
+          r.readAsDataURL(poFile);
+        });
+        poDocument = { name: poFile.name, type: poFile.type || 'application/octet-stream', dataBase64 };
+      }
+      const ref = await requestQuote({ contact: { name: q.name.trim(), email: q.email.trim(), company: q.company.trim(), phone: q.phone.trim() }, poReference: q.po.trim() || undefined, message: q.message.trim() || undefined, poDocument });
       track('generate_lead', { form: 'purchase_order' });
       setQuoteRef(ref); setView('sent'); clearCart();
     } catch (e2) { setErr(e2.message || 'Could not submit the quote.'); }
     setBusy(false);
-  }, [q]);
+  }, [q, poFile]);
   const setQf = (k, v) => setQ(s => ({ ...s, [k]: v }));
 
   if (confirmed) return <Confirmed />;
@@ -113,6 +127,10 @@ export default function StoreCart({ confirmed = false }) {
                 <label>Email<input type="email" required value={q.email} onChange={(e) => setQf('email', e.target.value)} autoComplete="email" /></label>
                 <label>Phone (optional)<input value={q.phone} onChange={(e) => setQf('phone', e.target.value)} autoComplete="tel" /></label>
                 <label>Notes (optional)<textarea rows="2" value={q.message} onChange={(e) => setQf('message', e.target.value)} placeholder="Team size, timing, anything specific…" /></label>
+                <label>Attach your PO <span style={{ fontWeight: 400 }}>(optional: PDF or document, up to 10 MB)</span>
+                  <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,application/pdf" onChange={(e) => setPoFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} />
+                </label>
+                {poFile ? <p className="sc-note" style={{ marginTop: -6 }}>Attached: {poFile.name}. We&rsquo;ll match it to your purchase order.</p> : null}
                 {err && <div className="sc-err" role="alert">{err}</div>}
                 <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Submitting…' : 'Submit purchase order'}</button>
                 <button type="button" className="sc-clear" onClick={() => { setView('cart'); setErr(null); }}>Back to basket</button>

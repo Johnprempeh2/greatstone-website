@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
   try {
-    const { items, contact, poReference, message } = await req.json();
+    const { items, contact, poReference, message, poDocument } = await req.json();
     if (!Array.isArray(items) || !items.length) return json({ error: 'No items' }, 400);
     const email = (contact?.email || '').trim();
     if (!/.+@.+\..+/.test(email)) return json({ error: 'A valid email is required for a quote.' }, 400);
@@ -103,6 +103,30 @@ Deno.serve(async (req) => {
     if (qErr) return json({ error: qErr.message }, 400);
     const { error: iErr } = await supabase.from('quote_items').insert(rows.map((r) => ({ ...r, quote_id: quote.id })));
     if (iErr) return json({ error: iErr.message }, 400);
+
+    // Optional PO document (migration 0026): the buyer's browser sends the file base64-encoded. We (the
+    // service role) upload it to the private 'po-documents' bucket under the quote id and record the path;
+    // there is no buyer-facing Storage write policy, so this is the only path in. Best-effort: the quote is
+    // already saved, so a failed/oversized upload never fails the quote — the PO number + email fallback stand.
+    try {
+      const doc = poDocument;
+      const b64 = doc && typeof doc.dataBase64 === 'string' ? doc.dataBase64 : '';
+      // Pre-filter before atob (cheap DoS guard): a 10 MB file base64-encodes to <= 13_981_016 chars.
+      // The decoded-byte check below is the authoritative limit; this just avoids decoding a huge string.
+      if (b64 && b64.length <= 13_981_016) {
+        const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        if (bytes.length && bytes.length <= 10_485_760) {
+          const safe = String(doc.name || 'purchase-order').replace(/[^\w.\-]+/g, '_').replace(/^\.+/, '').slice(-80) || 'purchase-order';
+          const path = quote.id + '/' + safe;
+          const up = await supabase.storage.from('po-documents').upload(path, bytes, { contentType: (typeof doc.type === 'string' && doc.type) || 'application/octet-stream', upsert: true });
+          if (!up.error) await supabase.from('quotes').update({ po_document_path: path, po_document_name: doc.name || safe }).eq('id', quote.id);
+          // Log (don't fail) so staff have a trail when a buyer meant to attach a PO but the upload errored
+          // (e.g. the bucket/columns don't exist yet pre-migration). The quote itself still stands.
+          else console.error('request-quote: PO document upload failed for quote', quote.id, up.error.message);
+        }
+      }
+    } catch (e) { console.error('request-quote: PO document handling failed for quote', quote.id, String((e as Error)?.message || e)); }
+
     return json({ reference: quote.reference, id: quote.id });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 400);
