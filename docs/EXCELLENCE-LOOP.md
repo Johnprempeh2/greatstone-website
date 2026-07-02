@@ -839,3 +839,26 @@ the component, the route wiring in `App.jsx`, and the `sc-*` CSS) returned zero 
 
 No commit for the code (there was nothing to change); this ledger entry is the record. An honest "already
 excellent" is a valid loop outcome and is logged rather than papered over with churn.
+
+---
+
+## Cycle 35 — 2026-07-02 — ServiceDetail: 2 small a11y/voice fixes (NOT deployed)
+
+Swept the public per-service page (`ServiceDetail.jsx`, `#service/<slug>`). Multi-lens Workflow
+(`servicedetail-sweep`: a11y + correctness) with adversarial verify. The page was already strong (full SEO head
+via `applyHead`, not-found state, breadcrumb a11y, `safeMailto` inquiry, analytics).
+
+**Shipped (verified, NOT deployed):**
+- **Decorative check SVGs now `aria-hidden="true"`** (line 83, the "What we build" bullets). They were the only
+  icons in the component not hidden from assistive tech (the scrim + breadcrumb separators already were), so a
+  screen reader would try to parse the path data. WCAG 1.1.1. Verified safe, zero regression.
+- **Prose em dash removed** from the sp-note ("No obligation — tell us…" → "No obligation. Tell us…"). This file
+  wasn't in the C32/C33 voice sweep's touched set, so this is an incidental in-slice fix, not a voice re-run.
+
+**Verify grounded a non-bug + rejected a false positive:**
+- The "loading flash → Service not found" hypothesis was **disproved**: `useServices()` is synchronous (context
+  with a default fallback), so `svc` is never briefly-undefined-during-load. No fix needed.
+- Not-found `<h3>` → `<h1>` was **rejected**: the not-found state is a lightweight callout, not a page with an
+  outline; promoting it to h1 would misrepresent its role. Left as h3.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean.

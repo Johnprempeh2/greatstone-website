@@ -75,12 +75,12 @@ export default function ServiceDetail({ slug, onBack, applyHead }) {
             <InquiryToggle service={svc} size="lg" onAdded={openInquiryDrawer} />
             <button type="button" className="gs-btn ghost" onClick={inquireOne}>Inquire about just this</button>
           </div>
-          <p className="sp-note">No obligation — tell us what you’re solving and we’ll scope it to your numbers. Add more services to inquire about several at once.</p>
+          <p className="sp-note">No obligation. Tell us what you’re solving and we’ll scope it to your numbers. Add more services to inquire about several at once.</p>
         </div>
 
         {bullets.length ? (
           <section className="sp-section"><h2>What we build</h2>
-            <div className="sp-specs">{bullets.map((b, i) => <div key={i} className="sp-spec"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>{b.text}</div>)}</div>
+            <div className="sp-specs">{bullets.map((b, i) => <div key={i} className="sp-spec"><svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>{b.text}</div>)}</div>
           </section>
         ) : null}
 
