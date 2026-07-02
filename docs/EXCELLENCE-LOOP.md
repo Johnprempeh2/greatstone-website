@@ -654,3 +654,38 @@ don't exist until deploy); verified by tests + build + review.
 **Deploy-ready features now awaiting John's deploy (the full Ben fulfilment trilogy):** licence-file (0024),
 activation instructions (0025), PO-document upload (0026). Three migrations + the frontend + one `request-quote`
 + `notify-licence-issued` function deploy ship them all in one pass.
+
+---
+
+## Cycle 29 — 2026-07-02 — fresh sweep: InvoiceView (a11y) + VAT-number proposal (NOT deployed)
+
+First sweep of the printable VAT invoice (`#invoice/<orderId>`), an uncovered slice. Multi-lens Workflow
+(`invoice-view-sweep`: a11y / correctness / voice+legal) with an adversarial verify stage. The surface is
+already strong; the verify stage rejected 4 of 8 findings as false positives (see below), leaving one safe win.
+
+**Shipped (1, verified, NOT deployed):**
+- **Invoice totals table — footer labels are now row headers.** The `<tfoot>` summary rows (Subtotal, VAT, Total,
+  Refunded) used plain `<td colSpan="3">` for the label cell; changed to `<th scope="row" colSpan="3">` so screen
+  readers associate each label with its amount (WCAG 1.3.1). **CSS caveat caught before shipping:** the verify
+  agent claimed th/td were styled identically, but `store.css` targets `tfoot td` specifically and the global
+  `.inv-table th` rule would have restyled the footer labels (uppercase, grey, 11px, bottom border). Extended the
+  three `tfoot` rules to cover `th` and reset the thead-th styling, so the footer `<th>` renders pixel-identical
+  to the old `<td>`. `InvoiceView.jsx` + `store.css`.
+
+**Verify stage rejected (false positives — did NOT ship):** a `<caption>` (the table already satisfies 1.3.1 via
+`scope="col"`, so a caption is optional, not a gap); a minus-sign "fix" (the refund already uses U+2212); a
+`role="img"` on the text logo (wrong for text-rendered content — would hide the readable wordmark); a voice pass
+that mis-flagged an em dash in a code comment (not rendered).
+
+**PROPOSE (needs John, not built):**
+- **VAT registration number (HIGH).** The invoice shows `VAT registration: [add VAT no.]` (red `.inv-todo`) on a
+  document titled **VAT Invoice**. A UK VAT invoice must carry the real VAT number; before live use John must
+  either supply it (a config/org-setting value, not hardcoded) or, if the company isn't VAT-registered, drop the
+  "VAT Invoice" title and the 20% VAT line. The red placeholder currently renders on the printed page too, which
+  is a useful safeguard (it makes the gap visible) but must be resolved for any real invoice.
+- **Logo aria-label (LOW, borderline).** One lens suggested `aria-label="Greatstone"` on the `.inv-logo` div; left
+  unshipped because the wordmark text "GREATSTONE" is already announced correctly and `aria-label` on a bare div
+  is inconsistently honoured. Not worth the risk; flagged for John if he wants it.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. The CSS reset was reasoned against the
+cascade (the route needs a live order to render, so it can't be browser-previewed without seeded data).

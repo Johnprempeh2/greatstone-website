@@ -79,10 +79,10 @@ export default function InvoiceView({ orderId }) {
             ))}
           </tbody>
           <tfoot>
-            <tr><td colSpan="3">Subtotal (ex VAT)</td><td>{fmtMoney(order.subtotal_minor, cur)}</td></tr>
-            <tr><td colSpan="3">VAT (20%)</td><td>{fmtMoney(vat, cur)}</td></tr>
-            <tr className="inv-total"><td colSpan="3">Total</td><td>{fmtMoney(order.total_minor, cur)}</td></tr>
-            {order.refunded_minor > 0 && <tr className="inv-refund"><td colSpan="3">Refunded</td><td>−{fmtMoney(order.refunded_minor, cur)}</td></tr>}
+            <tr><th scope="row" colSpan="3">Subtotal (ex VAT)</th><td>{fmtMoney(order.subtotal_minor, cur)}</td></tr>
+            <tr><th scope="row" colSpan="3">VAT (20%)</th><td>{fmtMoney(vat, cur)}</td></tr>
+            <tr className="inv-total"><th scope="row" colSpan="3">Total</th><td>{fmtMoney(order.total_minor, cur)}</td></tr>
+            {order.refunded_minor > 0 && <tr className="inv-refund"><th scope="row" colSpan="3">Refunded</th><td>−{fmtMoney(order.refunded_minor, cur)}</td></tr>}
           </tfoot>
         </table>
 
