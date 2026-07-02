@@ -575,3 +575,37 @@ carry `aria-label`, so this is polish, not a gap); account quotes loading skelet
 skeleton + stat-tile `aria-busy` (state changes better verified signed-in).
 
 The proposal backlog (cycles 21-25) is unchanged and still awaits John's call.
+
+---
+
+## Cycle 27 — 2026-07-02 — DEPLOY-READY: per-product-range activation instructions (NOT deployed)
+
+With the safe micro-win pool thin, this cycle built a real Ben feature (1 Jul item #4) rather than manufacture
+churn: author activation steps once per product range, shown on the account beside each licence and (on
+deploy) in the licence email. Built with a review workflow; the one HIGH finding was fixed and unit-tested.
+
+**Built (deploy-ready, NOT deployed):**
+- **Migration** `0025_vendor_activation.sql`: a `vendors.activation_instructions` TEXT column. No new RLS
+  (staff write via `vendors` `staff_all`; buyer reads via `public_read` on published vendors; it's help content).
+- **Admin**: new **Activation** tab (`src/store/VendorActivation.jsx`) wired into `CatalogueAdmin` — a textarea
+  per range with dirty-tracked Save.
+- **Account**: `LicenceKeys` shows a "How to activate" disclosure per licence, matched to its range by product
+  name via the new, unit-tested `src/lib/activation-match.mjs`.
+- **Handoff**: `docs/ACTIVATION-INSTRUCTIONS.md` (migration + frontend deploy + the optional email-injection
+  edge-fn step + the name-matching limitation).
+
+**Review + fixes (workflow `activation-instructions-review`):**
+- HIGH — the first name-matcher both missed dotted acronyms (I.R.I.S.) and mis-matched short tokens ("iron"
+  inside an unrelated word). Fixed by extracting a token-anchored matcher to `activation-match.mjs` (dot-stripped
+  full name via substring; short first token only via prefix-and-strictly-longer) with **6 unit tests** covering
+  Aspose/GroupDocs/ActivePDF/Apryse/PDFlib, ReadIRIS + IRISPen, IronPDF, and the "Stainless Iron Tools"
+  false-positive guard.
+- NIT — VendorActivation dirty check now trims (no stuck-dirty no-op saves); admin note warns that HTML/markdown
+  won't render.
+
+Verify: `npm test` 577 green (+6 matcher tests), `npm run build` clean, secret scan clean. Cannot be
+live-tested here (the column doesn't exist until the migration is applied); verified by tests + build + review.
+
+**Deploy-ready features now awaiting John's deploy:** licence-file fulfilment (0024) and activation
+instructions (0025). Two migrations + the frontend + (optionally) the `notify-licence-issued` email change ship
+them all in one pass.

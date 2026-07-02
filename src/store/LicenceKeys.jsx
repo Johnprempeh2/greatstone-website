@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { expiryInfo } from './licence-expiry.mjs';
 import { keysToCsv } from './keys-export.mjs';
+import { activationInstructionsFor } from '../lib/activation-match.mjs';
 import './store.css';
 import './admin.css';
 
@@ -23,6 +24,17 @@ export default function LicenceKeys() {
       .then(({ data, error }) => { setErr(error || null); setKeys(data || []); });
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Per-product-range activation steps (vendors.activation_instructions, migration 0025), matched to each
+  // licence by its product name. Failure-tolerant: before the migration the column doesn't exist, so on any
+  // error we simply show no activation block. Vendors are customer-readable (public_read, published only).
+  const [vendors, setVendors] = useState([]);
+  useEffect(() => {
+    supabase.from('vendors').select('id, name, activation_instructions').is('deleted_at', null)
+      .then(({ data, error }) => { if (!error) setVendors((data || []).filter((v) => v.activation_instructions)); });
+  }, []);
+  // Match each licence to its range's steps by product name (token-anchored; see lib/activation-match.mjs).
+  const activationFor = useCallback((offeringName) => activationInstructionsFor(offeringName, vendors), [vendors]);
 
   // Download a .lic licence FILE: mint a short-lived signed URL for the private object (Storage RLS lets a
   // buyer read only their own customer folder, 0024), then trigger the download. No file bytes touch our JS.
@@ -115,6 +127,9 @@ export default function LicenceKeys() {
                 {kk.expires_at ? <span>Expires {fmtDate(kk.expires_at)}</span> : null}
                 {kk.order?.reference ? <span>Order {kk.order.reference}</span> : null}
               </div>
+              {(() => { const act = kk.status === 'issued' ? activationFor(kk.offering_name) : null; return act ? (
+                <details className="lk-activate"><summary>How to activate</summary><div className="lk-activate-body">{act}</div></details>
+              ) : null; })()}
               {kk.status === 'revoked' && <p className="ca-note" style={{ marginTop: 8 }}>This key has been deactivated. If you think that's a mistake, <a className="ca-link" href="#go/contact">contact us</a>.</p>}
               {kk.status === 'expired' && <p className="ca-note" style={{ marginTop: 8 }}>This licence has expired. <a className="ca-link" href="#go/contact">Get in touch</a> to renew it.</p>}
             </div>

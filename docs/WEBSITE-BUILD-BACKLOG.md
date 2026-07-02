@@ -26,12 +26,13 @@ missing · **[MISSING]** not started · **(gated)** cannot finish frontend-only,
   Emits `track('generate_lead', { form: 'ai_cost_calc' })`. Pure frontend. Completes the lead-magnet pair with
   the AI Baseline Survey.
 
-- **Per-product-range activation-instructions authoring UI** — [MISSING] (authoring + account display are
-  frontend-only; email injection is gated). Ben: activation instructions are authored **per product RANGE, not
-  per product** ("each product range... it will be only six or seven"; the 9 ranges are Aspose, GroupDocs,
-  IronSoftware, Apryse, DevExpress, Conholdate, ActivePDF, I.R.I.S., PDFlib), in "a word editor window." Build
-  the admin authoring surface in `CatalogueAdmin` (one card per vendor range, textarea), persist to localStorage
-  for the frontend-only phase, and render read-only under each key in `LicenceKeys.jsx` ("How to activate").
+- **Per-product-range activation-instructions authoring UI** — [BUILT deploy-ready] (excellence Cycle 27;
+  **gated on the migration deploy**). Real DB-backed version, not the hollow localStorage phase: migration
+  `0025_vendor_activation.sql` (a `vendors.activation_instructions` column), a new **Activation** tab in
+  `CatalogueAdmin` (`VendorActivation.jsx`) to author steps once per vendor range, and a "How to activate"
+  disclosure per licence on the account (`LicenceKeys.jsx`), matched to its range by product name via the
+  unit-tested `src/lib/activation-match.mjs`. Email injection is the one gated follow-on (a `notify-licence-issued`
+  change). Handoff: `docs/ACTIVATION-INSTRUCTIONS.md`. Built with a review workflow (matcher hardened + tested).
 
 - **User-portal engagement polish** — [PARTIAL]. Ben wants the user area "a lot more engaging." It already has
   individual + company registration, team access, company purchases, a QBR-capable engagement timeline, and an
