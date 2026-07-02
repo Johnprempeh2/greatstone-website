@@ -862,3 +862,33 @@ via `applyHead`, not-found state, breadcrumb a11y, `safeMailto` inquiry, analyti
   outline; promoting it to h1 would misrepresent its role. Left as h3.
 
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean.
+
+---
+
+## Cycle 36 — 2026-07-02 — StoreProduct: alt-text correctness + quote-email voice (NOT deployed)
+
+Swept the public product-detail page (`StoreProduct.jsx`, `#product/<slug>`). Multi-lens Workflow
+(`storeproduct-sweep`: a11y + correctness) with adversarial verify. The page is very mature (loading/not-found
+tri-state, full SEO head, gallery with `aria-live` counter + `aria-current` thumbs + broken-image fallbacks,
+labelled basket/add controls, header-injection-safe mailto).
+
+**Shipped (verified, NOT deployed):**
+- **Main image alt now matches what's shown.** When a product has no gallery images, `cur` falls back to the
+  vendor logo but the alt still read the product name (a WCAG 1.1.1 mismatch: a vendor logo announced as the
+  product). Added a tracked `curIsGallery = !!gallery[gi]` flag and set the alt to the vendor logo's name in the
+  fallback case. Deliberately used tracked state, not the `gallery[gi]` re-check the review proposed (the verify
+  stage correctly flagged that as regression-prone once `gi` walks past the gallery length). No-op for the common
+  case (a product with images keeps `alt={o.name}`); only the empty-gallery edge changes.
+- **Quote-email voice:** the "Request a quote" mailto builder used em dashes in the subject + body
+  ("Quote request — Name — Edition"). Changed to a colon + comma ("Quote request: Name, Edition"). This is
+  buyer-facing output (their mail client shows it); the earlier voice sweep didn't cover this builder.
+
+**PROPOSE (not shipped):**
+- **Vendor logo `alt=""` (line 97):** the review flagged it as a missing alt, but the logo sits immediately
+  beside `<span>{vendor.name}</span>`. When an image is adjacent to its equivalent text, empty alt is the correct
+  WCAG choice (adding alt would double-announce the vendor). Left as-is; noted here as considered-and-declined.
+- **Gallery arrow-key navigation:** an AAA enhancement (keyboard access is already met at AA via Tab + the
+  labelled prev/next buttons). Matches a pattern used in ~6 other components, but it makes the stage focusable +
+  adds focus management, so it's a small feature, not a pure fix. Flagged for John.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean.

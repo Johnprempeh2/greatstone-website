@@ -17,9 +17,9 @@ const QUOTE_EMAIL = 'dx@greatstonesoftware.co.uk';
 // stated "browse-and-enquire, no account needed to ask" model and carries the product context. Subject +
 // body are encodeURIComponent'd (newlines → %0A) so a catalogue-sourced name can't inject mail headers.
 const quoteMailto = (o, variant) => {
-  const what = variant ? (o.name + ' — ' + variant.name) : o.name;
+  const what = variant ? (o.name + ', ' + variant.name) : o.name;
   const vendor = o.vendor && o.vendor.name ? ' (' + o.vendor.name + ')' : '';
-  const subject = 'Quote request — ' + what;
+  const subject = 'Quote request: ' + what;
   const body = 'Hi Greatstone,\n\nPlease send a quote for ' + what + vendor + '.\n\nTeam size / seats:\nLicence term:\nTimeline:\nAnything specific:\n\nThanks,';
   return 'mailto:' + QUOTE_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 };
@@ -68,6 +68,9 @@ export default function StoreProduct({ slug, onBack, applyHead }) {
 
   const gallery = [...new Set([o.attributes && o.attributes.icon, o.attributes && o.attributes.mainImage, ...((o.attributes && o.attributes.gallery) || [])].filter(Boolean))].map(img);
   const cur = gallery[gi] || img(o.vendor && o.vendor.logo_url);
+  // cur is a real product image, or the vendor-logo fallback when the gallery is empty; the alt must match
+  // which one is actually showing (a vendor logo announced as the product name is a WCAG 1.1.1 mismatch).
+  const curIsGallery = !!gallery[gi];
   const fromP = o.from;
 
   return (
@@ -83,7 +86,7 @@ export default function StoreProduct({ slug, onBack, applyHead }) {
       <div className="sp-top">
         <div className="sp-gallery">
           <div className="sp-stage">
-            {cur && <img src={cur} alt={o.name} onError={e => { e.currentTarget.style.visibility = 'hidden'; }} />}
+            {cur && <img src={cur} alt={curIsGallery ? o.name : ((o.vendor && o.vendor.name) ? o.vendor.name + ' logo' : o.name)} onError={e => { e.currentTarget.style.visibility = 'hidden'; }} />}
             {gallery.length > 1 && <>
               <button className="sp-nav prev" onClick={() => setGi(g => (g - 1 + gallery.length) % gallery.length)} aria-label="Previous image">‹</button>
               <button className="sp-nav next" onClick={() => setGi(g => (g + 1) % gallery.length)} aria-label="Next image">›</button>
