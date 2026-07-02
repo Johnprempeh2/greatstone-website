@@ -718,3 +718,38 @@ Both customer + catalogue-admin forms lacked the same error-association wiring t
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. The customer sign-in form was also
 live-checked in the preview (`#account`): labels associate (`for`/`id`), correct `autocomplete`, and the
 `aria-*` error attributes correctly absent until an error exists, with no console errors.
+
+---
+
+## Cycle 31 — 2026-07-02 — 3D Stage/BackgroundPanel editor: mostly excellent, one voice fix (NOT deployed)
+
+Swept the 3D background editor (admin-only). Recon first found `OrgDashboard.jsx` and `Stage.jsx` already
+excellent (OrgDashboard: role=region/tablist/tabpanel, progressbar `aria-valuetext`, sr-only live regions,
+labelled controls, empty/skeleton states; Stage: continuous `prefers-reduced-motion` that freezes the loop,
+decorative layers `aria-hidden`), so the sweep focused on `BackgroundPanel.jsx` + `stage-presets.js`.
+Multi-lens Workflow (`stage-editor-sweep`: correctness / a11y / voice) with adversarial verify.
+
+**Shipped (verified, NOT deployed):**
+- **Voice: em dashes removed from the scene labels.** `stage-presets.js` `STAGE_OPTIONS` and `SCENE_KINDS`
+  carried `'Tide — waves'` / `'Tide — radial'` / `'Tide — calm'` (a hard-banned Greatstone AI tell). Replaced
+  the em dashes with commas. Pure data-string change; these render in the studio's preset + scene dropdowns.
+  (The verify stage inconsistently confirmed the `SCENE_KINDS` set but rejected the identical `STAGE_OPTIONS`
+  em dashes; both are the same violation, so both were fixed.)
+
+**Declined two "HIGH correctness" findings after grounding the data model (NOT bugs → reclassified PROPOSE):**
+The workflow flagged `removeScene` (removes the "wrong" transition) and `moveScene` (doesn't reorder
+transitions) as high-severity bugs, and the verify stage confirmed both. I did not ship them. Reading how the
+model is actually consumed (`Stage.jsx` L68-69: `incoming = t[k-1]`, `outgoing = t[k]`) shows transitions are
+**positional boundaries** (transition[i] is the crossfade at the scroll boundary between whichever scenes sit at
+positions i and i+1; its `at`/`fade` describe that scroll position, not a scene identity). Under that model both
+operations already produce a valid, monotonic, non-crashing track (Stage even `??`-guards a malformed one).
+So neither is an objective bug; they're a UX-behaviour choice, and the verify agents accepted the reviewer's
+assumed (scene-tied) intent. Changing working, untested scene-track math on that basis is a regression risk, not
+a safe win. **PROPOSE for John:** when you delete or reorder a scene, should a transition's fade/anchor follow
+the scene, or stay at its scroll position? (Today: stays at the scroll position.)
+
+**Verify rejected the rest:** `center` vs `centred` enum (needs a data migration + `stage-presets.js` consumer
+change; unsafe as a one-line edit); buttons without `type="button"` (cosmetic only, there is no `<form>`).
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. Honest outcome: this surface was already
+in good shape; one real voice fix shipped, the "bugs" were behaviour preferences left for John.
