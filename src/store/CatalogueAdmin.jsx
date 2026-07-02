@@ -86,9 +86,9 @@ function SignInGate() {
       <h1>Sign in</h1>
       <p className="ca-sub">Manage the Greatstone software catalogue, pricing and quotes.</p>
       <form onSubmit={submit}>
-        <label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" required /></label>
-        <label>Password<input type="password" value={pw} onChange={e => setPw(e.target.value)} autoComplete="current-password" required /></label>
-        {err && <div className="ca-err" role="alert">{err}</div>}
+        <label htmlFor="ca-cat-email">Email<input id="ca-cat-email" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr(null); }} autoComplete="username" required aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'ca-cat-err' : undefined} /></label>
+        <label htmlFor="ca-cat-password">Password<input id="ca-cat-password" type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(null); }} autoComplete="current-password" required aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'ca-cat-err' : undefined} /></label>
+        {err && <div id="ca-cat-err" className="ca-err" role="alert">{err}</div>}
         <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
       </form>
     </div></div>

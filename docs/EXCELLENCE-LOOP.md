@@ -689,3 +689,32 @@ that mis-flagged an em dash in a code comment (not rendered).
 
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. The CSS reset was reasoned against the
 cascade (the route needs a live order to render, so it can't be browser-previewed without seeded data).
+
+---
+
+## Cycle 30 — 2026-07-02 — fresh sweep: sign-in form a11y parity (NOT deployed)
+
+Swept the authentication forms. The admin `SignIn.jsx` + shared `PasswordInput.jsx` are the gold standard
+(and this confirmed the Cycle-26 open question: PasswordInput **does** forward `aria-invalid`/`aria-describedby`,
+plus a 44x44 toggle, `aria-pressed`/`aria-controls`, `tabIndex=-1`). Multi-lens Workflow (`auth-forms-sweep`:
+a11y / correctness / voice) compared the two OTHER sign-in forms against it, with an adversarial verify stage.
+Both customer + catalogue-admin forms lacked the same error-association wiring the admin form has.
+
+**Shipped (verified, NOT deployed) — brought both forms up to the gold standard:**
+- **Customer sign-in / register / reset** (`AccountDashboard.jsx`, `AuthGate` + `SetNewPassword`): the error
+  `<div>` now has an `id` and each input wires `aria-invalid` + `aria-describedby` to it (so a screen reader
+  announces which field the error is about, not just that an error exists); every field clears the error/message
+  on edit (was stale until resubmit); explicit `htmlFor`/`id` on each label (the password one also disambiguates
+  the label from PasswordInput's show/hide toggle).
+- **Catalogue-admin sign-in** (`CatalogueAdmin.jsx`, `SignInGate`): same treatment — error-div `id`,
+  `aria-invalid`/`aria-describedby` on email + password, `htmlFor`/`id` labels, clear-error-on-edit.
+
+**Verify stage rejected 3 false positives; PROPOSE (not shipped):**
+- Autofocus the first field on mount (both forms) — matches the admin form but classified subjective (autofocus
+  has genuine a11y debate); left for John.
+- Swap the catalogue-admin's plain `<input type=password>` for the shared `PasswordInput` (show/hide toggle,
+  44x44 target) — a component change, not a pure attribute fix; proposed.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. The customer sign-in form was also
+live-checked in the preview (`#account`): labels associate (`for`/`id`), correct `autocomplete`, and the
+`aria-*` error attributes correctly absent until an error exists, with no console errors.
