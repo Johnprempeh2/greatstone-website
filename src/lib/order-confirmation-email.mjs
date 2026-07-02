@@ -32,7 +32,7 @@ export function buildOrderConfirmationEmail(opts = {}) {
   const subtotal = Number(opts.subtotalMinor || 0);
   const total = Number(opts.totalMinor || 0);
   const vat = Math.max(0, total - subtotal);
-  const origin = (opts.siteOrigin ? String(opts.siteOrigin) : 'https://greatstonesoftware.co.uk').replace(/\/+$/, '');
+  const origin = (opts.siteOrigin ? String(opts.siteOrigin) : 'https://greatstoneint.com').replace(/\/+$/, '');
   const accountUrl = opts.accountUrl || origin + '/#account';
 
   const greeting = name ? 'Hi ' + escapeHtml(name) + ',' : 'Hello,';

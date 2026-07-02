@@ -174,6 +174,17 @@ function Dashboard({ session, profile, onProfile }) {
   const [orderQ, setOrderQ] = useState('');
   // the #account h1 already greets by name, so only surface the "since last visit" line on a return visit
   const [lastVisit] = useState(() => sinceLastVisit('gs:lastvisit:account'));
+  // First-visit welcome email (Ben 1 Jul): fire-and-forget; send-welcome-email is the once-only authority
+  // (atomic claim on customer_users.welcome_email_sent_at), the localStorage flag just avoids re-invoking
+  // the function on every dashboard load from this browser. Silent on failure — never disturbs the account.
+  useEffect(() => {
+    const uid = session?.user?.id; if (!uid || !supabase) return;
+    const flag = 'gs:welcomed:' + uid;
+    try { if (localStorage.getItem(flag)) return; } catch { /* still safe: the server claim is the guard */ }
+    supabase.functions.invoke('send-welcome-email')
+      .then(({ data }) => { if (data && (data.sent || data.skipped === 'already sent')) { try { localStorage.setItem(flag, '1'); } catch { /* ignore */ } } })
+      .catch(() => { /* retried on a later visit */ });
+  }, [session?.user?.id]);
   // for a non-admin member: who to ask for access (their company's primary contact / admin). RLS customer_self
   // already scopes customer_users to the member's own company; this read is a no-op for admins.
   const [companyAdmin, setCompanyAdmin] = useState(null);

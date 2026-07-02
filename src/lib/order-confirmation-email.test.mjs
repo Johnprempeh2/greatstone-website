@@ -13,15 +13,15 @@ test('order confirmation: subject + itemised order + totals + next steps', () =>
     customerName: 'Jane', reference: 'cs_test_a1b2c3d4e5f6g7h8',
     items: [{ offering_name: 'Aspose.Total for .NET', variant_name: 'Developer OEM', qty: 2, line_total_minor: 1999800 }],
     subtotalMinor: 1666500, totalMinor: 1999800, currency: 'GBP',
-    siteOrigin: 'https://greatstonesoftware.co.uk',
+    siteOrigin: 'https://greatstoneint.com',
   });
   assert.equal(subject, 'Your Greatstone order a1b2c3d4e5f6');
   assert.match(html, /Thank you, your order is confirmed/);
   assert.match(html, /Aspose\.Total for \.NET · Developer OEM ×2/);
   assert.match(html, /What happens next/);
   assert.match(html, /within one business day/);
-  assert.match(html, /href="https:\/\/greatstonesoftware\.co\.uk\/#account"/);
-  assert.match(text, /View your order: https:\/\/greatstonesoftware\.co\.uk\/#account/);
+  assert.match(html, /href="https:\/\/greatstoneint\.com\/#account"/);
+  assert.match(text, /View your order: https:\/\/greatstoneint\.com\/#account/);
 });
 
 test('order confirmation: VAT is derived from total minus subtotal, never negative', () => {

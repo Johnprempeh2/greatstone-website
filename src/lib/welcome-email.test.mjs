@@ -5,14 +5,14 @@ import { buildWelcomeEmail } from './welcome-email.mjs';
 test('welcome email: subject, greeting, brand intro and account CTA', () => {
   const { subject, html, text } = buildWelcomeEmail({
     customerName: 'Jane', company: 'Stonewell & Co.',
-    siteOrigin: 'https://greatstonesoftware.co.uk',
+    siteOrigin: 'https://greatstoneint.com',
   });
   assert.equal(subject, 'Welcome to Greatstone');
   assert.match(html, /Hi Jane,/);
   assert.match(html, /Stonewell &amp; Co\./);            // company HTML-escaped
-  assert.match(html, /href="https:\/\/greatstonesoftware\.co\.uk\/#account"/);
+  assert.match(html, /href="https:\/\/greatstoneint\.com\/#account"/);
   assert.match(html, /Go to your account/);
-  assert.match(text, /Go to your account: https:\/\/greatstonesoftware\.co\.uk\/#account/);
+  assert.match(text, /Go to your account: https:\/\/greatstoneint\.com\/#account/);
 });
 
 test('welcome email: the three next steps are present', () => {

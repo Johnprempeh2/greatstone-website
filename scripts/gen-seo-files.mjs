@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { buildSitemapXml, buildRobotsTxt, normaliseOrigin } from '../src/lib/seo-files.mjs';
 
-const DEFAULT_ORIGIN = 'https://greatstone-home.netlify.app'; // the one place a default host lives; VITE_SITE_ORIGIN overrides it
+const DEFAULT_ORIGIN = 'https://greatstoneint.com'; // the canonical domain (decided 2 Jul: permanent, no move); VITE_SITE_ORIGIN overrides it
 
 const here = dirname(fileURLToPath(import.meta.url));
 const publicDir = resolve(here, '..', 'public');

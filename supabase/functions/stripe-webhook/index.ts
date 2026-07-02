@@ -128,7 +128,7 @@ async function recordRefund(charge: Stripe.Charge) {
 
 // Transactional-ish order confirmation via Resend (HTTP). No-ops cleanly if RESEND_API_KEY is unset,
 // so the webhook + order capture never depend on email being configured. Set RESEND_API_KEY + RESEND_FROM
-// (a verified sender, e.g. "Greatstone <orders@greatstonesoftware.co.uk>") to switch it on.
+// (a verified sender, e.g. "Greatstone <orders@greatstoneint.com>") to switch it on.
 async function sendOrderEmail(o: { to: string | null; reference: string; items: any[]; subtotal: number; total: number; currency: string }) {
   const KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') || 'Greatstone <onboarding@resend.dev>';
@@ -140,7 +140,7 @@ async function sendOrderEmail(o: { to: string | null; reference: string; items: 
   const money = (m: number) => sym + (Number(m || 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const ref = /^cs_(test|live)_/.test(o.reference) ? o.reference.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 12) : o.reference;
-  const account = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstonesoftware.co.uk').replace(/\/+$/, '') + '/#account';
+  const account = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstoneint.com').replace(/\/+$/, '') + '/#account';
   const itemLabel = (it: any) => esc((it.offering_name || 'Item') + (it.variant_name ? ' · ' + it.variant_name : '') + (it.qty && it.qty > 1 ? ' ×' + it.qty : ''));
   const rows = o.items.map((it) => `<tr><td style="padding:6px 0;color:#cfd3cb;font-size:14px">${itemLabel(it)}</td><td style="padding:6px 0;text-align:right;color:#f5f5f5;font-size:14px">${money(it.line_total_minor)}</td></tr>`).join('');
   const vat = Math.max(0, o.total - o.subtotal);

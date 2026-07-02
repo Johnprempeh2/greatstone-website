@@ -4,9 +4,10 @@
 // concrete next steps. Pure + framework-free so it runs in both a Deno edge function and node tests. No
 // secrets, no remote images (CSS wordmark), values HTML-escaped. Same chrome as the order + licence emails.
 //
-// DISPATCH IS GATED: sending this needs a trigger (a Supabase auth hook or a small edge function invoked on
-// customer_users insert) plus the Resend secrets. This module is the reviewable, deploy-ready template; the
-// wiring is tracked in docs/AUTH-EMAILS.md.
+// DISPATCH (wired 2 Jul): the send-welcome-email edge function mirrors this template (keep the two in step)
+// and sends it once per customer, claimed atomically on customer_users.welcome_email_sent_at (migration
+// 0027), triggered fire-and-forget from the account dashboard's first visit. It still needs the Resend
+// secrets to actually send; until then it no-ops without claiming.
 import { escapeHtml } from './licence-email.mjs';
 
 const ACCENT = '#c8ff00';
@@ -19,7 +20,7 @@ const FAINT = '#707070';
 export function buildWelcomeEmail(opts = {}) {
   const name = opts.customerName ? String(opts.customerName).trim() : '';
   const company = opts.company ? String(opts.company).trim() : '';
-  const origin = (opts.siteOrigin ? String(opts.siteOrigin) : 'https://greatstonesoftware.co.uk').replace(/\/+$/, '');
+  const origin = (opts.siteOrigin ? String(opts.siteOrigin) : 'https://greatstoneint.com').replace(/\/+$/, '');
   const accountUrl = opts.accountUrl || origin + '/#account';
   const shopUrl = opts.shopUrl || origin + '/#shop';
   const bookUrl = opts.bookUrl || origin + '/#book';

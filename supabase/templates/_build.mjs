@@ -25,10 +25,10 @@ const ACTION = '{{ .ConfirmationURL }}';
 const MUTED = '#9a9a9a';
 const LINK = '#aeb4ad';
 
-// Single canonical domain + contact. One edit here at the real-domain cutover; nothing else in the
-// templates hardcodes a host. Kept as the live .co.uk so the emails are correct today and stay correct
-// after cutover (the placeholder IS the launch domain).
-const SITE = 'https://greatstonesoftware.co.uk';
+// Single canonical domain + contact. Nothing else in the templates hardcodes a host.
+// SITE: greatstoneint.com is the permanent domain (decided 2 Jul; no move to greatstonesoftware.co.uk).
+// CONTACT stays on the old domain until John confirms a mailbox exists at the new one (it must RECEIVE).
+const SITE = 'https://greatstoneint.com';
 const CONTACT = 'dx@greatstonesoftware.co.uk';
 
 // VML roundrect width must fit the CTA text (Outlook ignores the <a>'s padding, so the modern button
