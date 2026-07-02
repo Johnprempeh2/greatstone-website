@@ -42,8 +42,8 @@ export default function NotesPanel({ order = [], pages = {}, onSetNote, onClearN
     <PanelFrame embedded={embedded} label={<>Editorial notes {withNotes ? <span className="gs-panel-count">{withNotes}</span> : null}</>} name="Editorial notes" onClose={onClose}>
       <div className="gs-panel-body">
         <p className="gs-field-hint" style={{ marginTop: 0 }}>
-          Pin a short note to any page for your team — “waiting on legal”, “copy approved by Ben”, “don’t
-          publish until launch”. <strong>It’s a reminder, not a gate</strong> — it never blocks publishing,
+          Pin a short note to any page for your team: “waiting on legal”, “copy approved by Ben”, “don’t
+          publish until launch”. <strong>It’s a reminder, not a gate.</strong> It never blocks publishing,
           and you can clear it any time.
         </p>
 

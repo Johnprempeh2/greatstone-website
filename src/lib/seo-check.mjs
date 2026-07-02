@@ -49,9 +49,9 @@ export function checkSeo(state) {
       issues.push({ ruleId: 'no-title', severity: 'error', field: 'title', fieldLabel: 'Meta title', label: 'Missing meta title', suggestion: 'add a meta title so search shows the right headline' });
     } else {
       if (title.length < TITLE_LO) issues.push({ ruleId: 'title-short', severity: 'warn', field: 'title', fieldLabel: 'Meta title', value: title, label: 'Meta title is short', suggestion: 'aim for ' + TITLE_LO + '–' + TITLE_HI + ' characters so the result fills the line' });
-      else if (title.length > TITLE_HI) issues.push({ ruleId: 'title-long', severity: 'warn', field: 'title', fieldLabel: 'Meta title', value: title, label: 'Meta title is too long', suggestion: 'over ' + TITLE_HI + ' characters — Google truncates the end; tighten it' });
+      else if (title.length > TITLE_HI) issues.push({ ruleId: 'title-long', severity: 'warn', field: 'title', fieldLabel: 'Meta title', value: title, label: 'Meta title is too long', suggestion: 'over ' + TITLE_HI + ' characters. Google truncates the end; tighten it' });
       const dup = others(titleMap, normVal(title), slug);
-      if (dup) issues.push({ ruleId: 'dup-title', severity: 'error', field: 'title', fieldLabel: 'Meta title', value: title, label: 'Duplicate meta title', suggestion: 'also used on ' + nameList(dup) + ' — give each page its own title' });
+      if (dup) issues.push({ ruleId: 'dup-title', severity: 'error', field: 'title', fieldLabel: 'Meta title', value: title, label: 'Duplicate meta title', suggestion: 'also used on ' + nameList(dup) + '. Give each page its own title' });
     }
 
     // --- meta description: presence + length + duplicate ---
@@ -59,9 +59,9 @@ export function checkSeo(state) {
       issues.push({ ruleId: 'no-desc', severity: 'error', field: 'description', fieldLabel: 'Meta description', label: 'Missing meta description', suggestion: 'add one honest line; search and social show it under the title' });
     } else {
       if (desc.length < DESC_LO) issues.push({ ruleId: 'desc-short', severity: 'warn', field: 'description', fieldLabel: 'Meta description', value: desc, label: 'Meta description is short', suggestion: 'aim for ' + DESC_LO + '–' + DESC_HI + ' characters to use the snippet fully' });
-      else if (desc.length > DESC_HI) issues.push({ ruleId: 'desc-long', severity: 'warn', field: 'description', fieldLabel: 'Meta description', value: desc, label: 'Meta description is too long', suggestion: 'over ' + DESC_HI + ' characters — the snippet truncates; trim it' });
+      else if (desc.length > DESC_HI) issues.push({ ruleId: 'desc-long', severity: 'warn', field: 'description', fieldLabel: 'Meta description', value: desc, label: 'Meta description is too long', suggestion: 'over ' + DESC_HI + ' characters. The snippet truncates; trim it' });
       const dup = others(descMap, normVal(desc), slug);
-      if (dup) issues.push({ ruleId: 'dup-desc', severity: 'error', field: 'description', fieldLabel: 'Meta description', value: desc, label: 'Duplicate meta description', suggestion: 'also used on ' + nameList(dup) + ' — give each page its own description' });
+      if (dup) issues.push({ ruleId: 'dup-desc', severity: 'error', field: 'description', fieldLabel: 'Meta description', value: desc, label: 'Duplicate meta description', suggestion: 'also used on ' + nameList(dup) + '. Give each page its own description' });
     }
 
     if (issues.length) {

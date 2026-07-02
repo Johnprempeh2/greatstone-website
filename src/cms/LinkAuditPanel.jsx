@@ -17,7 +17,7 @@ export default function LinkAuditPanel({ audit, pages = {}, onOpen, onClose, emb
 
   const describe = (i) => {
     if (i.dead) return 'this button is labelled but links nowhere';
-    if (i.severity === 'recoverable') return 'forwards to “' + title(i.fixSlug) + '” via a redirect — repoint it';
+    if (i.severity === 'recoverable') return 'forwards to “' + title(i.fixSlug) + '” via a redirect. Repoint it';
     return 'points at “' + i.target + '”, which no longer exists';
   };
 
@@ -64,7 +64,7 @@ export default function LinkAuditPanel({ audit, pages = {}, onOpen, onClose, emb
                       <span className="gs-la-pill is-orphan">Orphan</span>
                       <span className="gs-la-body">
                         <span className="gs-la-where">{title(slug)}</span>
-                        <span className="gs-la-target">reachable only by direct URL — add it to the navigation or link to it from a page</span>
+                        <span className="gs-la-target">reachable only by direct URL. Add it to the navigation or link to it from a page</span>
                       </span>
                       {onOpen ? <button type="button" className="gs-btn ghost sm gs-la-fix" onClick={() => onOpen(slug)}>Open</button> : null}
                     </li>

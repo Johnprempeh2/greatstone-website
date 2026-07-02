@@ -511,11 +511,11 @@ function EngagementTimeline({ engagements, orders, companyId, companyName, membe
         <div>
           <span className="st-kicker">Digital experience</span>
           <h2 id="dx-h">Your DX engagement</h2>
-          <p className="dx-sub">Your journey with Greatstone — recaps, milestones and deliverables, newest first.</p>
+          <p className="dx-sub">Your journey with Greatstone. Recaps, milestones and deliverables, newest first.</p>
         </div>
         {newCount > 0 && (
           <button type="button" className="dx-newcount" onClick={scrollToNewest}
-            aria-label={`${newCount} ${newCount === 1 ? 'item' : 'items'} added since your last visit — jump to the newest`}>
+            aria-label={`${newCount} ${newCount === 1 ? 'item' : 'items'} added since your last visit. Jump to the newest`}>
             {newCount} new
           </button>
         )}
@@ -569,7 +569,7 @@ function EngagementTimeline({ engagements, orders, companyId, companyName, membe
           )}
 
           {past.length === 0 ? (
-            <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>Your timeline fills in after your first session — see “What's next” above.</p>
+            <p className="ca-note" role="status" style={{ padding: '20px 4px' }}>Your timeline fills in after your first session. See “What's next” above.</p>
           ) : (
             <>
               {phasesPresent && (
@@ -601,7 +601,7 @@ function EngagementTimeline({ engagements, orders, companyId, companyName, membe
                     const filtered = phaseFilter !== 'all';
                     return (
                       <p className="dx-phase-delivers" role="status">
-                        <span className="dx-phase-delivers-ph">{filtered ? <>Showing <b>{cap}</b></> : <>You are in <b>{cap}</b></>}</span> — {PHASE_BLURB[cap]}
+                        <span className="dx-phase-delivers-ph">{filtered ? <>Showing <b>{cap}</b></> : <>You are in <b>{cap}</b></>}</span>: {PHASE_BLURB[cap]}
                         {filtered && <> <button type="button" className="ca-link" onClick={() => setPhaseFilter('all')}>Show all phases</button></>}
                       </p>
                     );
@@ -665,7 +665,7 @@ function Item({ e, companyName, isNew, open, onToggle }) {
   // "Discuss this" — prefilled mailto to the Greatstone team, so a client can pick up a thread in context
   const discussHref = 'mailto:dx@greatstonesoftware.co.uk'
     + '?subject=' + encodeURIComponent(`Re: ${e.title}${companyName ? ` (${companyName})` : ''}`)
-    + '&body=' + encodeURIComponent(`Hi Greatstone team,\n\nI'd like to discuss this from our engagement timeline:\n• ${e.title} — ${fmtDate(e.occurred_on)}\n\nThanks`);
+    + '&body=' + encodeURIComponent(`Hi Greatstone team,\n\nI'd like to discuss this from our engagement timeline:\n• ${e.title} (${fmtDate(e.occurred_on)})\n\nThanks`);
   const [copyMsg, setCopyMsg] = useState('');
   const linkRef = useRef(null);
   const cleanBody = useMemo(() => (open && e.body_html ? sanitizeHtml(e.body_html) : ''), [open, e.body_html]);
@@ -913,7 +913,7 @@ function InviteForm({ customerId, requestedBy, taken, onDone }) {
     });
     setBusy(false);
     if (error) { fail(error.code === '23505' ? 'A request for this email is already pending.' : (error.message || 'Could not send the request.')); return; }
-    onDone("Invitation requested — our team will set up access and be in touch.");
+    onDone("Invitation requested. Our team will set up access and be in touch.");
   };
   return (
     <form className="pr-form org-inviteform" onSubmit={submit}>

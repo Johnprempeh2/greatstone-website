@@ -753,3 +753,37 @@ change; unsafe as a one-line edit); buttons without `type="button"` (cosmetic on
 
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. Honest outcome: this surface was already
 in good shape; one real voice fix shipped, the "bugs" were behaviour preferences left for John.
+
+---
+
+## Cycle 32 — 2026-07-02 — Greatstone-voice pass: prose em dashes removed from visible copy (NOT deployed)
+
+A repo-wide voice sweep for the hard no-em-dash rule in USER-VISIBLE copy. Multi-lens Workflow
+(`voice-emdash-sweep`: CMS panels / lib strings / public copy) returned exact old→new edits, adversarially
+verified that each was rendered prose (not an empty-cell `—` placeholder, comment, test, or the em-dash-stripping
+sanitisers). Then a manual exhaustive grep caught more the Explore finders had missed.
+
+**Shipped (verified, NOT deployed) — ~29 prose em dashes removed across 11 files:**
+- **Studio panels** (`A11yPanel`, `SeoHealthPanel`, `OutlinePanel`, `CopyCoachPanel`, `LinkAuditPanel`,
+  `LinkField`, `NotesPanel`, `RedirectsPanel`): the `{label} — {suggestion}`/`{label} — {detail}` audit-row
+  separators became colons; the panel hints and redirect/link status messages became full stops.
+- **Audit engines** (`src/lib/seo-check.mjs`, `src/lib/a11y-check.mjs`): all the SEO + a11y suggestion strings
+  shown in the studio (title/description too-long + duplicate; vague link text; H1 structure) lost their em
+  dashes. Note: the sweep flagged 2 of 4 in `seo-check` and 3 of 4 in `a11y-check`; I fixed all of them for
+  consistency (identical objectively-correct fix).
+- **OrgDashboard** (6): the DX-timeline sub, the "jump to newest" aria-label, the empty-timeline note, the
+  phase blurb separator, the "Discuss this" mailto body, and the invite-requested toast.
+
+**Deliberately NOT changed:** em-dash empty-cell placeholders (`<span>—</span>`, `value ?? '—'`), code comments,
+tests, and the dash-stripping sanitisers (`store.js`, `a11y-check` `normLabel`) — those are correct.
+
+**Caught a harmful false positive (SKIPPED):** the sweep proposed changing `PillarCards` "We **analyse** your
+stack" to American "analyze". That reverses the British-English house rule; rejected and not applied. (Lesson
+re-confirmed: verify-confirmed ≠ correct; a spelling "fix" can point the wrong way.)
+
+**PROPOSE (subjective rewrite, not shipped):** "journey"-as-metaphor survives in a few strings (OrgDashboard
+"Your journey with Greatstone", PillarCards "journeys"). The voice guide discourages the journey metaphor, but
+rephrasing is a copy decision, not a mechanical fix, so it's left for John.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. No prose em dashes remain in the 11
+touched files (only code comments + the sanitiser regex, which are correct).

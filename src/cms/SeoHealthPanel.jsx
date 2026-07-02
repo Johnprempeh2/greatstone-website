@@ -34,7 +34,7 @@ export default function SeoHealthPanel({ report, pages = {}, onFix, onClose, emb
                     <span className="gs-la-body">
                       <span className="gs-la-where">{i.fieldLabel}{i.value != null ? ' · ' + i.value.length + ' chars' : ''}</span>
                       {i.value ? <span className="gs-cs-snippet">“{i.value.length > 90 ? i.value.slice(0, 90) + '…' : i.value}”</span> : null}
-                      <span className="gs-la-target">{i.label} — {i.suggestion}</span>
+                      <span className="gs-la-target">{i.label}: {i.suggestion}</span>
                     </span>
                   </li>
                 ))}

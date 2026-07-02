@@ -6,14 +6,14 @@ import PanelFrame from './PanelFrame.jsx';
 // this is presentational — every status comes pre-computed. Reuses the gs-la-pill colours (text+colour).
 const STATUS = {
   ok: { label: 'Active', pill: 'is-recoverable', say: (t) => 'forwards to “' + t + '”' },
-  'target-missing': { label: 'Dead end', pill: 'is-broken', say: () => 'its target no longer exists — repoint or remove it' },
+  'target-missing': { label: 'Dead end', pill: 'is-broken', say: () => 'its target no longer exists. Repoint or remove it' },
   shadowed: { label: 'Shadowed', pill: 'is-orphan', say: (_t, f) => '“' + f + '” is a live page now, so this redirect never fires' },
 };
 const ERRORS = {
   empty: 'Choose both an old path and a destination page.',
   same: 'The old path and the destination are the same.',
   'from-reserved': 'That path is a fixed route and can’t be redirected.',
-  'from-live': 'That path is a live page — a redirect from it would never fire. Rename or delete the page instead.',
+  'from-live': 'That path is a live page. A redirect from it would never fire. Rename or delete the page instead.',
   exists: 'A redirect from that path already exists. Edit it in the table below.',
   cycle: 'That would create a redirect loop.',
 };
@@ -32,7 +32,7 @@ export default function RedirectsPanel({ rows = [], pages = {}, order = [], erro
           one by hand, repoint it, or remove a stale one. <strong>Active</strong> redirects forward to a live
           page; <strong>Dead end</strong> ones point at a page that no longer exists; <strong>Shadowed</strong>
           ones can’t fire because their old path is a live page again. Removing an Active redirect may strand
-          old links — Link health will flag any that break.
+          old links. Link health will flag any that break.
         </p>
 
         <form className="gs-redir-add" onSubmit={submit} aria-label="Add a redirect">

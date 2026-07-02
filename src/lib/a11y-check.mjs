@@ -55,7 +55,7 @@ export function checkA11y(state) {
         const label = props[labelKey];
         if (!label || !(hrefKey in props) || !hasLink(props[hrefKey])) continue; // dead/empty CTAs are Link-health's job
         if (VAGUE_LABELS.has(normLabel(label))) {
-          issues.push({ ruleId: 'link-text', severity: 'warn', wcag: '2.4.4', blockType, field: labelKey, fieldLabel: fieldLabel(blockType, labelKey), label: 'Vague link text', suggestion: 'say where it goes (e.g. “See the eight pillars”) — screen-reader users navigate by link text', snippet: snippetFor(String(label)) });
+          issues.push({ ruleId: 'link-text', severity: 'warn', wcag: '2.4.4', blockType, field: labelKey, fieldLabel: fieldLabel(blockType, labelKey), label: 'Vague link text', suggestion: 'say where it goes (e.g. “See the eight pillars”). Screen-reader users navigate by link text', snippet: snippetFor(String(label)) });
         }
       }
     });
@@ -65,12 +65,12 @@ export function checkA11y(state) {
     const nonEmpty = h1Blocks.filter((b) => headingText(b));
     const empties = h1Blocks.filter((b) => !headingText(b));
     if (empties.length) {
-      empties.forEach((b) => issues.push({ ruleId: 'empty-h1', severity: 'error', wcag: '2.4.6', blockType: b.type, field: 'headline', fieldLabel: 'Headline', label: 'Empty main heading', suggestion: 'this block is the page’s main heading (H1) but has no text — add a headline' }));
+      empties.forEach((b) => issues.push({ ruleId: 'empty-h1', severity: 'error', wcag: '2.4.6', blockType: b.type, field: 'headline', fieldLabel: 'Headline', label: 'Empty main heading', suggestion: 'this block is the page’s main heading (H1) but has no text. Add a headline' }));
     }
     if (nonEmpty.length === 0 && empties.length === 0) {
-      issues.push({ ruleId: 'no-h1', severity: 'error', wcag: '2.4.6', blockType: '(page)', field: '', fieldLabel: 'Page structure', label: 'No main heading', suggestion: 'no block on this page sets a main heading (H1) — add a Hero so the page has one' });
+      issues.push({ ruleId: 'no-h1', severity: 'error', wcag: '2.4.6', blockType: '(page)', field: '', fieldLabel: 'Page structure', label: 'No main heading', suggestion: 'no block on this page sets a main heading (H1). Add a Hero so the page has one' });
     } else if (nonEmpty.length > 1) {
-      nonEmpty.slice(1).forEach((b) => issues.push({ ruleId: 'multi-h1', severity: 'error', wcag: '1.3.1', blockType: b.type, field: 'headline', fieldLabel: 'Headline', label: 'Duplicate main heading', suggestion: 'a page should have one H1; this is an extra main heading — change it to a Chapter (H2)' }));
+      nonEmpty.slice(1).forEach((b) => issues.push({ ruleId: 'multi-h1', severity: 'error', wcag: '1.3.1', blockType: b.type, field: 'headline', fieldLabel: 'Headline', label: 'Duplicate main heading', suggestion: 'a page should have one H1; this is an extra main heading. Change it to a Chapter (H2)' }));
     }
 
     if (issues.length) {

@@ -15,7 +15,7 @@ export default function OutlinePanel({ report, pages = {}, onOpen, onClose, embe
     <PanelFrame embedded={embedded} label={<>Document outline {total ? <span className="gs-panel-count">{total}</span> : null}</>} name="Document outline" onClose={onClose}>
       <div className="gs-panel-body">
         <p className="gs-field-hint" style={{ marginTop: 0 }}>
-          The heading structure of every page — its H1 → H2 → H3 tree, built from the sections you’ve placed.
+          The heading structure of every page: its H1 → H2 → H3 tree, built from the sections you’ve placed.
           Flags heading levels that <strong>jump down more than one</strong> (e.g. H2→H4) or pages that
           don’t open with their H1. <strong>Advisory only:</strong> it never changes anything. Missing,
           empty, or duplicate main headings are handled by the Accessibility coach.
@@ -56,7 +56,7 @@ export default function OutlinePanel({ report, pages = {}, onOpen, onClose, embe
                       <span className="gs-la-pill is-recoverable">Warning</span>
                       <span className="gs-la-body">
                         <span className="gs-la-where">{i.blockType}{i.wcag ? ' · WCAG ' + i.wcag : ''}</span>
-                        <span className="gs-la-target">{i.label} — {i.detail}</span>
+                        <span className="gs-la-target">{i.label}: {i.detail}</span>
                       </span>
                     </li>
                   ))}

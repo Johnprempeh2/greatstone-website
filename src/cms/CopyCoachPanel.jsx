@@ -19,7 +19,7 @@ export default function CopyCoachPanel({ report, pages = {}, onOpen, onClose, em
     <PanelFrame embedded={embedded} label={<>Copy coach {total ? <span className="gs-panel-count">{total}</span> : null}</>} name="Copy coach" onClose={onClose}>
       <div className="gs-panel-body">
         <p className="gs-field-hint" style={{ marginTop: 0 }}>
-          Every page’s wording, checked against the Greatstone house voice — banned filler, em-dashes, the
+          Every page’s wording, checked against the Greatstone house voice. Banned filler, em-dashes, the
           “not just X, it’s Y” tic, metaphor clichés, and “whilst”. <strong>Advisory only:</strong> it flags
           wording with a why and a suggested direction; it never rewrites anything.
         </p>
@@ -40,7 +40,7 @@ export default function CopyCoachPanel({ report, pages = {}, onOpen, onClose, em
                     <span className="gs-la-body">
                       <span className="gs-la-where">{i.blockType}{i.fieldLabel && i.fieldLabel !== 'Page title' ? ' · ' + i.fieldLabel : ''}</span>
                       <span className="gs-cs-snippet">{renderSnippet(i.snippet)}</span>
-                      <span className="gs-la-target">{i.label} — {i.suggestion}</span>
+                      <span className="gs-la-target">{i.label}: {i.suggestion}</span>
                     </span>
                   </li>
                 ))}

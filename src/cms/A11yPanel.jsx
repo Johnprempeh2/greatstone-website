@@ -21,7 +21,7 @@ export default function A11yPanel({ report, pages = {}, onOpen, onClose, embedde
     <PanelFrame embedded={embedded} label={<>Accessibility {total ? <span className="gs-panel-count">{total}</span> : null}</>} name="Accessibility" onClose={onClose}>
       <div className="gs-panel-body">
         <p className="gs-field-hint" style={{ marginTop: 0 }}>
-          Your content checked for accessibility beyond images — vague link text (“click here”, “read
+          Your content checked for accessibility beyond images: vague link text (“click here”, “read
           more”) and main-heading structure (a page should have exactly one, non-empty H1).
           <strong> Advisory only:</strong> it never changes anything. Image alt text is checked separately
           when you publish.
@@ -43,7 +43,7 @@ export default function A11yPanel({ report, pages = {}, onOpen, onClose, embedde
                     <span className="gs-la-body">
                       <span className="gs-la-where">{i.blockType}{i.fieldLabel && i.fieldLabel !== 'Page structure' ? ' · ' + i.fieldLabel : ''}{i.wcag ? ' · WCAG ' + i.wcag : ''}</span>
                       {i.snippet ? <span className="gs-cs-snippet">{renderSnippet(i.snippet)}</span> : null}
-                      <span className="gs-la-target">{i.label} — {i.suggestion}</span>
+                      <span className="gs-la-target">{i.label}: {i.suggestion}</span>
                     </span>
                   </li>
                 ))}
