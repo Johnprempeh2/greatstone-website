@@ -817,3 +817,25 @@ and CSS keywords. The "not just X" occurrences are ordinary contrast ("the whole
 ticket"), not the banned "not just X, it's Y" construction. No public-copy changes were warranted.
 
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean.
+
+---
+
+## Cycle 34 — 2026-07-02 — order-confirmed screen: already excellent (nothing shipped)
+
+Swept the post-Stripe order-confirmed screen (`Confirmed()` in `src/store/StoreCart.jsx`, the `#order-confirmed`
+route). Multi-lens Workflow (`confirm-screen-sweep`: a11y + correctness) with an adversarial verify stage.
+
+**Outcome: nothing to ship. The screen is already excellent.** Both lenses (63 tool calls between them, reading
+the component, the route wiring in `App.jsx`, and the `sc-*` CSS) returned zero findings. What's already right:
+- **Security/correctness:** validates the Stripe session id (`/^cs_(test|live)_/`) before it shows success,
+  clears the basket, or fires the purchase conversion; a counterfeit or bookmarked `#order-confirmed` gets a
+  "couldn't find that order" state with recovery CTAs instead. The conversion fires once from a mount effect and
+  GA4 dedupes by `transaction_id`, so a refresh or Back/Forward can't double-count. Reference parsing strips the
+  `cs_..._` prefix + trailing secret to a stable 12-char ref that matches the account history + receipt email.
+- **A11y:** clean heading, `role="status"` test-mode banner, `aria-hidden` on the decorative tick + scrim, the
+  route sets `document.title`, and the CTAs are real links. (Focus-move-to-heading was considered and correctly
+  not forced: the buyer arrives via a full external redirect from Stripe, so it's a fresh document load, not an
+  in-app transition, and an auto-focus grab would be intrusive, not a win.)
+
+No commit for the code (there was nothing to change); this ledger entry is the record. An honest "already
+excellent" is a valid loop outcome and is logged rather than papered over with churn.
