@@ -18,6 +18,7 @@ export default function OrdersManager({ staff }) {
   const [expanded, setExpanded] = useState(null);
   const [toast, setToast] = useState(null);
   const [keyEditing, setKeyEditing] = useState(null); // { order, prefill }
+  const [loadErr, setLoadErr] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -26,7 +27,7 @@ export default function OrdersManager({ staff }) {
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(200)
-      .then(({ data, error }) => { if (error) console.error('orders load', error); setOrders(data || []); setLoading(false); });
+      .then(({ data, error }) => { if (error) { console.error('orders load', error); setLoadErr(error.message || 'load failed'); } else setLoadErr(null); setOrders(data || []); setLoading(false); });
   }, []);
   useEffect(() => { load(); }, [load]);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
@@ -74,6 +75,7 @@ export default function OrdersManager({ staff }) {
           <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Items</th><th scope="col">Keys</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="7" className="ca-muted"><span role="status">Loading…</span></td></tr>
+              : loadErr ? <tr><td colSpan="7" className="ca-muted" role="alert">Couldn&rsquo;t load orders. <button className="ca-link" onClick={load}>Try again</button></td></tr>
               : !orders.length ? <tr><td colSpan="7" className="ca-muted"><span role="status">No orders yet. Completed checkouts appear here automatically.</span></td></tr>
                 : orders.map(o => {
                   const items = o.order_items || [];

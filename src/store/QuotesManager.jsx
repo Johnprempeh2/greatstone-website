@@ -12,13 +12,14 @@ export default function QuotesManager({ staff }) {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
   const [toast, setToast] = useState(null);
+  const [loadErr, setLoadErr] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
     supabase.from('quotes')
       .select('id, reference, status, contact_company, contact_name, contact_email, contact_phone, po_reference, message, indicative_total_minor, quoted_total_minor, valid_until, currency, created_at, orders(id, invoice_number), quote_items(id, offering_name, variant_name, qty, list_price_minor, captured_price_minor)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(200)
-      .then(({ data, error }) => { if (error) console.error('quotes load', error); setQuotes(data || []); setLoading(false); });
+      .then(({ data, error }) => { if (error) { console.error('quotes load', error); setLoadErr(error.message || 'load failed'); } else setLoadErr(null); setQuotes(data || []); setLoading(false); });
   }, []);
   useEffect(() => { load(); }, [load]);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
@@ -57,6 +58,7 @@ export default function QuotesManager({ staff }) {
           <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Company</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
+              : loadErr ? <tr><td colSpan="6" className="ca-muted" role="alert">Couldn&rsquo;t load quotes. <button className="ca-link" onClick={load}>Try again</button></td></tr>
               : !quotes.length ? <tr><td colSpan="6" className="ca-muted">No quote requests yet. They arrive from the storefront "Request a quote" flow.</td></tr>
                 : quotes.map(qt => {
                   const converted = (qt.orders || []).length > 0;
@@ -119,7 +121,7 @@ function QuoteTerms({ quote, onStatus, onSave, onConvert }) {
     <div className="q-terms">
       <div className="q-terms-row">
         <label>Status
-          <select value={quote.status} onChange={e => onStatus(quote.id, e.target.value)}>
+          <select value={quote.status} onChange={e => onStatus(quote.id, e.target.value)} aria-label={'Status for quote ' + (quote.reference || '')}>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>

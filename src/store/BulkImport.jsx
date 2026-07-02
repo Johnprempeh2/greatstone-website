@@ -46,6 +46,7 @@ export default function BulkImport({ staff }) {
   };
   const onFile = async (e) => {
     const f = e.target.files[0]; if (!f || !maps) return; setFileName(f.name);
+    setPlan(null); // clear any prior preview first, so a failed parse can never leave a stale plan to commit
     try { setPlan(buildSkuPlan(csvToObjects(await f.text()), maps)); }
     catch (err) { flash('Could not parse that CSV.'); console.error(err); }
   };

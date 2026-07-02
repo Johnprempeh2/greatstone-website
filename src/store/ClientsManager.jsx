@@ -19,11 +19,11 @@ const KINDS = ['recap', 'milestone', 'deliverable', 'kickoff', 'review', 'note']
 const NEEDS_CONTENT = new Set(['recap', 'deliverable']); // mirror the 0013 chk_engagement_content constraint
 // Quick-start scaffolds for a new engagement — prefill kind + a title stub + a sensible phase so staff start faster.
 const ENG_TEMPLATES = [
-  { kind: 'kickoff', label: 'Kickoff', title: 'Kickoff — mapping the climb', phase: 'Discovery' },
-  { kind: 'recap', label: 'Recap', title: 'Meeting recap — ', phase: '' },
-  { kind: 'milestone', label: 'Milestone', title: 'Milestone — ', phase: 'Build' },
-  { kind: 'deliverable', label: 'Deliverable', title: 'Deliverable — ', phase: 'Build' },
-  { kind: 'review', label: 'Review', title: 'Review — measuring the return', phase: 'Review' },
+  { kind: 'kickoff', label: 'Kickoff', title: 'Kickoff: mapping the climb', phase: 'Discovery' },
+  { kind: 'recap', label: 'Recap', title: 'Meeting recap: ', phase: '' },
+  { kind: 'milestone', label: 'Milestone', title: 'Milestone: ', phase: 'Build' },
+  { kind: 'deliverable', label: 'Deliverable', title: 'Deliverable: ', phase: 'Build' },
+  { kind: 'review', label: 'Review', title: 'Review: measuring the return', phase: 'Review' },
 ];
 // freshness flag for the client list — amber after 30 quiet days, red after 60, a nudge when a client has none
 const staleBadge = (lastIso) => {
@@ -190,7 +190,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   };
   // copy a key value to hand to the client; clipboard is the happy path, else select the code so staff can ⌘/Ctrl+C
   const copyKey = async (k, codeEl) => {
-    try { await navigator.clipboard.writeText(k.licence_key); setCopiedKey(k.id); setTimeout(() => setCopiedKey(c => (c === k.id ? null : c)), 1800); }
+    try { await navigator.clipboard.writeText(k.licence_key); setCopiedKey(k.id); setTimeout(() => setCopiedKey(c => (c === k.id ? null : c)), 3500); }
     catch { try { const r = document.createRange(); r.selectNodeContents(codeEl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch { /* ignore */ } setCopiedKey('fail:' + k.id); setTimeout(() => setCopiedKey(c => (c === 'fail:' + k.id ? null : c)), 4000); }
   };
 
@@ -337,7 +337,7 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
     // least one (matches the DB check constraint in 0024). Products like Aspose activate by .lic file.
     const hasExistingFile = !!lkey.file_path;
     if (!key.trim() && !file && !hasExistingFile && !download.trim()) {
-      setErr('Add a licence key, a licence file, or a download link — a licence needs at least one.'); return;
+      setErr('Add a licence key, a licence file, or a download link. A licence needs at least one.'); return;
     }
     if (file && file.size > 5 * 1024 * 1024) { setErr('The licence file must be 5 MB or smaller.'); return; }
     const seatsN = seats.trim() === '' ? null : parseInt(seats, 10);

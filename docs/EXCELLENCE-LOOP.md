@@ -509,3 +509,42 @@ editor-chrome CSS doesn't ship to public visitors (the public header shares the 
 keyed on `[products, categories, cat, q, sort]` to cut recompute on the 159-product catalogue. (5) The
 `App.jsx` studio-attention audit chain recomputes ~9 report memos on every edit keystroke (correct, but it's
 why the studio feels heavy); consider a debounced/idle or panel-open-gated recompute.
+
+---
+
+## Cycle 25 — 2026-07-02 — Puck editor + admin (staff) surfaces (NOT deployed)
+
+Slice 5: a 4-lens assessment (a11y, correctness, UX-states, voice) over the staff experience (CatalogueAdmin,
+ClientsManager + KeyEditor + EngagementEditor, OrdersManager, QuotesManager, BulkImport). 21 safe wins + 8
+proposals; the panel dropped 3 self-validated false positives. These are staff-gated, so I shipped the
+highest-value contained wins (error-visibility + safe copy/a11y), verified by build + tests, and deferred the
+larger ARIA-structure work to a pass with live sign-in.
+
+**Shipped (7, verified, NOT deployed):**
+- **Orders + Quotes tabs no longer show a load failure as "nothing here"** (OrdersManager, QuotesManager): a
+  network/RLS error now sets a `loadErr` and renders a distinct "Couldn't load… Try again" row instead of the
+  empty state, so staff aren't misled into thinking a money surface is genuinely empty.
+- **BulkImport can't commit a stale plan** (`setPlan(null)` before parsing): a failed CSV parse used to leave
+  the previous preview in place, so a later Commit shipped the OLD plan. Now cleared first.
+- **Voice**: the engagement quick-start template titles (Kickoff/Recap/Milestone/Deliverable/Review) had em
+  dashes and are client-facing on the org dashboard, now colons; an error message em dash cleared.
+- **A11y/UX**: the QuotesManager per-row status `<select>` gets a quote-specific `aria-label`; the licence-key
+  copy confirmation holds 3.5s (was 1.8s) so a sensitive code isn't missed.
+
+Verify: `npm test` 571 green, `npm run build` clean, secret scan clean. Not deployed.
+
+**Assessed and skipped (reason):** the OrdersManager "needsKeys misses revoked" finding is a false positive —
+`keys` already excludes revoked before `totalQty > keys.length`, so a revoked key correctly triggers the
+"issue" warning.
+
+**Deferred (real, but larger / needs a live signed-in admin pass):** catalogue tab strip `role=tablist`/`tab`
++ arrow-key nav; modal `aria-labelledby` on the KeyEditor/EngagementEditor/MediaField dialogs; form-error
+`aria-describedby`/`aria-invalid` in the editors; OfferingsManager search `aria-label`; engagement-table
+`<caption>`; "Issue key" button disabled-with-tooltip when the order has no customer; BulkImport maps-fetch
+error state; remaining staff-copy em-dash sweep + toast manual-close.
+
+**Proposed to John (money / data-semantics / behaviour):** convert-to-order can leave a quote stranded in
+"won" with no linked order; licence-key expiry stored as start-of-day UTC (timezone shifts the date); quote
+total re-save can round away typed precision; KeyEditor concurrent-edit/failed-upload state; a confirm before
+sharing an engagement to the client dashboard; a house-voice rewrite of the "Not authorised" + sign-in error
+copy; `aria-sort` + visible sort indicators on admin tables.
