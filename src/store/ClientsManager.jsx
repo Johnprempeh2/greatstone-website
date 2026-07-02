@@ -80,7 +80,7 @@ export default function ClientsManager({ staff }) {
   return (
     <div className="ca-wrap">
       <header className="ca-head"><div><span className="st-kicker">Clients</span><h1>Clients &amp; DX engagements</h1></div></header>
-      <p className="ca-note" style={{ marginBottom: 14 }}>Pick a client company to curate its digital-experience timeline — upload meeting recaps (inline or a link), milestones and deliverables they'll see on their organization dashboard.</p>
+      <p className="ca-note" style={{ marginBottom: 14 }}>Pick a client company to curate its digital-experience timeline: upload meeting recaps (inline or a link), milestones and deliverables they'll see on their organisation dashboard.</p>
       {!loading && customers.length > 0 && (
         <div className="ci-health" role="group" aria-label="Portfolio health by recency of last engagement — filter the list">
           {HEALTH.map(b => health[b.key] > 0 && (

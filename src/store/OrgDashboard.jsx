@@ -77,11 +77,11 @@ export default function OrgDashboard() {
   if (profile && !isCustomer(profile)) return (
     <div className="ca-wrap"><div className="ca-center">
       <h2>This is a staff account</h2>
-      <p>{session.user?.email} manages the catalogue. The organization dashboard is for customer companies.</p>
+      <p>{session.user?.email} manages the catalogue. The organisation dashboard is for customer companies.</p>
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
-  if (!profile) return <div className="ca-wrap"><div className="ca-center">Loading your organization…</div></div>;
+  if (!profile) return <div className="ca-wrap"><div className="ca-center">Loading your organisation…</div></div>;
   return <Org profile={profile} session={session} onProfile={setProfile} />;
 }
 
@@ -167,13 +167,13 @@ function Org({ profile, session, onProfile }) {
   const openQuotes = (quotes || []).filter(q => !['won', 'lost', 'cancelled'].includes(q.status)).length;
 
   return (
-    <div className="ca-wrap org-print-root" role="region" aria-label="Your organization">
+    <div className="ca-wrap org-print-root" role="region" aria-label="Your organisation">
       {/* role=region (not a 2nd <main>; the shell's #gs-main owns the single unlabelled main) gives SR users a named dashboard landmark. The store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
-      <a className="gs-skip" href="#org-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('org-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your organization</a>
+      <a className="gs-skip" href="#org-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('org-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your organisation</a>
       <header className="acct-id" id="org-main" tabIndex={-1}>
         <div className="acct-avatar" aria-hidden="true">{initialsOf(company.name)}</div>
         <div className="acct-id-text">
-          <span className="st-kicker">Your organization</span>
+          <span className="st-kicker">Your organisation</span>
           {(firstName || lastVisit) && <p className="acct-welcome">Welcome back{firstName ? ', ' + firstName : ''}{lastVisit ? ' · ' + lastVisit : ''}</p>}
           <h1 className="acct-id-name">{company.name}</h1>
           <div className="acct-id-sub">
@@ -214,7 +214,7 @@ function Org({ profile, session, onProfile }) {
       <OnboardingChecklist company={company} admin={admin} members={members} engagements={engagements} orders={orders} nav={goToTab} />
 
       {/* tabs — consistent with #account; identity/role/KPIs/onboarding above stay on every tab */}
-      <div className="ca-tabs acct-tabs org-tabs" role="tablist" aria-label="Your organization">
+      <div className="ca-tabs acct-tabs org-tabs" role="tablist" aria-label="Your organisation">
         {ORG_TABS.map((t, i) => (
           <button key={t.id} id={'org-tab-' + t.id} role="tab" type="button"
             aria-selected={tab === t.id} aria-controls={'org-panel-' + t.id}
@@ -283,7 +283,7 @@ function OnboardingChecklist({ company, admin, members, engagements, orders, nav
   return (
     <section className="org-onboard" aria-labelledby="org-ob-h">
       <div className="org-onboard-head">
-        <div><span className="st-kicker">Get started</span><h2 id="org-ob-h">Set up your organization</h2></div>
+        <div><span className="st-kicker">Get started</span><h2 id="org-ob-h">Set up your organisation</h2></div>
         <button type="button" className="org-onboard-x" onClick={dismiss} aria-label="Dismiss setup checklist">×</button>
       </div>
       <div className="org-onboard-prog"><div className="org-onboard-bar" style={{ width: pct + '%' }} role="progressbar" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length} aria-valuetext={`${doneCount} of ${steps.length} steps complete`} aria-label="Setup progress" /></div>

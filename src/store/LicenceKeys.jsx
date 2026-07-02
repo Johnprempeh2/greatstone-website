@@ -92,7 +92,7 @@ export default function LicenceKeys() {
       ) : keys.length === 0 ? (
         <div className="lk-empty">
           <p>Your licence keys land here the moment our team delivers them after a purchase, each with its product, your seats and any expiry. Nothing to do until then; we&rsquo;ll email you the moment your first one is ready.</p>
-          <p className="ca-note">When a key arrives, copy it and paste it into the product's licence or activation screen to unlock your seats. Stuck? <a className="ca-link" href="#go/contact">Our team will help you set it up</a>.</p>
+          <p className="ca-note">When a key arrives, copy it and paste it into the product's licence or activation screen to activate your seats. Stuck? <a className="ca-link" href="#go/contact">Our team will help you set it up</a>.</p>
         </div>
       ) : (
         <div className="lk-list">

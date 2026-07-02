@@ -298,9 +298,9 @@ function Dashboard({ session, profile, onProfile }) {
   const nextStep = (() => {
     if (expiringKeys > 0) return { title: 'Renew your licences', body: `${expiringKeys} of your licence key${expiringKeys === 1 ? '' : 's'} expire${expiringKeys === 1 ? 's' : ''} within ${KEY_SOON_DAYS} days. Renew to keep your seats active.`, ctas: [{ label: 'Review your keys', onClick: () => goTab('keys'), primary: true }, { label: 'Talk to us', href: '#go/contact' }] };
     if (!loadingOrders && orders.length === 0) return { title: 'Start your Greatstone toolkit', body: 'Explore the software catalogue, or book a diagnostic to kick off your transformation.', ctas: [{ label: 'Explore the catalogue', href: '#shop', primary: true }, { label: 'Book a Diagnostic', href: '#go/contact' }] };
-    if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to unlock your seats.', ctas: [{ label: 'View your keys', onClick: () => goTab('keys'), primary: true }] };
-    if (profile?.customer && admin) return { title: 'Set up your organization', body: 'Invite teammates and complete your company profile in your organization dashboard.', ctas: [{ label: 'Go to your organization', href: '#org', primary: true }] };
-    if (profile?.customer) return { title: 'Follow your transformation', body: 'See your maturity, your engagement timeline and what your Greatstone team has delivered.', ctas: [{ label: 'Open your organization', href: '#org', primary: true }] };
+    if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to activate your seats.', ctas: [{ label: 'View your keys', onClick: () => goTab('keys'), primary: true }] };
+    if (profile?.customer && admin) return { title: 'Set up your organisation', body: 'Invite teammates and complete your company profile in your organisation dashboard.', ctas: [{ label: 'Go to your organisation', href: '#org', primary: true }] };
+    if (profile?.customer) return { title: 'Follow your transformation', body: 'See your maturity, your engagement timeline and what your Greatstone team has delivered.', ctas: [{ label: 'Open your organisation', href: '#org', primary: true }] };
     return null;
   })();
   // pending-actions banner — decision/time-sensitive open loops, each a deep-link to its tab. Distinct from the
@@ -337,7 +337,7 @@ function Dashboard({ session, profile, onProfile }) {
           <h1 className="acct-id-name">{profile?.full_name || 'Welcome back'}</h1>
           <div className="acct-id-sub">
             <span className="acct-id-email">{profile?.email || session.user?.email}</span>
-            {admin && <a className="org-rolechip is-admin" href="#org" style={{ marginLeft: 8, whiteSpace: 'nowrap', textDecoration: 'none' }} aria-label="Company admin — open your organization">Company admin</a>}
+            {admin && <a className="org-rolechip is-admin" href="#org" style={{ marginLeft: 8, whiteSpace: 'nowrap', textDecoration: 'none' }} aria-label="Company admin, open your organisation">Company admin</a>}
             {company && <> · <a className="ca-link" href="#org">{company}</a>{tier && <span className="acct-tier">{tier}</span>}</>}
           </div>
         </div>

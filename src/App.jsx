@@ -520,7 +520,7 @@ export default function App() {
     if (adminNav) { utility('Studio admin', 'home'); return; }
     if (invoiceRoute) { utility('Invoice', 'home', 'View and print the details of your Greatstone order.'); return; }
     if (accountRoute || authLanding) { utility('Your account', 'home', 'Manage your Greatstone account, orders and details.'); return; }
-    if (orgRoute) { utility('Your organization', 'home', 'Manage your organisation, team and orders with Greatstone.'); return; }
+    if (orgRoute) { utility('Your organisation', 'home', 'Manage your organisation, team and orders with Greatstone.'); return; }
     if (confirmRoute) { utility('Order confirmed', 'home', 'Your Greatstone order is confirmed. Review the details.'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home', 'Manage the Greatstone product catalogue.'); return; }
     if (shopRoute) { utility('Products', 'shop'); return; }
@@ -1199,7 +1199,7 @@ export default function App() {
     if (mode !== 'edit') {
       cmds.push({ id: 'go-shop', group: 'Go to', label: 'Products', hint: 'storefront', run: goShop });
       cmds.push({ id: 'go-account', group: 'Go to', label: 'Your account', run: () => { if (typeof location !== 'undefined') location.hash = 'account'; } });
-      cmds.push({ id: 'go-org', group: 'Go to', label: 'Your organization', run: () => { if (typeof location !== 'undefined') location.hash = 'org'; } });
+      cmds.push({ id: 'go-org', group: 'Go to', label: 'Your organisation', run: () => { if (typeof location !== 'undefined') location.hash = 'org'; } });
     }
     // editing commands are gated behind sign-in AND the edit capability (a viewer is signed in
     // but read-only). The admin login is NOT surfaced on the public site — it lives at the

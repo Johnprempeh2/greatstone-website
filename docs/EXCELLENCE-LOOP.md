@@ -787,3 +787,33 @@ rephrasing is a copy decision, not a mechanical fix, so it's left for John.
 
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean. No prose em dashes remain in the 11
 touched files (only code comments + the sanitiser regex, which are correct).
+
+---
+
+## Cycle 33 — 2026-07-02 — voice pass 2: British spelling + banned words in visible copy (NOT deployed)
+
+Continued the voice sweep into banned words + non-British spelling across public + account copy. Grounded by
+deterministic grep, each hit classified visible-copy vs token/comment/CSS.
+
+**Shipped (verified, NOT deployed):**
+- **British spelling: `organization` → `organisation`** across ~13 visible-copy instances: the `#org` page
+  title + ⌘K command label (`App.jsx`), the org dashboard's kicker/heading/skip-link/aria-labels/loading +
+  no-access copy (`OrgDashboard.jsx` ×7), the account onboarding CTAs (`AccountDashboard.jsx` ×5), and the
+  clients-manager note (`ClientsManager.jsx`). British spelling is a hard house rule.
+- **Banned word `unlock` → `activate`** in two customer strings ("unlock your seats" → "activate your seats",
+  `AccountDashboard` onboarding + `LicenceKeys` help note). Also more precise: the card's own title is
+  "Activate your licences" and the copy references the product's "activation screen".
+- **Two residual prose em dashes** the C32 sweep didn't reach (it didn't touch these files): `ClientsManager`
+  timeline note, `AccountDashboard` "Company admin" aria-label.
+
+**Deliberately NOT changed (correctly technical/American):** `autoComplete="organization"` (HTML autofill token,
+spec value), `'@type': 'Organization'` + `#organization` (schema.org JSON-LD vocabulary/anchors), CSS
+`center`/`color` keywords, `org-*` classes + the `#org` route, and code comments.
+
+**Honest finding — public marketing copy is already voice-clean:** grepping `src/blocks` / `src/intel` /
+`src/data` for banned words (delve/leverage/robust/holistic/seamless/unlock/empower/transformative/…) and
+non-British spelling turned up only CSS class names (`b-acc-unlock`), code comments (`// robust`, `// holistic`),
+and CSS keywords. The "not just X" occurrences are ordinary contrast ("the whole relationship, not just the last
+ticket"), not the banned "not just X, it's Y" construction. No public-copy changes were warranted.
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean.
