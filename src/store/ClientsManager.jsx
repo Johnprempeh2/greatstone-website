@@ -247,6 +247,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
       )}
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
+          <caption className="gs-sr-only">Engagement timeline for {customer.name}</caption>
           <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Title</th><th scope="col">Content</th><th scope="col">Visibility</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
           <tbody>
             {items === null ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>

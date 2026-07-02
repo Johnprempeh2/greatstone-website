@@ -548,3 +548,30 @@ error state; remaining staff-copy em-dash sweep + toast manual-close.
 total re-save can round away typed precision; KeyEditor concurrent-edit/failed-upload state; a confirm before
 sharing an engagement to the client dashboard; a house-voice rewrite of the "Not authorised" + sign-in error
 copy; `aria-sort` + visible sort indicators on admin tables.
+
+---
+
+## Cycle 26 — 2026-07-02 — deferred a11y + voice wins (no assessment; NOT deployed)
+
+After a full first sweep (cycles 21-25), this pass shipped the deferred a11y/voice wins that are safe to make
+from reading, without a fresh assessment (the findings were already identified in cycles 3 + 5).
+
+**Shipped (4, verified, NOT deployed):**
+- **Catalogue admin tab strip** now carries `role="tablist"` + per-button `role="tab"` + `aria-selected`, so
+  assistive tech announces the eight-section set and which is active (was colour-only). The arrow-key roving
+  pattern is deferred (needs the full tabpanel wiring + live SR verification).
+- **Offerings search input** gets `type="search"` + `aria-label="Search offerings"` (was placeholder-only,
+  a WCAG 1.3.1 gap; the Clients search already had one).
+- **Client engagement table** gets an sr-only `<caption>` naming the client, so AT knows whose timeline it is.
+- **Account voice/spelling**: the profile "Company:" note had an em dash and the US "organization" spelling in
+  visible copy, now a full stop and "organisation".
+
+Verify: `npm test` 571 green, `npm run build` clean, secret scan clean. Not deployed.
+
+**Deferred (needs a component change or live SR test):** Security-card password-input error associations
+(`PasswordInput` is a wrapper; needs confirming it forwards `aria-describedby`/`aria-invalid`); the tab
+arrow-key roving pattern + `role="tabpanel"` wiring; modal `aria-labelledby` refinements (the dialogs already
+carry `aria-label`, so this is polish, not a gap); account quotes loading skeleton + section-heading-outside-
+skeleton + stat-tile `aria-busy` (state changes better verified signed-in).
+
+The proposal backlog (cycles 21-25) is unchanged and still awaits John's call.

@@ -582,7 +582,7 @@ function ProfileCard({ profile, onProfile, flash }) {
       <h2>Profile</h2>
       <label>Your name<input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
       <label>Phone<input value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" /></label>
-      {profile?.customer && <p className="ca-note">Company: <b>{profile.customer.name}</b> — manage company details in <a className="ca-link" href="#org">your organization</a>.</p>}
+      {profile?.customer && <p className="ca-note">Company: <b>{profile.customer.name}</b>. Manage its details in <a className="ca-link" href="#org">your organisation</a>.</p>}
       <button className="gs-btn primary" onClick={save} disabled={busy || !dirty}>{busy ? 'Saving…' : dirty ? 'Save profile' : 'Saved ✓'}</button>
     </div>
   );

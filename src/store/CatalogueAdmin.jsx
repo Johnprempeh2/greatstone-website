@@ -44,15 +44,15 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub, onStaf
   return (
     <>
       <div data-tour="ca-tabbar" className="ca-tabbar">
-        <div className="ca-tabs">
-          <button data-tour="catab-offerings" className={tab === 'offerings' ? 'on' : ''} onClick={() => setTab('offerings')}>Offerings</button>
-          <button data-tour="catab-pricing" className={tab === 'pricing' ? 'on' : ''} onClick={() => setTab('pricing')}>Pricing &amp; discounts</button>
-          <button className={tab === 'fx' ? 'on' : ''} onClick={() => setTab('fx')}>Currency (FX)</button>
-          <button className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>Orders</button>
-          <button className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
-          <button data-tour="catab-inquiries" className={tab === 'inquiries' ? 'on' : ''} onClick={() => setTab('inquiries')}>Inquiries</button>
-          <button className={tab === 'clients' ? 'on' : ''} onClick={() => setTab('clients')}>Clients &amp; DX</button>
-          <button data-tour="catab-bulk" className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
+        <div className="ca-tabs" role="tablist" aria-label="Catalogue admin sections">
+          <button role="tab" aria-selected={tab === 'offerings'} data-tour="catab-offerings" className={tab === 'offerings' ? 'on' : ''} onClick={() => setTab('offerings')}>Offerings</button>
+          <button role="tab" aria-selected={tab === 'pricing'} data-tour="catab-pricing" className={tab === 'pricing' ? 'on' : ''} onClick={() => setTab('pricing')}>Pricing &amp; discounts</button>
+          <button role="tab" aria-selected={tab === 'fx'} className={tab === 'fx' ? 'on' : ''} onClick={() => setTab('fx')}>Currency (FX)</button>
+          <button role="tab" aria-selected={tab === 'orders'} className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>Orders</button>
+          <button role="tab" aria-selected={tab === 'quotes'} className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
+          <button role="tab" aria-selected={tab === 'inquiries'} data-tour="catab-inquiries" className={tab === 'inquiries' ? 'on' : ''} onClick={() => setTab('inquiries')}>Inquiries</button>
+          <button role="tab" aria-selected={tab === 'clients'} className={tab === 'clients' ? 'on' : ''} onClick={() => setTab('clients')}>Clients &amp; DX</button>
+          <button role="tab" aria-selected={tab === 'bulk'} data-tour="catab-bulk" className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
         </div>
         <div className="ca-tabtools">
           <span className="ca-who">{staff.full_name || staff.email} · {staff.role}</span>
@@ -121,7 +121,7 @@ function OfferingsManager({ staff }) {
         <div><span className="st-kicker">Catalogue admin</span><h1>Offerings</h1></div>
       </header>
       <div className="ca-toolbar">
-        <input className="ca-search" placeholder="Search offerings…" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="ca-search" type="search" placeholder="Search offerings…" aria-label="Search offerings" value={q} onChange={e => setQ(e.target.value)} />
         <span className="ca-count">{items.length} shown</span>
       </div>
       <div className="ca-table-wrap">
