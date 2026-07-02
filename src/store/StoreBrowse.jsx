@@ -68,9 +68,9 @@ export default function StoreBrowse({ initialVendor = '' }) {
       </header>
 
       <div className="st-toolbar">
-        <button className="st-filterbtn" onClick={() => setFacetsOpen(o => !o)} aria-expanded={facetsOpen}>Filters</button>
+        <button className="st-filterbtn" onClick={() => setFacetsOpen(o => !o)} aria-expanded={facetsOpen} aria-controls="st-facets">Filters</button>
         <div className="st-search">
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
           <input type="search" placeholder="Search products, e.g. PDF, OCR, Aspose…" value={q} onChange={e => setQ(e.target.value)} aria-label="Search products" />
         </div>
         <select className="st-select" value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort products">
@@ -83,9 +83,9 @@ export default function StoreBrowse({ initialVendor = '' }) {
       </div>
 
       <div className="st-layout">
-        <aside className={'st-facets' + (facetsOpen ? ' open' : '')} aria-label="Filters">
+        <aside id="st-facets" className={'st-facets' + (facetsOpen ? ' open' : '')} aria-label="Filters">
           <div className="st-facet">
-            <h2>Vendor {active && <button className="st-clear" onClick={clearAll}>Clear all</button>}</h2>
+            <div className="st-facet-head"><h2>Vendor</h2>{active && <button className="st-clear" onClick={clearAll}>Clear all</button>}</div>
             <div className="st-pills">
               {vendors.map(v => <button key={v.id} aria-pressed={vendor === v.slug} className={'st-pill' + (vendor === v.slug ? ' on' : '')} onClick={() => setVendor(vendor === v.slug ? '' : v.slug)}>{v.name}</button>)}
             </div>

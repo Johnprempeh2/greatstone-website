@@ -892,3 +892,38 @@ labelled basket/add controls, header-injection-safe mailto).
   adds focus management, so it's a small feature, not a pure fix. Flagged for John.
 
 Verify: `npm test` 577 green, `npm run build` clean, secret scan clean.
+
+---
+
+## Cycle 37 — 2026-07-02 — StoreBrowse: disclosure + icon + heading a11y (NOT deployed)
+
+Swept the storefront listing/filter (`StoreBrowse.jsx`, `#shop`). Multi-lens Workflow (`storebrowse-sweep`:
+a11y + correctness) with adversarial verify. Cycle 19 did the facet-pill a11y; this pass found the remaining gaps.
+This was the LAST unswept functional slice.
+
+**Shipped (verified live in the preview, NOT deployed):**
+- **Filters disclosure completed:** the toggle had `aria-expanded` but no `aria-controls`, and the facets
+  `<aside>` had no `id`. Added `id="st-facets"` + `aria-controls="st-facets"` (WCAG 4.1.2). Verified live: the
+  `aria-controls` resolves to the panel.
+- **Decorative search icon hidden:** the magnifier `<svg>` beside the labelled search input is now
+  `aria-hidden="true"` (WCAG 1.1.1), matching the codebase's decorative-SVG pattern.
+- **"Clear all" moved out of the heading:** it was nested inside `<h2>Vendor …</h2>`, so the heading's accessible
+  name resolved to "Vendor Clear all" (WCAG 1.3.1). Restructured into a `.st-facet-head` flex row (sibling h2 +
+  button) with a scoped CSS rule that moves the 10px spacing to the row and zeroes the wrapped h2's margin, so
+  the Platform/Category headings are untouched. Verified live: the h2 name is now "Vendor" only, and "Clear all"
+  still sits on the same row, right-aligned; no console errors.
+
+**PROPOSE (not shipped — needs a full pattern, not a half-fix):**
+- **Mobile facets focus management:** on mobile the facets panel opens without moving focus into it (WCAG 2.4.3).
+  The verify stage correctly judged the naive "focus the first control" fix incomplete: on mobile the panel is
+  modal-like, so a safe fix needs `role="dialog"`, a labelled close control, a focus trap, and escape-to-close.
+  That's a contained feature, flagged for John rather than shipped as a partial (which would leave a broken
+  keyboard journey).
+
+Verify: `npm test` 577 green, `npm run build` clean, secret scan clean; live-checked at `#shop` (aria wiring
+resolves, facet-head layout + heading name correct, no console errors).
+
+**Functional-slice sweep is now COMPLETE** (account, storefront/catalogue, admin, cart, checkout, InvoiceView,
+nav, deep-links, editor-workflow, Intel hub, auth/sign-in, OrgDashboard, 3D Stage/BackgroundPanel, voice,
+order-confirmed, ServiceDetail, StoreProduct, StoreBrowse). Next: consolidate a summary for John rather than
+manufacture new sweeps.

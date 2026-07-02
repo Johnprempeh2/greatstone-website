@@ -26,6 +26,10 @@
 @media (max-width:880px){ .st-layout { grid-template-columns:1fr; } .st-facets { display:none; } .st-facets.open { display:flex; } }
 .st-facets { display:flex; flex-direction:column; gap:20px; position:sticky; top:88px; }
 .st-facet h2 { font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--gs-text-faint); margin-bottom:10px; }
+/* the vendor facet pairs its heading with a "Clear all" action; the action is a sibling of the <h2> (not nested
+   inside it, which would pollute the heading's accessible name), so the row owns the 10px the h2 otherwise sets. */
+.st-facet-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.st-facet-head h2 { margin-bottom:0; }
 .st-pills { display:flex; flex-wrap:wrap; gap:6px; }
 .st-pill { font-size:.78rem; padding:.4em .85em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.03); color:var(--gs-text-muted); cursor:pointer; }
 .st-pill:hover { border-color:var(--gs-accent-mid); color:var(--gs-text); }
