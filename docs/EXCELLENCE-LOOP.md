@@ -927,3 +927,13 @@ resolves, facet-head layout + heading name correct, no console errors).
 nav, deep-links, editor-workflow, Intel hub, auth/sign-in, OrgDashboard, 3D Stage/BackgroundPanel, voice,
 order-confirmed, ServiceDetail, StoreProduct, StoreBrowse). Next: consolidate a summary for John rather than
 manufacture new sweeps.
+
+---
+
+## Copy loop C1 — 2026-06-22 — house-voice pass on the live site copy (John re-scoped the loop to "the copy")
+
+John re-pointed the loop at the website COPY, ~10-min cadence. Loaded the `greatstone-voice` skill as the rubric. Ran an 8-page copy-audit workflow (per-page audit vs house voice, each rewrite adversarially verified for improve + preserve-facts + clean-voice + before-verbatim). GUARDRAIL held: craft only, no invented facts/metrics/claims.
+
+**Funnel:** 71 raw rewrites → **29 confirmed** (rate-limiting knocked out most `method`+`contact` verify agents, so those two pages are under-audited this cycle, re-audit next). Applied all 29 across `seed-pages.json` (services/industries/proof/about/insights), `store.js` (home + HOME_FAQ), and the Spectrum + ServiceCards defaults (both render live via empty-seed). Highlights: killed banned word "landscape" (insights IntelBand → "Every meaningful AI move"); tightened cliches (hammer aphorism, "move the needle", "die on the shelf", "X was born"); fixed a genuinely broken sentence (about 2005 timeline) + a dangling "that line" (RoiBar) + a subjectless fragment (industries Steps); consistency (about eyebrows Title→sentence case, "Diagnostic" capitalised, "your world"→"your sector", home "Capacity"→"Hours" stat labels); voice/tightening (de-padded home Ch01/Ch03, "Explore"→"See", "thirty"→"30", ServiceCards negative→positive). Committed `51931ae` (scoped: seed-pages.json, store.js, Spectrum.jsx, ServiceCards.jsx). Verified: valid JSON, 579/579 tests, clean build, Services copy live-rendered in preview, no em-dashes.
+
+**⚠️ DEPLOY NOT LIVE + PIPELINE CHANGED (needs John).** Two things surfaced: (1) I used a STALE deploy flow (rsync into the retired `greatstone-homepage-deploy` mirror + npx from there) instead of the current root-deploy-from-clean-HEAD-worktree flow the `greatstone-deploy-flow` memory now documents; the copy is committed + preview-verified but is NOT live (greatstoneint.com/ still serves `index-BKOXUkXv.js` with the old "The AI landscape"). (2) The site cut over to the custom domain **greatstoneint.com**, and `origin/main` (greatstone-cms) is **376 commits behind** local (no C1-C20 or copy on the connected repo). Per John's standing ASK-FIRST-never-auto-deploy rule, I stopped and am asking how to proceed rather than re-hacking the deploy. The copy build itself is correct (`base:/`, root, includes the copy).
