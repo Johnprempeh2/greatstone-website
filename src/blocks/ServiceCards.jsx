@@ -132,7 +132,7 @@ export const puck = {
       },
       {
         badge: '03', sub: 'Adoption & ongoing', title: 'Embed & scale',
-        body: 'A system nobody uses saves nobody time. We train your people, drive real adoption, and stay on as your foundation: tuning, extending and scaling what works. Embedded, not advisory. We don’t disappear when the invoice clears.',
+        body: 'A system nobody uses saves nobody time. We train your people, drive real adoption, and stay on as your foundation: tuning, extending and scaling what works. Embedded, not advisory. We stay after the invoice clears.',
         bullets: BULLETS(['Training & real adoption', 'Ongoing tuning & support', 'Scale what works, retire what doesn’t']),
       },
     ],

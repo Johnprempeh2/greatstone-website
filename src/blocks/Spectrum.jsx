@@ -86,7 +86,7 @@ export const puck = {
   defaultProps: {
     kicker: 'Full-spectrum DX',
     headline: 'Start with the problem. Then pick the', highlight: 'tool.',
-    body: 'When all you sell is a hammer, everything looks like a nail. That’s why most AI spend never pays back: the tool came first, the problem second. We work the other way round. We diagnose what’s actually costing you hours, then choose from the full spectrum (AI, automation, integration, or simply a better process) and use only what fits.',
+    body: 'Sell only hammers and every problem looks like a nail. That’s why most AI spend never pays back: the tool came first, the problem second. We work the other way round. We diagnose what’s actually costing you hours, then choose from the full spectrum (AI, automation, integration, or simply a better process) and use only what fits.',
     coda: 'Sometimes the right answer isn’t AI at all. We’ll tell you. We leave no stone unturned, and we don’t sell you stone you don’t need.',
     rows: [
       R('bad', 'Tool-first', 'AI everywhere → little payback'),

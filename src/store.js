@@ -335,7 +335,7 @@ export function logActivity(state, label, by) {
 const HOME_FAQ = {
   showSchema: false,
   kicker: 'Common questions', heading: 'The questions buyers ask first.',
-  intro: 'Straight answers to what most teams want to know before they book. The Diagnostic is the fastest way to get the rest.',
+  intro: 'Straight answers to what teams ask before they book. The Diagnostic is the fastest way to get the rest.',
   items: [
     { q: 'What actually happens in a Diagnostic?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
     { q: 'Are you a software house or consultants?', a: 'Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside.' },
@@ -352,8 +352,8 @@ export function seedState() {
           prompt: '', align: 'center', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', scrollCue: true,
         }),
         blk('Chapter', {
-          index: '01', eyebrow: 'Twenty Years Deep', headline: 'A transformation partner. Not a software house.', highlight: '',
-          body: 'For two decades our team has modernised how organisations actually work (their **tools**, their **processes**, their **people**), and now the intelligent layer above them all.',
+          index: '01', eyebrow: 'Twenty Years In', headline: 'A transformation partner. Not a software house.', highlight: '',
+          body: 'For two decades our team has modernised how organisations work: their **tools**, their **processes**, their **people**, and now the intelligent layer above them all.',
           coda: 'Digital transformation first. AI as the accelerator.', align: 'left',
         }),
         blk('Chapter', {
@@ -363,8 +363,8 @@ export function seedState() {
         }),
         blk('Chapter', {
           index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone unturned.', highlight: '',
-          body: 'Every engagement begins with the **Digital Transformation Playbook**: a rigorous diagnostic across **eight pillars**, producing the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
-          coda: '', align: 'center', ctaLabel: 'Explore the eight pillars', ctaHref: '#go/method', ctaVariant: 'primary',
+          body: 'Every engagement begins with the **Digital Transformation Playbook**: a diagnostic across **eight pillars** that produces the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
+          coda: '', align: 'center', ctaLabel: 'See the eight pillars', ctaHref: '#go/method', ctaVariant: 'primary',
         }),
         blk('Chapter', {
           index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence, properly integrated.', highlight: '',
@@ -376,8 +376,8 @@ export function seedState() {
           body: 'Our leadership has delivered transformation for **Deloitte, Lloyds, Bank of Scotland and the NHS**. Today we’re embedded with clients across the UK and Africa.',
           clients: '',
           stats: [
-            { value: 21, prefix: '', suffix: '+ hrs', dec: 0, label: 'Capacity recovered weekly · one engagement' },
-            { value: 27, prefix: '£', suffix: 'k', dec: 0, label: 'Capacity returned annually' },
+            { value: 21, prefix: '', suffix: '+ hrs', dec: 0, label: 'Hours recovered weekly · one engagement' },
+            { value: 27, prefix: '£', suffix: 'k', dec: 0, label: 'The same hours, costed for a year' },
             { value: 20, prefix: '', suffix: 'yrs', dec: 0, label: 'Leadership heritage' },
             { value: 2, prefix: '', suffix: '', dec: 0, label: 'Continents, one team' },
           ],

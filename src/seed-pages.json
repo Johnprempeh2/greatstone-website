@@ -73,7 +73,7 @@
           ],
           "columns": 3,
           "variant": "plain",
-          "footnote": "Illustrative targets: your numbers are set by the DXP assessment.",
+          "footnote": "Illustrative targets: your numbers come out of the Diagnostic.",
           "clients": ""
         }
       },
@@ -82,7 +82,7 @@
         "props": {
           "kicker": "The cost of the status quo",
           "heading": "See the hours you are quietly losing.",
-          "intro": "A rough, honest estimate in seconds. Move the numbers to match your team, and watch what the week is costing you across a year.",
+          "intro": "A rough, honest estimate in seconds. Move the numbers to match your team and see what a week costs you across a year.",
           "teamLabel": "People affected",
           "hoursLabel": "Hours lost per person, per week",
           "costLabel": "Average hourly cost",
@@ -106,7 +106,7 @@
           "intro": "Straight answers to what most teams want to know before they book. If yours is not here, the Diagnostic is the fastest way to get it.",
           "items": [
             { "q": "What actually happens in a Diagnostic?", "a": "Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation." },
-            { "q": "Are you a software house or consultants?", "a": "Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside." },
+            { "q": "Are you a software house or consultants?", "a": "Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years doing the work, not advising from the outside." },
             { "q": "How long before we see results?", "a": "The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters." },
             { "q": "What about our data and security?", "a": "We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment." },
             { "q": "Do you replace our team?", "a": "No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do." },
@@ -120,7 +120,7 @@
           "eyebrow": "Start here",
           "headline": "Let's find the hours you're",
           "highlight": "losing.",
-          "body": "A Diagnostic is where it begins: a focused look at where your week goes and what it's costing. No deck, no pitch. Just the first stone, turned over.",
+          "body": "A Diagnostic is where it begins: a focused look at where your week goes and what it costs. No deck, no pitch. Just the first stone, turned over.",
           "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
@@ -147,7 +147,7 @@
           "kicker": "Industries",
           "headline": "Start with your",
           "highlight": "industry.",
-          "body": "Pick your world and the rest adjusts: your drains, your numbers. The same foundation, shaped to the way your sector actually works.",
+          "body": "Pick your sector and the rest adjusts to your drains and your numbers. The same foundation, shaped to the way your industry actually works.",
           "prompt": "",
           "align": "left",
           "size": "compact"
@@ -174,7 +174,7 @@
             },
             {
               "title": "We map the leaks",
-              "text": "Universal drains and the ones unique to your sector, scored against our eight pillars, so you see exactly where the time goes."
+              "text": "We score the universal drains and the ones specific to your sector against our eight pillars, so you see exactly where the time goes."
             },
             {
               "title": "We become the fix",
@@ -188,8 +188,8 @@
         "props": {
           "eyebrow": "Your sector, your diagnostic",
           "headline": "Let's start with",
-          "highlight": "your world.",
-          "body": "Book a diagnostic and we'll show you the hours your industry is quietly losing, and how we buy them back.",
+          "highlight": "your sector.",
+          "body": "Book a Diagnostic and we'll show you the hours your industry is quietly losing, and how we buy them back.",
           "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
@@ -216,7 +216,7 @@
           "kicker": "Proof, not promises",
           "headline": "We could show you someone else's ROI.",
           "highlight": "Yours is the one that matters.",
-          "body": "Every number below came from a real engagement, anonymised but earned. They are the floor, not the ceiling. The only result that counts is the one we build inside your business. We don't advise from the sidelines: we become your foundation, and we leave no stone unturned.",
+          "body": "Every number below came from a real engagement, anonymised but real. They are a floor, not a ceiling. The only result that counts is the one we build inside your business, so we become your foundation rather than advise from the sidelines.",
           "align": "left",
           "size": "compact",
           "ctaLabel": "Book a Diagnostic",
@@ -244,7 +244,7 @@
               "value": 6,
               "suffix": "wks",
               "dec": 0,
-              "label": "to first value, measurable, not theoretical"
+              "label": "to first measurable value, not theoretical"
             },
             {
               "value": 90,
@@ -275,13 +275,13 @@
               "tag": "National real-estate group",
               "head": "Listings that took days now take minutes.",
               "drain": "Agents re-keyed every listing across four disconnected systems, hours lost per property, errors compounding.",
-              "built": "A single source of truth with automated syndication and an internal portal their teams actually wanted to use.",
+              "built": "A single source of truth with automated syndication, plus an internal portal their teams actually used.",
               "outNum": "9 hrs",
               "outCap": "saved per agent each week"
             },
             {
               "tag": "Regional healthcare provider",
-              "head": "Less time on the form, more on the patient.",
+              "head": "Less time on the form, more with the patient.",
               "drain": "Clinical admin swallowed a third of every shift: paper handoffs, duplicate data entry, manual scheduling.",
               "built": "A compliant intake-to-record workflow with automated triage routing and a staff-facing dashboard.",
               "outNum": "31%",
@@ -305,7 +305,7 @@
           "eyebrow": "",
           "headline": "Paid back before",
           "highlight": "the quarter’s out.",
-          "body": "On a typical engagement, the investment is recovered in the first few months. Everything after that line is time and money handed back, every week.",
+          "body": "On a typical engagement, the investment is recovered inside the first few months. Everything past that point is time and money handed back to you, week after week.",
           "paybackPct": 29,
           "s1": "Day one",
           "s2": "Month 6",
@@ -330,7 +330,7 @@
           "eyebrow": "Your number is waiting",
           "headline": "The next case study on this page",
           "highlight": "could be yours.",
-          "body": "Book a Diagnostic and we'll find the hours your business is quietly losing, then show you exactly what reclaiming them is worth.",
+          "body": "Book a Diagnostic. We'll find the hours your business is quietly losing, then show you what reclaiming them is worth.",
           "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
@@ -354,7 +354,7 @@
       {
         "type": "Hero",
         "props": {
-          "kicker": "Our Story",
+          "kicker": "Our story",
           "headline": "Twenty years deep.",
           "highlight": "Embedded",
           "headlineSuffix": ", not advisory.",
@@ -383,7 +383,7 @@
         "type": "Timeline",
         "props": {
           "index": "",
-          "eyebrow": "The Long Road",
+          "eyebrow": "The long road",
           "headline": "From a single fix to a foundation.",
           "highlight": "",
           "body": "Twenty years, told as a handful of milestones. Real direction; dates we will firm up with you.",
@@ -391,12 +391,12 @@
             {
               "year": "2005",
               "head": "One business, one problem worth solving.",
-              "text": "A single client, a process bleeding time, and a refusal to accept that this is just how it works here was the answer."
+              "text": "A single client, a process bleeding time, and a refusal to accept that this is just how it works here."
             },
             {
               "year": "2011",
               "head": "Advice was not enough.",
-              "text": "We kept watching good recommendations die on the shelf. So we stopped advising and started building, sitting inside the business until the change actually shipped. The embedded model was born."
+              "text": "We kept watching good recommendations get filed and forgotten. So we stopped advising and started building, sitting inside the business until the change actually shipped. That is when the embedded model started."
             },
             {
               "year": "2016",
@@ -419,7 +419,7 @@
       {
         "type": "Values",
         "props": {
-          "kicker": "What We Stand On",
+          "kicker": "What we stand on",
           "heading": "Four values. No slideware.",
           "items": [
             {
@@ -435,7 +435,7 @@
               "text": "If we cannot explain it to the person who has to live with it, we have not finished the job."
             },
             {
-              "title": "Outcomes, not slideware",
+              "title": "Outcomes over decks",
               "text": "We measure ourselves in hours returned and decisions made, never in decks delivered."
             }
           ]
@@ -444,7 +444,7 @@
       {
         "type": "Team",
         "props": {
-          "kicker": "The People",
+          "kicker": "The people",
           "heading": "Senior hands, on the floor with you.",
           "body": "The senior people who do the work, not a sales team between you and them. Your founders are on it from day one; the rest of your engagement team is named at kickoff.",
           "items": [
@@ -478,10 +478,10 @@
       {
         "type": "Invite",
         "props": {
-          "eyebrow": "Start Here",
+          "eyebrow": "Start here",
           "headline": "Let us find the hours you are",
           "highlight": "quietly losing.",
-          "body": "A diagnostic is thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
+          "body": "A diagnostic is 30 focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
           "ctaLabel": "Book a Diagnostic",
           "ctaHref": "#book",
           "email": "",
@@ -508,7 +508,7 @@
           "kicker": "Insights",
           "headline": "Field notes from",
           "highlight": "the foundation.",
-          "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the plays that actually move the needle. No theory for theory's sake. We leave no stone unturned.",
+          "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the moves that actually earn their keep. No theory for theory's sake.",
           "align": "left",
           "size": "compact",
           "ctaLabel": "Open the AI Intelligence Hub",
@@ -519,7 +519,7 @@
         "type": "IntelBand",
         "props": {
           "kicker": "Live · rebuilt each working day",
-          "heading": "The AI landscape,",
+          "heading": "Every meaningful AI move,",
           "highlight": "read for you.",
           "body": "Our standing intelligence briefing: every meaningful move in AI, with Greatstone's own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
           "ctaLabel": "Open the AI Intelligence Briefing",
