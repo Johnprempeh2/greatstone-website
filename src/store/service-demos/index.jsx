@@ -14,6 +14,7 @@ import './service-demos.css';
 // category -> archetype. Add a category here as its archetype lands.
 const ARCHETYPES = {
   'AI Agents & Assistants': lazy(() => import('./AgentDemo.jsx')),
+  'Automation & Integration': lazy(() => import('./FlowDemo.jsx')),
 };
 
 // What the demo is called on the page, per category. Kept beside the registry so the framing copy and the
@@ -22,8 +23,16 @@ const FRAMING = {
   'AI Agents & Assistants': {
     heading: 'See it answer',
     lead: 'A working prototype of the assistant. Pick a question and watch it answer from its sources.',
+    note: 'The questions, answers and sources are samples, not live data.',
+  },
+  'Automation & Integration': {
+    heading: 'Watch it run',
+    lead: 'One pass of the automation, end to end. Nobody starts it, and it does not forget.',
+    note: 'The steps, details and time figures are a typical case, not live data.',
   },
 };
+
+const DEFAULT_NOTE = 'The content shown is a sample, not live data.';
 
 export function hasServiceDemo(svc) {
   return !!(svc && ARCHETYPES[svc.category]);
@@ -48,8 +57,7 @@ export default function ServiceDemo({ svc }) {
         <Archetype svc={svc} />
       </Suspense>
       <p className="sdemo-note">
-        A prototype built to show how the service behaves. The questions, answers and sources are samples,
-        not live data.
+        A prototype built to show how the service behaves. {framing.note || DEFAULT_NOTE}
       </p>
     </section>
   );
