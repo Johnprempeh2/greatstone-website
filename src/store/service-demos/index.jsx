@@ -19,6 +19,7 @@ const ARCHETYPES = {
   'Brand, Content & Media': lazy(() => import('./BrandDemo.jsx')),
   'Intelligence & Reporting': lazy(() => import('./IntelDemo.jsx')),
   'Commerce & Storefronts': lazy(() => import('./ShopDemo.jsx')),
+  'Meetings & Knowledge': lazy(() => import('./KnowDemo.jsx')),
 };
 
 // What the demo is called on the page, per category. Kept beside the registry so the framing copy and the
@@ -53,6 +54,11 @@ const FRAMING = {
     heading: 'Buy something',
     lead: 'The whole way through: choose, price it, pay, and see what the payment produced. Nothing is charged.',
     note: 'A working checkout with no payment behind it. The catalogue and prices are invented; the arithmetic is real.',
+  },
+  'Meetings & Knowledge': {
+    heading: 'Find it again',
+    lead: 'What was said, what was decided, and why. Turned into something you can retrieve months later.',
+    note: 'The transcripts, policies and decisions are invented. The wiring is real: provenance resolves, permissions change the answer, rollups recompute.',
   },
 };
 
