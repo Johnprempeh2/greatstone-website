@@ -65,7 +65,17 @@ function NavLeaf({ item, current, shopActive, onNavigate, className }) {
     return <a className={className} href={safeHref(item.href)} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined}>{item.label}</a>;
   }
   const active = item.slug === current && !shopActive;
-  return <button aria-current={active ? 'page' : undefined} className={className + (active ? ' is-active' : '')} onClick={() => onNavigate(item.slug)}>{item.label}</button>;
+  // A real link, not a button: a page has an address now, so let people cmd-click it into a new tab, copy
+  // the link, see where it goes on hover, and let a crawler follow it. The click is still intercepted for
+  // the SPA transition, but only for an unmodified left click.
+  return (
+    <a
+      aria-current={active ? 'page' : undefined}
+      className={className + (active ? ' is-active' : '')}
+      href={'#' + item.slug}
+      onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); onNavigate(item.slug); }}
+    >{item.label}</a>
+  );
 }
 
 // An inline nav dropdown (desktop). Opens on hover and on click/Enter; full menu-button keyboard pattern
@@ -210,7 +220,7 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const menuLeaf = (m, sub) => m.kind === 'url' ? (
     <a key={m.href} role="menuitem" className={'gs-navmenu-item' + (sub ? ' is-sub' : '')} href={safeHref(m.href)} target={m.newTab ? '_blank' : undefined} rel={m.newTab ? 'noopener noreferrer' : undefined} onClick={() => setMenuOpen(false)}>{m.label}</a>
   ) : (
-    <button key={m.slug} role="menuitem" aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={() => { onNavigate(m.slug); setMenuOpen(false); }}>{m.label}</button>
+    <a key={m.slug} role="menuitem" href={'#' + m.slug} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}>{m.label}</a>
   );
 
   return (

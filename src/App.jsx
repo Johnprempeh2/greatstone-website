@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import { config, blockCss } from './puck.config.jsx';
 import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
@@ -432,11 +432,33 @@ export default function App() {
     addEventListener('beforeunload', flush);
     return () => removeEventListener('beforeunload', flush);
   }, []);
+  // A bare #<slug> is a marketing page, but only if it names a page that actually exists. Anything else is
+  // left to the route parsers above, so an unknown hash can never blank the site.
+  const readPageHash = useCallback(() => {
+    if (typeof location === 'undefined') return null;
+    const m = location.hash.match(/^#\/?([a-z0-9-]+)$/i);
+    if (!m) return null;
+    const slug = m[1].toLowerCase();
+    const pages = stateRef.current && stateRef.current.pages;
+    return pages && pages[slug] ? slug : null;
+  }, []);
+
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null); };
+    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
+      // Back, Forward, a pasted link and a reload all land on the right page.
+      const page = readPageHash();
+      if (page) setCurrent(page);
+      else if (!location.hash) setCurrent(stateRef.current.order[0]);
+    };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
-  }, []);
+  }, [readPageHash]);
+
+  // First paint: honour a deep link straight to a marketing page.
+  useEffect(() => {
+    const page = readPageHash();
+    if (page) setCurrent(page);
+  }, [readPageHash]);
   // Legacy redirect: the AI Intelligence hub used to be a full-screen #intel takeover. It now lives in
   // the site nav as the "Intelligence" page (the renamed Insights), rendered inside the normal chrome.
   // Send any old #intel bookmark/link onto that page so shared links still land somewhere sensible.
@@ -1039,8 +1061,26 @@ export default function App() {
   // public navigation: switch page, leave any editor mode, and reset scroll to the top (a new page
   // should start at its hero, not wherever the last one was scrolled to). The .gs-public remount
   // (key={current}) gives the brief fade — see gsPageIn in index.css.
+  // Marketing pages are URL-addressable: #<slug>, with the first page living at the bare URL.
+  //
+  // They used to be React state only, which meant Proof and Services had no address at all. You could not
+  // share or bookmark a page, reload put you back on the homepage, Back and Forward did nothing between
+  // pages, every marketing page was invisible to search engines, and the analytics pageview (which reads
+  // location.pathname + location.hash) recorded every one of them as the same URL.
+  //
+  // Bare slugs are safe alongside the existing routes: every reserved route either requires a slash
+  // (#service/, #product/, #intel/, #join/, #invoice/) or is a word no page uses (#shop, #admin, #account,
+  // #org, #breakdown, #catalogue, #order-confirmed). readPageHash below only accepts a known page slug, so
+  // anything unrecognised still falls through to the parsers above.
   function navigate(slug) {
-    if (typeof location !== 'undefined' && location.hash) location.hash = ''; // leave #shop / #product / #admin / #breakdown
+    if (typeof location !== 'undefined') {
+      const want = slug && slug !== stateRef.current.order[0] ? '#' + slug : '';
+      if (location.hash !== want) {
+        // replace (not push) when only clearing to the homepage, so Back does not stick on an empty hash
+        if (want) location.hash = want;
+        else history.replaceState(null, '', location.pathname + location.search);
+      }
+    }
     setShopRoute(null); setProductSlug(null); setCatalogueAdmin(false); setConfirmRoute(false); setAccountRoute(false); setOrgRoute(false); setInvoiceRoute(null);
     setAdminNav(null); setBreakdownRoute(false); setIntelArticle(null); // clear admin/breakdown/article routes synchronously so the page renders without a flash
     setCurrent(slug); setMode('view'); setQuery(''); setPanel(null);

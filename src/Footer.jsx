@@ -32,14 +32,14 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
       <div className="tagline">{footTagline}</div>
       <nav className="foot-links" aria-label="Footer">
         {navOrder.filter((slug) => pages[slug]).map((slug) => (
-          <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title || slug}</a>
+          <a key={slug} href={'#' + slug} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); onNavigate(slug); }}>{pages[slug].title || slug}</a>
         ))}
       </nav>
       <a className="mail" href={safeMailto(mail)}>{mail}</a>
       {legalOrder.length > 0 && (
         <nav className="foot-legal" aria-label="Legal">
           {legalOrder.map((slug) => (
-            <a key={slug} href="#" onClick={(e) => { e.preventDefault(); onNavigate(slug); }}>{pages[slug].title || slug}{canEdit && pages[slug].status !== 'published' ? ' (draft)' : ''}</a>
+            <a key={slug} href={'#' + slug} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); onNavigate(slug); }}>{pages[slug].title || slug}{canEdit && pages[slug].status !== 'published' ? ' (draft)' : ''}</a>
           ))}
         </nav>
       )}
