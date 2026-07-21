@@ -1,0 +1,116 @@
+/* Service demo prototypes. Uses the site tokens (--gs-*) throughout so a future light theme, or any
+   palette change, carries automatically. Every motion here is gated on prefers-reduced-motion. */
+
+.sdemo-section { margin-top: 8px; }
+.sdemo-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sdemo-head h2 { margin: 0; }
+.sdemo-tag {
+  font-size: .62rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gs-accent); background: var(--gs-accent-dim, rgba(200,255,0,.10));
+  border: 1px solid var(--gs-border-strong, rgba(200,255,0,.18));
+  padding: 4px 9px; border-radius: 100px; white-space: nowrap;
+}
+.sdemo-lead { color: var(--gs-text-muted); font-size: .93rem; margin: 8px 0 16px; max-width: 62ch; line-height: 1.6; }
+.sdemo-loading { color: var(--gs-text-faint); font-size: .85rem; padding: 28px 0; }
+.sdemo-note { color: var(--gs-text-faint); font-size: .74rem; line-height: 1.55; margin: 12px 0 0; max-width: 62ch; }
+
+/* ── the console ─────────────────────────────────────────────────────────────────────────────────── */
+.sdemo-console {
+  border: 1px solid var(--gs-border-strong, rgba(200,255,0,.18));
+  border-radius: 16px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  box-shadow: 0 26px 70px -34px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.sdemo-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 15px; border-bottom: 1px solid var(--gs-border, rgba(200,255,0,.08));
+  background: rgba(0,0,0,.28);
+}
+.sdemo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gs-accent); box-shadow: 0 0 9px var(--gs-accent); flex: none; }
+.sdemo-name { font-size: .82rem; font-weight: 800; color: var(--gs-text); letter-spacing: .01em; }
+.sdemo-chan {
+  margin-left: auto; font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gs-text-faint); border: 1px solid var(--gs-border, rgba(200,255,0,.08));
+  padding: 3px 8px; border-radius: 100px;
+}
+
+.sdemo-thread {
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  min-height: 210px; max-height: 380px; overflow-y: auto; scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) { .sdemo-thread { scroll-behavior: auto; } }
+
+.sdemo-msg { max-width: 88%; }
+.sdemo-msg p { margin: 0; font-size: .89rem; line-height: 1.62; }
+.sdemo-msg.is-agent { align-self: flex-start; }
+.sdemo-msg.is-agent p {
+  color: var(--gs-text); background: rgba(255,255,255,.05);
+  border: 1px solid var(--gs-border, rgba(200,255,0,.08));
+  padding: 11px 14px; border-radius: 4px 14px 14px 14px;
+}
+.sdemo-msg.is-user { align-self: flex-end; }
+.sdemo-msg.is-user p {
+  color: #0e1611; background: var(--gs-accent); font-weight: 600;
+  padding: 11px 14px; border-radius: 14px 4px 14px 14px;
+}
+.sdemo-greet p { color: var(--gs-text-muted); background: transparent; border-style: dashed; }
+
+/* streaming caret */
+.sdemo-caret {
+  display: inline-block; width: 2px; height: 1em; margin-left: 3px; vertical-align: -.14em;
+  background: var(--gs-accent); animation: sdemo-blink 1s steps(2) infinite;
+}
+@keyframes sdemo-blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sdemo-caret { animation: none; } }
+
+/* thinking dots */
+.sdemo-think { display: flex; gap: 5px; padding: 13px 14px; align-self: flex-start;
+  background: rgba(255,255,255,.05); border: 1px solid var(--gs-border, rgba(200,255,0,.08)); border-radius: 4px 14px 14px 14px; }
+.sdemo-tdot { width: 6px; height: 6px; border-radius: 50%; background: var(--gs-text-faint); animation: sdemo-bounce 1.25s ease-in-out infinite; }
+.sdemo-tdot:nth-child(2) { animation-delay: .16s; }
+.sdemo-tdot:nth-child(3) { animation-delay: .32s; }
+@keyframes sdemo-bounce { 0%,60%,100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-4px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sdemo-tdot { animation: none; opacity: .6; } }
+
+/* cited sources */
+.sdemo-srcs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-left: 2px; }
+.sdemo-srcs-l { font-size: .58rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--gs-text-faint); margin-right: 2px; }
+.sdemo-src {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .68rem; color: var(--gs-text-muted);
+  background: rgba(0,0,0,.3); border: 1px solid var(--gs-border, rgba(200,255,0,.08));
+  padding: 3px 8px; border-radius: 100px;
+}
+.sdemo-src svg { width: 10px; height: 10px; stroke: var(--gs-accent); flex: none; }
+
+/* ── the ask row ─────────────────────────────────────────────────────────────────────────────────── */
+.sdemo-ask { border-top: 1px solid var(--gs-border, rgba(200,255,0,.08)); padding: 13px 15px; background: rgba(0,0,0,.2); }
+.sdemo-ask-l { display: block; font-size: .6rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--gs-text-faint); margin-bottom: 9px; }
+.sdemo-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sdemo-chip {
+  font-family: inherit; font-size: .8rem; line-height: 1.4; text-align: left;
+  color: var(--gs-text); background: rgba(255,255,255,.04);
+  border: 1px solid var(--gs-border-strong, rgba(200,255,0,.18));
+  padding: 8px 13px; border-radius: 100px; cursor: pointer;
+  transition: background var(--gs-dur-micro, 150ms) var(--gs-ease, ease), border-color var(--gs-dur-micro, 150ms) var(--gs-ease, ease), transform var(--gs-dur-micro, 150ms) var(--gs-ease, ease);
+}
+.sdemo-chip:hover:not(:disabled) { background: var(--gs-accent-dim, rgba(200,255,0,.10)); border-color: var(--gs-accent); transform: translateY(-1px); }
+.sdemo-chip:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .sdemo-chip:hover:not(:disabled) { transform: none; } }
+
+.sdemo-done { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sdemo-done span { font-size: .82rem; color: var(--gs-text-muted); }
+.sdemo-reset {
+  font-family: inherit; font-size: .78rem; font-weight: 700; color: var(--gs-accent);
+  background: none; border: 0; padding: 4px 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+
+/* ── privacy line ────────────────────────────────────────────────────────────────────────────────── */
+.sdemo-privacy { display: flex; align-items: center; gap: 7px; margin: 11px 0 0; font-size: .76rem; color: var(--gs-text-faint); }
+.sdemo-privacy svg { width: 13px; height: 13px; stroke: var(--gs-accent); flex: none; }
+
+@media (max-width: 620px) {
+  .sdemo-msg { max-width: 96%; }
+  .sdemo-thread { min-height: 180px; max-height: 320px; padding: 13px; }
+  .sdemo-chip { font-size: .76rem; }
+}

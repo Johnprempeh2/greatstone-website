@@ -10,6 +10,7 @@ import { openInquiryDrawer } from './inquiry.mjs';
 import { bumpService } from './popularity.mjs';
 import { track } from '../lib/analytics.js';
 import { safeMailto } from '../lib/safe-url.js';
+import ServiceDemo from './service-demos/index.jsx';
 import './store.css';
 import './service-detail.css';
 
@@ -77,6 +78,10 @@ export default function ServiceDetail({ slug, onBack, applyHead }) {
           </div>
           <p className="sp-note">No obligation. Tell us what you’re solving and we’ll scope it to your numbers. Add more services to inquire about several at once.</p>
         </div>
+
+        {/* The interactive prototype for this service's category, if one exists. Renders nothing when the
+            category has no archetype yet, so archetypes can ship one at a time without a gap on the page. */}
+        <ServiceDemo svc={svc} />
 
         {bullets.length ? (
           <section className="sp-section"><h2>What we build</h2>
