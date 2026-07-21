@@ -20,6 +20,7 @@ const ARCHETYPES = {
   'Intelligence & Reporting': lazy(() => import('./IntelDemo.jsx')),
   'Commerce & Storefronts': lazy(() => import('./ShopDemo.jsx')),
   'Meetings & Knowledge': lazy(() => import('./KnowDemo.jsx')),
+  'Comms Channels': lazy(() => import('./CommsDemo.jsx')),
 };
 
 // What the demo is called on the page, per category. Kept beside the registry so the framing copy and the
@@ -59,6 +60,11 @@ const FRAMING = {
     heading: 'Find it again',
     lead: 'What was said, what was decided, and why. Turned into something you can retrieve months later.',
     note: 'The transcripts, policies and decisions are invented. The wiring is real: provenance resolves, permissions change the answer, rollups recompute.',
+  },
+  'Comms Channels': {
+    heading: 'Send it',
+    lead: 'Compose once, reach people on the channel they actually use, and get proof it landed.',
+    note: 'Nothing is sent from this page. The rosters and messages are invented; the counts and the cascade are computed.',
   },
 };
 
