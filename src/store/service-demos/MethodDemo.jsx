@@ -37,7 +37,7 @@ export default function MethodDemo({ svc }) {
         <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
           <path d="M12 3 4 8v8l8 5 8-5V8z" /><path d="M12 12v9M12 12 4 8M12 12l8-4" />
         </svg>
-        We do not hand you a report and leave. We build what the assessment found, and then we run it.
+        {data.closer}
       </p>
     </div>
   );

@@ -52,7 +52,7 @@ export const AGENT_SCRIPTS = {
       {
         q: 'Can I book a call for Thursday afternoon?',
         a: 'Thursday has two slots free: 14:00 and 16:30 UK time. I can hold one now if you give me your name, company and email, and it goes straight into the right diary.',
-        sources: ['Live calendar availability', 'Booking rules.md'],
+        sources: ['Booking calendar', 'Booking rules.md'],
       },
     ],
   },
@@ -71,7 +71,7 @@ export const AGENT_SCRIPTS = {
       {
         q: 'I need to reschedule my appointment on Friday.',
         a: 'I have found your Friday 11:00 appointment. The next openings are Monday 09:30 or Tuesday 14:00. Shall I move it, and would you like the confirmation by text or email?',
-        sources: ['Calendar (connected)', 'Rescheduling policy.md'],
+        sources: ['Booking calendar', 'Rescheduling policy.md'],
       },
     ],
   },
@@ -179,7 +179,7 @@ export const AGENT_SCRIPTS = {
     prompts: [
       {
         q: 'How much are the annual dues and when are they due?',
-        a: 'Annual dues are 120, payable by 31 March. Members joining after 1 October pay a half-year rate of 60 for that first year. Late payment after 30 April adds a 15 reinstatement fee.',
+        a: 'Annual dues are GHS 120, payable by 31 March. Members joining after 1 October pay a half-year rate of GHS 60 for that first year. Late payment after 30 April adds a GHS 15 reinstatement fee.',
         sources: ['By-laws 2026.pdf, article 7', 'Fee schedule notice, Jan 2026'],
       },
       {

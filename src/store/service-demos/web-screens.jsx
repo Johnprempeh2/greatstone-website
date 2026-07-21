@@ -60,11 +60,13 @@ function PageScreen({ data }) {
                 </button>
               ))}
             </div>
+            {/* labelled as an illustration: a real test measures this, and this page is not measuring it */}
             <span className="swd-tool-note" aria-live="polite">
-              Version {variants[vi].label}: {variants[vi].rate}% of visitors enquire
+              Illustration: version {variants[vi].label} at {variants[vi].rate}%
               {vi > 0 && variants[vi].rate > variants[0].rate
-                ? ' (' + (variants[vi].rate - variants[0].rate).toFixed(1) + ' points above A)'
+                ? ', ' + (variants[vi].rate - variants[0].rate).toFixed(1) + ' points above A'
                 : ''}
+              . Your live test supplies the real figure.
             </span>
           </>
         ) : (

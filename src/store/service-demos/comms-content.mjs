@@ -24,8 +24,24 @@ export const COMMS = {
     broadcast: {
       title: 'Institute of Surveyors', context: 'AGM notice, 14 November',
       drafts: [
-        { id: 'd1', label: 'AGM notice', body: 'The AGM is on 14 November at 10:00, Accra International Conference Centre. Registration closes on the 7th. Reply YES to reserve a seat.' },
-        { id: 'd2', label: 'Dues reminder', body: 'Your 2026 dues are outstanding. Members in arrears cannot vote at the AGM. Pay in two taps: [link]' },
+        {
+          id: 'd1', label: 'AGM notice',
+          body: 'The AGM is on 14 November at 10:00, Accra International Conference Centre. Registration closes on the 7th. Reply YES to reserve a seat.',
+          replies: [
+            { who: 'Kwesi Anokye, Ashanti', t: 'YES, and I will bring two colleagues.' },
+            { who: 'Ama Owusu, Diaspora', t: 'Is there a dial-in for members abroad?' },
+            { who: 'Yaw Boadu, Northern', t: 'YES' },
+          ],
+        },
+        {
+          id: 'd2', label: 'Dues reminder',
+          body: 'Your 2026 dues are outstanding. Members in arrears cannot vote at the AGM. Pay in two taps: [link]',
+          replies: [
+            { who: 'Efua Sarpong, Ashanti', t: 'Paid just now, thank you for the link.' },
+            { who: 'Selorm Agbeko, Accra', t: 'I paid in March. Can you check?' },
+            { who: 'Kofi Danquah, Accra', t: 'Can I pay in two instalments?' },
+          ],
+        },
       ],
       segments: [
         { id: 's1', label: 'Greater Accra', n: 1840 },
@@ -40,11 +56,6 @@ export const COMMS = {
         { id: 'email', label: 'Email', share: 1, note: 'Whoever is left, and the record copy' },
       ],
       readRate: 0.79,
-      replies: [
-        { who: 'Kwesi Anokye, Ashanti', t: 'YES, and I will bring two colleagues.' },
-        { who: 'Ama Owusu, Diaspora', t: 'Is there a dial-in for members abroad?' },
-        { who: 'Yaw Boadu, Northern', t: 'YES' },
-      ],
       repliesNote: 'Replies route to staff instead of vanishing into a number nobody owns. The dial-in question is now a task, not a missed message.',
       foot: 'One compose, three channels, and a notice that no longer misses half the membership.',
     },
@@ -74,8 +85,24 @@ export const COMMS = {
     broadcast: {
       title: 'Tamale Girls’ Education Trust', context: 'Term-start check-in',
       drafts: [
-        { id: 'd1', label: 'Term check-in', body: 'Term starts Monday. Reply 1 if she will attend, 2 if there is a problem we can help with. No cost to reply.' },
-        { id: 'd2', label: 'Crew assignment', body: 'You are at the Tamale site on Tuesday, 07:30. Reply OK to confirm. Reply NO and we will reassign.' },
+        {
+          id: 'd1', label: 'Term check-in',
+          body: 'Term starts Monday. Reply 1 if she will attend, 2 if there is a problem we can help with. No cost to reply.',
+          replies: [
+            { who: 'Family 0142, Tamale', t: '2 — the uniform did not fit after the holidays' },
+            { who: 'Family 0311, Kumasi', t: '1' },
+            { who: 'Family 0288, Tamale', t: '1, and thank you for the reminder' },
+          ],
+        },
+        {
+          id: 'd2', label: 'Crew assignment',
+          body: 'You are at the Tamale site on Tuesday, 07:30. Reply OK to confirm. Reply NO and we will reassign.',
+          replies: [
+            { who: 'Crew, D. Mensah', t: 'OK' },
+            { who: 'Crew, A. Boateng', t: 'NO — I am on the Kumasi job until Wednesday' },
+            { who: 'Crew, S. Adjei', t: 'OK, will bring the second van' },
+          ],
+        },
       ],
       segments: [
         { id: 's1', label: 'Families, Tamale', n: 320 },
@@ -87,11 +114,6 @@ export const COMMS = {
         { id: 'sms', label: 'SMS', share: 1, note: 'Reaches a basic handset with no data' },
       ],
       readRate: 0.84,
-      replies: [
-        { who: 'Family 0142, Tamale', t: '2 — the uniform did not fit after the holidays' },
-        { who: 'Family 0311, Kumasi', t: '1' },
-        { who: 'Crew, D. Mensah', t: 'OK' },
-      ],
       repliesNote: 'Every reply lands on the record with a timestamp, so the uniform problem becomes a case with an owner rather than a message somebody remembers.',
       foot: 'Two-way, at a scale a team could never reach by hand, and consent-respecting throughout.',
     },

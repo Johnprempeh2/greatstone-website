@@ -1078,3 +1078,9 @@
   .smt-read { position: static; }
   .smt-teams li { grid-template-columns: 84px 1fr 40px 52px; gap: 7px; }
 }
+
+/* Tier-0 audit fixes: content that existed in the data but was never rendered */
+.smt-weeknote { margin: 0 0 13px; padding-left: 11px; border-left: 2px solid var(--gs-accent);
+  font-size: .78rem; line-height: 1.55; color: var(--gs-text-muted); }
+.sbd-mods-h { display: block; margin-top: 4px; font-size: .68rem; font-weight: 600; letter-spacing: 0;
+  text-transform: none; color: var(--gs-text-faint); }

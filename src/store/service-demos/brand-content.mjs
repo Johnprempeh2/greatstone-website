@@ -43,7 +43,7 @@ export const PIECES = {
       mode: 'studies',
       hint: 'Every study is generated here, now, from a seed. Ask for another and the technique changes with it.',
       truth: 'Drawn live in your browser from a seeded generator, so study 014 looks the same every time it is opened. The service runs this on a schedule and files each one in a gallery.',
-      facts: [['Daily', 'One new study, on a schedule'], ['Never repeats', 'Technique and feel both move'], ['Export-ready', 'Loops for social, heroes, loaders']],
+      facts: [['Daily', 'One new study, on a schedule'], ['Seeded', 'Study 014 draws the same picture every time'], ['Export-ready', 'Loops for social, heroes, loaders']],
     },
   },
 

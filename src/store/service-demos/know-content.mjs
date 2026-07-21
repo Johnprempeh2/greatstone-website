@@ -38,7 +38,7 @@ export const KNOW = {
         { id: 'o3', type: 'Action', t: 'Send the supplier list', owner: 'Amara', due: 'by the 15th', from: ['l6', 'l7'] },
         { id: 'o4', type: 'Risk', t: 'A late supplier list pushes September, which pushes the go-live the board has been promised.', from: ['l8', 'l1'] },
       ],
-      after: 'The two actions land in the task tool with their owners. The recap goes out branded, and the whole thing is searchable the moment the call ends.',
+      after: 'The action lands in the task tool with its owner and its date. The recap goes out branded, and the whole thing is searchable the moment the call ends.',
     },
   },
 
@@ -100,7 +100,16 @@ export const KNOW = {
             ptr: { t: 'Fourteen months at the current burn, per the June management accounts.', cites: ['Management accounts, June'] },
           },
         },
+        {
+          q: 'What is our policy on subcontracting overseas?',
+          a: {
+            any: { gap: true, t: 'Nothing in the index answers this. Rather than assemble something plausible from adjacent documents, it has been logged as a gap.' },
+            fin: { gap: true, t: 'Nothing in the index answers this. Logged as a gap for the people who would have to write it.' },
+            ptr: { gap: true, t: 'Nothing in the index answers this, and you are cleared for everything, so the gap is real rather than a permission boundary.' },
+          },
+        },
       ],
+      capture: { label: 'What we could not answer', note: 'The gaps report. Every unanswered question is logged rather than guessed at, which is how you find out what your own documentation is missing.' },
       foot: 'Your documents stay yours. Nothing here trains a public model, and the index respects the same permissions your drives already have.',
     },
   },

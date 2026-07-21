@@ -49,6 +49,7 @@ export const METHOD = {
         },
       ],
       metric: { label: 'Started the day on', value: 'the exceptions' },
+      closer: 'It runs on your schedule against a queue you define. We monitor and tune it, so what you see is results rather than maintenance.',
       foot: 'It does the safe work end to end and parks the rest with a reason. Every action is permissioned and logged, so the morning brief is auditable rather than just reassuring.',
     },
   },
@@ -81,6 +82,7 @@ export const METHOD = {
         },
       ],
       metric: { label: 'Requests you had to raise', value: 'fewer than the fixes we found' },
+      closer: 'No assessment required to start. We pick the estate up as it is, and it gets better every cycle whether or not you raise anything.',
       foot: 'A ticket queue waits to be told. We critique the whole estate every cycle, which is why half of what ships each month was never asked for.',
     },
   },
@@ -107,6 +109,7 @@ export const METHOD = {
         w12: 'Every team is over two thirds, and the hours are real. The quarterly review now goes looking for the next thing worth automating.',
       },
       foot: 'The build is the easy half. This is the half that decides whether the hours actually come back.',
+      closer: 'We do not hand over and leave. We stay until the tools are part of the working week.',
     },
   },
 };

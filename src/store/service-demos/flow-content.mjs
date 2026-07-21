@@ -161,11 +161,13 @@ export const FLOWS = {
     trigger: { label: 'PO issued', detail: 'Purchase order raised for a supplier' },
     steps: [
       { label: 'Publish to the portal', detail: 'Supplier sees it without an email hunt', tool: 'Portal' },
-      { label: 'Supplier confirms', detail: 'Quantities and a delivery date of the 14th', tool: 'Supplier' },
+      { label: 'Wait for the supplier', detail: 'They confirm quantities and a date in their own time, not ours', tool: 'Portal', human: true },
       { label: 'Update the status', detail: 'Confirmed, and visible to everyone who needs it', tool: 'POs' },
       { label: 'Chase the overdue', detail: 'Day 15 with no delivery raises a flag on its own', tool: 'Rules' },
     ],
     outcome: { label: 'Every open PO at a glance', detail: 'No more digging through a buyer\'s inbox to find a date.' },
+    // the automation's seconds cover issuing, publishing and chasing. The supplier's own reply is a human
+    // step and is deliberately excluded from the timed figure.
     manualMin: 16, autoSec: 6, runsPerMonth: 70,
   },
 };

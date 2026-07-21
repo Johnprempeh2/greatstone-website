@@ -28,7 +28,7 @@ export const SHOPS = {
       ],
       grants: [
         { t: 'Order in your own database', d: 'Not a platform’s. You can query it, export it, and it is still yours if you change checkout provider.' },
-        { t: 'Stock moved', d: 'The listing decrements as it sells, so the catalogue stops promising what the shelf cannot deliver.' },
+        { t: 'Stock knows', d: 'The catalogue and the shelf are the same number, so a line that has sold out stops being sellable.' },
         { t: 'Confirmation sent', d: 'Branded, with the variant the buyer actually chose, not a generic line.' },
       ],
       ledger: 'Order 1041 captured, reconciled against the Stripe payout on 24 July. No per-sale platform tax.',

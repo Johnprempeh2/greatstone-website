@@ -88,7 +88,9 @@ export function DocumentScreen({ data }) {
   return (
     <div className="sbd-doc">
       <fieldset className="sbd-mods">
-        <legend className="sbd-mods-l">Modules</legend>
+        {/* data.hint names the strongest interaction on the screen. It was being dropped, so the chart's
+            narrative layer went undiscovered on both services that carry one. */}
+        <legend className="sbd-mods-l">Modules<span className="sbd-mods-h">{data.hint}</span></legend>
         {data.modules.map((m) => (
           <label key={m.id} className={'sbd-mod' + (on[m.id] ? ' is-on' : '')}>
             <input type="checkbox" checked={!!on[m.id]} onChange={() => toggle(m.id)} />

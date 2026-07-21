@@ -30,6 +30,9 @@ export function BroadcastScreen({ data }) {
   };
 
   const eng = data.engagement;
+  // replies belong to the message that was actually sent. Reading them off the broadcast meant selecting
+  // the crew assignment and getting a parent's reply about a school uniform.
+  const replies = data.drafts[draft].replies;
 
   return (
     <div className="scm-bc">
@@ -100,11 +103,11 @@ export function BroadcastScreen({ data }) {
             )}
           </div>
 
-          {data.replies ? (
+          {replies ? (
             <div className="scm-replies">
               <p className="scm-l">And what came back</p>
               <ul>
-                {data.replies.map((r) => (
+                {replies.map((r) => (
                   <li key={r.who}>
                     <b>{r.who}</b>
                     <span>{r.t}</span>

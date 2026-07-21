@@ -83,6 +83,10 @@ export function AdoptionScreen({ data }) {
         </div>
       </div>
 
+      {/* what MOVED the bars. Without this the dashboard reads as a metric that improved on its own,
+          when the whole service is the work that caused it. */}
+      <p className="smt-weeknote" aria-live="polite">{data.weeks[at].note}</p>
+
       <div className="swd-tiles smt-tiles">
         <div className="swd-tile"><b>{avg}%</b><i>Average use</i></div>
         <div className="swd-tile"><b>{totalHours}</b><i>Hours back a week</i></div>

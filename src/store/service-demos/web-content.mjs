@@ -70,7 +70,7 @@ export const SCREENS = {
         { t: 'Fixed fee', d: 'If you want us to act.' },
       ],
       variants: [
-        { label: 'A', headline: 'Your lease renewal, reviewed in 48 hours', cta: 'Send the lease', rate: 2.4 },
+        { label: 'A', headline: 'Your lease renewal, reviewed in 48 hours', cta: 'Send the lease', rate: 2.4 },  // illustrative, see the label in web-screens.jsx
         { label: 'B', headline: 'Do not sign that renewal until you have read this', cta: 'Get the free review', rate: 4.1 },
       ],
     },
@@ -103,7 +103,9 @@ export const SCREENS = {
     target: 'A real URL in users’ hands within weeks',
     dash: {
       who: 'Founder view', role: 'Live product, week 6',
-      tiles: [{ v: '412', l: 'Signed up' }, { v: '86', l: 'Active this week' }, { v: '9', l: 'Paying' }],
+      // no invented traction figures here: a fabricated growth curve is not evidence of anything, and it was
+      // the only thing this panel was proving. The tiles now describe the build, which is what is being sold.
+      tiles: [{ v: '3', l: 'Core features' }, { v: '1', l: 'Live URL' }, { v: 'Wk 6', l: 'Since kickoff' }],
       rows: [
         { t: 'New sign-up, t.owusu@…', s: 'Completed onboarding', when: '11 minutes ago' },
         { t: 'First paid plan', s: 'Monthly, £29', when: 'Yesterday', ok: true },
