@@ -21,6 +21,7 @@ const ARCHETYPES = {
   'Commerce & Storefronts': lazy(() => import('./ShopDemo.jsx')),
   'Meetings & Knowledge': lazy(() => import('./KnowDemo.jsx')),
   'Comms Channels': lazy(() => import('./CommsDemo.jsx')),
+  'The Method': lazy(() => import('./MethodDemo.jsx')),
 };
 
 // What the demo is called on the page, per category. Kept beside the registry so the framing copy and the
@@ -65,6 +66,11 @@ const FRAMING = {
     heading: 'Send it',
     lead: 'Compose once, reach people on the channel they actually use, and get proof it landed.',
     note: 'Nothing is sent from this page. The rosters and messages are invented; the counts and the cascade are computed.',
+  },
+  'The Method': {
+    heading: 'Read your week',
+    lead: 'Answer a few questions and watch the plan rank itself. Change an answer and the order changes with it.',
+    note: 'A short prototype, not the assessment. The real thing walks your whole operating week; this one names how much it leaves unread.',
   },
 };
 
