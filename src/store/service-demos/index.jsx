@@ -17,6 +17,7 @@ const ARCHETYPES = {
   'Automation & Integration': lazy(() => import('./FlowDemo.jsx')),
   'Websites & Web Apps': lazy(() => import('./WebDemo.jsx')),
   'Brand, Content & Media': lazy(() => import('./BrandDemo.jsx')),
+  'Intelligence & Reporting': lazy(() => import('./IntelDemo.jsx')),
 };
 
 // What the demo is called on the page, per category. Kept beside the registry so the framing copy and the
@@ -41,6 +42,11 @@ const FRAMING = {
     heading: 'Watch it work',
     lead: 'Craft you can put your hands on, and production you can count. Both are running here, not recorded.',
     note: 'The motion and the generated art are real and running now. The written pieces are samples.',
+  },
+  'Intelligence & Reporting': {
+    heading: 'Read it',
+    lead: 'Numbers that explain themselves. Open any figure and the sentence saying what moved, and why, is already there.',
+    note: 'The figures, names and commentary are invented for the demonstration.',
   },
 };
 
