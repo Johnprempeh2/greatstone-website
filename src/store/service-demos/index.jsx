@@ -68,24 +68,36 @@ const FRAMING = {
     note: 'Nothing is sent from this page. The rosters and messages are invented; the counts and the cascade are computed.',
   },
   'The Method': {
-    heading: 'Read your week',
-    lead: 'Answer a few questions and watch the plan rank itself. Change an answer and the order changes with it.',
-    note: 'A short prototype, not the assessment. The real thing walks your whole operating week; this one names how much it leaves unread.',
+    heading: 'What it produces',
+    lead: 'These are engagements rather than tools, so the prototype shows what actually lands: the work done on the days it was done, and whether it stuck.',
+    note: 'The logs and figures are invented for the demonstration.',
   },
 };
 
 const DEFAULT_NOTE = 'The content shown is a sample, not live data.';
 
+// Services that deliberately have NO prototype.
+//
+// Not everything should have one. A prototype has to do the service justice, and for a deep consultative
+// engagement a few clicks makes the work look smaller than it is: a five-question form reads as a lead-gen
+// quiz, not as a structured walkthrough of an entire operating week. Underselling is worse than silence, so
+// these render no demo section at all rather than a toy version of themselves.
+const NO_DEMO = new Set([
+  '8-pillar-digital-assessment',      // a walkthrough of the whole operating week; no form does that justice
+  'operations-command-centre-build',  // assessment-led, so it inherits the same problem
+  'website-audit-rebuild',            // a real audit measures the site; a self-scored quiz is not an audit
+]);
+
 export function hasServiceDemo(svc) {
-  return !!(svc && ARCHETYPES[svc.category]);
+  if (!svc || NO_DEMO.has(svc.slug)) return false;
+  return !!ARCHETYPES[svc.category];
 }
 
 // The consistent frame every archetype sits in: heading, one line of framing, the prototype, and an honest
 // label. The label matters. This is a marketing page, and the panel must never read as live customer data.
 export default function ServiceDemo({ svc }) {
-  if (!svc) return null;
+  if (!hasServiceDemo(svc)) return null;
   const Archetype = ARCHETYPES[svc.category];
-  if (!Archetype) return null;
   const framing = FRAMING[svc.category] || { heading: 'See it working', lead: '' };
 
   return (

@@ -1,16 +1,17 @@
 // The Method archetype.
 //
-// The last of the nine, and the only category that is not a tool: it is how the work starts and how it
-// keeps running. The assessment is the flagship, and its one job is to prove it is a diagnostic rather
-// than a brochure with your name on it, which it does by re-ranking the plan from your own answers.
+// The only category that is not a tool: it is how the work starts and how it keeps running.
 //
-// The eight pillars come from the live methodology explorer, not a parallel set.
+// Three of its six services have NO prototype (see NO_DEMO in index.jsx). The 8-pillar assessment, the
+// command-centre build and the website audit are consultative engagements, and a few clicks would make
+// them look like a quiz. The three that remain each produce a concrete artefact the catalogue already
+// promises, so showing that artefact is fair rather than reductive.
 import React from 'react';
 import { methodFor } from './method-content.mjs';
-import { AssessScreen, WorklogScreen, AdoptionScreen } from './method-screens.jsx';
+import { WorklogScreen, AdoptionScreen } from './method-screens.jsx';
 
-const KINDS = { assess: AssessScreen, worklog: WorklogScreen, adoption: AdoptionScreen };
-const CHANNEL = { assess: 'Diagnostic', worklog: 'Embedded', adoption: 'Week 12' };
+const KINDS = { worklog: WorklogScreen, adoption: AdoptionScreen };
+const CHANNEL = { worklog: 'Embedded', adoption: 'Since launch' };
 
 export default function MethodDemo({ svc }) {
   const piece = methodFor(svc);
@@ -36,7 +37,7 @@ export default function MethodDemo({ svc }) {
         <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
           <path d="M12 3 4 8v8l8 5 8-5V8z" /><path d="M12 12v9M12 12 4 8M12 12l8-4" />
         </svg>
-        We do not hand you a report and leave. The assessment decides what gets built, and we run it after.
+        We do not hand you a report and leave. We build what the assessment found, and then we run it.
       </p>
     </div>
   );
