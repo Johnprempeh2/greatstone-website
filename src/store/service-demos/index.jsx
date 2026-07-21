@@ -15,6 +15,7 @@ import './service-demos.css';
 const ARCHETYPES = {
   'AI Agents & Assistants': lazy(() => import('./AgentDemo.jsx')),
   'Automation & Integration': lazy(() => import('./FlowDemo.jsx')),
+  'Websites & Web Apps': lazy(() => import('./WebDemo.jsx')),
 };
 
 // What the demo is called on the page, per category. Kept beside the registry so the framing copy and the
@@ -29,6 +30,11 @@ const FRAMING = {
     heading: 'Watch it run',
     lead: 'One pass of the automation, end to end. Nobody starts it, and it does not forget.',
     note: 'The steps, details and time figures are a typical case, not live data.',
+  },
+  'Websites & Web Apps': {
+    heading: 'Use it',
+    lead: 'The screen this service builds, working. Do the thing it exists for, and switch it to a phone.',
+    note: 'The records, names and numbers on screen are invented for the demonstration.',
   },
 };
 
