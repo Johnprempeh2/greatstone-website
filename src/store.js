@@ -23,7 +23,10 @@ const SCHEMA = 19;
 // studio whose seedVersion is older than this is re-seeded ONCE from the fresh bundle — so a deploy's
 // content updates actually show for returning visitors instead of being masked by their saved store.
 // Review-prototype behaviour: a bump resets in-editor drafts; between bumps, edits persist normally.
-const SEED_VERSION = 20260701;
+// Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
+// at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
+// Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
+const SEED_VERSION = 20260722;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /

@@ -17,9 +17,11 @@ export function Figure({ id, puck, image, alt, caption, width = 'standard', aspe
     <section ref={ref} className={`b-figure width-${width}`}>
       <div className="wrap">
         <figure className="b-figure-inner" data-reveal>
+          {/* The empty state is an instruction to the EDITOR, so it must never reach a visitor. A published
+              page with an unset image used to show "Choose an image in the panel" to prospective clients. */}
           {image
             ? <img className="b-figure-img" src={image} alt={alt || ''} loading="lazy" decoding="async" style={imgStyle} onError={hideOnError} />
-            : <div className="b-figure-ph">Choose an image in the panel →</div>}
+            : editing ? <div className="b-figure-ph">Choose an image in the panel →</div> : null}
           <EditableText editing={editing} id={id} field="caption" value={caption} as="figcaption" className="b-figure-cap" placeholder="Caption (optional)…" />
         </figure>
       </div>

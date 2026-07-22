@@ -450,27 +450,33 @@
           "items": [
             {
               "name": "Ben Mensah",
-              "role": "Founder and CEO"
+              "role": "Founder and CEO",
+              "kind": "person"
             },
             {
               "name": "John Prempeh",
-              "role": "Senior DX Executive"
+              "role": "Senior DX Executive",
+              "kind": "person"
             },
             {
               "name": "Naa Ayokor Harding",
-              "role": "Product Manager"
+              "role": "Product Manager",
+              "kind": "person"
             },
             {
               "name": "Principal Engineer",
-              "role": "Named once we confirm who is on your engagement."
+              "role": "Named once we confirm who is on your engagement.",
+              "kind": "role"
             },
             {
               "name": "Delivery Lead",
-              "role": "Named once we confirm who is on your engagement."
+              "role": "Named once we confirm who is on your engagement.",
+              "kind": "role"
             },
             {
               "name": "Design Director",
-              "role": "Named once we confirm who is on your engagement."
+              "role": "Named once we confirm who is on your engagement.",
+              "kind": "role"
             }
           ]
         }
