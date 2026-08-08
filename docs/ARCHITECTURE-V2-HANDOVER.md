@@ -156,6 +156,34 @@ This was worth re-measuring rather than assuming: the first pass found two insta
 and counting properly found four across three. His call, alongside the chapters 2 and 3 overlap
 already on the list.
 
+## Accessibility and responsive, measured
+
+Run across all five rebuilt pages at 1440px and 375px. Everything below was measured in the browser
+on the built site, not read off the stylesheet.
+
+**Structure.** Exactly one h1 per page, no heading-level skips anywhere, no positive tabindex.
+
+**The contact form.** Every field has a properly associated label. `required` and `aria-required`
+agree exactly on every field, and only Work email is required, which is what Ben's "no qualification
+barriers" asks for.
+
+**Contrast against the void.** Body and muted copy 11.04:1, the faint section label 7.19:1, the
+numbered motif 15.84:1, contact routes 11.04:1, panel buttons 17.18:1. AA needs 4.5:1.
+
+**Mobile.** The header collapses correctly into its Pages dropdown under 760px. No page scrolls
+sideways at 375px: two separate causes were found and fixed, the header's own intrinsic width and a
+decorative pseudo-element in the Chapter block that extended 60px past each edge.
+
+**Reduced motion.** The pane cannot emulate the media query, so rather than claim a check I could not
+run, I enumerated every element that actually animates on each page and tested whether a rule inside
+a `prefers-reduced-motion` block matches it. 53 animated elements across the five pages, all covered,
+against 55 such rules. Of those rules 32 explicitly set transition or animation to none, and the rest
+neutralise transforms, decoration or scroll-snap, which is the same intent.
+
+**One thing that is a decision, not a defect.** Tap targets in the collapsed mobile nav and the
+contact routes measure 26 to 36px tall. That PASSES WCAG 2.2 AA, which requires 24x24 (2.5.8), and
+misses the 44x44 comfort figure often quoted. Worth a look on a real phone before deciding.
+
 ## One safety change worth knowing about
 
 Several blocks shipped fabricated claims as their **defaults**, publishable the moment anyone added
