@@ -13,7 +13,7 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false }) {
+export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb' }) {
   const ref = useReveal();
   // home-hero only (opt-in): hide the scroll indicator once the visitor scrolls past the fold so it
   // doesn't linger over the content below. Passive listener, removed on unmount; inert unless scrollCue.
@@ -33,7 +33,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   const cta1 = resolveLink(ctaHref);
   const cta2 = resolveLink(ctaHref2);
   return (
-    <section ref={ref} className={`b-hero size-${size} align-${align}${gridBackdrop ? ' has-grid' : ''}`}>
+    <section ref={ref} className={`b-hero size-${size} align-${align}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}`}>
       <div className="wrap b-hero-inner">
         <EditableText editing={puck && puck.isEditing} id={id} field="kicker" value={kicker} as="span" className={pillEyebrow ? 'pill' : 'kicker'} singleLine placeholder="Eyebrow…" data-reveal />
         <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
@@ -66,7 +66,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
       </div>
       {scrollCue ? (
         <span className={'b-hero-scrollcue' + (cueHidden ? ' is-gone' : '')} aria-hidden="true">
-          <span className="b-hero-scrollcue-label">Scroll down to start the climb</span>
+          <span className="b-hero-scrollcue-label">{cueLabel}</span>
           <span className="b-hero-scrollcue-chevron" />
         </span>
       ) : null}
@@ -131,6 +131,23 @@ export const css = `
   background-size:64px 64px;
   -webkit-mask-image:radial-gradient(120% 90% at 80% 0%,#000 25%,transparent 70%);
           mask-image:radial-gradient(120% 90% at 80% 0%,#000 25%,transparent 70%)}
+/* variant: opening statement (Ben's chapter 2). Keep this block LAST in the string: it ties on
+   specificity with .b-hero.size-full and wins only on source order. */
+.b-hero.v-statement{--stmt-w:min(1040px,100%);
+  min-height:100vh;min-height:100svh;align-items:safe center;
+  padding-block:clamp(88px,11vh,132px) clamp(64px,8vh,104px)}
+.b-hero.v-statement .b-hero-inner{max-width:var(--stmt-w)}
+.b-hero.v-statement h1{margin-top:0;text-shadow:none;
+  font-size:clamp(27px,3.3vw,46px);line-height:1.2;letter-spacing:-.015em;text-wrap:balance}
+.b-hero.v-statement h1.b-hero-stack .b-hero-line + .b-hero-line{margin-top:.42em}
+.b-hero.v-statement .lede{margin-top:clamp(22px,3vh,34px);text-shadow:none;
+  font-size:clamp(16px,1.3vw,19px);line-height:1.75;max-width:min(620px,100%)}
+.b-hero.v-statement .b-cta-row{margin-top:clamp(26px,3.5vh,40px)}
+.b-hero.v-statement.align-left .b-hero-scrollcue{
+  left:max(var(--gs-gutter),calc((100% - var(--stmt-w))/2 + var(--gs-gutter)));
+  transform:none;align-items:flex-start}
+.b-hero.v-statement.align-left .b-hero-scrollcue.is-gone{transform:translateY(8px)}
+
 `;
 
 export const puck = {
@@ -146,6 +163,8 @@ export const puck = {
     cueStyle: { type: 'radio', label: 'Cue style', options: [
       { label: 'Text line', value: 'text' }, { label: 'Mouse capsule (scroll)', value: 'mouse' },
     ]},
+    variant: { type: 'radio', label: 'Hero style', options: [
+      { label: 'Default hero', value: 'default' }, { label: 'Opening statement', value: 'statement' }] },
     scrollCue: { type: 'radio', label: 'Scroll indicator (home hero)', options: [
       { label: 'Off', value: false }, { label: 'On (bouncing chevron)', value: true },
     ]},
@@ -165,6 +184,7 @@ export const puck = {
     ctaHref: { type: 'custom', label: 'Primary button link', render: (props) => <LinkField {...props} /> },
     ctaLabel2: { type: 'text', label: 'Ghost button label (optional)' },
     ctaHref2: { type: 'custom', label: 'Ghost button link', render: (props) => <LinkField {...props} /> },
+    cueLabel: { type: 'text', label: 'Scroll indicator label' },
     meta: {
       type: 'array', label: 'Stats row (optional)',
       arrayFields: { bignum: { type: 'text', label: 'Figure' }, label: { type: 'text', label: 'Label' } },
@@ -189,7 +209,7 @@ export const puck = {
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
     headlineSuffix: '',
-    align: 'left', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false,
+    align: 'left', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, variant: 'default', cueLabel: 'Scroll down to start the climb',
   },
   render: (props) => <Hero {...props} />,
 };
