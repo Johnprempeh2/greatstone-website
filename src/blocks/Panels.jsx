@@ -108,6 +108,11 @@ export function Panels({
 
 export const css = `
 .b-panels{padding:clamp(72px,12vh,150px) 0;position:relative}
+/* Panel rows need more width than a prose column does. At the shared 1180px wrap, a four-up row
+   left each panel about 221px, which set the body at TWENTY-FOUR characters per line over 19
+   lines: roughly half a readable measure, and the real reason the cards read as thin walls of
+   type rather than as cards. The head keeps the prose width; only the grid widens. */
+.b-panels > .wrap{max-width:1320px}
 .b-panels-head{max-width:760px}
 /* Head alignment. Home carried three Panels sections back to back, each an identical 760px left-aligned
    head above a grid, so the eye read one continuous object rather than three sections. Centring one
@@ -119,7 +124,7 @@ export const css = `
 .b-panels-intro{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-panels-label{margin-top:clamp(40px,6vw,72px);font-size:.72rem;font-weight:800;letter-spacing:.26em;
   text-transform:uppercase;color:var(--gs-faint)}
-.b-panels-grid{display:grid;gap:clamp(28px,4vw,56px);margin-top:clamp(40px,6vw,72px);
+.b-panels-grid{display:grid;gap:clamp(20px,2.2vw,34px);margin-top:clamp(40px,6vw,72px);
   grid-template-columns:repeat(var(--pcols,3),minmax(0,1fr))}
 .b-panels-label + .b-panels-grid{margin-top:clamp(24px,3vw,36px)}
 .b-panels.cols-two{--pcols:2}.b-panels.cols-three{--pcols:3}.b-panels.cols-four{--pcols:4}
