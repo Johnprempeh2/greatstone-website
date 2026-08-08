@@ -15,6 +15,10 @@ export function LogoWall({ id, puck, eyebrow, logos = [] }) {
   const shown = logos.filter((l) => l && l.image);
   const ref = useReveal([shown.length]);
   const editing = puck && puck.isEditing;
+  // With no usable logos the eyebrow used to render alone, leaving a heading like "Organisations we
+  // have supported" standing over nothing, which reads worse than an absent section and implies a list
+  // that does not exist. Render nothing publicly; the editor still sees the block so logos can be added.
+  if (!shown.length && !editing) return null;
   return (
     <section ref={ref} className="b-logos">
       <div className="wrap b-logos-wrap">
