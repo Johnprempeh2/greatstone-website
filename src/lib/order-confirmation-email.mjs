@@ -5,6 +5,7 @@
 // tests; the webhook keeps an inline MIRROR of this output (like licence-email.mjs ↔ notify-licence-issued).
 // No secrets, no remote images, values HTML-escaped.
 import { escapeHtml } from './licence-email.mjs';
+import { BRAND_NAME, BRAND_TAGLINE, BRAND_SIGNOFF } from './brand.mjs';
 
 const ACCENT = '#c8ff00';
 const CARD = '#1f1f1f';
@@ -59,7 +60,7 @@ export function buildOrderConfirmationEmail(opts = {}) {
     <h2 style="font-size:15px;margin:22px 0 8px">What happens next</h2>
     <ol style="color:${MUTED};font-size:14px;padding-left:18px;margin:0 0 18px">${nextRows}</ol>
     <a href="${escapeHtml(accountUrl)}" style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:${ACCENT};text-decoration:none;border-radius:100px">View your order</a>
-    <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email. Greatstone International &middot; The Foundation of Digital Excellence</p>
+    <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email. ${BRAND_NAME} &middot; ${BRAND_TAGLINE}</p>
   </div>`;
 
   const textLines = [
@@ -72,7 +73,7 @@ export function buildOrderConfirmationEmail(opts = {}) {
     ...nextSteps.map((s) => '- ' + s), '',
     'View your order: ' + accountUrl, '',
     'Questions? Just reply to this email.',
-    'Greatstone International · The Foundation of Digital Excellence',
+    BRAND_SIGNOFF,
   ];
 
   return { subject: 'Your Greatstone order ' + ref, html, text: textLines.join('\n') };

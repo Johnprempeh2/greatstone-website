@@ -1,3 +1,4 @@
+import { BRAND_NAME, BRAND_TAGLINE, BRAND_SIGNOFF } from './brand.mjs';
 // Builds the "your licence key is ready" email sent when staff issue a key against a customer's order
 // (manual fulfilment: Greatstone buys the key from the vendor, uploads it, the customer is told to collect it).
 // Pure + framework-free so it runs in both the Deno edge function and node tests. SECURITY: the email never
@@ -71,7 +72,7 @@ export function buildLicenceEmail(opts = {}) {
     <p style="color:${MUTED};font-size:14px;margin:0 0 14px">${lead} ${orderLine} Sign in to your account to view and access ${many ? 'them' : 'it'} (a key to copy, or a licence file to download). For your security we never send licences by email.</p>
     <ul style="color:${TEXT};font-size:14px;padding-left:18px;margin:0 0 18px">${rows}</ul>
     ${actHtml}<a href="${escapeHtml(accountUrl)}" style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:${ACCENT};text-decoration:none;border-radius:100px">${many ? 'View your licence keys' : 'View your licence key'}</a>
-    <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email. Greatstone International · The Foundation of Digital Excellence</p>
+    <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email. ${BRAND_SIGNOFF}</p>
   </div>`;
 
   const textLines = [
@@ -82,7 +83,7 @@ export function buildLicenceEmail(opts = {}) {
     ...items.map((it) => '- ' + itemLabel(it)), '',
     ...actGroups.flatMap((g) => ['How to activate · ' + g.names.join(', '), g.steps, '']),
     (many ? 'View your licence keys: ' : 'View your licence key: ') + accountUrl, '',
-    'Greatstone International · The Foundation of Digital Excellence',
+    BRAND_SIGNOFF,
   ];
 
   return { subject, html, text: textLines.join('\n') };

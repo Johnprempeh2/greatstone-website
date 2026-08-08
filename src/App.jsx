@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
+import { BRAND_TAGLINE } from './lib/brand.mjs';
 import { config, blockCss } from './puck.config.jsx';
 import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
@@ -294,7 +295,7 @@ function injectStructuredData() {
         '@id': SITE_ORIGIN + '/#organization',
         name: SITE_NAME,
         url: SITE_ORIGIN,
-        slogan: 'The Foundation of Digital Excellence',
+        slogan: BRAND_TAGLINE,
         // Fallback description for any route without page-level SEO. This is what search results and link
         // previews show, and it lived in code rather than the seed, so the Architecture v2.0 rebuild did not
         // reach it: it was still selling the retired "transformation partner, not a software house" position.

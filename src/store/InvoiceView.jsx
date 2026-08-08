@@ -1,6 +1,7 @@
 // Printable VAT invoice for an order (#invoice/<orderId>). Readable by staff (staff_all) and by the
 // owning customer (customer_self) under RLS. Browser print → PDF; no PDF dependency.
 import React, { useState, useEffect } from 'react';
+import { BRAND_TAGLINE } from '../lib/brand.mjs';
 import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import './store.css';
@@ -50,7 +51,7 @@ export default function InvoiceView({ orderId }) {
         <header className="inv-head">
           <div>
             <div className="inv-logo">GREATST<span>O</span>NE</div>
-            <div className="inv-seller">Greatstone International Ltd<br />The Foundation of Digital Excellence<br />VAT registration: <span className="inv-todo">[add VAT no.]</span></div>
+            <div className="inv-seller">Greatstone International Ltd<br />{BRAND_TAGLINE}<br />VAT registration: <span className="inv-todo">[add VAT no.]</span></div>
           </div>
           <div className="inv-meta">
             <h1>{order.status === 'refunded' ? 'Credit / Invoice' : 'VAT Invoice'}</h1>

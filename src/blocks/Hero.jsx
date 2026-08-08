@@ -1,4 +1,5 @@
 import { useReveal } from './reveal.js';
+import { BRAND_TAGLINE } from '../lib/brand.mjs';
 import { useEffect, useState } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
@@ -202,7 +203,7 @@ export const puck = {
     },
   },
   defaultProps: {
-    kicker: 'The Foundation of Digital Excellence',
+    kicker: BRAND_TAGLINE,
     headline: 'We don’t decorate businesses with technology.',
     highlight: 'We build what holds everything up.',
     body: 'A transformation partner, not a software house. Edit any line on the canvas, pick the 3D background, add blocks.',

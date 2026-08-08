@@ -9,6 +9,7 @@
 // 0027), triggered fire-and-forget from the account dashboard's first visit. It still needs the Resend
 // secrets to actually send; until then it no-ops without claiming.
 import { escapeHtml } from './licence-email.mjs';
+import { BRAND_NAME, BRAND_TAGLINE, BRAND_SIGNOFF } from './brand.mjs';
 
 const ACCENT = '#c8ff00';
 const CARD = '#1f1f1f';
@@ -51,7 +52,7 @@ export function buildWelcomeEmail(opts = {}) {
     <p style="color:${MUTED};font-size:14px;margin:0 0 18px">${intro} We are the foundation the best teams build on: the licensed software you run, and the help to get more from it. Here is where to start.</p>
     <table style="width:100%;border-collapse:collapse">${stepRows}</table>
     <a href="${escapeHtml(accountUrl)}" style="display:inline-block;margin-top:22px;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:${ACCENT};text-decoration:none;border-radius:100px">Go to your account</a>
-    <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email and a real person will help. Greatstone International &middot; The Foundation of Digital Excellence</p>
+    <p style="color:${FAINT};font-size:12px;margin-top:22px">Questions? Just reply to this email and a real person will help. ${BRAND_NAME} &middot; ${BRAND_TAGLINE}</p>
   </div>`;
 
   const textLines = [
@@ -62,7 +63,7 @@ export function buildWelcomeEmail(opts = {}) {
     ...steps.map((s) => '- ' + s.t + ': ' + s.d + (s.cta ? ' (' + s.href + ')' : '')), '',
     'Go to your account: ' + accountUrl, '',
     'Questions? Just reply to this email and a real person will help.',
-    'Greatstone International · The Foundation of Digital Excellence',
+    BRAND_SIGNOFF,
   ];
 
   return { subject, html, text: textLines.join('\n') };

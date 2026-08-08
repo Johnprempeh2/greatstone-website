@@ -1,4 +1,5 @@
 import { publicNavOrder, footerLegalOrder } from './lib/nav-order.js';
+import { BRAND_TAGLINE } from './lib/brand.mjs';
 import { safeMailto } from './lib/safe-url.js';
 
 const LOGO = '/assets/greatstone-logo-web.png';
@@ -10,7 +11,7 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
   const year = new Date().getFullYear();
   const logoSrc = logo || LOGO;
   const brandName = siteName || 'Greatstone International';
-  const footTagline = tagline || 'The Foundation of Digital Excellence';
+  const footTagline = tagline || BRAND_TAGLINE;
   const mail = footerEmail || 'dx@greatstonesoftware.co.uk';
   const legal = legalName || 'Greatstone International Ltd';
   // public visitors only see published pages; editors see all (so they can reach drafts). Home always kept.

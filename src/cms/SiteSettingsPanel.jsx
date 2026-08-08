@@ -1,4 +1,5 @@
 import { MediaField } from './MediaField.jsx';
+import { BRAND_TAGLINE } from '../lib/brand.mjs';
 import PanelFrame from './PanelFrame.jsx';
 import { DEFAULT_LOGO } from '../store.js';
 
@@ -34,7 +35,7 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
 
         <label className="gs-field">
           <span className="gs-field-label">Footer tagline</span>
-          <input value={s.footerTagline || ''} onChange={(e) => set('footerTagline', e.target.value)} placeholder="The Foundation of Digital Excellence" />
+          <input value={s.footerTagline || ''} onChange={(e) => set('footerTagline', e.target.value)} placeholder={BRAND_TAGLINE} />
         </label>
 
         <label className="gs-field">
@@ -64,7 +65,7 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
         <div className="gs-preview-label">Footer preview</div>
         <div className="gs-chrome-preview" style={{ textAlign: 'center' }}>
           <img src={s.logo || DEFAULT_LOGO} alt="" style={{ height: 20, width: 'auto', opacity: 0.8, display: 'block', margin: '0 auto 8px' }} />
-          <div style={{ fontWeight: 700, letterSpacing: '.04em', fontSize: '.9rem', color: 'var(--gs-text)' }}>{s.footerTagline || 'The Foundation of Digital Excellence'}</div>
+          <div style={{ fontWeight: 700, letterSpacing: '.04em', fontSize: '.9rem', color: 'var(--gs-text)' }}>{s.footerTagline || BRAND_TAGLINE}</div>
         </div>
       </div>
     </PanelFrame>
