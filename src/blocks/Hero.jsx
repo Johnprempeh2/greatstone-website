@@ -134,9 +134,14 @@ export const css = `
           mask-image:radial-gradient(120% 90% at 80% 0%,#000 25%,transparent 70%)}
 /* variant: opening statement (Ben's chapter 2). Keep this block LAST in the string: it ties on
    specificity with .b-hero.size-full and wins only on source order. */
-.b-hero.v-statement{--stmt-w:min(1040px,100%);
-  min-height:100vh;min-height:100svh;align-items:safe center;
-  padding-block:clamp(88px,11vh,132px) clamp(64px,8vh,104px);
+.b-hero.v-statement{--stmt-w:min(1240px,100%);
+  /* Was a forced 100vh with the statement wrapping to eight lines and 134px of dead space below the
+     button. Three changes shorten it WITHOUT shrinking the type, which still has to dominate: a wider
+     measure so each approved sentence wraps less, a tighter gap between the three statements, and a
+     height that lets the next section peek. The peek also serves the brief, which wants the visitor
+     "encouraged to continue reading rather than searching for navigation". */
+  min-height:86vh;min-height:86svh;align-items:safe center;
+  padding-block:clamp(64px,8vh,96px) clamp(48px,6vh,76px);
   position:relative;isolation:isolate}
 /* Atmosphere. The opening screen was flat void, which is what made the page read as a wall of type
    before a word was judged. This is depth, not decoration: two very low-alpha emerald washes, static,
@@ -158,7 +163,7 @@ export const css = `
      BELOW the fold, which breaks his acceptance criterion. The dominance win comes from dropping
      the section h2, not from inflating the h1. */
   font-size:clamp(31px,4vw,48px);line-height:1.16;letter-spacing:-.018em;text-wrap:balance}
-.b-hero.v-statement h1.b-hero-stack .b-hero-line + .b-hero-line{margin-top:.42em}
+.b-hero.v-statement h1.b-hero-stack .b-hero-line + .b-hero-line{margin-top:.28em}
 .b-hero.v-statement .lede{margin-top:clamp(22px,3vh,34px);text-shadow:none;
   font-size:clamp(16px,1.3vw,19px);line-height:1.75;max-width:min(620px,100%)}
 .b-hero.v-statement .b-cta-row{margin-top:clamp(26px,3.5vh,40px)}
