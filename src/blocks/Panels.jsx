@@ -118,7 +118,11 @@ export const css = `
    head above a grid, so the eye read one continuous object rather than three sections. Centring one
    breaks that repetition without touching a word. */
 .b-panels.head-center .b-panels-head{margin-inline:auto;text-align:center}
-.b-panels.head-center .b-panels-intro{margin-inline:auto}
+/* The HEADING centres; the paragraph does not. Centred body copy is harder to read because every
+   line starts in a different place, and narrowing the measure makes it worse rather than better: the
+   word count is fixed, so a shorter line just produces more ragged lines. The intro therefore stays
+   left-aligned inside a centred column. */
+.b-panels.head-center .b-panels-intro{margin-inline:auto;text-align:left;max-width:58ch}
 .b-panels.head-center .b-panels-label{text-align:center}
 .b-panels-h{font-size:clamp(27px,3.5vw,42px);font-weight:900;line-height:1.05;letter-spacing:-.025em}
 .b-panels-intro{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
