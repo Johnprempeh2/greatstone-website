@@ -184,6 +184,28 @@ neutralise transforms, decoration or scroll-snap, which is the same intent.
 contact routes measure 26 to 36px tall. That PASSES WCAG 2.2 AA, which requires 24x24 (2.5.8), and
 misses the 44x44 comfort figure often quoted. Worth a look on a real phone before deciding.
 
+### The AI Market Intelligence hub
+
+The hub moved to its own page during this rebuild and had never been checked. At 375px it is clean:
+no horizontal overflow, one h1, no heading-level skips across a 12-level sequence, all six images
+carry alt text, no unlabelled buttons among 50 interactive elements, body copy at 11.04:1.
+
+Its tab widget is properly built: one tablist, five tabs, correct `aria-selected`, a roving tabindex
+(0 on the selected tab, -1 on the rest), a panel with `aria-labelledby`, and 46px tap targets, which
+clear even the 44px comfort figure.
+
+`aria-controls` is absent from the tabs, and that is correct here rather than a gap. Only the active
+panel is rendered, so four of the five tabs would point at element ids that do not exist, which is
+worse for assistive technology than omitting the attribute.
+
+**One thing I could not verify, stated as such.** The arrow-key behaviour between tabs is implemented
+in source and looks right (`IntelHub.jsx` moves selection and then calls `.focus()` on the newly
+selected tab). I could not confirm it end to end: the preview pane reports sending key presses but
+delivers no keydown events to the page at all, which I proved with a capture-phase listener that
+recorded zero events. A synthetic event gave a different result again, and synthetic events do not
+faithfully model React plus requestAnimationFrame plus focus. So this needs one minute in a real
+browser: focus the Overview tab, press the right arrow, and check that focus lands on Briefing.
+
 ## One safety change worth knowing about
 
 Several blocks shipped fabricated claims as their **defaults**, publishable the moment anyone added
