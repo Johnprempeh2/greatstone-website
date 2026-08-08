@@ -295,7 +295,10 @@ function injectStructuredData() {
         name: SITE_NAME,
         url: SITE_ORIGIN,
         slogan: 'The Foundation of Digital Excellence',
-        description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, embedding alongside your team with AI as the accelerator.',
+        // Fallback description for any route without page-level SEO. This is what search results and link
+        // previews show, and it lived in code rather than the seed, so the Architecture v2.0 rebuild did not
+        // reach it: it was still selling the retired "transformation partner, not a software house" position.
+        description: 'Greatstone International helps organisations build the clarity, confidence and capability required to become stronger.',
       },
       {
         '@type': 'WebSite',

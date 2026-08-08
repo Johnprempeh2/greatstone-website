@@ -13,7 +13,7 @@ export const LINK_KINDS = [
   { value: 'page', label: 'A page on this site' },
   { value: 'url', label: 'External / custom URL' },
   { value: 'email', label: 'Email address' },
-  { value: 'booking', label: 'Book a Diagnostic (booking flow)' },
+  { value: 'booking', label: 'The booking flow (opens the scheduler)' },
   { value: 'anchor', label: 'A section on this page' },
 ];
 

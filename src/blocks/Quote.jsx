@@ -36,6 +36,10 @@ export function Quote({ id, puck, text, attr, align = 'center', variant = 'plain
   // require an identity anchor (name or photo) so role/company alone never render a faceless empty card
   const hasCard = variant === 'card' && (name || photo);
   const roleLine = [role, company].filter(Boolean).join(', ');
+  // The default is now empty (see defaultProps), so a freshly added block would otherwise render an
+  // empty blockquote with an attribution dash and nothing in it. Render nothing publicly until there
+  // is a quote to show; the editor still sees the block so it can be filled in.
+  if (!text && !editing) return null;
   return (
     <section ref={ref} className={`b-quote align-${align}${hasCard ? ' has-card' : ''}`}>
       <div className={('wrap quote-wrap ' + appearanceClass(appearance)).trim()}>
@@ -90,9 +94,14 @@ export const puck = {
     align: { type: 'radio', label: 'Alignment', options: [{ label: 'Centre', value: 'center' }, { label: 'Left', value: 'left' }] },
     appearance: APPEARANCE_FIELD,
   },
+  // Deliberately EMPTY, like LogoWall's logos and StatStrip's clients. This block used to ship a
+  // complete, attributed customer testimonial as its default ("They didn't hand us a deck and
+  // leave...", attributed to an Operations Director at a named-by-sector organisation). Anyone adding
+  // a Quote block got a fabricated endorsement pre-filled and ready to publish, which is the single
+  // easiest way for an untrue claim to reach the site. An editor must now type a real one.
   defaultProps: {
-    text: 'They didn’t hand us a deck and leave. They moved in, found the hours we were losing, and gave them back.',
-    attr: 'Operations Director, national real-estate group',
+    text: '',
+    attr: '',
     variant: 'plain', name: '', role: '', company: '', photo: '', companyLogo: '',
     align: 'center', appearance: APPEARANCE_DEFAULT,
   },

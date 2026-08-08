@@ -8,8 +8,8 @@ import { ctaStyleClass } from '../lib/cta-style.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
-// The close: a single, calm invitation. One primary action, one email, nothing else
-// competing. The first step costs nothing — say so and stop.
+// The close: a single, calm invitation. One primary action, an optional secondary, and the contact
+// routes beneath, with nothing else competing. The primary action keeps the greatest visual emphasis.
 export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false, contactOptions = [] }) {
   const ref = useReveal();
   const editing = puck && puck.isEditing;
@@ -125,10 +125,13 @@ export const puck = {
     },
   },
   defaultProps: {
-    eyebrow: 'Start the Conversation',
-    headline: 'The first step', highlight: 'costs nothing.',
-    body: 'A Diagnostic: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-    ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaStyle: CTA_STYLE_DEFAULT, ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
+    // Ben's Architecture v2.0 fixes the primary call to action as "Begin the Conversation" and says the
+    // wording should remain unchanged, so that is what an editor gets when they add this block. The old
+    // default sold the retired Diagnostic proposition and would have quietly reintroduced it on any new page.
+    eyebrow: '',
+    headline: 'Let’s Build a Stronger Organisation', highlight: '',
+    body: 'The journey towards a stronger organisation begins with a conversation.',
+    ctaLabel: 'Begin the Conversation', ctaHref: '#book', ctaStyle: CTA_STYLE_DEFAULT, ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
     contactOptions: [],
   },
   render: (props) => <Invite {...props} />,

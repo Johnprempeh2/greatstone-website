@@ -18,7 +18,7 @@ const firstSceneKind = (bg) => {
 const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...p}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>);
 const UserIcon = (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...p}><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.8" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>);
 
-// The persistent "Book a Diagnostic" CTA lands the visitor on the booking page (slug BOOK_PAGE).
+// The persistent primary CTA ("Begin the Conversation") lands the visitor on the booking page (slug BOOK_PAGE).
 const BOOK_PAGE = 'contact';
 
 // Resolve one CMS navigation item into a render model node, or null to drop it. A page item is dropped
@@ -149,7 +149,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
 export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
   // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
   const logoSrc = logo || LOGO;
-  const bookLabel = ctaLabel || 'Book a Diagnostic';
+  const bookLabel = ctaLabel || 'Begin the Conversation'; // Ben's fixed primary CTA wording
   const brandName = siteName || 'Greatstone International';
   const q = (query || '').trim().toLowerCase();
   // nav is driven by the editable CMS navigation tree (state.navigation); public sees only published
