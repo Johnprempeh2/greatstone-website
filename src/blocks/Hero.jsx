@@ -141,7 +141,10 @@ export const css = `
      height that lets the next section peek. The peek also serves the brief, which wants the visitor
      "encouraged to continue reading rather than searching for navigation". */
   min-height:86vh;min-height:86svh;align-items:safe center;
-  padding-block:clamp(64px,8vh,96px) clamp(48px,6vh,76px);
+  /* The bottom pad is not whitespace, it is the scroll cue's reserved lane. The cue is pinned
+     clamp(20px,4vh,38px) from the foot of the section and stands about 36px tall, so any floor
+     under ~66px lets it sit on top of the button. At 1280x720 the old 48px floor did exactly that. */
+  padding-block:clamp(64px,8vh,96px) clamp(72px,8vh,96px);
   position:relative;isolation:isolate}
 /* Atmosphere. The opening screen was flat void, which is what made the page read as a wall of type
    before a word was judged. This is depth, not decoration: two very low-alpha emerald washes, static,
@@ -164,6 +167,22 @@ export const css = `
      the section h2, not from inflating the h1. */
   font-size:clamp(31px,4vw,48px);line-height:1.16;letter-spacing:-.018em;text-wrap:balance}
 .b-hero.v-statement h1.b-hero-stack .b-hero-line + .b-hero-line{margin-top:.28em}
+/* PHONES. The desktop floor of 31px was tuned for "dominates the first screen" on a laptop and never
+   re-checked at 375px, where the three approved sentences ran to THIRTEEN lines and filled the whole
+   screen with nothing but type. Dominance on a phone is not the same measurement: at this width the
+   statement is the only thing on screen regardless of size, so the size can come down a long way.
+   min-height:auto as well, so the hero is as tall as its content instead of a forced 86vh. */
+@media(max-width:640px){
+  /* The scroll cue is absolutely pinned to the foot of the section. While the hero was a forced 86vh
+     there was always slack below the button to hold it; the moment it became content-height the cue
+     landed ON the lime button. So the bottom padding now reserves the cue's own height, and the
+     "CONTINUE" label is dropped on phones (10px letterspaced grey earns nothing next to the chevron). */
+  .b-hero.v-statement{min-height:auto;padding-block:clamp(92px,13vh,112px) 68px}
+  .b-hero.v-statement .b-hero-scrollcue-label{display:none}
+  .b-hero.v-statement h1{font-size:clamp(22px,5.4vw,27px);line-height:1.24;letter-spacing:-.01em;text-wrap:normal}
+  .b-hero.v-statement h1.b-hero-stack .b-hero-line + .b-hero-line{margin-top:.4em}
+  .b-hero.v-statement .lede{margin-top:18px}
+}
 .b-hero.v-statement .lede{margin-top:clamp(22px,3vh,34px);text-shadow:none;
   font-size:clamp(16px,1.3vw,19px);line-height:1.75;max-width:min(620px,100%)}
 .b-hero.v-statement .b-cta-row{margin-top:clamp(26px,3.5vh,40px)}

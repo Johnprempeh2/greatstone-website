@@ -194,6 +194,10 @@ export const css = `
 .b-panels-coda{margin-top:clamp(36px,5vw,64px);color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-panels-cta{margin-top:clamp(28px,4vw,44px);display:inline-flex}
 @media(prefers-reduced-motion:reduce){.b-panel-cta{transform:none;margin-top:22px}}
+
+/* Phone scale, paired with the hero's mobile floor in Hero.jsx: the statement caps at 27px there, so
+   section headings cap at 26px here and the ramp holds at every width (375px 22/19, 640px 27/26). */
+@media(max-width:640px){.b-panels-h{font-size:clamp(19px,5vw,26px)}}
 `;
 
 const PANEL = (title, text) => ({ label: '', icon: '', title, text, ctaLabel: '', ctaHref: '#' });

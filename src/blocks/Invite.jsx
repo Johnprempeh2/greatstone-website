@@ -91,6 +91,10 @@ export const css = `
 .b-invite-band{padding:clamp(56px,9vw,120px) 0}
 .b-invite-band h2{font-size:clamp(27px,3.5vw,42px)}
 .b-invite-pillband{border-top:1px solid var(--gs-border-soft)}
+
+/* Phone scale, paired with the hero's mobile floor in Hero.jsx: the statement caps at 27px there, so
+   section headings cap at 26px here and the ramp holds at every width (375px 22/19, 640px 27/26). */
+@media(max-width:640px){.b-invite h2{font-size:clamp(19px,5vw,26px)}}
 `;
 
 export const puck = {

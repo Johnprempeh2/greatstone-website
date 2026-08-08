@@ -71,6 +71,10 @@ export const css = `
 .b-chapter-body strong,.b-chapter-coda strong{color:var(--gs-text);font-weight:700}
 .b-chapter-cta{margin-top:28px;display:inline-flex}
 .b-chapter.align-center .b-chapter-cta{margin-inline:auto}
+
+/* Phone scale, paired with the hero's mobile floor in Hero.jsx: the statement caps at 27px there, so
+   section headings cap at 26px here and the ramp holds at every width (375px 22/19, 640px 27/26). */
+@media(max-width:640px){.b-chapter .b-chapter-h{font-size:clamp(19px,5vw,26px)}}
 `;
 
 export const puck = {
