@@ -116,14 +116,45 @@ Centres in chapter 6, all as specified. Chapter 7's "trust communicated without 
 in the strongest sense: both logo walls render nothing at all publicly, because there is no verified
 client or partner list to show.
 
+### The four rebuilt pages, checked against architecture.txt
+
+**How We Help (section 2).** All three strategic priorities present, and all three descriptions match
+his text character for character. His architecture principle is the interesting one: the internal
+category names "should not become the visitor's starting point". They are stored on the page as
+approved button wording, but because none of the three has a destination yet, no button renders, so
+a visitor sees the three organisational outcomes and none of the commercial categories. Conformant
+in effect today. Worth re-checking the moment those destinations exist, because that is when the
+principle starts to bite.
+
+**Executive Intelligence (section 6).** Four centres, each with a distinct purpose, presented as
+equal panels. The page leads with the thinking and carries no article feed, so his "premium
+executive resource rather than a corporate blog or news feed" holds. The live AI briefing now sits on
+its own page rather than occupying this one.
+
+**About Greatstone (section 7).** All six of his topics are covered: purpose (the opening
+statement), philosophy ("What We Believe"), institutional character, experience, leadership (three
+real people and three clearly marked unfilled seats), and strategic relationships (the partner wall,
+which correctly renders nothing at all rather than showing an invented list).
+
+**Begin the Conversation (section 8).** The journey line is present verbatim. The sector question
+reports `required=false`, so his "no qualification barriers" now holds at the DOM level, not just in
+the copy. Two of the four routes render; Telephone and Email stay hidden until a number and an
+address exist, which is decisions 3 and 4 above.
+
 ### One thing for Ben, found by this check
 
-His approved copy uses the identical heading **"Invest in Technology That Matters"** twice on the
-same page: once as the third strategic priority in chapter 4, and again as Intelligence Centre Three
-in chapter 6. Both are verbatim his (architecture.txt line 47, homepage.txt lines 353 and 531), so
-neither was changed. But a visitor scrolling the homepage meets the same heading over two different
-propositions, which reads as a repeat rather than a distinction. His call, alongside the chapters 2
-and 3 overlap already on the list.
+His approved copy uses the identical heading **"Invest in Technology That Matters"** four times
+across three pages: twice on the homepage (the third strategic priority in chapter 4, and
+Intelligence Centre Three in chapter 6), once on How We Help, and once on Executive Intelligence.
+
+Every instance is verbatim his (architecture.txt line 47, homepage.txt lines 353 and 531), so none
+was changed. But it labels two genuinely different things: a commercial priority that leads to
+Technology Solutions, and an intelligence centre that publishes thinking about technology. A visitor
+moving through the site meets the same heading over both, one screen apart on the homepage.
+
+This was worth re-measuring rather than assuming: the first pass found two instances on one page,
+and counting properly found four across three. His call, alongside the chapters 2 and 3 overlap
+already on the list.
 
 ## One safety change worth knowing about
 
