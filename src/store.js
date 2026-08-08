@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260820;
+const SEED_VERSION = 20260821;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -567,6 +567,8 @@ export function seedState() {
         // form's wording is editable rather than hardcoded. email stays empty until the address is settled;
         // the block shows its fallback panel on submit either way.
         blk('BookDeepDive', {
+          // the form is the page's one interactive surface; a lifted band makes it read as one
+          _section: { surface: 'panel', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
           eyebrow: '', headline: 'Send an Enquiry', highlight: '',
           body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
           submitLabel: 'Send Enquiry',

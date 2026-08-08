@@ -81,7 +81,14 @@
               "ctaHref": "#",
               "icon": "technology"
             }
-          ]
+          ],
+          "_section": {
+            "surface": "panel",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          },
+          "headAlign": "center"
         }
       },
       {
@@ -571,7 +578,8 @@
               "gated": false,
               "icon": "briefing"
             }
-          ]
+          ],
+          "headAlign": "center"
         }
       },
       {
@@ -580,7 +588,13 @@
           "kicker": "Experience",
           "align": "left",
           "width": "reading",
-          "body": "Greatstone brings two decades of work inside organisations, across a broad range of industries and at every level from the executive team to the people doing the work each day. That experience is why we begin with understanding. We have seen enough organisations to know that the presenting problem is rarely the real one, and that the difference between an initiative that holds and one that quietly unwinds is almost always decided before any change begins."
+          "body": "Greatstone brings two decades of work inside organisations, across a broad range of industries and at every level from the executive team to the people doing the work each day. That experience is why we begin with understanding. We have seen enough organisations to know that the presenting problem is rarely the real one, and that the difference between an initiative that holds and one that quietly unwinds is almost always decided before any change begins.",
+          "_section": {
+            "surface": "panel",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          }
         }
       },
       {
@@ -620,7 +634,13 @@
               "role": "Named once we confirm who is on your engagement.",
               "kind": "role"
             }
-          ]
+          ],
+          "_section": {
+            "surface": "deep",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          }
         }
       },
       {
@@ -773,7 +793,8 @@
               "gated": false,
               "icon": "briefing"
             }
-          ]
+          ],
+          "headAlign": "center"
         }
       },
       {
@@ -812,6 +833,12 @@
           "stat2": {
             "value": "",
             "label": ""
+          },
+          "_section": {
+            "surface": "panel",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
           }
         }
       },
