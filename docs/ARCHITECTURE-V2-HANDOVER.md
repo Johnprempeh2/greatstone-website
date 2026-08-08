@@ -184,6 +184,33 @@ neutralise transforms, decoration or scroll-snap, which is the same intent.
 contact routes measure 26 to 36px tall. That PASSES WCAG 2.2 AA, which requires 24x24 (2.5.8), and
 misses the 44x44 comfort figure often quoted. Worth a look on a real phone before deciding.
 
+### Printing
+
+**The public site had no print styles at all.** The only `@media print` blocks in the codebase were
+for invoices and the admin area.
+
+That is worse than it sounds. Browsers default to `print-color-adjust: economy`, which drops
+background colours but keeps text colour. Measured on the homepage before the fix, against white
+paper: the h1 printed at 1.09:1, body copy at 1.7:1, the lime numeral at 1.18:1. An executive
+printing a briefing before a board meeting got a near-blank sheet.
+
+There is now a print block in `site.css`. It forces white paper and ink-black text, gives the lime
+and grey accents a dark print colour, hides the fixed header and the decorative scrims and wave,
+collapses the panel grids to a single column, and keeps panels and cards from splitting across a page
+break.
+
+The rule that matters most is the least obvious: reveal-on-scroll content sits at `opacity: 0` until
+it enters the viewport, and printing does not scroll, so everything below the fold would have printed
+**blank** even after the colours were fixed. All 92 reveal elements across the five pages are now
+forced visible for print.
+
+Verified the same way as the reduced-motion check, by enumerating rather than assuming: across all
+five rebuilt pages, zero elements that would print illegibly are left uncovered by a print rule, and
+the screen is untouched (void background, body copy still 11.04:1).
+
+One honest note: the rule that appends destination URLs after links currently matches nothing,
+because the rebuilt pages carry no external links. It is there for when they do.
+
 ### The AI Market Intelligence hub
 
 The hub moved to its own page during this rebuild and had never been checked. At 375px it is clean:

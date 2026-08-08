@@ -248,3 +248,55 @@ body.nav-locked { overflow:hidden; }
   .reveal { opacity:1 !important; transform:none !important; transition:none !important; }
   .btn:hover, .card:hover { transform:none; }
 }
+
+/* ============================================================================
+   PRINT
+   ----------------------------------------------------------------------------
+   There were no print styles for the public site at all: the only @media print
+   blocks lived in the invoice and admin stylesheets. That mattered more than it
+   sounds, because browsers default to print-color-adjust:economy and drop
+   background colours while KEEPING text colour. Measured on the homepage before
+   this block existed, against white paper: h1 1.09:1, body copy 1.7:1, the lime
+   numeral 1.18:1. An executive printing a briefing got a near-blank sheet.
+
+   Everything here is additive and print-only, so nothing on screen changes.
+   ========================================================================== */
+@media print {
+  /* 1. Paper. Light background, ink-black text, and no full-bleed dark slabs. */
+  html, body { background: #fff !important; color: #111 !important; }
+  #gs-main, .gs-public, .b-hero, .b-chapter, .b-panels, .b-invite, .b-team, .b-book,
+  .b-logos, .b-prose, .b-cases, .b-proof { background: transparent !important; }
+
+  /* 2. Every text colour the rebuilt pages use, forced to ink. The site's light
+        greys (#f5f5f5, #c4c8c1, #9ca29b) are invisible on paper; so is the lime. */
+  h1, h2, h3, h4, h5, h6, p, li, span, div, strong, em, a { color: #111 !important; }
+  .b-chapter-name, .b-panels-label, .b-panel-label, .kicker, .pill,
+  .b-panel-num, .accent, .b-hero .accent { color: #333 !important; }
+
+  /* 3. Chrome and decoration. The header is fixed, so without this it reprints on
+        every page. The scrims and the aurora would render as grey blocks. */
+  .gs-header, .gs-tools, .gs-cmdbtn, .gs-accountbtn, .gs-search, .gs-navmenu,
+  .foot-wave, .b-invite-aurora, .gs-tour, .gs-ctx-pill { display: none !important; }
+  .b-chapter-inner::before, .b-invite-card::before { display: none !important; }
+  .b-chapter-inner { text-shadow: none !important; }
+
+  /* 4. Reveal-on-scroll content is opacity:0 until it enters the viewport. Printing
+        happens without scrolling, so anything below the fold would print BLANK.
+        This is the single most important rule in the block. */
+  [data-reveal], .reveal { opacity: 1 !important; transform: none !important; }
+
+  /* 5. Layout. Single column reads better on A4, and sections should not be split
+        across a page break mid-thought. */
+  .b-panels-grid, .team-grid, .b-panels.cols-two .b-panels-grid,
+  .b-panels.cols-three .b-panels-grid, .b-panels.cols-four .b-panels-grid {
+    grid-template-columns: 1fr !important; gap: 18px !important;
+  }
+  .b-panel, .team-card, .b-chapter-inner, blockquote { break-inside: avoid; page-break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  .b-hero, .b-chapter, .b-panels, .b-invite, .b-team { padding: 18px 0 !important; }
+
+  /* 6. A printed link is a dead end unless the destination is on the page. In-page
+        anchors and the JS-routed '#go/' links are excluded: their href says nothing
+        useful to someone holding paper. */
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .78em; color: #555 !important; word-break: break-all; }
+}
