@@ -26,13 +26,18 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260722;
+const SEED_VERSION = 20260808;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
 // Footer / AdminConsole, so backfilling them onto an existing store changes nothing until an admin edits.
 export const DEFAULT_LOGO = '/assets/greatstone-logo-web.png';
-const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Book a Diagnostic', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
+// headerCtaLabel is Ben's locked wording ("The wording should remain unchanged"). It sat one inch above
+// body copy reading "Begin the Conversation" while itself saying "Book a Diagnostic", which the first
+// screenshot of the rebuilt homepage showed plainly. footerTagline and footerEmail are NOT changed here:
+// the tagline is the positioning Ben's opening statement retires and needs his replacement, and the email
+// is one of three candidate addresses in this repo and needs John's decision, not a guess.
+const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: 'The Foundation of Digital Excellence', headerCtaLabel: 'Begin the Conversation', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on
@@ -335,72 +340,135 @@ export function logActivity(state, label, by) {
 // the home closing CTA so the primary landing page answers the top objections too. Schema suppressed
 // (showSchema:false) so the canonical FAQPage rich-result stays on the Services FAQ only. Pure reuse of
 // existing answers (no fabrication). Shared by seedState + the migrate so the two never drift.
-const HOME_FAQ = {
-  showSchema: false,
-  kicker: 'Common questions', heading: 'The questions buyers ask first.',
-  intro: 'Straight answers to what teams ask before they book. The Diagnostic is the fastest way to get the rest.',
-  items: [
-    { q: 'What actually happens in a Diagnostic?', a: 'Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation.' },
-    { q: 'Are you a software house or consultants?', a: 'Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years of doing the work, not advising from the outside.' },
-    { q: 'How long before we see results?', a: 'The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters.' },
-  ],
-};
 export function seedState() {
   const pages = {
-      home: seedPage('Home', 'stone', [
+      // Ben's Implementation Guide v2.0, chapters 2 to 8. Every string below is his approved Foundation
+      // Content, verbatim. Two em dashes in the source are typed here as commas: deEmDash() in migrate()
+      // would rewrite them anyway, but a FRESH seed persists without migrating, so the literal must
+      // already carry the comma or the em dash renders once and then silently rewrites itself.
+      // Background is 'none': chapter 2 requires that nothing visually competes with the opening
+      // statement, and Stage makes scene zero fully opaque at scroll top, so a quieter stone is not
+      // authorable. This retires the 3D mark from the homepage only; it still runs elsewhere.
+      home: seedPage('Home', 'none', [
+        // Chapter 2, The Opening Statement. Sentences 1 to 3 are the statement, sentence 4 is the
+        // Supporting Narrative: his copywriting rule forbids the statement mentioning Greatstone, and
+        // sentence 4 opens "At Greatstone". All four appear, in order, unaltered.
         blk('Hero', {
-          kicker: 'Greatstone International',
-          headline: 'The Foundation of', highlight: 'Digital Excellence.',
-          body: 'We don’t decorate businesses with technology. We build what holds everything up.',
-          prompt: '', align: 'center', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', scrollCue: true,
+          variant: 'statement', kicker: '', headline: '', highlight: '', headlineSuffix: '', prompt: '',
+          lines: [
+            { text: 'Strong organisations are not created by chance.', accent: false },
+            { text: 'They are built by understanding what matters before deciding what must change.', accent: false },
+            { text: 'Only then can organisations transform with confidence.', accent: false },
+          ],
+          body: 'At Greatstone, we help organisations build the clarity, confidence and capability required to become stronger.',
+          align: 'left', size: 'full', meta: [], pillEyebrow: false, gridBackdrop: false,
+          ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' },
+          ctaLabel2: '', ctaHref2: '#',
+          cueStyle: 'text', scrollCue: true, cueLabel: 'Continue',
         }),
+        // Chapter 3, Why Greatstone.
         blk('Chapter', {
-          index: '01', eyebrow: 'Twenty Years In', headline: 'A transformation partner. Not a software house.', highlight: '',
-          body: 'For two decades our team has modernised how organisations work: their **tools**, their **processes**, their **people**, and now the intelligent layer above them all.',
-          coda: 'Digital transformation first. AI as the accelerator.', align: 'left',
+          index: '', eyebrow: 'Why Greatstone', highlight: '',
+          headline: 'Organisations face increasing complexity, opportunity and change.',
+          body: 'The challenge is not change itself, but understanding where meaningful change should begin.',
+          // EM DASH 1 of 2 in Ben's source: "stronger—and sustain" becomes "stronger, and sustain".
+          coda: 'At Greatstone, we help organisations build the clarity, confidence and capability to become stronger, and sustain that strength over time.',
+          align: 'left', ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
         }),
-        blk('Chapter', {
-          index: '02', eyebrow: 'Embedded, Not Advisory', headline: 'We sit inside the business.', highlight: '',
-          body: 'Shoulder-to-shoulder with the people who run it. We learn your rules, then build the system to match the business, **never the other way around**.',
-          coda: 'No reports that gather dust. No tools for the sake of innovation.', align: 'left',
-        }),
-        blk('Chapter', {
-          index: '03', eyebrow: 'The Methodology', headline: 'We leave no stone unturned.', highlight: '',
-          body: 'Every engagement begins with the **Digital Transformation Playbook**: a diagnostic across **eight pillars** that produces the Periscope Report, a scored view of where you stand and a phased roadmap to where you’re going.',
-          coda: '', align: 'center', ctaLabel: 'See the eight pillars', ctaHref: '#go/method', ctaVariant: 'primary',
-        }),
-        blk('Chapter', {
-          index: '04', eyebrow: 'Systems That Think', headline: 'Intelligence, properly integrated.', highlight: '',
-          body: 'We build **agentic systems** on the stack you already own. Intelligence that reasons across your own data, with human oversight built in, delivered in sprints that earn their keep early.',
-          coda: 'Privacy-first by architecture. **Not wrappers. Not gimmicks.**', align: 'left',
-        }),
-        blk('StatStrip', {
-          index: '05', eyebrow: 'Proof, Not Promises', headline: 'Measured in hours back.', highlight: '', variant: 'cards', columns: 2,
-          body: 'Our leadership has delivered transformation for **Deloitte, Lloyds, Bank of Scotland and the NHS**. Today we’re embedded with clients across the UK and Africa.',
-          clients: '',
-          stats: [
-            { value: 21, prefix: '', suffix: '+ hrs', dec: 0, label: 'Hours recovered weekly · one engagement' },
-            { value: 27, prefix: '£', suffix: 'k', dec: 0, label: 'The same hours, costed for a year' },
-            { value: 20, prefix: '', suffix: 'yrs', dec: 0, label: 'Leadership heritage' },
-            { value: 2, prefix: '', suffix: '', dec: 0, label: 'Continents, one team' },
+        // Chapter 4, Building a Stronger Organisation. Panel links are unset until the three destination
+        // pages exist, so the approved button wording is stored and editable but nothing dead renders.
+        blk('Panels', {
+          eyebrow: '', heading: 'Building a Stronger Organisation',
+          intro: 'Every organisation has the potential to become stronger. The organisations that realise that potential are those that focus their leadership, capability and investment where they create the greatest long-term value. For some, that means transforming with confidence. For others, it means strengthening organisational capability or applying technology where it delivers the greatest strategic advantage. Wherever your organisation is on its journey, Greatstone helps you move forward with greater clarity, confidence and purpose.',
+          panelsLabel: '', columns: 'three', panelStyle: 'ruled', coda: '',
+          ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
+          items: [
+            { label: '', title: 'Transform with Confidence',
+              text: 'Successful transformation begins long before change begins. It starts with understanding the organisation, establishing the right priorities and creating a clear path towards stronger organisational outcomes. Whether your objective is improving performance, modernising operations, embracing Artificial Intelligence or preparing for future growth, Greatstone helps organisations establish the clarity and confidence required to transform successfully and create lasting organisational value.',
+              ctaLabel: 'Explore Organisational Transformation', ctaHref: '#' },
+            { label: '', title: 'Strengthen Organisational Capability',
+              text: 'The strongest organisations understand that capability is one of their greatest strategic assets. They recognise when specialist expertise can strengthen leadership, accelerate progress and help deliver priorities that create lasting organisational value. Greatstone works alongside organisations, providing experienced expertise that strengthens internal capability, supports executive leadership and helps organisations achieve sustainable strategic progress.',
+              ctaLabel: 'Explore Professional Services', ctaHref: '#' },
+            { label: '', title: 'Invest in Technology That Matters',
+              text: 'Technology creates value only when it is applied to the right organisational priorities. The objective is not simply to adopt new technology. It is to apply the right technology, to the right opportunities, at the right time, strengthening organisational capability and supporting long-term strategic success. Greatstone helps organisations identify, evaluate and implement technologies that matter, ensuring every investment contributes directly to stronger organisational performance and future capability.',
+              ctaLabel: 'Explore Technology Solutions', ctaHref: '#' },
           ],
         }),
-        blk('Terrace', {
-          index: '06', eyebrow: 'How a Diagnostic Works', headline: 'Three moves to your foundation.', highlight: '',
-          body: 'No theatre, no twelve-week discovery. We diagnose, we report, we build, and each layer settles before the next one lands.',
-          slabs: [
-            { n: '01', title: 'Diagnostic', body: 'We map where the week goes, across all eight pillars.' },
-            { n: '02', title: 'Periscope Report', body: 'A clear read of where you stand and the fastest gains.' },
-            { n: '03', title: 'Phased Roadmap', body: 'The build, embedded into how you already work, not bolted on.' },
+        // Chapter 5, Building Confidence Before Change. The lime rule is the "supporting visual motif";
+        // no process diagram, no framework name, no engagement stage, per his prohibitions.
+        blk('Panels', {
+          eyebrow: '', heading: 'Building Confidence Before Change',
+          intro: 'Every organisation is different. Every leadership team faces different opportunities, challenges and ambitions. For that reason, Greatstone believes that meaningful transformation should never begin with assumptions or predetermined solutions. It should begin by building the understanding and confidence required to make the right decisions for the organisation. That philosophy guides every engagement we undertake and every recommendation we make.',
+          panelsLabel: 'The Greatstone Principles',
+          columns: 'four', panelStyle: 'ruled', coda: '',
+          ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
+          items: [
+            { label: '', title: 'Understanding Before Action',
+              text: 'Every meaningful initiative begins with understanding. Before recommending change, Greatstone develops a clear understanding of the organisation, its objectives and the factors that will determine long-term success. Only then can meaningful progress begin.',
+              ctaLabel: '', ctaHref: '#' },
+            { label: '', title: 'Evidence Before Transformation',
+              text: 'Transformation should always be guided by evidence rather than assumption. Every recommendation should be informed by organisational understanding, sound judgement and objective insight, creating the confidence required for meaningful and sustainable transformation.',
+              ctaLabel: '', ctaHref: '#' },
+            { label: '', title: 'Execution with Purpose',
+              text: 'Every initiative should contribute to a clearly defined organisational objective. Transformation, specialist expertise and technology should never become objectives in themselves. They should always strengthen the organisation they exist to serve.',
+              ctaLabel: '', ctaHref: '#' },
+            { label: '', title: 'Capability That Endures',
+              text: 'The measure of success is not the completion of an engagement. It is the capability the organisation retains, the confidence leadership gains and the strength the organisation continues to build long after the engagement has concluded.',
+              ctaLabel: '', ctaHref: '#' },
           ],
         }),
-        blk('Faq', HOME_FAQ),
+        // Chapter 6, Executive Intelligence. Only AI Market Intelligence has a live destination today.
+        blk('Panels', {
+          eyebrow: '', heading: 'Executive Intelligence',
+          intro: 'The quality of an organisation’s decisions will never exceed the quality of its thinking. Executive Intelligence is where Greatstone shares the thinking that shapes its perspective on organisations, leadership, technology and transformation, helping executive leaders think more clearly about the decisions that matter most. Because stronger organisations begin with stronger thinking.',
+          panelsLabel: '', columns: 'four', panelStyle: 'ruled', coda: '',
+          ctaLabel: 'Explore Executive Intelligence', ctaHref: { kind: 'page', page: 'insights' },
+          ctaVariant: 'ghost', headingLevel: 'h2',
+          items: [
+            { label: '', title: 'Understand AI Before You Adopt It',
+              // EM DASH 2 of 2: "matters—and where it does not" becomes "matters, and where it does not".
+              text: 'Artificial Intelligence presents extraordinary opportunities for organisations prepared to apply it thoughtfully. Its greatest value is realised when it strengthens organisational capability, supports strategic priorities and delivers measurable organisational outcomes. AI Market Intelligence helps executive leaders understand where Artificial Intelligence genuinely matters, and where it does not.',
+              ctaLabel: 'Explore AI Market Intelligence', ctaHref: '#intel' },
+            { label: '', title: 'Think Beyond Today’s Challenges',
+              text: 'The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.',
+              ctaLabel: 'Explore Organisational Thinking', ctaHref: '#' },
+            { label: '', title: 'Invest in Technology That Matters',
+              text: 'Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.',
+              ctaLabel: 'Explore Technology Intelligence', ctaHref: '#' },
+            { label: '', title: 'Executive Briefings',
+              text: 'Executive leaders need insight they can apply rather than information they already know. Executive Briefings distil complex developments into concise executive perspectives, helping leadership understand what has changed, why it matters and what should be considered next. Every briefing is designed to strengthen executive judgement through thoughtful analysis and practical insight.',
+              ctaLabel: 'Explore Executive Briefings', ctaHref: '#' },
+          ],
+        }),
+        // Chapter 7, Trusted by Organisations That Expect More. Both logo walls ship EMPTY and render
+        // nothing at all: there is no verified client or partner list, and the only named organisations
+        // anywhere in this codebase are leadership heritage (where our people worked BEFORE Greatstone),
+        // which must never be restated as clients. His chapter-7 CTA is omitted; chapter 8 follows
+        // immediately and is itself the call to action.
+        blk('Chapter', {
+          index: '', eyebrow: '', highlight: '',
+          headline: 'Trusted by Organisations That Expect More',
+          body: 'The organisations you choose to trust help shape the organisation you become. Executive leaders understand that the partners they choose influence the quality of their thinking, the confidence of their decisions and the success of their most important initiatives. That is why organisations that expect more choose their partners carefully. The same commitment to thoughtful leadership, disciplined judgement and meaningful organisational outcomes continues to shape every engagement Greatstone undertakes.',
+          coda: 'Greatstone has supported organisations across a broad range of industries, helping executive leadership strengthen organisational capability, transform with confidence and apply technology where it creates lasting organisational value.',
+          align: 'left', ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
+        }),
+        blk('LogoWall', { eyebrow: 'Organisations we have supported', logos: [] }),
+        blk('LogoWall', { eyebrow: 'Strategic technology partnerships', logos: [] }),
+        blk('Prose', {
+          kicker: '', align: 'left', width: 'reading',
+          body: 'Every engagement begins with understanding. Every successful engagement builds trust. Every trusted relationship creates the opportunity to strengthen organisations over the long term. The organisations Greatstone supports differ in size, sector and geography. The philosophy upon which every relationship is built remains the same.',
+        }),
+        // Chapter 8. email stays empty until the canonical address is decided; Invite hides it when blank.
         blk('Invite', {
-          eyebrow: 'Start the Conversation', headline: 'The first step', highlight: 'costs nothing.',
-          body: 'A Diagnostic: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
-          ctaLabel: 'Book a Diagnostic', ctaHref: '#book', email: 'dx@greatstonesoftware.co.uk', variant: 'band',
+          eyebrow: '', highlight: '',
+          headline: 'Let’s Build a Stronger Organisation',
+          body: 'The journey towards a stronger organisation begins with a conversation. Let’s begin by understanding your organisation, your ambitions and the challenges that matter most. Every meaningful partnership begins with understanding.',
+          ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' },
+          ctaLabel2: 'Explore Executive Intelligence', ctaHref2: { kind: 'page', page: 'insights' },
+          email: '',
+          variant: 'band', pill: false,
         }),
-      ], { title: 'Greatstone International · Foundation of Digital Excellence', description: 'A transformation partner, not a software house. Twenty years modernising how organisations work, embedding alongside your team with AI as the accelerator.', ogImage: '' }),
+      ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Strong organisations are not created by chance. They are built by understanding what matters before deciding what must change. Greatstone helps organisations build the clarity, confidence and capability to become stronger.', ogImage: '' }),
 
       method: seedPage('Process', 'stone', [
         blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
@@ -763,21 +831,10 @@ function migrate(state) {
     if (sp && sp.published && sp.published !== sp.data) addCmp(sp.published.content);
     state._cmpSeeded = true;
   }
-  // Home FAQ (additive, Excellence-loop cycle 20; NO SEED_VERSION bump): surface the objection-handling
-  // FAQ on the home page of existing saved sites ONCE (flagged), before the closing Invite. Schema is
-  // suppressed (HOME_FAQ.showSchema:false) so it never competes with the canonical Services FAQPage.
-  // Idempotent + respects a later hand-removal; both draft + published.
-  if (!state._homeFaqSeeded) {
-    const hp = state.pages && state.pages.home;
-    const addHomeFaq = (content) => {
-      if (!Array.isArray(content) || content.some((b) => b && b.type === 'Faq')) return;
-      const idx = content.findIndex((b) => b && b.type === 'Invite');
-      content.splice(idx >= 0 ? idx : content.length, 0, blk('Faq', HOME_FAQ));
-    };
-    if (hp && hp.data) addHomeFaq(hp.data.content);
-    if (hp && hp.published && hp.published !== hp.data) addHomeFaq(hp.published.content);
-    state._homeFaqSeeded = true;
-  }
+  // The home FAQ migration was removed with Ben's homepage rebuild. It re-inserted an
+  // objection-handling FAQ before the closing Invite, gated on a flag a FRESH seed never sets, so
+  // after the re-seed it reappeared on the SECOND load and every load after, in the retired voice
+  // and in a chapter sequence that has no FAQ. Deleting it is the fix; nothing replaces it.
   // Proof Hero CTA (additive, cycle 10; NO SEED_VERSION bump): give the proof page Hero its above-fold
   // "Book a Deep Dive" CTA on existing saved sites, ONLY when it is still the empty seed default with the
   // seeded #book href (so a hand-edited label/href is never clobbered). Both draft + published.
@@ -806,12 +863,8 @@ function migrate(state) {
         if (proj && Array.isArray(proj.content)) proj.content.forEach((b) => { if (b && b.props) fn(b); });
       });
     };
-    // home hero: fill the empty primary CTA so the first viewport has an action
-    editBlocks(state.pages && state.pages.home, (b) => {
-      if (b.type === 'Hero' && !b.props.ctaLabel && (b.props.ctaHref === '#' || b.props.ctaHref == null)) {
-        b.props.ctaLabel = 'Book a Deep Dive'; b.props.ctaHref = '#book';
-      }
-    });
+    // The home-hero CTA backfill was removed with the rebuild: it wrote "Book a Deep Dive" into an
+    // empty primary CTA, which is the retired voice. Ben's hero ships with its own approved label.
     // contact: Deep Dive step duration 45 → 30 (matches the live Calendly slot)
     editBlocks(state.pages && state.pages.contact, (b) => {
       if (b.type === 'Steps' && Array.isArray(b.props.items)) {
