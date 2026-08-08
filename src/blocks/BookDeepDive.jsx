@@ -19,7 +19,17 @@ const ICONS = {
 // The "Book a Diagnostic" page: the booking form beside a short framing aside. On submit it composes a
 // prefilled mailto to the contact address from the entered fields (client-side, no backend) and shows a
 // confirmation with the address as a fallback. A future build may POST to a backend; that decision is open.
-export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody, asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk' }) {
+export function BookDeepDive({
+  id, puck, eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody,
+  asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk',
+  // The form's own wording used to be hardcoded, which meant the enquiry route could not be reworded
+  // without a code change, and the sector question could not be made optional at all. These carry the
+  // previous strings as defaults, so any stored page that predates them renders exactly as before.
+  sectorLabel = 'Industry', sectorPlaceholder = 'Choose your sector…', sectorRequired = true,
+  messageLabel = 'Where does your week go?',
+  messagePlaceholder = 'The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours.',
+  subjectPrefix = 'Diagnostic request', anchorId = '',
+}) {
   const editing = puck && puck.isEditing;
   // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
   // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
@@ -41,13 +51,13 @@ export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, sub
     const fd = new FormData(e.currentTarget);
     const g = (k) => (fd.get(k) || '').toString().trim();
     const nm = g('name'), company = g('company');
-    const subject = 'Diagnostic request' + (company ? ' · ' + company : nm ? ' · ' + nm : '');
+    const subject = subjectPrefix + (company ? ' · ' + company : nm ? ' · ' + nm : '');
     const parts = [];
     if (nm) parts.push('Name: ' + nm);
     if (company) parts.push('Company: ' + company);
     if (g('email')) parts.push('Work email: ' + g('email'));
-    if (g('industry')) parts.push('Industry: ' + g('industry'));
-    parts.push('', 'Where the week goes:', g('week') || '(not specified)');
+    if (g('industry')) parts.push(sectorLabel + ': ' + g('industry'));
+    parts.push('', messageLabel, g('week') || '(not specified)');
     track('generate_lead', { form: 'deep_dive' });
     // guard the editor-controlled address through safeMailto (same as every other mailto in the codebase),
     // so a stray ?/&/whitespace in the email prop can't merge params / inject headers. Subject + body are
@@ -60,7 +70,7 @@ export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, sub
     setSent(true);
   };
   return (
-    <section ref={ref} className="b-book">
+    <section ref={ref} className="b-book" id={anchorId || undefined}>
       <div className="wrap">
         <div className="grid b-book-grid" data-reveal>
           <div className="card book-card">
@@ -85,11 +95,14 @@ export function BookDeepDive({ id, puck, eyebrow, headline, highlight, body, sub
                   <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
                 </div>
                 <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email" /></div>
-                <div className="field"><label htmlFor={uid + 'industry'}>Industry</label>
-                  <select className="fld" id={uid + 'industry'} name="industry" required aria-required="true" defaultValue=""><option value="" disabled>Choose your sector…</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
+                {/* Optional by default now. Forcing a visitor to classify their own sector before they may
+                    say hello is a qualification barrier, and the placeholder stays selectable so choosing
+                    nothing is a real answer rather than a dead first option. */}
+                <div className="field"><label htmlFor={uid + 'industry'}>{sectorLabel}</label>
+                  <select className="fld" id={uid + 'industry'} name="industry" {...(sectorRequired ? { required: true, 'aria-required': 'true' } : null)} defaultValue=""><option value="" disabled={!!sectorRequired}>{sectorPlaceholder}</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
                 </div>
-                <div className="field"><label htmlFor={uid + 'week'}>Where does your week go?</label>
-                  <textarea className="fld" id={uid + 'week'} name="week" placeholder="The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours." />
+                <div className="field"><label htmlFor={uid + 'week'}>{messageLabel}</label>
+                  <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} />
                 </div>
                 <button className="b-cta book-submit" type="submit">{submitLabel}<Arrow /></button>
                 <p className="book-fine">Submitting opens your email with these details filled in, ready to send.</p>
@@ -171,6 +184,15 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     submitLabel: { type: 'text', label: 'Submit button' },
+    sectorLabel: { type: 'text', label: 'Sector question label' },
+    sectorPlaceholder: { type: 'text', label: 'Sector question placeholder' },
+    sectorRequired: { type: 'radio', label: 'Sector answer is', options: [
+      { label: 'Optional', value: false }, { label: 'Required', value: true },
+    ]},
+    messageLabel: { type: 'text', label: 'Message question label' },
+    messagePlaceholder: { type: 'text', label: 'Message placeholder' },
+    subjectPrefix: { type: 'text', label: 'Email subject prefix' },
+    anchorId: { type: 'text', label: 'Anchor id (lets a link jump here, e.g. enquiry)' },
     asideKicker: { type: 'custom', label: 'Aside kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     asideHeading: { type: 'custom', label: 'Aside heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     asideBody: { type: 'custom', label: 'Aside intro', render: (props) => <RichTextField {...props} /> },
@@ -199,6 +221,10 @@ export const puck = {
     headline: 'Book a', highlight: 'Diagnostic.',
     body: 'Thirty focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.',
     submitLabel: 'Book a Diagnostic',
+    sectorLabel: 'Industry', sectorPlaceholder: 'Choose your sector…', sectorRequired: false,
+    messageLabel: 'Where does your week go?',
+    messagePlaceholder: 'The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours.',
+    subjectPrefix: 'Diagnostic request', anchorId: '',
     asideKicker: 'Why a diagnostic',
     asideHeading: 'We don’t advise. We become your foundation.',
     asideBody: 'A diagnostic isn’t a sales call dressed up. It’s the first hour of the work: us assessing how you actually run, against the eight pillars of our method, so the time we hand back is real and measured.',

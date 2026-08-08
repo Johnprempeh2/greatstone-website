@@ -25,13 +25,28 @@ import { headingTag, headingLevelNum } from '../lib/heading-level.mjs';
 //
 // Restraint is the brief here: no cards, no borders, no hover lift, no backdrop blur. Panels are
 // separated by whitespace and a single lime rule, because "whitespace should dominate".
+const COLS = { two: 2, three: 3, four: 4 };
+
 export function Panels({
   id, puck, eyebrow, heading, intro, panelsLabel, coda,
   columns = 'three', panelStyle = 'ruled', items = [],
   ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, headingLevel,
 }) {
-  const ref = useReveal([items.length]);
   const editing = puck && puck.isEditing;
+  // A gated panel is one whose whole point is its destination (a contact route, a section that does not
+  // exist yet). Hiding only its button would leave a heading and a paragraph with nothing to act on, which
+  // reads worse than an absent panel. So the panel itself waits for a resolvable link. The editor still
+  // sees it, otherwise the approved wording would be unreachable to the person who has to set the link.
+  // Each entry keeps its ORIGINAL index: EditableText writes back through it, so filtering without
+  // carrying it would make an inline edit land on the wrong panel once one is hidden.
+  const shown = items
+    .map((it, idx) => ({ it, idx }))
+    .filter(({ it }) => editing || !it.gated || hasLink(it.ctaHref));
+  const ref = useReveal([shown.length]);
+  // Gating can leave fewer panels than the section declares columns for, and the grid would then hold its
+  // authored track count: two panels stranded in the left half of a four-column row with a dead gap beside
+  // them. The effective count follows what actually renders, so a hidden panel closes the row up instead.
+  const effCols = Math.max(1, Math.min(COLS[columns] || 3, shown.length));
   const HeadTag = headingTag(headingLevel);
   // Panels sit one level below the section, derived rather than hard-coded, so dropping the section to
   // h3 does not leave the panels alongside it. The outline tooling reads the same helper, so the DOM and
@@ -51,18 +66,19 @@ export function Panels({
 
         {panelsLabel ? <p className="b-panels-label" data-reveal>{panelsLabel}</p> : null}
 
-        <div className="b-panels-grid">
-          {items.map((it, i) => (
-            <div className="b-panel" key={i} data-reveal style={{ transitionDelay: `${i * 70}ms` }}>
-              {/* The numeral is ordering, which the DOM order already gives a screen reader, so it is
-                  hidden rather than read out as "zero one" ahead of every principle heading. */}
+        <div className="b-panels-grid" style={{ '--pcols': effCols }}>
+          {shown.map(({ it, idx }, i) => (
+            <div className="b-panel" key={idx} data-reveal style={{ transitionDelay: `${i * 70}ms` }}>
+              {/* Numbered by DISPLAY position, not stored index, so a hidden panel never leaves a gap in
+                  the sequence. The numeral is ordering, which the DOM order already gives a screen reader,
+                  so it is hidden rather than read out as "zero one" ahead of every principle heading. */}
               {panelStyle === 'numbered'
                 ? <span className="b-panel-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
                 : null}
               <span className="b-panel-rule" aria-hidden="true" />
               {it.label ? <span className="b-panel-label">{it.label}</span> : null}
-              <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as={PanelTag} className="b-panel-h" singleLine placeholder="Panel heading…" />
-              <EditableText editing={editing} id={id} arrayField="items" index={i} field="text" value={it.text} as="p" className="b-panel-body" placeholder="Panel body…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={idx} field="title" value={it.title} as={PanelTag} className="b-panel-h" singleLine placeholder="Panel heading…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={idx} field="text" value={it.text} as="p" className="b-panel-body" placeholder="Panel body…" />
               {/* Renders only when the label AND a resolvable link both exist. That lets the seed carry
                   approved button wording verbatim, visible and editable in the studio, while a button
                   whose destination does not exist yet never reaches a visitor as a dead link. */}
@@ -145,8 +161,11 @@ export const puck = {
         text: { type: 'custom', label: 'Panel body', render: (props) => <RichTextField {...props} /> },
         ctaLabel: { type: 'text', label: 'Panel button label (optional)' },
         ctaHref: { type: 'custom', label: 'Panel button link', render: (props) => <LinkField {...props} /> },
+        gated: { type: 'radio', label: 'Show this panel', options: [
+          { label: 'Always', value: false }, { label: 'Only once its link is set', value: true },
+        ]},
       },
-      defaultItemProps: { label: '', title: 'Panel heading', text: 'What this panel is about.', ctaLabel: '', ctaHref: '#' },
+      defaultItemProps: { label: '', title: 'Panel heading', text: 'What this panel is about.', ctaLabel: '', ctaHref: '#', gated: false },
       getItemSummary: (item, i) => item.title || ('Panel ' + (i + 1)),
       max: 4,
     },

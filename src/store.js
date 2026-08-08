@@ -26,7 +26,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260812;
+const SEED_VERSION = 20260813;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -512,33 +512,67 @@ export function seedState() {
           ctaLabel: 'Book a Diagnostic', ctaHref: '#book', variant: 'framed' }),
       ], { title: 'Process · Eight Pillars · Greatstone International', description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.', ogImage: '' }),
 
-      contact: seedPage('Begin the Conversation', 'tide', [
-        blk('TimeCounter', {}),
-        blk('BookDeepDive', {
-          eyebrow: 'The first step', headline: 'Tell us where the week goes', highlight: '',
-          body: 'Two minutes here saves us an hour later. The more honest the picture, the sharper the dive.',
-          submitLabel: 'Book a Diagnostic',
-          email: 'dx@greatstonesoftware.co.uk',
+      contact: seedPage('Begin the Conversation', 'none', [
+        // Ben's section 8. The page is the primary route for organisations ready to engage, and his
+        // constraints are explicit: professional, straightforward and human, with NO unnecessary friction,
+        // qualification barriers or sales language. The previous build broke all three, so the Diagnostic
+        // form headline, the three-step "what happens next" narrative and the 45-second calculator card
+        // are gone, along with the TimeCounter that opened on a claim about buying time.
+        blk('Hero', {
+          kicker: '', headline: 'Begin the Conversation', highlight: '', headlineSuffix: '',
+          body: 'The journey towards a stronger organisation begins with a conversation. Tell us about your organisation, your ambitions and the challenges that matter most, and we will take it from there.',
+          prompt: '', size: 'standard', align: 'left', variant: 'statement',
+          pillEyebrow: false, gridBackdrop: false, scrollCue: false,
+          ctaLabel: '', ctaHref: '#', ctaLabel2: '', ctaHref2: '#',
+          meta: [], lines: [],
         }),
-        blk('Steps', {
-          index: '', eyebrow: 'What happens next', headline: 'Three steps.', highlight: 'No theatre.', align: 'center', numberStyle: 'text',
-          body: 'From the moment you book to the moment you see the hours, the path is short and plainly worth your time.',
+        // His four routes, in his order. Telephone and Email are GATED: no number exists anywhere in this
+        // codebase and the address is still one of three candidates, so both carry approved copy that
+        // stays in the studio and stays off the public page until someone sets the link. Setting either
+        // one reveals its panel with no code change.
+        blk('Panels', {
+          eyebrow: '', heading: 'However you would prefer to begin',
+          intro: 'Different organisations open a conversation in different ways. Choose whichever suits you. Every route reaches the same team, and none of them commits you to anything.',
+          panelsLabel: '', columns: 'four', panelStyle: 'ruled', coda: '',
+          ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
-            { phase: 'Within 24 hours', title: 'We read your week', text: 'We take what you’ve told us and map it against the eight pillars before we ever speak, so the call starts where most engagements end.', timing: 'A short reply, a held slot' },
-            { phase: 'The diagnostic', title: '30 focused minutes', text: 'We sit with you, pull on the threads, and surface where the hours are draining. You’ll feel the difference between advice and a foundation being laid.', timing: 'One session, real findings' },
-            { phase: 'The hours, costed', title: 'A picture you can act on', text: 'You leave with a clear read on what your week is quietly costing you, and exactly where Greatstone buys it back. No deck. No fluff.', timing: 'Yours to keep, pressure-free' },
+            { label: '', title: 'Schedule a Conversation',
+              text: 'Choose a time that suits your diary and we will meet you there. Thirty minutes is usually enough to understand whether there is something worth exploring together.',
+              ctaLabel: 'Schedule a Conversation', ctaHref: { kind: 'booking' }, gated: false },
+            { label: '', title: 'Send an Enquiry',
+              text: 'Prefer to put it in writing first? Tell us what is on your mind using the form below and we will reply with a considered response rather than a brochure.',
+              ctaLabel: 'Go to the enquiry form', ctaHref: { kind: 'anchor', anchor: 'enquiry' }, gated: false },
+            { label: '', title: 'Telephone',
+              text: 'Some conversations are simply easier by voice. Call us directly and ask for whoever is best placed to help.',
+              ctaLabel: 'Call Greatstone', ctaHref: '', gated: true },
+            { label: '', title: 'Email',
+              text: 'Write to us in your own words, in your own time. Everything that reaches this address is read by the team, not by an autoresponder.',
+              ctaLabel: 'Email Greatstone', ctaHref: { kind: 'email', email: '' }, gated: true },
           ],
         }),
-        blk('ContactBand', {
-          kicker: 'Rather just talk?', heading: 'Reach us direct.',
-          body: 'No forms, no gatekeeping. Write a line about where your week goes and we’ll write back with where it could go instead.',
-          email: 'dx@greatstonesoftware.co.uk',
-          cardKicker: 'Before you book', cardStat: '45', cardStatUnit: 'seconds',
-          cardHeading: 'Run the time-savings calculator',
-          cardBody: 'Forty-five seconds to see, in your own numbers, the hours your business is quietly losing each year. The diagnostic picks up exactly where it leaves off.',
-          cardCtaLabel: 'Open the calculator', cardCtaHref: '#go/services',
+        // The enquiry route. The sector question is now OPTIONAL (his "no qualification barriers"), and the
+        // form's wording is editable rather than hardcoded. email stays empty until the address is settled;
+        // the block shows its fallback panel on submit either way.
+        blk('BookDeepDive', {
+          eyebrow: '', headline: 'Send an Enquiry', highlight: '',
+          body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
+          submitLabel: 'Send Enquiry',
+          sectorLabel: 'Your sector (optional)', sectorPlaceholder: 'Select if it is useful context',
+          sectorRequired: false,
+          messageLabel: 'What would you like to discuss?',
+          messagePlaceholder: 'A challenge you are weighing up, an ambition you are planning around, or simply a question you would like a considered answer to.',
+          subjectPrefix: 'Enquiry', anchorId: 'enquiry',
+          asideKicker: 'What happens next',
+          asideHeading: 'A considered reply, not a sales sequence.',
+          asideBody: 'Every enquiry is read by the team. We reply with a view on whether we can genuinely help, and say so plainly when we cannot.',
+          email: '',
+          asidePoints: [
+            { icon: 'check', title: 'Read by the team', text: 'Not routed into an automated nurture sequence.' },
+            { icon: 'clock', title: 'A considered response', text: 'We would rather reply well than reply instantly.' },
+            { icon: 'scan', title: 'No obligation', text: 'A conversation is a conversation. Nothing follows it unless you want it to.' },
+          ],
         }),
-      ], { title: 'Book a Diagnostic · Greatstone International', description: 'You still cannot buy time, so let us save yours. Book a Diagnostic and we map where your week goes across eight pillars. The first step costs nothing.', ogImage: '' }),
+      ], { title: 'Begin the Conversation · Greatstone International', description: 'The journey towards a stronger organisation begins with a conversation. Schedule a conversation, send an enquiry, telephone or email Greatstone International.', ogImage: '' }),
   };
   // fold in the rest of the site, converted from the live pages into editable blocks
   seedPages.forEach((p) => {
