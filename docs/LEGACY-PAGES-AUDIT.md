@@ -30,7 +30,7 @@ different corporate identity". A visitor who arrives on any of these five meets 
 
 ## Page by page
 
-### Process (`method`) — 5 blocks
+### Process (`method`), 5 blocks
 Hero, FeatureGrid, PillarCards, MaturityModel, Invite.
 
 **Carries real work:** the eight-pillar model, and it is the return target for the full-screen
@@ -39,14 +39,14 @@ pillar explorer at `#breakdown` (`App.jsx:1373` navigates back to `method` on cl
 **If unpublished:** the `#breakdown` explorer loses its return page and falls back to the home page.
 The explorer itself keeps working.
 
-### The Climb (`climb`) — 5 blocks
+### The Climb (`climb`), 5 blocks
 Hero, MaturityMap, Ladder, MethodTieIn, Invite.
 
 **Carries real work:** the maturity model (pebble / plateau / peak) as an interactive map and ladder.
 
 **If unpublished:** nothing in the app routes to it. No code references the slug at all.
 
-### Services (`services`) — 9 blocks
+### Services (`services`), 9 blocks
 Hero, ServiceCards, ServiceCatalog, Spectrum, StatStrip, TimeSavingsCalculator, ComparisonMatrix,
 Faq, Invite.
 
@@ -63,14 +63,14 @@ the one page where unpublishing has a real functional cost.
 so this page's eventual replacement is already scheduled in his plan. It is not orphaned
 permanently, it is waiting.
 
-### Industries (`industries`) — 4 blocks
+### Industries (`industries`), 4 blocks
 Hero, IndustryPicker, Steps, Invite.
 
 **Carries real work:** the interactive industry picker.
 
 **If unpublished:** nothing routes to it.
 
-### Proof (`proof`) — 6 blocks
+### Proof (`proof`), 6 blocks
 Hero, StatStrip, CaseStudy, RoiBar, Quote, Invite.
 
 **This one needs a decision on its own merits, separately from the navigation question.**
