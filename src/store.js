@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260816;
+const SEED_VERSION = 20260817;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -393,16 +393,16 @@ export function seedState() {
         blk('Panels', {
           eyebrow: '', heading: 'Building a Stronger Organisation',
           intro: 'Every organisation has the potential to become stronger. The organisations that realise that potential are those that focus their leadership, capability and investment where they create the greatest long-term value. For some, that means transforming with confidence. For others, it means strengthening organisational capability or applying technology where it delivers the greatest strategic advantage. Wherever your organisation is on its journey, Greatstone helps you move forward with greater clarity, confidence and purpose.',
-          panelsLabel: '', columns: 'three', panelStyle: 'ruled', coda: '',
+          panelsLabel: '', columns: 'three', panelStyle: 'card', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
-            { label: '', title: 'Transform with Confidence',
+            { label: '', icon: 'transform', title: 'Transform with Confidence',
               text: 'Successful transformation begins long before change begins. It starts with understanding the organisation, establishing the right priorities and creating a clear path towards stronger organisational outcomes. Whether your objective is improving performance, modernising operations, embracing Artificial Intelligence or preparing for future growth, Greatstone helps organisations establish the clarity and confidence required to transform successfully and create lasting organisational value.',
               ctaLabel: 'Explore Organisational Transformation', ctaHref: '#' },
-            { label: '', title: 'Strengthen Organisational Capability',
+            { label: '', icon: 'structure', title: 'Strengthen Organisational Capability',
               text: 'The strongest organisations understand that capability is one of their greatest strategic assets. They recognise when specialist expertise can strengthen leadership, accelerate progress and help deliver priorities that create lasting organisational value. Greatstone works alongside organisations, providing experienced expertise that strengthens internal capability, supports executive leadership and helps organisations achieve sustainable strategic progress.',
               ctaLabel: 'Explore Professional Services', ctaHref: '#' },
-            { label: '', title: 'Invest in Technology That Matters',
+            { label: '', icon: 'technology', title: 'Invest in Technology That Matters',
               text: 'Technology creates value only when it is applied to the right organisational priorities. The objective is not simply to adopt new technology. It is to apply the right technology, to the right opportunities, at the right time, strengthening organisational capability and supporting long-term strategic success. Greatstone helps organisations identify, evaluate and implement technologies that matter, ensuring every investment contributes directly to stronger organisational performance and future capability.',
               ctaLabel: 'Explore Technology Solutions', ctaHref: '#' },
           ],
@@ -417,16 +417,16 @@ export function seedState() {
           columns: 'four', panelStyle: 'numbered', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
-            { label: '', title: 'Understanding Before Action',
+            { label: '', icon: 'compass', title: 'Understanding Before Action',
               text: 'Every meaningful initiative begins with understanding. Before recommending change, Greatstone develops a clear understanding of the organisation, its objectives and the factors that will determine long-term success. Only then can meaningful progress begin.',
               ctaLabel: '', ctaHref: '#' },
-            { label: '', title: 'Evidence Before Transformation',
+            { label: '', icon: 'evidence', title: 'Evidence Before Transformation',
               text: 'Transformation should always be guided by evidence rather than assumption. Every recommendation should be informed by organisational understanding, sound judgement and objective insight, creating the confidence required for meaningful and sustainable transformation.',
               ctaLabel: '', ctaHref: '#' },
-            { label: '', title: 'Execution with Purpose',
+            { label: '', icon: 'target', title: 'Execution with Purpose',
               text: 'Every initiative should contribute to a clearly defined organisational objective. Transformation, specialist expertise and technology should never become objectives in themselves. They should always strengthen the organisation they exist to serve.',
               ctaLabel: '', ctaHref: '#' },
-            { label: '', title: 'Capability That Endures',
+            { label: '', icon: 'layers', title: 'Capability That Endures',
               text: 'The measure of success is not the completion of an engagement. It is the capability the organisation retains, the confidence leadership gains and the strength the organisation continues to build long after the engagement has concluded.',
               ctaLabel: '', ctaHref: '#' },
           ],
@@ -441,17 +441,17 @@ export function seedState() {
           ctaLabel: 'Explore Executive Intelligence', ctaHref: { kind: 'page', page: 'insights' },
           ctaVariant: 'ghost', headingLevel: 'h2',
           items: [
-            { label: '', title: 'Understand AI Before You Adopt It',
+            { label: '', icon: 'judgement', title: 'Understand AI Before You Adopt It',
               // EM DASH 2 of 2: "matters—and where it does not" becomes "matters, and where it does not".
               text: 'Artificial Intelligence presents extraordinary opportunities for organisations prepared to apply it thoughtfully. Its greatest value is realised when it strengthens organisational capability, supports strategic priorities and delivers measurable organisational outcomes. AI Market Intelligence helps executive leaders understand where Artificial Intelligence genuinely matters, and where it does not.',
               ctaLabel: 'Explore AI Market Intelligence', ctaHref: { kind: 'page', page: 'ai-market-intelligence' } },
-            { label: '', title: 'Think Beyond Today’s Challenges',
+            { label: '', icon: 'horizon', title: 'Think Beyond Today’s Challenges',
               text: 'The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.',
               ctaLabel: 'Explore Organisational Thinking', ctaHref: { kind: 'page', page: 'insights' } },
             { label: '', title: 'Invest in Technology That Matters',
               text: 'Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.',
               ctaLabel: 'Explore Technology Intelligence', ctaHref: { kind: 'page', page: 'insights' } },
-            { label: '', title: 'Executive Briefings',
+            { label: '', icon: 'briefing', title: 'Executive Briefings',
               text: 'Executive leaders need insight they can apply rather than information they already know. Executive Briefings distil complex developments into concise executive perspectives, helping leadership understand what has changed, why it matters and what should be considered next. Every briefing is designed to strengthen executive judgement through thoughtful analysis and practical insight.',
               ctaLabel: 'Explore Executive Briefings', ctaHref: { kind: 'page', page: 'insights' } },
           ],

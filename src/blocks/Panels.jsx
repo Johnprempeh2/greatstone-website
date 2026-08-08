@@ -1,5 +1,5 @@
 import { useReveal } from './reveal.js';
-import { Arrow } from './icons.jsx';
+import { Arrow, PanelIcon, ICON_NAMES } from './icons.jsx';
 import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
@@ -23,8 +23,11 @@ import { headingTag, headingLevelNum } from '../lib/heading-level.mjs';
 // introduction would read as a separate section from the panels it introduces, which is precisely what
 // the brief rules out ("read as part of one coherent philosophy rather than four independent statements").
 //
-// Restraint is the brief here: no cards, no borders, no hover lift, no backdrop blur. Panels are
-// separated by whitespace and a single lime rule, because "whitespace should dominate".
+// Restraint is still the brief ("whitespace should dominate"), but restraint is not the same as bare.
+// The first build gave every panel nothing but a lime rule, and across three sections of a prose-heavy
+// homepage that read as a wall of text. Panels now support a per-item ICON (which Ben's brief asks for
+// by name: "Simple supporting icon or visual motif") and an optional CARD motif that gives the set a
+// visible container. Both are opt-in per section, so a section that wants bare text still gets it.
 const COLS = { two: 2, three: 3, four: 4 };
 
 export function Panels({
@@ -75,6 +78,10 @@ export function Panels({
               {panelStyle === 'numbered'
                 ? <span className="b-panel-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
                 : null}
+              {/* Ben asks each panel to carry a "simple supporting icon or visual motif". The icon is
+                  the motif; it is decorative (the heading carries the meaning) so it is aria-hidden and
+                  renders nothing at all when unset, rather than falling back to a placeholder glyph. */}
+              {it.icon ? <PanelIcon name={it.icon} className="b-panel-icon" /> : null}
               <span className="b-panel-rule" aria-hidden="true" />
               {it.label ? <span className="b-panel-label">{it.label}</span> : null}
               <EditableText editing={editing} id={id} arrayField="items" index={idx} field="title" value={it.title} as={PanelTag} className="b-panel-h" singleLine placeholder="Panel heading…" />
@@ -122,6 +129,14 @@ export const css = `
   .b-panels.cols-four .b-panels-grid{grid-template-columns:minmax(0,1fr)}
 }
 .b-panel{min-width:0;display:flex;flex-direction:column}
+.b-panel-icon{display:block;color:var(--gs-accent);margin-bottom:16px;opacity:.92}
+/* Card motif. A contained surface rather than a floating column of text: it gives the eye an edge to
+   rest on and makes a three or four panel row read as a set. Deliberately quiet, one hairline border
+   and a barely-there wash, no shadow and no hover lift, so it adds structure without adding noise. */
+.b-panels.style-card .b-panel{border:1px solid var(--gs-border-soft,rgba(255,255,255,.09));border-radius:16px;
+  padding:clamp(22px,2.4vw,30px);background:rgba(255,255,255,.018)}
+.b-panels.style-card .b-panel-rule{display:none}
+.b-panels.style-card .b-panel-icon{margin-bottom:14px}
 .b-panel-rule{display:block;width:28px;height:2px;background:var(--gs-accent);margin-bottom:22px}
 .b-panels.style-plain .b-panel-rule{display:none}
 /* Numbered progression. The brief asks each panel to carry a simple supporting motif, while the set must
@@ -143,7 +158,7 @@ export const css = `
 @media(prefers-reduced-motion:reduce){.b-panel-cta{transform:none;margin-top:22px}}
 `;
 
-const PANEL = (title, text) => ({ label: '', title, text, ctaLabel: '', ctaHref: '#' });
+const PANEL = (title, text) => ({ label: '', icon: '', title, text, ctaLabel: '', ctaHref: '#' });
 
 export const puck = {
   label: 'Panels (section + equal panels)',
@@ -153,7 +168,7 @@ export const puck = {
     intro: { type: 'custom', label: 'Introductory narrative', render: (props) => <RichTextField {...props} /> },
     panelsLabel: { type: 'text', label: 'Label above the panels (optional)' },
     columns: { type: 'radio', label: 'Panels per row', options: [{ label: 'Two', value: 'two' }, { label: 'Three', value: 'three' }, { label: 'Four', value: 'four' }] },
-    panelStyle: { type: 'radio', label: 'Panel motif', options: [{ label: 'Plain', value: 'plain' }, { label: 'Lime rule', value: 'ruled' }, { label: 'Numbered', value: 'numbered' }] },
+    panelStyle: { type: 'radio', label: 'Panel motif', options: [{ label: 'Plain', value: 'plain' }, { label: 'Lime rule', value: 'ruled' }, { label: 'Numbered', value: 'numbered' }, { label: 'Card', value: 'card' }] },
     coda: { type: 'custom', label: 'Closing narrative (optional)', render: (props) => <RichTextField {...props} /> },
     ctaLabel: { type: 'text', label: 'Section button label (optional)' },
     ctaHref: { type: 'custom', label: 'Section button link', render: (props) => <LinkField {...props} /> },
@@ -165,6 +180,7 @@ export const puck = {
       type: 'array', label: 'Panels',
       arrayFields: {
         label: { type: 'text', label: 'Panel label (optional)' },
+        icon: { type: 'select', label: 'Supporting icon (optional)', options: [{ label: 'None', value: '' }].concat(ICON_NAMES.map((n) => ({ label: n, value: n }))) },
         title: { type: 'custom', label: 'Panel heading', render: (props) => <RichTextField {...props} variant="heading" /> },
         text: { type: 'custom', label: 'Panel body', render: (props) => <RichTextField {...props} /> },
         ctaLabel: { type: 'text', label: 'Panel button label (optional)' },
@@ -173,7 +189,7 @@ export const puck = {
           { label: 'Always', value: false }, { label: 'Only once its link is set', value: true },
         ]},
       },
-      defaultItemProps: { label: '', title: 'Panel heading', text: 'What this panel is about.', ctaLabel: '', ctaHref: '#', gated: false },
+      defaultItemProps: { label: '', icon: '', title: 'Panel heading', text: 'What this panel is about.', ctaLabel: '', ctaHref: '#', gated: false },
       getItemSummary: (item, i) => item.title || ('Panel ' + (i + 1)),
       max: 4,
     },

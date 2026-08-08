@@ -51,7 +51,7 @@
           "intro": "Greatstone organises its work around three strategic priorities that executive leaders recognise within their own organisations. Start with the priority that matches where your organisation is, rather than with how Greatstone is arranged internally.",
           "panelsLabel": "",
           "columns": "three",
-          "panelStyle": "ruled",
+          "panelStyle": "card",
           "coda": "",
           "ctaLabel": "",
           "ctaHref": "#",
@@ -62,21 +62,24 @@
               "title": "Transform with Confidence",
               "text": "For organisations undertaking significant strategic, operational or organisational transformation.",
               "ctaLabel": "Explore Organisational Transformation",
-              "ctaHref": "#"
+              "ctaHref": "#",
+              "icon": "transform"
             },
             {
               "label": "",
               "title": "Strengthen Organisational Capability",
               "text": "For organisations requiring specialist expertise, advisory capability or implementation support to strengthen specific areas of the organisation.",
               "ctaLabel": "Explore Professional Services",
-              "ctaHref": "#"
+              "ctaHref": "#",
+              "icon": "structure"
             },
             {
               "label": "",
               "title": "Invest in Technology That Matters",
               "text": "For organisations seeking to apply the right technologies to the right organisational priorities in order to strengthen capability and create meaningful organisational value.",
               "ctaLabel": "Explore Technology Solutions",
-              "ctaHref": "#"
+              "ctaHref": "#",
+              "icon": "technology"
             }
           ]
         }
@@ -534,7 +537,7 @@
           "intro": "Organisations choose their partners carefully, and rightly so. These are the characteristics that shape how Greatstone works, and the ones our clients hold us to.",
           "panelsLabel": "",
           "columns": "three",
-          "panelStyle": "ruled",
+          "panelStyle": "card",
           "coda": "",
           "ctaLabel": "",
           "ctaHref": "#",
@@ -547,7 +550,8 @@
               "text": "The answer is usually in the part everyone had agreed to overlook. Examining it is uncomfortable and it is where the value is, so we go there first.",
               "ctaLabel": "",
               "ctaHref": "#",
-              "gated": false
+              "gated": false,
+              "icon": "compass"
             },
             {
               "label": "",
@@ -555,7 +559,8 @@
               "text": "The measure of an engagement is what the organisation can do once it concludes. We are not a supplier to be managed. We are a foundation to be built upon.",
               "ctaLabel": "",
               "ctaHref": "#",
-              "gated": false
+              "gated": false,
+              "icon": "layers"
             },
             {
               "label": "",
@@ -563,7 +568,8 @@
               "text": "If a recommendation cannot be explained to the people who will live with it, the thinking behind it is not finished. Clarity is a discipline, not a style.",
               "ctaLabel": "",
               "ctaHref": "#",
-              "gated": false
+              "gated": false,
+              "icon": "briefing"
             }
           ]
         }
@@ -721,7 +727,7 @@
           "intro": "Executive Intelligence is not a marketing function, a news service or a content library. It exists to help executive leaders think more clearly about the challenges, opportunities and decisions that shape stronger organisations.",
           "panelsLabel": "",
           "columns": "four",
-          "panelStyle": "ruled",
+          "panelStyle": "card",
           "coda": "",
           "ctaLabel": "",
           "ctaHref": "#",
@@ -737,7 +743,8 @@
                 "kind": "page",
                 "page": "ai-market-intelligence"
               },
-              "gated": false
+              "gated": false,
+              "icon": "judgement"
             },
             {
               "label": "",
@@ -745,7 +752,8 @@
               "text": "The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.",
               "ctaLabel": "Explore Organisational Thinking",
               "ctaHref": "#",
-              "gated": false
+              "gated": false,
+              "icon": "horizon"
             },
             {
               "label": "",
@@ -753,7 +761,8 @@
               "text": "Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.",
               "ctaLabel": "Explore Technology Intelligence",
               "ctaHref": "#",
-              "gated": false
+              "gated": false,
+              "icon": "technology"
             },
             {
               "label": "",
@@ -761,7 +770,8 @@
               "text": "Executive leaders need insight they can apply rather than information they already know. Executive Briefings distil complex developments into concise executive perspectives, helping leadership understand what has changed, why it matters and what should be considered next. Every briefing is designed to strengthen executive judgement through thoughtful analysis and practical insight.",
               "ctaLabel": "Explore Executive Briefings",
               "ctaHref": "#",
-              "gated": false
+              "gated": false,
+              "icon": "briefing"
             }
           ]
         }
