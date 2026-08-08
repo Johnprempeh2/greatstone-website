@@ -95,6 +95,36 @@ to customers.
 The lesson worth keeping: on this codebase, a green test run and a clean build say nothing about
 whether the page is right.
 
+## Conformance check against Ben's acceptance criteria
+
+He marked the homepage LOCKED, so it was checked line by line against his own criteria rather than
+by my summary judgement. The objectively checkable ones all pass.
+
+**Chapter 1, the strictest.** He requires the Opening Statement to appear "exactly as approved".
+Compared character by character: all three lines and the supporting narrative match his text
+exactly. All eight of his prohibitions hold: the statement mentions no consulting, no Artificial
+Intelligence, no technology, no services, no products, and does not name Greatstone (his own
+narrative names it one line later, which is his design).
+
+"Dominates the first screen", measured at 1366x768, the tightest common laptop: the statement takes
+54% of the first screen, nothing else appears in it, and the eye sequence falls in exactly his order,
+Opening Statement then Supporting Narrative then Primary Call to Action, with the button 60px clear
+of the fold.
+
+**Counts.** Three strategic priorities in chapter 4, four Principles in chapter 5, four Intelligence
+Centres in chapter 6, all as specified. Chapter 7's "trust communicated without exaggeration" holds
+in the strongest sense: both logo walls render nothing at all publicly, because there is no verified
+client or partner list to show.
+
+### One thing for Ben, found by this check
+
+His approved copy uses the identical heading **"Invest in Technology That Matters"** twice on the
+same page: once as the third strategic priority in chapter 4, and again as Intelligence Centre Three
+in chapter 6. Both are verbatim his (architecture.txt line 47, homepage.txt lines 353 and 531), so
+neither was changed. But a visitor scrolling the homepage meets the same heading over two different
+propositions, which reads as a repeat rather than a distinction. His call, alongside the chapters 2
+and 3 overlap already on the list.
+
 ## One safety change worth knowing about
 
 Several blocks shipped fabricated claims as their **defaults**, publishable the moment anyone added
