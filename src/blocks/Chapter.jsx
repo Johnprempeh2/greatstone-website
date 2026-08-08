@@ -33,7 +33,12 @@ export function Chapter({ id, puck, index, eyebrow, headline, highlight, body, c
 }
 
 export const css = `
-.b-chapter{padding:clamp(72px,13vh,150px) 0;position:relative}
+/* overflow-x:clip contains the decorative scrim below, which is inset -16% horizontally and so extends
+   60px past each edge at a 375px viewport, forcing the whole PAGE to scroll sideways on a phone. Invite
+   and StatStrip carry the same percentage-inset decoration and already clip; Chapter was the one that
+   did not. clip rather than hidden: hidden on one axis forces the other to auto and would have made
+   this a scroll container. */
+.b-chapter{padding:clamp(72px,13vh,150px) 0;position:relative;overflow-x:clip}
 .b-chapter.align-center{text-align:center}
 /* copy sits over the 3D stone; a soft radial scrim + text-shadow keep it legible without a visible box
    (faithful to the live .panel-inner::before — full scroll-pinning is intentionally not ported) */
