@@ -112,7 +112,15 @@ export const css = `
 .b-panels.cols-two{--pcols:2}.b-panels.cols-three{--pcols:3}.b-panels.cols-four{--pcols:4}
 @media(max-width:1080px){.b-panels.cols-four .b-panels-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.b-panels.cols-three .b-panels-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.b-panels-grid{grid-template-columns:1fr}}
+/* Single column on phones. This MUST repeat the .cols-* class to reach specificity (0,3,0): the plain
+   .b-panels-grid selector is (0,1,0) and silently lost to the .cols-four and .cols-three rules above,
+   which also apply at 375px. The result was two 153px columns of body copy breaking two words to a line.
+   Equal specificity here, so source order decides, which is why this block stays last. */
+@media(max-width:640px){
+  .b-panels.cols-two .b-panels-grid,
+  .b-panels.cols-three .b-panels-grid,
+  .b-panels.cols-four .b-panels-grid{grid-template-columns:minmax(0,1fr)}
+}
 .b-panel{min-width:0;display:flex;flex-direction:column}
 .b-panel-rule{display:block;width:28px;height:2px;background:var(--gs-accent);margin-bottom:22px}
 .b-panels.style-plain .b-panel-rule{display:none}
