@@ -99,6 +99,17 @@
 .gs-signout{background:none;border:0;color:var(--gs-faint);font-family:'Montserrat',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;padding:6px 4px;transition:color .2s}
 .gs-signout:hover{color:var(--gs-text)}
 
+/* Narrow phones (<=420px): the header's own minimum content width exceeded the viewport, so the
+   PAGE scrolled sideways even though no page content overflowed. Measured at 375px: 32px padding +
+   138px logo + 150px nav + 95px tools + 20px gaps = 435px against a 375px viewport. The logo is the
+   only part with slack (the tools are two 44px tap targets, which must not shrink), so it caps here
+   and the padding tightens. gs-navwrap already has min-width:0, so it absorbs whatever is left. */
+@media(max-width:420px){
+  .gs-header{padding-left:12px;padding-right:12px;gap:8px}
+  .gs-logo img{max-width:104px;height:auto}
+  .gs-navmenu-btn{max-width:100%}
+}
+
 @media(max-width:760px){
   .gs-header{gap:10px}
   .gs-search{display:none}
