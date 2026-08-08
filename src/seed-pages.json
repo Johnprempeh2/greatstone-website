@@ -471,109 +471,118 @@
   {
     "slug": "about",
     "title": "About Greatstone",
-    "background": "stone",
+    "background": "none",
     "seo": {
-      "title": "About Greatstone · Twenty Years Embedded",
-      "description": "Twenty years embedded, not advisory. We find the hours a business is quietly losing and win them back, becoming the foundation you build the next decades on.",
+      "title": "About Greatstone · Greatstone International",
+      "description": "Greatstone exists to help organisations become stronger. Our purpose, our philosophy, the character of the institution and the people who do the work.",
       "ogImage": ""
     },
     "blocks": [
       {
         "type": "Hero",
         "props": {
-          "kicker": "Our story",
-          "headline": "Twenty years deep.",
-          "highlight": "Embedded",
-          "headlineSuffix": ", not advisory.",
-          "body": "We have spent two decades learning where businesses quietly lose their hours, and how to win them back. We do not hand you a deck and leave. We become the foundation you build the next twenty years on.",
-          "align": "left",
-          "size": "compact",
-          "ctaLabel": "",
-          "ctaHref": "#book",
-          "meta": [
+          "variant": "statement",
+          "kicker": "",
+          "headline": "",
+          "highlight": "",
+          "headlineSuffix": "",
+          "prompt": "",
+          "lines": [
             {
-              "bignum": "20",
-              "label": "Years building the foundations others stand on"
+              "text": "Greatstone exists for one reason.",
+              "accent": false
             },
             {
-              "bignum": "8",
-              "label": "Pillars we assess every business against"
-            },
-            {
-              "bignum": "0",
-              "label": "Stones left unturned, by design"
+              "text": "To help organisations become stronger.",
+              "accent": false
             }
-          ]
+          ],
+          "body": "Everything we do, and everything we decline to do, is measured against that single purpose.",
+          "align": "left",
+          "size": "standard",
+          "pillEyebrow": false,
+          "gridBackdrop": false,
+          "scrollCue": false,
+          "cueStyle": "text",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "ctaLabel2": "",
+          "ctaHref2": "#",
+          "meta": []
         }
       },
       {
-        "type": "Timeline",
+        "type": "Chapter",
         "props": {
           "index": "",
-          "eyebrow": "The long road",
-          "headline": "From a single fix to a foundation.",
+          "eyebrow": "",
           "highlight": "",
-          "body": "Twenty years, told as a handful of milestones. Real direction; dates we will firm up with you.",
+          "headline": "What We Believe",
+          "body": "Strong organisations are built deliberately. They are built by leaders who understand what matters before deciding what must change, and who are willing to look honestly at how their organisation actually works rather than how it is described. That belief shapes how Greatstone engages. We begin with understanding rather than assumption, we let evidence rather than instinct guide what follows, and we measure success by the strength an organisation retains long after our involvement ends.",
+          "coda": "This is not a methodology we apply to organisations. It is the standard we hold ourselves to.",
+          "align": "left",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "headingLevel": "h2"
+        }
+      },
+      {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "The Character of the Institution",
+          "intro": "Organisations choose their partners carefully, and rightly so. These are the characteristics that shape how Greatstone works, and the ones our clients hold us to.",
+          "panelsLabel": "",
+          "columns": "three",
+          "panelStyle": "ruled",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "ctaVariant": "ghost",
+          "headingLevel": "h2",
           "items": [
             {
-              "year": "2005",
-              "head": "One business, one problem worth solving.",
-              "text": "A single client, a process bleeding time, and a refusal to accept that this is just how it works here."
+              "label": "",
+              "title": "We look where others stop looking",
+              "text": "The answer is usually in the part everyone had agreed to overlook. Examining it is uncomfortable and it is where the value is, so we go there first.",
+              "ctaLabel": "",
+              "ctaHref": "#",
+              "gated": false
             },
             {
-              "year": "2011",
-              "head": "Advice was not enough.",
-              "text": "We kept watching good recommendations get filed and forgotten. So we stopped advising and started building, sitting inside the business until the change actually shipped. That is when the embedded model started."
+              "label": "",
+              "title": "We build capability, not dependency",
+              "text": "The measure of an engagement is what the organisation can do once it concludes. We are not a supplier to be managed. We are a foundation to be built upon.",
+              "ctaLabel": "",
+              "ctaHref": "#",
+              "gated": false
             },
             {
-              "year": "2016",
-              "head": "The eight pillars took shape.",
-              "text": "Years of diagnostics became a method. Eight pillars we could assess any business against, so the work stopped being guesswork and started being a map."
-            },
-            {
-              "year": "2021",
-              "head": "From projects to partnerships.",
-              "text": "Clients stopped hiring us for one thing and started keeping us as their foundation. The relationships outlived the briefs, which is exactly the point."
-            },
-            {
-              "year": "Today",
-              "head": "Buying back the hours, at scale.",
-              "text": "Same belief, broader reach. We find the time a business is quietly losing, we win it back, and we leave no stone unturned getting there."
+              "label": "",
+              "title": "We say things plainly",
+              "text": "If a recommendation cannot be explained to the people who will live with it, the thinking behind it is not finished. Clarity is a discipline, not a style.",
+              "ctaLabel": "",
+              "ctaHref": "#",
+              "gated": false
             }
           ]
         }
       },
       {
-        "type": "Values",
+        "type": "Prose",
         "props": {
-          "kicker": "What we stand on",
-          "heading": "Four values. No slideware.",
-          "items": [
-            {
-              "title": "We leave no stone unturned",
-              "text": "The answer is usually hiding in the part everyone agreed to ignore. We look there first."
-            },
-            {
-              "title": "We become the foundation",
-              "text": "Not a vendor you manage. A layer you build on. We sit inside the work until it holds without us."
-            },
-            {
-              "title": "Plain over clever",
-              "text": "If we cannot explain it to the person who has to live with it, we have not finished the job."
-            },
-            {
-              "title": "Outcomes over decks",
-              "text": "We measure ourselves in hours returned and decisions made, never in decks delivered."
-            }
-          ]
+          "kicker": "Experience",
+          "align": "left",
+          "width": "reading",
+          "body": "Greatstone brings two decades of work inside organisations, across a broad range of industries and at every level from the executive team to the people doing the work each day. That experience is why we begin with understanding. We have seen enough organisations to know that the presenting problem is rarely the real one, and that the difference between an initiative that holds and one that quietly unwinds is almost always decided before any change begins."
         }
       },
       {
         "type": "Team",
         "props": {
-          "kicker": "The people",
-          "heading": "Senior hands, on the floor with you.",
-          "body": "The senior people who do the work, not a sales team between you and them. Your founders are on it from day one; the rest of your engagement team is named at kickoff.",
+          "kicker": "Leadership",
+          "heading": "The people who do the work",
+          "body": "Senior people, involved directly rather than represented. Your engagement is led by the people you meet, and the remaining seats on your team are named once the engagement is confirmed.",
           "items": [
             {
               "name": "Ben Mensah",
@@ -609,18 +618,58 @@
         }
       },
       {
+        "type": "LogoWall",
+        "props": {
+          "eyebrow": "Strategic relationships",
+          "logos": []
+        }
+      },
+      {
         "type": "Invite",
         "props": {
-          "eyebrow": "Start here",
-          "headline": "Let us find the hours you are",
-          "highlight": "quietly losing.",
-          "body": "A diagnostic is 30 focused minutes of our time and a sharper picture of yours. No deck to sit through, no obligation after.",
-          "ctaLabel": "Book a Diagnostic",
-          "ctaHref": "#book",
+          "eyebrow": "",
+          "headline": "Let’s Build a Stronger Organisation",
+          "highlight": "",
+          "body": "The journey towards a stronger organisation begins with a conversation. Let’s begin by understanding your organisation, your ambitions and the challenges that matter most.",
+          "ctaLabel": "Begin the Conversation",
+          "ctaHref": {
+            "kind": "page",
+            "page": "contact"
+          },
+          "ctaLabel2": "Explore Executive Intelligence",
+          "ctaHref2": {
+            "kind": "page",
+            "page": "insights"
+          },
           "email": "",
-          "ctaLabel2": "See the Method",
-          "ctaHref2": "#go/method",
-          "variant": "band"
+          "variant": "band",
+          "pill": false,
+          "contactOptions": [
+            {
+              "label": "Schedule a Conversation",
+              "href": {
+                "kind": "booking"
+              }
+            },
+            {
+              "label": "Send an Enquiry",
+              "href": {
+                "kind": "page",
+                "page": "contact"
+              }
+            },
+            {
+              "label": "Telephone",
+              "href": ""
+            },
+            {
+              "label": "Email",
+              "href": {
+                "kind": "email",
+                "email": ""
+              }
+            }
+          ]
         }
       }
     ]
