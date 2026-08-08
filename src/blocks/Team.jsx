@@ -45,7 +45,9 @@ export function Team({ id, puck, kicker, heading, body, items = [] }) {
               </div>
             ) : (
               <div className="card team-card" data-reveal style={{ transitionDelay: `${i * 55}ms` }} key={i}>
-                <TeamAvatar photo={m.photo} name={m.name} />
+                <div className="t-portrait">
+                  <TeamAvatar photo={m.photo} name={m.name} />
+                </div>
                 <div className="t-meta"><div className="t-name">{m.name}</div><div className="t-role">{m.role}</div></div>
               </div>
             )
@@ -63,18 +65,35 @@ export const css = `
 .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,30px);margin-top:clamp(28px,4vh,48px)}
 @media(max-width:820px){.team-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:680px){.team-grid{grid-template-columns:1fr}}
-.team-card{display:flex;align-items:center;gap:16px}
-.team-card .avatar{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.95rem;
-  color:var(--gs-accent);background:radial-gradient(circle at 32% 28%,rgba(27,80,57,.9),rgba(14,49,34,.9));border:1px solid var(--gs-border);letter-spacing:.02em}
-.team-card .avatar-img{object-fit:cover}
+/* PORTRAIT FRAME. The people were a 52px initials disc beside a name, which reads as a photo that
+   failed to load rather than as a considered state. It is now a real portrait-ratio frame at the size a
+   headshot will occupy, with the initials set as deliberate typography on the brand surface. Nothing here
+   pretends to be a face. When the photo field is set, the same frame fills with the image at
+   object-fit:cover and the initials simply stop rendering, so no code changes when the photography lands. */
+/* min-width:0 is load-bearing: grid items default to min-width:auto, so a child that will not shrink
+   expands its own track. Without it these three tracks grew to 415px inside a 1052px container and
+   pushed the page 61px wider than the viewport. */
+.team-card{display:block;min-width:0}
+.t-portrait{position:relative;width:100%;max-width:260px;aspect-ratio:4/5;border-radius:14px;overflow:hidden;
+  border:1px solid var(--gs-border);background:
+    radial-gradient(120% 90% at 28% 18%,rgba(27,80,57,.55),transparent 62%),
+    linear-gradient(180deg,#161816,#101210);margin-bottom:16px}
+.t-portrait::after{content:"";position:absolute;inset:auto 0 0 0;height:34%;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(8,10,9,.55))}
+.team-card .avatar{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;background:none;
+  display:grid;place-items:center;font-weight:900;letter-spacing:.06em;
+  font-size:clamp(2.4rem,4.6vw,3.4rem);color:var(--gs-accent);opacity:.86}
+.team-card .avatar-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0;border:0}
 .team-card.is-slot{border-style:dashed;background:transparent}
 .team-card.is-slot .t-name{color:var(--gs-text-muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.team-card .avatar-slot{background:none;border:1px dashed var(--gs-border-strong,rgba(200,255,0,.18))}
-.team-card .avatar-slot svg{width:22px;height:22px;stroke:var(--gs-text-faint)}
+.team-card.is-slot .avatar-slot{position:relative;inset:auto;width:100%;max-width:260px;aspect-ratio:4/5;border-radius:14px;
+  display:grid;place-items:center;background:none;border:1px dashed var(--gs-border-strong,rgba(200,255,0,.18));
+  margin-bottom:16px}
+.team-card .avatar-slot svg{width:34px;height:34px;stroke:var(--gs-text-faint)}
 .t-slotpill{font-size:.56rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-accent);
   border:1px solid var(--gs-accent);padding:2px 7px;border-radius:100px;white-space:nowrap}
 .team-card .t-meta{min-width:0}
-.team-card .t-name{font-weight:700;font-size:1rem;line-height:1.2;overflow-wrap:anywhere}
+.team-card .t-name{font-weight:800;font-size:1.06rem;line-height:1.25;overflow-wrap:anywhere}
 .team-card .t-role{font-size:.82rem;color:var(--gs-faint);margin-top:2px;overflow-wrap:anywhere}
 `;
 
