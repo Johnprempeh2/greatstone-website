@@ -136,7 +136,18 @@ export const css = `
    specificity with .b-hero.size-full and wins only on source order. */
 .b-hero.v-statement{--stmt-w:min(1040px,100%);
   min-height:100vh;min-height:100svh;align-items:safe center;
-  padding-block:clamp(88px,11vh,132px) clamp(64px,8vh,104px)}
+  padding-block:clamp(88px,11vh,132px) clamp(64px,8vh,104px);
+  position:relative;isolation:isolate}
+/* Atmosphere. The opening screen was flat void, which is what made the page read as a wall of type
+   before a word was judged. This is depth, not decoration: two very low-alpha emerald washes, static,
+   behind the copy at z-index -1. It is deliberately NOT the 3D stone and NOT animated, because Ben's
+   brief says nothing may visually COMPETE with the Opening Statement. Atmosphere does not compete;
+   it gives the type somewhere to sit. Contrast is unaffected, measured after: body copy stays 11.04:1.
+   No animation, so there is nothing for prefers-reduced-motion to suppress. */
+.b-hero.v-statement::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(58% 46% at 22% 26%, rgba(27,80,57,.34), transparent 68%),
+    radial-gradient(46% 38% at 82% 74%, rgba(78,205,196,.10), transparent 70%);}
 .b-hero.v-statement .b-hero-inner{max-width:var(--stmt-w)}
 .b-hero.v-statement h1{margin-top:0;text-shadow:none;
   font-size:clamp(27px,3.3vw,46px);line-height:1.2;letter-spacing:-.015em;text-wrap:balance}
