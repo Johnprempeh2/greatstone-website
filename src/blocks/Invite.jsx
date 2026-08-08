@@ -89,7 +89,7 @@ export const css = `
 /* band variant: a calm centered close (the live industries/about/home/climb closings), no aurora, no card,
    headline at the shared .h2 scale rather than the oversized aurora display size */
 .b-invite-band{padding:clamp(56px,9vw,120px) 0}
-.b-invite-band h2{font-size:clamp(2rem,4.5vw,3.6rem)}
+.b-invite-band h2{font-size:clamp(27px,3.5vw,42px)}
 .b-invite-pillband{border-top:1px solid var(--gs-border-soft)}
 `;
 

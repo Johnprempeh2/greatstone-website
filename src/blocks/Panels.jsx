@@ -109,7 +109,7 @@ export function Panels({
 export const css = `
 .b-panels{padding:clamp(72px,12vh,150px) 0;position:relative}
 .b-panels-head{max-width:760px}
-.b-panels-h{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em}
+.b-panels-h{font-size:clamp(27px,3.5vw,42px);font-weight:900;line-height:1.05;letter-spacing:-.025em}
 .b-panels-intro{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-panels-label{margin-top:clamp(40px,6vw,72px);font-size:.72rem;font-weight:800;letter-spacing:.26em;
   text-transform:uppercase;color:var(--gs-faint)}

@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260817;
+const SEED_VERSION = 20260818;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -448,7 +448,7 @@ export function seedState() {
             { label: '', icon: 'horizon', title: 'Think Beyond Today’s Challenges',
               text: 'The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.',
               ctaLabel: 'Explore Organisational Thinking', ctaHref: { kind: 'page', page: 'insights' } },
-            { label: '', title: 'Invest in Technology That Matters',
+            { label: '', icon: 'technology', title: 'Invest in Technology That Matters',
               text: 'Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.',
               ctaLabel: 'Explore Technology Intelligence', ctaHref: { kind: 'page', page: 'insights' } },
             { label: '', icon: 'briefing', title: 'Executive Briefings',
@@ -539,16 +539,16 @@ export function seedState() {
           panelsLabel: '', columns: 'four', panelStyle: 'ruled', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
-            { label: '', title: 'Schedule a Conversation',
+            { label: '', icon: 'horizon', title: 'Schedule a Conversation',
               text: 'Choose a time that suits your diary and we will meet you there. Thirty minutes is usually enough to understand whether there is something worth exploring together.',
               ctaLabel: 'Schedule a Conversation', ctaHref: { kind: 'booking' }, gated: false },
-            { label: '', title: 'Send an Enquiry',
+            { label: '', icon: 'briefing', title: 'Send an Enquiry',
               text: 'Prefer to put it in writing first? Tell us what is on your mind using the form below and we will reply with a considered response rather than a brochure.',
               ctaLabel: 'Go to the enquiry form', ctaHref: { kind: 'anchor', anchor: 'enquiry' }, gated: false },
-            { label: '', title: 'Telephone',
+            { label: '', icon: 'phone', title: 'Telephone',
               text: 'Some conversations are simply easier by voice. Call us directly and ask for whoever is best placed to help.',
               ctaLabel: 'Call Greatstone', ctaHref: '', gated: true },
-            { label: '', title: 'Email',
+            { label: '', icon: 'mail', title: 'Email',
               text: 'Write to us in your own words, in your own time. Everything that reaches this address is read by the team, not by an autoresponder.',
               ctaLabel: 'Email Greatstone', ctaHref: { kind: 'email', email: '' }, gated: true },
           ],

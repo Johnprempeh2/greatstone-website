@@ -150,7 +150,14 @@ export const css = `
     radial-gradient(46% 38% at 82% 74%, rgba(78,205,196,.10), transparent 70%);}
 .b-hero.v-statement .b-hero-inner{max-width:var(--stmt-w)}
 .b-hero.v-statement h1{margin-top:0;text-shadow:none;
-  font-size:clamp(27px,3.3vw,46px);line-height:1.2;letter-spacing:-.015em;text-wrap:balance}
+  /* Was clamp(27px,3.3vw,46px), which made the Opening Statement SMALLER than every section
+     heading below it at every viewport: an inverted ramp, and the opposite of "nothing should
+     visually compete with it". Paired with the section h2 drop below; the two rates are chosen
+     so the ramps never cross (375px 31/27, 800px 32/28, 1440px 48/42). The h1 cap is held at 48
+     rather than pushed higher because at 1280x720 a 52px statement pushed the primary CTA 14px
+     BELOW the fold, which breaks his acceptance criterion. The dominance win comes from dropping
+     the section h2, not from inflating the h1. */
+  font-size:clamp(31px,4vw,48px);line-height:1.16;letter-spacing:-.018em;text-wrap:balance}
 .b-hero.v-statement h1.b-hero-stack .b-hero-line + .b-hero-line{margin-top:.42em}
 .b-hero.v-statement .lede{margin-top:clamp(22px,3vh,34px);text-shadow:none;
   font-size:clamp(16px,1.3vw,19px);line-height:1.75;max-width:min(620px,100%)}
