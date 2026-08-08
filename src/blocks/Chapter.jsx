@@ -56,8 +56,16 @@ export const css = `
 .b-chapter .b-chapter-h{font-size:clamp(27px,3.5vw,42px);font-weight:900;line-height:1.05;letter-spacing:-.025em}
 .b-chapter-body{margin-top:24px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-chapter.align-center .b-chapter-body{margin-inline:auto}
-/* coda is just a follow-on body paragraph (the live .ch-copy is one muted block, no lime callout) */
-.b-chapter-coda{margin-top:14px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
+/* The coda used to be byte-identical to the body: same size, colour, line-height and 62ch measure,
+   separated only by margin-top:14px. That is exactly why the "Trusted by Organisations" chapter read as
+   97 consecutive words rather than a paragraph and a closing thought. It is a lead-out, so it now looks
+   like one: brighter, slightly larger, a shorter measure and a lime tick, set apart by real space. */
+.b-chapter-coda{margin-top:30px;padding-left:20px;position:relative;color:var(--gs-text);
+  font-size:clamp(1.08rem,1.65vw,1.32rem);max-width:52ch;line-height:1.62;font-weight:500}
+.b-chapter-coda::before{content:"";position:absolute;left:0;top:.42em;bottom:.42em;width:2px;
+  background:linear-gradient(180deg,var(--gs-accent),transparent)}
+.b-chapter.align-center .b-chapter-coda::before{display:none}
+.b-chapter.align-center .b-chapter-coda{padding-left:0}
 .b-chapter.align-center .b-chapter-coda{margin-inline:auto}
 /* subtle inline emphasis, faithful to live .ch-copy strong: brighter text + weight 700, never lime */
 .b-chapter-body strong,.b-chapter-coda strong{color:var(--gs-text);font-weight:700}

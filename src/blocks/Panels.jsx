@@ -32,7 +32,7 @@ const COLS = { two: 2, three: 3, four: 4 };
 
 export function Panels({
   id, puck, eyebrow, heading, intro, panelsLabel, coda,
-  columns = 'three', panelStyle = 'ruled', items = [],
+  columns = 'three', panelStyle = 'ruled', headAlign = 'left', items = [],
   ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, headingLevel,
 }) {
   const editing = puck && puck.isEditing;
@@ -57,7 +57,7 @@ export function Panels({
   const PanelTag = 'h' + Math.min(4, headingLevelNum(headingLevel) + 1);
 
   return (
-    <section ref={ref} className={`b-panels cols-${columns} style-${panelStyle}`}>
+    <section ref={ref} className={`b-panels cols-${columns} style-${panelStyle} head-${headAlign}`}>
       <div className="wrap">
         <div className="b-panels-head">
           <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" data-reveal />
@@ -109,6 +109,12 @@ export function Panels({
 export const css = `
 .b-panels{padding:clamp(72px,12vh,150px) 0;position:relative}
 .b-panels-head{max-width:760px}
+/* Head alignment. Home carried three Panels sections back to back, each an identical 760px left-aligned
+   head above a grid, so the eye read one continuous object rather than three sections. Centring one
+   breaks that repetition without touching a word. */
+.b-panels.head-center .b-panels-head{margin-inline:auto;text-align:center}
+.b-panels.head-center .b-panels-intro{margin-inline:auto}
+.b-panels.head-center .b-panels-label{text-align:center}
 .b-panels-h{font-size:clamp(27px,3.5vw,42px);font-weight:900;line-height:1.05;letter-spacing:-.025em}
 .b-panels-intro{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
 .b-panels-label{margin-top:clamp(40px,6vw,72px);font-size:.72rem;font-weight:800;letter-spacing:.26em;
@@ -168,6 +174,7 @@ export const puck = {
     intro: { type: 'custom', label: 'Introductory narrative', render: (props) => <RichTextField {...props} /> },
     panelsLabel: { type: 'text', label: 'Label above the panels (optional)' },
     columns: { type: 'radio', label: 'Panels per row', options: [{ label: 'Two', value: 'two' }, { label: 'Three', value: 'three' }, { label: 'Four', value: 'four' }] },
+    headAlign: { type: 'radio', label: 'Section heading', options: [{ label: 'Left', value: 'left' }, { label: 'Centred', value: 'center' }] },
     panelStyle: { type: 'radio', label: 'Panel motif', options: [{ label: 'Plain', value: 'plain' }, { label: 'Lime rule', value: 'ruled' }, { label: 'Numbered', value: 'numbered' }, { label: 'Card', value: 'card' }] },
     coda: { type: 'custom', label: 'Closing narrative (optional)', render: (props) => <RichTextField {...props} /> },
     ctaLabel: { type: 'text', label: 'Section button label (optional)' },
@@ -196,7 +203,7 @@ export const puck = {
   },
   defaultProps: {
     eyebrow: '', heading: 'Section heading', intro: 'The introductory narrative.',
-    panelsLabel: '', columns: 'three', panelStyle: 'ruled', coda: '',
+    panelsLabel: '', columns: 'three', panelStyle: 'ruled', headAlign: 'left', coda: '',
     ctaLabel: '', ctaHref: '#', ctaVariant: 'ghost',
     ctaStyle: CTA_STYLE_DEFAULT, headingLevel: 'h2',
     items: [
