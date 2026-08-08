@@ -7,6 +7,9 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 export function CaseStudy({ id, puck, index, eyebrow, headline, highlight, body, items = [] }) {
   const ref = useReveal([items.length]);
   const editing = puck && puck.isEditing;
+  // Ships EMPTY (see defaultProps) so a section headed "Selected Engagements" can never stand over
+  // nothing, and can never stand over engagements nobody had. The editor still sees the block.
+  if (!items.length && !editing) return null;
   return (
     <section ref={ref} className="b-cases">
       <div className="wrap">
@@ -87,11 +90,12 @@ export const puck = {
     index: '02', eyebrow: 'Selected Engagements',
     headline: 'The drain we found.', highlight: 'The foundation we left.',
     body: 'Names withheld, outcomes intact. Three businesses, three quiet leaks of time, closed.',
-    items: [
-      C('National real-estate group', 'Listings that took days now take minutes.', 'Agents re-keyed every listing across four disconnected systems, hours lost per property, errors compounding.', 'A single source of truth with automated syndication and an internal portal their teams actually wanted to use.', '9 hrs', 'saved per agent each week'),
-      C('Regional healthcare provider', 'Less time on the form, more on the patient.', 'Clinical admin swallowed a third of every shift: paper handoffs, duplicate entry, manual scheduling.', 'A compliant intake-to-record workflow with automated triage routing and a staff dashboard.', '31%', 'drop in admin time per clinician'),
-      C('Multi-site logistics operator', 'One screen replaced a wall of spreadsheets.', 'Dispatch ran on spreadsheets and phone calls: no live view, costly idle trucks, daily firefighting.', 'A real-time operations layer with predictive routing and exception alerts on their existing fleet.', '3.4×', 'return inside the first year'),
-    ],
+    // Deliberately EMPTY, following LogoWall's logos, StatStrip's clients and Quote's testimonial.
+    // This shipped THREE complete case studies as its default: a "National real-estate group" saving
+    // "9 hrs per agent each week", a "Regional healthcare provider" and a "Multi-site logistics
+    // operator", each with a named problem and a claimed outcome. Anyone adding the block published
+    // three client stories, with figures, without typing anything. Real engagements go in by hand.
+    items: [],
   },
   render: (props) => <CaseStudy {...props} />,
 };

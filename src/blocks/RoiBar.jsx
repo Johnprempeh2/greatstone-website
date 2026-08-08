@@ -8,6 +8,9 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 export function RoiBar({ id, puck, index, eyebrow, headline, highlight, body, paybackPct = 29, markerLabel = 'Payback', s1, s2, s3, paybackNum = '', paybackCap, legendCost, legendReturn }) {
   const ref = useReveal();
   const editing = puck && puck.isEditing;
+  // The payback figure is a claim about how the business performs, so the block ships without one and
+  // renders nothing publicly until someone sets a real number. Otherwise the bar itself asserts a
+  // payback period on its own, with no editor having chosen it.
   const roiRef = useRef(null);
   useEffect(() => {
     const el = roiRef.current; if (!el) return;
@@ -15,6 +18,8 @@ export function RoiBar({ id, puck, index, eyebrow, headline, highlight, body, pa
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  // After the hooks, never before them, so the early return cannot change the hook call order.
+  if (!paybackNum && !editing) return null;
   return (
     <section ref={ref} className="b-roi">
       <div className="wrap">
@@ -93,9 +98,13 @@ export const puck = {
   defaultProps: {
     index: '03', eyebrow: 'Return on Investment',
     headline: 'Paid back before', highlight: 'the quarter’s out.',
-    body: 'On a typical engagement, the investment is recovered in the first few months. Everything after that line is time and money handed back, every week.',
+    // The body and the two payback fields ship EMPTY: "recovered in the first few months" and
+    // "3.5 months to break even, on average" are assertions about real engagement performance, and
+    // they were publishable the moment anyone added the block. paybackPct stays only as the bar's
+    // geometry; the render guard keeps the whole block invisible until a real figure is entered.
+    body: '',
     paybackPct: 29, markerLabel: 'Payback', s1: 'Day one', s2: 'Month 6', s3: 'Year one',
-    paybackNum: '3.5 months', paybackCap: 'to break even, on average',
+    paybackNum: '', paybackCap: '',
     legendCost: 'Recovering the investment', legendReturn: 'Pure return',
   },
   render: (props) => <RoiBar {...props} />,
