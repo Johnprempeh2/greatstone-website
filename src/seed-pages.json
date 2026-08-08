@@ -88,7 +88,27 @@
             "spaceTop": "default",
             "spaceBottom": "default"
           },
-          "headAlign": "center"
+          "headAlign": "center",
+          "bodyClamp": "three"
+        }
+      },
+      {
+        "type": "ServiceCatalog",
+        "props": {
+          "kicker": "Every service",
+          "heading": "Or browse the full catalogue",
+          "highlight": "",
+          "intro": "The three priorities above are where most conversations start. If you already know what you are looking for, every service Greatstone offers is listed here, searchable and grouped.",
+          "searchPlaceholder": "Search services…",
+          "inquiryEmail": "",
+          "bookLabel": "Begin the Conversation",
+          "bookHref": "#book",
+          "_section": {
+            "surface": "none",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          }
         }
       },
       {
@@ -579,7 +599,8 @@
               "icon": "briefing"
             }
           ],
-          "headAlign": "center"
+          "headAlign": "center",
+          "bodyClamp": "three"
         }
       },
       {
@@ -794,7 +815,8 @@
               "icon": "briefing"
             }
           ],
-          "headAlign": "center"
+          "headAlign": "center",
+          "bodyClamp": "three"
         }
       },
       {

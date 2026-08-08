@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260821;
+const SEED_VERSION = 20260822;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -393,7 +393,7 @@ export function seedState() {
         blk('Panels', {
           eyebrow: '', heading: 'Building a Stronger Organisation',
           intro: 'Every organisation has the potential to become stronger. The organisations that realise that potential are those that focus their leadership, capability and investment where they create the greatest long-term value. For some, that means transforming with confidence. For others, it means strengthening organisational capability or applying technology where it delivers the greatest strategic advantage. Wherever your organisation is on its journey, Greatstone helps you move forward with greater clarity, confidence and purpose.',
-          panelsLabel: '', columns: 'three', panelStyle: 'card', coda: '',
+          panelsLabel: '', columns: 'three', panelStyle: 'card', bodyClamp: 'three', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
             { label: '', icon: 'transform', title: 'Transform with Confidence',
@@ -416,7 +416,7 @@ export function seedState() {
           eyebrow: '', heading: 'Building Confidence Before Change',
           intro: 'Every organisation is different. Every leadership team faces different opportunities, challenges and ambitions. For that reason, Greatstone believes that meaningful transformation should never begin with assumptions or predetermined solutions. It should begin by building the understanding and confidence required to make the right decisions for the organisation. That philosophy guides every engagement we undertake and every recommendation we make.',
           headAlign: 'center', panelsLabel: 'The Greatstone Principles',
-          columns: 'four', panelStyle: 'numbered', coda: '',
+          columns: 'four', panelStyle: 'numbered', bodyClamp: 'three', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
             { label: '', icon: 'compass', title: 'Understanding Before Action',
@@ -439,7 +439,7 @@ export function seedState() {
         blk('Panels', {
           eyebrow: '', heading: 'Executive Intelligence',
           intro: 'The quality of an organisation’s decisions will never exceed the quality of its thinking. Executive Intelligence is where Greatstone shares the thinking that shapes its perspective on organisations, leadership, technology and transformation, helping executive leaders think more clearly about the decisions that matter most. Because stronger organisations begin with stronger thinking.',
-          panelsLabel: '', columns: 'four', panelStyle: 'ruled', coda: '',
+          panelsLabel: '', columns: 'four', panelStyle: 'ruled', bodyClamp: 'three', coda: '',
           ctaLabel: 'Explore Executive Intelligence', ctaHref: { kind: 'page', page: 'insights' },
           ctaVariant: 'ghost', headingLevel: 'h2',
           items: [
@@ -546,7 +546,7 @@ export function seedState() {
         blk('Panels', {
           eyebrow: '', heading: 'However you would prefer to begin',
           intro: 'Different organisations open a conversation in different ways. Choose whichever suits you. Every route reaches the same team, and none of them commits you to anything.',
-          panelsLabel: '', columns: 'four', panelStyle: 'ruled', coda: '',
+          panelsLabel: '', columns: 'four', panelStyle: 'ruled', bodyClamp: 'three', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
             { label: '', icon: 'horizon', title: 'Schedule a Conversation',

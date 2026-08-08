@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow, PanelIcon, ICON_NAMES } from './icons.jsx';
 import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
@@ -32,10 +33,16 @@ const COLS = { two: 2, three: 3, four: 4 };
 
 export function Panels({
   id, puck, eyebrow, heading, intro, panelsLabel, coda,
-  columns = 'three', panelStyle = 'ruled', headAlign = 'left', items = [],
+  columns = 'three', panelStyle = 'ruled', headAlign = 'left', bodyClamp = 'none', items = [],
   ctaLabel, ctaHref = '#', ctaVariant = 'ghost', ctaStyle, headingLevel,
 }) {
   const editing = puck && puck.isEditing;
+  // Progressive disclosure. The approved copy runs 50 to 70 words a panel, and three such sections on
+  // one page is most of why the site reads as text. Not a word is cut: the panel shows the opening lines
+  // and the rest is one tap away. Off in the editor so an author always sees what they are editing.
+  const [open, setOpen] = useState(() => new Set());
+  const clamped = bodyClamp !== 'none' && !editing;
+  const toggle = (i) => setOpen((prev) => { const n = new Set(prev); if (n.has(i)) n.delete(i); else n.add(i); return n; });
   // A gated panel is one whose whole point is its destination (a contact route, a section that does not
   // exist yet). Hiding only its button would leave a heading and a paragraph with nothing to act on, which
   // reads worse than an absent panel. So the panel itself waits for a resolvable link. The editor still
@@ -85,7 +92,13 @@ export function Panels({
               <span className="b-panel-rule" aria-hidden="true" />
               {it.label ? <span className="b-panel-label">{it.label}</span> : null}
               <EditableText editing={editing} id={id} arrayField="items" index={idx} field="title" value={it.title} as={PanelTag} className="b-panel-h" singleLine placeholder="Panel heading…" />
-              <EditableText editing={editing} id={id} arrayField="items" index={idx} field="text" value={it.text} as="p" className="b-panel-body" placeholder="Panel body…" />
+              <EditableText editing={editing} id={id} arrayField="items" index={idx} field="text" value={it.text}
+                as="p" className={'b-panel-body' + (clamped && !open.has(idx) ? ' is-clamped clamp-' + bodyClamp : '')} placeholder="Panel body…" />
+              {clamped ? (
+                <button type="button" className="b-panel-more" aria-expanded={open.has(idx)} onClick={() => toggle(idx)}>
+                  {open.has(idx) ? 'Less' : 'More'}
+                </button>
+              ) : null}
               {/* Renders only when the label AND a resolvable link both exist. That lets the seed carry
                   approved button wording verbatim, visible and editable in the studio, while a button
                   whose destination does not exist yet never reaches a visitor as a dead link. */}
@@ -166,6 +179,16 @@ export const css = `
 .b-panel-label{font-size:.7rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gs-faint);margin-bottom:10px}
 .b-panel-h{font-size:clamp(1.18rem,1.9vw,1.45rem);font-weight:800;letter-spacing:-.015em;line-height:1.25}
 .b-panel-body{margin-top:12px;color:var(--gs-muted);font-size:1rem;line-height:1.7}
+/* Clamp + reveal. -webkit-line-clamp is the only cross-browser way to truncate at a line boundary and
+   it needs the -webkit box display; the standard line-clamp is set alongside for browsers that take it. */
+.b-panel-body.is-clamped{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.b-panel-body.clamp-three{-webkit-line-clamp:3;line-clamp:3}
+.b-panel-body.clamp-four{-webkit-line-clamp:4;line-clamp:4}
+.b-panel-more{margin-top:10px;align-self:flex-start;background:none;border:0;padding:4px 0;cursor:pointer;
+  font:inherit;font-size:.82rem;font-weight:700;letter-spacing:.02em;color:var(--gs-accent);
+  border-bottom:1px solid transparent;transition:border-color .25s var(--gs-ease)}
+.b-panel-more:hover,.b-panel-more:focus-visible{border-color:var(--gs-accent)}
+@media(prefers-reduced-motion:reduce){.b-panel-more{transition:none}}
 .b-panel-body strong{color:var(--gs-text);font-weight:700}
 .b-panel-cta{margin-top:auto;align-self:flex-start;transform:translateY(22px)}
 .b-panels-coda{margin-top:clamp(36px,5vw,64px);color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.2rem);max-width:62ch;line-height:1.7}
@@ -183,6 +206,7 @@ export const puck = {
     intro: { type: 'custom', label: 'Introductory narrative', render: (props) => <RichTextField {...props} /> },
     panelsLabel: { type: 'text', label: 'Label above the panels (optional)' },
     columns: { type: 'radio', label: 'Panels per row', options: [{ label: 'Two', value: 'two' }, { label: 'Three', value: 'three' }, { label: 'Four', value: 'four' }] },
+    bodyClamp: { type: 'radio', label: 'Panel body length', options: [{ label: 'Full', value: 'none' }, { label: 'Three lines + More', value: 'three' }, { label: 'Four lines + More', value: 'four' }] },
     headAlign: { type: 'radio', label: 'Section heading', options: [{ label: 'Left', value: 'left' }, { label: 'Centred', value: 'center' }] },
     panelStyle: { type: 'radio', label: 'Panel motif', options: [{ label: 'Plain', value: 'plain' }, { label: 'Lime rule', value: 'ruled' }, { label: 'Numbered', value: 'numbered' }, { label: 'Card', value: 'card' }] },
     coda: { type: 'custom', label: 'Closing narrative (optional)', render: (props) => <RichTextField {...props} /> },
@@ -212,7 +236,7 @@ export const puck = {
   },
   defaultProps: {
     eyebrow: '', heading: 'Section heading', intro: 'The introductory narrative.',
-    panelsLabel: '', columns: 'three', panelStyle: 'ruled', headAlign: 'left', coda: '',
+    panelsLabel: '', columns: 'three', panelStyle: 'ruled', headAlign: 'left', bodyClamp: 'none', coda: '',
     ctaLabel: '', ctaHref: '#', ctaVariant: 'ghost',
     ctaStyle: CTA_STYLE_DEFAULT, headingLevel: 'h2',
     items: [
