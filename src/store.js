@@ -26,7 +26,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260814;
+const SEED_VERSION = 20260816;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -430,7 +430,9 @@ export function seedState() {
               ctaLabel: '', ctaHref: '#' },
           ],
         }),
-        // Chapter 6, Executive Intelligence. Only AI Market Intelligence has a live destination today.
+        // Chapter 6, Executive Intelligence. AI Market Intelligence goes straight to the live briefing; the other
+        // three centres now point at the Executive Intelligence page, which presents all four as his four equal
+        // panels. That is their real home, so the buttons are honest rather than dead.
         blk('Panels', {
           eyebrow: '', heading: 'Executive Intelligence',
           intro: 'The quality of an organisation’s decisions will never exceed the quality of its thinking. Executive Intelligence is where Greatstone shares the thinking that shapes its perspective on organisations, leadership, technology and transformation, helping executive leaders think more clearly about the decisions that matter most. Because stronger organisations begin with stronger thinking.',
@@ -441,16 +443,16 @@ export function seedState() {
             { label: '', title: 'Understand AI Before You Adopt It',
               // EM DASH 2 of 2: "matters—and where it does not" becomes "matters, and where it does not".
               text: 'Artificial Intelligence presents extraordinary opportunities for organisations prepared to apply it thoughtfully. Its greatest value is realised when it strengthens organisational capability, supports strategic priorities and delivers measurable organisational outcomes. AI Market Intelligence helps executive leaders understand where Artificial Intelligence genuinely matters, and where it does not.',
-              ctaLabel: 'Explore AI Market Intelligence', ctaHref: '#intel' },
+              ctaLabel: 'Explore AI Market Intelligence', ctaHref: { kind: 'page', page: 'ai-market-intelligence' } },
             { label: '', title: 'Think Beyond Today’s Challenges',
               text: 'The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.',
-              ctaLabel: 'Explore Organisational Thinking', ctaHref: '#' },
+              ctaLabel: 'Explore Organisational Thinking', ctaHref: { kind: 'page', page: 'insights' } },
             { label: '', title: 'Invest in Technology That Matters',
               text: 'Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.',
-              ctaLabel: 'Explore Technology Intelligence', ctaHref: '#' },
+              ctaLabel: 'Explore Technology Intelligence', ctaHref: { kind: 'page', page: 'insights' } },
             { label: '', title: 'Executive Briefings',
               text: 'Executive leaders need insight they can apply rather than information they already know. Executive Briefings distil complex developments into concise executive perspectives, helping leadership understand what has changed, why it matters and what should be considered next. Every briefing is designed to strengthen executive judgement through thoughtful analysis and practical insight.',
-              ctaLabel: 'Explore Executive Briefings', ctaHref: '#' },
+              ctaLabel: 'Explore Executive Briefings', ctaHref: { kind: 'page', page: 'insights' } },
           ],
         }),
         // Chapter 7, Trusted by Organisations That Expect More. Both logo walls ship EMPTY and render
@@ -580,7 +582,7 @@ export function seedState() {
   });
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
-  const order = ['home', 'how-we-help', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  const order = ['home', 'how-we-help', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'ai-market-intelligence', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical

@@ -466,7 +466,7 @@ export default function App() {
     if (!intelRoute) return;
     if (typeof location !== 'undefined' && location.hash) location.hash = '';
     setIntelRoute(false);
-    navigate(state.pages.insights ? 'insights' : state.order[0]);
+    navigate(state.pages['ai-market-intelligence'] ? 'ai-market-intelligence' : state.order[0]);
   }, [intelRoute]); // eslint-disable-line react-hooks/exhaustive-deps
   // Editing is URL-addressable. (A) A #admin/editor/<slug> URL — refresh, a shared link, Back/Forward
   // — restores the editor on the right page. (B) While editing under the admin area, mirror the page
@@ -629,9 +629,9 @@ export default function App() {
   // document outline (per-page heading tree + skipped-level/not-h1-first order check) — computed once, shared.
   // 'insights' renders the live AI Intelligence hub (LazyIntelHub), NOT its authored blocks (see the
   // `current === 'insights'` render special-case) — so it's marked dynamic, never given a fictional outline.
-  const outlineReport = useMemo(() => buildSiteOutline(state, headingsOf, { dynamic: ['insights'] }), [state.pages, state.order]);
+  const outlineReport = useMemo(() => buildSiteOutline(state, headingsOf, { dynamic: ['ai-market-intelligence'] }), [state.pages, state.order]);
   // conversion map: CTA label consistency + hidden buttons + dead-end pages (deps include redirects — canonicalDest collapses aliases).
-  const ctaReport = useMemo(() => buildCtaReport(state, { dynamic: ['insights'] }), [state.pages, state.order, state.redirects]);
+  const ctaReport = useMemo(() => buildCtaReport(state, { dynamic: ['ai-market-intelligence'] }), [state.pages, state.order, state.redirects]);
   // change-review queue (Releases): which pages have unpublished edits (drift) or were never published, + the diff.
   const reviewReport = useMemo(() => buildReviewQueue(state), [state.pages, state.order]);
   // the Managed Services catalogue (the ServiceCatalog block's services[]/categories[]) for the Services manager.
@@ -1557,7 +1557,7 @@ export default function App() {
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) and the Intelligence section render on their
           own solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'insights') && !saveData && <Stage background={bg} />}
+      {!(accountRoute || orgRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence') && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} navigation={state.navigation} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
@@ -1585,8 +1585,8 @@ export default function App() {
             : svcSlug
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyServiceDetail slug={svcSlug} onBack={exitService} applyHead={applyHead} /></Suspense>
             : intelArticle
-            ? <Suspense fallback={<IntelBoot />}><LazyIntelArticle id={intelArticle} onBack={() => navigate(state.pages.insights ? 'insights' : state.order[0])} applyHead={applyHead} /></Suspense>
-            : current === 'insights'
+            ? <Suspense fallback={<IntelBoot />}><LazyIntelArticle id={intelArticle} onBack={() => navigate(state.pages['ai-market-intelligence'] ? 'ai-market-intelligence' : state.order[0])} applyHead={applyHead} /></Suspense>
+            : current === 'ai-market-intelligence'
             ? <Suspense fallback={<IntelBoot />}><LazyIntelHub /></Suspense>
             : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}
         </EditorBoundary>

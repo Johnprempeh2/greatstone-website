@@ -677,35 +677,107 @@
   {
     "slug": "insights",
     "title": "Executive Intelligence",
-    "background": "tide",
+    "background": "none",
     "seo": {
-      "title": "AI Intelligence · Greatstone International",
-      "description": "Greatstone's standing AI intelligence briefing: every meaningful move in AI, with our own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
+      "title": "Executive Intelligence · Greatstone International",
+      "description": "The quality of an organisation’s decisions will never exceed the quality of its thinking. Greatstone’s perspective on organisations, leadership, technology and transformation.",
       "ogImage": ""
     },
     "blocks": [
       {
         "type": "Hero",
         "props": {
-          "kicker": "Insights",
-          "headline": "Field notes from",
-          "highlight": "the foundation.",
-          "body": "What we learn living inside the work: the hours businesses quietly lose, the maturity gaps no one names, and the moves that actually earn their keep. No theory for theory's sake.",
+          "variant": "statement",
+          "kicker": "",
+          "headline": "",
+          "highlight": "",
+          "headlineSuffix": "",
+          "prompt": "",
+          "lines": [
+            {
+              "text": "The quality of an organisation’s decisions will never exceed the quality of its thinking.",
+              "accent": false
+            }
+          ],
+          "body": "Executive Intelligence is where Greatstone shares the thinking that shapes its perspective on organisations, leadership, technology and transformation, helping executive leaders think more clearly about the decisions that matter most. Because stronger organisations begin with stronger thinking.",
           "align": "left",
-          "size": "compact",
-          "ctaLabel": "Open the AI Intelligence Hub",
-          "ctaHref": "#intel"
+          "size": "standard",
+          "pillEyebrow": false,
+          "gridBackdrop": false,
+          "scrollCue": false,
+          "cueStyle": "text",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "ctaLabel2": "",
+          "ctaHref2": "#",
+          "meta": []
+        }
+      },
+      {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "The Intelligence Centres",
+          "intro": "Executive Intelligence is not a marketing function, a news service or a content library. It exists to help executive leaders think more clearly about the challenges, opportunities and decisions that shape stronger organisations.",
+          "panelsLabel": "",
+          "columns": "four",
+          "panelStyle": "ruled",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "ctaVariant": "ghost",
+          "headingLevel": "h2",
+          "items": [
+            {
+              "label": "",
+              "title": "Understand AI Before You Adopt It",
+              "text": "Artificial Intelligence presents extraordinary opportunities for organisations prepared to apply it thoughtfully. Its greatest value is realised when it strengthens organisational capability, supports strategic priorities and delivers measurable organisational outcomes. AI Market Intelligence helps executive leaders understand where Artificial Intelligence genuinely matters, and where it does not.",
+              "ctaLabel": "Explore AI Market Intelligence",
+              "ctaHref": {
+                "kind": "page",
+                "page": "ai-market-intelligence"
+              },
+              "gated": false
+            },
+            {
+              "label": "",
+              "title": "Think Beyond Today’s Challenges",
+              "text": "The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.",
+              "ctaLabel": "Explore Organisational Thinking",
+              "ctaHref": "#",
+              "gated": false
+            },
+            {
+              "label": "",
+              "title": "Invest in Technology That Matters",
+              "text": "Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.",
+              "ctaLabel": "Explore Technology Intelligence",
+              "ctaHref": "#",
+              "gated": false
+            },
+            {
+              "label": "",
+              "title": "Executive Briefings",
+              "text": "Executive leaders need insight they can apply rather than information they already know. Executive Briefings distil complex developments into concise executive perspectives, helping leadership understand what has changed, why it matters and what should be considered next. Every briefing is designed to strengthen executive judgement through thoughtful analysis and practical insight.",
+              "ctaLabel": "Explore Executive Briefings",
+              "ctaHref": "#",
+              "gated": false
+            }
+          ]
         }
       },
       {
         "type": "IntelBand",
         "props": {
-          "kicker": "Live · rebuilt each working day",
-          "heading": "Every meaningful AI move,",
-          "highlight": "read for you.",
-          "body": "Our standing intelligence briefing: every meaningful move in AI, with Greatstone's own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
-          "ctaLabel": "Open the AI Intelligence Briefing",
-          "ctaHref": "#intel",
+          "kicker": "AI Market Intelligence",
+          "heading": "Where Artificial Intelligence genuinely matters,",
+          "highlight": "and where it does not.",
+          "body": "Greatstone’s standing briefing on developments in Artificial Intelligence, interpreted for their organisational implications rather than reported as news. Every entry answers what has changed, why it matters and what should be considered next.",
+          "ctaLabel": "Open AI Market Intelligence",
+          "ctaHref": {
+            "kind": "page",
+            "page": "ai-market-intelligence"
+          },
           "themes": [
             {
               "label": "Frontier models"
@@ -724,35 +796,72 @@
             }
           ],
           "stat1": {
-            "value": "26",
-            "label": "live developments"
+            "value": "",
+            "label": ""
           },
           "stat2": {
-            "value": "8",
-            "label": "models ranked"
+            "value": "",
+            "label": ""
           }
         }
       },
       {
-        "type": "FeaturedArticle",
+        "type": "Invite",
         "props": {
-          "label": "Featured · AI & Automation",
-          "glyph": "G",
-          "title": "The hours your business is quietly losing, and how to get them back.",
-          "excerpt": "A field-level look at where time actually leaks: the manual handoffs, the duplicated tools, the approvals that wait on a single inbox. We map a week of real work and show what a foundation gives back.",
-          "meta": "AI & Automation",
-          "readTime": "8 min read"
+          "eyebrow": "",
+          "headline": "Let’s Build a Stronger Organisation",
+          "highlight": "",
+          "body": "Executive Intelligence shows how Greatstone thinks. A conversation is where we begin to understand your organisation.",
+          "ctaLabel": "Begin the Conversation",
+          "ctaHref": {
+            "kind": "page",
+            "page": "contact"
+          },
+          "ctaLabel2": "",
+          "ctaHref2": "#",
+          "email": "",
+          "variant": "band",
+          "pill": false,
+          "contactOptions": [
+            {
+              "label": "Schedule a Conversation",
+              "href": {
+                "kind": "booking"
+              }
+            },
+            {
+              "label": "Send an Enquiry",
+              "href": {
+                "kind": "page",
+                "page": "contact"
+              }
+            },
+            {
+              "label": "Telephone",
+              "href": ""
+            },
+            {
+              "label": "Email",
+              "href": {
+                "kind": "email",
+                "email": ""
+              }
+            }
+          ]
         }
-      },
-      {
-        "type": "InsightsGrid",
-        "props": {}
-      },
-      {
-        "type": "NewsletterBand",
-        "props": {}
       }
     ]
+  },
+  {
+    "slug": "ai-market-intelligence",
+    "title": "AI Market Intelligence",
+    "background": "none",
+    "seo": {
+      "title": "AI Market Intelligence · Greatstone International",
+      "description": "Greatstone’s standing briefing on developments in Artificial Intelligence, interpreted for their organisational implications: what has changed, why it matters and what should be considered next.",
+      "ogImage": ""
+    },
+    "blocks": []
   },
   {
     "slug": "climb",
