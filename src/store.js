@@ -26,7 +26,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260808;
+const SEED_VERSION = 20260810;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -56,17 +56,29 @@ export const rid = (t) => t.toLowerCase() + '-' + (_seq++).toString(36) + Math.r
 // and the booking CTA stay header chrome added by Header.jsx, so they are not items in this tree.
 const navItem = (o) => ({ id: rid('nav'), visible: true, ...o });
 export function DEFAULT_NAVIGATION() {
+  // Ben's architecture v2.0: Home / How We Help / Executive Intelligence / Technology Solutions /
+  // About Greatstone / Begin the Conversation. Labels come from each page's title, so the retitles
+  // above (insights -> Executive Intelligence, about -> About Greatstone, contact -> Begin the
+  // Conversation) are what render here.
+  //
+  // TECHNOLOGY SOLUTIONS IS DELIBERATELY NOT WIRED YET. Its page does not exist, and the architecture
+  // is explicit that the experience "should not begin as a conventional software catalogue" with
+  // commerce sitting INSIDE it. Pointing the label at the existing product storefront would present
+  // the catalogue as the proposition, which is the one thing that section may not be. The storefront
+  // keeps its honest "Products" entry until the gateway page is written.
+  //
+  // Services, Proof, Process, The Climb and Industries drop out of the primary nav because Ben's list
+  // has six items and does not include them. They remain published and reachable by URL, and their
+  // content is destined for Professional Services and Organisational Transformation once those pages
+  // are specified. This is a visible IA change and is flagged for review, not a silent removal.
   return [
     navItem({ type: 'page', pageSlug: 'home' }),
-    navItem({ type: 'group', label: 'Who We Are', children: [
-      navItem({ type: 'page', pageSlug: 'about' }),
-      navItem({ type: 'page', pageSlug: 'method' }),
-      navItem({ type: 'page', pageSlug: 'climb' }),
-      navItem({ type: 'page', pageSlug: 'industries' }),
-    ] }),
-    navItem({ type: 'page', pageSlug: 'services' }),
-    navItem({ type: 'page', pageSlug: 'proof' }),
+    navItem({ type: 'page', pageSlug: 'how-we-help' }),
     navItem({ type: 'page', pageSlug: 'insights' }),
+    // NOTE: no 'products' entry. Header.jsx:263 already appends a hardcoded "Products" storefront link
+    // after the configured nav, so listing it here rendered it twice. Caught by screenshot, not by tests.
+    navItem({ type: 'page', pageSlug: 'about' }),
+    navItem({ type: 'page', pageSlug: 'contact' }),
   ];
 }
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
@@ -489,7 +501,7 @@ export function seedState() {
           ctaLabel: 'Book a Diagnostic', ctaHref: '#book', variant: 'framed' }),
       ], { title: 'Process · Eight Pillars · Greatstone International', description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.', ogImage: '' }),
 
-      contact: seedPage('Contact', 'tide', [
+      contact: seedPage('Begin the Conversation', 'tide', [
         blk('TimeCounter', {}),
         blk('BookDeepDive', {
           eyebrow: 'The first step', headline: 'Tell us where the week goes', highlight: '',
@@ -523,7 +535,7 @@ export function seedState() {
   });
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
-  const order = ['home', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  const order = ['home', 'how-we-help', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical

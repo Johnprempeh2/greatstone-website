@@ -1,5 +1,111 @@
 [
   {
+    "slug": "how-we-help",
+    "title": "How We Help",
+    "background": "none",
+    "seo": {
+      "title": "How We Help · Greatstone International",
+      "description": "Every organisation has the potential to become stronger. Greatstone helps organisations transform with confidence, strengthen organisational capability and invest in technology that matters.",
+      "ogImage": ""
+    },
+    "blocks": [
+      {
+        "type": "Hero",
+        "props": {
+          "variant": "statement",
+          "kicker": "",
+          "headline": "",
+          "highlight": "",
+          "headlineSuffix": "",
+          "prompt": "",
+          "lines": [
+            {
+              "text": "Every organisation has the potential to become stronger.",
+              "accent": false
+            },
+            {
+              "text": "The question is where that strength should begin.",
+              "accent": false
+            }
+          ],
+          "body": "The organisations that realise their potential are those that focus their leadership, capability and investment where they create the greatest long-term value.",
+          "align": "left",
+          "size": "standard",
+          "meta": [],
+          "pillEyebrow": false,
+          "gridBackdrop": false,
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "ctaLabel2": "",
+          "ctaHref2": "#",
+          "cueStyle": "text",
+          "scrollCue": false,
+          "cueLabel": "Continue"
+        }
+      },
+      {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "Begin with the organisational priority",
+          "intro": "Greatstone organises its work around three strategic priorities that executive leaders recognise within their own organisations. Start with the priority that matches where your organisation is, rather than with how Greatstone is arranged internally.",
+          "panelsLabel": "",
+          "columns": "three",
+          "panelStyle": "ruled",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "headingLevel": "h2",
+          "items": [
+            {
+              "label": "",
+              "title": "Transform with Confidence",
+              "text": "For organisations undertaking significant strategic, operational or organisational transformation.",
+              "ctaLabel": "Explore Organisational Transformation",
+              "ctaHref": "#"
+            },
+            {
+              "label": "",
+              "title": "Strengthen Organisational Capability",
+              "text": "For organisations requiring specialist expertise, advisory capability or implementation support to strengthen specific areas of the organisation.",
+              "ctaLabel": "Explore Professional Services",
+              "ctaHref": "#"
+            },
+            {
+              "label": "",
+              "title": "Invest in Technology That Matters",
+              "text": "For organisations seeking to apply the right technologies to the right organisational priorities in order to strengthen capability and create meaningful organisational value.",
+              "ctaLabel": "Explore Technology Solutions",
+              "ctaHref": "#"
+            }
+          ]
+        }
+      },
+      {
+        "type": "Invite",
+        "props": {
+          "eyebrow": "",
+          "highlight": "",
+          "headline": "Let’s Build a Stronger Organisation",
+          "body": "The journey towards a stronger organisation begins with a conversation. Let’s begin by understanding your organisation, your ambitions and the challenges that matter most.",
+          "ctaLabel": "Begin the Conversation",
+          "ctaHref": {
+            "kind": "page",
+            "page": "contact"
+          },
+          "ctaLabel2": "Explore Executive Intelligence",
+          "ctaHref2": {
+            "kind": "page",
+            "page": "insights"
+          },
+          "email": "",
+          "variant": "band",
+          "pill": false
+        }
+      }
+    ]
+  },
+  {
     "slug": "services",
     "title": "Services",
     "background": "tide",
@@ -97,7 +203,10 @@
           "footnote": "A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
         }
       },
-      { "type": "ComparisonMatrix", "props": {} },
+      {
+        "type": "ComparisonMatrix",
+        "props": {}
+      },
       {
         "type": "Faq",
         "props": {
@@ -105,12 +214,30 @@
           "heading": "The questions buyers ask first.",
           "intro": "Straight answers to what most teams want to know before they book. If yours is not here, the Diagnostic is the fastest way to get it.",
           "items": [
-            { "q": "What actually happens in a Diagnostic?", "a": "Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation." },
-            { "q": "Are you a software house or consultants?", "a": "Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years doing the work, not advising from the outside." },
-            { "q": "How long before we see results?", "a": "The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters." },
-            { "q": "What about our data and security?", "a": "We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment." },
-            { "q": "Do you replace our team?", "a": "No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do." },
-            { "q": "Is this just AI hype?", "a": "Digital transformation first, AI as the accelerator. We automate the boring before the brilliant, and only deploy AI where it pays back in hours returned, not headlines." }
+            {
+              "q": "What actually happens in a Diagnostic?",
+              "a": "Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation."
+            },
+            {
+              "q": "Are you a software house or consultants?",
+              "a": "Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years doing the work, not advising from the outside."
+            },
+            {
+              "q": "How long before we see results?",
+              "a": "The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters."
+            },
+            {
+              "q": "What about our data and security?",
+              "a": "We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment."
+            },
+            {
+              "q": "Do you replace our team?",
+              "a": "No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do."
+            },
+            {
+              "q": "Is this just AI hype?",
+              "a": "Digital transformation first, AI as the accelerator. We automate the boring before the brilliant, and only deploy AI where it pays back in hours returned, not headlines."
+            }
           ]
         }
       },
@@ -343,7 +470,7 @@
   },
   {
     "slug": "about",
-    "title": "About",
+    "title": "About Greatstone",
     "background": "stone",
     "seo": {
       "title": "About Greatstone · Twenty Years Embedded",
@@ -500,7 +627,7 @@
   },
   {
     "slug": "insights",
-    "title": "Intelligence",
+    "title": "Executive Intelligence",
     "background": "tide",
     "seo": {
       "title": "AI Intelligence · Greatstone International",
@@ -530,9 +657,31 @@
           "body": "Our standing intelligence briefing: every meaningful move in AI, with Greatstone's own read on what it means for a business modernising with it. Models ranked, themes tracked, sources shown.",
           "ctaLabel": "Open the AI Intelligence Briefing",
           "ctaHref": "#intel",
-          "themes": [{ "label": "Frontier models" }, { "label": "Agents" }, { "label": "AI security" }, { "label": "Regulation" }, { "label": "Enterprise" }],
-          "stat1": { "value": "26", "label": "live developments" },
-          "stat2": { "value": "8", "label": "models ranked" }
+          "themes": [
+            {
+              "label": "Frontier models"
+            },
+            {
+              "label": "Agents"
+            },
+            {
+              "label": "AI security"
+            },
+            {
+              "label": "Regulation"
+            },
+            {
+              "label": "Enterprise"
+            }
+          ],
+          "stat1": {
+            "value": "26",
+            "label": "live developments"
+          },
+          "stat2": {
+            "value": "8",
+            "label": "models ranked"
+          }
         }
       },
       {
