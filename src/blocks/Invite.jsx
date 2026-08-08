@@ -1,7 +1,7 @@
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
-import { resolveLink } from '../lib/link-resolver.mjs';
+import { resolveLink, hasLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
 import { ctaStyleClass } from '../lib/cta-style.mjs';
@@ -10,9 +10,14 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 
 // The close: a single, calm invitation. One primary action, one email, nothing else
 // competing. The first step costs nothing — say so and stop.
-export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false }) {
+export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel, ctaHref = '#', ctaStyle, ctaLabel2, ctaHref2 = '#', email, variant = 'aurora', pill = false, contactOptions = [] }) {
   const ref = useReveal();
   const editing = puck && puck.isEditing;
+  // "Visitors should never feel constrained to a single communication method", so the close can offer
+  // several routes alongside the primary action. Each one renders ONLY when its link actually resolves:
+  // the approved wording for a route that has no destination yet (no published number, no agreed address)
+  // stays stored and editable in the studio, and the visitor never meets a contact route that goes nowhere.
+  const routes = contactOptions.filter((o) => o && o.label && hasLink(o.href));
   const framed = variant === 'framed';
   const band = variant === 'band';
   const inner = (
@@ -25,6 +30,13 @@ export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel,
         {ctaLabel2 ? <a className="b-cta ghost" {...resolveLink(ctaHref2)}>{ctaLabel2}</a> : null}
         {email ? <a className="b-invite-email" href={safeMailto(email)}>{email}</a> : null}
       </div>
+      {routes.length ? (
+        <ul className="b-invite-routes" data-reveal>
+          {routes.map((o, i) => (
+            <li key={i}><a {...resolveLink(o.href)}>{o.label}</a></li>
+          ))}
+        </ul>
+      ) : null}
     </>
   );
   const cls = 'b-invite'
@@ -54,6 +66,16 @@ export const css = `
 .b-invite-email{font-size:.94rem;font-weight:700;color:var(--gs-text);border-bottom:1px solid var(--gs-border);padding-bottom:3px;
   transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease);overflow-wrap:anywhere}
 .b-invite-email:hover{color:var(--gs-accent);border-color:var(--gs-accent)}
+/* Contact routes. The primary action must keep "the greatest visual emphasis", so these sit quieter than
+   both buttons: muted small text, separated by whitespace rather than rules or chips, since anything
+   boxed would read as a second row of buttons competing with the one above it. */
+.b-invite-routes{margin:clamp(24px,3.5vw,34px) 0 0;padding:0;list-style:none;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px clamp(16px,2.6vw,28px)}
+.b-invite-routes a{display:inline-block;font-size:.9rem;font-weight:600;color:var(--gs-muted);
+  border-bottom:1px solid transparent;padding-bottom:2px;
+  transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease)}
+.b-invite-routes a:hover,.b-invite-routes a:focus-visible{color:var(--gs-accent);border-color:var(--gs-accent)}
+@media(prefers-reduced-motion:reduce){.b-invite-routes a{transition:none}}
 /* framed variant: a contained bordered card (the live method .cta-band), no full-bleed aurora */
 .b-invite-framed{padding:clamp(48px,9vw,110px) 0}
 .b-invite-card{position:relative;max-width:880px;margin-inline:auto;text-align:center;overflow:hidden;
@@ -90,12 +112,24 @@ export const puck = {
     pill: { type: 'radio', label: 'Pill eyebrow + top border (band only)', options: [
       { label: 'No', value: false }, { label: 'Yes', value: true },
     ]},
+    // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
+    contactOptions: {
+      type: 'array', label: 'Contact routes (each appears only once its link is set)',
+      arrayFields: {
+        label: { type: 'text', label: 'Route label' },
+        href: { type: 'custom', label: 'Route link', render: (props) => <LinkField {...props} /> },
+      },
+      defaultItemProps: { label: 'Telephone', href: '#' },
+      getItemSummary: (item) => item.label || 'Route',
+      max: 6,
+    },
   },
   defaultProps: {
     eyebrow: 'Start the Conversation',
     headline: 'The first step', highlight: 'costs nothing.',
     body: 'A Diagnostic: we learn your business and map what’s holding it back. If your organisation should work better than it does, talk to us.',
     ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaStyle: CTA_STYLE_DEFAULT, ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
+    contactOptions: [],
   },
   render: (props) => <Invite {...props} />,
 };

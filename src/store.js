@@ -26,7 +26,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260811;
+const SEED_VERSION = 20260812;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -472,6 +472,10 @@ export function seedState() {
           body: 'Every engagement begins with understanding. Every successful engagement builds trust. Every trusted relationship creates the opportunity to strengthen organisations over the long term. The organisations Greatstone supports differ in size, sector and geography. The philosophy upon which every relationship is built remains the same.',
         }),
         // Chapter 8. email stays empty until the canonical address is decided; Invite hides it when blank.
+        // The four contact routes are his, in his order. Two resolve today. Telephone has NO number
+        // anywhere in this codebase and Email has three competing candidate addresses, so both ship with
+        // the approved label and no destination: they stay editable in the studio and stay invisible to
+        // visitors until someone sets them. Filling either in is a field edit, not a code change.
         blk('Invite', {
           eyebrow: '', highlight: '',
           headline: 'Let’s Build a Stronger Organisation',
@@ -480,6 +484,12 @@ export function seedState() {
           ctaLabel2: 'Explore Executive Intelligence', ctaHref2: { kind: 'page', page: 'insights' },
           email: '',
           variant: 'band', pill: false,
+          contactOptions: [
+            { label: 'Schedule a Conversation', href: { kind: 'booking' } },
+            { label: 'Send an Enquiry', href: { kind: 'page', page: 'contact' } },
+            { label: 'Telephone', href: '' },
+            { label: 'Email', href: { kind: 'email', email: '' } },
+          ],
         }),
       ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Strong organisations are not created by chance. They are built by understanding what matters before deciding what must change. Greatstone helps organisations build the clarity, confidence and capability to become stronger.', ogImage: '' }),
 
