@@ -54,6 +54,11 @@ export function Panels({
         <div className="b-panels-grid">
           {items.map((it, i) => (
             <div className="b-panel" key={i} data-reveal style={{ transitionDelay: `${i * 70}ms` }}>
+              {/* The numeral is ordering, which the DOM order already gives a screen reader, so it is
+                  hidden rather than read out as "zero one" ahead of every principle heading. */}
+              {panelStyle === 'numbered'
+                ? <span className="b-panel-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                : null}
               <span className="b-panel-rule" aria-hidden="true" />
               {it.label ? <span className="b-panel-label">{it.label}</span> : null}
               <EditableText editing={editing} id={id} arrayField="items" index={i} field="title" value={it.title} as={PanelTag} className="b-panel-h" singleLine placeholder="Panel heading…" />
@@ -95,6 +100,15 @@ export const css = `
 .b-panel{min-width:0;display:flex;flex-direction:column}
 .b-panel-rule{display:block;width:28px;height:2px;background:var(--gs-accent);margin-bottom:22px}
 .b-panels.style-plain .b-panel-rule{display:none}
+/* Numbered progression. The brief asks each panel to carry a simple supporting motif, while the set must
+   still read as ONE philosophy rather than four independent statements. Four different icons would pull
+   the other way, so the motif is an ordinal: it differentiates each panel and sequences them at the same
+   time. The rule then goes full width and fades out, so at desktop the four hairlines share a baseline and
+   scan as a single line interrupted by the gaps. */
+.b-panel-num{display:block;font-size:.82rem;font-weight:800;letter-spacing:.18em;color:var(--gs-accent);
+  font-variant-numeric:tabular-nums;line-height:1;margin-bottom:12px}
+.b-panels.style-numbered .b-panel-rule{width:100%;height:1px;margin-bottom:20px;
+  background:linear-gradient(90deg,var(--gs-accent-mid,rgba(200,255,0,.4)),transparent)}
 .b-panel-label{font-size:.7rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gs-faint);margin-bottom:10px}
 .b-panel-h{font-size:clamp(1.18rem,1.9vw,1.45rem);font-weight:800;letter-spacing:-.015em;line-height:1.25}
 .b-panel-body{margin-top:12px;color:var(--gs-muted);font-size:1rem;line-height:1.7}
@@ -115,7 +129,7 @@ export const puck = {
     intro: { type: 'custom', label: 'Introductory narrative', render: (props) => <RichTextField {...props} /> },
     panelsLabel: { type: 'text', label: 'Label above the panels (optional)' },
     columns: { type: 'radio', label: 'Panels per row', options: [{ label: 'Two', value: 'two' }, { label: 'Three', value: 'three' }, { label: 'Four', value: 'four' }] },
-    panelStyle: { type: 'radio', label: 'Panel motif', options: [{ label: 'Plain', value: 'plain' }, { label: 'Lime rule', value: 'ruled' }] },
+    panelStyle: { type: 'radio', label: 'Panel motif', options: [{ label: 'Plain', value: 'plain' }, { label: 'Lime rule', value: 'ruled' }, { label: 'Numbered', value: 'numbered' }] },
     coda: { type: 'custom', label: 'Closing narrative (optional)', render: (props) => <RichTextField {...props} /> },
     ctaLabel: { type: 'text', label: 'Section button label (optional)' },
     ctaHref: { type: 'custom', label: 'Section button link', render: (props) => <LinkField {...props} /> },

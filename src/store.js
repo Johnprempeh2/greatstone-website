@@ -26,7 +26,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260810;
+const SEED_VERSION = 20260811;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -406,13 +406,14 @@ export function seedState() {
               ctaLabel: 'Explore Technology Solutions', ctaHref: '#' },
           ],
         }),
-        // Chapter 5, Building Confidence Before Change. The lime rule is the "supporting visual motif";
-        // no process diagram, no framework name, no engagement stage, per his prohibitions.
+        // Chapter 5, Building Confidence Before Change. The brief asks each principle to carry a simple
+        // supporting motif, while the four must still read as one philosophy; the numbered motif does both
+        // (see Panels.jsx). No process diagram, no framework name, no engagement stage, per his prohibitions.
         blk('Panels', {
           eyebrow: '', heading: 'Building Confidence Before Change',
           intro: 'Every organisation is different. Every leadership team faces different opportunities, challenges and ambitions. For that reason, Greatstone believes that meaningful transformation should never begin with assumptions or predetermined solutions. It should begin by building the understanding and confidence required to make the right decisions for the organisation. That philosophy guides every engagement we undertake and every recommendation we make.',
           panelsLabel: 'The Greatstone Principles',
-          columns: 'four', panelStyle: 'ruled', coda: '',
+          columns: 'four', panelStyle: 'numbered', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
             { label: '', title: 'Understanding Before Action',
