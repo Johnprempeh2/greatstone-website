@@ -41,6 +41,8 @@ const HEADINGS = {
   Timeline: (p) => [{ level: 2, text: join(p.headline, p.highlight) }, ...arr(p.items).map((it) => ({ level: 3, text: String(it.head || '') }))],
 
   // --- conditional H2 + per-item H3 ---
+  // section h2 (when set) + one h3 per panel, mirroring the PanelTag derivation in Panels.jsx
+  Panels:  (p) => [...(p.heading ? [{ level: 2, text: String(p.heading) }] : []), ...arr(p.items).map((it) => ({ level: 3, text: String(it.title || '') }))],
   FeatureGrid:  (p) => [...(p.heading ? [{ level: 2, text: String(p.heading) }] : []), ...arr(p.items).map((it) => ({ level: 3, text: String(it.title || '') }))],
   Faq:          (p) => [...(p.heading ? [{ level: 2, text: String(p.heading) }] : []), ...arr(p.items).map((it) => ({ level: 3, text: String(it.q || '') }))],
   Values:       (p) => [...(p.heading ? [{ level: 2, text: String(p.heading) }] : []), ...arr(p.items).map((it) => ({ level: 3, text: String(it.title || '') }))],

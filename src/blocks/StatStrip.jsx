@@ -182,7 +182,11 @@ export const puck = {
     index: '05', eyebrow: 'Proof, Not Promises',
     headline: 'Measured in', highlight: 'hours back.',
     body: 'Our leadership has delivered transformation for Deloitte, Lloyds, Bank of Scotland and the NHS. Today we’re embedded with clients across the UK and Africa.',
-    clients: 'Deloitte · Lloyds · Bank of Scotland · NHS',
+    // Deliberately empty. The body above is a claim about where our leadership has WORKED, which is career
+    // history and true. This field renders under a "Clients line" label, so seeding the same four names
+    // here would silently restate that history as a client list. An editor who drops a fresh StatStrip
+    // should have to type a client line on purpose, never inherit one that overstates the relationship.
+    clients: '',
     columns: 4, variant: 'aurora',
     stats: [
       STAT(21, '+', '', 0, 'Hours recovered weekly, one engagement'),
