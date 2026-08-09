@@ -55,6 +55,17 @@ export default function Stage({ background = 'stone', previewP = null }) {
       const sc = scrollContext();
       const inj = previewRef.current;
       const p = inj != null ? inj : (sc.max > 0 ? Math.min(Math.max(sc.top / sc.max, 0), 1) : 0);
+      // Optional lead-in. Scene 0 otherwise paints from the very first pixel of scroll, which is why a
+      // page whose opening must sit on nothing (the homepage Opening Statement, where Ben's brief says
+      // nothing may compete) had to run background 'none' and give up its 3D entirely. A `lead`
+      // transition fades scene 0 UP from zero, so a track can start on void and arrive later. Costs
+      // nothing while hidden: setActive below pauses a scene's WebGL loop at opacity <= 0.01.
+      let leadT = 1;
+      if (c.lead) {
+        const la = resolveTransitionAt(c.lead, sc);
+        const lh = Math.max(c.lead.fade || 0.2, 1e-4) / 2;
+        leadT = smoothstep(la - lh, la + lh, p);
+      }
       const ats = (c.transitions || []).map((tr) => resolveTransitionAt(tr, sc));
       let prev = 0;
       const t = ats.map((at, i) => {
@@ -65,9 +76,14 @@ export default function Stage({ background = 'stone', previewP = null }) {
       });
       layers.forEach((l, k) => {
         // ?? guards a malformed track (scenes without a matching transition) → never write opacity "NaN"
-        const incoming = k > 0 ? (t[k - 1] ?? 1) : 1;
+        const incoming = k > 0 ? (t[k - 1] ?? 1) : leadT;
         const outgoing = k < n - 1 ? 1 - (t[k] ?? 0) : 1;
-        const op = incoming * outgoing;
+        // CEIL. A scene is decoration behind reading matter, so a track can cap how strong it is ever
+        // allowed to get. Without this the stone reached full strength directly behind body copy and
+        // took it well under the 7:1 the brand's background contract asks for. Defaults to 1, so every
+        // existing page renders exactly as before; only a track that opts in is dimmed.
+        const ceil = typeof c.ceil === 'number' ? Math.min(Math.max(c.ceil, 0), 1) : 1;
+        const op = incoming * outgoing * ceil;
         l.host.style.opacity = String(op);
         l.host.style.zIndex = String(k);
         const bandStart = k > 0 ? ats[k - 1] : 0;

@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260823;
+const SEED_VERSION = 20260826;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -362,7 +362,26 @@ export function seedState() {
       // Background is 'none': chapter 2 requires that nothing visually competes with the opening
       // statement, and Stage makes scene zero fully opaque at scroll top, so a quieter stone is not
       // authorable. This retires the 3D mark from the homepage only; it still runs elsewhere.
-      home: seedPage('Home', 'none', [
+      // The 3D stone, brought back with a lead-in rather than the blanket 'none' it ran before.
+      // Ben's brief says nothing may compete with the Opening Statement, and scene zero used to paint
+      // from the first pixel of scroll, so the only way to honour that was to have no 3D on the page at
+      // all. `lead` fades the stone up instead: void behind the statement, stone arriving as the reader
+      // reaches "Why Greatstone". Pinned to that block, so editing copy above it moves the reveal with
+      // the content instead of stranding it at a stale scroll fraction.
+      home: seedPage('Home', {
+        v: 1,
+        scenes: [{ id: 'sc-home-stone', kind: 'stone' }],
+        transitions: [],
+        // Held well below full strength: the stone is atmosphere behind reading matter, not a subject.
+        // At full opacity its bright core sat directly behind the Panels intro paragraph.
+        ceil: 0.38,
+        // edge 'center' rather than 'top': a block anchor resolves to "when this point reaches mid-screen",
+        // and with a 0.12 fade the top edge began lifting the stone while the third sentence was still on
+        // screen. Centred, the fade starts exactly as the last statement line passes the middle of the
+        // screen and completes with "Why Greatstone" centred.
+        lead: { id: 'tr-home-lead', at: 0.15, fade: 0.12,
+          anchor: { type: 'block', blockId: 'gs-home-why', edge: 'center', fallbackAt: 0.15 } },
+      }, [
         // Chapter 2, The Opening Statement. Sentences 1 to 3 are the statement, sentence 4 is the
         // Supporting Narrative: his copywriting rule forbids the statement mentioning Greatstone, and
         // sentence 4 opens "At Greatstone". All four appear, in order, unaltered.
@@ -383,6 +402,7 @@ export function seedState() {
         // hero made the hero 787px tall on a 812px phone, so the visitor met the statement and nothing
         // else. To put it back, move these two lines into the Hero block's `lines` and delete this block.
         blk('Statement', {
+          id: 'gs-home-statement', // stable: the 3D lead-in is pinned to this block, not a scroll number
           align: 'left', ctaLabel: '', ctaHref: '#',
           lines: [
             { text: 'They are built by understanding what matters before deciding what must change.', accent: false },
@@ -391,6 +411,7 @@ export function seedState() {
         }),
         // Chapter 3, Why Greatstone.
         blk('Chapter', {
+          id: 'gs-home-why', // stable: the 3D stone finishes fading in as this block reaches mid-screen
           index: '', eyebrow: 'Why Greatstone', highlight: '',
           headline: 'Organisations face increasing complexity, opportunity and change.',
           body: 'The challenge is not change itself, but understanding where meaningful change should begin.',

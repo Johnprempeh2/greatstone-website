@@ -162,7 +162,10 @@ export const css = `
    rest on and makes a three or four panel row read as a set. Deliberately quiet, one hairline border
    and a barely-there wash, no shadow and no hover lift, so it adds structure without adding noise. */
 .b-panels.style-card .b-panel{border:1px solid var(--gs-border-soft,rgba(255,255,255,.09));border-radius:16px;
-  padding:clamp(22px,2.4vw,30px);background:rgba(255,255,255,.018)}
+  /* A card has to be a surface. At rgba(255,255,255,.018) it was a border with nothing behind it, so
+     the 3D stone read straight through the middle of the copy. This is dark enough to sit on and to
+     hold the card's own contrast independent of whatever scene is behind the page. */
+  padding:clamp(22px,2.4vw,30px);background:rgba(16,18,16,.68);backdrop-filter:blur(7px)}
 .b-panels.style-card .b-panel-rule{display:none}
 .b-panels.style-card .b-panel-icon{margin-bottom:14px}
 .b-panel-rule{display:block;width:28px;height:2px;background:var(--gs-accent);margin-bottom:22px}
