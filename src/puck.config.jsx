@@ -1,6 +1,7 @@
 import * as Hero from './blocks/Hero.jsx';
 import * as Prose from './blocks/Prose.jsx';
 import * as Chapter from './blocks/Chapter.jsx';
+import * as Statement from './blocks/Statement.jsx';
 import * as Panels from './blocks/Panels.jsx';
 import * as Pillars from './blocks/Pillars.jsx';
 import * as PillarExplorer from './blocks/PillarExplorer.jsx';
@@ -46,7 +47,7 @@ import { SECTION_FIELD, SECTION_DEFAULT } from './cms/style-field.jsx';
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Prose, Chapter, Panels, Columns, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, ServiceCatalog, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator, AiBaselineSurvey, AiCostCalculator, LogoWall, ComparisonMatrix };
+const MODULES = { Hero, Prose, Chapter, Statement, Panels, Columns, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, ServiceCatalog, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator, AiBaselineSurvey, AiCostCalculator, LogoWall, ComparisonMatrix };
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
@@ -76,7 +77,7 @@ export const config = {
   // group the block drawer so the section types read as a deliberate kit, not a junk drawer
   categories: {
     page: { title: 'Page', components: ['Hero', 'Invite', 'NewsletterBand'] },
-    story: { title: 'Story', components: ['Prose', 'Chapter', 'Columns', 'Pillars', 'PillarCards', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'ServiceCatalog', 'Terrace', 'Spectrum', 'Timeline', 'Ladder', 'MethodTieIn'] },
+    story: { title: 'Story', components: ['Prose', 'Chapter', 'Statement', 'Columns', 'Pillars', 'PillarCards', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'ServiceCatalog', 'Terrace', 'Spectrum', 'Timeline', 'Ladder', 'MethodTieIn'] },
     proof: { title: 'Proof', components: ['StatStrip', 'LogoWall', 'ComparisonMatrix', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid', 'Faq', 'TimeSavingsCalculator', 'AiBaselineSurvey', 'AiCostCalculator'] },
     editorial: { title: 'Editorial', components: ['IntelBand', 'FeaturedArticle', 'InsightsGrid', 'Figure'] },
     commerce: { title: 'Commerce', components: ['Storefront'] },

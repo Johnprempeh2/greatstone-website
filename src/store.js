@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260822;
+const SEED_VERSION = 20260823;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -370,14 +370,24 @@ export function seedState() {
           variant: 'statement', kicker: '', headline: '', highlight: '', headlineSuffix: '', prompt: '',
           lines: [
             { text: 'Strong organisations are not created by chance.', accent: false },
-            { text: 'They are built by understanding what matters before deciding what must change.', accent: false },
-            { text: 'Only then can organisations transform with confidence.', accent: false },
           ],
           body: 'At Greatstone, we help organisations build the clarity, confidence and capability required to become stronger.',
           align: 'left', size: 'full', meta: [], pillEyebrow: false, gridBackdrop: false,
           ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' },
           ctaLabel2: '', ctaHref2: '#',
           cueStyle: 'text', scrollCue: true, cueLabel: 'Continue',
+        }),
+        // Sentences 2 and 3 of the Opening Statement, at the same weight and scale as sentence 1 above.
+        // All three of Ben's sentences are still on the page, in order, unaltered: the fold now falls
+        // between the first and the second instead of after the third. Holding the whole triad in the
+        // hero made the hero 787px tall on a 812px phone, so the visitor met the statement and nothing
+        // else. To put it back, move these two lines into the Hero block's `lines` and delete this block.
+        blk('Statement', {
+          align: 'left', ctaLabel: '', ctaHref: '#',
+          lines: [
+            { text: 'They are built by understanding what matters before deciding what must change.', accent: false },
+            { text: 'Only then can organisations transform with confidence.', accent: false },
+          ],
         }),
         // Chapter 3, Why Greatstone.
         blk('Chapter', {

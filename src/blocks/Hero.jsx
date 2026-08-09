@@ -140,7 +140,10 @@ export const css = `
      measure so each approved sentence wraps less, a tighter gap between the three statements, and a
      height that lets the next section peek. The peek also serves the brief, which wants the visitor
      "encouraged to continue reading rather than searching for navigation". */
-  min-height:86vh;min-height:86svh;align-items:safe center;
+  /* 86vh was sized to hold the whole three-sentence statement. With sentences 2 and 3 moved to the
+     Statement band below, that height left ~270px of void under the button on a 900px screen. 66vh
+     still reads as a hero (the band below stays under the fold) without the hollow middle. */
+  min-height:66vh;min-height:66svh;align-items:safe center;
   /* The bottom pad is not whitespace, it is the scroll cue's reserved lane. The cue is pinned
      clamp(20px,4vh,38px) from the foot of the section and stands about 36px tall, so any floor
      under ~66px lets it sit on top of the button. At 1280x720 the old 48px floor did exactly that. */
