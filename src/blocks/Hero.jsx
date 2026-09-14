@@ -1,6 +1,6 @@
 import { useReveal } from './reveal.js';
 import { BRAND_TAGLINE } from '../lib/brand.mjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
@@ -14,7 +14,57 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb' }) {
+// The hero's own 3D mark, mounted into a CONTAINED box rather than the full-screen Stage, so it sits
+// beside the Opening Statement instead of behind the reading. Two things make this cheap:
+//   three.js is ~520KB and deliberately kept off the critical path (App.jsx lazy-loads Stage for
+//   exactly that reason), so the module is imported dynamically here too: the hero paints immediately
+//   and the mark arrives when its chunk lands.
+//   greatstone-logo.mjs already self-gates on its own IntersectionObserver, so the loop stops the
+//   moment the hero scrolls away. Nothing extra to wire.
+function HeroStone() {
+  const host = useRef(null);
+  useEffect(() => {
+    if (typeof matchMedia === 'undefined') return undefined;
+    // The mark is only rendered at two-column widths, and standing up a WebGL context for a canvas
+    // nobody can see is pure cost on exactly the devices least able to pay. But the breakpoint has to
+    // be WATCHED, not read once: read once, a visitor who loads at 900px and then maximises their
+    // window keeps an empty column until they reload. So mount and unmount follow the query.
+    const mq = matchMedia('(min-width:1024px)');
+    let handle = null, dead = false, loading = false;
+    const up = () => {
+      if (handle || loading || !host.current) return;
+      loading = true;
+      // three.js is ~520KB and deliberately kept off the critical path (App.jsx lazy-loads Stage for
+      // exactly that reason), so this is a dynamic import too: the hero paints at once and the mark
+      // arrives when its chunk lands.
+      import('../lib/greatstone-logo.mjs').then((m) => {
+        loading = false;
+        if (dead || handle || !host.current || !mq.matches) return;
+        // mounting constructs a WebGLRenderer, which THROWS where WebGL is unavailable (blocklisted
+        // GPU, hardened browser, some VMs). Guard it: the hero simply renders without the mark.
+        try {
+          handle = m.mountGreatstoneLogo(host.current, {
+            envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
+            bloom: 0.6, exposure: 1.3, idle: true, autoTurn: true,
+          });
+        } catch (e) { handle = null; }
+      }).catch(() => { loading = false; });
+    };
+    const down = () => { if (handle) { try { handle.destroy(); } catch (e) { /* already gone */ } handle = null; } };
+    const onChange = () => (mq.matches ? up() : down());
+    onChange();
+    // Safari before 14 has no addEventListener on MediaQueryList
+    if (mq.addEventListener) mq.addEventListener('change', onChange); else mq.addListener(onChange);
+    return () => {
+      dead = true;
+      if (mq.removeEventListener) mq.removeEventListener('change', onChange); else mq.removeListener(onChange);
+      down();
+    };
+  }, []);
+  return <div className="b-hero-stone" ref={host} aria-hidden="true" data-cursor="explore" />;
+}
+
+export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb', stone = 'none' }) {
   const ref = useReveal();
   // home-hero only (opt-in): hide the scroll indicator once the visitor scrolls past the fold so it
   // doesn't linger over the content below. Passive listener, removed on unmount; inert unless scrollCue.
@@ -33,38 +83,49 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   // sanitised anchor props. '#book'/'#go/<slug>' are handled by App's global click handler.
   const cta1 = resolveLink(ctaHref);
   const cta2 = resolveLink(ctaHref2);
+  // With a mark beside it the copy becomes one column of a grid instead of a single centred block.
+  // The wrapper is chosen with plain JSX below rather than a component defined in here: a component
+  // declared during render gets a fresh identity every render, and this hero re-renders on scroll
+  // (cueHidden), which would tear down and rebuild HeroStone's WebGL context on the first scroll.
+  const stoneOn = stone === 'right';
+  // The hero body, lifted into a variable so the wrapper can change without duplicating it.
+  const inner = (
+    <>
+      <EditableText editing={puck && puck.isEditing} id={id} field="kicker" value={kicker} as="span" className={pillEyebrow ? 'pill' : 'kicker'} singleLine placeholder="Eyebrow…" data-reveal />
+      <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
+        {stacked
+          ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
+          : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
+      </h1>
+      <EditableText editing={puck && puck.isEditing} id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" data-reveal />
+      {Array.isArray(meta) && meta.length ? (
+        <div className="b-hero-meta" data-reveal>
+          {meta.map((m, i) => (
+            <div className="b-hero-stat" key={i}>
+              <span className="b-hero-bignum">{m.bignum}</span>
+              <span className="b-hero-statlabel">{m.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {(ctaLabel || ctaLabel2) ? (
+        <div className="b-cta-row" data-reveal>
+          {ctaLabel ? <a className="b-cta" href={cta1.href} target={cta1.target} rel={cta1.rel}>{ctaLabel}<Arrow /></a> : null}
+          {ctaLabel2 ? <a className="b-cta ghost" href={cta2.href} target={cta2.target} rel={cta2.rel}>{ctaLabel2}</a> : null}
+        </div>
+      ) : null}
+      {prompt ? (
+        cueStyle === 'mouse'
+          ? <span className="b-hero-mousecue" data-reveal><span className="b-hero-capsule" aria-hidden="true"></span>{prompt}</span>
+          : <span className="b-hero-prompt" data-reveal>{prompt}</span>
+      ) : null}
+    </>
+  );
   return (
-    <section ref={ref} className={`b-hero size-${size} align-${align}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}`}>
-      <div className="wrap b-hero-inner">
-        <EditableText editing={puck && puck.isEditing} id={id} field="kicker" value={kicker} as="span" className={pillEyebrow ? 'pill' : 'kicker'} singleLine placeholder="Eyebrow…" data-reveal />
-        <h1 data-reveal className={stacked ? 'b-hero-stack' : undefined}>
-          {stacked
-            ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
-            : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
-        </h1>
-        <EditableText editing={puck && puck.isEditing} id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" data-reveal />
-        {Array.isArray(meta) && meta.length ? (
-          <div className="b-hero-meta" data-reveal>
-            {meta.map((m, i) => (
-              <div className="b-hero-stat" key={i}>
-                <span className="b-hero-bignum">{m.bignum}</span>
-                <span className="b-hero-statlabel">{m.label}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        {(ctaLabel || ctaLabel2) ? (
-          <div className="b-cta-row" data-reveal>
-            {ctaLabel ? <a className="b-cta" href={cta1.href} target={cta1.target} rel={cta1.rel}>{ctaLabel}<Arrow /></a> : null}
-            {ctaLabel2 ? <a className="b-cta ghost" href={cta2.href} target={cta2.target} rel={cta2.rel}>{ctaLabel2}</a> : null}
-          </div>
-        ) : null}
-        {prompt ? (
-          cueStyle === 'mouse'
-            ? <span className="b-hero-mousecue" data-reveal><span className="b-hero-capsule" aria-hidden="true"></span>{prompt}</span>
-            : <span className="b-hero-prompt" data-reveal>{prompt}</span>
-        ) : null}
-      </div>
+    <section ref={ref} className={`b-hero size-${size} align-${align}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}${stoneOn ? ' has-stone' : ''}`}>
+      {stoneOn
+        ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><HeroStone /></div>
+        : <div className="wrap b-hero-inner">{inner}</div>}
       {scrollCue ? (
         <span className={'b-hero-scrollcue' + (cueHidden ? ' is-gone' : '')} aria-hidden="true">
           <span className="b-hero-scrollcue-label">{cueLabel}</span>
@@ -194,6 +255,33 @@ export const css = `
   transform:none;align-items:flex-start}
 .b-hero.v-statement.align-left .b-hero-scrollcue.is-gone{transform:translateY(8px)}
 
+/* TWO-COLUMN HERO (opt-in via the Mark field).
+   The single-column statement left the whole right half of a desktop screen empty, which is what made
+   the opening read as thin rather than calm: a short approved sentence cannot fill 1240px on its own.
+   The mark occupies that half, so the composition is balanced by an object instead of by more words.
+   1.15fr/1fr rather than an even split keeps the statement the larger mass, which is the point: Ben's
+   brief says nothing may visually compete with it, so the mark stays subordinate by size, by position
+   (it follows the copy in reading order) and by being aria-hidden. */
+.b-hero.v-statement.has-stone .b-hero-grid{max-width:var(--stmt-w);margin-inline:auto;
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+  gap:clamp(28px,4vw,72px);align-items:center}
+.b-hero.v-statement.has-stone .b-hero-inner{max-width:none}
+/* Room for the mark to be an object rather than a thumbnail. Capped in vh as well as px so it cannot
+   outgrow a short laptop screen and push the primary CTA under the fold. */
+.b-hero-stone{position:relative;width:100%;aspect-ratio:1/1.06;max-height:min(58vh,560px);
+  justify-self:center;pointer-events:none}
+.b-hero.v-statement.has-stone{min-height:78vh;min-height:78svh}
+/* Below the breakpoint there is no second column: the copy returns to a single block and the mark is
+   not rendered at all (HeroStone refuses to mount under 1024px, so no WebGL context is created). */
+@media(max-width:1023px){
+  .b-hero.v-statement.has-stone .b-hero-grid{display:block;max-width:var(--stmt-w)}
+  .b-hero.v-statement.has-stone{min-height:66vh;min-height:66svh}
+  .b-hero-stone{display:none}
+}
+@media(max-width:640px){
+  .b-hero.v-statement.has-stone{min-height:auto}
+}
+
 `;
 
 export const puck = {
@@ -222,6 +310,9 @@ export const puck = {
     ]},
     gridBackdrop: { type: 'radio', label: 'Grid backdrop', options: [
       { label: 'None', value: false }, { label: 'Engineered grid', value: true },
+    ]},
+    stone: { type: 'radio', label: 'Mark (3D stone beside the copy)', options: [
+      { label: 'None', value: 'none' }, { label: 'Right', value: 'right' },
     ]},
     size: { type: 'radio', label: 'Height', options: [
       { label: 'Full screen', value: 'full' }, { label: 'Standard', value: 'standard' }, { label: 'Compact', value: 'compact' },
@@ -255,7 +346,7 @@ export const puck = {
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
     headlineSuffix: '',
-    align: 'left', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, variant: 'default', cueLabel: 'Scroll down to start the climb',
+    align: 'left', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, stone: 'none', variant: 'default', cueLabel: 'Scroll down to start the climb',
   },
   render: (props) => <Hero {...props} />,
 };

@@ -27,7 +27,7 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260826;
+const SEED_VERSION = 20260827;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -392,8 +392,15 @@ export function seedState() {
           ],
           body: 'At Greatstone, we help organisations build the clarity, confidence and capability required to become stronger.',
           align: 'left', size: 'full', meta: [], pillEyebrow: false, gridBackdrop: false,
+          // The mark, beside the statement rather than behind it. The hero was a short approved
+          // sentence alone in a 1240px column, so half the screen was empty and the opening read as
+          // thin. See the note on the background track below: the full-screen stone still stays out
+          // of the hero entirely, it arrives later. These are two different jobs.
+          stone: 'right',
           ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' },
-          ctaLabel2: '', ctaHref2: '#',
+          // A second route for the visitor who is not ready to talk yet. Ben's architecture makes
+          // How We Help the gateway into the commercial capabilities, so that is where it points.
+          ctaLabel2: 'How We Help', ctaHref2: { kind: 'page', page: 'how-we-help' },
           cueStyle: 'text', scrollCue: true, cueLabel: 'Continue',
         }),
         // Sentences 2 and 3 of the Opening Statement, at the same weight and scale as sentence 1 above.
