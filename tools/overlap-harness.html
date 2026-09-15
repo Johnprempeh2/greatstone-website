@@ -1,0 +1,511 @@
+<!doctype html>
+<!-- The overlap sweep: verify step for the whole portal.
+     Run: open /tools/overlap-harness.html on the dev server, then in the console:
+       for (const n of window.__screens) { await window.__mount(n); console.log(n, window.__probe()); }
+     TRUST IT ONLY PLANTED: re-add the negative margin to .dd-inline.is-empty via an injected
+     style and confirm SessionPage goes red before believing a green sweep.
+     Fixture data only. This file is never a build input; nothing here reaches dist. -->
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>sweep</title>
+<link rel="stylesheet" href="/src/site.css"><link rel="stylesheet" href="/src/studio.css">
+<link rel="stylesheet" href="/src/store/store.css"><link rel="stylesheet" href="/src/store/admin.css">
+<link rel="stylesheet" href="/src/store/deepdive.css">
+<style>body{margin:0;background:var(--gs-bg);padding:24px}</style>
+</head><body><div class="dd-wrap" id="root"></div>
+<script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import * as S from '/src/data/deepdive-schema.mjs';
+import DeepDivePortal, { __panels } from '/src/store/DeepDivePortal.jsx';
+import ProcessPage from '/src/store/ProcessPage.jsx';
+import QuestionPage from '/src/store/QuestionPage.jsx';
+import EvidencePage from '/src/store/EvidencePage.jsx';
+import SessionPage from '/src/store/SessionPage.jsx';
+import SourcePage from '/src/store/SourcePage.jsx';
+import PersonPage from '/src/store/PersonPage.jsx';
+import BuildPage from '/src/store/BuildPage.jsx';
+import CompetitorPage from '/src/store/CompetitorPage.jsx';
+import KpiPage from '/src/store/KpiPage.jsx';
+import HypothesisPage from '/src/store/HypothesisPage.jsx';
+import SessionRun from '/src/store/SessionRun.jsx';
+import RecordDrawer from '/src/store/RecordDrawer.jsx';
+import OfferingBoard from '/src/store/OfferingBoard.jsx';
+import InnovationBoard from '/src/store/InnovationBoard.jsx';
+import { probeOverlaps } from '/tools/overlap-probe.mjs';
+import { probeNativeFields, probeFragmentedBoxes, probeOffscreen, probeTextOverflow, probeTextContrast, probeFocus, probeNames } from '/tools/native-field-probe.mjs';
+
+// the render test's own fixture recipe, with EMPTY inline fields so every dashed add-box renders
+let plan = S.normalisePlan({ engagement: { slug: 'probe', client: 'Probe', title: 'T',
+  stage: 'Greatstone Deep Dive', access: 'Commitment in principle', sponsor: 'S', lead: 'L',
+  // ⚠ The access box renders its note only when there IS one, so the fixture has to carry one or
+  // the sweep only ever sees the empty case and the populated layout goes unmeasured.
+  accessNote: 'Agreed in principle, with the deep dive run at our cost and a cost share if it runs long.' } });
+const add = (kind, fields, id) => { plan = S.applyOp(plan, { type: 'add', kind, fields }, id); };
+add('offering', { ref: '01', name: 'Tracking', what: 'What they sell' }, 'o:aaaaaaa1');
+add('process', { num: '01', name: 'Data collection', howToday: 'By hand', whoRuns: 'The field team',
+  pains: 'Slow', opens: 'Who checks it', pillars: ['Data'], offerings: ['01'],
+  steps: [{ name: 'Collect', who: 'Field', tool: 'Paper', detail: 'Re-keyed' }] }, 'p:aaaaaaa1');
+add('process', { num: '02', name: 'Analysis', howToday: 'In a spreadsheet' }, 'p:bbbbbbb2');
+add('unit', { ref: 'OPS', name: 'Operations', unitType: 'team', headcount: 12 }, 'u:aaaaaaa1');
+add('person', { name: 'Ama', role: 'Supervisor', side: 'client', unitId: 'u:aaaaaaa1' }, 'n:aaaaaaa1');
+add('task', { what: 'Re-types responses', personId: 'n:aaaaaaa1', processes: ['01'], cadence: 'daily', fate: 'automated' }, 't:aaaaaaa1');
+add('question', { pillar: 'Data', q: 'Who checks the returns?', certainty: 'indicated', note: 'The supervisor does, told 21 Aug.', ref: 'Q34', processes: ['01'] }, 'q:aaaaaaa1');
+add('evidence', { item: 'The value tables', state: 'partial', held: 'A sample' }, 'e:aaaaaaa1');
+add('source', { name: 'The data lead', sourceType: 'person', gives: 'Access' }, 'r:aaaaaaa1');
+// ⚠ record/recordNote EMPTY on purpose: the dashed empty state is the shape that overlapped
+add('session', { name: 'How the wave runs', ref: 'S1', person: 'Ama', method: 'blended',
+  priority: 'critical', only: 'Only she runs it', covers: ['q:aaaaaaa1'], minutes: 120,
+  notHere: ['The tool estate. Established 21 August.'] }, 's:aaaaaaa1');
+add('kpi', { name: 'Turnaround', scope: 'team', unit: 'days', current: 9, target: 4, direction: 'down' }, 'k:aaaaaaa1');
+add('session', { name: 'The sitting that ended', person: 'Kofi', covers: ['q:aaaaaaa1'] }, 's:ended001');
+add('session', { name: 'Filler sitting 1', ref: 'S21', person: 'Someone 1' }, 's:fill0001');
+add('session', { name: 'Filler sitting 2', ref: 'S22', person: 'Someone 2' }, 's:fill0002');
+add('session', { name: 'Filler sitting 3', ref: 'S23', person: 'Someone 3' }, 's:fill0003');
+add('session', { name: 'Filler sitting 4', ref: 'S24', person: 'Someone 4' }, 's:fill0004');
+add('session', { name: 'Filler sitting 5', ref: 'S25', person: 'Someone 5' }, 's:fill0005');
+add('session', { name: 'Filler sitting 6', ref: 'S26', person: 'Someone 6' }, 's:fill0006');
+add('session', { name: 'Filler sitting 7', ref: 'S27', person: 'Someone 7' }, 's:fill0007');
+add('hypothesis', { ref: 'H1', claim: 'Re-keying causes the delay', kills: 'A clean run', verdict: 'open', sessionIds: ['s:aaaaaaa1'] }, 'h:aaaaaaa1');
+add('competitor', { name: 'Another firm', evidence: 'Their site', overlaps: 'Tracking' }, 'c:aaaaaaa1');
+add('build', { ref: 'B1', name: 'Field capture app', state: 'considering', stateWhy: 'Devices.',
+  what: 'Collect on a phone', effort: 4, impact: 8.5, processes: ['01'],
+  demoKind: 'prototype', demoLink: 'https://example.org/demo' }, 'b:aaaaaaa1');
+plan = S.applyOp(plan, { type: 'set_engagement', fields: { outcomes: [
+  'THE WORK ITSELF. Collect easily, analyse easily, present easily.',
+  'THE WORK ITSELF. Fewer hands in the chain, so the time comes back.',
+  'THE ECONOMICS. Field output that holds above the margin line.',
+] } });
+
+const noop = () => {}; const an = async () => {};
+const common = { slug: 'probe', plan, map: {}, log: [], findings: [], files: [], staff: true,
+  canAuthor: { can: true }, busy: false, onEdit: noop, onSaveField: an, onStatus: an, onAttach: an,
+  onDetach: an, onRecord: an, onJudge: an, onDropFinding: an, onAgreement: an, onNote: an,
+  onSaveSteps: an, onEditTask: noop, onSelect: noop, onConnect: an, onMove: an, onTidy: an,
+  onSaveRecord: an, onAddProcess: noop, onEditOffering: noop };
+const ctx = { slug: 'probe', map: { 's:ended001': { status: 'done' } }, staff: true, set: an, setMany: an, busy: false,
+  canAuthor: { can: true }, onJudge: an, findings: [], recordFinding: an, dropFinding: an,
+  runOp: an, runOpLoud: an, setWarn: noop, openDrawer: noop };
+const F = (k) => S.findItem(plan, k).item;
+// Marked Shared so ClientView has something to render. Built from the record rather than a literal
+// list, so it keeps working when the fixture changes shape.
+const sharedMap = (() => {
+  const m = {};
+  const mark = (id) => { m[id] = { visibility: 'shared' }; };
+  (plan.PROCESSES || []).forEach((p) => mark(p.id));
+  (plan.EVIDENCE || []).forEach((e) => mark(e.id));
+  (plan.QUESTIONS || []).forEach((g) => (g.items || []).forEach((q) => mark(q.id)));
+  (plan.SESSIONS || []).forEach((s) => mark(s.id));
+  return m;
+})();
+// A history with the two hands the trail distinguishes, a plan edit, and a removal, which are the
+// entries that render differently from one another.
+// ⚠ EVERY ENTRY CARRIES A LABEL, because the app always writes one: see the logOp call in
+// DeepDivePortal, where label falls back through labelOfItem and then to "Record details" or "The
+// North Star" for an engagement change, and id falls back to 'engagement'. A first version of this
+// fixture left label off and used op:'plan', which the app never writes. The History tab renders
+// `{r.label || r.id}` into an h4, so that fixture produced an EMPTY HEADING and raw ids where names
+// belong, and the heading scan duly reported a defect that only the test data had.
+const logFixture = [
+  { at: '2026-09-02T09:14:00.000Z', by: 'person', who: 'Ama', op: 'add', kind: 'process', id: 'p:aaaaaaa1',
+    label: 'Data collection', changed: { added: [null, 'Data collection'] } },
+  { at: '2026-09-03T11:02:00.000Z', by: 'mcp', op: 'edit', kind: 'question', id: 'q:aaaaaaa1',
+    label: 'Who checks the returns?',
+    changed: { certainty: ['unknown', 'indicated'], note: [null, 'The supervisor does, told 21 Aug.'] } },
+  { at: '2026-09-04T16:40:00.000Z', by: 'person', who: 'Kofi', op: 'remove', kind: 'evidence', id: 'e:aaaaaaa1',
+    label: 'A document nobody could find', changed: { removed: ['A document nobody could find', null] } },
+  { at: '2026-09-05T08:05:00.000Z', by: 'person', who: 'Ama', op: 'set_engagement', kind: null,
+    id: 'engagement', label: 'Record details', changed: { stage: ['GITA', 'Greatstone Deep Dive'] } },
+];
+const cover = { processes: 2, pillars: 1, questions: 1, toInvestigate: 1, settled: 0, outstanding: 1, sessions: 1, shared: 0 };
+const P = __panels;
+const SCREENS = {
+  'tab:Overview': () => React.createElement(P.Overview, { eng: plan.engagement, plan, cover, go: noop, ctx, asClient: false, onDetails: noop, onAdd: noop }),
+  'tab:Processes': () => React.createElement(P.Processes, { plan, ctx }),
+  'tab:Organisation': () => React.createElement(P.Organisation, { plan, ctx, slug: 'probe' }),
+  'tab:Knowledge': () => React.createElement(P.Knowledge, { plan, ctx }),
+  // ⚠ THE ENQUIRY TAB WAS IN NO SWEEP AT ALL. `Pillars` is exported from the module beside the
+  // other panels precisely so it can be mounted, and the screen list never used it, so a whole tab
+  // (the collapsible pillar groups somebody works questions from) went unmeasured for contrast,
+  // overlap, focus and accessible names. Found by renaming a class the panel owns and discovering
+  // there was no screen on which to check the result.
+  'tab:Pillars': () => React.createElement(P.Pillars, { plan, ctx, findings: [] }),
+  // ⚠ TWO MORE PANELS WERE EXPORTED FOR MOUNTING AND NEVER MOUNTED HERE, and the module's own
+  // comment says they are exported for that and nothing else. ClientView is the ONE SCREEN A CLIENT
+  // EVER SEES: its confidentiality boundary is well covered by deepdive-clientview.test.mjs, which
+  // plants internal content and proves it does not come out, but nothing had ever measured how the
+  // screen READS. Contrast, overlap, text spill, focus rings and accessible names on the only
+  // surface that leaves the building were simply never looked at.
+  // ⚠ The map has to MARK THINGS SHARED or this mounts an empty screen and sweeps nothing: Internal
+  // is the default, so `map: {}` renders a client view of nothing at all.
+  'ClientView': () => React.createElement(P.ClientView, { eng: plan.engagement, plan, map: sharedMap }),
+  // ⚠ Nothing shared AND no access note: the fixture above carries a note, so without stripping it
+  // here the empty-note path (the access box rendering its heading alone) is swept nowhere.
+  'ClientView:empty': () => React.createElement(P.ClientView,
+    { eng: { ...plan.engagement, accessNote: '' }, plan, map: {} }),
+  'tab:History': () => React.createElement(P.History, { log: logFixture, plan, slug: 'probe' }),
+  'tab:Sessions': () => React.createElement(P.Sessions, { plan, ctx, slug: 'probe' }),
+  'tab:Competitors': () => React.createElement(P.Competitors, { plan, ctx }),
+  'tab:Kpis': () => React.createElement(P.Kpis, { plan, ctx }),
+  'ProcessPage': () => React.createElement(ProcessPage, { ...common, item: F('p:aaaaaaa1') }),
+  'QuestionPage': () => React.createElement(QuestionPage, { ...common, question: F('q:aaaaaaa1'), pillar: 'Data' }),
+  'EvidencePage': () => React.createElement(EvidencePage, { ...common, item: F('e:aaaaaaa1') }),
+  'SessionPage': () => React.createElement(SessionPage, { ...common, session: F('s:aaaaaaa1') }),
+  'SessionPage:ended': () => React.createElement(SessionPage, { ...common,
+    map: { 's:ended001': { status: 'done' } }, session: F('s:ended001') }),
+  // inside the same wrapper SessionPage really gives it: without ca-wrap's top padding the
+  // sticky bar's offset exceeds its natural position and push-down covers the strip below,
+  // a state the real app cannot reach
+  'SessionRun': () => React.createElement('div', { className: 'ca-wrap dd-wrap' },
+    React.createElement(SessionRun, { session: F('s:aaaaaaa1'), plan, map: {},
+      busy: false, canAuthor: { can: true }, onSaveRecord: an, onSaveField: an, onStatus: an, onAddQuestion: an, onDone: noop })),
+  'SourcePage': () => React.createElement(SourcePage, { ...common, item: F('r:aaaaaaa1') }),
+  'PersonPage': () => React.createElement(PersonPage, { ...common, item: F('n:aaaaaaa1') }),
+  'BuildPage': () => React.createElement(BuildPage, { ...common, item: F('b:aaaaaaa1') }),
+  'CompetitorPage': () => React.createElement(CompetitorPage, { ...common, item: F('c:aaaaaaa1') }),
+  'KpiPage': () => React.createElement(KpiPage, { ...common, item: F('k:aaaaaaa1') }),
+  'HypothesisPage': () => React.createElement(HypothesisPage, { ...common, item: F('h:aaaaaaa1') }),
+  'OfferingBoard': () => React.createElement(OfferingBoard, { plan, slug: 'probe', staff: true,
+    canAuthor: { can: true }, busy: false, map: {}, selectedId: 'o:aaaaaaa1', onSelect: noop,
+    onEdit: noop, onEditOffering: noop, onConnect: an, onAddProcess: noop, onMove: an, onTidy: an }),
+  'InnovationBoard': () => React.createElement(InnovationBoard, { plan, slug: 'probe', staff: true, ctx }),
+};
+// ⚠ THE DRAWER WAS IN NO BROWSER SWEEP. It is the largest form the portal has (thirteen kinds,
+// up to twenty-seven fields on a build) and every probe so far has only ever seen pages. Add and
+// edit are different code paths: edit seeds every control from a stored value.
+// ── the stress fixture: what a real record does to a layout that was only ever seen with
+// short fixture strings. A long sentence tests wrapping; an unbroken 90-character token tests
+// whether anything allows a break at all, which is what a pasted URL or system name really is.
+const LONG = 'A question that goes on at the length practitioners actually write them, naming the branch, the wave, the system and the person, because the record is written by people in a hurry';
+const TOKEN = 'ReportingPipelineExportServiceConfigurationEndpointAuthorityRegistryHandlerFactoryImpl';
+plan = S.applyOp(plan, { type:'add', kind:'question', fields:{ pillar:'Data', q: LONG + ' ' + TOKEN,
+  certainty:'unknown', ref:'Q-LONG', processes:['01'] } }, 'q:long0001');
+plan = S.applyOp(plan, { type:'add', kind:'build', fields:{ ref:'B-LONG',
+  name: 'A proposal whose name nobody shortened ' + TOKEN, state:'proposed',
+  what: LONG, processes:['01'] } }, 'b:long0001');
+plan = S.applyOp(plan, { type:'add', kind:'person', fields:{ name:'Kwabena ' + TOKEN,
+  role:'A role title that is itself a sentence about what the person is accountable for',
+  side:'client' } }, 'n:long0001');
+SCREENS['QuestionPage:long'] = () => React.createElement(QuestionPage,
+  { ...common, plan, question: S.findItem(plan,'q:long0001').item, pillar:'Data' });
+SCREENS['BuildPage:long'] = () => React.createElement(BuildPage,
+  { ...common, plan, item: S.findItem(plan,'b:long0001').item });
+SCREENS['PersonPage:long'] = () => React.createElement(PersonPage,
+  { ...common, plan, item: S.findItem(plan,'n:long0001').item });
+
+// ── the two ends nobody fixtures: a record with NOTHING in it (the state every engagement
+// genuinely starts in, and this portal is admin-first so John fills it from empty), and one with
+// far more rows than the comfortable middle the fixture has always had.
+const emptyPlan = S.normalisePlan({ engagement: { slug:'empty', client:'New', title:'T',
+  stage:'Greatstone Deep Dive', access:'Commitment in principle' } });
+const emptyCtx = { ...ctx, slug:'empty' };
+const emptyCover = { processes:0, pillars:0, questions:0, toInvestigate:0, settled:0,
+  outstanding:0, sessions:0, shared:0 };
+SCREENS['empty:Overview'] = () => React.createElement(P.Overview, { eng: emptyPlan.engagement,
+  plan: emptyPlan, cover: emptyCover, go: noop, ctx: emptyCtx, asClient: false, onDetails: noop, onAdd: noop });
+SCREENS['empty:Processes'] = () => React.createElement(P.Processes, { plan: emptyPlan, ctx: emptyCtx });
+SCREENS['empty:Organisation'] = () => React.createElement(P.Organisation, { plan: emptyPlan, ctx: emptyCtx, slug:'empty' });
+SCREENS['empty:Knowledge'] = () => React.createElement(P.Knowledge, { plan: emptyPlan, ctx: emptyCtx, findings: [] });
+SCREENS['empty:Pillars'] = () => React.createElement(P.Pillars, { plan: emptyPlan, ctx: emptyCtx, findings: [] });
+SCREENS['empty:Sessions'] = () => React.createElement(P.Sessions, { plan: emptyPlan, ctx: emptyCtx, slug:'empty' });
+SCREENS['empty:Kpis'] = () => React.createElement(P.Kpis, { plan: emptyPlan, ctx: emptyCtx });
+SCREENS['empty:Competitors'] = () => React.createElement(P.Competitors, { plan: emptyPlan, ctx: emptyCtx });
+SCREENS['empty:Innovation'] = () => React.createElement(InnovationBoard, { plan: emptyPlan, slug:'empty', staff:true, ctx: emptyCtx });
+
+// ⚠ THE BAR WAS IN NO PROBE AT ALL. It is the one surface on screen on every route, it holds both
+// ways out of the application, and every sweep this repo runs measured the page beneath it. The
+// long client name is the realistic squeeze: the bar is a flex row and the name is the part that
+// grows. The preview chip is the newest thing in it and the only one that appears conditionally.
+// ⚠ NO BARE-BAR SCREEN. One existed and it reported empty-screen on every phone-width sweep, which
+// was CORRECT: below 700px the client name and the "Deep Dive" wordmark both hide, leaving a logo
+// image and two icon buttons, and a bar with no text is exactly what the sentinel is for. A finding
+// that is right every time and actionable never is trains you to skim past the ones that matter.
+// `bar:tabs` is a superset for every geometry question the bare bar answered.
+SCREENS['bar:preview'] = () => React.createElement(P.PortalBar,
+  { slug:'probe', client:'Probe', slotRef: noop, asClient: true, onExit: noop });
+SCREENS['bar:preview-longname'] = () => React.createElement(P.PortalBar,
+  { slug:'probe', client:'A Very Long Client Organisation Name Limited', slotRef: noop,
+    asClient: true, onExit: noop });
+
+// ⚠ AN EMPTY SLOT IS NOT A SHAPE THE BAR EVER HAS. In the app the record screen portals nine tabs
+// into it, and the tabs are what the rest of the bar is competing with for room. Measuring the bar
+// without them measures a screen nobody sees. The slot is a div React renders no children into, so
+// filling it by hand is how the real geometry gets into a harness that cannot run the portal.
+const TAB_LABELS = ['Overview','Processes','Organisation','Innovation','Enquiry','Sessions',
+  'Competitors','KPIs','History'];
+const fillSlotWith = (labels) => (el) => {
+  if (!el) return;
+  const bar = document.createElement('div');
+  bar.className = 'dd-tabs'; bar.setAttribute('role', 'tablist');
+  for (const [i, label] of labels.entries()) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('role', 'tab');
+    // ⚠ WITH THE ICON. Every real tab carries one at 15px plus a .45em gap, so leaving it out
+    // understates the width of the navigation by about 200px across nine tabs, which is most of
+    // what this screen exists to measure.
+    const ic = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    ic.setAttribute('width', '15'); ic.setAttribute('height', '15');
+    ic.setAttribute('class', 'dd-i'); ic.setAttribute('aria-hidden', 'true');
+    b.appendChild(ic);
+    b.appendChild(document.createTextNode(label));
+    if (i === 0) { b.className = 'on'; b.setAttribute('aria-selected', 'true'); }
+    bar.appendChild(b);
+  }
+  el.replaceChildren(bar);
+};
+const fillSlot = fillSlotWith(TAB_LABELS);
+SCREENS['bar:tabs'] = () => React.createElement(P.PortalBar,
+  { slug:'probe', client:'Probe', slotRef: fillSlot });
+SCREENS['bar:tabs-preview'] = () => React.createElement(P.PortalBar,
+  { slug:'probe', client:'Probe', slotRef: fillSlot, asClient: true, onExit: noop });
+SCREENS['bar:tabs-preview-longname'] = () => React.createElement(P.PortalBar,
+  { slug:'probe', client:'A Very Long Client Organisation Name Limited', slotRef: fillSlot,
+    asClient: true, onExit: noop });
+// ⚠ THE CASE THAT PROVES THE AFFORDANCE IS MEASURED. A fade that is always on says "there is more"
+// on a strip where there is not, which is the same lie as no fade on a strip where there is. Three
+// tabs fit at any width this harness runs at, so this screen must come back with NO edge classes.
+SCREENS['bar:tabs-few'] = () => React.createElement(P.PortalBar,
+  { slug:'probe', client:'Probe', slotRef: fillSlotWith(['Overview', 'Sessions', 'History']) });
+
+let manyPlan = S.normalisePlan({ engagement: { slug:'many', client:'Big', title:'T',
+  stage:'Greatstone Deep Dive', access:'Commitment in principle' } });
+const PILL = ['Data','Technology','People','Communication','Process','Governance','Customer','Competitor'];
+for (let i = 1; i <= 24; i += 1) {
+  const num = String(i).padStart(2, '0');
+  manyPlan = S.applyOp(manyPlan, { type:'add', kind:'process', fields:{ num, name:'Process number ' + i,
+    howToday:'How it runs today, in their words.' } }, 'p:many' + num);
+  manyPlan = S.applyOp(manyPlan, { type:'add', kind:'question', fields:{ pillar: PILL[i % 8],
+    q:'Question number ' + i + ' that the investigation has to answer', certainty:'unknown',
+    processes:[num] } }, 'q:many' + num);
+  manyPlan = S.applyOp(manyPlan, { type:'add', kind:'person', fields:{ name:'Person ' + i,
+    role:'A role', side:'client' } }, 'n:many' + num);
+}
+const manyCtx = { ...ctx, slug:'many' };
+SCREENS['many:Processes'] = () => React.createElement(P.Processes, { plan: manyPlan, ctx: manyCtx });
+SCREENS['many:Organisation'] = () => React.createElement(P.Organisation, { plan: manyPlan, ctx: manyCtx, slug:'many' });
+SCREENS['many:Knowledge'] = () => React.createElement(P.Knowledge, { plan: manyPlan, ctx: manyCtx, findings: [] });
+
+const SEEDED = { process: 'p:aaaaaaa1', question: 'q:aaaaaaa1', evidence: 'e:aaaaaaa1',
+  session: 's:aaaaaaa1', source: 'r:aaaaaaa1', kpi: 'k:aaaaaaa1', hypothesis: 'h:aaaaaaa1',
+  competitor: 'c:aaaaaaa1', offering: 'o:aaaaaaa1', unit: 'u:aaaaaaa1', person: 'n:aaaaaaa1',
+  task: 't:aaaaaaa1', build: 'b:aaaaaaa1' };
+for (const kind of S.KINDS) {
+  SCREENS['drawer:' + kind] = () => React.createElement(RecordDrawer,
+    { mode: 'add', kind, item: null, plan, onSave: an, onRemove: noop, onClose: noop });
+  const id = SEEDED[kind];
+  const seed = id ? (S.findItem(plan, id) || {}).item : null;
+  if (seed) SCREENS['drawer:edit:' + kind] = () => React.createElement(RecordDrawer,
+    { mode: 'edit', kind, item: seed, plan, onSave: an, onRemove: an, onClose: noop });
+}
+const root = createRoot(document.getElementById('root'));
+window.__screens = Object.keys(SCREENS);
+window.__mount = (name) => new Promise((res) => {
+  // ⚠ KEYED BY SCREEN NAME, OR SAME-TYPE SCREENS NEVER REMOUNT. React reconciles two renders of
+  // the same component type by UPDATING props, and RecordDrawer seeds its `kind` into state (it
+  // owns a kind picker), so mounting drawer:source after drawer:build left the BUILD drawer on
+  // screen: six different kinds each measured 26 controls, because they were all the same drawer.
+  // A changed key forces a real remount, which is what a sweep of distinct screens has to have.
+  // ⚠ THE BAR IS THE ONE THING THAT RENDERS OUTSIDE .dd-wrap, and the mount point IS .dd-wrap. So
+  // the first bar measurements were wrong in a way that looked like a finding: `.dd-wrap .dd-tabs
+  // button` and `.dd-top .dd-tabs button` tie on specificity, the .dd-wrap one is written later
+  // and won, and the tabs measured 1128px wearing the in-page padding they never wear in the bar.
+  // The scaffolding decided the answer. Bar screens mount without it.
+  document.getElementById('root').className = /^bar\b/.test(name) ? '' : 'dd-wrap';
+  root.render(React.createElement(React.Fragment, { key: name }, SCREENS[name]()));
+  // The same reason as above: a screen with an entrance is not the screen anybody reads.
+  setTimeout(() => { window.__settle().then(res); }, 260);
+});
+// ⚠ THE DRAWER SCREENS WERE NEVER PROBED. Every probe was pointed at #root, and RecordDrawer
+// portals to <body> (it has to: a scrim trapped in a stacking context was a real bug once). So the
+// twenty-eight drawer screens in this file, add and edit for every kind, were measured against an
+// empty div for as long as they have existed. The empty-screen sentinel is what said so, which is
+// the only reason it is known: a probe pointed at nothing reports nothing wrong.
+// The root follows the content: <body> when something has portalled out, #root otherwise, so the
+// other screens keep the baseline they were built against.
+const probeRoot = () => (document.querySelector('.rd-drawer, .ca-drawer-scrim, .dd-pop')
+  ? document.body : document.getElementById('root'));
+window.__probe = () => probeOverlaps(probeRoot());
+window.__fields = () => probeNativeFields(probeRoot());
+window.__boxes = () => probeFragmentedBoxes(probeRoot());
+window.__offscreen = () => probeOffscreen(probeRoot());
+window.__spill = () => probeTextOverflow(probeRoot());
+window.__ink = () => probeTextContrast(probeRoot());
+window.__focus = () => probeFocus(probeRoot());
+window.__names = () => probeNames(probeRoot());
+
+// ⚠ THE RESULT CARRIES THE WIDTH IT WAS TAKEN AT. A sweep was read as a desktop pass and had
+// actually run at 612px: the pane had dropped the viewport emulation on navigate, and nothing in
+// the output said so. A measurement that does not report its own conditions invites being filed
+// under the wrong ones, which is the same failure as a probe that reports on a state it never
+// reached. It also totals what each probe LOOKED AT, because "no findings" only means something
+// against "out of how many".
+// ⚠ AND THE THEME IT WAS TAKEN IN. Setting `data-dd-theme` by hand before a sweep does not hold:
+// the portal's own useTheme OWNS that attribute, sets it on mount from the saved choice and REMOVES
+// it on unmount, so mounting any screen that carries a ThemeButton wiped it mid-run. A light sweep
+// set up that way reports the attribute gone, the body still dark, and zero findings: a clean pass
+// through a theme it was never in. The preference is written where the portal reads it, and the
+// attribute is re-asserted after every mount because an unmount takes it away again.
+// ⚠ THE INTERESTING STATES ONLY EXIST AFTER A CLICK. Every sweep so far measured screens AT REST,
+// so 76 disclosures and popovers across 24 screens had never been opened while anything was
+// looking: a popover that lands on top of the field below it, or a panel whose text fails contrast
+// on its own surface, is invisible to a probe that never opens it.
+// Buttons only. An <a> with aria-expanded would navigate, and a sweep that changes the route is
+// measuring a different screen from the one it names. Bounded rounds, because opening one
+// disclosure can reveal another.
+// ⚠ WAIT FOR THE MOTION TO STOP, DON'T GUESS A DELAY. The first opened-state pass reported 26
+// faded-text findings that do not exist: popovers fade in, and the probe measured them part way
+// through, reading a cumulative opacity that was on its way to 1. At 0ms after opening: 7 findings.
+// At 200ms: none. `document.getAnimations()` says exactly when there is nothing left moving, which
+// beats any fixed delay, and the timeout is only there so one infinite decorative animation cannot
+// hang the sweep.
+window.__settle = async (ms = 900) => {
+  const running = () => (document.getAnimations ? document.getAnimations() : [])
+    .filter((a) => a.playState === 'running');
+  await Promise.race([
+    Promise.allSettled(running().map((a) => a.finished)),
+    new Promise((r) => setTimeout(r, ms)),
+  ]);
+  // ⚠ THAT RACE SAMPLES getAnimations() ONCE, AND IT IS NOT ENOUGH. Anything that starts after the
+  // sample (a staggered entrance, a disclosure the sweep opens, a remount) is never awaited, so the
+  // ink probe reads an element mid-entrance and reports it as faded text. That is not theoretical:
+  // a sweep of tab:Processes returned SIX "faded-text" findings at fade 0.99 with contrast ratios
+  // from 5.9 to 15.1, and every one of them measured 1.0 after settling. High contrast plus a 1%
+  // fade is the signature of a phantom, and phantoms are worse than no check: they teach the reader
+  // to scroll past findings.
+  // Finishing is deterministic where waiting is a race. An infinite animation (the session's live
+  // pulse) throws on finish(), which is why the loop is bounded and the throw is swallowed.
+  for (let i = 0; i < 3; i += 1) {
+    const still = running();
+    if (!still.length) break;
+    for (const a of still) { try { a.finish(); } catch { /* infinite: the timeout above covers it */ } }
+    // ⚠ NEVER A BARE requestAnimationFrame HERE. A background tab does not run rAF, so this awaited
+    // a callback that never came and every settle hung forever: the sweep stopped finishing the
+    // moment the harness tab was not the fronted one. Raced against a timer, which does run.
+    await new Promise((r) => { const t = setTimeout(r, 32); requestAnimationFrame(() => { clearTimeout(t); r(); }); });
+  }
+};
+
+// ⚠ THE SWEEP OPENED DISCLOSURES AND NEVER PRESSED ANYTHING ELSE. A band, a verdict filter, a view
+// toggle: each renders a DIFFERENT screen, and only the default one was ever measured. The Enquiry
+// tab alone hides five of its six bands that way, and the hypothesis register lives behind one of
+// them, so it had never been laid out by any probe. `__open` covers aria-expanded; this covers the
+// mutually exclusive groups, one option at a time (never combinations, which would explode).
+// Returns how many states it visited, so a run can say what it actually reached.
+window.__bands = async (onState) => {
+  const groups = new Map();
+  for (const b of document.querySelectorAll('button[aria-pressed]')) {
+    const g = b.closest('[role="group"]') || b.parentElement;
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(b);
+  }
+  let visited = 0;
+  for (const [g, btns] of groups) {
+    if (btns.length < 2) continue;          // a lone toggle is a disclosure, __open has it
+    for (let i = 0; i < btns.length; i += 1) {
+      // ⚠ RE-QUERY. React replaces these nodes on every state change, so a held reference is stale
+      // after the first click and clicking it does nothing at all: the sweep would report visiting
+      // six bands while sitting on one.
+      const live = [...g.querySelectorAll('button[aria-pressed]')][i];
+      if (!live || live.getAttribute('aria-pressed') === 'true') continue;
+      const label = (live.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+      live.click();
+      await window.__settle();
+      visited += 1;
+      if (onState) await onState(label);
+    }
+  }
+  return visited;
+};
+
+window.__open = async (rounds = 3) => {
+  let opened = 0;
+  for (let i = 0; i < rounds; i += 1) {
+    const shut = [...document.querySelectorAll('button[aria-expanded="false"]')];
+    if (!shut.length) break;
+    for (const b of shut) { try { b.click(); opened += 1; } catch { /* not ours to fix here */ } }
+    await new Promise((r) => setTimeout(r, 60));
+    await window.__settle();
+  }
+  return opened;
+};
+
+window.__theme = (t) => {
+  try { localStorage.setItem('dd-theme', t === 'light' ? 'light' : 'dark'); } catch { /* fine */ }
+  if (t === 'light') document.documentElement.setAttribute('data-dd-theme', 'light');
+  else document.documentElement.removeAttribute('data-dd-theme');
+};
+window.__sweep = async (only = null, theme = null) => {
+  if (theme) window.__theme(theme);
+  const canFocus = document.hasFocus();
+  const names = window.__screens.filter((n) => !only || only.test(n));
+  // No count for the overlap probe: it returns a bare array, and its own empty-screen sentinel is
+  // the coverage guard that a count would duplicate.
+  const cover = { controls: 0, painted: 0, boxes: 0, spill: 0, ink: 0, focus: 0, opened: 0, openInk: 0, named: 0, bands: 0, bandInk: 0 };
+  const findings = [];
+  for (const name of names) {
+    await window.__mount(name);
+    if (theme) window.__theme(theme);
+    const overlaps = window.__probe();
+    const f = window.__fields(); const b = window.__boxes();
+    const o = window.__offscreen(); const sp = window.__spill();
+    const ink = window.__ink(); const names = window.__names();
+    cover.named += names.checked || 0;
+    // ⚠ ASKED ONCE, NOT SIXTY-NINE TIMES. The focus probe refuses to run in a page that does not
+    // have focus, which is right, but a sweep started without it then carried the same refusal on
+    // every screen and buried whatever else it found. The condition belongs to the RUN.
+    const foc = canFocus ? window.__focus() : { checked: 0, findings: [] };
+    cover.focus += foc.checked || 0;
+    cover.controls += f.checked || 0; cover.painted += b.painted || 0;
+    cover.boxes += o.checked || 0; cover.spill += sp.measured || 0;
+    cover.ink += ink.measured || 0;
+    for (const x of overlaps) {
+      findings.push({ screen: name, probe: x.kind === 'empty-screen' ? 'mount' : 'overlap', ...x });
+    }
+    for (const [probe, res] of [['fields', f], ['boxes', b], ['offscreen', o], ['spill', sp], ['ink', ink], ['focus', foc], ['names', names]]) {
+      for (const x of res.findings || []) findings.push({ screen: name, probe, ...x });
+    }
+
+    // ── and again in every band, verdict and view the screen offers ──
+    // Tagged with the control that was pressed, because "spill on tab:Knowledge" is unactionable
+    // when five of its six bands are a different screen.
+    cover.bands += await window.__bands(async (label) => {
+      const each = [
+        ['overlap', { findings: window.__probe().filter((x) => x.kind !== 'empty-screen') }],
+        ['spill', window.__spill()], ['ink', window.__ink()], ['offscreen', window.__offscreen()],
+      ];
+      cover.bandInk += (each[2][1].measured) || 0;
+      for (const [probe, res] of each) {
+        for (const x of res.findings || []) findings.push({ screen: name, probe, state: `band:${label}`, ...x });
+      }
+    });
+
+    // ── and again with everything open ──
+    // Tagged `state: 'open'` so a finding can be told from its at-rest twin: the same element can
+    // be fine closed and wrong open, and a report that cannot say which is a report that gets
+    // chased twice.
+    const opened = await window.__open();
+    if (opened) {
+      cover.opened += opened;
+      const again = [
+        ['overlap', { findings: window.__probe().filter((x) => x.kind !== 'empty-screen') }],
+        ['fields', window.__fields()], ['boxes', window.__boxes()],
+        ['offscreen', window.__offscreen()], ['spill', window.__spill()], ['ink', window.__ink()],
+      ];
+      for (const [probe, res] of again) {
+        for (const x of res.findings || []) findings.push({ screen: name, probe, state: 'open', ...x });
+      }
+      // ⚠ The opened pass needs its own volume or its "nothing found" means nothing. `opened`
+      // counts disclosures clicked; this counts the text actually re-measured behind them.
+      cover.openInk += again.find(([n]) => n === 'ink')[1].measured || 0;
+    }
+  }
+  return {
+    viewport: document.documentElement.clientWidth,
+    // Read back from the page, never echoed from the argument: the point is what it RAN in.
+    theme: document.documentElement.getAttribute('data-dd-theme') || 'dark',
+    ground: getComputedStyle(document.body).backgroundColor,
+    screens: names.length, cover, findings,
+    // Said plainly, so a run with no focus pass cannot be read as a run that found nothing wrong.
+    focusMeasured: canFocus || 'the page did not have focus: press Tab in it, then sweep again',
+  };
+};
+</script></body></html>
