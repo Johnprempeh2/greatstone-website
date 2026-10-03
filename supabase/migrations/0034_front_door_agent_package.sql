@@ -1,4 +1,4 @@
--- 0032_front_door_agent_package.sql — the visitor's three employees as an Agent Companies package
+-- 0034_front_door_agent_package.sql — the visitor's three employees as an Agent Companies package
 -- (GRE-468, spec GRE-416 rev 2 §4 "Handover at sale", B8).
 --
 -- The `front-door` edge function saves the package on the lead at S5: a file map

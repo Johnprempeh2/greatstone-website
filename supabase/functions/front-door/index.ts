@@ -79,10 +79,10 @@ async function saveLead(intake: any, industryOther: boolean, proposal: any, turn
     if (!org) { console.error('front-door: no organisation for the lead'); return null; }
     const row = leadRow({ orgId: org.id, intake, industryOther, proposal, turns, source });
     let { data, error } = await supabase.from('front_door_leads').insert(row).select('id').single();
-    // Before migration 0032 the agent_package column is absent: save the lead without it (the studio can
+    // Before migration 0034 the agent_package column is absent: save the lead without it (the studio can
     // still build the package from `agents`) rather than lose it.
     if (error && /agent_package/.test(error.message || '')) {
-      console.warn('front-door: lead saved without its package (apply 0032)');
+      console.warn('front-door: lead saved without its package (apply 0034)');
       const { agent_package: _, ...rest } = row;
       ({ data, error } = await supabase.from('front_door_leads').insert(rest).select('id').single());
     }

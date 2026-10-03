@@ -2,7 +2,7 @@
 // as an Agent Companies package (`agentcompanies/v1-draft`), so setup imports them into the client's new
 // company with the import GS Agentic Manager has today. No platform change.
 // The package is a file map { path: markdown }: COMPANY.md plus agents/<slug>/AGENTS.md for each employee.
-// The edge function saves it on the lead row at S5 (column agent_package, migration 0032); the studio leads
+// The edge function saves it on the lead row at S5 (column agent_package, migration 0034); the studio leads
 // tab downloads it as a .zip (src/lib/package-zip.mjs), which is what the import page takes.
 // Pure ESM with no Deno or Node APIs, like the other front-door modules.
 

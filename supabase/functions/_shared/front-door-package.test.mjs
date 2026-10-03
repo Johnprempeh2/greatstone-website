@@ -101,7 +101,7 @@ test('nothing to package: no company or no agents', () => {
 test('the S5 lead row carries the package', () => {
   const row = leadRow({ orgId: 'org', intake, proposal: { status: 'ok', agents, chat_summary: [] }, turns: 0, source: {} });
   assert.deepEqual(row.agent_package, buildAgentPackage(SAMPLE));
-  assert.ok(JSON.stringify(row.agent_package).length < 65536, 'fits the 0032 size check');
+  assert.ok(JSON.stringify(row.agent_package).length < 65536, 'fits the 0034 size check');
 });
 
 // Read a stored .zip back: every entry's name, CRC and bytes.
