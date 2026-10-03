@@ -79,14 +79,16 @@ export const leadRef = (id) => (isLeadId(id) ? id.slice(0, 8) : '');
 // S8: the internal alert. Industry, team size, company name and a link to the studio tab. The contact
 // details stay in the studio; they are in the email only when the lead could not be saved (`contact`),
 // so the alert is then the record and the lead is not lost.
-/** @param {{ lead?: any, studioUrl?: string, contact?: any }} [opts] */
-export function buildAlertEmail({ lead = {}, studioUrl = '', contact = null } = {}) {
+// `packSent` (GRE-464): true or false says whether the visitor's team pack went; staff send it by hand when not.
+/** @param {{ lead?: any, studioUrl?: string, contact?: any, packSent?: boolean | null }} [opts] */
+export function buildAlertEmail({ lead = {}, studioUrl = '', contact = null, packSent = null } = {}) {
   const saved = !contact;
   const industry = lead.industry ? lead.industry + (lead.industry_other ? ' (typed in)' : '') : 'Not known';
   const size = lead.team_size ? lead.team_size + ' people' : 'Not given';
   const company = lead.company_name || 'Not known';
   const ref = leadRef(lead.id);
   const rows = [['Industry', industry], ['Team size', size], ['Company', company]];
+  if (packSent !== null) rows.push(['Team pack', packSent ? 'Sent' : 'Not sent. Send it by hand.']);
   if (saved) {
     rows.push(['Consent to contact', lead.consent_given ? 'Yes' : 'No']);
     if (ref) rows.push(['Lead', ref]);
