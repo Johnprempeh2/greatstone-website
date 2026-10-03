@@ -76,7 +76,12 @@ function useScreenFocus(screen) {
   const first = useRef(true);
   useEffect(() => {
     if (first.current) { first.current = false; return; }
-    if (ref.current) ref.current.focus();
+    if (!ref.current) return;
+    // focus() alone scrolls to "nearest", which leaves the heading under the sticky header on a phone;
+    // scroll to the top of the new screen (scroll-margin-top clears the header), then focus in place
+    const still = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    ref.current.scrollIntoView({ block: 'start', behavior: still ? 'auto' : 'smooth' });
+    ref.current.focus({ preventScroll: true });
   }, [screen]);
   return ref;
 }
@@ -391,7 +396,7 @@ export const css = `
 .b-fd-entry{max-width:46rem}
 .b-fd-pitch{font-size:clamp(1.9rem,5vw,3.4rem);font-weight:800;line-height:1.04;letter-spacing:-.025em;margin:0 0 1.6rem}
 .b-fd-panel{max-width:44rem;padding:clamp(22px,3.4vw,40px)}
-.b-fd-h{font-size:clamp(1.4rem,3vw,2.1rem);font-weight:800;line-height:1.08;letter-spacing:-.02em;margin:0 0 1.4rem;outline:none}
+.b-fd-h{font-size:clamp(1.4rem,3vw,2.1rem);font-weight:800;line-height:1.08;letter-spacing:-.02em;margin:0 0 1.4rem;outline:none;scroll-margin-top:96px}
 .b-fd-h3{font-size:clamp(1.1rem,2.2vw,1.4rem);font-weight:800;line-height:1.15;margin:0 0 1.2rem}
 .b-fd-muted{color:var(--gs-text-muted);line-height:1.6;margin:.8rem 0 1.4rem;max-width:52ch}
 .b-fd-hint{margin:.45rem 0 0;font-size:.82rem;color:var(--gs-muted)}
@@ -407,7 +412,8 @@ export const css = `
 .b-fd-chip-input{flex:1 1 8rem;min-width:8rem;border:0;background:transparent;color:var(--gs-text);font:inherit;padding:.35em .4em;outline:none}
 .b-fd-sizes{border:0;padding:0;display:flex;flex-wrap:wrap;gap:.5rem}
 .b-fd-sizes legend{display:block;width:100%;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-muted);margin-bottom:.5rem;padding:0}
-.b-fd-size{display:inline-flex;align-items:center;gap:.4rem;padding:.5em .9em;border:1px solid var(--gs-border-soft);border-radius:999px;cursor:pointer;font-size:.92rem}
+/* .field label (BookDeepDive) is a block-level uppercase caption; these are pills, so out-rank it */
+.b-fd-sizes .b-fd-size{display:inline-flex;align-items:center;gap:.5rem;margin:0;padding:.5em .95em;border:1px solid var(--gs-border-soft);border-radius:999px;cursor:pointer;font-size:.92rem;font-weight:600;letter-spacing:0;text-transform:none;color:var(--gs-text)}
 .b-fd-size:has(input:checked){border-color:var(--gs-accent);background:var(--gs-accent-soft)}
 .b-fd-size input{appearance:auto;-webkit-appearance:radio;flex:0 0 auto;width:1em;height:1em;margin:0;padding:0;accent-color:var(--gs-accent)}
 .b-fd-actions{display:flex;flex-wrap:wrap;gap:1rem 1.4rem;align-items:center;margin-top:1.4rem}
