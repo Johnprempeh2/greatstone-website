@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "happy-dom": "^20.14.5",
     "supabase": "^2.106.0",
     "vite": "^6.0.0"
   }
