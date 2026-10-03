@@ -111,6 +111,33 @@ export function readGaClientId(cookie) {
   return m ? m[1] : null;
 }
 
+// B9 (GRE-469): the funnel events of spec section 3, `front_door_intake` (S2), `front_door_proposal` (S5)
+// and `generate_lead` (S6). Each fires only once the visitor has accepted analytics in the ConsentBanner,
+// checked at the moment it fires. Parameters are labels, never what the visitor typed: an "Other" industry,
+// the company name, brand words and contact details stay out of GA (CRM plan, Layer 4).
+export function makeFunnel({ track, getConsent } = {}) {
+  const fire = (event, params) => {
+    if (typeof track !== 'function' || typeof getConsent !== 'function' || getConsent() !== 'granted') return false;
+    track(event, params);
+    return true;
+  };
+  const industry = (intake) => (!intake || intake.industryOther ? OTHER : intake.industry);
+  return {
+    // path: 'build' straight to the team, or 'chat' to talk to Everest first
+    intake: (intake, path) => fire('front_door_intake', {
+      form: 'front_door', industry: industry(intake), team_size: (intake && intake.teamSize) || 'not_given',
+      path: path === 'chat' ? 'chat' : 'build',
+    }),
+    proposal: (intake, { status, turns = 0 } = {}) => fire('front_door_proposal', {
+      form: 'front_door', industry: industry(intake), outcome: status === 'declined' ? 'declined' : 'team',
+      chat_turns: Math.max(0, Math.min(Number(turns) || 0, LIMITS.chatTurns)),
+    }),
+    lead: (intake, { consent = false } = {}) => fire('generate_lead', {
+      form: 'front_door', industry: industry(intake), contact_consent: consent === true,
+    }),
+  };
+}
+
 export class FrontDoorError extends Error {
   constructor(message, { status = 0, retryable = true } = {}) { super(message); this.status = status; this.retryable = retryable; }
 }

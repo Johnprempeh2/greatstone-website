@@ -8,7 +8,7 @@ import { track, getConsent, getAttribution } from '../lib/analytics.js';
 import { openBooking } from '../lib/booking.js';
 import {
   TEAM_SIZES, OTHER, LIMITS, EVEREST_OPENING, NOTICE_INTAKE, CONSENT_LABEL, NOTICE_LEAD,
-  addWord, validateIntake, validateContact, orderAgents, teamAvatars, readGaClientId, makeFrontDoorClient,
+  addWord, validateIntake, validateContact, orderAgents, teamAvatars, readGaClientId, makeFrontDoorClient, makeFunnel,
 } from '../lib/front-door.mjs';
 
 // FrontDoor: "Meet your first three employees" (GRE-416 spec rev 2, screens S1 to S7) as one block, so
@@ -25,6 +25,7 @@ const AVATARS = 6; // monogram tints until the cap-v1 images land (B5, GRE-465)
 
 // events only after the visitor accepted analytics in the ConsentBanner (spec section 3)
 const trackConsented = (event, params) => { if (getConsent() === 'granted') track(event, params); };
+const funnel = makeFunnel({ track, getConsent }); // B9: front_door_intake, front_door_proposal, generate_lead
 
 function source() {
   if (typeof window === 'undefined') return {};
@@ -174,9 +175,11 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
     setFailure('');
     try {
       const out = await client.propose({ intake: forIntake, messages: transcript, source: source(), turnstile: token });
-      if (out.status === 'declined') { setScreen('declined'); return; }
+      const turns = transcript.filter((m) => m.from === 'visitor').length;
+      if (out.status === 'declined') { funnel.proposal(forIntake, { status: 'declined', turns }); setScreen('declined'); return; }
       const agents = orderAgents(out.agents);
       if (agents.length !== 3) throw new Error('Something went wrong on our side. Please try again in a moment.');
+      funnel.proposal(forIntake, { status: 'ok', turns });
       setTeam({ leadId: out.leadId, agents, tints: teamAvatars(agents.map((a) => a.name), AVATARS) });
       setScreen('team');
     } catch (e) {
@@ -185,8 +188,8 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
     }
   };
 
-  const onBuild = (e) => { e.preventDefault(); const it = checkIntake(); if (it) propose(it, []); };
-  const onTalkFirst = () => { const it = checkIntake(); if (it) { setMessages([{ from: 'everest', text: EVEREST_OPENING }]); setScreen('chat'); } };
+  const onBuild = (e) => { e.preventDefault(); const it = checkIntake(); if (it) { funnel.intake(it, 'build'); propose(it, []); } };
+  const onTalkFirst = () => { const it = checkIntake(); if (it) { funnel.intake(it, 'chat'); setMessages([{ from: 'everest', text: EVEREST_OPENING }]); setScreen('chat'); } };
 
   const sendChat = async (e) => {
     e.preventDefault();
@@ -213,6 +216,7 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
     setContactErrors({}); setSendError(''); setSending(true);
     try {
       await client.lead({ leadId: team.leadId, contact: r.contact, consent: r.consent });
+      funnel.lead(intake, { consent: r.consent.given });
       setScreen('thanks');
     } catch (err) {
       // the form keeps what they typed; the walk-through link still works without the pack
