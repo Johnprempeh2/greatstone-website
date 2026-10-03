@@ -4,7 +4,7 @@
 // Scale is 1–10, banded Pebble (1–4) / Plateau (5–7) / Peak (8–10) — the same posture language as the
 // homepage MaturityMap. This module is the prototype data layer: it maps 1:1 onto the future
 // `maturity_assessments` Supabase table (migration 0019, DORMANT). Until that table is applied the radar
-// reads it, finds nothing, and falls back to DEMO_ASSESSMENT for the demo company ONLY (Ethical Quest),
+// reads it, finds nothing, and falls back to DEMO_ASSESSMENT for the demo company ONLY (see isDemoCompany),
 // so the feature is visible now; every other company sees a tasteful empty state. Nothing here is shown
 // to a real company as if it were their own scored data.
 
@@ -44,12 +44,23 @@ export function overallOf(scores) {
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
 
-// The demo company is Ethical Quest (slug ethical-quest, domain ethicalquest.com) under the single live
-// org. The customer id is a generated UUID, so gate on the stable domain/name instead of a hardcoded id.
-export const isDemoCompany = (company) =>
-  !!company && (/(^|\.)ethicalquest\.com$/i.test(company.domain || '') || /ethical\s*quest/i.test(company.name || ''));
+// The demo company is named by the environment, never in source: anything here ships in the public
+// bundle. VITE_DEMO_COMPANY_DOMAIN is unset in every shipped build, so by default nobody is the demo.
+// The customer id is a generated UUID, so gate on the stable domain instead of a hardcoded id.
+const DEMO_DOMAIN = import.meta.env?.VITE_DEMO_COMPANY_DOMAIN || '';
 
-// A realistic baseline for Ethical Quest: out of Pebble, into Plateau, with Data and Technology still
+/** A domain matches the demo domain when it is that domain or a subdomain of it, ignoring case and
+ *  surrounding whitespace. A look-alike that merely ends in the same characters does not match. */
+export function matchesDemoDomain(domain, demoDomain) {
+  const d = String(domain || '').trim().toLowerCase();
+  const want = String(demoDomain || '').trim().toLowerCase();
+  if (!d || !want) return false;
+  return d === want || d.endsWith('.' + want);
+}
+
+export const isDemoCompany = (company) => !!company && matchesDemoDomain(company.domain, DEMO_DOMAIN);
+
+// A realistic baseline for the demo company: out of Pebble, into Plateau, with Data and Technology still
 // trailing the field (their known drains) and a clear Peak target. Illustrative sample — demo company only.
 export const DEMO_ASSESSMENT = {
   assessed_on: '2026-06-15',
