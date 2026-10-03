@@ -8,7 +8,7 @@ import { track, getConsent, getAttribution } from '../lib/analytics.js';
 import { openBooking } from '../lib/booking.js';
 import {
   TEAM_SIZES, OTHER, LIMITS, EVEREST_OPENING, NOTICE_INTAKE, CONSENT_LABEL, NOTICE_LEAD,
-  addWord, validateIntake, validateContact, orderAgents, avatarIndex, readGaClientId, makeFrontDoorClient,
+  addWord, validateIntake, validateContact, orderAgents, teamAvatars, readGaClientId, makeFrontDoorClient,
 } from '../lib/front-door.mjs';
 
 // FrontDoor: "Meet your first three employees" (GRE-416 spec rev 2, screens S1 to S7) as one block, so
@@ -84,15 +84,15 @@ function useScreenFocus(screen) {
 const PrivacyLink = ({ children }) => <a className="b-fd-link" href="#go/privacy">{children}</a>;
 const FieldError = ({ id, text }) => (text ? <p className="b-fd-err" id={id}>{text}</p> : null);
 
-function Avatar({ name }) {
-  return <span className={'b-fd-avatar t' + avatarIndex(name, AVATARS)} aria-hidden="true">{String(name).charAt(0)}</span>;
+function Avatar({ name, tint }) {
+  return <span className={'b-fd-avatar t' + tint} aria-hidden="true">{String(name).charAt(0)}</span>;
 }
 
-function AgentCard({ agent }) {
+function AgentCard({ agent, tint }) {
   return (
     <article className={'card b-fd-agent' + (agent.is_lead ? ' is-lead' : '')}>
       <header className="b-fd-agent-head">
-        <Avatar name={agent.name} />
+        <Avatar name={agent.name} tint={tint} />
         <div>
           <h3 className="b-fd-agent-name">{agent.name}</h3>
           <p className="b-fd-agent-role">{agent.role}</p>
@@ -138,14 +138,16 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
   const [sendError, setSendError] = useState('');
 
   const visitorTurns = messages.filter((m) => m.from === 'visitor').length;
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  // a field's message goes as soon as the visitor changes that field, not on the next submit
+  const clearError = (k) => setErrors((er) => { if (!er[k]) return er; const { [k]: _, ...rest } = er; return rest; });
+  const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); clearError(k === 'other' ? 'industry' : k); };
 
   const start = () => {
     trackConsented('cta_click', { cta: 'front_door_start', cta_location: 'front_door' });
     setScreen('intake');
   };
 
-  const commitWord = () => { setWords((w) => addWord(w, wordDraft)); setWordDraft(''); };
+  const commitWord = () => { setWords((w) => addWord(w, wordDraft)); setWordDraft(''); clearError('words'); };
   const onWordKey = (e) => {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commitWord(); }
     else if (e.key === 'Backspace' && !wordDraft && words.length) setWords((w) => w.slice(0, -1));
@@ -170,7 +172,7 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
       if (out.status === 'declined') { setScreen('declined'); return; }
       const agents = orderAgents(out.agents);
       if (agents.length !== 3) throw new Error('Something went wrong on our side. Please try again in a moment.');
-      setTeam({ leadId: out.leadId, agents });
+      setTeam({ leadId: out.leadId, agents, tints: teamAvatars(agents.map((a) => a.name), AVATARS) });
       setScreen('team');
     } catch (e) {
       setFailure(e.message);
@@ -336,7 +338,7 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
           <div className="b-fd-team">
             {heading('Meet your first three employees')}
             <p className="b-fd-for">For {intake.company}</p>
-            <div className="b-fd-cards">{team.agents.map((a) => <AgentCard key={a.name} agent={a} />)}</div>
+            <div className="b-fd-cards">{team.agents.map((a, i) => <AgentCard key={a.name} agent={a} tint={team.tints[i]} />)}</div>
             <p className="b-fd-models">Your three employees can run on different models: Claude, ChatGPT, Gemini.</p>
 
             <form className="card b-fd-panel b-fd-keep" onSubmit={sendLead} noValidate>
@@ -345,20 +347,20 @@ export function FrontDoor({ id, puck, headline, ctaLabel }) {
                 <div className="field">
                   <label htmlFor={uid + 'name'}>Name</label>
                   <input className="fld" id={uid + 'name'} autoComplete="name" maxLength={LIMITS.name} value={contact.name}
-                    onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))} aria-invalid={contactErrors.name ? 'true' : undefined} aria-describedby={contactErrors.name ? errId('name') : undefined} />
+                    onChange={(e) => { setContact((c) => ({ ...c, name: e.target.value })); setContactErrors((er) => ({ ...er, name: undefined })); }} aria-invalid={contactErrors.name ? 'true' : undefined} aria-describedby={contactErrors.name ? errId('name') : undefined} />
                   <FieldError id={errId('name')} text={contactErrors.name} />
                 </div>
                 <div className="field">
                   <label htmlFor={uid + 'role'}>Role</label>
                   <input className="fld" id={uid + 'role'} autoComplete="organization-title" maxLength={LIMITS.role} value={contact.role}
-                    onChange={(e) => setContact((c) => ({ ...c, role: e.target.value }))} aria-invalid={contactErrors.role ? 'true' : undefined} aria-describedby={contactErrors.role ? errId('role') : undefined} />
+                    onChange={(e) => { setContact((c) => ({ ...c, role: e.target.value })); setContactErrors((er) => ({ ...er, role: undefined })); }} aria-invalid={contactErrors.role ? 'true' : undefined} aria-describedby={contactErrors.role ? errId('role') : undefined} />
                   <FieldError id={errId('role')} text={contactErrors.role} />
                 </div>
               </div>
               <div className="field">
                 <label htmlFor={uid + 'email'}>Work email</label>
                 <input className="fld" id={uid + 'email'} type="email" autoComplete="email" maxLength={LIMITS.email} value={contact.email}
-                  onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} aria-invalid={contactErrors.email ? 'true' : undefined} aria-describedby={contactErrors.email ? errId('email') : undefined} />
+                  onChange={(e) => { setContact((c) => ({ ...c, email: e.target.value })); setContactErrors((er) => ({ ...er, email: undefined })); }} aria-invalid={contactErrors.email ? 'true' : undefined} aria-describedby={contactErrors.email ? errId('email') : undefined} />
                 <FieldError id={errId('email')} text={contactErrors.email} />
               </div>
               <label className="b-fd-consent">
@@ -407,7 +409,7 @@ export const css = `
 .b-fd-sizes legend{display:block;width:100%;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-muted);margin-bottom:.5rem;padding:0}
 .b-fd-size{display:inline-flex;align-items:center;gap:.4rem;padding:.5em .9em;border:1px solid var(--gs-border-soft);border-radius:999px;cursor:pointer;font-size:.92rem}
 .b-fd-size:has(input:checked){border-color:var(--gs-accent);background:var(--gs-accent-soft)}
-.b-fd-size input{accent-color:var(--gs-accent)}
+.b-fd-size input{appearance:auto;-webkit-appearance:radio;flex:0 0 auto;width:1em;height:1em;margin:0;padding:0;accent-color:var(--gs-accent)}
 .b-fd-actions{display:flex;flex-wrap:wrap;gap:1rem 1.4rem;align-items:center;margin-top:1.4rem}
 .b-fd-textbtn{background:none;border:0;padding:.4em 0;color:var(--gs-accent);font:inherit;font-weight:600;cursor:pointer;border-bottom:1px solid var(--gs-border)}
 .b-fd-textbtn:disabled{opacity:.5;cursor:default}

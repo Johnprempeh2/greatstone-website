@@ -86,11 +86,23 @@ export function orderAgents(agents) {
 }
 
 // The same name always gets the same avatar (GRE-466 `proposal`: code chooses, not the model).
+// FNV-1a: a plain *31 hash is only the character sum for small counts, so near names would collide.
 export function avatarIndex(name, count) {
   const s = String(name || '').toLowerCase();
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return count > 0 ? h % count : 0;
+}
+
+// One avatar per card, never two the same on one team: a clash steps to the next free avatar, in card order.
+export function teamAvatars(names, count) {
+  const used = new Set();
+  return names.map((n) => {
+    let i = avatarIndex(n, count);
+    for (let k = 0; k < count && used.has(i); k++) i = (i + 1) % count;
+    used.add(i);
+    return i;
+  });
 }
 
 // The visit's source fields (spec section 3). Read from what analytics.js already stores; no new cookies.

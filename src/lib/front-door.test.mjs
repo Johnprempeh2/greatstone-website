@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  addWord, normaliseWord, validateIntake, validateContact, orderAgents, avatarIndex, readGaClientId,
+  addWord, normaliseWord, validateIntake, validateContact, orderAgents, avatarIndex, teamAvatars, readGaClientId,
   makeFrontDoorClient, CONSENT_VERSION, OTHER, LIMITS,
 } from './front-door.mjs';
 
@@ -70,6 +70,18 @@ test('avatar: the same name always gets the same avatar, in range', () => {
   assert.equal(avatarIndex('Priya', 8), avatarIndex('priya', 8));
   for (const n of ['Ada', 'Bo', 'Cy', 'Dev', 'Esi']) { const i = avatarIndex(n, 8); assert.ok(i >= 0 && i < 8); }
   assert.equal(avatarIndex('Ada', 0), 0);
+});
+
+test('avatar: names spread across the set rather than bunching on one', () => {
+  const seen = new Set(['Ines', 'Marta', 'Kofi', 'Ada', 'Bo', 'Cy', 'Dev', 'Esi', 'Priya', 'Tomas'].map((n) => avatarIndex(n, 6)));
+  assert.ok(seen.size >= 4, 'ten names spread over at least four of six avatars');
+});
+
+test('avatar: a team of three never repeats an avatar, and keeps each name\'s own when free', () => {
+  const t = teamAvatars(['Ines', 'Marta', 'Kofi'], 6);
+  assert.equal(new Set(t).size, 3);
+  assert.equal(t[0], avatarIndex('Ines', 6));
+  assert.deepEqual(teamAvatars(['Ada', 'Ada', 'Ada'], 3).sort(), [0, 1, 2]);
 });
 
 test('GA client id is read from the _ga cookie only', () => {
