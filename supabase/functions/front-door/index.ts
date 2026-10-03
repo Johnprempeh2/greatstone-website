@@ -77,8 +77,15 @@ async function saveLead(intake: any, industryOther: boolean, proposal: any, turn
     await supabase.rpc('front_door_purge');  // retention (spec §3); best effort
     const { data: org } = await supabase.from('organisations').select('id').order('created_at').limit(1).maybeSingle();
     if (!org) { console.error('front-door: no organisation for the lead'); return null; }
-    const { data, error } = await supabase.from('front_door_leads')
-      .insert(leadRow({ orgId: org.id, intake, industryOther, proposal, turns, source })).select('id').single();
+    const row = leadRow({ orgId: org.id, intake, industryOther, proposal, turns, source });
+    let { data, error } = await supabase.from('front_door_leads').insert(row).select('id').single();
+    // Before migration 0032 the agent_package column is absent: save the lead without it (the studio can
+    // still build the package from `agents`) rather than lose it.
+    if (error && /agent_package/.test(error.message || '')) {
+      console.warn('front-door: lead saved without its package (apply 0032)');
+      const { agent_package: _, ...rest } = row;
+      ({ data, error } = await supabase.from('front_door_leads').insert(rest).select('id').single());
+    }
     if (error) { console.error('front-door: lead not saved', error.message); return null; }
     return data.id;
   } catch (e) { console.error('front-door: lead not saved', String((e as Error)?.message || e)); return null; }

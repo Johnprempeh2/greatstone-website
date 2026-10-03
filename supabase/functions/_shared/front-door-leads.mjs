@@ -4,6 +4,7 @@
 // Table: supabase/migrations/0031_front_door_leads.sql. Studio tab: src/store/FrontDoorLeadsManager.jsx.
 
 import { TEAM_SIZES } from './front-door-engine.mjs';
+import { buildAgentPackage } from './front-door-package.mjs';
 
 // The consent wording versions we have shown visitors (GRE-467). Add a new one here when the wording changes.
 export const CONSENT_VERSIONS = ['front-door-consent-v1'];
@@ -52,6 +53,7 @@ export function leadRow({ orgId, intake, industryOther = false, proposal, turns 
     chat_summary: (proposal.chat_summary || []).slice(0, 5),
     chat_turns: Math.max(0, Math.min(Number(turns) || 0, 6)),
     source: normaliseSource(source),
+    agent_package: buildAgentPackage({ intake, agents: proposal.agents }),  // B8 (GRE-468), migration 0032
   };
 }
 
