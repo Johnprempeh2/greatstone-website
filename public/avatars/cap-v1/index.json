@@ -1,0 +1,7 @@
+{
+  "characterVersion": "cap-v1",
+  "pose": "rest",
+  "png": { "width": 512, "height": 512 },
+  "license": "MIT",
+  "palettes": ["gs-lime", "gs-emerald", "gs-void", "gs-tide", "gs-lagoon", "gs-paper", "gs-orchid", "gs-sunrise"]
+}
