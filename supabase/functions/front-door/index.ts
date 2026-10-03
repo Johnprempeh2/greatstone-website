@@ -7,11 +7,14 @@
 // row cannot be saved, the alert carries the contact instead, so a lead is never silently lost.
 // Team pack (B4, GRE-464): at S6 the visitor's three employees go to the address they typed, once per lead
 // (0032's pack_sent_at claim), tick or no tick (GRE-467). The alert says whether it went.
+// Pipedrive (B9, GRE-469): after that, a lead with the contact tick becomes a Person and a Deal, once per lead
+// (0033's pipedrive_synced_at claim), in the background so the visitor does not wait on the CRM.
 // Wire contract: src/lib/front-door.mjs (the FrontDoor block's client).
 // Secrets: ANTHROPIC_API_KEY (website-only workspace with a monthly cap), TURNSTILE_SECRET_KEY,
 // FRONT_DOOR_SECRET (signs sessions, keys the IP hash), optional FRONT_DOOR_PRIVATE_NAMES. For the S8 alert:
 // RESEND_API_KEY, RESEND_FROM, FRONT_DOOR_ALERT_TO (comma list), optional APP_SITE_ORIGIN; no alert without them.
 // The team pack needs RESEND_API_KEY and RESEND_FROM; optional FRONT_DOOR_BOOKING_URL (default: the site's Calendly).
+// Pipedrive: PIPEDRIVE_API_TOKEN, optional PIPEDRIVE_DOMAIN and PIPEDRIVE_STAGE_ID; no push without the token.
 // Deploy: supabase functions deploy front-door --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import {
@@ -21,6 +24,7 @@ import {
 import { CHAT_TURNS } from '../_shared/front-door-prompts.mjs';
 import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from '../_shared/front-door-leads.mjs';
 import { deliverTeamPack, BOOKING_URL } from '../_shared/front-door-pack.mjs';
+import { crmConfig, syncLeadToCrm } from '../_shared/front-door-crm.mjs';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 const API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
@@ -34,6 +38,7 @@ const ALERT_TO = (Deno.env.get('FRONT_DOOR_ALERT_TO') ?? '').split(',').map((s) 
 const SITE_ORIGIN = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstoneint.com').replace(/\/+$/, '');
 const STUDIO_URL = SITE_ORIGIN + '/#catalogue/leads';
 const BOOKING = Deno.env.get('FRONT_DOOR_BOOKING_URL') || BOOKING_URL;
+const CRM = crmConfig(Deno.env.toObject());
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -118,7 +123,7 @@ async function takeContact(leadId: string | null, update: Record<string, unknown
   if (leadId) {
     try {
       const { data, error } = await supabase.from('front_door_leads').update(update).eq('id', leadId)
-        .select('id, industry, industry_other, team_size, company_name, agents, consent_given, alert_sent_at').maybeSingle();
+        .select('id, industry, industry_other, team_size, company_name, agents, source, consent_given, alert_sent_at').maybeSingle();
       if (error) console.error('front-door: contact not saved', error.message);
       lead = data;
     } catch (e) { console.error('front-door: contact not saved', String((e as Error)?.message || e)); }
@@ -135,7 +140,35 @@ async function takeContact(leadId: string | null, update: Record<string, unknown
     if (sent.sent) await supabase.from('front_door_leads').update({ alert_sent_at: new Date().toISOString() }).eq('id', lead.id);
     else console.warn('front-door: alert not sent', sent.error);
   }
+  background(pushToCrm(lead, update));
   return { ok: true, pack };
+}
+
+// Keep the isolate alive for work the response does not wait on (Supabase Edge Runtime). The promise never
+// rejects (syncLeadToCrm catches), so elsewhere it simply runs on.
+function background(p: Promise<unknown>) {
+  const rt = (globalThis as any).EdgeRuntime;
+  if (rt && typeof rt.waitUntil === 'function') rt.waitUntil(p);
+}
+
+// S6, after the pack and the alert: Pipedrive, only with the contact tick. A failure is logged and leaves the
+// claim open for a later S6; the lead is already in the studio and the alert has gone, so nothing is lost.
+async function pushToCrm(lead: any, contact: Record<string, unknown>) {
+  const out = await syncLeadToCrm({
+    config: CRM, lead, contact, studioUrl: STUDIO_URL,
+    claim: async () => {
+      const { data, error } = await supabase.from('front_door_leads').update({ pipedrive_synced_at: new Date().toISOString() })
+        .eq('id', lead.id).is('pipedrive_synced_at', null).select('id').maybeSingle();
+      if (error) { console.error('front-door: pipedrive claim failed', error.message); return 'error'; }
+      return data ? 'claimed' : 'taken';
+    },
+    release: async () => { await supabase.from('front_door_leads').update({ pipedrive_synced_at: null }).eq('id', lead.id); },
+    save: async ({ personId, dealId }: { personId: number; dealId: number }) => {
+      await supabase.from('front_door_leads').update({ pipedrive_person_id: personId, pipedrive_deal_id: dealId }).eq('id', lead.id);
+    },
+  });
+  if (!out.synced && out.reason !== 'not configured' && out.reason !== 'no consent') console.error('front-door: pipedrive not synced', out.reason);
+  else if (out.reason === 'synced without note') console.warn('front-door: pipedrive deal has no note', lead.id);
 }
 
 Deno.serve(async (req) => {
