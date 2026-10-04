@@ -6,6 +6,7 @@ import { LinkField } from '../cms/LinkField.jsx';
 import { CTA_STYLE_FIELD, CTA_STYLE_DEFAULT } from '../cms/style-field.jsx';
 import { ctaStyleClass } from '../lib/cta-style.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The close: a single, calm invitation. One primary action, an optional secondary, and the contact
@@ -135,7 +136,7 @@ export const puck = {
     eyebrow: '',
     headline: 'Let’s Build a Stronger Organisation', highlight: '',
     body: 'The journey towards a stronger organisation begins with a conversation.',
-    ctaLabel: 'Begin the Conversation', ctaHref: '#book', ctaStyle: CTA_STYLE_DEFAULT, ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
+    ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, ctaStyle: CTA_STYLE_DEFAULT, ctaLabel2: '', ctaHref2: '#', email: '', variant: 'aurora', pill: false,
     contactOptions: [],
   },
   render: (props) => <Invite {...props} />,

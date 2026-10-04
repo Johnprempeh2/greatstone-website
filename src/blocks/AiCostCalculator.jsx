@@ -3,6 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { track } from '../lib/analytics.js';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 
 // The AI Cost Calculator lead magnet (Ben + John, 1 Jul marketing session — "how much money am I leaving
 // on the table"). Three honest inputs show what the manual work costs each year (the hook, live and
@@ -223,8 +224,8 @@ export const puck = {
     savingsLead: 'AI could recover about',
     gateHeading: 'See what AI could save you',
     gateBody: 'Tell us where to send your estimate and we will show the figure. No spam, no obligation.',
-    ctaLabel: 'Book a diagnostic',
-    ctaHref: '#book',
+    ctaLabel: PRIMARY_CTA_LABEL,
+    ctaHref: PRIMARY_CTA_HREF,
     footnote: 'A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly which work AI should take first and what it gives back.',
   },
   render: (props) => <AiCostCalculator {...props} />,

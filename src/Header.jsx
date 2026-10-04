@@ -4,6 +4,7 @@ import { Search } from './blocks/icons.jsx';
 import { ROLE_LABEL } from './cms/staffRoles.mjs';
 import { track } from './lib/analytics.js';
 import { safeHref } from './lib/safe-url.js';
+import { PRIMARY_CTA_LABEL } from './lib/brand.mjs';
 
 const LOGO = '/assets/greatstone-logo-web.png';
 const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is the built-in default (a CMS-overridden logo has no .webp sibling)
@@ -149,7 +150,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
 export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
   // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
   const logoSrc = logo || LOGO;
-  const bookLabel = ctaLabel || 'Begin the Conversation'; // Ben's fixed primary CTA wording
+  const bookLabel = ctaLabel || PRIMARY_CTA_LABEL; // Ben's fixed primary CTA wording
   const brandName = siteName || 'Greatstone International';
   const q = (query || '').trim().toLowerCase();
   // nav is driven by the editable CMS navigation tree (state.navigation); public sees only published

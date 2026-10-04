@@ -3,7 +3,7 @@
 // `versions`) mirrors the rails they're building, so swapping to a real backend is a
 // data-source change, not a rewrite.
 import seedPages from './seed-pages.json';
-import { BRAND_TAGLINE } from './lib/brand.mjs';
+import { BRAND_TAGLINE, PRIMARY_CTA_LABEL } from './lib/brand.mjs';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
@@ -38,7 +38,7 @@ export const DEFAULT_LOGO = '/assets/greatstone-logo-web.png';
 // screenshot of the rebuilt homepage showed plainly. footerTagline and footerEmail are NOT changed here:
 // the tagline is the positioning Ben's opening statement retires and needs his replacement, and the email
 // is one of three candidate addresses in this repo and needs John's decision, not a guess.
-const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: BRAND_TAGLINE, headerCtaLabel: 'Begin the Conversation', footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
+const DEFAULT_SETTINGS = { background: 'stone', siteName: 'Greatstone International', logo: DEFAULT_LOGO, footerTagline: BRAND_TAGLINE, headerCtaLabel: PRIMARY_CTA_LABEL, footerEmail: 'dx@greatstonesoftware.co.uk', legalName: 'Greatstone International Ltd' };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 // the org/tenant. The DX dashboard is multi-tenant; the prototype runs one org but stamps orgId on

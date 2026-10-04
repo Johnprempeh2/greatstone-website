@@ -3,6 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { track } from '../lib/analytics.js';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import { PILLARS } from '../data/maturity-seed.mjs';
 import { SURVEY } from '../data/ai-baseline-survey.mjs';
 
@@ -303,8 +304,8 @@ export const puck = {
     kicker: 'Free AI-readiness benchmark',
     heading: 'Where does your business stand on AI?',
     intro: 'Eight questions, one per pillar of our method. See where you sit against the field, from Laggard to Pioneer, and take the survey away to run across your team.',
-    ctaLabel: 'Book a diagnostic',
-    ctaHref: '#book',
+    ctaLabel: PRIMARY_CTA_LABEL,
+    ctaHref: PRIMARY_CTA_HREF,
   },
   render: (props) => <AiBaselineSurvey {...props} />,
 };
