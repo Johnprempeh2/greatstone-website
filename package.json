@@ -16,6 +16,7 @@
     "redirects:check": "node scripts/gen-legacy-redirects.mjs --check",
     "redirects:audit": "node scripts/gen-legacy-redirects.mjs --audit",
     "verify:staff": "node scripts/verify-staff.mjs",
+    "secrets:list": "node scripts/list-edge-secrets.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check"
   },
   "dependencies": {

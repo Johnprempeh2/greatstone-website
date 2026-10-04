@@ -18,6 +18,14 @@ Everything below moves the platform from Stripe **test** to **live**. Do it in o
 - Stripe **Customer Portal** configured in **both** test and live modes (Dashboard → Settings → Billing → Customer portal). Until live is configured, the account "Manage billing & cards" button errors in live.
 - A transactional email sender is ready: a verified domain in Resend (or your provider) and an API key.
 
+## Keys to set
+Run `npm run secrets:list` (`scripts/list-edge-secrets.mjs`). It reads the edge function source and prints
+every secret name they read, which functions read it, and whether it is required or optional (from
+`scripts/edge-secrets.json`). Names only; it never reads or prints a value. Set each `required` name with
+`supabase secrets set NAME=... --project-ref <ref>` (the `SUPABASE_*` ones are set by Supabase itself). A
+missed key fails quietly: no Pipedrive push without `PIPEDRIVE_API_TOKEN`, no lead alert without
+`FRONT_DOOR_ALERT_TO`. A name shown as `unknown` is new: add it to `scripts/edge-secrets.json`.
+
 ## 1. Email (order confirmations)
 Set as **function secrets** (not in the client bundle):
 ```
