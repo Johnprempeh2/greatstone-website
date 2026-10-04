@@ -99,7 +99,7 @@ export function BookDeepDive({
             {status === 'sent' ? (
               <div className="book-sent" role="status" aria-live="polite">
                 <h3 ref={sentRef} tabIndex={-1}>Thank you. We have your enquiry.</h3>
-                <p>The team reads every enquiry and will reply to you by email. If you need us sooner, write to us directly:</p>
+                <p>The team reads every enquiry and will reply to you by email. You can also write to us directly:</p>
                 <a className="b-cta" href={safeMailto(replyTo)}>{replyTo}</a>
               </div>
             ) : status === 'failed' ? (
