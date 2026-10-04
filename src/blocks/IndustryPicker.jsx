@@ -278,4 +278,8 @@ export const puck = {
   render: (props) => <IndustryPicker {...props} />,
 };
 
+// the site's one set of industries: the FrontDoor intake reads its list from here, so a sector added to
+// the picker's defaults appears in both places.
+export const SECTORS = puck.defaultProps.industries.map((i) => i.label);
+
 export default IndustryPicker;

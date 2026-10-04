@@ -234,7 +234,7 @@ export async function callModel(body, { apiKey, fetchImpl = (...a) => fetch(...a
 }
 
 // Small Everest: one turn. `messages` ends with the visitor's newest message. No tools, no web access.
-export async function runChat({ intake, messages, apiKey, fetchImpl = undefined, privateNames = /** @type {string[]} */ ([]), model = MODEL }) {
+export async function runChat({ intake, messages, apiKey, fetchImpl = /** @type {((url: string, init: any) => Promise<Response>) | undefined} */ (undefined), privateNames = /** @type {string[]} */ ([]), model = MODEL }) {
   const data = await callModel({
     model, max_tokens: CHAT_MAX_TOKENS, system: EVEREST_SYSTEM, messages: chatMessages(intake, messages),
   }, { apiKey, fetchImpl, timeoutMs: 25000 });
@@ -252,7 +252,7 @@ export const PROPOSAL_TOOL = {
 
 // The proposal: one forced tool call, validated in code, retried once (spec S4). Throws ModelError when
 // both attempts fail; `attempts` says why each one failed (no visitor text in it).
-export async function runProposal({ intake, messages, apiKey, fetchImpl = undefined, privateNames = /** @type {string[]} */ ([]), model = MODEL }) {
+export async function runProposal({ intake, messages, apiKey, fetchImpl = /** @type {((url: string, init: any) => Promise<Response>) | undefined} */ (undefined), privateNames = /** @type {string[]} */ ([]), model = MODEL }) {
   const body = {
     model, max_tokens: PROPOSAL_MAX_TOKENS, system: PROPOSAL_SYSTEM,
     tools: [PROPOSAL_TOOL], tool_choice: { type: 'tool', name: PROPOSAL_TOOL.name },
