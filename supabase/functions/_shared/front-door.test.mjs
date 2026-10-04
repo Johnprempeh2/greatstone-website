@@ -211,7 +211,10 @@ test('session: signed, checked, tamper-proof and short-lived', async () => {
   const [body, sig] = tok.split('.');
   const forged = Buffer.from(JSON.stringify({ iat: Date.now(), th: null })).toString('base64url');
   assert.equal(await verifySession(`${forged}.${sig}`, secret), null, 'rewritten body');
-  assert.equal(await verifySession(`${body}.${sig.slice(0, -1)}A`, secret), null, 'bad signature');
+  // Always a different last char; both carry data bits, so the decoded signature changes too.
+  const badSig = sig.slice(0, -1) + (sig.at(-1) === 'A' ? 'E' : 'A');
+  assert.notEqual(badSig, sig);
+  assert.equal(await verifySession(`${body}.${badSig}`, secret), null, 'bad signature');
   assert.equal(await verifySession(tok, secret, Date.now() + SESSION_TTL_MS + 1000), null, 'expired');
   assert.equal(await verifySession('nonsense', secret), null);
 });
