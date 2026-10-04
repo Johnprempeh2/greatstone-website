@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 
 // The full-screen "interactive breakdown" — the live homepage's #/method methodology explorer brought
 // into the studio. Eight emerald pillar-gems in a ring around a central EXPLORE orb; hover to feel one,
@@ -107,7 +108,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
         <div className="me-top-actions">
           {/* book from inside the explorer — the global #book handler opens the Calendly popup over it,
               so a visitor at peak interest never has to leave to convert (the popup overlays the explorer). */}
-          <a className="me-book" href="#book" onClick={onClose}>Book a Diagnostic</a>
+          <a className="me-book" href={PRIMARY_CTA_HREF} onClick={onClose}>{PRIMARY_CTA_LABEL}</a>
           <button className="me-back" onClick={onClose}><span>← Back</span></button>
         </div>
       </div>
@@ -158,7 +159,7 @@ export default function MethodExplorer({ pillars = [], onClose }) {
                 panel covers the screen on mobile, so the top-bar CTA alone would be hidden here). The
                 optional per-pillar link stays as a secondary, hidden when it would just duplicate #book. */}
             <div className="me-detail-actions">
-              <a className="me-detail-book" href="#book" onClick={onClose}>Book a Diagnostic<Arrow /></a>
+              <a className="me-detail-book" href={PRIMARY_CTA_HREF} onClick={onClose}>{PRIMARY_CTA_LABEL}<Arrow /></a>
               {(() => { const l = resolveLink(active.href); return l.href !== '#' && l.href !== '#book' ? (
                 <a className="me-detail-cta" {...l} onClick={onClose}>Inspect this pillar<Arrow /></a>
               ) : null; })()}

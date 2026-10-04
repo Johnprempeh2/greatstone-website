@@ -54,7 +54,7 @@ export function LinkField({ value, onChange }) {
         <input className="gs-lf-in" value={model.anchor} onChange={(e) => set({ anchor: e.target.value })} placeholder="section-id (a block on this page)" />
       )}
       {model.kind === 'booking' && (
-        <p className="gs-lf-note">Opens the on-site booking flow. The same as the header “Book a Diagnostic” button.</p>
+        <p className="gs-lf-note">Opens the on-site booking flow. The same as the header “Begin the Conversation” button.</p>
       )}
 
       <p className="gs-lf-preview" aria-live="polite">→ {describeLink(model, pages)}</p>

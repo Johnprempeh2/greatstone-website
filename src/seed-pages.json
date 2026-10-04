@@ -155,7 +155,7 @@
           "align": "left",
           "size": "compact",
           "gridBackdrop": true,
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "ctaLabel2": "See the Method",
           "ctaHref2": "#go/method"
@@ -228,7 +228,7 @@
           "weeksPerYear": 46,
           "currency": "£",
           "resultLead": "That is roughly",
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "footnote": "A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
         }
@@ -278,7 +278,7 @@
           "headline": "Let's find the hours you're",
           "highlight": "losing.",
           "body": "A Diagnostic is where it begins: a focused look at where your week goes and what it costs. No deck, no pitch. Just the first stone, turned over.",
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "Explore the 8 pillars",
@@ -347,7 +347,7 @@
           "headline": "Let's start with",
           "highlight": "your sector.",
           "body": "Book a Diagnostic and we'll show you the hours your industry is quietly losing, and how we buy them back.",
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See the method",
@@ -376,7 +376,7 @@
           "body": "Every number below came from a real engagement, anonymised but real. They are a floor, not a ceiling. The only result that counts is the one we build inside your business, so we become your foundation rather than advise from the sidelines.",
           "align": "left",
           "size": "compact",
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "pillEyebrow": true
         }
@@ -488,7 +488,7 @@
           "headline": "The next case study on this page",
           "highlight": "could be yours.",
           "body": "Book a Diagnostic. We'll find the hours your business is quietly losing, then show you what reclaiming them is worth.",
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "See how we work",
@@ -1033,7 +1033,7 @@
           "headline": "Let's find out where you",
           "highlight": "stand.",
           "body": "A diagnostic scores you across all eight pillars and hands you the route up: pebble, plateau, or peak. The climb starts with one honest read.",
-          "ctaLabel": "Book a Diagnostic",
+          "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "email": "",
           "ctaLabel2": "Explore the Method",

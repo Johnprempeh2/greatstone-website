@@ -6,6 +6,7 @@
 // starter pre-fills only the 1-2 props that make placeholder copy read sensibly. The id factory is
 // INJECTED (App passes store.rid; tests pass a deterministic counter) — same discipline as buildInsertBlock.
 import { remapIds } from './sections-model.mjs';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './brand.mjs';
 
 export const STARTERS = Object.freeze([
   Object.freeze({
@@ -19,7 +20,7 @@ export const STARTERS = Object.freeze([
     id: 'landing', label: 'Landing page',
     blurb: 'Hero → proof → features → steps → testimonial → closing CTA.',
     blocks: Object.freeze([
-      { type: 'Hero', props: { kicker: 'Landing', ctaLabel: 'Book a Diagnostic', ctaHref: '#book' } },
+      { type: 'Hero', props: { kicker: 'Landing', ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF } },
       { type: 'StatStrip', props: {} },
       { type: 'FeatureGrid', props: {} },
       { type: 'Steps', props: {} },

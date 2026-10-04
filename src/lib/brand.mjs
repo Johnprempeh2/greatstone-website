@@ -29,3 +29,9 @@ export const BRAND_NAME = 'Greatstone International';
 
 // "Greatstone International · The Foundation of Digital Excellence", the email sign-off form.
 export const BRAND_SIGNOFF = `${BRAND_NAME} · ${BRAND_TAGLINE}`;
+
+// The one primary call to action, and where it goes. Ben's Architecture v2.0 fixes the wording and John
+// confirmed it for every block on 4 Oct 2026 (GRE-635), retiring "Book a Diagnostic". '#book' opens the
+// booking flow (App.jsx handles it), so every block default lands the visitor on the same next step.
+export const PRIMARY_CTA_LABEL = 'Begin the Conversation';
+export const PRIMARY_CTA_HREF = '#book';

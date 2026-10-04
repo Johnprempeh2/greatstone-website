@@ -21,6 +21,7 @@ import { moveGap } from './next-move-gap.mjs';
 import { monthlySpend } from './monthly-spend.mjs';
 import { attendeeOverflow, filterAnnouncement } from './timeline-a11y.mjs';
 import { firstRunState } from './org-firstrun.mjs';
+import { PRIMARY_CTA_LABEL } from '../lib/brand.mjs';
 import './store.css';
 import './admin.css';
 
@@ -274,7 +275,7 @@ function OnboardingChecklist({ company, admin, members, engagements, orders, nav
   const steps = [
     { id: 'profile', label: 'Complete your company profile', hint: admin ? 'Add your website and a note about your goals.' : 'Your company admin will add this.', done: !!(company.domain && company.notes), cta: admin ? { label: 'Edit profile', onClick: () => nav('company', 'org-co-h') } : null },
     { id: 'team', label: 'Invite your team', hint: admin ? 'Bring your colleagues into the portal.' : 'Your company admin manages who has access.', done: members.length > 1, cta: admin ? { label: 'Invite a teammate', onClick: () => nav('team', 'org-mem-h') } : null },
-    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: 'Book a Diagnostic', href: '#go/contact' } },
+    { id: 'kickoff', label: 'Book your kickoff', hint: 'Start your engagement with a kickoff call.', done: engagements.some(e => e.kind === 'kickoff'), cta: { label: PRIMARY_CTA_LABEL, href: '#go/contact' } },
     { id: 'order', label: 'Place your first order', hint: 'Explore the Greatstone software catalogue.', done: (orders || []).length > 0, cta: { label: 'Browse the store', href: '#shop' } },
   ];
   const doneCount = steps.filter(s => s.done).length;
@@ -756,7 +757,7 @@ function NextMove({ company }) {
         )}
         <p>{lowest.name} is your lowest pillar right now, at {lowest.v}/10. {lowest.tag} A focused diagnostic is the fastest way to move it, and lifts the score the whole assessment hangs on.</p>
         <div className="org-move-ctas">
-          <a className="gs-btn primary sm" href="#go/contact">Book a Diagnostic</a>
+          <a className="gs-btn primary sm" href="#go/contact">{PRIMARY_CTA_LABEL}</a>
           <a className="gs-btn ghost sm" href="#go/method">See the eight pillars →</a>
         </div>
       </div>
@@ -825,7 +826,7 @@ function GreatstoneTeam({ engagements }) {
             <div className="org-team-info"><span className="org-team-name">{n}</span><span className="org-team-role">Greatstone lead</span></div>
           </div>
         ))}
-        <a className="gs-btn ghost sm org-team-cta" href="#go/contact">Book a Diagnostic</a>
+        <a className="gs-btn ghost sm org-team-cta" href="#go/contact">{PRIMARY_CTA_LABEL}</a>
       </div>
     </section>
   );

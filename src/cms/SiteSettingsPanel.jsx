@@ -1,5 +1,5 @@
 import { MediaField } from './MediaField.jsx';
-import { BRAND_TAGLINE } from '../lib/brand.mjs';
+import { BRAND_TAGLINE, PRIMARY_CTA_LABEL } from '../lib/brand.mjs';
 import PanelFrame from './PanelFrame.jsx';
 import { DEFAULT_LOGO } from '../store.js';
 
@@ -29,7 +29,7 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
 
         <label className="gs-field">
           <span className="gs-field-label">Header CTA label</span>
-          <input value={s.headerCtaLabel || ''} onChange={(e) => set('headerCtaLabel', e.target.value)} placeholder="Book a Diagnostic" />
+          <input value={s.headerCtaLabel || ''} onChange={(e) => set('headerCtaLabel', e.target.value)} placeholder={PRIMARY_CTA_LABEL} />
           <span className="gs-field-hint">The persistent button in the header and the Pages menu. The link is the booking flow.</span>
         </label>
 
@@ -59,7 +59,7 @@ export default function SiteSettingsPanel({ settings = {}, onChange, onClose, em
                 visitors actually see; alt="" because this is a decorative duplicate of the fields above. */}
             <img src={s.logo || DEFAULT_LOGO} alt="" style={{ height: 22, width: 'auto' }} />
           </span>
-          <span style={{ background: 'var(--gs-accent,#c8ff00)', color: '#0e1611', fontWeight: 800, fontSize: '.74rem', borderRadius: 100, padding: '7px 13px', whiteSpace: 'nowrap' }}>{s.headerCtaLabel || 'Book a Diagnostic'}</span>
+          <span style={{ background: 'var(--gs-accent,#c8ff00)', color: '#0e1611', fontWeight: 800, fontSize: '.74rem', borderRadius: 100, padding: '7px 13px', whiteSpace: 'nowrap' }}>{s.headerCtaLabel || PRIMARY_CTA_LABEL}</span>
         </div>
 
         <div className="gs-preview-label">Footer preview</div>

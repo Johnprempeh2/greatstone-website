@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import { shortFormat, serviceSlug, serviceReason, featuredServices, newServices, popularServices } from '../store/services.mjs';
 import { usePopularity, loadGlobalPopularity } from '../store/popularity.mjs';
 import { InquiryToggle } from '../store/InquiryUI.jsx';
@@ -337,8 +338,8 @@ export const puck = {
     intro: 'One catalogue of the systems we put to work for clients · the website, the storefront, the AI behind them, and the quiet automation that buys back the hours. Open any service for the detail, add the ones that fit, and inquire about them together.',
     searchPlaceholder: 'Search services…',
     inquiryEmail: 'dx@greatstonesoftware.co.uk',
-    bookLabel: 'Book a Diagnostic',
-    bookHref: '#book',
+    bookLabel: PRIMARY_CTA_LABEL,
+    bookHref: PRIMARY_CTA_HREF,
     categories: CATALOG_CATEGORIES,
     services: CATALOG_SERVICES,
   },

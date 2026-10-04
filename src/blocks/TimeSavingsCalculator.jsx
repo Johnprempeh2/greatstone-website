@@ -3,6 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 
 // The time-savings calculator the rest of the site advertises ("45 seconds to see the hours your
 // business is quietly losing"). Three honest inputs → the hours and money draining each year, live.
@@ -142,8 +143,8 @@ export const puck = {
     costLabel: 'Average hourly cost',
     defaultTeam: 12, defaultHours: 5, defaultCost: 30, weeksPerYear: 46, currency: '£',
     resultLead: 'That is roughly',
-    ctaLabel: 'Book a Diagnostic',
-    ctaHref: '#book',
+    ctaLabel: PRIMARY_CTA_LABEL,
+    ctaHref: PRIMARY_CTA_HREF,
     footnote: 'A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back.',
   },
   render: (props) => <TimeSavingsCalculator {...props} />,

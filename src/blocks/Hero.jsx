@@ -1,5 +1,5 @@
 import { useReveal } from './reveal.js';
-import { BRAND_TAGLINE } from '../lib/brand.mjs';
+import { BRAND_TAGLINE, PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import { useEffect, useState, useRef } from 'react';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
@@ -346,7 +346,7 @@ export const puck = {
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
     headlineSuffix: '',
-    align: 'left', size: 'full', ctaLabel: 'Book a Diagnostic', ctaHref: '#book', ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, stone: 'none', variant: 'default', cueLabel: 'Scroll down to start the climb',
+    align: 'left', size: 'full', ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, stone: 'none', variant: 'default', cueLabel: 'Scroll down to start the climb',
   },
   render: (props) => <Hero {...props} />,
 };

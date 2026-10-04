@@ -4,6 +4,7 @@ import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
+import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // IndustryPicker: industries.html's signature interaction. A role=tablist of sector chips with a
@@ -263,8 +264,8 @@ export const puck = {
     specificHead: 'Specific to your world',
     specificFoot: 'Where your sector quietly bleeds hours:',
     specificFootAccent: 'we leave no stone unturned.',
-    ctaLabel: 'Book a Diagnostic',
-    ctaHref: '#book',
+    ctaLabel: PRIMARY_CTA_LABEL,
+    ctaHref: PRIMARY_CTA_HREF,
     industries: [
       { label: 'Real estate', headline: 'Less time on portals. More time closing.', specificTitle: 'What real estate quietly loses.', drains: DRAIN(['Pulling comps and area research by hand', 'Re-listing the same property across every portal', 'Drafting near-identical property descriptions', 'Chasing solicitors, surveyors and brokers', 'Matching new stock to buyers manually']) },
       { label: 'Healthcare', headline: 'Less time on admin. More time on patients.', specificTitle: 'What healthcare quietly loses.', drains: DRAIN(['Re-typing patient details across disconnected systems', 'Manual appointment reminders and no-show chasing', 'Coding and submitting claims by hand', 'Compiling compliance and audit reports from scratch', 'Routing referrals and results between teams']) },
