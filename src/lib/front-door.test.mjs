@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addWord, normaliseWord, validateIntake, validateContact, orderAgents, avatarIndex, teamAvatars, readGaClientId,
-  makeFrontDoorClient, CONSENT_VERSION, OTHER, LIMITS,
+  makeFrontDoorClient, makeFunnel, CONSENT_VERSION, OTHER, LIMITS,
 } from './front-door.mjs';
 
 const SECTORS = ['Real estate', 'Healthcare'];
@@ -147,4 +147,62 @@ test('client: with no Supabase config it refuses without a network call', async 
   assert.equal(c.configured, false);
   await assert.rejects(c.propose({}), /not set up/);
   assert.equal(called, false);
+});
+
+// B9 (GRE-469): funnel events, consent-gated, no typed text
+function recorder(consent) {
+  const sent = [];
+  let c = consent;
+  const f = makeFunnel({ track: (event, params) => sent.push({ event, params }), getConsent: () => c });
+  return { f, sent, set: (v) => { c = v; } };
+}
+const okIntake = validateIntake(good, SECTORS).intake;
+const otherIntake = validateIntake({ ...good, industry: OTHER, other: 'Rare earth mining' }, SECTORS).intake;
+
+test('funnel: nothing fires before analytics consent, or after it is refused', () => {
+  for (const consent of [null, 'denied', 'yes']) {
+    const { f, sent } = recorder(consent);
+    assert.equal(f.intake(okIntake, 'build'), false);
+    assert.equal(f.proposal(okIntake, { status: 'ok' }), false);
+    assert.equal(f.lead(okIntake, { consent: true }), false);
+    assert.equal(sent.length, 0);
+  }
+});
+
+test('funnel: consent is read when the event fires, so accepting mid-flow counts from then on', () => {
+  const { f, sent, set } = recorder(null);
+  f.intake(okIntake, 'build');
+  set('granted');
+  f.proposal(okIntake, { status: 'ok' });
+  assert.deepEqual(sent.map((s) => s.event), ['front_door_proposal']);
+});
+
+test('funnel: the three spec events with label parameters', () => {
+  const { f, sent } = recorder('granted');
+  f.intake(okIntake, 'chat');
+  f.proposal(okIntake, { status: 'ok', turns: 4 });
+  f.lead(okIntake, { consent: false });
+  assert.deepEqual(sent, [
+    { event: 'front_door_intake', params: { form: 'front_door', industry: 'Healthcare', team_size: '11-50', path: 'chat' } },
+    { event: 'front_door_proposal', params: { form: 'front_door', industry: 'Healthcare', outcome: 'team', chat_turns: 4 } },
+    { event: 'generate_lead', params: { form: 'front_door', industry: 'Healthcare', contact_consent: false } },
+  ]);
+});
+
+test('funnel: no typed text reaches GA (Other industry, company, brand words)', () => {
+  const { f, sent } = recorder('granted');
+  f.intake({ ...otherIntake, teamSize: null }, 'build');
+  f.proposal(otherIntake, { status: 'declined', turns: 99 });
+  f.lead(otherIntake, { consent: true });
+  const all = JSON.stringify(sent);
+  for (const typed of ['Rare earth', 'Acme', 'calm', 'clear', 'kind']) assert.ok(!all.includes(typed), typed);
+  assert.equal(sent[0].params.industry, OTHER);
+  assert.equal(sent[0].params.team_size, 'not_given');
+  assert.equal(sent[1].params.outcome, 'declined');
+  assert.equal(sent[1].params.chat_turns, LIMITS.chatTurns);
+  assert.equal(sent[2].params.contact_consent, true);
+});
+
+test('funnel: a missing track or consent reader is a no-op, not a crash', () => {
+  assert.equal(makeFunnel().intake(okIntake, 'build'), false);
 });
