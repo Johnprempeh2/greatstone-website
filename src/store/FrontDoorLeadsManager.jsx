@@ -6,6 +6,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
+import { zipFiles } from '../lib/package-zip.mjs';
+import { buildAgentPackage, packageFolder } from '../../supabase/functions/_shared/front-door-package.mjs';
 
 const STATUSES = ['new', 'contacted', 'closed'];
 const COLS = 'id, industry, industry_other, team_size, brand_words, company_name, agents, chat_summary, chat_turns, source, '
@@ -46,6 +48,20 @@ export default function FrontDoorLeadsManager() {
     const { error } = await supabase.from('front_door_leads').update(patch).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
     flash('Status: ' + status); load();
+  };
+  // B8 (GRE-468): the three employees as an Agent Companies package, for the GS Agentic Manager import page.
+  // The saved package (0032) when there is one, else built from the row, so older leads download too.
+  const downloadPackage = async (r) => {
+    const { data, error } = await supabase.from('front_door_leads').select('agent_package').eq('id', r.id).maybeSingle();
+    const files = (!error && data && data.agent_package)
+      || buildAgentPackage({ intake: { industry: r.industry, company: r.company_name, words: list(r.brand_words), teamSize: r.team_size }, agents: list(r.agents) });
+    if (!files) { flash('This lead has no employees to package.'); return; }
+    const folder = packageFolder(r.company_name);
+    const url = URL.createObjectURL(new Blob([zipFiles(files, folder)], { type: 'application/zip' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = folder + '.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const remove = async (r) => {
     const who = r.contact_email || r.company_name;
@@ -111,7 +127,7 @@ export default function FrontDoorLeadsManager() {
                           </td>
                           <td><button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === r.id ? null : r.id)} aria-expanded={expanded === r.id}>{expanded === r.id ? 'Hide' : 'View'}</button></td>
                         </tr>
-                        {expanded === r.id ? <tr><td colSpan="6" className="ca-inq-detail"><LeadDetail r={r} onDelete={() => remove(r)} /></td></tr> : null}
+                        {expanded === r.id ? <tr><td colSpan="6" className="ca-inq-detail"><LeadDetail r={r} onDelete={() => remove(r)} onPackage={() => downloadPackage(r)} /></td></tr> : null}
                       </React.Fragment>
                     ))}
               </tbody>
@@ -124,7 +140,7 @@ export default function FrontDoorLeadsManager() {
   );
 }
 
-function LeadDetail({ r, onDelete }) {
+function LeadDetail({ r, onDelete, onPackage }) {
   const src = r.source || {};
   const ft = src.firstTouch || {};
   const utm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].filter((k) => ft[k]).map((k) => k.slice(4) + ': ' + ft[k]);
@@ -158,7 +174,10 @@ function LeadDetail({ r, onDelete }) {
         {utm.length ? ' · ' + utm.join(', ') : ''}{ft.landing ? ' · first landed on ' + ft.landing : ''}
         {src.gaClientId ? ' · GA client ' + src.gaClientId : ''}
       </p>
-      <p><button className="gs-btn ghost sm" onClick={onDelete}>Delete lead</button></p>
+      <p style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {list(r.agents).length ? <button className="gs-btn ghost sm" onClick={onPackage}>Download agent package (.zip)</button> : null}
+        <button className="gs-btn ghost sm" onClick={onDelete}>Delete lead</button>
+      </p>
     </>
   );
 }
