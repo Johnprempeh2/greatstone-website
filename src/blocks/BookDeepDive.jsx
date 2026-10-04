@@ -16,7 +16,7 @@ const ICONS = {
   scan: ico(<><path d="M4 7V5a2 2 0 0 1 2-2h2" /><path d="M16 3h2a2 2 0 0 1 2 2v2" /><path d="M20 17v2a2 2 0 0 1-2 2h-2" /><path d="M8 21H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></>),
 };
 
-// The "Book a Diagnostic" page: the booking form beside a short framing aside. On submit it composes a
+// The booking page: the booking form beside a short framing aside. On submit it composes a
 // prefilled mailto to the contact address from the entered fields (client-side, no backend) and shows a
 // confirmation with the address as a fallback. A future build may POST to a backend; that decision is open.
 export function BookDeepDive({
@@ -177,7 +177,7 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 const PT = (title, text) => ({ title, text });
 
 export const puck = {
-  label: 'Book a Diagnostic (form)',
+  label: 'Booking form',
   fields: {
     eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     headline: { type: 'custom', label: 'Headline', render: (props) => <RichTextField {...props} variant="heading" /> },

@@ -12,6 +12,7 @@ import { isExpiringSoon, daysUntil } from './licence-expiry.mjs';
 import { orderRefDisplay } from '../lib/order-ref.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
+import { PRIMARY_CTA_LABEL } from '../lib/brand.mjs';
 import './store.css';
 import './admin.css';
 
@@ -308,7 +309,7 @@ function Dashboard({ session, profile, onProfile }) {
   const expiringKeys = Object.values(keysByOrder).flat().filter(k => isExpiringSoon(k, KEY_SOON_DAYS)).length;
   const nextStep = (() => {
     if (expiringKeys > 0) return { title: 'Renew your licences', body: `${expiringKeys} of your licence key${expiringKeys === 1 ? '' : 's'} expire${expiringKeys === 1 ? 's' : ''} within ${KEY_SOON_DAYS} days. Renew to keep your seats active.`, ctas: [{ label: 'Review your keys', onClick: () => goTab('keys'), primary: true }, { label: 'Talk to us', href: '#go/contact' }] };
-    if (!loadingOrders && orders.length === 0) return { title: 'Start your Greatstone toolkit', body: 'Explore the software catalogue, or book a diagnostic to kick off your transformation.', ctas: [{ label: 'Explore the catalogue', href: '#shop', primary: true }, { label: 'Book a Diagnostic', href: '#go/contact' }] };
+    if (!loadingOrders && orders.length === 0) return { title: 'Start your Greatstone toolkit', body: 'Explore the software catalogue, or talk to us about the work you want to improve.', ctas: [{ label: 'Explore the catalogue', href: '#shop', primary: true }, { label: PRIMARY_CTA_LABEL, href: '#go/contact' }] };
     if (keyCount > 0) return { title: 'Activate your licences', body: 'Your licence keys are ready. Copy each one into the product to activate your seats.', ctas: [{ label: 'View your keys', onClick: () => goTab('keys'), primary: true }] };
     if (profile?.customer && admin) return { title: 'Set up your organisation', body: 'Invite teammates and complete your company profile in your organisation dashboard.', ctas: [{ label: 'Go to your organisation', href: '#org', primary: true }] };
     if (profile?.customer) return { title: 'Follow your transformation', body: 'See your maturity, your engagement timeline and what your Greatstone team has delivered.', ctas: [{ label: 'Open your organisation', href: '#org', primary: true }] };
