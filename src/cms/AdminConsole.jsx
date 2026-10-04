@@ -65,6 +65,7 @@ function buildNav(attention = {}) {
       { id: 'cat-orders', label: 'Orders', type: 'commerce', tab: 'orders' },
       { id: 'cat-quotes', label: 'Quotes', type: 'commerce', tab: 'quotes' },
       { id: 'cat-inquiries', label: 'Service inquiries', type: 'commerce', tab: 'inquiries' },
+      { id: 'cat-leads', label: 'Front door leads', type: 'commerce', tab: 'leads' },
       { id: 'cat-bulk', label: 'Import / export', type: 'commerce', tab: 'bulk' },
       { id: 'store', label: 'View live store', type: 'link' },
     ] },

@@ -16,6 +16,10 @@ verify_jwt = false
 [functions.request-quote]
 verify_jwt = false
 
+# Anonymous visitors; the function does its own bot check (Turnstile), signed session and per-IP limit.
+[functions.front-door]
+verify_jwt = false
+
 # Staff-triggered + customer-triggered emailers: the gateway JWT check stays ON (a signed-in session is
 # required to even reach them), and each function then does its own narrower check (staff row / own
 # customer_users row) before sending anything.

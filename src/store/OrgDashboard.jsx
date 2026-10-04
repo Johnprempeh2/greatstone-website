@@ -13,6 +13,7 @@ import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { BRIEFINGS, TOPIC_LABEL, TOPIC_HUE } from '../data/ai-intel.mjs';
 import { PILLARS } from '../data/maturity-seed.mjs';
 import { useMaturity } from './useMaturity.mjs';
+import { safeLink } from '../data/deepdive-schema.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
 import { toIcs } from './to-ics.mjs';
@@ -711,8 +712,8 @@ function Item({ e, companyName, isNew, open, onToggle }) {
               {open ? 'Hide recap' : 'Read recap'}
             </button>
           )}
-          {e.external_url && (
-            <a className="gs-btn ghost sm dx-ext" href={e.external_url} target="_blank" rel="noopener noreferrer"
+          {safeLink(e.external_url) && (
+            <a className="gs-btn ghost sm dx-ext" href={safeLink(e.external_url)} target="_blank" rel="noopener noreferrer"
                aria-label={(e.kind === 'deliverable' ? 'Open deliverable' : 'Open') + ' (opens in a new tab)'}>
               {e.kind === 'deliverable' ? 'Open deliverable' : 'Open'} ↗ <span className="dx-host">{hostOf(e.external_url)}</span>
             </a>
