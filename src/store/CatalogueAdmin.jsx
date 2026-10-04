@@ -12,6 +12,7 @@ import OrdersManager from './OrdersManager.jsx';
 import QuotesManager from './QuotesManager.jsx';
 import VendorActivation from './VendorActivation.jsx';
 import InquiriesManager from './InquiriesManager.jsx';
+import FrontDoorLeadsManager from './FrontDoorLeadsManager.jsx';
 import FxRateEditor from './FxRateEditor.jsx';
 import ClientsManager from './ClientsManager.jsx';
 import './store.css';
@@ -52,6 +53,7 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub, onStaf
           <button role="tab" aria-selected={tab === 'orders'} className={tab === 'orders' ? 'on' : ''} onClick={() => setTab('orders')}>Orders</button>
           <button role="tab" aria-selected={tab === 'quotes'} className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
           <button role="tab" aria-selected={tab === 'inquiries'} data-tour="catab-inquiries" className={tab === 'inquiries' ? 'on' : ''} onClick={() => setTab('inquiries')}>Inquiries</button>
+          <button role="tab" aria-selected={tab === 'leads'} className={tab === 'leads' ? 'on' : ''} onClick={() => setTab('leads')}>Front door leads</button>
           <button role="tab" aria-selected={tab === 'clients'} className={tab === 'clients' ? 'on' : ''} onClick={() => setTab('clients')}>Clients &amp; DX</button>
           <button role="tab" aria-selected={tab === 'activation'} className={tab === 'activation' ? 'on' : ''} onClick={() => setTab('activation')}>Activation</button>
           <button role="tab" aria-selected={tab === 'bulk'} data-tour="catab-bulk" className={tab === 'bulk' ? 'on' : ''} onClick={() => setTab('bulk')}>Import / export</button>
@@ -63,7 +65,7 @@ export default function CatalogueAdmin({ initialTab = 'offerings', onHub, onStaf
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
       </div>
-      {tab === 'pricing' ? <PricingRules staff={staff} /> : tab === 'fx' ? <FxRateEditor staff={staff} /> : tab === 'orders' ? <OrdersManager staff={staff} /> : tab === 'quotes' ? <QuotesManager staff={staff} /> : tab === 'inquiries' ? <InquiriesManager staff={staff} /> : tab === 'clients' ? <ClientsManager staff={staff} /> : tab === 'activation' ? <VendorActivation /> : tab === 'bulk' ? <BulkImport staff={staff} /> : <OfferingsManager staff={staff} />}
+      {tab === 'pricing' ? <PricingRules staff={staff} /> : tab === 'fx' ? <FxRateEditor staff={staff} /> : tab === 'orders' ? <OrdersManager staff={staff} /> : tab === 'quotes' ? <QuotesManager staff={staff} /> : tab === 'inquiries' ? <InquiriesManager staff={staff} /> : tab === 'leads' ? <FrontDoorLeadsManager /> : tab === 'clients' ? <ClientsManager staff={staff} /> : tab === 'activation' ? <VendorActivation /> : tab === 'bulk' ? <BulkImport staff={staff} /> : <OfferingsManager staff={staff} />}
     </>
   );
 }
