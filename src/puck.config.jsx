@@ -41,13 +41,14 @@ import * as ComparisonMatrix from './blocks/ComparisonMatrix.jsx';
 import * as Columns from './blocks/Columns.jsx';
 import * as AiBaselineSurvey from './blocks/AiBaselineSurvey.jsx';
 import * as AiCostCalculator from './blocks/AiCostCalculator.jsx';
+import * as FrontDoor from './blocks/FrontDoor.jsx';
 import { sectionClass } from './lib/block-style.mjs';
 import { SECTION_FIELD, SECTION_DEFAULT } from './cms/style-field.jsx';
 
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Prose, Chapter, Statement, Panels, Columns, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, ServiceCatalog, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator, AiBaselineSurvey, AiCostCalculator, LogoWall, ComparisonMatrix };
+const MODULES = { Hero, Prose, Chapter, Statement, Panels, Columns, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, ServiceCatalog, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator, AiBaselineSurvey, AiCostCalculator, LogoWall, ComparisonMatrix, FrontDoor };
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
@@ -81,7 +82,7 @@ export const config = {
     proof: { title: 'Proof', components: ['StatStrip', 'LogoWall', 'ComparisonMatrix', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid', 'Faq', 'TimeSavingsCalculator', 'AiBaselineSurvey', 'AiCostCalculator'] },
     editorial: { title: 'Editorial', components: ['IntelBand', 'FeaturedArticle', 'InsightsGrid', 'Figure'] },
     commerce: { title: 'Commerce', components: ['Storefront'] },
-    contact: { title: 'Contact', components: ['TimeCounter', 'BookDeepDive', 'ContactBand'] },
+    contact: { title: 'Contact', components: ['FrontDoor', 'TimeCounter', 'BookDeepDive', 'ContactBand'] },
   },
 };
 
