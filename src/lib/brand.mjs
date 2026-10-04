@@ -12,6 +12,7 @@
 //   1. supabase/functions/{stripe-webhook,notify-licence-issued,send-welcome-email}/index.ts
 //      Deno edge functions. They are documented mirrors of the src/lib/*-email.mjs builders precisely
 //      because they cannot reach into src/. Each carries the tagline in its own HTML.
+//      supabase/functions/_shared/front-door-pack.mjs copies BRAND_SIGNOFF; its test fails if they differ.
 //   2. supabase/templates/_build.mjs
 //      Generates the five auth email templates (confirmation, recovery, invite, magic_link,
 //      email_change). Edit the generator, not the generated .html files.

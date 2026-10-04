@@ -5,10 +5,13 @@
 // three proposals per IP a day (counted in the database, IP hashed), fixed max output tokens, retry once.
 // Leads (B3): an anonymous row at S5, the contact added at S6, then the internal Resend alert (S8). If the
 // row cannot be saved, the alert carries the contact instead, so a lead is never silently lost.
+// Team pack (B4, GRE-464): at S6 the visitor's three employees go to the address they typed, once per lead
+// (0032's pack_sent_at claim), tick or no tick (GRE-467). The alert says whether it went.
 // Wire contract: src/lib/front-door.mjs (the FrontDoor block's client).
 // Secrets: ANTHROPIC_API_KEY (website-only workspace with a monthly cap), TURNSTILE_SECRET_KEY,
 // FRONT_DOOR_SECRET (signs sessions, keys the IP hash), optional FRONT_DOOR_PRIVATE_NAMES. For the S8 alert:
 // RESEND_API_KEY, RESEND_FROM, FRONT_DOOR_ALERT_TO (comma list), optional APP_SITE_ORIGIN; no alert without them.
+// The team pack needs RESEND_API_KEY and RESEND_FROM; optional FRONT_DOOR_BOOKING_URL (default: the site's Calendly).
 // Local, no cost: FRONT_DOOR_STUB=1 with no ANTHROPIC_API_KEY answers from ../_shared/front-door-stub.mjs
 // (never in a hosted project). Use Turnstile's test secret 1x0000000000000000000000000000000AA with it.
 // Deploy: supabase functions deploy front-door --no-verify-jwt
@@ -20,6 +23,7 @@ import {
 import { CHAT_TURNS } from '../_shared/front-door-prompts.mjs';
 import { stubAllowed, stubFetch, STUB_KEY } from '../_shared/front-door-stub.mjs';
 import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from '../_shared/front-door-leads.mjs';
+import { deliverTeamPack, BOOKING_URL } from '../_shared/front-door-pack.mjs';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 const STUB = stubAllowed({
@@ -35,7 +39,9 @@ const PROPOSALS_PER_DAY = 3;
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? '';
 const ALERT_TO = (Deno.env.get('FRONT_DOOR_ALERT_TO') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-const STUDIO_URL = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstoneint.com').replace(/\/+$/, '') + '/#catalogue/leads';
+const SITE_ORIGIN = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstoneint.com').replace(/\/+$/, '');
+const STUDIO_URL = SITE_ORIGIN + '/#catalogue/leads';
+const BOOKING = Deno.env.get('FRONT_DOOR_BOOKING_URL') || BOOKING_URL;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -92,6 +98,23 @@ async function saveLead(intake: any, industryOther: boolean, proposal: any, turn
   } catch (e) { console.error('front-door: lead not saved', String((e as Error)?.message || e)); return null; }
 }
 
+// S6: the visitor's team pack, once per lead. `taken` means an earlier S6 already sent it.
+async function sendPack(lead: any, contact: Record<string, unknown>) {
+  const out = await deliverTeamPack({
+    lead, contact, bookingUrl: BOOKING, siteOrigin: SITE_ORIGIN,
+    claim: async () => {
+      const { data, error } = await supabase.from('front_door_leads').update({ pack_sent_at: new Date().toISOString() })
+        .eq('id', lead.id).is('pack_sent_at', null).select('id').maybeSingle();
+      if (error) { console.error('front-door: pack claim failed', error.message); return 'error'; }
+      return data ? 'claimed' : 'taken';
+    },
+    release: async () => { await supabase.from('front_door_leads').update({ pack_sent_at: null }).eq('id', lead.id); },
+    send: (msg: any) => sendEmail({ apiKey: RESEND_KEY, from: RESEND_FROM, ...msg }),
+  });
+  if (!out.sent) console.warn('front-door: team pack not sent', out.reason);
+  return out.sent;
+}
+
 const alert = (opts: Parameters<typeof buildAlertEmail>[0]) =>
   sendEmail({ apiKey: RESEND_KEY, from: RESEND_FROM, to: ALERT_TO, ...buildAlertEmail(opts) });
 
@@ -103,23 +126,24 @@ async function takeContact(leadId: string | null, update: Record<string, unknown
   if (leadId) {
     try {
       const { data, error } = await supabase.from('front_door_leads').update(update).eq('id', leadId)
-        .select('id, industry, industry_other, team_size, company_name, consent_given, alert_sent_at').maybeSingle();
+        .select('id, industry, industry_other, team_size, company_name, agents, consent_given, alert_sent_at').maybeSingle();
       if (error) console.error('front-door: contact not saved', error.message);
       lead = data;
     } catch (e) { console.error('front-door: contact not saved', String((e as Error)?.message || e)); }
   }
+  // No row means no saved team, so no pack; the fallback alert says so and staff send it by hand.
   if (!lead) {
-    const sent = await alert({ contact: update, studioUrl: STUDIO_URL });
+    const sent = await alert({ contact: update, studioUrl: STUDIO_URL, packSent: false });
     if (!sent.sent) console.error('front-door: lead lost, fallback alert failed', sent.error);
-    return sent.sent;
+    return { ok: sent.sent, pack: false };
   }
+  const pack = await sendPack(lead, update);
   if (!lead.alert_sent_at) {
-    const sent = await alert({ lead, studioUrl: STUDIO_URL });
+    const sent = await alert({ lead, studioUrl: STUDIO_URL, packSent: pack });
     if (sent.sent) await supabase.from('front_door_leads').update({ alert_sent_at: new Date().toISOString() }).eq('id', lead.id);
     else console.warn('front-door: alert not sent', sent.error);
   }
-  // B4 (GRE-464) sends the team pack from here.
-  return true;
+  return { ok: true, pack };
 }
 
 Deno.serve(async (req) => {
@@ -141,8 +165,8 @@ Deno.serve(async (req) => {
     if (body.leadId != null && body.leadId !== s.lid) return json({ error: MSG.input }, 409);
     const update = contactUpdate(body);
     if (!update) return json({ error: MSG.input }, 400);
-    const ok = await takeContact(isLeadId(s.lid) ? s.lid : null, update);
-    return ok ? json({ ok: true }) : json({ error: MSG.lead }, 502);
+    const out = await takeContact(isLeadId(s.lid) ? s.lid : null, update);
+    return out.ok ? json({ ok: true, pack: out.pack }) : json({ error: MSG.lead }, 502);
   }
 
   const ip = clientIp(req);
