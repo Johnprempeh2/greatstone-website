@@ -70,7 +70,7 @@ at the same account and every auth email comes from a Greatstone address with pr
 What you do once:
 
 1. In Resend, confirm the sending domain is verified (the same one the order email uses, e.g.
-   `greatstonesoftware.co.uk`, with DKIM/SPF records on the domain). Create an API key for SMTP if you
+   `greatstoneint.com`, with DKIM/SPF records on the domain). Create an API key for SMTP if you
    don't have one.
 2. Turn on custom SMTP in Supabase. Dashboard → Authentication → Emails → SMTP Settings, or as code in
    `config.toml`:
@@ -82,7 +82,7 @@ What you do once:
    port = 465
    user = "resend"
    pass = "env(RESEND_SMTP_PASSWORD)"     # a Resend API key, set as a secret; never commit it
-   admin_email = "dx@greatstonesoftware.co.uk"
+   admin_email = "orders@greatstoneint.com"
    sender_name = "Greatstone International"
    ```
 
@@ -93,13 +93,13 @@ What you do once:
 That's the whole sender step. It's the one piece that needs your credentials, so I've left it to you
 rather than handling a Resend API key.
 
-## 4. One thing to decide: the sender domain
+## 4. The sender domain
 
-The codebase isn't consistent on the contact domain: the live site footer and the order email's
-`RESEND_FROM` example use **greatstonesoftware.co.uk**, while a couple of older strings use
-**greatstoneinternational.co.uk**. Pick one as the canonical sending + contact domain (whichever is
-verified in Resend), and we'll align the footer, the invoice contact line and these emails to it in a
-follow-up. The templates above don't hardcode an email address, so they're unaffected either way.
+Decided 2 Jul 2026: **greatstoneint.com** is the sending and contact domain (see
+`docs/DOMAIN-EMAIL-TRANSITION.md`). Verify it in Resend and send from it. Some public contact strings
+(footer, invoice contact line) still show the old greatstonesoftware.co.uk address; they move to
+greatstoneint.com in a follow-up once its mailboxes receive mail. The templates above don't hardcode
+an email address, so they're unaffected either way.
 
 ## 5. Testing
 

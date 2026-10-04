@@ -1,6 +1,8 @@
 # Domain cutover runbook
 
 How we move the studio from `greatstone-home.netlify.app` to the real Greatstone public domain.
+The permanent domain is **greatstoneint.com** (decided 2 Jul 2026; see `docs/DOMAIN-EMAIL-TRANSITION.md`).
+The old greatstonesoftware.co.uk is to redirect to it (`public/_redirects` already maps the old shop's paths).
 The whole point: this is a **config change, not a migration.** The app builds every URL it needs from
 `location.origin`, so it already works on any domain served at root. Nothing below requires a rewrite.
 
@@ -17,8 +19,8 @@ The whole point: this is a **config change, not a migration.** The app builds ev
 
 ## The cutover, when the domain is ready
 
-1. **Decide the shape.** Either the studio is the public site on the apex (`greatstonesoftware.co.uk`),
-   or it lives on a subdomain (`app.greatstonesoftware.co.uk`) with a separate marketing site on the
+1. **Decide the shape.** Either the studio is the public site on the apex (`greatstoneint.com`),
+   or it lives on a subdomain (`app.greatstoneint.com`) with a separate marketing site on the
    apex. Subdomain is the cleaner default if a separate marketing site is planned: separate deploys,
    no path collisions.
 2. **Netlify: attach the domain.** Site `greatstone-home` (id `3b1e97e6-e184-4251-badd-deed532be3ab`)

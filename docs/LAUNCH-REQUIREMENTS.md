@@ -38,7 +38,7 @@ items clear."**
 Everything below changes depending on two answers. Worth settling these first, because they decide which
 items are even in scope.
 
-1. **What happens to the existing store?** The current greatstonesoftware.co.uk is a full working reseller
+1. **What happens to the existing store?** The old greatstonesoftware.co.uk is a full working reseller
    storefront (built by iCandy Design): real products, basket, checkout, customer accounts and order
    history. Does the new build **replace** it, sit **alongside** it as the brand/marketing site, or **take
    over** its commerce? If it replaces the live store, we must migrate the existing customers and orders,
@@ -94,14 +94,15 @@ proper launch, not day-one-of-staging), or **[Later]** (can follow after launch)
 - **[Important] Acceptance of Stripe and Supabase as data processors** (standard GDPR agreements).
 
 ### 4. Domain, DNS and hosting ownership
-- **[Blocker] Access to the domain registrar** for greatstonesoftware.co.uk (or delegated DNS access), and
-  confirmation of who owns the registration. This is the hardest external dependency: nothing in the
-  cutover (site DNS, SSL certificate, email verification) can happen without editing the domain's DNS. We
-  need to know if Greatstone owns it directly or if the incumbent agency (iCandy) holds it.
+- **[Blocker] Access to the domain registrar** for greatstoneint.com, the permanent domain (decided 2 Jul
+  2026, see `docs/DOMAIN-EMAIL-TRANSITION.md`), and confirmation of who owns the registration. Its DNS is
+  already hosted in our Netlify account, so site DNS, SSL and email verification records can be added there.
+  For the old greatstonesoftware.co.uk we still need whoever holds it (Greatstone directly or the incumbent
+  agency, iCandy) to point it at greatstoneint.com with a permanent redirect.
 - **[Blocker] Access to the Cloudflare account** in front of the current domain (the live site uses it), as
   it sits in the DNS path.
-- **[Blocker] Apex vs subdomain decision.** Is the new site the public site on greatstonesoftware.co.uk, or
-  on app.greatstonesoftware.co.uk with a separate marketing site on the apex? We recommend the subdomain
+- **[Blocker] Apex vs subdomain decision.** Is the new site the public site on greatstoneint.com, or
+  on app.greatstoneint.com with a separate marketing site on the apex? We recommend the subdomain
   split if a distinct marketing site is planned, for cleaner SEO.
 - **[Blocker] Ownership of the hosting account** the site sits on, and agreement to move it under a
   Greatstone-owned account so control does not sit with an individual or an agency at handover.
@@ -109,9 +110,10 @@ proper launch, not day-one-of-staging), or **[Later]** (can follow after launch)
   server, so we can plan any takeover, data export or redirect.
 
 ### 5. Email sending
-- **[Blocker] Pick one canonical domain and from-address** for sending (for example
-  `orders@greatstonesoftware.co.uk`). The codebase currently mixes greatstonesoftware.co.uk and
-  greatstoneinternational.co.uk; one must win so email, invoices and the footer all align.
+- **[Blocker] Confirm the from-address** for sending. The domain is decided: greatstoneint.com (2 Jul
+  2026); the recommended sender is `orders@greatstoneint.com`. Some public contact strings still use
+  greatstonesoftware.co.uk; they move to greatstoneint.com once its mailboxes receive mail (that change
+  waits on John and Ben).
 - **[Blocker] A production email account (Resend)** and verification of the sending domain by adding the DNS
   records it generates (SPF and DKIM). Until the domain shows "verified", order and account emails from a
   @greatstone address are rejected or land in spam. Today it uses a sandbox sender that only reaches us.
