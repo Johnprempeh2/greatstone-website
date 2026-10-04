@@ -9,6 +9,8 @@
 // Secrets: ANTHROPIC_API_KEY (website-only workspace with a monthly cap), TURNSTILE_SECRET_KEY,
 // FRONT_DOOR_SECRET (signs sessions, keys the IP hash), optional FRONT_DOOR_PRIVATE_NAMES. For the S8 alert:
 // RESEND_API_KEY, RESEND_FROM, FRONT_DOOR_ALERT_TO (comma list), optional APP_SITE_ORIGIN; no alert without them.
+// Local, no cost: FRONT_DOOR_STUB=1 with no ANTHROPIC_API_KEY answers from ../_shared/front-door-stub.mjs
+// (never in a hosted project). Use Turnstile's test secret 1x0000000000000000000000000000000AA with it.
 // Deploy: supabase functions deploy front-door --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import {
@@ -16,10 +18,16 @@ import {
   signSession, verifySession, transcriptHash, hashIp, sha256, parsePrivateNames,
 } from '../_shared/front-door-engine.mjs';
 import { CHAT_TURNS } from '../_shared/front-door-prompts.mjs';
+import { stubAllowed, stubFetch, STUB_KEY } from '../_shared/front-door-stub.mjs';
 import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from '../_shared/front-door-leads.mjs';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-const API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+const STUB = stubAllowed({
+  flag: Deno.env.get('FRONT_DOOR_STUB'), apiKey: Deno.env.get('ANTHROPIC_API_KEY'), supabaseUrl: Deno.env.get('SUPABASE_URL'),
+});
+const API_KEY = STUB ? STUB_KEY : Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+const MODEL_FETCH = STUB ? stubFetch : undefined;
+if (STUB) console.warn('front-door: LOCAL STUB, replies are fixed lines, not a model');
 const TURNSTILE_SECRET = Deno.env.get('TURNSTILE_SECRET_KEY') ?? '';
 const SECRET = Deno.env.get('FRONT_DOOR_SECRET') ?? '';
 const PRIVATE_NAMES = parsePrivateNames(Deno.env.get('FRONT_DOOR_PRIVATE_NAMES'));
@@ -167,7 +175,7 @@ Deno.serve(async (req) => {
       const expect = history.length ? await transcriptHash(intake, history) : null;
       if (session.th !== expect) return json({ error: MSG.input }, 409);
       let out;
-      try { out = await runChat({ intake, messages, apiKey: API_KEY, privateNames: PRIVATE_NAMES }); }
+      try { out = await runChat({ intake, messages, apiKey: API_KEY, fetchImpl: MODEL_FETCH, privateNames: PRIVATE_NAMES }); }
       catch (e) { console.error('front-door: chat call failed', (e as Error).message); return json({ error: MSG.chat }, 502); }
       if (out.failed.length) console.warn('front-door: chat reply replaced', out.failed.join(','));
       const next = [...messages, { from: 'everest', text: out.reply }];
@@ -185,7 +193,7 @@ Deno.serve(async (req) => {
     if (!slot) return json({ error: MSG.limit }, 429);
 
     let result;
-    try { result = await runProposal({ intake, messages, apiKey: API_KEY, privateNames: PRIVATE_NAMES }); }
+    try { result = await runProposal({ intake, messages, apiKey: API_KEY, fetchImpl: MODEL_FETCH, privateNames: PRIVATE_NAMES }); }
     catch (e) {
       console.error('front-door: proposal failed', ((e as any).attempts || [(e as Error).message]).join(' | '));
       // A failed build does not use up one of the visitor's three.
