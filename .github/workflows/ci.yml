@@ -1,5 +1,5 @@
 name: CI
-# Build + unit tests on every PR and push to main. Activates once the repo is on GitHub.
+# Build, unit tests and redirects check on every PR and push to main. Activates once the repo is on GitHub.
 on:
   push:
     branches: [main]
@@ -26,3 +26,5 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
           VITE_VAT_RATE: '0.20'
+      - name: Legacy redirects in sync (public/_redirects)
+        run: npm run redirects:check
