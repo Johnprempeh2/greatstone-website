@@ -50,9 +50,18 @@ test('seed pages and page starters carry no retired CTA label', async () => {
 });
 
 test('store seeds and dashboards carry no retired CTA label', () => {
-  for (const f of ['../store.js', '../store/OrgDashboard.jsx']) {
+  for (const f of ['../store.js', '../store/OrgDashboard.jsx', '../store/AccountDashboard.jsx']) {
     const src = readFileSync(new URL(f, import.meta.url), 'utf8');
     assert.doesNotMatch(src, /(ctaLabel2?|bookLabel|label)\s*:\s*['"]Book a diagnostic['"]/i, f);
     assert.doesNotMatch(src, />\s*Book a diagnostic\s*</i, f);
   }
+});
+
+// GRE-636: the copy that named the old button now carries John's approved wording (GRE-637), so neither the
+// seed pages nor the TimeCounter default may tell a visitor to "Book a Diagnostic" any more.
+test('seed page copy and the TimeCounter default no longer say "Book a Diagnostic"', () => {
+  assert.doesNotMatch(readFileSync(new URL('../seed-pages.json', import.meta.url), 'utf8'), /book a diagnostic/i);
+  const tc = read('TimeCounter.jsx');
+  assert.doesNotMatch(tc, /book a diagnostic|one diagnostic/i);
+  assert.match(tc, /kicker: 'Where the hours hide'/);
 });

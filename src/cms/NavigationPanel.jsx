@@ -71,7 +71,7 @@ export default function NavigationPanel({ navigation = [], pages = {}, order = [
   return (
     <PanelFrame embedded={embedded} label={<>Navigation <span className="gs-panel-count">{tree.length}</span></>} name="Navigation" onClose={onClose}>
       <div className="gs-panel-body">
-        <p className="gs-field-hint" style={{ marginTop: 0 }}>The header navigation bar. Add pages, external links and dropdown groups, reorder them, rename their labels, and nest pages inside a group. Changes apply across the site immediately. (The Products link and the Book a Diagnostic button are added automatically.)</p>
+        <p className="gs-field-hint" style={{ marginTop: 0 }}>The header navigation bar. Add pages, external links and dropdown groups, reorder them, rename their labels, and nest pages inside a group. Changes apply across the site immediately. (The Products link and the main call-to-action button are added automatically.)</p>
         <ul className="gs-navedit">
           {tree.map((it, i) => it.type === 'group' ? (
             <li key={it.id} className="gs-navedit-group">

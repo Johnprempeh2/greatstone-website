@@ -96,9 +96,9 @@ export const puck = {
     ctaHref: { type: 'custom', label: 'Button link', render: (props) => <LinkField {...props} /> },
   },
   defaultProps: {
-    kicker: 'Book a Diagnostic',
+    kicker: 'Where the hours hide',
     headline: 'You still can’t buy time.', highlight: 'Let’s save yours.',
-    body: 'Everyone sells you tools. We buy back the hours your business is quietly losing, week after week, in the gaps you’ve stopped noticing. One diagnostic. No pitch, no obligation. We come in, look hard, and leave no stone unturned.',
+    body: 'Plenty of people sell you tools. We start with the work itself: the handoffs, the workarounds and the gaps no one notices anymore. That is where the hours hide. No pitch, no obligation. Just an honest read on where your time goes and what it will take to win it back.',
     clockLabel: 'on this page',
     ctaLabel: '', ctaHref: '#book',
   },
