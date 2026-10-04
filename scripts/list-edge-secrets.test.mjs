@@ -49,18 +49,19 @@ test('lists Deno.env.get names, names read through an imported config(env), and 
   }
 });
 
-test('the real functions: all 20 names found, every one noted, no value printed', () => {
+test('the real functions: all 21 names found, every one noted, no value printed', () => {
   const found = scanSecrets(join(HERE, '..', 'supabase', 'functions'));
-  for (const n of ['ANTHROPIC_API_KEY', 'TURNSTILE_SECRET_KEY', 'FRONT_DOOR_SECRET', 'PIPEDRIVE_API_TOKEN', 'PIPEDRIVE_DOMAIN', 'PIPEDRIVE_STAGE_ID']) {
+  for (const n of ['ANTHROPIC_API_KEY', 'TURNSTILE_SECRET_KEY', 'FRONT_DOOR_SECRET', 'PIPEDRIVE_API_TOKEN', 'PIPEDRIVE_DOMAIN', 'PIPEDRIVE_STAGE_ID', 'ENQUIRY_ALERT_TO']) {
     assert.ok(found.has(n), n);
   }
   assert.deepEqual(found.get('PIPEDRIVE_API_TOKEN'), ['front-door']);
-  assert.equal(found.size, 20);
+  assert.equal(found.size, 21);
+  assert.deepEqual(found.get('ENQUIRY_ALERT_TO'), ['enquiry']);
 
   const out = execFileSync(process.execPath, [SCRIPT], {
     encoding: 'utf8', env: { ...process.env, RESEND_API_KEY: 're_planted_value_123' },
   });
   assert.doesNotMatch(out, /unknown/);
   assert.doesNotMatch(out, /re_planted_value_123/);
-  assert.match(out, /^20 secret names read by 7 edge functions/);
+  assert.match(out, /^21 secret names read by 8 edge functions/);
 });

@@ -20,6 +20,10 @@ verify_jwt = false
 [functions.front-door]
 verify_jwt = false
 
+# Anonymous visitors: the contact form. The function does its own honeypot, field limits and per-IP limit.
+[functions.enquiry]
+verify_jwt = false
+
 # Staff-triggered + customer-triggered emailers: the gateway JWT check stays ON (a signed-in session is
 # required to even reach them), and each function then does its own narrower check (staff row / own
 # customer_users row) before sending anything.
