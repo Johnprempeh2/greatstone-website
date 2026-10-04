@@ -22,6 +22,9 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- GRE-654: with no JavaScript the contact form cannot render, so give the address as the next step.
+         Site CSS loads through JavaScript, so this block carries its own dark background for contrast. -->
+    <noscript><p style="max-width:40rem;margin:4rem auto;padding:1.5rem;background:#0a0a0a;font:1rem/1.6 system-ui,sans-serif;color:#f5f5f5">This site needs JavaScript. To send us an enquiry, email <a style="color:#c8ff00" href="mailto:dx@greatstonesoftware.co.uk">dx@greatstonesoftware.co.uk</a> and we will reply.</p></noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

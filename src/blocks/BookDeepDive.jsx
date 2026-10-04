@@ -2,9 +2,17 @@ import { useState, useRef, useEffect, useId } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
-import { track } from '../lib/analytics.js';
+import { track, getConsent, getAttribution } from '../lib/analytics.js';
+import { makeEnquiryClient, enquiryPayload, fireLead, isEmail } from '../lib/enquiry.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
+
+const ime = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+const client = makeEnquiryClient({ url: ime.VITE_SUPABASE_URL || '', anonKey: ime.VITE_SUPABASE_ANON_KEY || '' });
+
+// The site's contact address (the footer's default too). The panels after submit always show an address,
+// even on a page whose `email` is left empty, so a visitor whose enquiry failed still has a next step.
+const FALLBACK_EMAIL = 'dx@greatstonesoftware.co.uk';
 
 const DEFAULT_SECTORS = ['Professional Services', 'Financial Services', 'Healthcare & Life Sciences', 'Retail & E-commerce', 'Manufacturing & Industrial', 'Logistics & Supply Chain', 'Property & Construction', 'Other'];
 
@@ -16,12 +24,13 @@ const ICONS = {
   scan: ico(<><path d="M4 7V5a2 2 0 0 1 2-2h2" /><path d="M16 3h2a2 2 0 0 1 2 2v2" /><path d="M20 17v2a2 2 0 0 1-2 2h-2" /><path d="M8 21H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></>),
 };
 
-// The booking page: the booking form beside a short framing aside. On submit it composes a
-// prefilled mailto to the contact address from the entered fields (client-side, no backend) and shows a
-// confirmation with the address as a fallback. A future build may POST to a backend; that decision is open.
+// The booking page: the booking form beside a short framing aside. On submit it sends the enquiry to the
+// `enquiry` edge function (GRE-654), which saves it in the studio Inquiries tab and alerts the owner, then
+// shows a confirmation. On any failure (offline, no backend, server error) it shows the contact address
+// with an email already filled in from the form, so the visitor always has a next step.
 export function BookDeepDive({
   id, puck, eyebrow, headline, highlight, body, submitLabel, asideKicker, asideHeading, asideBody,
-  asidePoints = [], sectors, email = 'dx@greatstonesoftware.co.uk',
+  asidePoints = [], sectors, email = FALLBACK_EMAIL,
   // The form's own wording used to be hardcoded, which meant the enquiry route could not be reworded
   // without a code change, and the sector question could not be made optional at all. These carry the
   // previous strings as defaults, so any stored page that predates them renders exactly as before.
@@ -36,20 +45,22 @@ export function BookDeepDive({
   const sectorList = (Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS)
     .map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
   const ref = useReveal([asidePoints.length]);
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'failed'
+  const [emailError, setEmailError] = useState('');
+  const [fallbackHref, setFallbackHref] = useState('');
+  const sent = status === 'sent' || status === 'failed';
   const uid = useId(); // per-instance id prefix so two BookDeepDive blocks on one page never collide
   // on submit the form is replaced by the confirmation, so the control the user just activated is
   // unmounted; move focus to the confirmation heading (which is a live region) so keyboard + screen-reader
   // users are carried to it and the success is announced, instead of focus falling back to <body>.
   const sentRef = useRef(null);
   useEffect(() => { if (sent && sentRef.current) sentRef.current.focus(); }, [sent]);
-  // Submit composes a prefilled email to the team from the entered fields. No backend needed: this is the
-  // same email path the form always pointed to, now filled in for the visitor. encodeURIComponent on the
-  // subject/body keeps it injection-safe. The sent panel still shows the address as a fallback.
-  const onSubmit = (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const g = (k) => (fd.get(k) || '').toString().trim();
+  // The email the visitor can send themselves if the save fails: the same prefilled mailto the form used
+  // to open. safeMailto guards the editor-set address; subject and body are encodeURIComponent'd.
+  const replyTo = safeMailto(email) !== '#' ? email : FALLBACK_EMAIL;
+  const composeMailto = (g) => {
+    const to = safeMailto(replyTo);
+    if (to === '#') return to;
     const nm = g('name'), company = g('company');
     const subject = subjectPrefix + (company ? ' · ' + company : nm ? ' · ' + nm : '');
     const parts = [];
@@ -58,16 +69,24 @@ export function BookDeepDive({
     if (g('email')) parts.push('Work email: ' + g('email'));
     if (g('industry')) parts.push(sectorLabel + ': ' + g('industry'));
     parts.push('', messageLabel, g('week') || '(not specified)');
-    track('generate_lead', { form: 'deep_dive' });
-    // guard the editor-controlled address through safeMailto (same as every other mailto in the codebase),
-    // so a stray ?/&/whitespace in the email prop can't merge params / inject headers. Subject + body are
-    // already encodeURIComponent'd. If the address is implausible, still show the panel (it carries a fallback).
-    const to = safeMailto(email);
-    if (to !== '#') {
-      const href = to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(parts.join('\n'));
-      try { if (typeof window !== 'undefined') window.location.href = href; } catch (err) { /* ignore */ }
-    }
-    setSent(true);
+    return to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(parts.join('\n'));
+  };
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    if (status === 'sending' || editing) return;
+    const fd = new FormData(e.currentTarget);
+    const g = (k) => (fd.get(k) || '').toString().trim();
+    if (!isEmail(g('email'))) { setEmailError('Enter a work email we can reply to.'); return; }
+    setEmailError('');
+    setFallbackHref(composeMailto(g));
+    setStatus('sending');
+    const attribution = getAttribution();
+    const page = typeof window !== 'undefined' ? window.location.pathname + window.location.hash : '';
+    const out = await client.send(enquiryPayload({
+      name: g('name'), company: g('company'), email: g('email'), industry: g('industry'), message: g('week'), website: g('website'),
+    }, attribution, page));
+    if (out.ok) fireLead({ track, getConsent, attribution });
+    setStatus(out.ok ? 'sent' : 'failed');
   };
   return (
     <section ref={ref} className="b-book" id={anchorId || undefined}>
@@ -77,11 +96,17 @@ export function BookDeepDive({
             {(editing || (eyebrow && eyebrow !== headline)) ? <span className="kicker b-book-eyebrow"><EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" singleLine placeholder="Eyebrow…" /></span> : null}
             <h2 className="h3 b-book-card-head"><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" />{highlight ? <> <span className="accent">{highlight}</span></> : null}</h2>
             <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-book-card-intro muted" placeholder="Body…" />
-            {sent ? (
+            {status === 'sent' ? (
               <div className="book-sent" role="status" aria-live="polite">
-                <h3 ref={sentRef} tabIndex={-1}>Thanks. Your email is ready.</h3>
-                <p>We’ve opened your email with these details filled in. Send it and we’ll reply with times. If nothing opened, write to us directly:</p>
-                <a className="b-cta" href={safeMailto(email)}>{email}</a>
+                <h3 ref={sentRef} tabIndex={-1}>Thank you. We have your enquiry.</h3>
+                <p>The team reads every enquiry and will reply to you by email. You can also write to us directly:</p>
+                <a className="b-cta" href={safeMailto(replyTo)}>{replyTo}</a>
+              </div>
+            ) : status === 'failed' ? (
+              <div className="book-sent" role="alert">
+                <h3 ref={sentRef} tabIndex={-1}>We could not send your enquiry.</h3>
+                <p>Please email us instead. The link below opens an email with your details filled in, ready to send.</p>
+                <a className="b-cta" href={fallbackHref || safeMailto(replyTo)}>{replyTo}</a>
               </div>
             ) : (
               <>
@@ -89,12 +114,16 @@ export function BookDeepDive({
                     global handler), so the booking page itself books instantly; the form stays as "tell us first" */}
                 <a className="b-cta b-book-instant" href="#book">Pick a time now<Arrow /></a>
                 <div className="b-book-or">or tell us first</div>
-                <form onSubmit={onSubmit} noValidate>
+                <form onSubmit={onSubmit} noValidate aria-busy={status === 'sending' ? 'true' : undefined}>
+                {/* honeypot: hidden from people and screen readers; a bot that fills it is dropped by the function */}
+                <div className="b-book-hp" aria-hidden="true"><label htmlFor={uid + 'website'}>Website</label><input id={uid + 'website'} name="website" type="text" tabIndex={-1} autoComplete="off" /></div>
                 <div className="field-row">
                   <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} name="name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
                   <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
                 </div>
-                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email" /></div>
+                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email"
+                  onChange={() => { if (emailError) setEmailError(''); }} aria-invalid={emailError ? 'true' : undefined} aria-describedby={emailError ? uid + 'email-err' : undefined} />
+                  {emailError ? <p className="b-book-err" id={uid + 'email-err'} role="alert">{emailError}</p> : null}</div>
                 {/* Optional by default now. Forcing a visitor to classify their own sector before they may
                     say hello is a qualification barrier, and the placeholder stays selectable so choosing
                     nothing is a real answer rather than a dead first option. */}
@@ -104,8 +133,7 @@ export function BookDeepDive({
                 <div className="field"><label htmlFor={uid + 'week'}>{messageLabel}</label>
                   <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} />
                 </div>
-                <button className="b-cta book-submit" type="submit">{submitLabel}<Arrow /></button>
-                <p className="book-fine">Submitting opens your email with these details filled in, ready to send.</p>
+                <button className="b-cta book-submit" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : submitLabel}<Arrow /></button>
               </form>
               </>
             )}
@@ -157,7 +185,9 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .b-book-instant{width:100%;justify-content:center;margin-bottom:18px}
 .b-book-or{display:flex;align-items:center;gap:12px;margin:0 0 18px;color:var(--gs-faint);font-size:.74rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
 .b-book-or::before,.b-book-or::after{content:"";flex:1;height:1px;background:var(--gs-border-soft)}
-.book-fine{margin-top:1rem;font-size:.82rem;color:var(--gs-muted);text-align:center}
+.book-submit[disabled]{opacity:.7;cursor:progress}
+.b-book-err{margin:.45rem 0 0;font-size:.86rem;color:#ffb4a8}
+.b-book-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .book-sent{text-align:center;padding:18px 0}
 .book-sent h3{font-size:1.4rem;font-weight:800}
 .book-sent p{margin:12px auto 22px;color:var(--gs-muted);max-width:42ch;line-height:1.6}
