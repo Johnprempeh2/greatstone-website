@@ -3,7 +3,7 @@
 // `versions`) mirrors the rails they're building, so swapping to a real backend is a
 // data-source change, not a rewrite.
 import seedPages from './seed-pages.json';
-import { BRAND_TAGLINE, PRIMARY_CTA_LABEL } from './lib/brand.mjs';
+import { BRAND_TAGLINE, PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './lib/brand.mjs';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
@@ -142,7 +142,7 @@ export const LEGAL_SCAFFOLDS = [
 ];
 function buildLegalPage({ title, desc, sections }) {
   const blocks = [
-    // ctaLabel/prompt set empty so the Hero's defaults ("Book a Diagnostic", the cursor prompt) don't bleed
+    // ctaLabel/prompt set empty so the Hero's defaults (the primary CTA, the cursor prompt) don't bleed
     // onto a legal page — it wants just the title + the draft banner.
     blk('Hero', { kicker: 'Legal', headline: title, highlight: '', body: LEGAL_DRAFT_BANNER, align: 'left', size: 'compact', scrollCue: false, ctaLabel: '', ctaLabel2: '', prompt: '' }),
     ...sections.map((s) => blk('Prose', { kicker: s.h, body: s.b, align: 'left', width: 'reading' })),
@@ -548,7 +548,7 @@ export function seedState() {
         blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
           body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
           prompt: '', align: 'center', size: 'full',
-          ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: 'Book a Diagnostic', ctaHref2: '#book' }),
+          ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: PRIMARY_CTA_LABEL, ctaHref2: PRIMARY_CTA_HREF }),
         blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
           body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: a full, honest read of the business across eight pillars, so the work that follows is the work that actually moves you.',
           items: [
@@ -560,7 +560,7 @@ export function seedState() {
         blk('MaturityModel', {}),
         blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
           body: 'A Diagnostic scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
-          ctaLabel: 'Book a Diagnostic', ctaHref: '#book', variant: 'framed' }),
+          ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, variant: 'framed' }),
       ], { title: 'Process · Eight Pillars · Greatstone International', description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.', ogImage: '' }),
 
       contact: seedPage('Begin the Conversation', 'none', [
