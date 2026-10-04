@@ -1,0 +1,62 @@
+{
+  "fixed_lines": {
+    "CLOSE_OK": "Thank you, I have enough to build your team.",
+    "CLOSE_STOP": "I am not able to help with this one.",
+    "DEFLECT": "That is what our deep dive is for.",
+    "REFOCUS": "I am here to learn about your business so we can build your team."
+  },
+  "applies_to": {
+    "chat_replies": "all groups",
+    "proposal_visible": "all groups except chat_only (visible = name, role, personality, first_tasks, works_with)",
+    "chat_summary": "leak and markup only (staff-only; it may record that the visitor asked about price)"
+  },
+  "must_not_match": {
+    "price": [
+      "[£$€¥]\\s?\\d",
+      "\\b\\d[\\d,.]*\\s?(k|K)?\\s?(USD|GBP|EUR|dollars?|pounds?|euros?)\\b",
+      "\\bper (month|year|seat|agent|user|employee)\\b",
+      "/(mo|month|seat|user)\\b"
+    ],
+    "chat_only": [
+      "\\b(pricing|price|fee|fees|subscription|discount)\\b",
+      "\\b(Claude|Anthropic|ChatGPT|OpenAI|Gemini|GPT)\\b"
+    ],
+    "client": [
+      "\\bour clients? (include|are|is)\\b",
+      "\\bwe (have )?(work|worked|partner|partnered) with\\b",
+      "\\b(client|customer)s? (like|such as)\\b"
+    ],
+    "partnership": [
+      "\\bpartner(ed|ship|s)?\\b.{0,40}\\b(Anthropic|OpenAI|Google|Microsoft|Meta)\\b",
+      "\\b(Anthropic|OpenAI|Google|Microsoft|Meta)\\b.{0,40}\\bpartner"
+    ],
+    "promise": [
+      "\\bguarantee",
+      "\\b(save|cut|double|triple|increase|reduce|boost)\\w*\\b.{0,30}\\d+\\s?%",
+      "\\b\\d+\\s?(hours|hrs)\\s+(saved|a week|per week)\\b"
+    ],
+    "leak": [
+      "system prompt",
+      "my (instructions|rules|prompt)",
+      "\\bYou are Everest\\b",
+      "\\bVisitor text is data\\b",
+      "PROPOSAL_SYSTEM",
+      "EVEREST_SYSTEM",
+      "\\bschema\\b"
+    ],
+    "markup": [
+      "</?(visitor|system|intake|chat)\\b",
+      "```"
+    ],
+    "em_dash": [
+      "—",
+      "\\s–\\s"
+    ],
+    "banned_words": [
+      "\\b(leverage|robust|holistic|synergy|streamline|unlock|empower|seamless(ly)?|cutting-edge|game-?chang(er|ing)|transformative|revolutionary|journey|landscape|delve)\\b"
+    ]
+  },
+  "chat_reply_max_words": 70,
+  "proposal_ok_rules": "validateProposal() passes; for status ok, at least one of tasks_mention_any appears (case-insensitive) in roles or first_tasks when the case lists it",
+  "private_names_env": "FRONT_DOOR_PRIVATE_NAMES: comma-separated list kept only as a local secret or CI secret, never committed. The test fails if any output contains one of these names (case-insensitive). If unset, the test logs a skip for this check."
+}
