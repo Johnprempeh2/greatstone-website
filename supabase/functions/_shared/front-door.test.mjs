@@ -12,6 +12,7 @@ import {
   CHAT_GROUPS, VISIBLE_GROUPS, guardReply, validateProposal, visibleStrings, runChat, runProposal,
   publicAgents, signSession, verifySession, transcriptHash, hashIp, SESSION_TTL_MS, parsePrivateNames,
 } from './front-door-engine.mjs';
+import { stubAllowed, stubFetch, STUB_KEY } from './front-door-stub.mjs';
 
 const { CHECKS } = P;
 
@@ -232,6 +233,32 @@ test('private names come from a comma list and are matched case-insensitively', 
   const names = parsePrivateNames(' Acme Rocket, ,x, Zed Co ');
   assert.deepEqual(names, ['Acme Rocket', 'Zed Co']);
   assert.deepEqual(failedChecks('we know zed co well', [], names), ['private_name']);
+});
+
+test('local stub: only when asked for, never beside a real key, never in a hosted project', () => {
+  assert.equal(stubAllowed({ flag: '1', apiKey: '', supabaseUrl: 'http://kong:8000' }), true);
+  assert.equal(stubAllowed({ flag: '1', apiKey: undefined, supabaseUrl: 'http://127.0.0.1:54321' }), true);
+  assert.equal(stubAllowed({ flag: undefined, apiKey: '', supabaseUrl: 'http://kong:8000' }), false);
+  assert.equal(stubAllowed({ flag: '1', apiKey: 'sk-real', supabaseUrl: 'http://kong:8000' }), false);
+  assert.equal(stubAllowed({ flag: '1', apiKey: '', supabaseUrl: 'https://abcd.supabase.co' }), false);
+});
+
+test('local stub: every B6 intake gets a chat that closes on turn six and a proposal that passes validateProposal', async () => {
+  for (const c of CASES.cases) {
+    const intake = normaliseIntake(c.intake);
+    const messages = [];
+    let out;
+    for (let n = 1; n <= P.CHAT_TURNS; n++) {
+      messages.push({ from: 'visitor', text: `answer ${n}` });
+      out = await runChat({ intake, messages, apiKey: STUB_KEY, fetchImpl: stubFetch });
+      assert.deepEqual(out.failed, [], `${c.id} turn ${n}`);
+      assert.equal(out.closed, n === P.CHAT_TURNS ? 'ok' : null, `${c.id} turn ${n}`);
+      messages.push({ from: 'everest', text: out.reply });
+    }
+    const { proposal } = await runProposal({ intake, messages, apiKey: STUB_KEY, fetchImpl: stubFetch });
+    assert.equal(proposal.status, 'ok', c.id);
+    assert.equal(publicAgents(proposal).length, 3, c.id);
+  }
 });
 
 // ---------------------------------------------------------------------------------------------------
