@@ -19,6 +19,7 @@
     "secrets:list": "node scripts/list-edge-secrets.mjs",
     "secrets:check": "node scripts/list-edge-secrets.mjs --check",
     "seo:report": "node scripts/seo-report.mjs",
+    "launch:check": "node scripts/seo-report.mjs --launch",
     "rls:check": "node scripts/check-rls.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check"
   },

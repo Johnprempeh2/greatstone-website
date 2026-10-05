@@ -36,15 +36,18 @@ The whole point: this is a **config change, not a migration.** The app builds ev
    checkout on the new domain.
 6. **SEO indexing.** `index.html` currently carries `<meta name="robots" content="noindex">` for the
    interim host. Remove it when the public site should be indexed. Then, after the production build,
-   run `npm run seo:report -- dist` and expect `Summary: INDEXABLE`. Any `NOINDEX` line names its
-   source (meta tag, `X-Robots-Tag` in `_headers`, or a robots.txt `Disallow`); fix that and rebuild.
-   The report only reads the build; it always exits 0, so read the summary line.
+   run the **launch check**, `npm run launch:check` (reads `dist/`). It must end `Launch check: PASS`
+   and exit 0. It exits 1 while any page still says noindex; each `NOINDEX` line names its source
+   (meta tag, `X-Robots-Tag` in `_headers`, or a robots.txt `Disallow`). Fix that, rebuild, run it again.
+   Do not deploy the launch build until it passes. Before cutover use `npm run seo:report` instead: the
+   same report, always exit 0, so preview builds (and `npm run preflight`) are never blocked by noindex.
 7. **Saved content (low priority).** Old Puck content may still reference the old absolute logo URL
    (`greatstone-home.netlify.app/assets/...`). It still resolves, but to fully cut the old host either
    re-save those pages (the code default is already the local `/assets/...` path) or scrub the content.
 8. **Verify on the new domain:** root 200; sign-in works (no "Store backend not configured"); a deep
    link like `…/#account` routes; `curl` a legacy `/puck-proof/` URL still 301s; view-source shows the
-   canonical tag = the new domain.
+   canonical tag = the new domain; `npm run launch:check` on the deployed build passed (step 6), and
+   view-source shows no `<meta name="robots" content="noindex">`.
 
 ## Rule going forward
 

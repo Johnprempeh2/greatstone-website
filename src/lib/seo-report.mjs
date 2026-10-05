@@ -7,7 +7,7 @@
 //   - an `X-Robots-Tag` header in `_headers` whose path rule matches the page,
 //   - a robots.txt `Disallow` (for `User-agent: *`) that covers the page's path.
 // Pure functions only; scripts/seo-report.mjs does the file reading and printing. It reports, it
-// never fails a build: the launch gate is a separate decision (GRE-483 row 94).
+// never fails a build; the script's --launch flag (npm run launch:check) turns it into the go-live gate.
 
 const NOINDEX = /(^|[\s,])(noindex|none)([\s,]|$)/i;
 

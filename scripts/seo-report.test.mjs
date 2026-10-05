@@ -15,7 +15,7 @@ import { robotsBlocks, parseRobots, metaNoindex } from '../src/lib/seo-report.mj
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'seo-report.mjs');
 
 /** Build a throwaway dist/ and run the real report over it. */
-function report(files) {
+function report(files, flags = []) {
   const dir = mkdtempSync(join(tmpdir(), 'seoreport-'));
   for (const [name, content] of Object.entries(files)) {
     const p = join(dir, 'dist', name);
@@ -23,7 +23,7 @@ function report(files) {
     writeFileSync(p, content);
   }
   try {
-    const out = execFileSync(process.execPath, [SCRIPT, 'dist'], { cwd: dir, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [SCRIPT, ...flags, 'dist'], { cwd: dir, encoding: 'utf8' });
     return { code: 0, out };
   } catch (e) {
     return { code: e.status, out: `${e.stdout || ''}${e.stderr || ''}` };
@@ -90,4 +90,38 @@ test('meta tag: attribute order, quotes and "none" are understood; other names a
   assert.deepEqual(metaNoindex('<meta name="googlebot" content="none">'), ['googlebot=none']);
   assert.deepEqual(metaNoindex('<meta name="robots" content="index, follow">'), []);
   assert.deepEqual(metaNoindex('<meta name="description" content="noindex is a word">'), []);
+});
+
+// --launch (GRE-836, GRE-483 row 94): the same report, but a gate for go-live.
+const NOINDEX_PAGE = PAGE.replace('<title>', '<meta name="robots" content="noindex" /><title>');
+
+test('launch check: FAILS (exit 1) on a build that still has the noindex meta tag', () => {
+  const r = report({ ...CLEAN, 'index.html': NOINDEX_PAGE }, ['--launch']);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /← meta tag \(robots=noindex\)/);
+  assert.match(r.out, /^Launch check: FAIL\./m);
+});
+
+test('launch check: FAILS on an X-Robots-Tag: noindex header', () => {
+  const r = report({ ...CLEAN, '_headers': CLEAN._headers + '/*\n  X-Robots-Tag: noindex\n' }, ['--launch']);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /X-Robots-Tag: noindex/);
+});
+
+test('launch check: PASSES (exit 0) on a clean build', () => {
+  const r = report(CLEAN, ['--launch']);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /^Launch check: PASS\./m);
+});
+
+test('launch check: FAILS when there is no build to check', () => {
+  const r = report({}, ['--launch']);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /^Launch check: FAIL\. There is no build/m);
+});
+
+test('without --launch a noindex preview build is never blocked', () => {
+  const r = report({ ...CLEAN, 'index.html': NOINDEX_PAGE });
+  assert.equal(r.code, 0);
+  assert.doesNotMatch(r.out, /Launch check/);
 });
