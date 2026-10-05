@@ -1,5 +1,5 @@
 name: CI
-# Build, unit tests and redirects check on every PR and push to main. Activates once the repo is on GitHub.
+# Build, unit tests, redirects check and edge secrets list check on every PR and push to main. Activates once the repo is on GitHub.
 on:
   push:
     branches: [main]
@@ -28,3 +28,5 @@ jobs:
           VITE_VAT_RATE: '0.20'
       - name: Legacy redirects in sync (public/_redirects)
         run: npm run redirects:check
+      - name: Edge secrets list in sync (scripts/edge-secrets.json)
+        run: npm run secrets:check
