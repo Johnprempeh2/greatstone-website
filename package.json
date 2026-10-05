@@ -21,7 +21,7 @@
     "seo:report": "node scripts/seo-report.mjs",
     "launch:check": "node scripts/seo-report.mjs --launch",
     "rls:check": "node scripts/check-rls.mjs",
-    "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check"
+    "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check"
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",

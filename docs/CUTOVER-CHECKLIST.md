@@ -21,7 +21,7 @@ Detailed procedures: **GO-LIVE-RUNBOOK.md** (Stripe/email/functions/deploy/smoke
 
 1. **Freeze the old site** — maintenance notice or read-only, so no new orders land mid-migration. *[external]*
 2. **Preflight gate:** `npm run preflight` — runs the unit tests, the production build (SEO files + the
-   dist secret scan), the redirect drift check, and the edge secrets list check. Must be green before anything ships.
+   dist secret scan), the redirect drift check, the edge secrets list check, and the row-level security check (`rls:check`). Must be green before anything ships.
 3. **Redirects:** drop Ben's product-slug map at `scripts/legacy-product-map.json`, run `npm run redirects`,
    and commit. (Skip to accept the vendor-catalogue fallback; every old product URL still lands on the right
    vendor.) Refresh `scripts/legacy-urls.txt` from a fresh crawl first if the old site changed.

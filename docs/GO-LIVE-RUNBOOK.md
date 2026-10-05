@@ -13,6 +13,7 @@ Everything below moves the platform from Stripe **test** to **live**. Do it in o
   into the client bundle. A clean build is your leak guard.
 - `npm run rls:check` green: every table the migrations create has row-level security on. Run it before
   applying migrations and after adding one; a table meant to stay open goes in `scripts/rls-allow.json` with a reason.
+  `npm run preflight` and CI run it too, so a pull request that adds an open table goes red.
 - `.env` is gitignored (`.env`, `.env.*`) and has never been committed (verified). It holds only TEST/dev
   values today; rotate every secret when you provision production and store them in the host's encrypted
   env + Supabase Edge Function secrets, never the repo.
