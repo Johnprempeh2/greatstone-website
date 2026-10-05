@@ -1,5 +1,5 @@
 name: CI
-# Build, unit tests, redirects check and edge secrets list check on every PR and push to main. Activates once the repo is on GitHub.
+# Build, unit tests, redirects check, edge secrets list check and row-level security check on every PR and push to main. Activates once the repo is on GitHub.
 on:
   push:
     branches: [main]
@@ -30,3 +30,5 @@ jobs:
         run: npm run redirects:check
       - name: Edge secrets list in sync (scripts/edge-secrets.json)
         run: npm run secrets:check
+      - name: Row-level security on every table (supabase/migrations)
+        run: npm run rls:check
