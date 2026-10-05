@@ -6,8 +6,10 @@
 // it imports (crmConfig(Deno.env.toObject()) reads PIPEDRIVE_* that way). Relative imports are followed, so
 // a name read in _shared/ is listed under each function that pulls that module in. Test files are skipped.
 // A name with no note prints as `unknown`: add it to scripts/edge-secrets.json.
+// --check (GRE-715) exits 1 when a name is `unknown` or a note names a secret no function reads any more.
 //
 //   npm run secrets:list            (or: node scripts/list-edge-secrets.mjs [functionsDir] [notesFile])
+//   npm run secrets:check           (or: node scripts/list-edge-secrets.mjs --check [functionsDir] [notesFile])
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -93,10 +95,23 @@ export function formatRows(rows) {
   ].join('\n');
 }
 
+/** One line per problem for --check: names with no usable note, and notes for names nothing reads. */
+export function checkProblems(rows, notes = {}, notesPath = 'scripts/edge-secrets.json') {
+  const read = new Set(rows.map((r) => r.name));
+  return [
+    ...rows.filter((r) => r.need === 'unknown')
+      .map((r) => `✗ ${r.name} is read by ${r.functions.join(', ')} but has no required/optional note in ${notesPath}.`),
+    ...Object.keys(notes).filter((name) => !read.has(name)).sort()
+      .map((name) => `✗ ${name} has a note in ${notesPath} but no edge function reads it: remove the note.`),
+  ];
+}
+
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  const functionsDir = resolve(process.argv[2] || join(ROOT, 'supabase', 'functions'));
-  const notesFile = resolve(process.argv[3] || join(ROOT, 'scripts', 'edge-secrets.json'));
+  const check = process.argv.includes('--check');
+  const [dirArg, notesArg] = process.argv.slice(2).filter((a) => a !== '--check');
+  const functionsDir = resolve(dirArg || join(ROOT, 'supabase', 'functions'));
+  const notesFile = resolve(notesArg || join(ROOT, 'scripts', 'edge-secrets.json'));
   const notes = existsSync(notesFile) ? JSON.parse(readFileSync(notesFile, 'utf8')) : {};
   const rows = secretRows(scanSecrets(functionsDir), notes);
   const fnCount = new Set(rows.flatMap((r) => r.functions)).size;
@@ -105,4 +120,12 @@ if (isMain) {
   console.log(formatRows(rows));
   const unknown = rows.filter((r) => r.need === 'unknown').length;
   if (unknown) console.log(`\n${unknown} name(s) marked unknown: add them to ${relative(ROOT, notesFile)}.`);
+  if (check) {
+    const problems = checkProblems(rows, notes, relative(ROOT, notesFile));
+    if (problems.length) {
+      console.error(`\n${problems.join('\n')}`);
+      process.exit(1);
+    }
+    console.log(`\n✓ every secret name has a note, and every note names a secret a function reads.`);
+  }
 }

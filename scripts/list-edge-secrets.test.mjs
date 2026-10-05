@@ -1,7 +1,7 @@
 // npm run secrets:list (GRE-542): run against a throwaway functions dir and against the real one.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -64,4 +64,58 @@ test('the real functions: all 21 names found, every one noted, no value printed'
   assert.doesNotMatch(out, /unknown/);
   assert.doesNotMatch(out, /re_planted_value_123/);
   assert.match(out, /^21 secret names read by 8 edge functions/);
+});
+
+// --check (GRE-715): exit 1 with one line per problem; exit 0 when names and notes match.
+function runCheck(files, notes) {
+  const dir = fixture(files);
+  const notesFile = join(dir, 'notes.json');
+  writeFileSync(notesFile, JSON.stringify(notes));
+  try {
+    const r = spawnSync(process.execPath, [SCRIPT, '--check', dir, notesFile], { encoding: 'utf8' });
+    return { code: r.status, out: r.stdout, err: r.stderr };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('--check: one unknown secret exits 1 and names it', () => {
+  const r = runCheck(
+    { 'alpha/index.ts': "Deno.env.get('ALPHA_KEY'); Deno.env.get('NEW_KEY');" },
+    { ALPHA_KEY: { need: 'required' } },
+  );
+  assert.equal(r.code, 1);
+  assert.match(r.err, /^✗ NEW_KEY is read by alpha but has no required\/optional note/m);
+  assert.equal(r.err.trim().split('\n').length, 1);
+});
+
+test('--check: one stale note exits 1 and names it', () => {
+  const r = runCheck(
+    { 'alpha/index.ts': "Deno.env.get('ALPHA_KEY');" },
+    { ALPHA_KEY: { need: 'required' }, GONE_KEY: { need: 'optional' } },
+  );
+  assert.equal(r.code, 1);
+  assert.match(r.err, /^✗ GONE_KEY has a note in .* but no edge function reads it/m);
+  assert.equal(r.err.trim().split('\n').length, 1);
+});
+
+test('--check: clean exits 0; without --check an unknown still exits 0', () => {
+  const clean = runCheck({ 'alpha/index.ts': "Deno.env.get('ALPHA_KEY');" }, { ALPHA_KEY: { need: 'required' } });
+  assert.equal(clean.code, 0);
+  assert.match(clean.out, /✓ every secret name has a note/);
+  assert.equal(clean.err, '');
+
+  const dir = fixture({ 'alpha/index.ts': "Deno.env.get('NEW_KEY');" });
+  try {
+    const r = spawnSync(process.execPath, [SCRIPT, dir, join(dir, 'none.json')], { encoding: 'utf8' });
+    assert.equal(r.status, 0);
+    assert.doesNotMatch(r.stdout + r.stderr, /✗|✓/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('--check passes on the real functions and notes', () => {
+  const r = spawnSync(process.execPath, [SCRIPT, '--check'], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
 });
