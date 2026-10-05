@@ -18,6 +18,7 @@
     "verify:staff": "node scripts/verify-staff.mjs",
     "secrets:list": "node scripts/list-edge-secrets.mjs",
     "secrets:check": "node scripts/list-edge-secrets.mjs --check",
+    "seo:report": "node scripts/seo-report.mjs",
     "rls:check": "node scripts/check-rls.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check"
   },
