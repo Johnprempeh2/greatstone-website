@@ -154,7 +154,9 @@ export function BookDeepDive({
                 </div>
               ))}
             </div>
-            <a className="b-book-mail" href={safeMailto(email)}>{email}</a>
+            {/* only with an address: the contact page leaves it empty until the public address is decided, and an
+                empty link has no accessible name (axe link-name, GRE-659 a11y pass) */}
+            {email ? <a className="b-book-mail" href={safeMailto(email)}>{email}</a> : null}
           </aside>
         </div>
       </div>
