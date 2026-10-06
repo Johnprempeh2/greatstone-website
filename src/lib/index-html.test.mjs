@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { indexingAllowed, releaseIndexHtml } from './index-html.mjs';
 import { indexabilityReport } from './seo-report.mjs';
 
-const INDEX = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const RAW = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const INDEX = releaseIndexHtml(RAW); // what a default build serves
 const meta = (html, attr, key) => {
   const m = html.match(new RegExp(`<meta\\s+${attr}="${key}"\\s+content="([^"]*)"`));
   return m ? m[1] : null;
@@ -16,17 +17,25 @@ test('only an explicit true or 1 allows indexing', () => {
 });
 
 test('the default build keeps noindex', () => {
-  const out = releaseIndexHtml(INDEX);
-  assert.equal(out, INDEX);
+  const out = releaseIndexHtml(RAW);
+  assert.match(out, /<meta name="robots" content="noindex" \/>/);
   assert.equal(indexabilityReport({ pages: [{ file: 'index.html', html: out }] }).status, 'NOINDEX');
 });
 
 test('the release build drops noindex and nothing else', () => {
-  const out = releaseIndexHtml(INDEX, { indexable: true });
+  const out = releaseIndexHtml(RAW, { indexable: true });
   assert.doesNotMatch(out, /noindex/i);
   assert.equal(indexabilityReport({ pages: [{ file: 'index.html', html: out }] }).status, 'INDEXABLE');
   assert.equal(INDEX.split('\n').length - out.split('\n').length, 1, 'removes exactly one line');
   assert.match(out, /<meta property="og:title"/);
+});
+
+test('no site host is hard-coded: the origin is stamped, and VITE_SITE_ORIGIN overrides it', () => {
+  assert.doesNotMatch(RAW, /greatstoneint\.com\//, 'raw index.html names no host');
+  assert.doesNotMatch(INDEX, /%GS_SITE_ORIGIN%/, 'every token is replaced');
+  const preview = releaseIndexHtml(RAW, { origin: 'https://preview.example.org/' });
+  assert.match(preview, /<link rel="canonical" href="https:\/\/preview\.example\.org\/" \/>/);
+  assert.match(preview, /content="https:\/\/preview\.example\.org\/og-default\.png"/);
 });
 
 test('index.html carries a static link preview with an absolute image and the canonical domain', () => {

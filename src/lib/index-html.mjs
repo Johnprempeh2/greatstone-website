@@ -5,7 +5,15 @@
 // (vite.config.js runs this through transformIndexHtml). Default is noindex: forgetting the variable fails
 // safe, and `npm run launch:check` then says so before go-live.
 //
+// It also stamps the canonical origin into the static canonical and link-preview tags: index.html writes
+// %GS_SITE_ORIGIN% so no site host is hard-coded (docs/DOMAIN-CUTOVER.md, "Rule going forward").
+//
 // Pure and store-free so node --test can run it.
+
+import { normaliseOrigin } from './seo-files.mjs';
+
+export const DEFAULT_ORIGIN = 'https://greatstoneint.com'; // same default as scripts/gen-seo-files.mjs
+const ORIGIN_TOKEN = /%GS_SITE_ORIGIN%/g;
 
 const NOINDEX_META = /[ \t]*<meta\s+name=["']robots["']\s+content=["'][^"']*noindex[^"']*["']\s*\/?>[ \t]*\r?\n?/gi;
 
@@ -15,7 +23,8 @@ export function indexingAllowed(raw) {
   return v === 'true' || v === '1';
 }
 
-/** index.html for the build: unchanged unless indexing is allowed, then without the robots noindex tag. */
-export function releaseIndexHtml(html, { indexable = false } = {}) {
-  return indexable ? String(html).replace(NOINDEX_META, '') : String(html);
+/** index.html for the build: origin stamped; the robots noindex tag removed only when indexing is allowed. */
+export function releaseIndexHtml(html, { indexable = false, origin = '' } = {}) {
+  const out = String(html).replace(ORIGIN_TOKEN, normaliseOrigin(origin, DEFAULT_ORIGIN));
+  return indexable ? out.replace(NOINDEX_META, '') : out;
 }
