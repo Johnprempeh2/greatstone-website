@@ -72,6 +72,16 @@ test('the legal pages are published with the approved facts, and no drafting mar
   assert.doesNotMatch(SEED_TEXT + STORE, /Greatstone Software Ltd/);
 });
 
+test('the Cookie page lists every storage entry the browser check found (GRE-968, legal doc v3)', () => {
+  const cookies = STORE.slice(STORE.indexOf("slug: 'cookies'"), STORE.indexOf("slug: 'terms'"));
+  for (const key of ['gs-studio', 'gs-consent', 'gs_service_inquiry_v1', 'gs-studio-session', 'sb-…-auth-token',
+    '_ga', 'gs-attr-first, gs-attr-last', 'gs-intel-profile', 'gs_service_pop_v1', 'gs_service_pop_seen_v1']) {
+    assert.ok(cookies.includes('<strong>' + key + '</strong>'), key);
+  }
+  assert.match(cookies, /h: 'Analytics and preference cookies \(only if you accept\)'/);
+  assert.match(cookies, /If you decline, or later change your mind in <strong>Cookie settings<\/strong>, we remove the ones we set\./);
+});
+
 test('launch:check fails until the ICO number is set, then passes', () => {
   if (!ICO_REGISTRATION_NUMBER) assert.equal(legalLaunchGaps().length, 1);
   assert.deepEqual(legalLaunchGaps({ ico: 'ZA123456' }), []);
