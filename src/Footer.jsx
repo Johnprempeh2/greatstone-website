@@ -1,6 +1,7 @@
 import { publicNavOrder, footerLegalOrder } from './lib/nav-order.js';
 import { BRAND_TAGLINE } from './lib/brand.mjs';
 import { safeMailto } from './lib/safe-url.js';
+import { analyticsConfigured, openConsentSettings } from './lib/analytics.js';
 
 const LOGO = '/assets/greatstone-logo-web.png';
 const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered for the built-in default logo
@@ -20,7 +21,7 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
   const legalOrder = footerLegalOrder(order, pages, canEdit);
   return (
     <footer className="site-footer">
-      <style dangerouslySetInnerHTML={{ __html: '@media(pointer:coarse){.site-footer .foot-links a{min-height:44px;padding:8px 6px;display:inline-flex;align-items:center}}' }} />
+      <style dangerouslySetInnerHTML={{ __html: '@media(pointer:coarse){.site-footer .foot-links a,.site-footer .foot-cookie-settings{min-height:44px;padding:8px 6px;display:inline-flex;align-items:center}}' }} />
       <svg className="foot-wave" viewBox="0 0 500 500" fill="none" aria-hidden="true">
         <g stroke="var(--gs-accent)" strokeWidth="0.8" fill="none" opacity="0.5">
           <path d="M500 40 Q392 72 344 154 Q296 236 318 338 Q340 440 424 486" />
@@ -37,11 +38,15 @@ export default function Footer({ order, pages, onNavigate, canEdit, logo, taglin
         ))}
       </nav>
       <a className="mail" href={safeMailto(mail)}>{mail}</a>
-      {legalOrder.length > 0 && (
+      {/* "Cookie settings" reopens the consent banner so a visitor can change or withdraw their choice
+          (GRE-659, legal doc "Code findings" 3). Shown only when analytics is configured: with no GTM
+          container there is no banner and no analytics cookie to choose about. */}
+      {(legalOrder.length > 0 || analyticsConfigured) && (
         <nav className="foot-legal" aria-label="Legal">
           {legalOrder.map((slug) => (
             <a key={slug} href={'#' + slug} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); onNavigate(slug); }}>{pages[slug].title || slug}{canEdit && pages[slug].status !== 'published' ? ' (draft)' : ''}</a>
           ))}
+          {analyticsConfigured && <button type="button" className="foot-cookie-settings" onClick={openConsentSettings}>Cookie settings</button>}
         </nav>
       )}
       <div className="legal">© {year} {legal}. All rights reserved.</div>

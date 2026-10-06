@@ -35,8 +35,10 @@ The whole point: this is a **config change, not a migration.** The app builds ev
 5. **Stripe.** Nothing to change (success/cancel/return URLs are origin-based). Confirm with one test
    checkout on the new domain.
 6. **SEO indexing.** `index.html` currently carries `<meta name="robots" content="noindex">` for the
-   interim host. Remove it when the public site should be indexed. Then, after the production build,
-   run the **launch check**, `npm run launch:check` (reads `dist/`). It must end `Launch check: PASS`
+   interim host. Do not edit the file: build the release with `ALLOW_INDEXING=true npm run build` and the
+   build drops that one line (`src/lib/index-html.mjs`, GRE-659). Any other value keeps noindex. The same
+   build stamps the canonical origin from step 3 into index.html's static canonical and link-preview tags.
+   Then run the **launch check**, `npm run launch:check` (reads `dist/`). It must end `Launch check: PASS`
    and exit 0. It exits 1 while any page still says noindex; each `NOINDEX` line names its source
    (meta tag, `X-Robots-Tag` in `_headers`, or a robots.txt `Disallow`). Fix that, rebuild, run it again.
    Do not deploy the launch build until it passes. Before cutover use `npm run seo:report` instead: the

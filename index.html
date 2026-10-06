@@ -3,15 +3,32 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Pre-launch: keep search engines out. The release build drops this line with ALLOW_INDEXING=true
+         (src/lib/index-html.mjs, wired in vite.config.js); `npm run launch:check` confirms it. -->
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#0e1611" />
     <title>Greatstone International · Building Stronger Organisations</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- default social card; per-page SEO refines these at runtime (see applyHead in App.jsx) -->
+    <meta name="description" content="Practical digital transformation and AI-enabled automation. Greatstone finds where your people's time goes, automates the work that should run itself, and runs it for you." />
+    <link rel="canonical" href="%GS_SITE_ORIGIN%/" />
+    <!-- Static link preview (GRE-659, plan §3.9). LinkedIn and most social crawlers do not run JavaScript, so
+         a shared link shows THESE, whatever page it points at. Words: Home SEO from GRE-652 §4.1. The origin
+         token is stamped at build time from VITE_SITE_ORIGIN (default greatstoneint.com, as for the sitemap), so
+         the image URL is absolute: crawlers do not resolve relative ones. applyHead in App.jsx refines them per page
+         for browsers and search engines that do run JavaScript. -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og-default.png" />
+    <meta property="og:site_name" content="Greatstone International" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:url" content="%GS_SITE_ORIGIN%/" />
+    <meta property="og:title" content="Greatstone International · Building Stronger Organisations" />
+    <meta property="og:description" content="Practical digital transformation and AI-enabled automation. Greatstone finds where your people's time goes, automates the work that should run itself, and runs it for you." />
+    <meta property="og:image" content="%GS_SITE_ORIGIN%/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="/og-default.png" />
+    <meta name="twitter:title" content="Greatstone International · Building Stronger Organisations" />
+    <meta name="twitter:description" content="Practical digital transformation and AI-enabled automation. Greatstone finds where your people's time goes, automates the work that should run itself, and runs it for you." />
+    <meta name="twitter:image" content="%GS_SITE_ORIGIN%/og-default.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Load the Montserrat CSS off the critical path: media="print" means it doesn't block first paint,
