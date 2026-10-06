@@ -4,6 +4,7 @@
 // data-source change, not a rewrite.
 import seedPages from './seed-pages.json';
 import { BRAND_TAGLINE, PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './lib/brand.mjs';
+import { LEGAL_NAME, COMPANY_NUMBER, REGISTERED_IN, REGISTERED_OFFICE, LEGAL_CONTACT_EMAIL, LEGAL_UPDATED, ICO_REGISTRATION_NUMBER } from './lib/legal-facts.mjs';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
@@ -27,7 +28,9 @@ const SCHEMA = 19;
 // Bumped 22 Jul 2026: the About team strip now distinguishes a named person from a seat that gets filled
 // at kickoff. Without a bump, anyone with saved studio state keeps the old items, where "Principal
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
-const SEED_VERSION = 20260827;
+// Bumped 6 Oct 2026 (GRE-659): Release 1 launch copy (GRE-652), the published legal pages (GRE-656) and the
+// K7 navigation. It also carries GRE-635's CTA change, which went out without a bump (plan GRE-638 §3.2).
+const SEED_VERSION = 20261006;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -72,13 +75,20 @@ export function DEFAULT_NAVIGATION() {
   // has six items and does not include them. They remain published and reachable by URL, and their
   // content is destined for Professional Services and Organisational Transformation once those pages
   // are specified. This is a visible IA change and is flagged for review, not a silent removal.
+  //
+  // Release 1 (GRE-659): GRE-652 K7 / decision D3. The launch pages must be reachable, so the bar is Home, How
+  // We Help, Managed Automation, How We Work, Proof, About, Begin the Conversation. Executive Intelligence
+  // moves to the footer and the Home panels. Labels are the page titles (services = "Managed Automation",
+  // method = "How We Work").
   return [
     navItem({ type: 'page', pageSlug: 'home' }),
     navItem({ type: 'page', pageSlug: 'how-we-help' }),
-    navItem({ type: 'page', pageSlug: 'insights' }),
+    navItem({ type: 'page', pageSlug: 'services' }),
+    navItem({ type: 'page', pageSlug: 'method' }),
+    navItem({ type: 'page', pageSlug: 'proof' }),
     // NOTE: no 'products' entry. Header.jsx:263 already appends a hardcoded "Products" storefront link
     // after the configured nav, so listing it here rendered it twice. Caught by screenshot, not by tests.
-    navItem({ type: 'page', pageSlug: 'about' }),
+    navItem({ type: 'page', pageSlug: 'about', label: 'About' }), // K7's label; the page keeps its title
     navItem({ type: 'page', pageSlug: 'contact' }),
   ];
 }
@@ -101,37 +111,57 @@ function seedPage(title, background, content, seo, status = 'published') {
 export const TRANSITIONS = { draft: ['review'], review: ['approved', 'draft'], approved: ['published', 'draft'], published: ['draft'] };
 export const canTransition = (from, to) => !!(TRANSITIONS[from] && TRANSITIONS[from].includes(to));
 
-// ---- launch legal scaffolds (footer-only, draft) ----
-// Editable placeholder pages (Terms, Privacy, Cookies, Refunds) so the structure, routing and footer wiring
-// are ready for launch and a solicitor's final wording drops straight into the CMS. They ship as DRAFT and
-// footerOnly: never in the primary nav or ⌘K, hidden from the PUBLIC footer until someone publishes them (so
-// placeholder text can't reach a customer), but reachable by staff to edit. Nothing here is legal copy — every
-// page says so in bold at the top. Seeded for fresh stores AND backfilled into existing ones (no re-seed).
+// ---- legal pages (footer-only) ----
+// Privacy, Cookies and Website terms of use carry the approved wording from the GRE-656 legal doc (v3; John
+// approved the text and made its decisions on 4-5 Oct 2026; Mikey reviewed the tone). They ship PUBLISHED and
+// footerOnly: never in the primary nav or ⌘K, shown in the footer's legal row. Refunds stays a DRAFT scaffold:
+// it only matters if the store stays public (GRE-621 decision 5), so it is hidden from visitors until then.
+// Rich text here is inline only (the sanitiser unwraps lists and tables), so lists and table rows are lines.
+// Seeded for fresh stores AND backfilled into existing ones (no re-seed).
 const LEGAL_DRAFT_BANNER = '<strong>Draft placeholder, not yet in force.</strong> This page is a launch scaffold. Our solicitor’s final wording replaces everything here before we sell, and nothing on this page is legal advice or a binding term.';
+const LEGAL_MAIL = '<a href="mailto:' + LEGAL_CONTACT_EMAIL + '">' + LEGAL_CONTACT_EMAIL + '</a>';
+const B = '• '; // a list line (the inline sanitiser has no <ul>)
+const ICO_LINE = ICO_REGISTRATION_NUMBER ? ' We are registered with the Information Commissioner’s Office under number ' + ICO_REGISTRATION_NUMBER + '.' : '';
 export const LEGAL_SCAFFOLDS = [
-  { slug: 'terms', title: 'Terms of sale', desc: 'The terms on which Greatstone sells software licences. Draft scaffold, final wording pending.', sections: [
-    { h: 'Who we are', b: 'Greatstone International Ltd, and how to reach us. [Company number and registered address to be confirmed.]' },
-    { h: 'What you are buying', b: 'We resell hand-picked third-party software licences. Each product’s vendor, edition and licence term are shown on its page.' },
-    { h: 'Orders and acceptance', b: 'When an order becomes a contract, and our right to decline or cancel an order before a licence is issued.' },
-    { h: 'Price, currency and VAT', b: 'Prices show in pounds, converted from the vendor list price, with VAT added at checkout where it applies.' },
-    { h: 'Licence delivery', b: 'Licence keys are issued once payment clears and appear in your account. [Expected delivery window to be confirmed.]' },
-    { h: 'Cancellations and refunds', b: 'How cancelling works for digital licences. See the <a href="#go/refunds">refunds and returns policy</a>.' },
-    { h: 'Liability and governing law', b: 'The limits of our liability, and the law that governs these terms. [Final wording from counsel.]' },
+  { slug: 'privacy', title: 'Privacy policy', publish: true,
+    desc: 'How Greatstone uses the personal data you give us through greatstoneint.com, and the choices you have.', sections: [
+    { h: 'Who we are', b: LEGAL_NAME + ' (“Greatstone”, “we”, “us”) runs greatstoneint.com and is the controller of the personal data described on this page. We are registered in ' + REGISTERED_IN + ' under company number ' + COMPANY_NUMBER + ', with our registered office at ' + REGISTERED_OFFICE + '.' + ICO_LINE + '<br><br>For anything about your data, email ' + LEGAL_MAIL + '. We will reply to privacy questions at that address.' },
+    { h: 'What this page covers', b: 'This website and the enquiry form on it. If you become a client, we tell you separately how we handle data in that work.' },
+    // GRE-659 PR A clears the enquiry IP after 30 days (migration 0036), so the 30-day wording applies.
+    { h: 'What we collect', b: '<strong>When you send an enquiry.</strong> Your work email, which we need to reply, plus anything else you choose to give: your name, company, sector and message. With it we save the date and time, the page you sent it from, and how you reached us on this visit (the site that referred you and any campaign tags in the link, such as utm_source). If you accepted analytics cookies, we also save how you first found us. We keep your IP address for 30 days to stop spam and abuse of the form.<br><br><strong>When you browse.</strong> If you accept analytics cookies, Google Analytics records how the site is used: pages viewed, device and browser type, and an approximate location. Google Analytics does not store your IP address. We never send your name or email to Google Analytics. If you decline, no analytics cookies are set. Google may still receive basic signals with no cookies and no identifier, such as the fact that a page loaded, which it uses to estimate overall traffic.<br><br>We do not ask for sensitive information such as health or political views. Please leave it out of your message.' },
+    { h: 'How we use it, and why we are allowed to', b: B + '<strong>Reply to your enquiry and discuss working together.</strong> Data used: enquiry details. Lawful basis: legitimate interests, answering a business that asked about our services. If you write to us for yourself, steps you asked us to take before a contract.<br>' + B + '<strong>Tell our team a new enquiry has arrived.</strong> Data used: enquiry details. Lawful basis: legitimate interests.<br>' + B + '<strong>See which campaigns and pages lead to enquiries.</strong> Data used: referrer, landing page, campaign tags. Lawful basis: legitimate interests.<br>' + B + '<strong>Protect the form from spam and abuse.</strong> Data used: IP address. Lawful basis: legitimate interests.<br>' + B + '<strong>Measure how the site is used.</strong> Data used: analytics data. Lawful basis: your consent, which you can withdraw at any time.<br><br>Sending an enquiry does not sign you up to marketing emails. We do not make automated decisions about you.' },
+    { h: 'Who we share it with', b: 'We use a small number of providers to run the site. Each works under a contract that allows it to use your data only on our instructions.<br>' + B + '<strong>Supabase</strong> stores enquiries in our database, in London.<br>' + B + '<strong>Resend</strong> sends our team the email alert for each new enquiry.<br>' + B + '<strong>Pipedrive</strong> is where our team records an enquiry and follows it up.<br>' + B + '<strong>Netlify</strong> hosts the website and keeps short-lived server logs, which include IP addresses.<br>' + B + '<strong>Google</strong> runs Tag Manager and Analytics. It sets analytics cookies only if you accept them; if you decline, it receives only the basic signals described above.<br><br>We do not sell your data. We share it with others only if the law requires us to.' },
+    { h: 'Data outside the UK', b: 'Some of these providers process data in the United States. Where they do, we rely on UK adequacy regulations (including the UK Extension to the EU-US Data Privacy Framework, where the provider is certified) or the ICO’s International Data Transfer Agreement or Addendum. Email us for details.' },
+    { h: 'How long we keep it', b: B + '<strong>Enquiries:</strong> 24 months after our last contact with you, then deleted. Copies in our team’s email are deleted on the same schedule. If you become a client, we keep what the work needs under that contract.<br>' + B + '<strong>IP address saved with an enquiry:</strong> 30 days.<br>' + B + '<strong>Analytics data:</strong> 14 months.' },
+    { h: 'Your rights', b: 'You can ask us to give you a copy of your data, correct it, delete it, restrict how we use it, or move it to another provider where that applies. You can object to any use based on legitimate interests, and you can withdraw consent for analytics at any time from <strong>Cookie settings</strong> in the footer. Email ' + LEGAL_MAIL + '. It is free, and we reply within one month.<br><br>If you are unhappy with how we handle your data, please tell us first so we can put it right. You can also complain to the Information Commissioner’s Office at <a href="https://ico.org.uk/make-a-complaint">ico.org.uk/make-a-complaint</a> or on 0303 123 1113.' },
+    { h: 'Security', b: 'Enquiries are sent over an encrypted connection and stored in a database that only named Greatstone staff can read.' },
+    { h: 'Children', b: 'This site is for businesses. It is not aimed at anyone under 18.' },
+    { h: 'Changes', b: 'When this page changes, the date at the top changes too.' },
   ] },
-  { slug: 'privacy', title: 'Privacy policy', desc: 'How Greatstone collects, uses and protects your personal data. Draft scaffold, final wording pending.', sections: [
-    { h: 'Who controls your data', b: 'Greatstone International Ltd is the data controller, and here is how to contact us about your data.' },
-    { h: 'What we collect', b: 'Your account details, order history and how you use the site. We never store card numbers; payments are handled by our payment provider.' },
-    { h: 'How we use it, and our lawful basis', b: 'To take orders, deliver licences, support you and improve the site, under the UK GDPR lawful bases.' },
-    { h: 'Who we share it with', b: 'Our processors for hosting, payments and email, each under contract. We do not sell your data.' },
-    { h: 'Cookies', b: 'How we use cookies, and your choices. See the <a href="#go/cookies">cookie policy</a>.' },
-    { h: 'Your rights', b: 'Access, correction, deletion and the rest of your UK GDPR rights, and how to exercise them.' },
-    { h: 'Retention, security and complaints', b: 'How long we keep data, how we protect it, and your right to complain to the ICO.' },
+  { slug: 'cookies', title: 'Cookie policy', publish: true,
+    desc: 'The cookies and browser storage greatstoneint.com uses, and how to change your choice.', sections: [
+    { h: 'The short version', b: 'We use a few small files and browser storage entries to make the site work, and, only if you say yes, analytics cookies to see how the site is used. We do not use advertising cookies.' },
+    { h: 'What cookies are', b: 'Cookies are small text files a website saves on your device. Sites can also save similar information in your browser’s local storage. This page covers both and calls them “cookies”.' },
+    { h: 'Essential cookies (always on)', b: 'The site needs these to work, so they do not ask for consent.<br>' + B + '<strong>gs-consent</strong>: remembers your cookie choice, so we do not ask again. Kept until you clear your browser storage.<br>' + B + '<strong>gs_service_inquiry_v1</strong>: remembers the services you added to an enquiry. Kept until you send the enquiry or clear your browser storage.<br>' + B + '<strong>sb-…-auth-token</strong>: keeps you signed in, only if you sign in to an account. Kept until you sign out.' },
+    { h: 'Analytics cookies (only if you accept)', b: 'These run only after you choose <strong>Accept analytics</strong>. They help us see which pages are useful and which campaigns bring people to the site.<br>' + B + '<strong>_ga</strong> (Google Analytics): tells one visitor from another, without identifying you. 2 years.<br>' + B + '<strong>_ga_…</strong> (Google Analytics): keeps track of a single visit. 2 years.<br>' + B + '<strong>gs-attr-first, gs-attr-last</strong> (Greatstone): remembers how you first and most recently reached the site (referring site, campaign tags, landing page), so an enquiry can tell us which campaign worked. Kept until you clear your browser storage.<br><br>Google holds the analytics data for 14 months. Google’s own explanation is at <a href="https://policies.google.com/technologies/partner-sites">policies.google.com/technologies/partner-sites</a>.<br><br>If you decline, Google may still receive basic signals with no cookies and no identifier, which it uses to estimate overall traffic.' },
+    { h: 'Changing your choice', b: 'Use <strong>Cookie settings</strong> in the footer at any time to accept or decline analytics. You can also delete cookies and site storage in your browser settings, or install Google’s opt-out add-on at <a href="https://tools.google.com/dlpage/gaoptout">tools.google.com/dlpage/gaoptout</a>.' },
+    { h: 'Questions', b: 'Email ' + LEGAL_MAIL + '. More on how we use personal data is in our <a href="#go/privacy">Privacy policy</a>.' },
   ] },
-  { slug: 'cookies', title: 'Cookie policy', desc: 'The cookies Greatstone uses, and how to control them. Draft scaffold, final wording pending.', sections: [
-    { h: 'What cookies are', b: 'Small files a site stores on your device, and why sites use them.' },
-    { h: 'Essential cookies', b: 'Sign-in and basket cookies the site needs to work. These always run.' },
-    { h: 'Analytics cookies', b: 'Usage measurement that runs only with your consent, so we can see what to improve.' },
-    { h: 'Managing your choices', b: 'Change your cookie choices at any time from the banner or your browser settings.' },
+  // Retitled from the "Terms of sale" scaffold: Release 1 sells nothing on the site (GRE-656 doc).
+  { slug: 'terms', title: 'Website terms of use', publish: true,
+    desc: 'The terms for using greatstoneint.com.', sections: [
+    { h: 'Who we are', b: 'greatstoneint.com is run by ' + LEGAL_NAME + ', registered in ' + REGISTERED_IN + ' under company number ' + COMPANY_NUMBER + ', registered office ' + REGISTERED_OFFICE + '. Contact us at ' + LEGAL_MAIL + '.' },
+    { h: 'Using this site', b: 'By using this site you accept these terms. If you do not accept them, please do not use the site.' },
+    { h: 'Information, not advice', b: 'The content here describes our services and our thinking. It is general information. It is not professional advice for your situation, and you should not rely on it as such. Advice comes under a written agreement with us.' },
+    { h: 'Enquiries', b: 'Sending an enquiry starts a conversation. It does not create a contract. Any work we do for you is under a separate written agreement.' },
+    { h: 'Our content', b: 'We own, or have permission to use, the text, design, images and code on this site. You may view it, and share links to it. You may not copy, republish or sell it without our written permission.' },
+    { h: 'Fair use of the site', b: 'Please do not misuse the site: no attempts to break in, overload it, add harmful code, or collect data from it by automated means. We may block access if we see this.' },
+    { h: 'Links to other sites', b: 'Links to other websites are there for convenience. We do not control those sites and are not responsible for them.' },
+    { h: 'Availability and changes', b: 'We work to keep the site available and accurate, but we do not promise that it will always be available, error-free or up to date. We may change or remove content at any time.' },
+    { h: 'Our liability', b: 'The content on this site is general information. It is not advice for your business, so please talk to us before you act on it.<br><br>To the extent the law allows, we are not responsible for:<br>' + B + 'loss that comes from relying on the general content of this site without talking to us first;<br>' + B + 'loss of profit, revenue, business, contracts or data;<br>' + B + 'loss we could not reasonably foresee.<br><br>Nothing in these terms excludes or limits any liability that the law does not allow us to exclude or limit, such as liability for death or personal injury caused by our negligence, or for fraud.' },
+    { h: 'Privacy and cookies', b: 'How we use personal data is in our <a href="#go/privacy">Privacy policy</a>, and our use of cookies is in our <a href="#go/cookies">Cookie policy</a>.' },
+    { h: 'Law', b: 'These terms are governed by the law of England and Wales, and its courts have exclusive jurisdiction.' },
+    { h: 'Changes to these terms', b: 'We may update these terms. The date at the top shows the latest version.' },
   ] },
   { slug: 'refunds', title: 'Refunds and returns', desc: 'When and how Greatstone refunds a software licence purchase. Draft scaffold, final wording pending.', sections: [
     { h: 'Digital licences and your right to cancel', b: 'How the right to cancel applies to digital licence keys, including where it ends once a key has been supplied.' },
@@ -140,18 +170,23 @@ export const LEGAL_SCAFFOLDS = [
     { h: 'How to request a refund', b: 'Email us from your account with your order reference, and we will confirm the next steps and the timeframe.' },
   ] },
 ];
-function buildLegalPage({ title, desc, sections }) {
+function buildLegalPage({ title, desc, sections, publish }) {
   const blocks = [
     // ctaLabel/prompt set empty so the Hero's defaults (the primary CTA, the cursor prompt) don't bleed
-    // onto a legal page — it wants just the title + the draft banner.
-    blk('Hero', { kicker: 'Legal', headline: title, highlight: '', body: LEGAL_DRAFT_BANNER, align: 'left', size: 'compact', scrollCue: false, ctaLabel: '', ctaLabel2: '', prompt: '' }),
-    ...sections.map((s) => blk('Prose', { kicker: s.h, body: s.b, align: 'left', width: 'reading' })),
+    // onto a legal page. A published page shows its "Last updated" line; the draft scaffold its banner.
+    blk('Hero', { kicker: 'Legal', headline: title, highlight: '', body: publish ? 'Last updated ' + LEGAL_UPDATED + '.' : LEGAL_DRAFT_BANNER, align: 'left', size: 'compact', scrollCue: false, ctaLabel: '', ctaLabel2: '', prompt: '' }),
+    // kickerLevel h2: each section title is a real heading, so screen-reader users can move by heading
+    ...sections.map((s) => blk('Prose', { kicker: s.h, kickerLevel: 'h2', body: s.b, align: 'left', width: 'reading' })),
   ];
-  const page = seedPage(title, 'stone', blocks, { title: title + ' · Greatstone International', description: desc, ogImage: '' }, 'draft');
-  // A true draft has NO published projection (mirrors addPageTo), so the public "published" gate hides it
-  // until a real publish. Without this, seedPage's default published-snapshot would leak the placeholder.
-  page.published = null;
-  page.publishedBackground = null;
+  // no 3D background: long legal text has to sit on a plain surface to stay readable (the stone drew bright
+  // lines straight through the Privacy body copy in the GRE-659 screenshots)
+  const page = seedPage(title, 'none', blocks, { title: title + ' · Greatstone International', description: desc, ogImage: '' }, publish ? 'published' : 'draft');
+  if (!publish) {
+    // A true draft has NO published projection (mirrors addPageTo), so the public "published" gate hides it
+    // until a real publish. Without this, seedPage's default published-snapshot would leak the placeholder.
+    page.published = null;
+    page.publishedBackground = null;
+  }
   return { ...page, footerOnly: true };
 }
 // Add every legal scaffold to a pages map + return the slugs (in declared order) for the nav order.
@@ -390,7 +425,8 @@ export function seedState() {
           lines: [
             { text: 'Strong organisations are not created by chance.', accent: false },
           ],
-          body: 'At Greatstone, we help organisations build the clarity, confidence and capability required to become stronger.',
+          // GRE-659: body from GRE-652 §4.1 (Harbor). States the agreed position plainly, as plan GRE-638 §5 asks.
+          body: 'We help organisations become stronger through practical digital transformation and AI-enabled automation: finding where your people’s time goes, automating the work that should run itself, and running it for you.',
           align: 'left', size: 'full', meta: [], pillEyebrow: false, gridBackdrop: false,
           // The mark, beside the statement rather than behind it. The hero was a short approved
           // sentence alone in a 1240px column, so half the screen was empty and the opening read as
@@ -420,57 +456,59 @@ export function seedState() {
         blk('Chapter', {
           id: 'gs-home-why', // stable: the 3D stone finishes fading in as this block reaches mid-screen
           index: '', eyebrow: 'Why Greatstone', highlight: '',
-          headline: 'Organisations face increasing complexity, opportunity and change.',
-          body: 'The challenge is not change itself, but understanding where meaningful change should begin.',
-          // EM DASH 1 of 2 in Ben's source: "stronger—and sustain" becomes "stronger, and sustain".
-          coda: 'At Greatstone, we help organisations build the clarity, confidence and capability to become stronger, and sustain that strength over time.',
+          headline: 'Most organisations already have the tools. What they lack is the time to use them well.',
+          body: 'Skilled people lose hours every week to reporting, first drafts, research, follow-ups and re-keying the same information twice. AI tools can do much of that work, but used one at a time, by whoever has a spare minute, they produce uneven results that nobody checks.',
+          coda: 'We start by understanding how your work is actually done. Then we automate the parts that should run themselves, and keep your people in charge of everything that matters.',
           align: 'left', ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
         }),
-        // Chapter 4, Building a Stronger Organisation. Panel links are unset until the three destination
-        // pages exist, so the approved button wording is stored and editable but nothing dead renders.
+        // Chapter 4, Building a Stronger Organisation. Ben's heading and three priorities; GRE-652 §4.1 gives
+        // each a short body and a real destination (the three were '#' before).
         blk('Panels', {
           eyebrow: '', heading: 'Building a Stronger Organisation',
-          intro: 'Every organisation has the potential to become stronger. The organisations that realise that potential are those that focus their leadership, capability and investment where they create the greatest long-term value. For some, that means transforming with confidence. For others, it means strengthening organisational capability or applying technology where it delivers the greatest strategic advantage. Wherever your organisation is on its journey, Greatstone helps you move forward with greater clarity, confidence and purpose.',
+          intro: 'Every organisation has the potential to become stronger. Start with the priority that matches where you are.',
           panelsLabel: '', columns: 'three', panelStyle: 'card', bodyClamp: 'three', coda: '',
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
             { label: '', icon: 'transform', title: 'Transform with Confidence',
-              text: 'Successful transformation begins long before change begins. It starts with understanding the organisation, establishing the right priorities and creating a clear path towards stronger organisational outcomes. Whether your objective is improving performance, modernising operations, embracing Artificial Intelligence or preparing for future growth, Greatstone helps organisations establish the clarity and confidence required to transform successfully and create lasting organisational value.',
-              ctaLabel: 'Explore Organisational Transformation', ctaHref: '#' },
+              text: 'For organisations changing how they operate. We read the organisation across eight pillars, set the priorities and lead the change.',
+              ctaLabel: 'See how we work', ctaHref: { kind: 'page', page: 'method' } },
             { label: '', icon: 'structure', title: 'Strengthen Organisational Capability',
-              text: 'The strongest organisations understand that capability is one of their greatest strategic assets. They recognise when specialist expertise can strengthen leadership, accelerate progress and help deliver priorities that create lasting organisational value. Greatstone works alongside organisations, providing experienced expertise that strengthens internal capability, supports executive leadership and helps organisations achieve sustainable strategic progress.',
-              ctaLabel: 'Explore Professional Services', ctaHref: '#' },
+              text: 'For organisations that need senior specialist expertise alongside their own team, for a defined piece of work.',
+              ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' } },
             { label: '', icon: 'technology', title: 'Invest in Technology That Matters',
-              text: 'Technology creates value only when it is applied to the right organisational priorities. The objective is not simply to adopt new technology. It is to apply the right technology, to the right opportunities, at the right time, strengthening organisational capability and supporting long-term strategic success. Greatstone helps organisations identify, evaluate and implement technologies that matter, ensuring every investment contributes directly to stronger organisational performance and future capability.',
-              ctaLabel: 'Explore Technology Solutions', ctaHref: '#' },
+              text: 'For organisations ready to automate. We set up a team of AI agents on your own install, connect it to your tools and run it for you.',
+              ctaLabel: 'Explore Managed Automation', ctaHref: { kind: 'page', page: 'services' } },
           ],
         }),
-        // Chapter 5, Building Confidence Before Change. The brief asks each principle to carry a simple
-        // supporting motif, while the four must still read as one philosophy; the numbered motif does both
-        // (see Panels.jsx). No process diagram, no framework name, no engagement stage, per his prohibitions.
+        // Chapter 5, Building Confidence Before Change: Ben's heading, now carrying the four steps of how an
+        // engagement runs (GRE-652 §4.1). His four principles moved to About unchanged (seed-pages.json).
         blk('Panels', {
-          // Tonal band. Three Panels sections ran back to back on one flat surface; lifting the middle one
           _section: { surface: 'panel', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
-          eyebrow: '', heading: 'Building Confidence Before Change',
-          intro: 'Every organisation is different. Every leadership team faces different opportunities, challenges and ambitions. For that reason, Greatstone believes that meaningful transformation should never begin with assumptions or predetermined solutions. It should begin by building the understanding and confidence required to make the right decisions for the organisation. That philosophy guides every engagement we undertake and every recommendation we make.',
-          headAlign: 'center', panelsLabel: 'The Greatstone Principles',
-          columns: 'four', panelStyle: 'numbered', bodyClamp: 'three', coda: '',
-          ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
+          eyebrow: '', heading: 'Building Confidence Before Change', intro: '',
+          headAlign: 'center', panelsLabel: '',
+          columns: 'four', panelStyle: 'numbered', bodyClamp: 'none', coda: '',
+          ctaLabel: '', ctaHref: '', headingLevel: 'h2',
           items: [
-            { label: '', icon: 'compass', title: 'Understanding Before Action',
-              text: 'Every meaningful initiative begins with understanding. Before recommending change, Greatstone develops a clear understanding of the organisation, its objectives and the factors that will determine long-term success. Only then can meaningful progress begin.',
-              ctaLabel: '', ctaHref: '#' },
-            { label: '', icon: 'evidence', title: 'Evidence Before Transformation',
-              text: 'Transformation should always be guided by evidence rather than assumption. Every recommendation should be informed by organisational understanding, sound judgement and objective insight, creating the confidence required for meaningful and sustainable transformation.',
-              ctaLabel: '', ctaHref: '#' },
-            { label: '', icon: 'target', title: 'Execution with Purpose',
-              text: 'Every initiative should contribute to a clearly defined organisational objective. Transformation, specialist expertise and technology should never become objectives in themselves. They should always strengthen the organisation they exist to serve.',
-              ctaLabel: '', ctaHref: '#' },
-            { label: '', icon: 'layers', title: 'Capability That Endures',
-              text: 'The measure of success is not the completion of an engagement. It is the capability the organisation retains, the confidence leadership gains and the strength the organisation continues to build long after the engagement has concluded.',
-              ctaLabel: '', ctaHref: '#' },
+            { label: '', icon: '', title: 'Conversation', text: 'Thirty minutes to understand your organisation and whether there is something worth exploring. No cost, no obligation.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Diagnostic', text: 'We read your organisation across eight pillars and show you where the hours go and what to automate first.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Set-up', text: 'We configure your agent team on your own install, connect your tools and agree where people approve the work.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Managed service', text: 'We run, support and improve it month by month, and show you what the agents did.', ctaLabel: '', ctaHref: '' },
           ],
         }),
+        // Proof teaser (GRE-652 §4.1), in place of chapter 7 "Trusted by Organisations That Expect More": no
+        // client list is approved (claim C20), so the page says what we can show instead (C02, with its qualifier
+        // on the Proof page). The two LogoWalls stay empty and render nothing until a client approves its logo.
+        blk('Chapter', {
+          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
+          index: '', eyebrow: '', highlight: '',
+          headline: 'We run Greatstone this way first.',
+          body: 'Our own product, marketing, engineering and release work runs on the same kind of agent team we set up for clients, with people approving what matters. We would rather show you that than quote a number we cannot stand behind.',
+          coda: '', align: 'left', ctaLabel: 'See the proof', ctaHref: { kind: 'page', page: 'proof' }, headingLevel: 'h2',
+        }),
+        blk('LogoWall', {
+          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' }, eyebrow: 'Organisations we have supported', logos: [] }),
+        blk('LogoWall', {
+          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' }, eyebrow: 'Strategic technology partnerships', logos: [] }),
         // Chapter 6, Executive Intelligence. AI Market Intelligence goes straight to the live briefing; the other
         // three centres now point at the Executive Intelligence page, which presents all four as his four equal
         // panels. That is their real home, so the buttons are honest rather than dead.
@@ -496,32 +534,6 @@ export function seedState() {
               ctaLabel: 'Explore Executive Briefings', ctaHref: { kind: 'page', page: 'insights' } },
           ],
         }),
-        // Chapter 7, Trusted by Organisations That Expect More. Both logo walls ship EMPTY and render
-        // nothing at all: there is no verified client or partner list, and the only named organisations
-        // anywhere in this codebase are leadership heritage (where our people worked BEFORE Greatstone),
-        // which must never be restated as clients. His chapter-7 CTA is omitted; chapter 8 follows
-        // immediately and is itself the call to action.
-        blk('Chapter', {
-          // Movement 3 opens: proof, then the close
-          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
-          index: '', eyebrow: '', highlight: '',
-          headline: 'Trusted by Organisations That Expect More',
-          body: 'The organisations you choose to trust help shape the organisation you become. Executive leaders understand that the partners they choose influence the quality of their thinking, the confidence of their decisions and the success of their most important initiatives. That is why organisations that expect more choose their partners carefully. The same commitment to thoughtful leadership, disciplined judgement and meaningful organisational outcomes continues to shape every engagement Greatstone undertakes.',
-          coda: 'Greatstone has supported organisations across a broad range of industries, helping executive leadership strengthen organisational capability, transform with confidence and apply technology where it creates lasting organisational value.',
-          align: 'left', ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
-        }),
-        blk('LogoWall', {
-          // same movement as the chapter above
-          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' }, eyebrow: 'Organisations we have supported', logos: [] }),
-        blk('LogoWall', {
-          // same movement
-          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' }, eyebrow: 'Strategic technology partnerships', logos: [] }),
-        blk('Prose', {
-          // closes the proof movement
-          _section: { surface: 'deep', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
-          kicker: '', align: 'left', width: 'reading',
-          body: 'Every engagement begins with understanding. Every successful engagement builds trust. Every trusted relationship creates the opportunity to strengthen organisations over the long term. The organisations Greatstone supports differ in size, sector and geography. The philosophy upon which every relationship is built remains the same.',
-        }),
         // Chapter 8. email stays empty until the canonical address is decided; Invite hides it when blank.
         // The four contact routes are his, in his order. Two resolve today. Telephone has NO number
         // anywhere in this codebase and Email has three competing candidate addresses, so both ship with
@@ -530,7 +542,7 @@ export function seedState() {
         blk('Invite', {
           eyebrow: '', highlight: '',
           headline: 'Let’s Build a Stronger Organisation',
-          body: 'The journey towards a stronger organisation begins with a conversation. Let’s begin by understanding your organisation, your ambitions and the challenges that matter most. Every meaningful partnership begins with understanding.',
+          body: 'It starts with a conversation about your organisation, the work that takes up your people’s time and what you would do with it back.',
           ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' },
           ctaLabel2: 'Explore Executive Intelligence', ctaHref2: { kind: 'page', page: 'insights' },
           email: '',
@@ -542,26 +554,35 @@ export function seedState() {
             { label: 'Email', href: { kind: 'email', email: '' } },
           ],
         }),
-      ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Strong organisations are not created by chance. They are built by understanding what matters before deciding what must change. Greatstone helps organisations build the clarity, confidence and capability to become stronger.', ogImage: '' }),
+      ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes, automates the work that should run itself, and runs it for you.', ogImage: '' }),
 
-      method: seedPage('Process', 'stone', [
-        blk('Hero', { kicker: 'The Digital Transformation Playbook', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
-          body: 'Your business has eight faces. We score every one: read where you stand, benchmark against your peers, and climb the lowest first. Move your cursor across the stone, then look inside each piece.',
+      // How We Work (GRE-652 §4.3). Slug stays 'method': it is the routing key for #go/method and #breakdown.
+      method: seedPage('How We Work', 'stone', [
+        blk('Hero', { kicker: 'How we work', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
+          body: 'Every engagement follows the same five steps. The Diagnostic in step two reads your organisation across eight pillars, so the work that follows is the work that actually moves you.',
           prompt: '', align: 'center', size: 'full',
           ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: PRIMARY_CTA_LABEL, ctaHref2: PRIMARY_CTA_HREF }),
-        blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
-          body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: a full, honest read of the business across eight pillars, so the work that follows is the work that actually moves you.',
+        blk('Steps', { index: '', eyebrow: '', headline: '', highlight: '', body: '', align: 'left', numberStyle: 'badge',
           items: [
-            { n: '01', title: 'We score, not guess', text: 'Every pillar gets a number, a clear, defensible read of where you stand today.' },
-            { n: '02', title: 'We benchmark', text: 'Your scores set against your peers, so you can see the gap and the lead.' },
-            { n: '03', title: 'We climb the lowest first', text: 'The biggest gain is hiding in your weakest pillar. That’s where we start.' },
+            { title: 'Conversation', text: 'Free, thirty minutes, by call or video. We learn what you do and where time goes. You leave knowing whether a Diagnostic is worth it.' },
+            { title: 'Diagnostic', text: 'We score your organisation across the eight pillars and map the repeatable work. You receive a written read of where you stand and a short list of what to automate first, with what each item needs. Scope and fee are fixed before it starts; it is not an open-ended exploration.' },
+            { title: 'Proposal', text: 'A written scope: which agent team, which tools, which approval points, what you provide, what it costs and how we will measure it.' },
+            { title: 'Set-up', text: 'We create your install, set up the agent team, connect your tools and AI accounts, and run it on real work with you before go-live.' },
+            { title: 'Managed service', text: 'We host, support and update it. With Manage Plus, we also review it every month and improve it.' },
+          ] }),
+        blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
+          body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: an honest read of the organisation across eight pillars, so the automation that follows is pointed at the right work.',
+          items: [
+            { n: '01', title: 'We score, not guess', text: 'Every pillar gets a number: a clear, defensible read of where you stand today.' },
+            { n: '02', title: 'We find the repeatable work', text: 'Inside each pillar, we look for the work that comes round every week and could run itself.' },
+            { n: '03', title: 'We climb the lowest first', text: 'The biggest gain is usually hiding in your weakest pillar. That is where we start.' },
           ]}),
         blk('PillarCards', {}),
         blk('MaturityModel', {}),
-        blk('Invite', { eyebrow: 'The First Step', headline: 'Find out where you stand.', highlight: '',
-          body: 'A Diagnostic scores all eight pillars and hands you the map: where the week goes, and where the next gain is hiding.',
+        blk('Invite', { eyebrow: 'The first step', headline: 'Find out where you stand.', highlight: '',
+          body: 'It starts with a conversation. If a Diagnostic makes sense, we will tell you what it covers and what it costs before you commit.',
           ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, variant: 'framed' }),
-      ], { title: 'Process · Eight Pillars · Greatstone International', description: 'The Digital Transformation Playbook scores your business across eight pillars, benchmarks you against your peers, and climbs the lowest first to win hours back.', ogImage: '' }),
+      ], { title: 'How We Work · Eight Pillars · Greatstone International', description: 'Conversation, Diagnostic, proposal, set-up and managed service. The Diagnostic reads your organisation across eight pillars before anything is built.', ogImage: '' }),
 
       contact: seedPage('Begin the Conversation', 'none', [
         // Ben's section 8. The page is the primary route for organisations ready to engage, and his
@@ -571,7 +592,9 @@ export function seedState() {
         // are gone, along with the TimeCounter that opened on a claim about buying time.
         blk('Hero', {
           kicker: '', headline: 'Begin the Conversation', highlight: '', headlineSuffix: '',
-          body: 'The journey towards a stronger organisation begins with a conversation. Tell us about your organisation, your ambitions and the challenges that matter most, and we will take it from there.',
+          // GRE-652 §4.6. Its second sentence ("A senior member of the team will reply within one working day")
+          // ships only once John and Ben name the enquiry owner and confirm the time (decision D6, claim C23).
+          body: 'Tell us about your organisation and the work that takes up your people’s time, and we will take it from there.',
           prompt: '', size: 'standard', align: 'left', variant: 'statement',
           pillEyebrow: false, gridBackdrop: false, scrollCue: false,
           ctaLabel: '', ctaHref: '#', ctaLabel2: '', ctaHref2: '#',
@@ -633,11 +656,16 @@ export function seedState() {
   });
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
-  const order = ['home', 'how-we-help', 'about', 'method', 'climb', 'services', 'industries', 'proof', 'insights', 'ai-market-intelligence', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  // footer order: the R1 launch pages first (as in the nav), then the secondary pages, then legal
+  const order = ['home', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
-  return { schema: SCHEMA, seedVersion: SEED_VERSION, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
+  // The one-time migrate() inserts below are for stores saved BEFORE they existed. A fresh seed is already
+  // current, so mark them done. Without this, a visitor's SECOND load ran them and put the time-savings
+  // calculator, comparison matrix and catalogue back on the Service page that GRE-652 took them off.
+  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true };
+  return { schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
 }

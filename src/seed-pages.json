@@ -61,24 +61,33 @@
               "label": "",
               "title": "Transform with Confidence",
               "text": "For organisations undertaking significant strategic, operational or organisational transformation.",
-              "ctaLabel": "Explore Organisational Transformation",
-              "ctaHref": "#",
+              "ctaLabel": "See how we work",
+              "ctaHref": {
+                "kind": "page",
+                "page": "method"
+              },
               "icon": "transform"
             },
             {
               "label": "",
               "title": "Strengthen Organisational Capability",
               "text": "For organisations requiring specialist expertise, advisory capability or implementation support to strengthen specific areas of the organisation.",
-              "ctaLabel": "Explore Professional Services",
-              "ctaHref": "#",
+              "ctaLabel": "Begin the Conversation",
+              "ctaHref": {
+                "kind": "page",
+                "page": "contact"
+              },
               "icon": "structure"
             },
             {
               "label": "",
               "title": "Invest in Technology That Matters",
               "text": "For organisations seeking to apply the right technologies to the right organisational priorities in order to strengthen capability and create meaningful organisational value.",
-              "ctaLabel": "Explore Technology Solutions",
-              "ctaHref": "#",
+              "ctaLabel": "Explore Managed Automation",
+              "ctaHref": {
+                "kind": "page",
+                "page": "services"
+              },
               "icon": "technology"
             }
           ],
@@ -137,136 +146,216 @@
   },
   {
     "slug": "services",
-    "title": "Services",
+    "title": "Managed Automation",
     "background": "tide",
     "seo": {
-      "title": "Services · Greatstone International",
-      "description": "We do not advise, we become your foundation. One team, three moves: find the hours you are losing, build the systems that buy them back, then embed and scale.",
+      "title": "Managed Automation · Greatstone International",
+      "description": "A team of AI agents set up on your own install, connected to your tools and run for you, with your people approving what matters.",
       "ogImage": ""
     },
     "blocks": [
       {
         "type": "Hero",
         "props": {
-          "kicker": "What we do",
-          "headline": "We don't advise. We become your",
-          "highlight": "foundation.",
-          "body": "Most partners hand you a deck and leave. We embed in how you already work, find the hours your business is quietly losing, and build the systems that buy them back. One team, three moves, no stone unturned.",
+          "kicker": "Managed Automation",
+          "headline": "Your AI tools, organised into one team.",
+          "highlight": "",
+          "headlineSuffix": "",
+          "body": "Most organisations use AI tools the way they would use freelancers: one at a time, with no shared memory and nobody checking the work. We set up a team of AI agents on your own install, give it a goal and clear roles, connect it to your tools, and run it for you. A named person in your organisation approves what matters.",
+          "prompt": "",
           "align": "left",
           "size": "compact",
-          "gridBackdrop": true,
           "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
-          "ctaLabel2": "See the Method",
-          "ctaHref2": "#go/method"
+          "ctaLabel2": "See how we work",
+          "ctaHref2": "#go/method",
+          "meta": [],
+          "lines": [],
+          "gridBackdrop": true
         }
       },
       {
-        "type": "ServiceCards",
-        "props": {}
-      },
-      {
-        "type": "ServiceCatalog",
-        "props": {}
-      },
-      {
-        "type": "Spectrum",
-        "props": {}
-      },
-      {
-        "type": "StatStrip",
+        "type": "Steps",
         "props": {
           "index": "",
-          "eyebrow": "The payback",
-          "headline": "Hours back, three",
-          "highlight": "ways.",
+          "eyebrow": "",
+          "headline": "Built for organisations where skilled people do too much repeatable work.",
+          "highlight": "",
           "body": "",
-          "stats": [
+          "align": "left",
+          "numberStyle": "text",
+          "items": [
             {
-              "value": 40,
-              "prefix": "+",
-              "suffix": "%",
-              "dec": 0,
-              "label": "More efficiency",
-              "note": "The hours your business was quietly losing, handed back to the work that matters."
+              "title": "",
+              "text": "You have 11 to 250 people and the same reports, drafts, research and follow-ups come round every week."
             },
             {
-              "value": 2,
-              "prefix": "",
-              "suffix": "×",
-              "dec": 0,
-              "label": "More value to customers",
-              "note": "Faster response, fewer errors, reinvested where clients feel it."
+              "title": "",
+              "text": "Your team already tries AI tools, but the results depend on who used them and nobody can see what was done."
             },
             {
-              "value": 60,
-              "prefix": "−",
-              "suffix": "%",
-              "dec": 0,
-              "label": "Less risk",
-              "note": "Manual gaps closed, the quiet failures designed out."
+              "title": "",
+              "text": "You want the hours back without hiring, and without handing control to a black box."
+            }
+          ]
+        }
+      },
+      {
+        "type": "FeatureGrid",
+        "props": {
+          "kicker": "",
+          "heading": "What is included",
+          "variant": "cards",
+          "body": "",
+          "items": [
+            {
+              "n": "",
+              "title": "Your own install",
+              "text": "A separate, hosted workspace for your organisation only. Your work and data are not shared with other clients."
+            },
+            {
+              "n": "",
+              "title": "An agent team set up for your work",
+              "text": "We start with one department, such as marketing, content, operations or research, and give each agent a role, instructions and a manager."
+            },
+            {
+              "n": "",
+              "title": "Your tools and AI accounts connected",
+              "text": "You hold the accounts with the AI providers and pay them directly. We help you set them up."
+            },
+            {
+              "n": "",
+              "title": "Approval points you choose",
+              "text": "Agents work within budgets and stop for a person wherever you decide they should."
+            },
+            {
+              "n": "",
+              "title": "A record of every task",
+              "text": "You can see what each agent did, why, and what it cost."
+            },
+            {
+              "n": "",
+              "title": "Hosting, backups, updates and support",
+              "text": "We keep it running. The service levels are written into your agreement."
+            }
+          ]
+        }
+      },
+      {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "Run it yourself, or have us improve it every month.",
+          "intro": "",
+          "panelsLabel": "",
+          "columns": "two",
+          "panelStyle": "card",
+          "bodyClamp": "none",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "",
+          "headingLevel": "h2",
+          "headAlign": "left",
+          "items": [
+            {
+              "label": "",
+              "icon": "structure",
+              "title": "Managed service",
+              "text": "We host, update, back up and support your install. Your team directs the agents, their tasks and goals.",
+              "ctaLabel": "",
+              "ctaHref": ""
+            },
+            {
+              "label": "",
+              "icon": "layers",
+              "title": "Manage Plus",
+              "text": "Everything in the managed service, plus a monthly review of your agent team: we propose improvements, add new tools and connections, and keep instructions current as AI models change.",
+              "ctaLabel": "",
+              "ctaHref": ""
             }
           ],
-          "columns": 3,
-          "variant": "plain",
-          "footnote": "Illustrative targets: your numbers come out of the Diagnostic.",
-          "clients": ""
+          "_section": {
+            "surface": "panel",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          }
         }
       },
       {
-        "type": "TimeSavingsCalculator",
+        "type": "Steps",
         "props": {
-          "kicker": "The cost of the status quo",
-          "heading": "See the hours you are quietly losing.",
-          "intro": "A rough, honest estimate in seconds. Move the numbers to match your team and see what a week costs you across a year.",
-          "teamLabel": "People affected",
-          "hoursLabel": "Hours lost per person, per week",
-          "costLabel": "Average hourly cost",
-          "defaultTeam": 12,
-          "defaultHours": 5,
-          "defaultCost": 30,
-          "weeksPerYear": 46,
-          "currency": "£",
-          "resultLead": "That is roughly",
-          "ctaLabel": "Begin the Conversation",
-          "ctaHref": "#book",
-          "footnote": "A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly where the hours go and where we buy them back."
+          "index": "",
+          "eyebrow": "",
+          "headline": "",
+          "highlight": "",
+          "body": "",
+          "align": "left",
+          "numberStyle": "badge",
+          "items": [
+            {
+              "title": "Conversation",
+              "text": "Thirty minutes. Is there something worth exploring?"
+            },
+            {
+              "title": "Diagnostic",
+              "text": "We map your week and agree what to automate first."
+            },
+            {
+              "title": "Proposal",
+              "text": "A written scope: the team, the tools, the approval points, the cost."
+            },
+            {
+              "title": "Set-up",
+              "text": "Usually a few working days of our time once accounts and access are in place."
+            },
+            {
+              "title": "Managed service",
+              "text": "Monthly, with a review at the end of the first month."
+            }
+          ]
         }
       },
       {
-        "type": "ComparisonMatrix",
-        "props": {}
+        "type": "Prose",
+        "props": {
+          "kicker": "Boundaries",
+          "align": "left",
+          "width": "reading",
+          "body": "Agents do not move money, sign anything, give regulated advice or make decisions about people. They do not replace your team; they take repeatable work off it. We do not resell AI model usage, and we do not build bespoke software inside this service. If the work needs any of those, we say so in the Diagnostic and scope it separately."
+        }
       },
       {
         "type": "Faq",
         "props": {
+          "showSchema": true,
           "kicker": "Common questions",
           "heading": "The questions buyers ask first.",
-          "intro": "Straight answers to what most teams want to know before they book. If yours is not here, the Diagnostic is the fastest way to get it.",
+          "intro": "",
           "items": [
             {
-              "q": "What actually happens in a Diagnostic?",
-              "a": "Thirty focused minutes where we map your week against the eight pillars and show you where the hours are draining. You leave with a clear read on what your week is quietly costing you and where we would start. No deck, no obligation."
+              "q": "Where does our data go?",
+              "a": "Your organisation has its own separate install, which no other client shares. The AI models run on accounts you own with the providers you choose. We sign a data processing agreement with every client."
             },
             {
-              "q": "Are you a software house or consultants?",
-              "a": "Neither, exactly. We embed alongside your team and build the systems that fit how you actually run. Twenty years doing the work, not advising from the outside."
+              "q": "Who is in control?",
+              "a": "You are. A named person in your organisation decides where agents stop for approval, and can override or pause them. Agents work within budgets, and you can see every task they did."
             },
             {
-              "q": "How long before we see results?",
-              "a": "The Diagnostic gives you a costed picture in the first session. Real change follows the work: we find the drains, build the fix, then stay embedded until the new way is the only way. Usually weeks, not quarters."
+              "q": "Which AI models do you use?",
+              "a": "Today we run agents on Anthropic’s Claude and OpenAI’s ChatGPT, and assess others case by case. When a better model arrives, we can move an agent to it without rebuilding the team."
             },
             {
-              "q": "What about our data and security?",
-              "a": "We work inside your stack and your controls, never around them. Access is least-privilege, scoped to the engagement, and removed when it ends. Security runs through the Technology and Data pillars of our assessment."
+              "q": "What kind of work can the agents do?",
+              "a": "Repeatable knowledge work: first drafts, research, reports, content, summaries, follow-ups and routine checks. We start with one department and the work that comes round every week."
             },
             {
-              "q": "Do you replace our team?",
-              "a": "No. We make your team faster. We hand back the hours lost to copy-paste, handoffs and waiting so your people spend their time on the work only they can do."
+              "q": "What does it cost?",
+              "a": "A one-off set-up fee and a flat monthly fee based on the size of your organisation, with no charge per agent. You pay the AI providers directly for what your agents use. We give you the full figure in the proposal, before you commit."
             },
             {
-              "q": "Is this just AI hype?",
-              "a": "Digital transformation first, AI as the accelerator. We automate the boring before the brilliant, and only deploy AI where it pays back in hours returned, not headlines."
+              "q": "Is this a software product or a consultancy?",
+              "a": "Both, deliberately. We set up an agent team on software we run, and we stay responsible for it. You do not buy a licence and work it out alone."
             }
           ]
         }
@@ -275,15 +364,16 @@
         "type": "Invite",
         "props": {
           "eyebrow": "Start here",
-          "headline": "Let's find the hours you're",
-          "highlight": "losing.",
-          "body": "A Diagnostic is where it begins: a focused look at where your week goes and what it costs. No deck, no pitch. Just the first stone, turned over.",
+          "headline": "Tell us which work keeps coming back.",
+          "highlight": "",
+          "body": "Thirty minutes is usually enough to see whether an agent team would help, and where it would start.",
           "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
+          "ctaLabel2": "",
+          "ctaHref2": "#",
           "email": "",
-          "ctaLabel2": "Explore the 8 pillars",
-          "ctaHref2": "#go/method",
-          "variant": "framed"
+          "variant": "framed",
+          "pill": false
         }
       }
     ]
@@ -362,8 +452,8 @@
     "title": "Proof",
     "background": "tide",
     "seo": {
-      "title": "Proof · Real Results · Greatstone International",
-      "description": "Real results from real engagements: hours given back, first-year ROI and payback inside a quarter. Anonymised studies in property, healthcare and logistics.",
+      "title": "Proof · Greatstone International",
+      "description": "How Greatstone runs its own operations with a managed agent team, what a demonstration shows, and how we measure results with each client.",
       "ogImage": ""
     },
     "blocks": [
@@ -371,129 +461,97 @@
         "type": "Hero",
         "props": {
           "kicker": "Proof, not promises",
-          "headline": "We could show you someone else's ROI.",
-          "highlight": "Yours is the one that matters.",
-          "body": "Every number below came from a real engagement, anonymised but real. They are a floor, not a ceiling. The only result that counts is the one we build inside your business, so we become your foundation rather than advise from the sidelines.",
+          "headline": "We run Greatstone this way. Then we set it up for you.",
+          "highlight": "",
+          "headlineSuffix": "",
+          "body": "We publish a client result only when the client has approved the wording. Until then, this page shows what we can stand behind today: how we run our own company, and how we will measure yours.",
+          "prompt": "",
           "align": "left",
           "size": "compact",
           "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
+          "ctaLabel2": "",
+          "ctaHref2": "#",
+          "meta": [],
+          "lines": [],
           "pillEyebrow": true
         }
       },
       {
-        "type": "StatStrip",
+        "type": "Chapter",
         "props": {
-          "stats": [
-            {
-              "value": 12,
-              "suffix": "hrs",
-              "dec": 0,
-              "label": "given back per knowledge worker, every week"
-            },
-            {
-              "value": 3.4,
-              "suffix": "×",
-              "dec": 1,
-              "label": "first-year ROI on the average engagement"
-            },
-            {
-              "value": 6,
-              "suffix": "wks",
-              "dec": 0,
-              "label": "to first measurable value, not theoretical"
-            },
-            {
-              "value": 90,
-              "suffix": "%",
-              "dec": 0,
-              "label": "adoption of what we build, ninety days in"
-            }
-          ],
-          "variant": "band",
           "index": "",
-          "eyebrow": "",
-          "headline": "",
+          "eyebrow": "Our own operations",
+          "headline": "Our agents work in teams, with managers, budgets and people who approve.",
           "highlight": "",
-          "body": "",
-          "clients": ""
+          "body": "Greatstone’s product, marketing, engineering and release work runs on the same kind of agent team we set up for clients. Each agent has a role, a manager and a budget. Work is tracked task by task. Changes to our own systems are checked by one agent and approved by a person before they go live. This is our own company, not a client result, and we will show it to you working.",
+          "coda": "",
+          "align": "left",
+          "ctaLabel": "",
+          "ctaHref": "#",
+          "headingLevel": "h2"
         }
       },
       {
-        "type": "CaseStudy",
+        "type": "FeatureGrid",
         "props": {
-          "index": "",
-          "eyebrow": "Selected engagements",
-          "headline": "The drain we found.",
-          "highlight": "The foundation we left.",
-          "body": "Names withheld, outcomes intact. Three businesses, three quiet leaks of time, closed.",
+          "kicker": "",
+          "heading": "What you will see in a demonstration",
+          "variant": "cards",
+          "body": "",
           "items": [
             {
-              "tag": "National real-estate group",
-              "head": "Listings that took days now take minutes.",
-              "drain": "Agents re-keyed every listing across four disconnected systems, hours lost per property, errors compounding.",
-              "built": "A single source of truth with automated syndication, plus an internal portal their teams actually used.",
-              "outNum": "9 hrs",
-              "outCap": "saved per agent each week"
+              "n": "",
+              "title": "A goal and the team working on it",
+              "text": "Who does what, and who manages whom."
             },
             {
-              "tag": "Regional healthcare provider",
-              "head": "Less time on the form, more with the patient.",
-              "drain": "Clinical admin swallowed a third of every shift: paper handoffs, duplicate data entry, manual scheduling.",
-              "built": "A compliant intake-to-record workflow with automated triage routing and a staff-facing dashboard.",
-              "outNum": "31%",
-              "outCap": "drop in admin time per clinician"
+              "n": "",
+              "title": "A task from start to finish",
+              "text": "The brief, the work, the review, the approval."
             },
             {
-              "tag": "Multi-site logistics operator",
-              "head": "One screen replaced a wall of spreadsheets.",
-              "drain": "Dispatch ran on spreadsheets and phone calls: no live view, costly idle trucks, daily firefighting.",
-              "built": "A real-time operations layer with predictive routing and exception alerts wired to their existing fleet.",
-              "outNum": "3.4×",
-              "outCap": "return inside the first year"
+              "n": "",
+              "title": "The controls",
+              "text": "Budgets, approval points, and what happens when an agent is unsure."
+            },
+            {
+              "n": "",
+              "title": "The cost",
+              "text": "What the work used, by agent."
             }
           ]
         }
       },
       {
-        "type": "RoiBar",
+        "type": "Prose",
         "props": {
-          "index": "",
-          "eyebrow": "",
-          "headline": "Paid back before",
-          "highlight": "the quarter’s out.",
-          "body": "On a typical engagement, the investment is recovered inside the first few months. Everything past that point is time and money handed back to you, week after week.",
-          "paybackPct": 29,
-          "s1": "Day one",
-          "s2": "Month 6",
-          "s3": "Year one",
-          "paybackNum": "3.5 months",
-          "paybackCap": "to break even, on average",
-          "legendCost": "Recovering the investment",
-          "legendReturn": "Pure return"
-        }
-      },
-      {
-        "type": "Quote",
-        "props": {
-          "text": "They didn’t hand us a deck and leave. They moved in, found the hours we were losing, and gave them back.",
-          "attr": "Operations Director, national real-estate group",
-          "align": "center"
+          "kicker": "Your numbers",
+          "align": "left",
+          "width": "reading",
+          "body": "The Diagnostic records a starting point for the work we automate: how long it takes today, how often it happens and who does it. After the first month of the managed service, we compare against it with you. Those are the only figures we will quote to you, and the only ones we will ever publish about you, with your permission.",
+          "_section": {
+            "surface": "panel",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          }
         }
       },
       {
         "type": "Invite",
         "props": {
-          "eyebrow": "Your number is waiting",
-          "headline": "The next case study on this page",
-          "highlight": "could be yours.",
-          "body": "We’ll find the hours your business is quietly losing, then show you what winning them back is worth.",
+          "eyebrow": "See it working",
+          "headline": "Ask us for a demonstration.",
+          "highlight": "",
+          "body": "We will show you a real agent team doing real work, and answer the questions your team will ask.",
           "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
+          "ctaLabel2": "",
+          "ctaHref2": "#",
           "email": "",
-          "ctaLabel2": "See how we work",
-          "ctaHref2": "#go/method",
-          "variant": "framed"
+          "variant": "framed",
+          "pill": false
         }
       }
     ]
@@ -604,12 +662,69 @@
         }
       },
       {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "The Greatstone Principles",
+          "intro": "",
+          "headAlign": "center",
+          "panelsLabel": "",
+          "columns": "four",
+          "panelStyle": "numbered",
+          "bodyClamp": "three",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "",
+          "headingLevel": "h2",
+          "_section": {
+            "surface": "panel",
+            "accent": "default",
+            "spaceTop": "default",
+            "spaceBottom": "default"
+          },
+          "items": [
+            {
+              "label": "",
+              "icon": "compass",
+              "title": "Understanding Before Action",
+              "text": "Every meaningful initiative begins with understanding. Before recommending change, Greatstone develops a clear understanding of the organisation, its objectives and the factors that will determine long-term success. Only then can meaningful progress begin.",
+              "ctaLabel": "",
+              "ctaHref": ""
+            },
+            {
+              "label": "",
+              "icon": "evidence",
+              "title": "Evidence Before Transformation",
+              "text": "Transformation should always be guided by evidence rather than assumption. Every recommendation should be informed by organisational understanding, sound judgement and objective insight, creating the confidence required for meaningful and sustainable transformation.",
+              "ctaLabel": "",
+              "ctaHref": ""
+            },
+            {
+              "label": "",
+              "icon": "target",
+              "title": "Execution with Purpose",
+              "text": "Every initiative should contribute to a clearly defined organisational objective. Transformation, specialist expertise and technology should never become objectives in themselves. They should always strengthen the organisation they exist to serve.",
+              "ctaLabel": "",
+              "ctaHref": ""
+            },
+            {
+              "label": "",
+              "icon": "layers",
+              "title": "Capability That Endures",
+              "text": "The measure of success is not the completion of an engagement. It is the capability the organisation retains, the confidence leadership gains and the strength the organisation continues to build long after the engagement has concluded.",
+              "ctaLabel": "",
+              "ctaHref": ""
+            }
+          ]
+        }
+      },
+      {
         "type": "Prose",
         "props": {
           "kicker": "Experience",
           "align": "left",
           "width": "reading",
-          "body": "Greatstone brings two decades of work inside organisations, across a broad range of industries and at every level from the executive team to the people doing the work each day. That experience is why we begin with understanding. We have seen enough organisations to know that the presenting problem is rarely the real one, and that the difference between an initiative that holds and one that quietly unwinds is almost always decided before any change begins.",
+          "body": "Greatstone brings two decades of work inside organisations, across a broad range of industries and at every level from the executive team to the people doing the work each day. That experience is why we begin with understanding. We have seen enough organisations to know that the presenting problem is rarely the real one, and that the difference between an initiative that holds and one that quietly unwinds is almost always decided before any change begins. Today we bring that experience together with AI-enabled automation, and we run our own company on the same agent teams we set up for clients.",
           "_section": {
             "surface": "panel",
             "accent": "default",
@@ -677,7 +792,7 @@
           "eyebrow": "",
           "headline": "Let’s Build a Stronger Organisation",
           "highlight": "",
-          "body": "The journey towards a stronger organisation begins with a conversation. Let’s begin by understanding your organisation, your ambitions and the challenges that matter most.",
+          "body": "It starts with a conversation about your organisation, the work that takes up your people’s time and what you would do with it back.",
           "ctaLabel": "Begin the Conversation",
           "ctaHref": {
             "kind": "page",
@@ -791,7 +906,7 @@
               "label": "",
               "title": "Think Beyond Today’s Challenges",
               "text": "The strongest organisations prepare for tomorrow while continuing to perform today. Organisational Thinking explores the ideas, leadership perspectives and strategic observations that help executive teams strengthen organisational capability, improve long-term performance and navigate change with confidence.",
-              "ctaLabel": "Explore Organisational Thinking",
+              "ctaLabel": "",
               "ctaHref": "#",
               "gated": false,
               "icon": "horizon"
@@ -800,7 +915,7 @@
               "label": "",
               "title": "Invest in Technology That Matters",
               "text": "Technology creates value only when it is applied where it makes the greatest organisational difference. The objective is not simply to adopt new technologies. It is to apply the right technology, to the right organisational priorities, at the right time. Technology Intelligence helps executive leaders make informed technology investment decisions that strengthen capability, support strategic objectives and create lasting organisational value.",
-              "ctaLabel": "Explore Technology Intelligence",
+              "ctaLabel": "",
               "ctaHref": "#",
               "gated": false,
               "icon": "technology"
@@ -809,7 +924,7 @@
               "label": "",
               "title": "Executive Briefings",
               "text": "Executive leaders need insight they can apply rather than information they already know. Executive Briefings distil complex developments into concise executive perspectives, helping leadership understand what has changed, why it matters and what should be considered next. Every briefing is designed to strengthen executive judgement through thoughtful analysis and practical insight.",
-              "ctaLabel": "Explore Executive Briefings",
+              "ctaLabel": "",
               "ctaHref": "#",
               "gated": false,
               "icon": "briefing"
