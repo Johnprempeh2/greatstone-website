@@ -5,16 +5,20 @@
 // DEFINER — no direct table writes). Also mirrors each event to GA4. Module singleton +
 // useSyncExternalStore so the catalogue's "Popular" surface re-derives the moment counts move.
 import { useSyncExternalStore } from 'react';
+import { optionalStorageAllowed } from '../lib/analytics.js';
 // The Supabase client is imported DYNAMICALLY (inside loadGlobalPopularity + bumpService) rather than
 // statically: the public service catalogue pulls this module, so a static import would ship the ~120 KB
 // Supabase client to every visitor. Deferring it loads the client only on the first global read/write.
 
 const KEY = 'gs_service_pop_v1';   // local cache of the global scores (warm start + offline fallback)
 const SEEN = 'gs_service_pop_seen_v1'; // per-session view dedupe so a refresh can't inflate a view
+// Both keys are optional storage (not strictly necessary), so they are written only after "Accept analytics"
+// (GRE-659). Without consent the cache and the dedupe live in memory for this page load only.
+const seenInMemory = new Set();
 const subs = new Set();
 
 function readLocal() { try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } }
-function persist(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* quota — in-memory still works */ } }
+function persist(o) { if (!optionalStorageAllowed()) return; try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* quota — in-memory still works */ } }
 
 let base = readLocal();   // authoritative scores: the cached/global counts (views + 3·inquiries)
 const optimistic = {};    // this session's own bumps, applied on top so a visitor's action shows at once
@@ -57,11 +61,15 @@ const GTM_SAFE = (slug) => String(slug || '').slice(0, 120);
 export function bumpService(slug, kind = 'view') {
   if (!slug) return;
   if (kind === 'view') {
-    try {
-      const seen = JSON.parse(sessionStorage.getItem(SEEN) || '[]');
-      if (Array.isArray(seen) && seen.includes(slug)) return; // already counted this session
-      sessionStorage.setItem(SEEN, JSON.stringify([...(Array.isArray(seen) ? seen : []), slug]));
-    } catch { /* sessionStorage unavailable — still count */ }
+    if (seenInMemory.has(slug)) return; // already counted on this page load
+    seenInMemory.add(slug);
+    if (optionalStorageAllowed()) {
+      try {
+        const seen = JSON.parse(sessionStorage.getItem(SEEN) || '[]');
+        if (Array.isArray(seen) && seen.includes(slug)) return; // already counted this session
+        sessionStorage.setItem(SEEN, JSON.stringify([...(Array.isArray(seen) ? seen : []), slug]));
+      } catch { /* sessionStorage unavailable — still count */ }
+    }
   }
   const w = kind === 'inquiry' ? 3 : 1;
   optimistic[slug] = (optimistic[slug] || 0) + w; // session delta — recompute() persists the merged snapshot

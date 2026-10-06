@@ -5,7 +5,7 @@
 // same signal is pushed to the analytics dataLayer (track) so it can feed the CRM: a salesperson can see
 // "this account keeps reading AI-security + model-comparison, most-viewed vendor Anthropic". Nothing
 // identifying is stored or sent — topic ids, vendor domains and opaque item ids only.
-import { track } from '../lib/analytics.js';
+import { track, optionalStorageAllowed } from '../lib/analytics.js';
 
 const KEY = 'gs-intel-profile';
 const HALF_LIFE_DAYS = 14;          // an interest halves in ~2 weeks of no reinforcement
@@ -16,12 +16,16 @@ const now = () => Date.now();
 const blank = () => ({ topics: {}, vendors: {}, reads: [], opens: 0, dwellMs: 0, createdAt: now(), updatedAt: now() });
 
 function read() {
-  if (typeof localStorage === 'undefined') return blank();
+  if (typeof localStorage === 'undefined' || !optionalStorageAllowed()) return memoryProfile ? JSON.parse(JSON.stringify(memoryProfile)) : blank();
   try { const p = JSON.parse(localStorage.getItem(KEY) || 'null'); return p && p.topics ? p : blank(); }
   catch (e) { return blank(); }
 }
+// The profile is personalisation, so it is stored only after "Accept analytics" (GRE-659). Without
+// consent the feed still works for this page load from the in-memory profile below.
+let memoryProfile = null;
 function write(p) {
-  if (typeof localStorage === 'undefined') return;
+  memoryProfile = p;
+  if (typeof localStorage === 'undefined' || !optionalStorageAllowed()) return;
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) { /* private mode / quota */ }
 }
 
