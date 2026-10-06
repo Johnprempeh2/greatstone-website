@@ -15,6 +15,8 @@
 /* once collapsed we no longer measure inline overflow, so let the dropdown escape the clip */
 .gs-navwrap.is-collapsed{overflow:visible}
 .gs-nav{display:flex;align-items:center;gap:2px;flex-wrap:nowrap;white-space:nowrap}
+/* Header.jsx measures the labels here to decide which links sit inline and which go into "More" */
+.gs-nav-measure{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;width:max-content}
 .gs-navlink{background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;
   letter-spacing:.02em;color:var(--gs-muted);padding:8px 10px;border-radius:8px;transition:color .2s,background .2s;white-space:nowrap}
 .gs-navlink:hover{color:var(--gs-text);background:rgba(255,255,255,.04)}
@@ -22,10 +24,12 @@
 .gs-nomatch{font-size:.78rem;color:var(--gs-faint)}
 
 /* collapsed nav: a single "Pages" dropdown when the links don't fit */
-.gs-navmenu{position:relative}
+/* min-width:0 + max-width:100% let the button's own max-width resolve against the nav row, so a long current-page
+   label ("Managed Automation", "Begin the Conversation") ellipsises instead of running under the account button */
+.gs-navmenu{position:relative;min-width:0;max-width:100%}
 .gs-navmenu-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);
   border-radius:100px;padding:8px 14px;color:var(--gs-text);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:700;max-width:48vw}
-.gs-navmenu-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-navmenu-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .gs-navmenu-btn:hover{border-color:var(--gs-border)}
 .gs-navmenu-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:50;min-width:220px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;
   background:#1a1c1a;border:1px solid var(--gs-border);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:2px;

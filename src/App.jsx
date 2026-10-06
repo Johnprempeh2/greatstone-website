@@ -299,7 +299,8 @@ function injectStructuredData() {
         // Fallback description for any route without page-level SEO. This is what search results and link
         // previews show, and it lived in code rather than the seed, so the Architecture v2.0 rebuild did not
         // reach it: it was still selling the retired "transformation partner, not a software house" position.
-        description: 'Greatstone International helps organisations build the clarity, confidence and capability required to become stronger.',
+        // GRE-659: the Home description from GRE-652 §4.1, so search results match the R1 position.
+        description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes, automates the work that should run itself, and runs it for you.',
       },
       {
         '@type': 'WebSite',

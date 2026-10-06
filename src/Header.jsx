@@ -81,13 +81,14 @@ function NavLeaf({ item, current, shopActive, onNavigate, className }) {
 
 // An inline nav dropdown (desktop). Opens on hover and on click/Enter; full menu-button keyboard pattern
 // (ArrowDown opens + enters the menu, roving Up/Down/Home/End, Escape closes + restores focus, outside
-// click closes). Highlights itself when the current page is one of its members.
+// click closes). Highlights itself when the current page is one of its members. Also the "More" overflow,
+// which can hold the Products route (kind 'shop').
 function NavGroup({ label, members, current, shopActive, onNavigate }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const btnRef = useRef(null);
   const popRef = useRef(null);
-  const active = members.some((m) => m.kind === 'page' && m.slug === current) && !shopActive;
+  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => m.kind === 'page' && m.slug === current);
 
   // Hover intent: open immediately, but close on a short grace delay that is cancelled the moment the
   // cursor re-enters the group (button OR menu). This is what stops the menu vanishing while the cursor
@@ -134,7 +135,10 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
       </button>
       {open && (
         <div className="gs-navmenu-pop gs-navgroup-pop" role="menu" aria-label={label} ref={popRef} onKeyDown={onMenuKey}>
-          {members.map((m, i) => (
+          {members.map((m, i) => m.kind === 'shop' ? (
+            <button key="shop" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} aria-current={shopActive ? 'page' : undefined}
+              onClick={() => { m.onSelect(); setOpen(false); }}>{m.label}</button>
+          ) : (
             <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} className="gs-navmenu-item"
               onNavigate={(slug) => { onNavigate(slug); setOpen(false); }} />
           ))}
@@ -144,9 +148,13 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
   );
 }
 
-// Site chrome (view mode). The page links sit inline while they fit; when they don't, they
-// collapse into a single dropdown (measured, not breakpoint-guessed). Editing affordances appear
-// only for a signed-in user with edit rights.
+// Fewer inline links than this and the "More" split stops helping: the whole bar folds into one menu.
+const MIN_INLINE = 3;
+
+// Site chrome (view mode). The page links sit inline while they fit. When they don't, the ones at the end of
+// the nav order move into a "More" menu, so a laptop keeps the first launch pages one click away (GRE-659
+// review); only when fewer than MIN_INLINE fit, or on a phone, does the bar collapse into a single dropdown.
+// All measured, not breakpoint-guessed. Editing affordances appear only for a signed-in user with edit rights.
 export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
   // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
   const logoSrc = logo || LOGO;
@@ -162,26 +170,52 @@ export default function Header({ order, pages, navigation, current, query, onSea
   // the collapsed toggle should name the user's ACTUAL location, including the Products/account routes
   const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (pages[current] && pages[current].title) || 'Menu';
 
+  // the inline bar's items in priority order (the configured nav); the end of the list is the first to move
+  // into "More". The storefront is not a launch page, so it always sits in "More" and the bar stays light.
+  // The booking page's nav entry also sits in "More": the lime CTA beside the bar already goes there, and two
+  // copies of the same action side by side compete (GRE-659 review). The phone menu keeps the full tree.
+  const isBookLeaf = (it) => it.kind === 'page' && it.slug === BOOK_PAGE;
+  const leaves = navModel.filter((it) => !isBookLeaf(it));
+  const pinnedMore = [...navModel.filter(isBookLeaf), ...(onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [])];
+  const leavesKey = leaves.map((l) => l.kind + ':' + l.label).join('|') + '|' + pinnedMore.length;
+
   const wrapRef = useRef(null);
-  const neededRef = useRef(0);
+  const measureRef = useRef(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [fit, setFit] = useState(Infinity); // how many leaves sit inline; the rest go into "More"
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // collapse the inline nav into a dropdown when the links overflow the row
+  // Measure every label once in a hidden row (always rendered, so it works in any state), then fit as many
+  // as the row allows, leaving room for the "More" button when anything overflows.
   useLayoutEffect(() => {
-    const wrap = wrapRef.current; if (!wrap) return;
+    const wrap = wrapRef.current; const row = measureRef.current; if (!wrap || !row) return;
     const measure = () => {
-      if (!collapsed) neededRef.current = wrap.scrollWidth; // intrinsic links width, cached while inline
-      // collapse when the inline links overflow OR the viewport is in the mobile band (<=760px, where
-      // studio.css hides the persistent .gs-book CTA), so the dropdown's booking item stays reachable.
+      const kids = Array.from(row.children);
+      const widths = kids.slice(0, -1).map((k) => k.getBoundingClientRect().width);
+      const moreW = kids.length ? kids[kids.length - 1].getBoundingClientRect().width : 0;
+      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+      const avail = wrap.clientWidth;
+      const total = widths.reduce((a, w) => a + w, 0) + gap * Math.max(0, widths.length - 1);
+      let n = widths.length;
+      if (pinnedMore.length || total > avail + 1) {
+        let used = moreW; n = 0;
+        while (n < widths.length && used + gap + widths[n] <= avail + 1) { used += gap + widths[n]; n++; }
+      }
+      // collapse in the mobile band too (<=760px, where studio.css hides the persistent .gs-book CTA), so the
+      // dropdown's booking item stays reachable.
       const narrow = typeof matchMedia !== 'undefined' && matchMedia('(max-width:760px)').matches;
-      const next = narrow || neededRef.current > wrap.clientWidth + 1;
+      const next = narrow || n < Math.min(MIN_INLINE, widths.length);
       setCollapsed((c) => (c !== next ? next : c));
+      setFit((f) => (f !== n ? n : f));
     };
     measure();
-    const ro = new ResizeObserver(measure); ro.observe(wrap);
+    // the row is observed too: it resizes when the web font arrives, which changes every label's width
+    const ro = new ResizeObserver(measure); ro.observe(wrap); ro.observe(row);
     return () => ro.disconnect();
-  }, [collapsed, navModel.length, q]);
+  }, [leavesKey]);
+  const inlineLeaves = leaves.slice(0, fit);
+  // a group that overflows gives its members to "More" (one level of menu, not a menu inside a menu)
+  const moreLeaves = [...leaves.slice(fit).flatMap((it) => (it.kind === 'group' ? it.members : [it])), ...pinnedMore];
 
   const menuBtnRef = useRef(null);
   const menuPopRef = useRef(null);
@@ -234,6 +268,11 @@ export default function Header({ order, pages, navigation, current, query, onSea
       </a>
 
       <div className={'gs-navwrap' + (collapsed ? ' is-collapsed' : '')} ref={wrapRef}>
+        {/* hidden copy of the bar's labels, used only to measure them (see the layout effect above) */}
+        <div className="gs-nav gs-nav-measure" ref={measureRef} aria-hidden="true">
+          {leaves.map((it, i) => <span key={i} className={'gs-navlink' + (it.kind === 'group' ? ' gs-navgroup-btn' : '')}>{it.label}{it.kind === 'group' ? <Chevron /> : null}</span>)}
+          <span className="gs-navlink gs-navgroup-btn">More<Chevron /></span>
+        </div>
         {collapsed ? (
           <nav className="gs-navmenu" aria-label="Primary">
             <button ref={menuBtnRef} id="gs-navmenu-btn" className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} onKeyDown={onMenuBtnKey} aria-expanded={menuOpen} aria-haspopup="menu" aria-controls="gs-navmenu-pop" aria-label="Open navigation">
@@ -256,12 +295,12 @@ export default function Header({ order, pages, navigation, current, query, onSea
           </nav>
         ) : (
           <nav className="gs-nav" aria-label="Primary">
-            {navModel.map((it, i) => it.kind === 'group' ? (
+            {inlineLeaves.map((it, i) => it.kind === 'group' ? (
               <NavGroup key={'g' + i} label={it.label} members={it.members} current={current} shopActive={shopActive} onNavigate={onNavigate} />
             ) : (
               <NavLeaf key={it.slug || it.href || i} item={it} current={current} shopActive={shopActive} onNavigate={onNavigate} className="gs-navlink" />
             ))}
-            {onShop && <button aria-current={shopActive ? 'page' : undefined} className={'gs-navlink' + (shopActive ? ' is-active' : '')} onClick={onShop}>Products</button>}
+            {moreLeaves.length ? <NavGroup label="More" members={moreLeaves} current={current} shopActive={shopActive} onNavigate={onNavigate} /> : null}
             {navModel.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
           </nav>
         )}
