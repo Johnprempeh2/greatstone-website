@@ -111,8 +111,9 @@ export function BookDeepDive({
             ) : (
               <>
                 {/* the one-click path the rest of the site uses: #book opens the Calendly popup (App's
-                    global handler), so the booking page itself books instantly; the form stays as "tell us first" */}
-                <a className="b-cta b-book-instant" href="#book">Pick a time now<Arrow /></a>
+                    global handler), so the booking page itself books instantly; the form stays as "tell us first".
+                    Secondary (ghost) style: Send Enquiry is the one primary action in the card (GRE-659 review) */}
+                <a className="b-cta ghost b-book-instant" href="#book">Pick a time now<Arrow /></a>
                 <div className="b-book-or">or tell us first</div>
                 <form onSubmit={onSubmit} noValidate aria-busy={status === 'sending' ? 'true' : undefined}>
                 {/* honeypot: hidden from people and screen readers; a bot that fills it is dropped by the function */}
