@@ -172,8 +172,11 @@ export default function Header({ order, pages, navigation, current, query, onSea
 
   // the inline bar's items in priority order (the configured nav); the end of the list is the first to move
   // into "More". The storefront is not a launch page, so it always sits in "More" and the bar stays light.
-  const leaves = navModel;
-  const pinnedMore = onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [];
+  // The booking page's nav entry also sits in "More": the lime CTA beside the bar already goes there, and two
+  // copies of the same action side by side compete (GRE-659 review). The phone menu keeps the full tree.
+  const isBookLeaf = (it) => it.kind === 'page' && it.slug === BOOK_PAGE;
+  const leaves = navModel.filter((it) => !isBookLeaf(it));
+  const pinnedMore = [...navModel.filter(isBookLeaf), ...(onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [])];
   const leavesKey = leaves.map((l) => l.kind + ':' + l.label).join('|') + '|' + pinnedMore.length;
 
   const wrapRef = useRef(null);
