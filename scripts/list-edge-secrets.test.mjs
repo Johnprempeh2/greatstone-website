@@ -63,7 +63,7 @@ test('the real functions: all 21 names found, every one noted, no value printed'
   });
   assert.doesNotMatch(out, /unknown/);
   assert.doesNotMatch(out, /re_planted_value_123/);
-  assert.match(out, /^21 secret names read by 8 edge functions/);
+  assert.match(out, /^21 secret names read by 9 edge functions/);
 });
 
 // --check (GRE-715): exit 1 with one line per problem; exit 0 when names and notes match.

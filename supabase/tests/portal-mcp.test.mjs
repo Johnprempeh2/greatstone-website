@@ -13,6 +13,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { createPortalMcp } from '../functions/_shared/portal-mcp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const MIGRATIONS = join(ROOT, 'supabase/migrations');
@@ -346,6 +347,82 @@ test('every MCP write is in the audit with the agent and its run', { skip }, () 
   const pub = JSON.parse(auditOf(doc.id)).find((r) => r.event === 'published');
   assert.equal(pub.actor_kind, 'staff');
   assert.equal(pub.actor_id, U.approver.sub);
+});
+
+// ── the MCP handler end to end, on this database ──────────────────────────────────────────────
+// PostgREST calls a function with named parameters, so this drives the real handler with an rpc that does the same
+// through psql, as the service key: it proves the tools and the SQL signatures fit together.
+
+function psqlRpc(fn, params) {
+  const lit = (v) => (v === null || v === undefined ? 'NULL'
+    : typeof v === 'number' ? String(v)
+    : typeof v === 'object' ? `${q(JSON.stringify(v))}::jsonb` : q(v));
+  const args = Object.entries(params).map(([k, v]) => `${k} => ${lit(v)}`).join(', ');
+  const r = psql(`\\set VERBOSITY verbose\nBEGIN;\nSET LOCAL ROLE service_role;\nSELECT ${fn}(${args});\nCOMMIT;\n`);
+  if (r.status === 0) return { data: JSON.parse(r.stdout.trim()), error: null };
+  const m = /ERROR:\s+([0-9A-Z]{5}):\s+(.*)/.exec(r.stderr) || [];
+  return { data: null, error: { code: m[1], message: m[2] || r.stderr } };
+}
+
+test('end to end: the MCP handler creates, changes, attaches, submits; another client stays out of reach', { skip }, async () => {
+  const token = ok(null, `SELECT mcp_portal_issue_token('Test end to end', ARRAY['${A}']::uuid[]);`);
+  const stored = [];
+  const server = createPortalMcp({ rpc: async (fn, params) => psqlRpc(fn, params), upload: async (path, bytes) => { stored.push(path); return { error: null }; } });
+  let id = 0;
+  const post = async (method, params, auth = `Bearer ${token}`) => {
+    const out = await server.handle({ method: 'POST', headers: new Headers({ authorization: auth }), text: JSON.stringify({ jsonrpc: '2.0', id: ++id, method, params }) });
+    return { status: out.status, json: JSON.parse(out.body) };
+  };
+  const tool = async (name, args) => (await post('tools/call', { name, arguments: args })).json.result;
+
+  assert.equal((await post('initialize', { protocolVersion: '2025-06-18' })).status, 200);
+  assert.equal((await post('initialize', {}, `Bearer gspm_${'0'.repeat(64)}`)).status, 401);
+  assert.deepEqual((await tool('list_clients', {})).structuredContent.items, [{ customer_id: A, name: 'Test Client A' }]);
+
+  const who = { run_id: RUN1, agent_id: AGENT };
+  const created = await tool('create_draft', { customer_id: A, ...who, document: draftFields({ kind: 'gita', action: 'agree_in_principle', title: 'Test GITA via MCP' }) });
+  assert.equal(created.isError, undefined, created.content[0].text);
+  const d = created.structuredContent;
+  assert.equal(d.status, 'draft');
+
+  const changed = await tool('update_draft', { document_id: d.id, expected_row_version: d.row_version, ...who, changes: { summary: 'Changed via MCP' } });
+  assert.equal(changed.structuredContent.summary, 'Changed via MCP');
+  const stale = await tool('update_draft', { document_id: d.id, expected_row_version: d.row_version, ...who, changes: { summary: 'Stale' } });
+  assert.equal(stale.isError, true);
+  assert.match(stale.content[0].text, /changed since you read it/);
+
+  const pdf = Buffer.from('%PDF-1.7\nmade-up\n%%EOF').toString('base64');
+  const attached = await tool('attach_pdf', { document_id: d.id, ...who, filename: 'gita.pdf', content_base64: pdf });
+  assert.equal(attached.isError, undefined, attached.content[0].text);
+  assert.equal(stored.length, 1);
+  assert.ok(stored[0].startsWith(`${A}/${d.id}/`));
+
+  const listed = (await tool('list_documents', { customer_id: A })).structuredContent.items.find((x) => x.id === d.id);
+  const submitted = await tool('request_publish', { document_id: d.id, expected_row_version: listed.row_version, ...who });
+  assert.equal(submitted.structuredContent.status, 'pending_approval');
+  assert.match(submitted.structuredContent.next_step, /John/);
+  assert.equal(ok('a1', `SELECT count(*) FROM portal_documents WHERE id = '${d.id}';`), '0');
+
+  // client B: refused in the same words as something that does not exist
+  const docB = JSON.parse(ok(null, `SELECT to_jsonb(d) FROM portal_documents d WHERE customer_id = '${B}' LIMIT 1;`));
+  for (const [name, args, re] of [
+    ['list_documents', { customer_id: B }, /client not found/],
+    ['read_client_activity', { customer_id: B }, /client not found/],
+    ['get_document', { document_id: docB.id }, /document not found/],
+    ['create_draft', { customer_id: B, ...who, document: draftFields() }, /client not found/],
+    ['attach_pdf', { document_id: docB.id, ...who, filename: 'x.pdf', content_base64: pdf }, /document not found/],
+  ]) {
+    const r = await tool(name, args);
+    assert.equal(r.isError, true, name);
+    assert.match(r.content[0].text, re, name);
+  }
+  assert.equal(stored.length, 1); // nothing was stored for client B
+
+  // the audit holds each write with the agent and the run
+  const events = JSON.parse(auditOf(d.id)).map((r) => `${r.event}:${r.actor_kind}:${r.run_id}`);
+  assert.deepEqual(events, [
+    `draft_created:agent:${RUN1}`, `draft_updated:agent:${RUN1}`, `draft_updated:agent:${RUN1}`, `submitted_for_approval:agent:${RUN1}`,
+  ]);
 });
 
 // ── rollback (runs last) ──────────────────────────────────────────────────────────────────────
