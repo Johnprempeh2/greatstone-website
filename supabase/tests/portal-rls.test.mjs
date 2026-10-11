@@ -425,6 +425,17 @@ test('publishing a new version supersedes the old one; acceptances stay', { skip
 
 // ── 0038: approver check and the worker's claim (GRE-1256) ────────────────────────────────────
 
+test('the receipt keeps the title of a superseded version, for its own company and staff only', { skip }, () => {
+  const acc = ok('a1', `SELECT id FROM portal_acceptances WHERE document_id = '${DOC.a}' AND auth_subject = '${U.a1.sub}';`);
+  assert.equal(statusOf(DOC.a), 'superseded');
+  assert.equal(ok('a1', `SELECT count(*) FROM portal_documents WHERE id = '${DOC.a}';`), '0');
+  const row = `SELECT title || '|' || version || '|' || status FROM portal_receipt_document('${acc}');`;
+  assert.equal(ok('a1', row), 'Test pack A|1|superseded');
+  assert.equal(ok('editor', row), 'Test pack A|1|superseded');
+  assert.equal(ok('b1', row), '');
+  refused('anon', row, /permission denied/);
+});
+
 test('portal_is_approver() answers for the caller only', { skip }, () => {
   assert.equal(ok('approver', 'SELECT portal_is_approver();'), 't');
   assert.equal(ok('owner', 'SELECT portal_is_approver();'), 'f');
@@ -492,7 +503,7 @@ test('portal-files: private; staff write only under a draft; clients get nothing
 
 test('rollback refuses while acceptances exist, then removes 0038 and 0037 cleanly, and both apply again', { skip }, () => {
   const down38 = `\\i '${join(ROOT, 'supabase/rollback/0038_portal_receipt_worker_down.sql')}'`;
-  assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs');`), '0');
+  assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs', 'portal_receipt_document');`), '0');
   const down = `\\i '${join(ROOT, 'supabase/rollback/0037_client_portal_down.sql')}'`;
   const left = `SELECT count(*) FROM pg_class WHERE relname LIKE 'portal\\_%' AND relkind = 'r';
     SELECT count(*) FROM pg_proc WHERE proname LIKE 'portal\\_%';
@@ -505,5 +516,5 @@ test('rollback refuses while acceptances exist, then removes 0038 and 0037 clean
   // and the migration runs a second time on top of itself
   ok(null, `\\i '${join(MIGRATIONS, '0037_client_portal.sql')}'\n`);
   ok(null, `\\i '${join(MIGRATIONS, '0038_portal_receipt_worker.sql')}'\n\\i '${join(MIGRATIONS, '0038_portal_receipt_worker.sql')}'\n`);
-  assert.equal(ok(null, left), '6\n17\n2');
+  assert.equal(ok(null, left), '6\n18\n2');
 });

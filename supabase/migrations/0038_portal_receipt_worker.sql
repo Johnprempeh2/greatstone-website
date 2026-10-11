@@ -1,4 +1,4 @@
--- 0038 — client portal, phase 1b: the two database calls the screens and the receipt worker need (GRE-1256;
+-- 0038 — client portal, phase 1b: the three database calls the screens and the receipt worker need (GRE-1256;
 -- spec GRE-1227 revision 2, sections 3 and 7). No new table, no change to 0037's tables or policies.
 --
 --   portal_is_approver()            the studio asks "may the signed-in person approve?", so Approve and publish
@@ -8,6 +8,10 @@
 --                                   'sending' for more than 10 minutes to the queue, then claims up to n due jobs
 --                                   with FOR UPDATE SKIP LOCKED: status 'sending', attempts + 1. Two workers
 --                                   running at once never claim the same job.
+--   portal_receipt_document(id)     the receipt page shows the title of what was accepted even after that version
+--                                   was superseded or withdrawn (a client reads only published rows). Returns
+--                                   title, kind, version and status for an acceptance of the caller's own company
+--                                   (or, for staff, of their org); nothing for anyone else.
 --
 -- Re-runnable. Rollback: supabase/rollback/0038_portal_receipt_worker_down.sql.
 
@@ -38,6 +42,18 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION portal_receipt_document(p_acceptance_id uuid)
+  RETURNS TABLE (document_id uuid, title text, kind text, version integer, status text)
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+    SELECT d.id, d.title, d.kind, d.version, d.status
+      FROM public.portal_acceptances a
+      JOIN public.portal_documents d ON d.id = a.document_id
+     WHERE a.id = p_acceptance_id
+       AND (a.customer_id = app_customer_id() OR a.org_id = app_staff_org())
+  $$;
+
+REVOKE ALL ON FUNCTION portal_receipt_document(uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION portal_receipt_document(uuid) TO authenticated;
 REVOKE ALL ON FUNCTION portal_is_approver() FROM public, anon;
 GRANT EXECUTE ON FUNCTION portal_is_approver() TO authenticated;
 REVOKE ALL ON FUNCTION portal_claim_receipt_jobs(integer) FROM public, anon, authenticated;
