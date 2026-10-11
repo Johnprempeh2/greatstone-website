@@ -7,6 +7,8 @@
 // Pure apart from the injected db and fetch, so `node --test` covers it and the edge function
 // (supabase/functions/portal-receipt-worker) runs the same code.
 
+import { readingOrder } from './portal-gita.mjs';
+
 export const MAX_ATTEMPTS = 8;
 const RETRY_MINUTES = [1, 5, 15, 60];
 const LATER_MINUTES = 6 * 60;
@@ -127,7 +129,7 @@ const rows = (pairs) => pairs.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${k.startsW
 /** The accepted version as one HTML file that needs nothing else to open (attached to the email). */
 export function documentCopyHtml(document = {}, acceptance = {}) {
   const d = document || {};
-  const sections = (d.body && Array.isArray(d.body.sections) ? d.body.sections : []).map((s) =>
+  const sections = readingOrder(d.kind, d.body && Array.isArray(d.body.sections) ? d.body.sections : []).map((s) =>
     `<h2>${esc(s.title)}</h2>${sanitizeForEmail(s.html)}`).join('');
   const demos = Array.isArray(d.demos) && d.demos.length
     ? `<h2>Demos</h2><ul>${d.demos.map((x) => `<li>${/^https:\/\//i.test(String(x.url || '')) ? `<a href="${esc(x.url)}">${esc(x.label)}</a>` : esc(x.label)}${x.note ? ' · ' + esc(x.note) : ''}</li>`).join('')}</ul>`
