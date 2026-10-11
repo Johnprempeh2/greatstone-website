@@ -5,6 +5,7 @@ import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { publicNavOrder } from './lib/nav-order.js';
 import { initAnalytics, pageview, track, analyticsConfigured } from './lib/analytics.js';
+import { parseEnquireHref, setPendingInterest } from './lib/enquiry.mjs';
 import { openBooking } from './lib/booking.js';
 import { siteOrigin } from './lib/site-origin.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
@@ -306,7 +307,7 @@ function injectStructuredData() {
         // previews show, and it lived in code rather than the seed, so the Architecture v2.0 rebuild did not
         // reach it: it was still selling the retired "transformation partner, not a software house" position.
         // GRE-659: the Home description from GRE-652 §4.1, so search results match the R1 position.
-        description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes, automates the work that should run itself, and runs it for you.',
+        description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes and sets up the work that should run itself, with your people in charge.',
       },
       {
         '@type': 'WebSite',
@@ -596,6 +597,9 @@ export default function App() {
       // the widget, themed dark + lime, and falls back to a new tab). The contact page + its form stay
       // reachable via the "Contact" nav for a note instead.
       if (href === '#book') { e.preventDefault(); track('cta_click', { cta: 'book_deep_dive', cta_location: 'content' }); openBooking(); return; }
+      // "#enquire/<option>" (GRE-1373 §6): the contact page's enquiry form, with that interest already chosen
+      const want = parseEnquireHref(href);
+      if (want) { e.preventDefault(); track('cta_click', { cta: 'enquire', cta_location: 'content' }); setPendingInterest(want); navigate('contact'); return; }
       const m = href.match(/^#go\/([\w-]+)$/);
       // self-heal: a link to a since-renamed page forwards to its current slug via the redirect table
       // (resolveRedirect returns the slug itself when it's already live), so old internal links never dead-end.

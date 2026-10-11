@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { enquiryPayload, makeEnquiryClient, fireLead, isEmail } from './enquiry.mjs';
+import { enquiryPayload, makeEnquiryClient, fireLead, isEmail, INTEREST_OPTIONS, interestKey, parseEnquireHref, setPendingInterest, takePendingInterest } from './enquiry.mjs';
 
 const ATTR = {
   first: { utm_source: 'linkedin', utm_medium: 'paid', utm_campaign: 'r1', landing: '/' },
@@ -15,6 +15,26 @@ test('enquiryPayload trims the fields and carries first and last touch', () => {
   assert.equal(p.page, '/contact');
   assert.equal(p.website, '');
   assert.deepEqual(enquiryPayload({}, null).attribution, { first: null, last: null });
+});
+
+test('the optional interest choice leads the message, and is left out when not chosen', () => {
+  assert.equal(enquiryPayload({ message: ' hi ', interest: ' GS Agentic Manager ' }).message, 'Interest: GS Agentic Manager\n\nhi');
+  assert.equal(enquiryPayload({ interest: 'Not sure yet' }).message, 'Interest: Not sure yet');
+  assert.equal(enquiryPayload({ message: 'hi', interest: '' }).message, 'hi');
+  assert.equal(enquiryPayload({ message: 'hi' }).message, 'hi');
+});
+
+test('"#enquire/<key>" preselects a listed option once, and nothing else', () => {
+  assert.equal(INTEREST_OPTIONS.length, 5);
+  assert.equal(interestKey('GS Agentic Manager'), 'gs-agentic-manager');
+  assert.equal(parseEnquireHref('#enquire/gs-agentic-manager'), 'gs-agentic-manager');
+  assert.equal(parseEnquireHref('#go/contact'), null);
+  assert.equal(parseEnquireHref('#enquire/<x>'), null);
+  setPendingInterest('gs-agentic-manager');
+  assert.equal(takePendingInterest(INTEREST_OPTIONS), 'GS Agentic Manager');
+  assert.equal(takePendingInterest(INTEREST_OPTIONS), '', 'taken once');
+  setPendingInterest('not-an-option');
+  assert.equal(takePendingInterest(INTEREST_OPTIONS), '');
 });
 
 test('isEmail', () => {

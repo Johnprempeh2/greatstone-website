@@ -3,7 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { track, getConsent, getAttribution } from '../lib/analytics.js';
-import { makeEnquiryClient, enquiryPayload, fireLead, isEmail } from '../lib/enquiry.mjs';
+import { makeEnquiryClient, enquiryPayload, fireLead, isEmail, INTEREST_OPTIONS, takePendingInterest } from '../lib/enquiry.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
@@ -38,12 +38,23 @@ export function BookDeepDive({
   messageLabel = 'Where does your week go?',
   messagePlaceholder = 'The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours.',
   subjectPrefix = 'Diagnostic request', anchorId = '',
+  // GRE-1373 §6: an optional interest choice. No options, no question, so pages saved before it render as they did.
+  interestLabel = 'What are you interested in? (optional)', interestPlaceholder = 'Select if it helps', interests,
 }) {
   const editing = puck && puck.isEditing;
   // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
   // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
   const sectorList = (Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS)
     .map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
+  const interestList = (Array.isArray(interests) ? interests : [])
+    .map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
+  // a "#enquire/<key>" CTA elsewhere chose an option before this page opened: take it once, then bring the form into view
+  const [initialInterest] = useState(() => (editing ? '' : takePendingInterest(interestList)));
+  useEffect(() => {
+    if (!initialInterest || !anchorId || typeof document === 'undefined') return;
+    const el = document.getElementById(anchorId);
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useReveal([asidePoints.length]);
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'failed'
   const [emailError, setEmailError] = useState('');
@@ -68,6 +79,7 @@ export function BookDeepDive({
     if (company) parts.push('Company: ' + company);
     if (g('email')) parts.push('Work email: ' + g('email'));
     if (g('industry')) parts.push(sectorLabel + ': ' + g('industry'));
+    if (g('interest')) parts.push('Interest: ' + g('interest'));
     parts.push('', messageLabel, g('week') || '(not specified)');
     return to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(parts.join('\n'));
   };
@@ -83,7 +95,7 @@ export function BookDeepDive({
     const attribution = getAttribution();
     const page = typeof window !== 'undefined' ? window.location.pathname + window.location.hash : '';
     const out = await client.send(enquiryPayload({
-      name: g('name'), company: g('company'), email: g('email'), industry: g('industry'), message: g('week'), website: g('website'),
+      name: g('name'), company: g('company'), email: g('email'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'),
     }, attribution, page));
     if (out.ok) fireLead({ track, getConsent, attribution });
     setStatus(out.ok ? 'sent' : 'failed');
@@ -131,6 +143,11 @@ export function BookDeepDive({
                 <div className="field"><label htmlFor={uid + 'industry'}>{sectorLabel}</label>
                   <select className="fld" id={uid + 'industry'} name="industry" {...(sectorRequired ? { required: true, 'aria-required': 'true' } : null)} defaultValue=""><option value="" disabled={!!sectorRequired}>{sectorPlaceholder}</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
                 </div>
+                {interestList.length ? (
+                  <div className="field"><label htmlFor={uid + 'interest'}>{interestLabel}</label>
+                    <select className="fld" id={uid + 'interest'} name="interest" defaultValue={initialInterest}><option value="">{interestPlaceholder}</option>{interestList.map((s) => <option key={s}>{s}</option>)}</select>
+                  </div>
+                ) : null}
                 <div className="field"><label htmlFor={uid + 'week'}>{messageLabel}</label>
                   <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} />
                 </div>
@@ -222,6 +239,8 @@ export const puck = {
     sectorRequired: { type: 'radio', label: 'Sector answer is', options: [
       { label: 'Optional', value: false }, { label: 'Required', value: true },
     ]},
+    interestLabel: { type: 'text', label: 'Interest question label' },
+    interestPlaceholder: { type: 'text', label: 'Interest question placeholder' },
     messageLabel: { type: 'text', label: 'Message question label' },
     messagePlaceholder: { type: 'text', label: 'Message placeholder' },
     subjectPrefix: { type: 'text', label: 'Email subject prefix' },
@@ -241,6 +260,12 @@ export const puck = {
       },
       defaultItemProps: { icon: 'check', title: 'A point', text: 'detail.' },
       getItemSummary: (item) => item.title || 'Point',
+    },
+    interests: {
+      type: 'array', label: 'Interest options (dropdown; empty hides the question)',
+      arrayFields: { label: { type: 'text', label: 'Option' } },
+      defaultItemProps: { label: 'Option' },
+      getItemSummary: (item) => item.label || 'Option',
     },
     sectors: {
       type: 'array', label: 'Industry options (dropdown)',
@@ -269,6 +294,8 @@ export const puck = {
       { icon: 'clock', title: 'A considered response', text: 'We would rather reply well than reply instantly.' },
       { icon: 'scan', title: 'No obligation', text: 'A conversation is a conversation. Nothing follows it unless you want it to.' },
     ],
+    interestLabel: 'What are you interested in? (optional)', interestPlaceholder: 'Select if it helps',
+    interests: INTEREST_OPTIONS.map((label) => ({ label })),
     sectors: DEFAULT_SECTORS.map((label) => ({ label })),
     email: 'dx@greatstonesoftware.co.uk',
   },
