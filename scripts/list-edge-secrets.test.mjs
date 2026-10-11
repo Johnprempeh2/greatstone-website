@@ -49,13 +49,13 @@ test('lists Deno.env.get names, names read through an imported config(env), and 
   }
 });
 
-test('the real functions: all 21 names found, every one noted, no value printed', () => {
+test('the real functions: all 23 names found, every one noted, no value printed', () => {
   const found = scanSecrets(join(HERE, '..', 'supabase', 'functions'));
   for (const n of ['ANTHROPIC_API_KEY', 'TURNSTILE_SECRET_KEY', 'FRONT_DOOR_SECRET', 'PIPEDRIVE_API_TOKEN', 'PIPEDRIVE_DOMAIN', 'PIPEDRIVE_STAGE_ID', 'ENQUIRY_ALERT_TO']) {
     assert.ok(found.has(n), n);
   }
   assert.deepEqual(found.get('PIPEDRIVE_API_TOKEN'), ['front-door']);
-  assert.equal(found.size, 21);
+  assert.equal(found.size, 23);
   assert.deepEqual(found.get('ENQUIRY_ALERT_TO'), ['enquiry']);
 
   const out = execFileSync(process.execPath, [SCRIPT], {
@@ -63,7 +63,7 @@ test('the real functions: all 21 names found, every one noted, no value printed'
   });
   assert.doesNotMatch(out, /unknown/);
   assert.doesNotMatch(out, /re_planted_value_123/);
-  assert.match(out, /^21 secret names read by 9 edge functions/);
+  assert.match(out, /^23 secret names read by 10 edge functions/);
 });
 
 // --check (GRE-715): exit 1 with one line per problem; exit 0 when names and notes match.

@@ -423,6 +423,61 @@ test('publishing a new version supersedes the old one; acceptances stay', { skip
   assert.equal(ok('owner', `SELECT count(*) FROM portal_audit WHERE document_id = '${DOC.a}' AND event = 'superseded';`), '1');
 });
 
+// ── 0039: approver check and the worker's claim (GRE-1256) ────────────────────────────────────
+
+test('the receipt keeps the title of a superseded version, for its own company and staff only', { skip }, () => {
+  const acc = ok('a1', `SELECT id FROM portal_acceptances WHERE document_id = '${DOC.a}' AND auth_subject = '${U.a1.sub}';`);
+  assert.equal(statusOf(DOC.a), 'superseded');
+  assert.equal(ok('a1', `SELECT count(*) FROM portal_documents WHERE id = '${DOC.a}';`), '0');
+  const row = `SELECT title || '|' || version || '|' || status FROM portal_receipt_document('${acc}');`;
+  assert.equal(ok('a1', row), 'Test pack A|1|superseded');
+  assert.equal(ok('editor', row), 'Test pack A|1|superseded');
+  assert.equal(ok('b1', row), '');
+  refused('anon', row, /permission denied/);
+});
+
+test('portal_is_approver() answers for the caller only', { skip }, () => {
+  assert.equal(ok('approver', 'SELECT portal_is_approver();'), 't');
+  assert.equal(ok('owner', 'SELECT portal_is_approver();'), 'f');
+  assert.equal(ok('a1', 'SELECT portal_is_approver();'), 'f');
+  assert.equal(ok('service', 'SELECT portal_is_approver();'), 'f');
+  refused('anon', 'SELECT portal_is_approver();', /permission denied/);
+});
+
+test('the worker claims a due job once, even with another worker holding it; stuck jobs go back', { skip }, async () => {
+  const v2 = ok(null, `SELECT id FROM portal_documents WHERE series = '${SERIES_A}' AND status = 'published';`);
+  const acc = ok('a1', `SELECT portal_accept('${v2}', 'Test Person', 'Test Title', true);`);
+  const job = ok(null, `SELECT id FROM portal_receipt_jobs WHERE acceptance_id = '${acc}';`);
+  const claim = `SELECT id || ':' || status || ':' || attempts FROM portal_claim_receipt_jobs(10) WHERE acceptance_id = '${acc}';`;
+  for (const who of ['a1', 'editor', 'approver', 'anon']) refused(who, claim, /permission denied/);
+
+  // a second session holds the row lock (as a worker mid-claim would); SKIP LOCKED passes over it
+  const { spawn } = await import('node:child_process');
+  const holder = spawn(join(BIN, 'psql'), ['-X', '-q', '-h', sock, '-p', String(port), '-U', 'postgres', '-d', 'portal', '-c',
+    `BEGIN; SELECT 1 FROM portal_receipt_jobs WHERE id = '${job}' FOR UPDATE; SELECT pg_sleep(1.5); COMMIT;`]);
+  const done = new Promise((res) => holder.on('exit', res));
+  for (let i = 0; i < 50 && ok(null, "SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(1.5)%' AND pid <> pg_backend_pid();") === '0'; i++) {
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  assert.equal(ok('service', claim), '');
+  await done;
+  assert.equal(ok('service', claim), `${job}:sending:1`);
+  assert.equal(ok('service', claim), '', 'a claimed job is not claimed again');
+
+  // a worker that died mid-send: after 10 minutes in 'sending' the job is queued again and claimed once more
+  ok(null, `ALTER TABLE portal_receipt_jobs DISABLE TRIGGER portal_receipt_jobs_before_update;
+    UPDATE portal_receipt_jobs SET updated_at = now() - interval '11 minutes' WHERE id = '${job}';
+    ALTER TABLE portal_receipt_jobs ENABLE TRIGGER portal_receipt_jobs_before_update;`);
+  assert.equal(ok('service', claim), `${job}:sending:2`);
+  // a job due later is not claimed yet
+  ok('service', `UPDATE portal_receipt_jobs SET status = 'queued', next_attempt_at = now() + interval '5 minutes' WHERE id = '${job}';`);
+  assert.equal(ok('service', claim), '');
+  assert.equal(
+    ok('owner', `SELECT event FROM portal_audit WHERE detail ->> 'acceptance_id' = '${acc}' AND event LIKE 'receipt%' ORDER BY at;`),
+    'receipt_queued\nreceipt_retry\nreceipt_retry',
+  );
+});
+
 test('owner or admin withdraws; an editor or a client cannot', { skip }, () => {
   refused('editor', `SELECT portal_withdraw('${DOC.b}');`, /owner or admin/);
   refused('b1', `SELECT portal_withdraw('${DOC.b}');`, /owner or admin/);
@@ -446,7 +501,9 @@ test('portal-files: private; staff write only under a draft; clients get nothing
 
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
-test('rollback refuses while acceptances exist, then removes 0037 cleanly, and 0037 applies again', { skip }, () => {
+test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {
+  const down38 = `\\i '${join(ROOT, 'supabase/rollback/0039_portal_receipt_worker_down.sql')}'`;
+  assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs', 'portal_receipt_document');`), '0');
   const down = `\\i '${join(ROOT, 'supabase/rollback/0037_client_portal_down.sql')}'`;
   const left = `SELECT count(*) FROM pg_class WHERE relname LIKE 'portal\\_%' AND relkind = 'r';
     SELECT count(*) FROM pg_proc WHERE proname LIKE 'portal\\_%';
@@ -458,4 +515,6 @@ test('rollback refuses while acceptances exist, then removes 0037 cleanly, and 0
   assert.equal(ok(null, left), '6\n15\n2');
   // and the migration runs a second time on top of itself
   ok(null, `\\i '${join(MIGRATIONS, '0037_client_portal.sql')}'\n`);
+  ok(null, `\\i '${join(MIGRATIONS, '0039_portal_receipt_worker.sql')}'\n\\i '${join(MIGRATIONS, '0039_portal_receipt_worker.sql')}'\n`);
+  assert.equal(ok(null, left), '6\n18\n2');
 });
