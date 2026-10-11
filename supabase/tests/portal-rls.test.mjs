@@ -423,7 +423,7 @@ test('publishing a new version supersedes the old one; acceptances stay', { skip
   assert.equal(ok('owner', `SELECT count(*) FROM portal_audit WHERE document_id = '${DOC.a}' AND event = 'superseded';`), '1');
 });
 
-// ── 0038: approver check and the worker's claim (GRE-1256) ────────────────────────────────────
+// ── 0039: approver check and the worker's claim (GRE-1256) ────────────────────────────────────
 
 test('the receipt keeps the title of a superseded version, for its own company and staff only', { skip }, () => {
   const acc = ok('a1', `SELECT id FROM portal_acceptances WHERE document_id = '${DOC.a}' AND auth_subject = '${U.a1.sub}';`);
@@ -501,8 +501,8 @@ test('portal-files: private; staff write only under a draft; clients get nothing
 
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
-test('rollback refuses while acceptances exist, then removes 0038 and 0037 cleanly, and both apply again', { skip }, () => {
-  const down38 = `\\i '${join(ROOT, 'supabase/rollback/0038_portal_receipt_worker_down.sql')}'`;
+test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {
+  const down38 = `\\i '${join(ROOT, 'supabase/rollback/0039_portal_receipt_worker_down.sql')}'`;
   assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs', 'portal_receipt_document');`), '0');
   const down = `\\i '${join(ROOT, 'supabase/rollback/0037_client_portal_down.sql')}'`;
   const left = `SELECT count(*) FROM pg_class WHERE relname LIKE 'portal\\_%' AND relkind = 'r';
@@ -515,6 +515,6 @@ test('rollback refuses while acceptances exist, then removes 0038 and 0037 clean
   assert.equal(ok(null, left), '6\n15\n2');
   // and the migration runs a second time on top of itself
   ok(null, `\\i '${join(MIGRATIONS, '0037_client_portal.sql')}'\n`);
-  ok(null, `\\i '${join(MIGRATIONS, '0038_portal_receipt_worker.sql')}'\n\\i '${join(MIGRATIONS, '0038_portal_receipt_worker.sql')}'\n`);
+  ok(null, `\\i '${join(MIGRATIONS, '0039_portal_receipt_worker.sql')}'\n\\i '${join(MIGRATIONS, '0039_portal_receipt_worker.sql')}'\n`);
   assert.equal(ok(null, left), '6\n18\n2');
 });

@@ -1,4 +1,4 @@
--- 0038 — client portal, phase 1b: the three database calls the screens and the receipt worker need (GRE-1256;
+-- 0039 — client portal, phase 1b: the three database calls the screens and the receipt worker need (GRE-1256;
 -- spec GRE-1227 revision 2, sections 3 and 7). No new table, no change to 0037's tables or policies.
 --
 --   portal_is_approver()            the studio asks "may the signed-in person approve?", so Approve and publish
@@ -13,7 +13,7 @@
 --                                   title, kind, version and status for an acceptance of the caller's own company
 --                                   (or, for staff, of their org); nothing for anyone else.
 --
--- Re-runnable. Rollback: supabase/rollback/0038_portal_receipt_worker_down.sql.
+-- Re-runnable. Rollback: supabase/rollback/0039_portal_receipt_worker_down.sql.
 
 CREATE OR REPLACE FUNCTION portal_is_approver() RETURNS boolean
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$

@@ -1,7 +1,7 @@
 // Portal receipt worker (Supabase Edge Function, Deno). GRE-1256; spec GRE-1227 revision 2, section 7.
 // Sends the email copy of each portal acceptance, to the signer and to Greatstone, from the queue that
 // portal_accept() fills in the same transaction as the acceptance. The browser is not in the path: pg_cron calls
-// this every minute (deploy step in 0038), and the portal sends a nudge right after an acceptance so the email
+// this every minute (deploy step in 0039), and the portal sends a nudge right after an acceptance so the email
 // usually goes within seconds. A nudge only runs the queue; it cannot choose, change or read anything.
 // Claim, retry schedule, email and idempotency key: ../_shared/portal-receipt.mjs (covered by node --test).
 // Who may call: the cron (header x-portal-worker-secret = PORTAL_WORKER_SECRET) or any signed-in user (nudge).
