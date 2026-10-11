@@ -8,6 +8,7 @@ import { getCustomerProfile, isCustomer, signOut, getSession, onAuth } from '../
 import { AuthGate } from '../store/AccountDashboard.jsx';
 import DocumentView, { PrivacyNote } from './DocumentView.jsx';
 import ActionPanel from './ActionPanel.jsx';
+import { downloadPortalPdf } from './portal-file.mjs';
 import {
   JOURNEY, KIND_LABEL, journeyStage, docState, panelState, waitingForYou, acceptanceFor, signatoryLabel,
 } from './portal-model.mjs';
@@ -16,7 +17,7 @@ import '../store/store.css';
 import '../store/admin.css';
 import './portal.css';
 
-const DOC_COLS = 'id, customer_id, kind, series, version, title, summary, body, demos, action, confirmation_text, signatory_email, status, content_sha256, published_at';
+const DOC_COLS = 'id, customer_id, kind, series, version, title, summary, body, demos, action, confirmation_text, signatory_email, status, content_sha256, published_at, pdf_path';
 const JOB_COLS = 'id, acceptance_id, status, attempts, next_attempt_at, sent_at';
 
 /** Ask the receipt worker to run now (it also runs every minute). Fire and forget: a failed nudge loses nothing. */
@@ -197,7 +198,7 @@ function Reader({ id, docs, acceptances, jobs, members, company, email, profile,
     return data;
   };
   return (
-    <DocumentView doc={doc}>
+    <DocumentView doc={doc} onDownloadPdf={() => downloadPortalPdf(doc.id)}>
       <ActionPanel doc={doc} company={company.name} email={email} defaultName={profile.full_name || ''}
         state={state} acceptance={acc} job={acc ? jobs.find((j) => j.acceptance_id === acc.id) : null}
         signatoryName={signatoryLabel(doc, members)} onSubmit={submit} loadJob={loadJob} />
