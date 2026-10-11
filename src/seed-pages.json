@@ -83,7 +83,7 @@
               "label": "",
               "title": "Invest in Technology That Matters",
               "text": "For organisations seeking to apply the right technologies to the right organisational priorities in order to strengthen capability and create meaningful organisational value.",
-              "ctaLabel": "Explore Managed Automation",
+              "ctaLabel": "Explore GS Agentic Manager",
               "ctaHref": {
                 "kind": "page",
                 "page": "services"
@@ -146,27 +146,27 @@
   },
   {
     "slug": "services",
-    "title": "Managed Automation",
+    "title": "GS Agentic Manager",
     "background": "tide",
     "seo": {
-      "title": "Managed Automation · Greatstone International",
-      "description": "A team of AI agents set up on your own install, connected to your tools and run for you, with your people approving what matters.",
+      "title": "GS Agentic Manager · Greatstone International",
+      "description": "A digital office for your organisation: people and AI agents in clear roles on your own instance, set up by Greatstone where it fits, with your people approving what matters.",
       "ogImage": ""
     },
     "blocks": [
       {
         "type": "Hero",
         "props": {
-          "kicker": "Managed Automation",
+          "kicker": "GS Agentic Manager",
           "headline": "Your AI tools, organised into one team.",
           "highlight": "",
           "headlineSuffix": "",
-          "body": "Most organisations use AI tools the way they would use freelancers: one at a time, with no shared memory and nobody checking the work. We set up a team of AI agents on your own install, give it a goal and clear roles, connect it to your tools, and run it for you. A named person in your organisation approves what matters.",
+          "body": "Most organisations use AI tools the way they would use freelancers: one at a time, with no shared memory and nobody checking the work. Where it fits your blueprint, we set up a digital office on your own instance: your people and AI agents in clear roles, with shared context and a goal. We configure it, connect the systems you agree and train your team. Your people run the daily work, and a named person approves what matters.",
           "prompt": "",
           "align": "left",
           "size": "compact",
-          "ctaLabel": "Begin the Conversation",
-          "ctaHref": "#book",
+          "ctaLabel": "Ask about GS Agentic Manager",
+          "ctaHref": "#enquire/gs-agentic-manager",
           "ctaLabel2": "See how we work",
           "ctaHref2": "#go/method",
           "meta": [],
@@ -204,24 +204,24 @@
         "type": "FeatureGrid",
         "props": {
           "kicker": "",
-          "heading": "What is included",
+          "heading": "What every digital office starts with",
           "variant": "cards",
           "body": "",
           "items": [
             {
               "n": "",
-              "title": "Your own install",
-              "text": "A separate, hosted workspace for your organisation only. Your work and data are not shared with other clients."
+              "title": "Your own instance",
+              "text": "A separate, hosted office for your organisation only. Your work and data are not shared with other clients."
             },
             {
               "n": "",
               "title": "An agent team set up for your work",
-              "text": "We start with one department, such as marketing, content, operations or research, and give each agent a role, instructions and a manager."
+              "text": "We start with one area of work, such as operations, research or content, and give each agent a role, instructions and a manager."
             },
             {
               "n": "",
-              "title": "Your tools and AI accounts connected",
-              "text": "You hold the accounts with the AI providers and pay them directly. We help you set them up."
+              "title": "Connections you agree",
+              "text": "We connect the systems you agree once a technical check confirms each one. Access is held per agent and can be revoked at any time."
             },
             {
               "n": "",
@@ -231,12 +231,12 @@
             {
               "n": "",
               "title": "A record of every task",
-              "text": "You can see what each agent did, why, and what it cost."
+              "text": "You can see what each agent did and why, task by task."
             },
             {
               "n": "",
-              "title": "Hosting, backups, updates and support",
-              "text": "We keep it running. The service levels are written into your agreement."
+              "title": "Hosting and maintenance",
+              "text": "We host your instance, maintain the platform and keep backups. What platform support covers is written into your agreement."
             }
           ]
         }
@@ -245,10 +245,10 @@
         "type": "Panels",
         "props": {
           "eyebrow": "",
-          "heading": "Run it yourself, or have us improve it every month.",
+          "heading": "One setup, one recurring service, one optional review.",
           "intro": "",
           "panelsLabel": "",
-          "columns": "two",
+          "columns": "three",
           "panelStyle": "card",
           "bodyClamp": "none",
           "coda": "",
@@ -259,19 +259,27 @@
           "items": [
             {
               "label": "",
-              "icon": "structure",
-              "title": "Managed service",
-              "text": "We host, update, back up and support your install. Your team directs the agents, their tasks and goals.",
               "ctaLabel": "",
-              "ctaHref": ""
+              "ctaHref": "",
+              "icon": "structure",
+              "title": "Tailored setup",
+              "text": "A one-off engagement, charged separately: agents and their instructions, connections to the systems you agree, an introduction for your team, training and your acceptance."
             },
             {
               "label": "",
-              "icon": "layers",
-              "title": "Manage Plus",
-              "text": "Everything in the managed service, plus a monthly review of your agent team: we propose improvements, add new tools and connections, and keep instructions current as AI models change.",
               "ctaLabel": "",
-              "ctaHref": ""
+              "ctaHref": "",
+              "icon": "layers",
+              "title": "Recurring service",
+              "text": "Hosting of your own instance, platform maintenance and bounded platform support. Your people direct the agents and run the daily work."
+            },
+            {
+              "label": "",
+              "ctaLabel": "",
+              "ctaHref": "",
+              "icon": "assurance",
+              "title": "Quality review (optional)",
+              "text": "A fixed number of hours on a set cadence to improve agent instructions, tools, workflows and model choice. It improves your digital office. It does not run your business."
             }
           ],
           "_section": {
@@ -294,24 +302,24 @@
           "numberStyle": "badge",
           "items": [
             {
-              "title": "Conversation",
-              "text": "Thirty minutes. Is there something worth exploring?"
+              "title": "Executive Discovery",
+              "text": "Free. Is there something worth exploring?"
             },
             {
-              "title": "Diagnostic",
-              "text": "We map your week and agree what to automate first."
+              "title": "Initial assessment",
+              "text": "Free. Where technology and AI could help, with an indicative scope."
             },
             {
-              "title": "Proposal",
-              "text": "A written scope: the team, the tools, the approval points, the cost."
+              "title": "Agreement",
+              "text": "A written scope and a deposit before any paid work."
             },
             {
-              "title": "Set-up",
-              "text": "Usually a few working days of our time once accounts and access are in place."
+              "title": "Deep Dive and blueprint",
+              "text": "We map how the work is done and give you an actionable blueprint."
             },
             {
-              "title": "Managed service",
-              "text": "Monthly, with a review at the end of the first month."
+              "title": "Digital office",
+              "text": "Only where it fits: tailored setup, then a recurring service."
             }
           ]
         }
@@ -322,7 +330,7 @@
           "kicker": "Boundaries",
           "align": "left",
           "width": "reading",
-          "body": "Agents do not move money, sign anything, give regulated advice or make decisions about people. They do not replace your team; they take repeatable work off it. We do not resell AI model usage, and we do not build bespoke software inside this service. If the work needs any of those, we say so in the Diagnostic and scope it separately."
+          "body": "Agents do not move money, sign anything, give regulated advice or make decisions about people. They do not replace your team; they take repeatable work off it. AI use stays within a budget you approve, and work beyond it stops for a person. We do not build bespoke software inside this service. If the work needs any of these, we say so in the Deep Dive and scope it separately."
         }
       },
       {
@@ -335,7 +343,7 @@
           "items": [
             {
               "q": "Where does our data go?",
-              "a": "Your organisation has its own separate install, which no other client shares. The AI models run on accounts you own with the providers you choose. We sign a data processing agreement with every client."
+              "a": "Your organisation has its own separate instance, which no other client shares. Which AI providers handle your work, and on whose accounts, is agreed with you before setup. Data processing terms are part of your agreement."
             },
             {
               "q": "Who is in control?",
@@ -343,19 +351,19 @@
             },
             {
               "q": "Which AI models do you use?",
-              "a": "Today we run agents on Anthropic’s Claude and OpenAI’s ChatGPT, and assess others case by case. When a better model arrives, we can move an agent to it without rebuilding the team."
+              "a": "The digital office works with models from more than one provider. Which models your agents use is agreed with you, based on the work, your data and your budget. When a better model arrives, an agent can move to it without rebuilding the team."
             },
             {
               "q": "What kind of work can the agents do?",
-              "a": "Repeatable knowledge work: first drafts, research, reports, content, summaries, follow-ups and routine checks. We start with one department and the work that comes round every week."
+              "a": "Repeatable knowledge work: first drafts, research, reports, content, summaries, follow-ups and routine checks. We start with one area of work and the work that comes round every week."
             },
             {
               "q": "What does it cost?",
-              "a": "A one-off set-up fee and a flat monthly fee based on the size of your organisation, with no charge per agent. You pay the AI providers directly for what your agents use. We give you the full figure in the proposal, before you commit."
+              "a": "Setup is a one-off fee, agreed in writing. A recurring fee covers hosting, maintenance and bounded platform support, and the optional quality review is priced separately. AI use follows a route and a budget you agree with us. You see every figure in writing before you commit."
             },
             {
               "q": "Is this a software product or a consultancy?",
-              "a": "Both, deliberately. We set up an agent team on software we run, and we stay responsible for it. You do not buy a licence and work it out alone."
+              "a": "Both, deliberately. The consultancy comes first: we only propose a digital office where the blueprint shows it fits. We set it up on software we maintain, and your people run it. You do not buy a licence and work it out alone."
             }
           ]
         }
@@ -366,9 +374,9 @@
           "eyebrow": "Start here",
           "headline": "Tell us which work keeps coming back.",
           "highlight": "",
-          "body": "Thirty minutes is usually enough to see whether an agent team would help, and where it would start.",
-          "ctaLabel": "Begin the Conversation",
-          "ctaHref": "#book",
+          "body": "A free Executive Discovery is usually enough to see whether a digital office would help, and where it would start.",
+          "ctaLabel": "Ask about GS Agentic Manager",
+          "ctaHref": "#enquire/gs-agentic-manager",
           "ctaLabel2": "",
           "ctaHref2": "#",
           "email": "",
@@ -424,8 +432,8 @@
               "text": "We score the universal drains and the ones specific to your sector against our eight pillars, so you see exactly where the time goes."
             },
             {
-              "title": "We become the fix",
-              "text": "We don't advise and leave. We embed as your foundation and rebuild the flow until those hours come back to you."
+              "title": "We build what fits",
+              "text": "We don't advise and leave. Where the blueprint shows it fits, we set up the new way of working and train your people to run it."
             }
           ]
         }
@@ -453,7 +461,7 @@
     "background": "tide",
     "seo": {
       "title": "Proof · Greatstone International",
-      "description": "How Greatstone runs its own operations with a managed agent team, what a demonstration shows, and how we measure results with each client.",
+      "description": "How Greatstone runs its own operations as a digital office of people and agents, what a demonstration shows, and how we measure results with each client.",
       "ogImage": ""
     },
     "blocks": [
@@ -529,7 +537,7 @@
           "kicker": "Your numbers",
           "align": "left",
           "width": "reading",
-          "body": "The Diagnostic records a starting point for the work we automate: how long it takes today, how often it happens and who does it. After the first month of the managed service, we compare against it with you. Those are the only figures we will quote to you, and the only ones we will ever publish about you, with your permission.",
+          "body": "The Deep Dive records a starting point for the work in scope: how long it takes today, how often it happens and who does it. When your digital office has run for an agreed period, we compare against it with you. Those are the only figures we will quote to you, and the only ones we will ever publish about you, with your permission.",
           "_section": {
             "surface": "panel",
             "accent": "default",
@@ -1147,7 +1155,7 @@
           "eyebrow": "Find your altitude",
           "headline": "Let's find out where you",
           "highlight": "stand.",
-          "body": "A diagnostic scores your business across all eight pillars and shows you the shortest honest route up, from pebble to plateau to peak.",
+          "body": "The Deep Dive scores your organisation across all eight pillars and shows you the shortest honest route up, from pebble to plateau to peak.",
           "ctaLabel": "Begin the Conversation",
           "ctaHref": "#book",
           "email": "",
