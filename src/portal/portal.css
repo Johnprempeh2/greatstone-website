@@ -13,10 +13,11 @@
     --pt-accent: #1b5039; --pt-accent-ink: #ffffff; --pt-link: #1b5039; --pt-ok: #136f68; --pt-warn: #8a5a00; --pt-bad: #b3261e;
     --pt-field: #ffffff; --pt-focus: #1b5039;
   }
-  .pt-wrap { background: var(--pt-bg); }
-  body:has(.pt-wrap) { background: var(--pt-bg); }
+  /* the light surface stays on the portal column: the site header and footer are built for dark */
+  .pt-wrap { background: var(--pt-bg); border-radius: 12px; padding-left: clamp(14px, 3vw, 28px); padding-right: clamp(14px, 3vw, 28px); }
 }
-.pt-wrap { max-width: 860px; min-height: 70vh; }
+/* full height while loading and after, so the site footer starts below the fold and never jumps (no layout shift) */
+.pt-wrap { max-width: 860px; min-height: 100vh; }
 .pt-surface { background: var(--pt-bg); padding: 20px clamp(14px, 3vw, 28px); border-radius: 12px; }
 .pt-wrap a, .pt-surface a { color: var(--pt-link); text-underline-offset: 3px; }
 .pt-wrap :focus-visible, .pt-surface :focus-visible { outline: 3px solid var(--pt-focus); outline-offset: 2px; }

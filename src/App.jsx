@@ -1588,7 +1588,7 @@ export default function App() {
             : orgRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyOrg /></Suspense>
             : portalRoute
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyPortal route={portalRoute} /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '100vh' }} />}><LazyPortal route={portalRoute} /></Suspense>
             : confirmRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyStoreCart confirmed /></Suspense>
             : catalogueAdmin
