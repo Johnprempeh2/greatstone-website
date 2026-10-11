@@ -160,3 +160,22 @@
 .pts-fs legend { font-weight: 700; padding: 0 6px; }
 .pts-row { border-bottom: 1px solid var(--gs-border-soft); padding: 8px 0 12px; margin-bottom: 8px; }
 .pts-rowtools { display: flex; gap: 6px; flex-wrap: wrap; }
+/* laptop: the semantic table; phone: one card per row as a definition list, label above value, actions wrap */
+.pts-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pts-card { border: 1px solid var(--gs-border-soft); border-radius: 12px; padding: 12px 14px; background: rgba(18,20,18,.7); min-width: 0; }
+.pts-card-t { font-size: 1rem; margin: 0; overflow-wrap: anywhere; }
+.pts-card-m { margin: 2px 0 0; font-size: .9rem; overflow-wrap: anywhere; }
+.pts-card-dl { display: grid; gap: 10px; margin: 12px 0; }
+.pts-card-dl dt { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--gs-text-faint); }
+.pts-card-dl dd { margin: 2px 0 0; overflow-wrap: anywhere; min-width: 0; }
+.pts-card-dl .ca-status { white-space: normal; }
+.pts-card .ca-muted, .pts .ca-table .ca-muted { text-align: left; padding: 0; }
+.pts-card-dl .pts-err { max-width: none; }
+.pts-card-sub { display: block; font-size: .9rem; }
+.pts-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pts-card-actions .gs-btn { flex: 1 1 100%; justify-content: center; text-align: center; white-space: normal; }
+.pts-narrow-only { display: none; }
+@media (max-width: 720px) {
+  .pts-wide-only { display: none; }
+  .pts-narrow-only { display: grid; }
+}

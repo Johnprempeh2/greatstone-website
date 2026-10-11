@@ -78,6 +78,50 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
     signatory_email: d.signatory_email, fromVersion: d.version,
   });
 
+  // one source for each cell, shared by the laptop table and the phone cards
+  const docMeta = (d) => KIND_LABEL[d.kind] + (d.action !== 'none' ? ' · asks to ' + (d.action === 'accept' ? 'accept' : 'agree in principle') : '');
+  const docState = (d) => <>
+    <span className={'ca-status ' + (STATUS_CLS[d.status] || '')}>{STAFF_STATUS[d.status]}</span>
+    {d.content_sha256 && d.status === 'pending_approval' && <div className="pts-sha" title={d.content_sha256}>{d.content_sha256.slice(0, 12)}…</div>}
+  </>;
+  const docAuthor = (d) => (d.created_by_kind === 'agent' ? 'Agent' : 'Staff');
+  const docApproved = (d) => {
+    const ap = approvalOf(d);
+    return ap ? <>Registered approver · {fmtDay(ap.approved_at)}{ap.gsam_approval_ref ? <span className="ca-muted"> · ref {ap.gsam_approval_ref}</span> : null}</> : <span className="ca-muted">—</span>;
+  };
+  const docActions = (d) => <>
+    <button className="gs-btn ghost sm" onClick={() => setPreview(d)}>Preview as the client</button>
+    {d.status === 'draft' && <>
+      <button className="gs-btn ghost sm" onClick={() => setEditing(d)}>Edit</button>
+      <button className="gs-btn ghost sm" disabled={busyId === d.id} onClick={() => submitForApproval(d)}>Submit for approval</button>
+    </>}
+    {d.status === 'pending_approval' && <>
+      {approver && <button className="gs-btn primary sm" onClick={() => setApproving(d)}>Approve and publish</button>}
+      <button className="gs-btn ghost sm" disabled={busyId === d.id} onClick={() => backToDraft(d)}>Back to draft</button>
+    </>}
+    {d.status === 'published' && <>
+      <button className="gs-btn ghost sm" onClick={() => newVersion(d)}>New version</button>
+      {canWithdraw && <button className="gs-btn ghost sm" disabled={busyId === d.id} onClick={() => withdraw(d)}>Withdraw</button>}
+    </>}
+  </>;
+  const jobOf = (a) => jobs.find((x) => x.acceptance_id === a.id);
+  const accTitle = (a) => (docById[a.document_id] ? docById[a.document_id].title : 'Document');
+  const accAction = (a) => (a.action === 'accept' ? 'Accepted' : 'Agreed in principle');
+  const accEmail = (a) => {
+    const j = jobOf(a);
+    return <>
+      <span className={'ca-status ' + (j && j.status === 'sent' ? 'ca-published' : j && j.status === 'failed' ? 'ca-ord-refunded' : 'ca-draft')}>{receiptJobLabel(j, MAX_ATTEMPTS)}</span>
+      {j && j.last_error && j.status !== 'sent' && <div className="ca-muted pts-err">{j.last_error}</div>}
+    </>;
+  };
+  const accActions = (a) => {
+    const j = jobOf(a);
+    return <>
+      <button className="gs-btn ghost sm" onClick={() => setReceipt(a)}>View receipt</button>
+      {j && ['queued', 'failed'].includes(j.status) && <button className="gs-btn ghost sm" disabled={busyId === a.id} onClick={() => sendAgain(a)}>Send again</button>}
+    </>;
+  };
+
   return (
     <section className="pts" aria-labelledby="pts-h">
       <div className="acct-ordhead" style={{ marginTop: 30 }}>
@@ -87,77 +131,84 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
       <p className="ca-note">Documents {customer.name} sees in their client portal. A client sees nothing until the registered approver presses Approve and publish on the exact version.</p>
 
       <h3 className="pts-sub">Documents</h3>
-      <div className="ca-table-wrap">
-        <table className="ca-table ca-cards">
-          <caption className="gs-sr-only">Portal documents for {customer.name}</caption>
-          <thead><tr><th scope="col">Document</th><th scope="col">Version</th><th scope="col">State</th><th scope="col">Author</th><th scope="col">Approved</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
-          <tbody>
-            {docs === null ? <tr><td colSpan="6" className="ca-muted">Loading…</td></tr>
-              : loadErr ? <tr><td colSpan="6" className="ca-muted"><span role="alert">Couldn't load portal documents. <button className="ca-link" onClick={load}>Try again</button></span></td></tr>
-              : !docs.length ? <tr><td colSpan="6" className="ca-muted">No portal documents yet. Add a draft with “+ New document”, or an agent adds one through the portal MCP server.</td></tr>
-              : docs.map((d) => {
-                const ap = approvalOf(d);
-                return (
+      {docs === null ? <p className="ca-muted">Loading…</p>
+        : loadErr ? <p className="ca-muted" role="alert">Couldn't load portal documents. <button className="ca-link" onClick={load}>Try again</button></p>
+        : !docs.length ? <p className="ca-muted">No portal documents yet. Add a draft with “+ New document”, or an agent adds one through the portal MCP server.</p>
+        : <>
+          <div className="ca-table-wrap pts-wide-only">
+            <table className="ca-table">
+              <caption className="gs-sr-only">Portal documents for {customer.name}</caption>
+              <thead><tr><th scope="col">Document</th><th scope="col">Version</th><th scope="col">State</th><th scope="col">Author</th><th scope="col">Approved</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                {docs.map((d) => (
                   <tr key={d.id}>
-                    <td data-label="Document" className="ca-name">{d.title}<span className="ca-muted"> · {KIND_LABEL[d.kind]}{d.action !== 'none' ? ' · asks to ' + (d.action === 'accept' ? 'accept' : 'agree in principle') : ''}</span></td>
-                    <td data-label="Version">{d.version}</td>
-                    <td data-label="State"><span className={'ca-status ' + (STATUS_CLS[d.status] || '')}>{STAFF_STATUS[d.status]}</span>
-                      {d.content_sha256 && d.status === 'pending_approval' && <div className="pts-sha" title={d.content_sha256}>{d.content_sha256.slice(0, 12)}…</div>}</td>
-                    <td data-label="Author">{d.created_by_kind === 'agent' ? 'Agent' : 'Staff'}</td>
-                    <td data-label="Approved">{ap ? <>Registered approver · {fmtDay(ap.approved_at)}{ap.gsam_approval_ref ? <span className="ca-muted"> · ref {ap.gsam_approval_ref}</span> : null}</> : <span className="ca-muted">—</span>}</td>
-                    <td data-label="" className="ca-ord-actions">
-                      <button className="gs-btn ghost sm" onClick={() => setPreview(d)}>Preview as the client</button>
-                      {d.status === 'draft' && <>
-                        <button className="gs-btn ghost sm" onClick={() => setEditing(d)}>Edit</button>
-                        <button className="gs-btn ghost sm" disabled={busyId === d.id} onClick={() => submitForApproval(d)}>Submit for approval</button>
-                      </>}
-                      {d.status === 'pending_approval' && <>
-                        {approver && <button className="gs-btn primary sm" onClick={() => setApproving(d)}>Approve and publish</button>}
-                        <button className="gs-btn ghost sm" disabled={busyId === d.id} onClick={() => backToDraft(d)}>Back to draft</button>
-                      </>}
-                      {d.status === 'published' && <>
-                        <button className="gs-btn ghost sm" onClick={() => newVersion(d)}>New version</button>
-                        {canWithdraw && <button className="gs-btn ghost sm" disabled={busyId === d.id} onClick={() => withdraw(d)}>Withdraw</button>}
-                      </>}
-                    </td>
+                    <td className="ca-name">{d.title}<span className="ca-muted"> · {docMeta(d)}</span></td>
+                    <td>{d.version}</td>
+                    <td>{docState(d)}</td>
+                    <td>{docAuthor(d)}</td>
+                    <td>{docApproved(d)}</td>
+                    <td className="ca-ord-actions">{docActions(d)}</td>
                   </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* phones: one card per document, label above value, so nothing is cut off (Mikey's review) */}
+          <ul className="pts-cards pts-narrow-only" aria-label={'Portal documents for ' + customer.name}>
+            {docs.map((d) => (
+              <li key={d.id} className="pts-card">
+                <h4 className="pts-card-t">{d.title}</h4>
+                <p className="ca-muted pts-card-m">{docMeta(d)}</p>
+                <dl className="pts-card-dl">
+                  <div><dt>Version</dt><dd>{d.version}</dd></div>
+                  <div><dt>State</dt><dd>{docState(d)}</dd></div>
+                  <div><dt>Author</dt><dd>{docAuthor(d)}</dd></div>
+                  <div><dt>Approved</dt><dd>{docApproved(d)}</dd></div>
+                </dl>
+                <div className="pts-card-actions">{docActions(d)}</div>
+              </li>
+            ))}
+          </ul>
+        </>}
       {docs && docs.some((d) => d.status === 'pending_approval') && !approver && (
         <p className="ca-note" role="note">Waiting for approval: only the registered approver sees Approve and publish, when signed in with their own account.</p>
       )}
 
       <h3 className="pts-sub">Acceptances and receipt copies</h3>
-      <div className="ca-table-wrap">
-        <table className="ca-table ca-cards">
-          <caption className="gs-sr-only">Acceptances by {customer.name}</caption>
-          <thead><tr><th scope="col">Document</th><th scope="col">Action</th><th scope="col">Signer</th><th scope="col">When</th><th scope="col">Email copy</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
-          <tbody>
-            {!acceptances.length ? <tr><td colSpan="6" className="ca-muted">No acceptances yet.</td></tr>
-              : acceptances.map((a) => {
-                const j = jobs.find((x) => x.acceptance_id === a.id);
-                const d = docById[a.document_id];
-                return (
-                  <tr key={a.id}>
-                    <td data-label="Document" className="ca-name">{d ? d.title : 'Document'} <span className="ca-muted">v{a.document_version}</span></td>
-                    <td data-label="Action">{a.action === 'accept' ? 'Accepted' : 'Agreed in principle'}</td>
-                    <td data-label="Signer">{a.signer_name}<span className="ca-muted"> · {a.signer_title} · {a.signer_email}</span></td>
-                    <td data-label="When">{fmtDay(a.accepted_at)}</td>
-                    <td data-label="Email copy"><span className={'ca-status ' + (j && j.status === 'sent' ? 'ca-published' : j && j.status === 'failed' ? 'ca-ord-refunded' : 'ca-draft')}>{receiptJobLabel(j, MAX_ATTEMPTS)}</span>
-                      {j && j.last_error && j.status !== 'sent' && <div className="ca-muted pts-err">{j.last_error}</div>}</td>
-                    <td data-label="" className="ca-ord-actions">
-                      <button className="gs-btn ghost sm" onClick={() => setReceipt(a)}>View receipt</button>
-                      {j && ['queued', 'failed'].includes(j.status) && <button className="gs-btn ghost sm" disabled={busyId === a.id} onClick={() => sendAgain(a)}>Send again</button>}
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </div>
+      {!acceptances.length ? <p className="ca-muted">No acceptances yet.</p> : <>
+        <div className="ca-table-wrap pts-wide-only">
+          <table className="ca-table">
+            <caption className="gs-sr-only">Acceptances by {customer.name}</caption>
+            <thead><tr><th scope="col">Document</th><th scope="col">Action</th><th scope="col">Signer</th><th scope="col">When</th><th scope="col">Email copy</th><th scope="col"><span className="gs-sr-only">Actions</span></th></tr></thead>
+            <tbody>
+              {acceptances.map((a) => (
+                <tr key={a.id}>
+                  <td className="ca-name">{accTitle(a)} <span className="ca-muted">v{a.document_version}</span></td>
+                  <td>{accAction(a)}</td>
+                  <td>{a.signer_name}<span className="ca-muted"> · {a.signer_title} · {a.signer_email}</span></td>
+                  <td>{fmtDay(a.accepted_at)}</td>
+                  <td>{accEmail(a)}</td>
+                  <td className="ca-ord-actions">{accActions(a)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <ul className="pts-cards pts-narrow-only" aria-label={'Acceptances by ' + customer.name}>
+          {acceptances.map((a) => (
+            <li key={a.id} className="pts-card">
+              <h4 className="pts-card-t">{accTitle(a)} <span className="ca-muted">v{a.document_version}</span></h4>
+              <dl className="pts-card-dl">
+                <div><dt>Action</dt><dd>{accAction(a)}</dd></div>
+                <div><dt>Signer</dt><dd>{a.signer_name}<span className="ca-muted pts-card-sub">{a.signer_title}</span><span className="ca-muted pts-card-sub">{a.signer_email}</span></dd></div>
+                <div><dt>When</dt><dd>{fmtDay(a.accepted_at)}</dd></div>
+                <div><dt>Email copy</dt><dd>{accEmail(a)}</dd></div>
+              </dl>
+              <div className="pts-card-actions">{accActions(a)}</div>
+            </li>
+          ))}
+        </ul>
+      </>}
 
       {editing && <DraftEditor draft={editing} customer={customer} members={members} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); flash(m); load(); }} />}
       {preview && <PreviewDrawer doc={preview} customer={customer} members={members} onClose={() => setPreview(null)} />}
