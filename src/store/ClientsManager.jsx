@@ -11,6 +11,7 @@ import { engagementView } from './engagement-view.mjs';
 import { listState } from './list-state.mjs';
 import { shareChecklist } from './engagement-checklist.mjs';
 import { expiryInfo } from './licence-expiry.mjs';
+import PortalStaff from '../portal/PortalStaff.jsx';
 import './store.css';
 import './admin.css';
 
@@ -306,6 +307,8 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
           </tbody>
         </table>
       </div>
+
+      <PortalStaff customer={customer} staff={staff} members={members} flash={flash} />
 
       {editing && <EngagementEditor engagement={editing} customer={customer} staff={staff} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); flash(m); load(); }} />}
       {keyEditing && <KeyEditor lkey={keyEditing} customer={customer} staff={staff} orders={orders} onClose={() => setKeyEditing(null)} onSaved={(m) => { setKeyEditing(null); flash(m); load(); }} />}
