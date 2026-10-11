@@ -57,7 +57,7 @@ const db = {
     const { data: acceptance, error } = await admin.from('portal_acceptances').select('*').eq('id', acceptanceId).single();
     if (error) throw new Error(error.message);
     const { data: document, error: dErr } = await admin.from('portal_documents')
-      .select('id, title, summary, version, body, demos, content_sha256').eq('id', acceptance.document_id).single();
+      .select('id, kind, title, summary, version, body, demos, content_sha256').eq('id', acceptance.document_id).single();
     if (dErr) throw new Error(dErr.message);
     return { acceptance, document };
   },

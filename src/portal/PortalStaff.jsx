@@ -10,6 +10,7 @@ import { useModal } from '../store/useModal.mjs';
 import DrawerScrim from '../store/DrawerScrim.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import DocumentView from './DocumentView.jsx';
+import { downloadPortalPdf } from './portal-file.mjs';
 import ActionPanel from './ActionPanel.jsx';
 import { ReceiptView, nudgeReceiptWorker } from './Portal.jsx';
 import { KIND_LABEL, STAFF_STATUS, receiptJobLabel, cleanSections, cleanDemos, fmtDay } from './portal-model.mjs';
@@ -240,7 +241,7 @@ function PreviewDrawer({ doc, customer, members, onClose }) {
       </div>
       <p className="ca-note">{STAFF_STATUS[doc.status]}. {doc.status === 'published' ? 'The client sees this now.' : 'The client does not see this until it is approved and published.'}</p>
       <div className="pt-surface">
-        <DocumentView doc={doc} headingId="pts-preview-title">
+        <DocumentView doc={doc} headingId="pts-preview-title" onDownloadPdf={() => downloadPortalPdf(doc.id)}>
           <ActionPanel doc={doc} company={customer.name} email={doc.signatory_email || 'the signed-in client’s email'}
             defaultName={signer.full_name || ''} state={doc.action === 'none' ? 'none' : 'eligible'} preview onSubmit={async () => null} />
         </DocumentView>

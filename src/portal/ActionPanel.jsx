@@ -67,8 +67,10 @@ export default function ActionPanel({
   useEffect(() => { if (failure && failRef.current) failRef.current.focus(); }, [failure]);
 
   if (!doc || state === 'none') return null;
-  if (done) return <><ReceiptSummary action={doc.action} acceptance={done.acceptance} job={done.job} email={email} focus /><PrivacyNote /></>;
-  if (state === 'done' && acceptance) return <><ReceiptSummary action={doc.action} acceptance={acceptance} job={job} email={email} /><PrivacyNote /></>;
+  // after an agreement in principle the client still sees what happens next (GRE-1257)
+  const next = doc.action === 'agree_in_principle' ? <p className="pt-next">{AGREE_NEXT_LINE}</p> : null;
+  if (done) return <><ReceiptSummary action={doc.action} acceptance={done.acceptance} job={done.job} email={email} focus />{next}<PrivacyNote /></>;
+  if (state === 'done' && acceptance) return <><ReceiptSummary action={doc.action} acceptance={acceptance} job={job} email={email} />{next}<PrivacyNote /></>;
 
   if (state === 'waiting_signatory') {
     return (
@@ -110,7 +112,7 @@ export default function ActionPanel({
   return (
     <>
       <form className="pt-panel" onSubmit={submit} noValidate aria-labelledby={uid + '-h'} aria-busy={busy}>
-        <h2 className="pt-panel-h" id={uid + '-h'}>{actionWord(doc.action)} this document</h2>
+        <h2 className="pt-panel-h" id={uid + '-h'}>{doc.action === 'agree_in_principle' ? 'Agree in principle with this document' : 'Accept this document'}</h2>
         {preview && <p className="pt-preview-note" role="note">Preview: this is what the client sees. The button does nothing here.</p>}
 
         <fieldset className="pt-group pt-group-fixed">
@@ -155,7 +157,7 @@ export default function ActionPanel({
         </div>
         <p className="gs-sr-only" role="status" aria-live="polite">{busy ? 'Recording your ' + (doc.action === 'agree_in_principle' ? 'agreement' : 'acceptance') + '…' : ''}</p>
       </form>
-      {doc.action === 'agree_in_principle' && <p className="pt-next">{AGREE_NEXT_LINE}</p>}
+      {next}
       <PrivacyNote />
     </>
   );
