@@ -114,3 +114,20 @@ test('R1 navigation follows GRE-652 K7', () => {
   assert.deepEqual(slugs, ['home', 'how-we-help', 'services', 'method', 'proof', 'about', 'contact']);
   assert.match(nav, /pageSlug: 'about', label: 'About'/);
 });
+
+// GRE-970: the contact form carries GRE-652 §4.6, reconciled with GRE-1358 (interest choice kept, size band is
+// qualification only), and no reply-time promise until decision D6 (claim C23).
+test('the contact enquiry form follows GRE-652 §4.6 and makes no reply-time promise', () => {
+  const contact = STORE.slice(STORE.indexOf('contact: seedPage('), STORE.indexOf('// fold in the rest of the site'));
+  for (const s of ["nameLabel: 'Your name (required)'", "emailLabel: 'Work email (required)'", "companyLabel: 'Organisation'",
+    "sizeLabel: 'How many people work there?'", 'sizes: SIZE_BANDS.map', 'showSector: false', "submitLabel: 'Send enquiry'",
+    "messageLabel: 'Which work would you most like to get time back from?'",
+    "messagePlaceholder: 'For example: weekly reporting, proposals, social content, research'",
+    'consent: CONSENT', "sentHeading: 'Thank you. Your enquiry has reached us.'", "failedHeading: 'Your message did not reach us.'",
+    "sentLinkHref: '#go/method'", 'interests: INTEREST_OPTIONS.map']) {
+    assert.ok(contact.includes(s), s);
+  }
+  const code = contact.replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(code, /working day|within (one|a|24)|hours?\b.*reply/i, 'D6 is open');
+  assert.doesNotMatch(read('../blocks/BookDeepDive.jsx').replace(/^\s*\/\/.*$/gm, ''), /working day/i, 'D6 is open');
+});

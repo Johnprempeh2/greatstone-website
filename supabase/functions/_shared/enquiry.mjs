@@ -1,9 +1,11 @@
 // Contact enquiry (GRE-654, release plan GRE-638 rev 2 §3.4): the row the `enquiry` edge function saves in
-// service_inquiries (0023, attribution and industry from 0035), the internal Resend alert, and the one
+// service_inquiries (0023, attribution and industry from 0035, size band from 0040), the internal Resend alert, and the one
 // handler that ties them together. Pure: the database and the email are injected, so
 // `node --test` covers every path and the edge function imports the same code.
 // Wire contract with the BookDeepDive block (src/lib/enquiry.mjs):
-//   POST /functions/v1/enquiry  { name?, company?, email, industry?, message?, attribution?: { first, last }, page?, website? }
+//   POST /functions/v1/enquiry  { name?, company?, email, size_band?, industry?, message?, attribution?: { first, last }, page?, website? }
+// The form asks for a name too (GRE-970), but only the email is required here: a visitor on an older page
+// still reaches us. The optional interest choice arrives as the message's first line ("Interest: …").
 //   → 200 { ok: true, ref } when the row is saved or the alert went (the lead is on record)
 //   → 4xx/5xx { ok: false, error } otherwise; the block then shows the contact address.
 // `website` is a honeypot: people never see it, so a value means a bot. We answer ok and keep nothing.
@@ -13,7 +15,7 @@ import { sendEmail } from './front-door-leads.mjs';
 export { sendEmail };
 
 // The same limits submit_service_inquiry (0023) enforces, so the edge path and the rpc path agree.
-export const ENQUIRY_LIMITS = { name: 200, email: 200, company: 200, industry: 80, message: 4000, page: 200 };
+export const ENQUIRY_LIMITS = { name: 200, email: 200, company: 200, size_band: 40, industry: 80, message: 4000, page: 200 };
 export const PER_IP_PER_DAY = 10;
 export const SOURCE = 'contact';
 
@@ -32,10 +34,11 @@ export function normaliseEnquiry(body) {
     name: cap(b.name, ENQUIRY_LIMITS.name),
     email: cap(b.email, ENQUIRY_LIMITS.email),
     company: cap(b.company, ENQUIRY_LIMITS.company),
+    size_band: cap(b.size_band, ENQUIRY_LIMITS.size_band),
     industry: cap(b.industry, ENQUIRY_LIMITS.industry),
     message: capText(b.message, ENQUIRY_LIMITS.message),
   };
-  if (!EMAIL_RE.test(enquiry.email)) return { ok: false, error: 'Enter a work email we can reply to.' };
+  if (!EMAIL_RE.test(enquiry.email)) return { ok: false, error: 'Please add an email address we can reply to.' };
   return { ok: true, enquiry };
 }
 
@@ -73,6 +76,7 @@ export function enquiryRow({ orgId, enquiry, attribution = {}, ip = '' }) {
     contact_email: enquiry.email,
     contact_company: enquiry.company || null,
     message: enquiry.message || null,
+    size_band: enquiry.size_band || null,
     industry: enquiry.industry || null,
     attribution,
     source: SOURCE,
@@ -83,33 +87,58 @@ export function enquiryRow({ orgId, enquiry, attribution = {}, ip = '' }) {
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const touchLabel = (t) => (t ? [t.utm_source, t.utm_medium, t.utm_campaign].filter(Boolean).join(' / ') || 'Direct or organic' : 'Not known');
 
-// The internal alert. When the row is saved the studio holds the details and the email names the sender
-// and links to the Inquiries tab. When it is not saved the email carries everything: it is the record.
-export function buildEnquiryAlert({ enquiry, attribution = {}, saved, ref = '', studioUrl = '' }) {
+// The interest choice travels as the message's first line (src/lib/enquiry.mjs withInterest); split it back out.
+export function splitInterest(message) {
+  const m = String(message || '').match(/^Interest: ([^\n]+)(?:\n+([\s\S]*))?$/);
+  return m ? { interest: m[1].trim(), work: (m[2] || '').trim() } : { interest: '', work: String(message || '').trim() };
+}
+
+// "Source" in the alert (GRE-652 §4.6): utm_source / utm_campaign of the latest touch, else the first, else direct.
+export function sourceLabel(attribution = {}) {
+  const t = [attribution.last, attribution.first].find((x) => x && x.utm_source);
+  return t ? [t.utm_source, t.utm_campaign].filter(Boolean).join(' / ') : 'direct';
+}
+
+const fmtTime = (d) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
+
+// The internal alert, worded as GRE-652 §4.6 (the "Reply by" line waits on the enquiry owner and reply time,
+// decision D6). When the row is saved the studio holds the record and the email links to the Inquiries tab.
+// When it is not saved the email carries everything: it is the record.
+export function buildEnquiryAlert({ enquiry, attribution = {}, saved, ref = '', studioUrl = '', at = new Date() }) {
   const who = enquiry.company || enquiry.name || enquiry.email;
+  const { interest, work } = splitInterest(enquiry.message);
+  const size = enquiry.size_band || '';
+  const source = sourceLabel(attribution);
+  const summary = [
+    (enquiry.name || enquiry.email) + (enquiry.company ? ' at ' + enquiry.company : '') + (size ? ' (' + size + ')' : '') + ' sent an enquiry at ' + fmtTime(at) + '.',
+    ...(interest ? ['Interested in: ' + interest + '.'] : []),
+    ...(work ? ['Work they want time back from: "' + work + '".'] : []),
+    'Source: ' + source + '.',
+    'Then add them to Pipedrive.',
+  ];
   const rows = [['From', [enquiry.name, enquiry.company].filter(Boolean).join(', ') || 'Not given'], ['Email', enquiry.email]];
+  if (size) rows.push(['Organisation size', size]);
+  if (interest) rows.push(['Interested in', interest]);
   if (enquiry.industry) rows.push(['Industry', enquiry.industry]);
-  rows.push(['First visit from', touchLabel(attribution.first)], ['Latest visit from', touchLabel(attribution.last)]);
+  rows.push(['Source', source], ['First visit from', touchLabel(attribution.first)], ['Latest visit from', touchLabel(attribution.last)]);
   if (attribution.page) rows.push(['Sent from', attribution.page]);
   if (saved && ref) rows.push(['Enquiry', ref]);
-  const subject = (saved ? 'New enquiry: ' : 'Enquiry NOT SAVED: ') + who;
+  const subject = (saved ? 'New enquiry: ' : 'Enquiry NOT SAVED: ') + who + (size ? ', ' + size : '');
   const intro = saved
-    ? 'A visitor sent the contact form. The full enquiry is in the studio.'
+    ? 'A visitor sent the contact form. The enquiry is saved in the studio.'
     : 'A visitor sent the contact form, but the enquiry could not be saved in the studio. This email is the only record. Reply from here and add it to the CRM by hand.';
-  const message = saved ? '' : enquiry.message || '(no message)';
   const link = saved && studioUrl ? studioUrl : '';
   const html = `<div style="background:#1f1f1f;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif;padding:28px;max-width:560px;margin:0 auto;border-radius:14px">
     <div style="font-weight:800;font-size:18px;letter-spacing:.04em">GREATST<span style="color:#c8ff00">O</span>NE</div>
     <h1 style="font-size:20px;margin:18px 0 6px">${saved ? 'New enquiry' : 'Enquiry not saved'}</h1>
     <p style="color:#b0b0b0;font-size:14px;margin:0 0 14px">${esc(intro)}</p>
+    <p style="color:#f5f5f5;font-size:14px;white-space:pre-wrap;margin:0 0 18px">${esc(summary.join('\n'))}</p>
     <table style="font-size:14px;border-collapse:collapse;margin:0 0 18px">${rows.map(([k, v]) =>
       `<tr><td style="color:#b0b0b0;padding:4px 16px 4px 0;vertical-align:top">${esc(k)}</td><td style="color:#f5f5f5;padding:4px 0">${esc(v)}</td></tr>`).join('')}</table>
-    ${message ? `<p style="color:#f5f5f5;font-size:14px;white-space:pre-wrap;margin:0 0 18px">${esc(message)}</p>` : ''}
     ${link ? `<a href="${esc(link)}" style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:800;color:#0e1611;background:#c8ff00;text-decoration:none;border-radius:100px">Open enquiries</a>` : ''}
     <p style="color:#707070;font-size:12px;margin-top:22px">Internal alert from the website contact form. Do not forward.</p>
   </div>`;
-  const text = [intro, '', ...rows.map(([k, v]) => k + ': ' + v), ...(message ? ['', message] : []),
-    ...(link ? ['', 'Open enquiries: ' + link] : [])].join('\n');
+  const text = [...summary, '', intro, '', ...rows.map(([k, v]) => k + ': ' + v), ...(link ? ['', 'Open enquiries: ' + link] : [])].join('\n');
   return { subject, html, text };
 }
 
@@ -121,7 +150,7 @@ export function buildEnquiryAlert({ enquiry, attribution = {}, saved, ref = '', 
 //   log(level, msg)
 // Returns { status, body }. The lead is on record when the row is saved OR the alert went; only when both
 // fail does the visitor get { ok: false } and the contact address.
-export async function handleEnquiry(body, { ip = '', studioUrl = '', countRecent, saveRow, sendAlert, markAlerted, log = () => {} } = {}) {
+export async function handleEnquiry(body, { ip = '', studioUrl = '', now = () => new Date(), countRecent, saveRow, sendAlert, markAlerted, log = () => {} } = {}) {
   const b = body && typeof body === 'object' ? body : {};
   if (b.website) return { status: 200, body: { ok: true } };  // honeypot: quietly drop
   const norm = normaliseEnquiry(b);
@@ -142,7 +171,7 @@ export async function handleEnquiry(body, { ip = '', studioUrl = '', countRecent
   if (!id) log('error', 'enquiry: not saved, the alert carries it');
 
   let alert = { sent: false, error: 'not sent' };
-  try { alert = await sendAlert(buildEnquiryAlert({ enquiry, attribution, saved: !!id, ref, studioUrl })); } catch (e) { alert = { sent: false, error: 'alert threw' }; }
+  try { alert = await sendAlert(buildEnquiryAlert({ enquiry, attribution, saved: !!id, ref, studioUrl, at: now() })); } catch (e) { alert = { sent: false, error: 'alert threw' }; }
   if (!alert.sent) log(id ? 'warn' : 'error', 'enquiry: alert not sent ' + (alert.error || ''));
   if (id && alert.sent) { try { await markAlerted(id); } catch (e) { /* best effort */ } }
 
