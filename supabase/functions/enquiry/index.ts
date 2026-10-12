@@ -1,5 +1,5 @@
 // Contact enquiry (Supabase Edge Function, Deno). Public: the BookDeepDive contact form (GRE-654). Saves the
-// enquiry in service_inquiries (0023 + 0035) with the service role, then sends the owner a Resend alert. If
+// enquiry in service_inquiries (0023 + 0035 + 0040) with the service role, then sends the owner a Resend alert. If
 // the row cannot be saved the alert carries the whole enquiry, so a lead is never silently lost; only when
 // both fail does the visitor get an error (and the page shows the contact address).
 // The logic is ../_shared/enquiry.mjs, covered by `node --test`. Wire contract: src/lib/enquiry.mjs.
@@ -17,7 +17,7 @@ const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? '';
 const ALERT_TO = (Deno.env.get('ENQUIRY_ALERT_TO') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const SITE_ORIGIN = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstoneint.com').replace(/\/+$/, '');
 const STUDIO_URL = SITE_ORIGIN + '/#catalogue/inquiries';
-const EXTRA = /attribution|industry|alert_sent_at/;
+const EXTRA = /attribution|industry|alert_sent_at|size_band/;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -41,10 +41,16 @@ async function saveRow(row: Record<string, unknown>) {
   const { data: org } = await supabase.from('organisations').select('id').order('created_at').limit(1).maybeSingle();
   if (!org) { console.error('enquiry: no organisation'); return null; }
   let { data, error } = await supabase.from('service_inquiries').insert({ ...row, org_id: org.id }).select('id').single();
-  // Before 0035 the extra columns are absent: keep the enquiry without them (the alert still has the attribution).
+  // Before 0040 there is no size_band column, and before 0035 no attribution or industry: keep the enquiry
+  // without them (the alert still carries them).
+  if (error && /size_band/.test(error.message || '')) {
+    console.warn('enquiry: saved without the size band (apply 0040)');
+    const { size_band: _s, ...rest } = row;
+    ({ data, error } = await supabase.from('service_inquiries').insert({ ...rest, org_id: org.id }).select('id').single());
+  }
   if (error && EXTRA.test(error.message || '')) {
     console.warn('enquiry: saved without attribution (apply 0035)');
-    const { attribution: _a, industry: _i, ...rest } = row;
+    const { attribution: _a, industry: _i, size_band: _s, ...rest } = row;
     ({ data, error } = await supabase.from('service_inquiries').insert({ ...rest, org_id: org.id }).select('id').single());
   }
   if (error) { console.error('enquiry: not saved', error.message); return null; }
