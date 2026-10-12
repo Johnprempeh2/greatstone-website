@@ -7,7 +7,7 @@ import { BRAND_TAGLINE, PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './lib/brand.
 import { LEGAL_NAME, COMPANY_NUMBER, REGISTERED_IN, REGISTERED_OFFICE, LEGAL_CONTACT_EMAIL, LEGAL_UPDATED, ICO_REGISTRATION_NUMBER } from './lib/legal-facts.mjs';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
-import { INTEREST_OPTIONS } from './lib/enquiry.mjs';
+import { INTEREST_OPTIONS, SIZE_BANDS, CONSENT } from './lib/enquiry.mjs';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
 export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
 export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './lib/redirects-model.mjs';
@@ -33,7 +33,7 @@ const SCHEMA = 19;
 // K7 navigation. It also carries GRE-635's CTA change, which went out without a bump (plan GRE-638 §3.2).
 // Bumped 11 Oct 2026 (GRE-660): the R1 copy from GRE-1373 draft 4 (GRE-1358 offer journey, packaging v9 claims,
 // services page renamed GS Agentic Manager). Without a bump, returning visitors keep the superseded offer.
-const SEED_VERSION = 20261011;
+const SEED_VERSION = 20261012;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -131,7 +131,7 @@ export const LEGAL_SCAFFOLDS = [
     { h: 'Who we are', b: LEGAL_NAME + ' (“Greatstone”, “we”, “us”) runs greatstoneint.com and is the controller of the personal data described on this page. We are registered in ' + REGISTERED_IN + ' under company number ' + COMPANY_NUMBER + ', with our registered office at ' + REGISTERED_OFFICE + '.' + ICO_LINE + '<br><br>For anything about your data, email ' + LEGAL_MAIL + '. We will reply to privacy questions at that address.' },
     { h: 'What this page covers', b: 'This website and the enquiry form on it. If you become a client, we tell you separately how we handle data in that work.' },
     // GRE-659 PR A clears the enquiry IP after 30 days (migration 0036), so the 30-day wording applies.
-    { h: 'What we collect', b: '<strong>When you send an enquiry.</strong> Your work email, which we need to reply, plus anything else you choose to give: your name, company, sector and message. With it we save the date and time, the page you sent it from, and how you reached us on this visit (the site that referred you and any campaign tags in the link, such as utm_source). If you accepted analytics cookies, we also save how you first found us. We keep your IP address for 30 days to stop spam and abuse of the form.<br><br><strong>When you browse.</strong> If you accept analytics cookies, Google Analytics records how the site is used: pages viewed, device and browser type, and an approximate location. Google Analytics does not store your IP address. We never send your name or email to Google Analytics. If you decline, no analytics cookies are set. Google may still receive basic signals with no cookies and no identifier, such as the fact that a page loaded, which it uses to estimate overall traffic.<br><br>We do not ask for sensitive information such as health or political views. Please leave it out of your message.' },
+    { h: 'What we collect', b: '<strong>When you send an enquiry.</strong> Your work email, which we need to reply, plus anything else you choose to give: your name, company, organisation size, sector and message. With it we save the date and time, the page you sent it from, and how you reached us on this visit (the site that referred you and any campaign tags in the link, such as utm_source). If you accepted analytics cookies, we also save how you first found us. We keep your IP address for 30 days to stop spam and abuse of the form.<br><br><strong>When you browse.</strong> If you accept analytics cookies, Google Analytics records how the site is used: pages viewed, device and browser type, and an approximate location. Google Analytics does not store your IP address. We never send your name or email to Google Analytics. If you decline, no analytics cookies are set. Google may still receive basic signals with no cookies and no identifier, such as the fact that a page loaded, which it uses to estimate overall traffic.<br><br>We do not ask for sensitive information such as health or political views. Please leave it out of your message.' },
     { h: 'How we use it, and why we are allowed to', b: B + '<strong>Reply to your enquiry and discuss working together.</strong> Data used: enquiry details. Lawful basis: legitimate interests, answering a business that asked about our services. If you write to us for yourself, steps you asked us to take before a contract.<br>' + B + '<strong>Tell our team a new enquiry has arrived.</strong> Data used: enquiry details. Lawful basis: legitimate interests.<br>' + B + '<strong>See which campaigns and pages lead to enquiries.</strong> Data used: referrer, landing page, campaign tags. Lawful basis: legitimate interests.<br>' + B + '<strong>Protect the form from spam and abuse.</strong> Data used: IP address. Lawful basis: legitimate interests.<br>' + B + '<strong>Measure how the site is used.</strong> Data used: analytics data. Lawful basis: your consent, which you can withdraw at any time.<br><br>Sending an enquiry does not sign you up to marketing emails. We do not make automated decisions about you.' },
     { h: 'Who we share it with', b: 'We use a small number of providers to run the site. Each works under a contract that allows it to use your data only on our instructions.<br>' + B + '<strong>Supabase</strong> stores enquiries in our database, in London.<br>' + B + '<strong>Resend</strong> sends our team the email alert for each new enquiry.<br>' + B + '<strong>Pipedrive</strong> is where our team records an enquiry and follows it up.<br>' + B + '<strong>Netlify</strong> hosts the website and keeps short-lived server logs, which include IP addresses.<br>' + B + '<strong>Google</strong> runs Tag Manager and Analytics. It sets analytics cookies only if you accept them; if you decline, it receives only the basic signals described above.<br><br>We do not sell your data. We share it with others only if the law requires us to.' },
     { h: 'Data outside the UK', b: 'Some of these providers process data in the United States. Where they do, we rely on UK adequacy regulations (including the UK Extension to the EU-US Data Privacy Framework, where the provider is certified) or the ICO’s International Data Transfer Agreement or Addendum. Email us for details.' },
@@ -628,22 +628,32 @@ export function seedState() {
               ctaLabel: 'Email Greatstone', ctaHref: { kind: 'email', email: '' }, gated: true },
           ],
         }),
-        // The enquiry route. The sector question is now OPTIONAL (his "no qualification barriers"), and the
-        // form's wording is editable rather than hardcoded. email stays empty until the address is settled;
-        // the block shows its fallback panel on submit either way.
+        // The enquiry route, worded as GRE-652 §4.6 (GRE-970) plus GRE-1373's optional interest choice. Only
+        // name and email are required (his "no qualification barriers"); the size band qualifies, it is not a
+        // price tier (GRE-1354). The sector question is hidden: §4.6 has none. email stays empty until the
+        // address is settled; the block falls back to the site address after sending either way.
+        // The "within one working day" promise is left out of every string until decision D6 (claim C23).
         blk('BookDeepDive', {
           // the form is the page's one interactive surface; a lifted band makes it read as one
           _section: { surface: 'panel', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
           eyebrow: '', headline: 'Send an Enquiry', highlight: '',
-          body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
-          submitLabel: 'Send Enquiry',
-          sectorLabel: 'Your sector (optional)', sectorPlaceholder: 'Select if it is useful context',
+          body: 'A few short questions. Only your name and email are required.',
+          submitLabel: 'Send enquiry',
+          nameLabel: 'Your name (required)', emailLabel: 'Work email (required)', companyLabel: 'Organisation',
+          sizeLabel: 'How many people work there?', sizePlaceholder: 'Select if it helps',
+          sizes: SIZE_BANDS.map((label) => ({ label })),
+          showSector: false, sectorLabel: 'Your sector (optional)', sectorPlaceholder: 'Select if it is useful context',
           sectorRequired: false,
           interestLabel: 'What are you interested in? (optional)', interestPlaceholder: 'Select if it helps',
           interests: INTEREST_OPTIONS.map((label) => ({ label })),
-          messageLabel: 'What would you like to discuss?',
-          messagePlaceholder: 'A challenge you are weighing up, an ambition you are planning around, or simply a question you would like a considered answer to.',
+          messageLabel: 'Which work would you most like to get time back from?',
+          messagePlaceholder: 'For example: weekly reporting, proposals, social content, research',
           subjectPrefix: 'Enquiry', anchorId: 'enquiry',
+          consent: CONSENT,
+          sentHeading: 'Thank you. Your enquiry has reached us.',
+          sentBody: 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
+          sentLinkLabel: 'Read how we work', sentLinkHref: '#go/method',
+          failedHeading: 'Your message did not reach us.', failedBody: 'Please email us at',
           asideKicker: 'What happens next',
           asideHeading: 'A considered reply, not a sales sequence.',
           asideBody: 'Every enquiry is read by the team. We reply with a view on whether we can genuinely help, and say so plainly when we cannot.',
