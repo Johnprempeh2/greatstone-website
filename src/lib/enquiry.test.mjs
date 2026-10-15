@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { enquiryPayload, makeEnquiryClient, fireLead, isEmail } from './enquiry.mjs';
+import { enquiryPayload, makeEnquiryClient, fireLead, isEmail, validateEnquiry, SIZE_BANDS, CONSENT, INTEREST_OPTIONS, interestKey, parseEnquireHref, setPendingInterest, takePendingInterest } from './enquiry.mjs';
 
 const ATTR = {
   first: { utm_source: 'linkedin', utm_medium: 'paid', utm_campaign: 'r1', landing: '/' },
@@ -15,6 +15,26 @@ test('enquiryPayload trims the fields and carries first and last touch', () => {
   assert.equal(p.page, '/contact');
   assert.equal(p.website, '');
   assert.deepEqual(enquiryPayload({}, null).attribution, { first: null, last: null });
+});
+
+test('the optional interest choice leads the message, and is left out when not chosen', () => {
+  assert.equal(enquiryPayload({ message: ' hi ', interest: ' GS Agentic Manager ' }).message, 'Interest: GS Agentic Manager\n\nhi');
+  assert.equal(enquiryPayload({ interest: 'Not sure yet' }).message, 'Interest: Not sure yet');
+  assert.equal(enquiryPayload({ message: 'hi', interest: '' }).message, 'hi');
+  assert.equal(enquiryPayload({ message: 'hi' }).message, 'hi');
+});
+
+test('"#enquire/<key>" preselects a listed option once, and nothing else', () => {
+  assert.equal(INTEREST_OPTIONS.length, 5);
+  assert.equal(interestKey('GS Agentic Manager'), 'gs-agentic-manager');
+  assert.equal(parseEnquireHref('#enquire/gs-agentic-manager'), 'gs-agentic-manager');
+  assert.equal(parseEnquireHref('#go/contact'), null);
+  assert.equal(parseEnquireHref('#enquire/<x>'), null);
+  setPendingInterest('gs-agentic-manager');
+  assert.equal(takePendingInterest(INTEREST_OPTIONS), 'GS Agentic Manager');
+  assert.equal(takePendingInterest(INTEREST_OPTIONS), '', 'taken once');
+  setPendingInterest('not-an-option');
+  assert.equal(takePendingInterest(INTEREST_OPTIONS), '');
 });
 
 test('isEmail', () => {
@@ -64,4 +84,17 @@ test('generate_lead fires only after consent, with the UTM source, medium and ca
   fireLead({ track, getConsent: () => 'granted', attribution: {} });
   assert.deepEqual(events[2][1], { form: 'enquiry', utm_source: '(direct)', utm_medium: '(none)', utm_campaign: '(not set)' });
   assert.doesNotMatch(JSON.stringify(events), /@/, 'no personal data in GA');
+});
+
+test('GRE-970: name and email are the only required answers, with the §4.6 field errors', () => {
+  assert.deepEqual(validateEnquiry({ name: 'Jane', email: 'jane@stonewell.co' }), {});
+  assert.deepEqual(validateEnquiry({ name: '  ', email: 'jane@stonewell' }), { name: 'Please add your name.', email: 'Please add an email address we can reply to.' });
+  assert.deepEqual(validateEnquiry({ email: 'jane@stonewell.co' }), { name: 'Please add your name.' });
+});
+
+test('GRE-970: the size band travels in the payload; it is optional and qualifies, it is not a price', () => {
+  assert.deepEqual(SIZE_BANDS, ['Under 10', '11 to 50', '51 to 250', 'More than 250']);
+  assert.equal(enquiryPayload({ email: 'a@b.co', size_band: ' 51 to 250 ' }).size_band, '51 to 250');
+  assert.equal(enquiryPayload({ email: 'a@b.co' }).size_band, '');
+  assert.match(CONSENT, /^I agree that Greatstone can use these details to reply to my enquiry\. See our <a href="#go\/privacy">Privacy Policy<\/a>\.$/);
 });

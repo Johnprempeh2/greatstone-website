@@ -7,6 +7,7 @@ import { BRAND_TAGLINE, PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './lib/brand.
 import { LEGAL_NAME, COMPANY_NUMBER, REGISTERED_IN, REGISTERED_OFFICE, LEGAL_CONTACT_EMAIL, LEGAL_UPDATED, ICO_REGISTRATION_NUMBER } from './lib/legal-facts.mjs';
 import { config } from './puck.config.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
+import { INTEREST_OPTIONS, SIZE_BANDS, CONSENT } from './lib/enquiry.mjs';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
 export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
 export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect } from './lib/redirects-model.mjs';
@@ -30,7 +31,9 @@ const SCHEMA = 19;
 // Engineer" rendered in the same avatar card as Ben, John and Naa and read as a sixth colleague.
 // Bumped 6 Oct 2026 (GRE-659): Release 1 launch copy (GRE-652), the published legal pages (GRE-656) and the
 // K7 navigation. It also carries GRE-635's CTA change, which went out without a bump (plan GRE-638 §3.2).
-const SEED_VERSION = 20261006;
+// Bumped 11 Oct 2026 (GRE-660): the R1 copy from GRE-1373 draft 4 (GRE-1358 offer journey, packaging v9 claims,
+// services page renamed GS Agentic Manager). Without a bump, returning visitors keep the superseded offer.
+const SEED_VERSION = 20261012;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -78,7 +81,7 @@ export function DEFAULT_NAVIGATION() {
   //
   // Release 1 (GRE-659): GRE-652 K7 / decision D3. The launch pages must be reachable, so the bar is Home, How
   // We Help, Managed Automation, How We Work, Proof, About, Begin the Conversation. Executive Intelligence
-  // moves to the footer and the Home panels. Labels are the page titles (services = "Managed Automation",
+  // moves to the footer and the Home panels. Labels are the page titles (services = "GS Agentic Manager" since GRE-660,
   // method = "How We Work").
   return [
     navItem({ type: 'page', pageSlug: 'home' }),
@@ -128,7 +131,7 @@ export const LEGAL_SCAFFOLDS = [
     { h: 'Who we are', b: LEGAL_NAME + ' (“Greatstone”, “we”, “us”) runs greatstoneint.com and is the controller of the personal data described on this page. We are registered in ' + REGISTERED_IN + ' under company number ' + COMPANY_NUMBER + ', with our registered office at ' + REGISTERED_OFFICE + '.' + ICO_LINE + '<br><br>For anything about your data, email ' + LEGAL_MAIL + '. We will reply to privacy questions at that address.' },
     { h: 'What this page covers', b: 'This website and the enquiry form on it. If you become a client, we tell you separately how we handle data in that work.' },
     // GRE-659 PR A clears the enquiry IP after 30 days (migration 0036), so the 30-day wording applies.
-    { h: 'What we collect', b: '<strong>When you send an enquiry.</strong> Your work email, which we need to reply, plus anything else you choose to give: your name, company, sector and message. With it we save the date and time, the page you sent it from, and how you reached us on this visit (the site that referred you and any campaign tags in the link, such as utm_source). If you accepted analytics cookies, we also save how you first found us. We keep your IP address for 30 days to stop spam and abuse of the form.<br><br><strong>When you browse.</strong> If you accept analytics cookies, Google Analytics records how the site is used: pages viewed, device and browser type, and an approximate location. Google Analytics does not store your IP address. We never send your name or email to Google Analytics. If you decline, no analytics cookies are set. Google may still receive basic signals with no cookies and no identifier, such as the fact that a page loaded, which it uses to estimate overall traffic.<br><br>We do not ask for sensitive information such as health or political views. Please leave it out of your message.' },
+    { h: 'What we collect', b: '<strong>When you send an enquiry.</strong> Your work email, which we need to reply, plus anything else you choose to give: your name, company, organisation size, sector and message. With it we save the date and time, the page you sent it from, and how you reached us on this visit (the site that referred you and any campaign tags in the link, such as utm_source). If you accepted analytics cookies, we also save how you first found us. We keep your IP address for 30 days to stop spam and abuse of the form.<br><br><strong>When you browse.</strong> If you accept analytics cookies, Google Analytics records how the site is used: pages viewed, device and browser type, and an approximate location. Google Analytics does not store your IP address. We never send your name or email to Google Analytics. If you decline, no analytics cookies are set. Google may still receive basic signals with no cookies and no identifier, such as the fact that a page loaded, which it uses to estimate overall traffic.<br><br>We do not ask for sensitive information such as health or political views. Please leave it out of your message.' },
     { h: 'How we use it, and why we are allowed to', b: B + '<strong>Reply to your enquiry and discuss working together.</strong> Data used: enquiry details. Lawful basis: legitimate interests, answering a business that asked about our services. If you write to us for yourself, steps you asked us to take before a contract.<br>' + B + '<strong>Tell our team a new enquiry has arrived.</strong> Data used: enquiry details. Lawful basis: legitimate interests.<br>' + B + '<strong>See which campaigns and pages lead to enquiries.</strong> Data used: referrer, landing page, campaign tags. Lawful basis: legitimate interests.<br>' + B + '<strong>Protect the form from spam and abuse.</strong> Data used: IP address. Lawful basis: legitimate interests.<br>' + B + '<strong>Measure how the site is used.</strong> Data used: analytics data. Lawful basis: your consent, which you can withdraw at any time.<br><br>Sending an enquiry does not sign you up to marketing emails. We do not make automated decisions about you.' },
     { h: 'Who we share it with', b: 'We use a small number of providers to run the site. Each works under a contract that allows it to use your data only on our instructions.<br>' + B + '<strong>Supabase</strong> stores enquiries in our database, in London.<br>' + B + '<strong>Resend</strong> sends our team the email alert for each new enquiry.<br>' + B + '<strong>Pipedrive</strong> is where our team records an enquiry and follows it up.<br>' + B + '<strong>Netlify</strong> hosts the website and keeps short-lived server logs, which include IP addresses.<br>' + B + '<strong>Google</strong> runs Tag Manager and Analytics. It sets analytics cookies only if you accept them; if you decline, it receives only the basic signals described above.<br><br>We do not sell your data. We share it with others only if the law requires us to.' },
     { h: 'Data outside the UK', b: 'Some of these providers process data in the United States. Where they do, we rely on UK adequacy regulations (including the UK Extension to the EU-US Data Privacy Framework, where the provider is certified) or the ICO’s International Data Transfer Agreement or Addendum. Email us for details.' },
@@ -426,7 +429,7 @@ export function seedState() {
             { text: 'Strong organisations are not created by chance.', accent: false },
           ],
           // GRE-659: body from GRE-652 §4.1 (Harbor). States the agreed position plainly, as plan GRE-638 §5 asks.
-          body: 'We help organisations become stronger through practical digital transformation and AI-enabled automation: finding where your people’s time goes, automating the work that should run itself, and running it for you.',
+          body: 'We help organisations become stronger through practical digital transformation and AI-enabled automation: finding where your people’s time goes, then setting up the work that should run itself, with your people in charge.',
           align: 'left', size: 'full', meta: [], pillEyebrow: false, gridBackdrop: false,
           // The mark, beside the statement rather than behind it. The hero was a short approved
           // sentence alone in a 1240px column, so half the screen was empty and the opening read as
@@ -476,8 +479,8 @@ export function seedState() {
               text: 'For organisations that need senior specialist expertise alongside their own team, for a defined piece of work.',
               ctaLabel: 'Begin the Conversation', ctaHref: { kind: 'page', page: 'contact' } },
             { label: '', icon: 'technology', title: 'Invest in Technology That Matters',
-              text: 'For organisations ready to automate. We set up a team of AI agents on your own install, connect it to your tools and run it for you.',
-              ctaLabel: 'Explore Managed Automation', ctaHref: { kind: 'page', page: 'services' } },
+              text: 'For organisations ready to automate. Where it fits, we set up a digital office on your own instance: your people and AI agents in clear roles, with your team in charge.',
+              ctaLabel: 'Explore GS Agentic Manager', ctaHref: { kind: 'page', page: 'services' } },
           ],
         }),
         // Chapter 5, Building Confidence Before Change: Ben's heading, now carrying the four steps of how an
@@ -489,10 +492,10 @@ export function seedState() {
           columns: 'four', panelStyle: 'numbered', bodyClamp: 'none', coda: '',
           ctaLabel: '', ctaHref: '', headingLevel: 'h2',
           items: [
-            { label: '', icon: '', title: 'Conversation', text: 'Thirty minutes to understand your organisation and whether there is something worth exploring. No cost, no obligation.', ctaLabel: '', ctaHref: '' },
-            { label: '', icon: '', title: 'Diagnostic', text: 'We read your organisation across eight pillars and show you where the hours go and what to automate first.', ctaLabel: '', ctaHref: '' },
-            { label: '', icon: '', title: 'Set-up', text: 'We configure your agent team on your own install, connect your tools and agree where people approve the work.', ctaLabel: '', ctaHref: '' },
-            { label: '', icon: '', title: 'Managed service', text: 'We run, support and improve it month by month, and show you what the agents did.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Executive Discovery', text: 'We meet your leadership team to understand the organisation, its goals and what stands in the way. No cost, no obligation.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Initial assessment', text: 'We show where technology and AI could strengthen the organisation, with an indicative scope, before you commit to anything. No cost.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Deep Dive and blueprint', text: 'If you want to go further, we agree the scope in writing and you pay a deposit. We then read your organisation across eight pillars and give you an actionable blueprint that is yours to use, with or without us.', ctaLabel: '', ctaHref: '' },
+            { label: '', icon: '', title: 'Digital office, where it fits', text: 'Only where the blueprint shows it fits, we set up a digital office for your organisation as a separate engagement. Your people run the daily work.', ctaLabel: '', ctaHref: '' },
           ],
         }),
         // Proof teaser (GRE-652 §4.1), in place of chapter 7 "Trusted by Organisations That Expect More": no
@@ -554,21 +557,22 @@ export function seedState() {
             { label: 'Email', href: { kind: 'email', email: '' } },
           ],
         }),
-      ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes, automates the work that should run itself, and runs it for you.', ogImage: '' }),
+      ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes and sets up the work that should run itself, with your people in charge.', ogImage: '' }),
 
       // How We Work (GRE-652 §4.3). Slug stays 'method': it is the routing key for #go/method and #breakdown.
       method: seedPage('How We Work', 'stone', [
         blk('Hero', { kicker: 'How we work', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
-          body: 'Every engagement follows the same five steps. The Diagnostic in step two reads your organisation across eight pillars, so the work that follows is the work that actually moves you.',
+          body: 'Every engagement follows the same path, and you decide at each step whether to go on. The Deep Dive reads your organisation across eight pillars, so the work that follows is the work that actually moves you.',
           prompt: '', align: 'center', size: 'full',
           ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: PRIMARY_CTA_LABEL, ctaHref2: PRIMARY_CTA_HREF }),
         blk('Steps', { index: '', eyebrow: '', headline: '', highlight: '', body: '', align: 'left', numberStyle: 'badge',
           items: [
-            { title: 'Conversation', text: 'Free, thirty minutes, by call or video. We learn what you do and where time goes. You leave knowing whether a Diagnostic is worth it.' },
-            { title: 'Diagnostic', text: 'We score your organisation across the eight pillars and map the repeatable work. You receive a written read of where you stand and a short list of what to automate first, with what each item needs. Scope and fee are fixed before it starts; it is not an open-ended exploration.' },
-            { title: 'Proposal', text: 'A written scope: which agent team, which tools, which approval points, what you provide, what it costs and how we will measure it.' },
-            { title: 'Set-up', text: 'We create your install, set up the agent team, connect your tools and AI accounts, and run it on real work with you before go-live.' },
-            { title: 'Managed service', text: 'We host, support and update it. With Manage Plus, we also review it every month and improve it.' },
+            { title: 'Executive Discovery', text: 'Free. We meet your leadership team to understand the organisation, its ambitions and the challenges that matter most. You leave knowing whether there is something worth exploring.' },
+            { title: 'Initial assessment', text: 'Free. We show where technology and AI could strengthen the organisation, with demonstrations where they help, an indicative scope and a commercial perspective. Agreeing in principle carries no commitment.' },
+            { title: 'Agreement', text: 'If you want to go further, we agree the scope of the Deep Dive in writing and you pay a deposit before any paid work starts.' },
+            { title: 'Deep Dive', text: 'Paid, with a scope fixed before it starts. We read your organisation across the eight pillars with the people who do the work, and map where time and value are lost.' },
+            { title: 'Actionable blueprint', text: 'A blueprint of what to change, in what order and why. It is yours to use, with or without us.' },
+            { title: 'Digital office, where it fits', text: 'Only where the blueprint shows it fits, we set up a digital office for your organisation. Setup is charged separately, and your people run the daily work.' },
           ] }),
         blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
           body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: an honest read of the organisation across eight pillars, so the automation that follows is pointed at the right work.',
@@ -580,9 +584,9 @@ export function seedState() {
         blk('PillarCards', {}),
         blk('MaturityModel', {}),
         blk('Invite', { eyebrow: 'The first step', headline: 'Find out where you stand.', highlight: '',
-          body: 'It starts with a conversation. If a Diagnostic makes sense, we will tell you what it covers and what it costs before you commit.',
+          body: 'It starts with a free Executive Discovery. If a Deep Dive makes sense, we agree what it covers and what it costs in writing before you commit.',
           ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, variant: 'framed' }),
-      ], { title: 'How We Work · Eight Pillars · Greatstone International', description: 'Conversation, Diagnostic, proposal, set-up and managed service. The Diagnostic reads your organisation across eight pillars before anything is built.', ogImage: '' }),
+      ], { title: 'How We Work · Eight Pillars · Greatstone International', description: 'Executive Discovery, an initial assessment, a Deep Dive and an actionable blueprint, then a digital office only where it fits. The Deep Dive reads your organisation across eight pillars before anything is built.', ogImage: '' }),
 
       contact: seedPage('Begin the Conversation', 'none', [
         // Ben's section 8. The page is the primary route for organisations ready to engage, and his
@@ -611,7 +615,7 @@ export function seedState() {
           ctaLabel: '', ctaHref: '#', headingLevel: 'h2',
           items: [
             { label: '', icon: 'horizon', title: 'Schedule a Conversation',
-              text: 'Choose a time that suits your diary and we will meet you there. Thirty minutes is usually enough to understand whether there is something worth exploring together.',
+              text: 'Choose a time for a focused thirty-minute call. If there is something worth exploring, the next step is a free Executive Discovery.',
               ctaLabel: 'Schedule a Conversation', ctaHref: { kind: 'booking' }, gated: false },
             { label: '', icon: 'briefing', title: 'Send an Enquiry',
               text: 'Prefer to put it in writing first? Tell us what is on your mind using the form below and we will reply with a considered response rather than a brochure.',
@@ -624,20 +628,32 @@ export function seedState() {
               ctaLabel: 'Email Greatstone', ctaHref: { kind: 'email', email: '' }, gated: true },
           ],
         }),
-        // The enquiry route. The sector question is now OPTIONAL (his "no qualification barriers"), and the
-        // form's wording is editable rather than hardcoded. email stays empty until the address is settled;
-        // the block shows its fallback panel on submit either way.
+        // The enquiry route, worded as GRE-652 §4.6 (GRE-970) plus GRE-1373's optional interest choice. Only
+        // name and email are required (his "no qualification barriers"); the size band qualifies, it is not a
+        // price tier (GRE-1354). The sector question is hidden: §4.6 has none. email stays empty until the
+        // address is settled; the block falls back to the site address after sending either way.
+        // The "within one working day" promise is left out of every string until decision D6 (claim C23).
         blk('BookDeepDive', {
           // the form is the page's one interactive surface; a lifted band makes it read as one
           _section: { surface: 'panel', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
           eyebrow: '', headline: 'Send an Enquiry', highlight: '',
-          body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
-          submitLabel: 'Send Enquiry',
-          sectorLabel: 'Your sector (optional)', sectorPlaceholder: 'Select if it is useful context',
+          body: 'A few short questions. Only your name and email are required.',
+          submitLabel: 'Send enquiry',
+          nameLabel: 'Your name (required)', emailLabel: 'Work email (required)', companyLabel: 'Organisation',
+          sizeLabel: 'How many people work there?', sizePlaceholder: 'Select if it helps',
+          sizes: SIZE_BANDS.map((label) => ({ label })),
+          showSector: false, sectorLabel: 'Your sector (optional)', sectorPlaceholder: 'Select if it is useful context',
           sectorRequired: false,
-          messageLabel: 'What would you like to discuss?',
-          messagePlaceholder: 'A challenge you are weighing up, an ambition you are planning around, or simply a question you would like a considered answer to.',
+          interestLabel: 'What are you interested in? (optional)', interestPlaceholder: 'Select if it helps',
+          interests: INTEREST_OPTIONS.map((label) => ({ label })),
+          messageLabel: 'Which work would you most like to get time back from?',
+          messagePlaceholder: 'For example: weekly reporting, proposals, social content, research',
           subjectPrefix: 'Enquiry', anchorId: 'enquiry',
+          consent: CONSENT,
+          sentHeading: 'Thank you. Your enquiry has reached us.',
+          sentBody: 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
+          sentLinkLabel: 'Read how we work', sentLinkHref: '#go/method',
+          failedHeading: 'Your message did not reach us.', failedBody: 'Please email us at',
           asideKicker: 'What happens next',
           asideHeading: 'A considered reply, not a sales sequence.',
           asideBody: 'Every enquiry is read by the team. We reply with a view on whether we can genuinely help, and say so plainly when we cannot.',

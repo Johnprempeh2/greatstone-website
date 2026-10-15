@@ -58,8 +58,27 @@ test('the unverified claims (C10 to C19, C21, C22, C26) are off the R1 pages', (
 
 test('Home and Service state the agreed position (plan GRE-638 §5 acceptance test)', () => {
   assert.match(STORE, /practical digital transformation and AI-enabled automation/);
-  assert.match(JSON.stringify(page('services')), /team of AI agents/);
-  assert.equal(page('services').title, 'Managed Automation');
+  assert.match(JSON.stringify(page('services')), /a digital office/);
+  assert.equal(page('services').title, 'GS Agentic Manager');
+});
+
+// GRE-660 / GRE-1373: the copy follows the GRE-1358 offer journey and packaging v9, not the superseded GRE-652 offer
+test('no superseded offer, size tier, AI-route promise or "run it for you" on the seeded pages', () => {
+  const site = SEED_TEXT + STORE.slice(STORE.indexOf('export function seedState'), STORE.indexOf('function productsPage')).replace(/^\s*\/\/.*$/gm, '') + read('../../index.html');
+  for (const gone of [/Manage Plus/, /Managed Automation/, /managed service/i, /run(s|ning)? it for you/i, /run for you/i, /size of your organisation/i,
+    /pay (them|the AI providers) directly/i, /resell AI model usage/i, /accounts you own/i, /\bDiagnostic\b/, /\bGITA\b/, /\bGDXP\b/, /Explore Managed/]) {
+    assert.doesNotMatch(site, gone, String(gone));
+  }
+});
+
+test('How We Work and the service page tell the six-step journey; their CTAs open the enquiry with the package chosen', () => {
+  const method = STORE.slice(STORE.indexOf("method: seedPage("), STORE.indexOf("contact: seedPage("));
+  const titles = [...method.matchAll(/\{ title: '([^']+)', text:/g)].map((m) => m[1]);
+  assert.deepEqual(titles, ['Executive Discovery', 'Initial assessment', 'Agreement', 'Deep Dive', 'Actionable blueprint', 'Digital office, where it fits']);
+  const svc = ctas(page('services').blocks).filter((c) => c.label === 'Ask about GS Agentic Manager');
+  assert.equal(svc.length, 2);
+  for (const c of svc) assert.equal(c.href, '#enquire/gs-agentic-manager');
+  assert.match(STORE, /interests: INTEREST_OPTIONS\.map/);
 });
 
 test('the legal pages are published with the approved facts, and no drafting marker is left', () => {
@@ -94,4 +113,21 @@ test('R1 navigation follows GRE-652 K7', () => {
   const slugs = [...nav.matchAll(/pageSlug: '([\w-]+)'/g)].map((m) => m[1]);
   assert.deepEqual(slugs, ['home', 'how-we-help', 'services', 'method', 'proof', 'about', 'contact']);
   assert.match(nav, /pageSlug: 'about', label: 'About'/);
+});
+
+// GRE-970: the contact form carries GRE-652 §4.6, reconciled with GRE-1358 (interest choice kept, size band is
+// qualification only), and no reply-time promise until decision D6 (claim C23).
+test('the contact enquiry form follows GRE-652 §4.6 and makes no reply-time promise', () => {
+  const contact = STORE.slice(STORE.indexOf('contact: seedPage('), STORE.indexOf('// fold in the rest of the site'));
+  for (const s of ["nameLabel: 'Your name (required)'", "emailLabel: 'Work email (required)'", "companyLabel: 'Organisation'",
+    "sizeLabel: 'How many people work there?'", 'sizes: SIZE_BANDS.map', 'showSector: false', "submitLabel: 'Send enquiry'",
+    "messageLabel: 'Which work would you most like to get time back from?'",
+    "messagePlaceholder: 'For example: weekly reporting, proposals, social content, research'",
+    'consent: CONSENT', "sentHeading: 'Thank you. Your enquiry has reached us.'", "failedHeading: 'Your message did not reach us.'",
+    "sentLinkHref: '#go/method'", 'interests: INTEREST_OPTIONS.map']) {
+    assert.ok(contact.includes(s), s);
+  }
+  const code = contact.replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(code, /working day|within (one|a|24)|hours?\b.*reply/i, 'D6 is open');
+  assert.doesNotMatch(read('../blocks/BookDeepDive.jsx').replace(/^\s*\/\/.*$/gm, ''), /working day/i, 'D6 is open');
 });

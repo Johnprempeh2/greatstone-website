@@ -3,7 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { track, getConsent, getAttribution } from '../lib/analytics.js';
-import { makeEnquiryClient, enquiryPayload, fireLead, isEmail } from '../lib/enquiry.mjs';
+import { makeEnquiryClient, enquiryPayload, fireLead, validateEnquiry, INTEREST_OPTIONS, SIZE_BANDS, CONSENT, takePendingInterest } from '../lib/enquiry.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
@@ -38,15 +38,37 @@ export function BookDeepDive({
   messageLabel = 'Where does your week go?',
   messagePlaceholder = 'The reports nobody reads. The handoffs that get re-keyed. Tell us what quietly eats the hours.',
   subjectPrefix = 'Diagnostic request', anchorId = '',
+  // GRE-1373 §6: an optional interest choice. No options, no question, so pages saved before it render as they did.
+  interestLabel = 'What are you interested in? (optional)', interestPlaceholder = 'Select if it helps', interests,
+  // GRE-970 (copy GRE-652 §4.6): editable field labels, an optional size band (no options, no question), a
+  // switch for the sector question, the consent line and the two states after sending. The defaults for the
+  // labels are the earlier strings, so a page saved before them renders as it did.
+  nameLabel = 'Your name', emailLabel = 'Work email', companyLabel = 'Company',
+  sizeLabel = 'How many people work there?', sizePlaceholder = 'Select if it helps', sizes, showSector = true,
+  consent = '',
+  sentHeading = 'Thank you. Your enquiry has reached us.',
+  sentBody = 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
+  sentLinkLabel = 'Read how we work', sentLinkHref = '#go/method',
+  failedHeading = 'Your message did not reach us.', failedBody = 'Please email us at',
 }) {
   const editing = puck && puck.isEditing;
   // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
   // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
   const sectorList = (Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS)
     .map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
+  const labelsOf = (arr) => (Array.isArray(arr) ? arr : []).map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
+  const interestList = labelsOf(interests);
+  const sizeList = labelsOf(sizes);
+  // a "#enquire/<key>" CTA elsewhere chose an option before this page opened: take it once, then bring the form into view
+  const [initialInterest] = useState(() => (editing ? '' : takePendingInterest(interestList)));
+  useEffect(() => {
+    if (!initialInterest || !anchorId || typeof document === 'undefined') return;
+    const el = document.getElementById(anchorId);
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useReveal([asidePoints.length]);
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'failed'
-  const [emailError, setEmailError] = useState('');
+  const [errors, setErrors] = useState({}); // { name?, email? } from validateEnquiry
   const [fallbackHref, setFallbackHref] = useState('');
   const sent = status === 'sent' || status === 'failed';
   const uid = useId(); // per-instance id prefix so two BookDeepDive blocks on one page never collide
@@ -67,7 +89,9 @@ export function BookDeepDive({
     if (nm) parts.push('Name: ' + nm);
     if (company) parts.push('Company: ' + company);
     if (g('email')) parts.push('Work email: ' + g('email'));
+    if (g('size')) parts.push(sizeLabel + ' ' + g('size'));
     if (g('industry')) parts.push(sectorLabel + ': ' + g('industry'));
+    if (g('interest')) parts.push('Interest: ' + g('interest'));
     parts.push('', messageLabel, g('week') || '(not specified)');
     return to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(parts.join('\n'));
   };
@@ -76,14 +100,19 @@ export function BookDeepDive({
     if (status === 'sending' || editing) return;
     const fd = new FormData(e.currentTarget);
     const g = (k) => (fd.get(k) || '').toString().trim();
-    if (!isEmail(g('email'))) { setEmailError('Enter a work email we can reply to.'); return; }
-    setEmailError('');
+    const found = validateEnquiry({ name: g('name'), email: g('email') });
+    setErrors(found);
+    if (found.name || found.email) {
+      const first = e.currentTarget.querySelector(found.name ? '[name="name"]' : '[name="email"]');
+      if (first && first.focus) first.focus();
+      return;
+    }
     setFallbackHref(composeMailto(g));
     setStatus('sending');
     const attribution = getAttribution();
     const page = typeof window !== 'undefined' ? window.location.pathname + window.location.hash : '';
     const out = await client.send(enquiryPayload({
-      name: g('name'), company: g('company'), email: g('email'), industry: g('industry'), message: g('week'), website: g('website'),
+      name: g('name'), company: g('company'), email: g('email'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'),
     }, attribution, page));
     if (out.ok) fireLead({ track, getConsent, attribution });
     setStatus(out.ok ? 'sent' : 'failed');
@@ -98,15 +127,15 @@ export function BookDeepDive({
             <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-book-card-intro muted" placeholder="Body…" />
             {status === 'sent' ? (
               <div className="book-sent" role="status" aria-live="polite">
-                <h3 ref={sentRef} tabIndex={-1}>Thank you. We have your enquiry.</h3>
-                <p>The team reads every enquiry and will reply to you by email. You can also write to us directly:</p>
-                <a className="b-cta" href={safeMailto(replyTo)}>{replyTo}</a>
+                <h3 ref={sentRef} tabIndex={-1}>{sentHeading}</h3>
+                <p>{sentBody} <a className="b-book-inline" href={safeMailto(replyTo)}>{replyTo}</a>.</p>
+                {sentLinkLabel && sentLinkHref ? <a className="b-cta ghost" href={sentLinkHref}>{sentLinkLabel}<Arrow /></a> : null}
               </div>
             ) : status === 'failed' ? (
               <div className="book-sent" role="alert">
-                <h3 ref={sentRef} tabIndex={-1}>We could not send your enquiry.</h3>
-                <p>Please email us instead. The link below opens an email with your details filled in, ready to send.</p>
-                <a className="b-cta" href={fallbackHref || safeMailto(replyTo)}>{replyTo}</a>
+                <h3 ref={sentRef} tabIndex={-1}>{failedHeading}</h3>
+                {/* the link opens an email with the visitor's answers already filled in */}
+                <p>{failedBody} <a className="b-book-inline" href={fallbackHref || safeMailto(replyTo)}>{replyTo}</a>.</p>
               </div>
             ) : (
               <>
@@ -119,21 +148,38 @@ export function BookDeepDive({
                 {/* honeypot: hidden from people and screen readers; a bot that fills it is dropped by the function */}
                 <div className="b-book-hp" aria-hidden="true"><label htmlFor={uid + 'website'}>Website</label><input id={uid + 'website'} name="website" type="text" tabIndex={-1} autoComplete="off" /></div>
                 <div className="field-row">
-                  <div className="field"><label htmlFor={uid + 'name'}>Your name</label><input className="fld" id={uid + 'name'} name="name" type="text" placeholder="Jane Stonewell" autoComplete="name" /></div>
-                  <div className="field"><label htmlFor={uid + 'company'}>Company</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
+                  <div className="field"><label htmlFor={uid + 'name'}>{nameLabel}</label><input className="fld" id={uid + 'name'} name="name" type="text" required aria-required="true" placeholder="Jane Stonewell" autoComplete="name"
+                    onChange={() => { if (errors.name) setErrors((x) => ({ ...x, name: '' })); }} aria-invalid={errors.name ? 'true' : undefined} aria-describedby={errors.name ? uid + 'name-err' : undefined} />
+                    {errors.name ? <p className="b-book-err" id={uid + 'name-err'} role="alert">{errors.name}</p> : null}</div>
+                  <div className="field"><label htmlFor={uid + 'email'}>{emailLabel}</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email"
+                    onChange={() => { if (errors.email) setErrors((x) => ({ ...x, email: '' })); }} aria-invalid={errors.email ? 'true' : undefined} aria-describedby={errors.email ? uid + 'email-err' : undefined} />
+                    {errors.email ? <p className="b-book-err" id={uid + 'email-err'} role="alert">{errors.email}</p> : null}</div>
                 </div>
-                <div className="field"><label htmlFor={uid + 'email'}>Work email</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email"
-                  onChange={() => { if (emailError) setEmailError(''); }} aria-invalid={emailError ? 'true' : undefined} aria-describedby={emailError ? uid + 'email-err' : undefined} />
-                  {emailError ? <p className="b-book-err" id={uid + 'email-err'} role="alert">{emailError}</p> : null}</div>
+                <div className="field-row field-row-end">
+                  <div className="field"><label htmlFor={uid + 'company'}>{companyLabel}</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
+                  {sizeList.length ? (
+                    <div className="field"><label htmlFor={uid + 'size'}>{sizeLabel}</label>
+                      <select className="fld" id={uid + 'size'} name="size" defaultValue=""><option value="">{sizePlaceholder}</option>{sizeList.map((s) => <option key={s}>{s}</option>)}</select>
+                    </div>
+                  ) : null}
+                </div>
                 {/* Optional by default now. Forcing a visitor to classify their own sector before they may
                     say hello is a qualification barrier, and the placeholder stays selectable so choosing
-                    nothing is a real answer rather than a dead first option. */}
-                <div className="field"><label htmlFor={uid + 'industry'}>{sectorLabel}</label>
-                  <select className="fld" id={uid + 'industry'} name="industry" {...(sectorRequired ? { required: true, 'aria-required': 'true' } : null)} defaultValue=""><option value="" disabled={!!sectorRequired}>{sectorPlaceholder}</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
-                </div>
+                    nothing is a real answer rather than a dead first option. The contact page hides it (§4.6). */}
+                {showSector ? (
+                  <div className="field"><label htmlFor={uid + 'industry'}>{sectorLabel}</label>
+                    <select className="fld" id={uid + 'industry'} name="industry" {...(sectorRequired ? { required: true, 'aria-required': 'true' } : null)} defaultValue=""><option value="" disabled={!!sectorRequired}>{sectorPlaceholder}</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
+                  </div>
+                ) : null}
+                {interestList.length ? (
+                  <div className="field"><label htmlFor={uid + 'interest'}>{interestLabel}</label>
+                    <select className="fld" id={uid + 'interest'} name="interest" defaultValue={initialInterest}><option value="">{interestPlaceholder}</option>{interestList.map((s) => <option key={s}>{s}</option>)}</select>
+                  </div>
+                ) : null}
                 <div className="field"><label htmlFor={uid + 'week'}>{messageLabel}</label>
                   <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} />
                 </div>
+                {editing || consent ? <EditableText editing={editing} id={id} field="consent" value={consent} as="p" className="b-book-consent" placeholder="Consent line…" /> : null}
                 <button className="b-cta book-submit" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : submitLabel}<Arrow /></button>
               </form>
               </>
@@ -176,7 +222,10 @@ export const css = `
 .book-card{padding:clamp(26px,3.4vw,44px)}
 .field{margin-bottom:1.2rem}.field:last-of-type{margin-bottom:0}
 .field label{display:block;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-muted);margin-bottom:.5rem}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem}
+.field-row .field{margin-bottom:0}
+/* a label that wraps (the size question) must not push its input out of line with its neighbour's */
+.field-row-end{align-items:end}
 @media(max-width:520px){.field-row{grid-template-columns:1fr}}
 .fld{width:100%;font-family:inherit;font-size:.98rem;color:var(--gs-text);background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);border-radius:10px;padding:.8em .9em;transition:border-color .25s var(--gs-ease),background .25s var(--gs-ease),box-shadow .25s var(--gs-ease)}
 .fld::placeholder{color:var(--gs-faint)}
@@ -190,6 +239,9 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .b-book-or::before,.b-book-or::after{content:"";flex:1;height:1px;background:var(--gs-border-soft)}
 .book-submit[disabled]{opacity:.7;cursor:progress}
 .b-book-err{margin:.45rem 0 0;font-size:.86rem;color:#ffb4a8}
+.b-book-consent{margin:1.4rem 0 0;font-size:.86rem;line-height:1.55;color:var(--gs-text-muted)}
+.b-book-consent a,.b-book-inline{color:var(--gs-accent);border-bottom:1px solid var(--gs-border);overflow-wrap:anywhere}
+.book-sent .b-cta{margin-top:4px}
 .b-book-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .book-sent{text-align:center;padding:18px 0}
 .book-sent h3{font-size:1.4rem;font-weight:800}
@@ -217,14 +269,31 @@ export const puck = {
     highlight: { type: 'text', label: 'Highlighted word', contentEditable: true },
     body: { type: 'custom', label: 'Body', render: (props) => <RichTextField {...props} /> },
     submitLabel: { type: 'text', label: 'Submit button' },
+    nameLabel: { type: 'text', label: 'Name label' },
+    emailLabel: { type: 'text', label: 'Email label' },
+    companyLabel: { type: 'text', label: 'Organisation label' },
+    sizeLabel: { type: 'text', label: 'Size question label' },
+    sizePlaceholder: { type: 'text', label: 'Size question placeholder' },
+    showSector: { type: 'radio', label: 'Sector question', options: [
+      { label: 'Show', value: true }, { label: 'Hide', value: false },
+    ]},
     sectorLabel: { type: 'text', label: 'Sector question label' },
     sectorPlaceholder: { type: 'text', label: 'Sector question placeholder' },
     sectorRequired: { type: 'radio', label: 'Sector answer is', options: [
       { label: 'Optional', value: false }, { label: 'Required', value: true },
     ]},
+    interestLabel: { type: 'text', label: 'Interest question label' },
+    interestPlaceholder: { type: 'text', label: 'Interest question placeholder' },
     messageLabel: { type: 'text', label: 'Message question label' },
     messagePlaceholder: { type: 'text', label: 'Message placeholder' },
     subjectPrefix: { type: 'text', label: 'Email subject prefix' },
+    consent: { type: 'custom', label: 'Consent line (above the button)', render: (props) => <RichTextField {...props} /> },
+    sentHeading: { type: 'text', label: 'After sending: heading' },
+    sentBody: { type: 'textarea', label: 'After sending: text (the contact address follows it)' },
+    sentLinkLabel: { type: 'text', label: 'After sending: link label' },
+    sentLinkHref: { type: 'text', label: 'After sending: link' },
+    failedHeading: { type: 'text', label: 'Send failed: heading' },
+    failedBody: { type: 'text', label: 'Send failed: text (the contact address follows it)' },
     anchorId: { type: 'text', label: 'Anchor id (lets a link jump here, e.g. enquiry)' },
     asideKicker: { type: 'custom', label: 'Aside kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     asideHeading: { type: 'custom', label: 'Aside heading', render: (props) => <RichTextField {...props} variant="heading" /> },
@@ -242,6 +311,18 @@ export const puck = {
       defaultItemProps: { icon: 'check', title: 'A point', text: 'detail.' },
       getItemSummary: (item) => item.title || 'Point',
     },
+    sizes: {
+      type: 'array', label: 'Size options (dropdown; empty hides the question)',
+      arrayFields: { label: { type: 'text', label: 'Option' } },
+      defaultItemProps: { label: 'Option' },
+      getItemSummary: (item) => item.label || 'Option',
+    },
+    interests: {
+      type: 'array', label: 'Interest options (dropdown; empty hides the question)',
+      arrayFields: { label: { type: 'text', label: 'Option' } },
+      defaultItemProps: { label: 'Option' },
+      getItemSummary: (item) => item.label || 'Option',
+    },
     sectors: {
       type: 'array', label: 'Industry options (dropdown)',
       arrayFields: { label: { type: 'text', label: 'Sector' } },
@@ -256,10 +337,18 @@ export const puck = {
     eyebrow: '',
     headline: 'Send an Enquiry', highlight: '',
     body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
-    submitLabel: 'Send Enquiry',
+    submitLabel: 'Send enquiry',
+    nameLabel: 'Your name (required)', emailLabel: 'Work email (required)', companyLabel: 'Organisation',
+    sizeLabel: 'How many people work there?', sizePlaceholder: 'Select if it helps', sizes: SIZE_BANDS.map((label) => ({ label })),
+    showSector: false,
     sectorLabel: 'Industry', sectorPlaceholder: 'Choose your sector…', sectorRequired: false,
-    messageLabel: 'What would you like to discuss?',
-    messagePlaceholder: 'A challenge you are weighing up, an ambition you are planning around, or simply a question you would like a considered answer to.',
+    messageLabel: 'Which work would you most like to get time back from?',
+    messagePlaceholder: 'For example: weekly reporting, proposals, social content, research',
+    consent: CONSENT,
+    sentHeading: 'Thank you. Your enquiry has reached us.',
+    sentBody: 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
+    sentLinkLabel: 'Read how we work', sentLinkHref: '#go/method',
+    failedHeading: 'Your message did not reach us.', failedBody: 'Please email us at',
     subjectPrefix: 'Enquiry', anchorId: '',
     asideKicker: 'What happens next',
     asideHeading: 'A considered reply, not a sales sequence.',
@@ -269,6 +358,8 @@ export const puck = {
       { icon: 'clock', title: 'A considered response', text: 'We would rather reply well than reply instantly.' },
       { icon: 'scan', title: 'No obligation', text: 'A conversation is a conversation. Nothing follows it unless you want it to.' },
     ],
+    interestLabel: 'What are you interested in? (optional)', interestPlaceholder: 'Select if it helps',
+    interests: INTEREST_OPTIONS.map((label) => ({ label })),
     sectors: DEFAULT_SECTORS.map((label) => ({ label })),
     email: 'dx@greatstonesoftware.co.uk',
   },
