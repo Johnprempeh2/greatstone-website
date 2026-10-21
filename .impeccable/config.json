@@ -1,0 +1,12 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      { "rule": "overused-font", "value": "Montserrat", "files": [], "reason": "Montserrat is the brand face (greatstone-brand; GRE-1821 ignore 1)" },
+      { "rule": "kicker-above-heading", "value": "*", "files": ["src/two-doors.css", "src/blocks/*.jsx"], "reason": "Kickers are canonical in the brand (11px lime, 0.32em); GRE-1821 ignore 2" },
+      { "rule": "radial-halo", "value": "#1b5039", "files": ["src/site.css"], "reason": "Brand emerald atmosphere; GRE-1821 ignore 3" },
+      { "rule": "repeating-stripes-gradient", "value": "*", "files": ["src/two-doors.css"], "reason": "Tide still (.td-tide) is a brand motif; GRE-1821 ignore 4" }
+    ]
+  }
+}

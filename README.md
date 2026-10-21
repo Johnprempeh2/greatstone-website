@@ -32,6 +32,12 @@ npm run build    # production build to dist/ (base path /puck-proof/)
 | `src/store.js` | Page store + page/asset CRUD. localStorage today; the same shape Laravel will serve. |
 | `src/site.css` | The real shared stylesheet, copied from the live site (tokens, type, footer). |
 
+## Before a pull request
+
+Run `npm run design:detect` and post its summary on the task and in the PR, one line per finding
+(fixed or justified). This is required for every website PR. See
+[docs/design-detector.md](docs/design-detector.md).
+
 ## Editing
 
 Visit `/#admin` to sign in. Editing only appears once signed in; the public site is read-only.
