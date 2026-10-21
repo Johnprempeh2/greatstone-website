@@ -84,15 +84,16 @@ export function DEFAULT_NAVIGATION() {
   // moves to the footer and the Home panels. Labels are the page titles (services = "GS Agentic Manager" since GRE-660,
   // method = "How We Work").
   return [
-    navItem({ type: 'page', pageSlug: 'home' }),
-    navItem({ type: 'page', pageSlug: 'how-we-help' }),
-    navItem({ type: 'page', pageSlug: 'services' }),
-    navItem({ type: 'page', pageSlug: 'method' }),
-    navItem({ type: 'page', pageSlug: 'proof' }),
-    // NOTE: no 'products' entry. Header.jsx:263 already appends a hardcoded "Products" storefront link
-    // after the configured nav, so listing it here rendered it twice. Caught by screenshot, not by tests.
-    navItem({ type: 'page', pageSlug: 'about', label: 'About' }), // K7's label; the page keeps its title
-    navItem({ type: 'page', pageSlug: 'contact' }),
+    navItem({ type: 'page', pageSlug: 'home', label: 'DX Consultancy' }),
+    navItem({ type: 'page', pageSlug: 'dev-tools', label: 'DX Dev Tools' }),
+    navItem({ type: 'page', pageSlug: 'proof', label: 'Proof' }),
+    navItem({ type: 'page', pageSlug: 'about', label: 'About' }),
+    navItem({ type: 'page', pageSlug: 'insights', label: 'Insights' }),
+    navItem({ type: 'group', label: 'More', children: [
+      navItem({ type: 'page', pageSlug: 'how-we-help' }),
+      navItem({ type: 'page', pageSlug: 'method' }),
+      navItem({ type: 'page', pageSlug: 'services' }),
+    ] }),
   ];
 }
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
@@ -106,6 +107,19 @@ const blk = (type, props) => {
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
   return { title, background, publishedBackground: background, status, seo: seo || { title: title + ' · Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
+}
+
+function twoDoorsHomePage() {
+  return seedPage('Home', 'tide', [blk('TwoDoors', {}), blk('TwoDoorsStory', {}), blk('TwoDoorsProof', {}), blk('TwoDoorsTools', {})], {
+    title: 'Greatstone International · Two ways to work with us',
+    description: 'Explore DX Consultancy and DX Dev Tools from Greatstone International.', ogImage: '',
+  });
+}
+function devToolsPage() {
+  return seedPage('DX Dev Tools', 'none', [blk('DevTools', {})], {
+    title: 'DX Dev Tools · Greatstone International',
+    description: 'Explore developer components and SDKs through Greatstone International.', ogImage: '',
+  });
 }
 
 // the editorial state machine: who can move where (the future Laravel backend enforces this
@@ -670,17 +684,19 @@ export function seedState() {
   seedPages.forEach((p) => {
     pages[p.slug] = seedPage(p.title, p.background, p.blocks.map((b) => blk(b.type, b.props)), p.seo);
   });
+  pages.home = twoDoorsHomePage();
+  pages['dev-tools'] = devToolsPage();
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
   // footer order: the R1 launch pages first (as in the nav), then the secondary pages, then legal
-  const order = ['home', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  const order = ['home', 'dev-tools', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
   // The one-time migrate() inserts below are for stores saved BEFORE they existed. A fresh seed is already
   // current, so mark them done. Without this, a visitor's SECOND load ran them and put the time-savings
   // calculator, comparison matrix and catalogue back on the Service page that GRE-652 took them off.
-  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true };
+  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true };
   return { schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
@@ -726,6 +742,18 @@ function deEmDash(v) {
 
 function migrate(state) {
   if (!state || !state.pages) return seedState();
+  // Apply the accepted front door once to saved studio data, without a seed-version reset
+  // of unrelated R1 pages. Keep the previous home in History for editor recovery.
+  if (!state._twoDoorsV15Blocks) {
+    const previous = state.pages.home;
+    const next = twoDoorsHomePage();
+    if (previous) next.versions = pushVersion(previous.versions || [], { label: 'Before Two Doors v15', data: previous.data, by: null, status: previous.status });
+    state.pages.home = next;
+    state.pages['dev-tools'] = devToolsPage();
+    state.order = ['home', 'dev-tools', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dev-tools')];
+    state.navigation = DEFAULT_NAVIGATION();
+    state._twoDoorsV15Blocks = true;
+  }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
     // voice: sweep banned em dashes from persisted CONTENT (draft + live projection together, so no

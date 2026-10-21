@@ -168,15 +168,18 @@ export default function Header({ order, pages, navigation, current, query, onSea
   // jumping straight to Calendly. Keep the GA4 value (book_deep_dive) stable so history doesn't fragment.
   const goBook = (where) => { track('cta_click', { cta: 'book_deep_dive', cta_location: where }); onNavigate(BOOK_PAGE); };
   // the collapsed toggle should name the user's ACTUAL location, including the Products/account routes
-  const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (pages[current] && pages[current].title) || 'Menu';
+  const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (current === 'home' || current === 'dev-tools') ? 'Menu' : (pages[current] && pages[current].title) || 'Menu';
 
   // the inline bar's items in priority order (the configured nav); the end of the list is the first to move
   // into "More". The storefront is not a launch page, so it always sits in "More" and the bar stays light.
   // The booking page's nav entry also sits in "More": the lime CTA beside the bar already goes there, and two
   // copies of the same action side by side compete (GRE-659 review). The phone menu keeps the full tree.
   const isBookLeaf = (it) => it.kind === 'page' && it.slug === BOOK_PAGE;
-  const leaves = navModel.filter((it) => !isBookLeaf(it));
-  const pinnedMore = [...navModel.filter(isBookLeaf), ...(onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [])];
+  const baseLeaves = navModel.filter((it) => !isBookLeaf(it));
+  const pins = [...navModel.filter(isBookLeaf), ...(onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [])];
+  const hasNamedMore = baseLeaves.some((it) => it.kind === 'group' && it.label === 'More');
+  const leaves = hasNamedMore ? baseLeaves.map((it) => it.kind === 'group' && it.label === 'More' ? { ...it, members: [...it.members, ...pins] } : it) : baseLeaves;
+  const pinnedMore = hasNamedMore ? [] : pins;
   const leavesKey = leaves.map((l) => l.kind + ':' + l.label).join('|') + '|' + pinnedMore.length;
 
   const wrapRef = useRef(null);
@@ -259,7 +262,7 @@ export default function Header({ order, pages, navigation, current, query, onSea
   );
 
   return (
-    <header className="gs-header">
+    <header className={'gs-header' + (current === 'home' || current === 'dev-tools' ? ' td-header' : '')}>
       <a className="gs-logo" href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
         <picture>
           {logoSrc === LOGO && <source type="image/webp" srcSet={LOGO_WEBP} />}

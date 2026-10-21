@@ -108,10 +108,12 @@ test('launch:check fails until the ICO number is set, then passes', () => {
   assert.equal(legalLaunchGaps({ ico: '[GAP 4]' }).length, 1);
 });
 
-test('R1 navigation follows GRE-652 K7', () => {
+test('Two Doors navigation keeps the R1 pages available in More', () => {
   const nav = STORE.slice(STORE.indexOf('export function DEFAULT_NAVIGATION'), STORE.indexOf('const blk ='));
   const slugs = [...nav.matchAll(/pageSlug: '([\w-]+)'/g)].map((m) => m[1]);
-  assert.deepEqual(slugs, ['home', 'how-we-help', 'services', 'method', 'proof', 'about', 'contact']);
+  assert.deepEqual(slugs, ['home', 'dev-tools', 'proof', 'about', 'insights', 'how-we-help', 'method', 'services']);
+  assert.match(nav, /pageSlug: 'home', label: 'DX Consultancy'/);
+  assert.match(nav, /pageSlug: 'dev-tools', label: 'DX Dev Tools'/);
   assert.match(nav, /pageSlug: 'about', label: 'About'/);
 });
 
