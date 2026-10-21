@@ -1,8 +1,8 @@
 // Contact enquiry (GRE-654): the browser half of the BookDeepDive form. Pure apart from the injected fetch,
-// so `node --test` covers it. The `enquiry` edge function saves the enquiry and alerts the owner; logic and
-// limits are in supabase/functions/_shared/enquiry.mjs.
-//   POST /functions/v1/enquiry { name, company, email, size_band, industry, message, attribution: { first, last }, page, website }
-//   (the optional interest choice is the first line of `message`)
+// so `node --test` covers it. The `enquiry` Netlify Function (netlify/functions/enquiry.mjs, GRE-1794) saves
+// the enquiry on Netlify Database and alerts the owner; logic and limits are in supabase/functions/_shared/enquiry.mjs.
+//   POST /api/enquiry { name, company, email, size_band, industry, message, attribution: { first, last }, page, website, turnstile? }
+//   (the optional interest choice is the first line of `message`; `turnstile` is the Cloudflare token when the site has a key)
 //   → { ok: true, ref } | non-2xx { ok: false, error }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -47,20 +47,23 @@ export function enquiryPayload(fields = {}, attribution = {}, page = '') {
     size_band: clean(fields.size_band), industry: clean(fields.industry), message: withInterest(fields.message, fields.interest),
     attribution: { first: (attribution && attribution.first) || null, last: (attribution && attribution.last) || null },
     page: clean(page).slice(0, 200), website: clean(fields.website),
+    ...(clean(fields.turnstile) ? { turnstile: clean(fields.turnstile) } : {}),
   };
 }
 
-// One client for the edge function. Resolves { ok: true, ref } or { ok: false } and never throws: the block
-// shows the contact address on any failure, including no backend configured (the editor canvas, local dev).
-export function makeEnquiryClient({ url, anonKey, fetchImpl = (...a) => fetch(...a) } = {}) {
+// One client for the enquiry function, on the site's own origin. Resolves { ok: true, ref } or { ok: false } and
+// never throws: the block shows the contact address on any failure, including no function there (the editor
+// canvas, `vite` local dev).
+export const ENQUIRY_ENDPOINT = '/api/enquiry';
+export function makeEnquiryClient({ endpoint = ENQUIRY_ENDPOINT, fetchImpl = (...a) => fetch(...a) } = {}) {
   return {
-    configured: !!(url && anonKey),
+    configured: !!endpoint,
     async send(payload) {
-      if (!url || !anonKey) return { ok: false };
+      if (!endpoint) return { ok: false };
       try {
-        const res = await fetchImpl(url.replace(/\/$/, '') + '/functions/v1/enquiry', {
+        const res = await fetchImpl(endpoint, {
           method: 'POST',
-          headers: { 'content-type': 'application/json', apikey: anonKey, authorization: 'Bearer ' + anonKey },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(payload),
         });
         let out = null;

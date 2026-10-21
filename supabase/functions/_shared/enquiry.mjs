@@ -1,9 +1,10 @@
 // Contact enquiry (GRE-654, release plan GRE-638 rev 2 §3.4): the row the `enquiry` edge function saves in
 // service_inquiries (0023, attribution and industry from 0035, size band from 0040), the internal Resend alert, and the one
 // handler that ties them together. Pure: the database and the email are injected, so
-// `node --test` covers every path and the edge function imports the same code.
+// `node --test` covers every path, and both the Netlify Function (netlify/functions/lib/enquiry-handler.mjs,
+// GRE-1794, the live path) and the old edge function import the same code.
 // Wire contract with the BookDeepDive block (src/lib/enquiry.mjs):
-//   POST /functions/v1/enquiry  { name?, company?, email, size_band?, industry?, message?, attribution?: { first, last }, page?, website? }
+//   POST /api/enquiry  { name?, company?, email, size_band?, industry?, message?, attribution?: { first, last }, page?, website? }
 // The form asks for a name too (GRE-970), but only the email is required here: a visitor on an older page
 // still reaches us. The optional interest choice arrives as the message's first line ("Interest: …").
 //   → 200 { ok: true, ref } when the row is saved or the alert went (the lead is on record)

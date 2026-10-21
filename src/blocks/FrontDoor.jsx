@@ -6,6 +6,7 @@ import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { track, getConsent, getAttribution } from '../lib/analytics.js';
 import { openBooking } from '../lib/booking.js';
+import { Turnstile, TURNSTILE_KEY } from './Turnstile.jsx';
 import {
   TEAM_SIZES, OTHER, LIMITS, EVEREST_OPENING, NOTICE_INTAKE, CONSENT_LABEL, NOTICE_LEAD,
   addWord, validateIntake, validateContact, orderAgents, teamAvatars, readGaClientId, makeFrontDoorClient, makeFunnel,
@@ -20,7 +21,6 @@ import {
 
 const ime = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
 const client = makeFrontDoorClient({ url: ime.VITE_SUPABASE_URL || '', anonKey: ime.VITE_SUPABASE_ANON_KEY || '' });
-const TURNSTILE_KEY = ime.VITE_TURNSTILE_SITE_KEY || '';
 const AVATARS = 6; // monogram tints until the cap-v1 images land (B5, GRE-465)
 
 // events only after the visitor accepted analytics in the ConsentBanner (spec section 3)
@@ -35,40 +35,6 @@ function source() {
     firstTouch: getAttribution().first,
     gaClientId: getConsent() === 'granted' ? readGaClientId(document.cookie) : null,
   };
-}
-
-// Cloudflare Turnstile, loaded only when a site key is configured and only once the intake is open.
-let turnstileLoader = null;
-function loadTurnstile() {
-  if (window.turnstile) return Promise.resolve(window.turnstile);
-  if (!turnstileLoader) {
-    turnstileLoader = new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-      s.async = true;
-      s.onload = () => resolve(window.turnstile);
-      s.onerror = () => { turnstileLoader = null; reject(new Error('turnstile failed to load')); };
-      document.head.appendChild(s);
-    });
-  }
-  return turnstileLoader;
-}
-
-function Turnstile({ onToken }) {
-  const host = useRef(null);
-  useEffect(() => {
-    if (!TURNSTILE_KEY) return undefined;
-    let widget = null, dead = false;
-    loadTurnstile().then((ts) => {
-      if (dead || !host.current) return;
-      widget = ts.render(host.current, {
-        sitekey: TURNSTILE_KEY, theme: 'dark',
-        callback: (t) => onToken(t), 'expired-callback': () => onToken(null), 'error-callback': () => onToken(null),
-      });
-    }).catch(() => onToken(null));
-    return () => { dead = true; if (widget != null && window.turnstile) { try { window.turnstile.remove(widget); } catch (e) { /* gone */ } } };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return TURNSTILE_KEY ? <div className="b-fd-turnstile" ref={host} /> : null;
 }
 
 // focus the new screen's heading so keyboard and screen-reader users land on it
