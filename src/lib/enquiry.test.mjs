@@ -43,17 +43,22 @@ test('isEmail', () => {
   assert.equal(isEmail(''), false);
 });
 
-test('client posts to the enquiry function with the anon key and reads ok', async () => {
+test('client posts to the site\'s own /api/enquiry with no Supabase key, and reads ok', async () => {
   let seen = null;
   const client = makeEnquiryClient({
-    url: 'https://proj.supabase.co/', anonKey: 'anon',
     fetchImpl: async (u, init) => { seen = { u, init }; return { ok: true, json: async () => ({ ok: true, ref: 'abcd1234' }) }; },
   });
   const out = await client.send({ email: 'a@b.co' });
   assert.deepEqual(out, { ok: true, ref: 'abcd1234' });
-  assert.equal(seen.u, 'https://proj.supabase.co/functions/v1/enquiry');
-  assert.equal(seen.init.headers.apikey, 'anon');
+  assert.equal(seen.u, '/api/enquiry');
+  assert.deepEqual(Object.keys(seen.init.headers), ['content-type']);
+  assert.doesNotMatch(seen.u + JSON.stringify(seen.init), /supabase|apikey|authorization/i);
   assert.deepEqual(JSON.parse(seen.init.body), { email: 'a@b.co' });
+});
+
+test('the Turnstile token travels only when there is one', () => {
+  assert.equal(enquiryPayload({ email: 'a@b.co', turnstile: ' tok ' }).turnstile, 'tok');
+  assert.equal('turnstile' in enquiryPayload({ email: 'a@b.co' }), false);
 });
 
 test('client failure paths all resolve { ok: false } so the page shows the contact address', async () => {
@@ -64,9 +69,9 @@ test('client failure paths all resolve { ok: false } so the page shows the conta
     async () => ({ ok: true, json: async () => ({ ok: false }) }),
   ];
   for (const fetchImpl of cases) {
-    assert.deepEqual(await makeEnquiryClient({ url: 'https://p', anonKey: 'k', fetchImpl }).send({}), { ok: false });
+    assert.deepEqual(await makeEnquiryClient({ fetchImpl }).send({}), { ok: false });
   }
-  const none = makeEnquiryClient({ url: '', anonKey: '' });
+  const none = makeEnquiryClient({ endpoint: '' });
   assert.equal(none.configured, false);
   assert.deepEqual(await none.send({}), { ok: false });
 });

@@ -6,9 +6,10 @@ import { track, getConsent, getAttribution } from '../lib/analytics.js';
 import { makeEnquiryClient, enquiryPayload, fireLead, validateEnquiry, INTEREST_OPTIONS, SIZE_BANDS, CONSENT, takePendingInterest } from '../lib/enquiry.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
+import { Turnstile, TURNSTILE_KEY } from './Turnstile.jsx';
 
-const ime = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-const client = makeEnquiryClient({ url: ime.VITE_SUPABASE_URL || '', anonKey: ime.VITE_SUPABASE_ANON_KEY || '' });
+// the site's own `enquiry` Netlify Function (GRE-1794); on the editor canvas the form never sends
+const client = makeEnquiryClient();
 
 // The site's contact address (the footer's default too). The panels after submit always show an address,
 // even on a page whose `email` is left empty, so a visitor whose enquiry failed still has a next step.
@@ -25,7 +26,7 @@ const ICONS = {
 };
 
 // The booking page: the booking form beside a short framing aside. On submit it sends the enquiry to the
-// `enquiry` edge function (GRE-654), which saves it in the studio Inquiries tab and alerts the owner, then
+// `enquiry` function (GRE-654, on Netlify since GRE-1794), which saves it in the studio Inquiries tab and alerts the owner, then
 // shows a confirmation. On any failure (offline, no backend, server error) it shows the contact address
 // with an email already filled in from the form, so the visitor always has a next step.
 export function BookDeepDive({
@@ -68,7 +69,8 @@ export function BookDeepDive({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useReveal([asidePoints.length]);
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'failed'
-  const [errors, setErrors] = useState({}); // { name?, email? } from validateEnquiry
+  const [errors, setErrors] = useState({}); // { name?, email? } from validateEnquiry, { bot? } from Turnstile
+  const [token, setToken] = useState(null); // Cloudflare Turnstile, only when the site has a key
   const [fallbackHref, setFallbackHref] = useState('');
   const sent = status === 'sent' || status === 'failed';
   const uid = useId(); // per-instance id prefix so two BookDeepDive blocks on one page never collide
@@ -107,12 +109,13 @@ export function BookDeepDive({
       if (first && first.focus) first.focus();
       return;
     }
+    if (TURNSTILE_KEY && !token) { setErrors({ bot: 'Please wait for the check above to finish, then try again.' }); return; }
     setFallbackHref(composeMailto(g));
     setStatus('sending');
     const attribution = getAttribution();
     const page = typeof window !== 'undefined' ? window.location.pathname + window.location.hash : '';
     const out = await client.send(enquiryPayload({
-      name: g('name'), company: g('company'), email: g('email'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'),
+      name: g('name'), company: g('company'), email: g('email'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'), turnstile: token,
     }, attribution, page));
     if (out.ok) fireLead({ track, getConsent, attribution });
     setStatus(out.ok ? 'sent' : 'failed');
@@ -180,6 +183,8 @@ export function BookDeepDive({
                   <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} />
                 </div>
                 {editing || consent ? <EditableText editing={editing} id={id} field="consent" value={consent} as="p" className="b-book-consent" placeholder="Consent line…" /> : null}
+                {editing ? null : <Turnstile onToken={(t) => { setToken(t); if (t) setErrors((x) => (x.bot ? { ...x, bot: '' } : x)); }} className="b-book-turnstile" />}
+                {errors.bot ? <p className="b-book-err" role="alert">{errors.bot}</p> : null}
                 <button className="b-cta book-submit" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : submitLabel}<Arrow /></button>
               </form>
               </>
@@ -240,6 +245,7 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .book-submit[disabled]{opacity:.7;cursor:progress}
 .b-book-err{margin:.45rem 0 0;font-size:.86rem;color:#ffb4a8}
 .b-book-consent{margin:1.4rem 0 0;font-size:.86rem;line-height:1.55;color:var(--gs-text-muted)}
+.b-book-turnstile{margin:1.4rem 0 0;min-height:65px}
 .b-book-consent a,.b-book-inline{color:var(--gs-accent);border-bottom:1px solid var(--gs-border);overflow-wrap:anywhere}
 .book-sent .b-cta{margin-top:4px}
 .b-book-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
