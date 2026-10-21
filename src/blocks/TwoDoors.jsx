@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { TideField } from './TideField.jsx';
 import { track } from '../lib/analytics.js';
 import { MediaField } from '../cms/MediaField.jsx';
@@ -15,6 +15,9 @@ const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLi
 const toolsFields = 'toolsKicker toolsHeading toolsIntro toolLinkPrefix toolLinkSuffix closeHeading closeLine closeCta bottomKicker bottomHeading bottomConsultancy bottomTools toolsHref contactHref consultancyHref consultancyImage toolsImage'.split(' ');
 const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
+const doorSides = ['consultancy', 'choose', 'tools'];
+const doorPanels = (node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
+const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - node.clientWidth, panel.offsetLeft - (node.clientWidth - panel.offsetWidth) / 2));
 
 function Carousel({ items, label, render, enabled = true }) {
   const [index, setIndex] = useState(0);
@@ -54,16 +57,14 @@ export function TwoDoors(props) {
     document.documentElement.classList.add('td-no-cursor');
     return () => document.documentElement.classList.remove('td-no-cursor');
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = strip.current;
-    if (!node) return;
-    const mobile = window.matchMedia('(max-width:760px)');
-    if (mobile.matches) node.scrollLeft = node.querySelector('.td-consultancy').getBoundingClientRect().width + 8;
-  }, []);
+    if (node && mobile) node.scrollLeft = panelPosition(node, doorPanels(node)[1]);
+  }, [mobile]);
   const select = (next) => {
     if (window.matchMedia('(max-width:760px)').matches && strip.current) {
-      const index = { consultancy: 0, choose: 1, tools: 2 }[next];
-      strip.current.scrollTo({ left: index * (strip.current.querySelector('.td-consultancy').getBoundingClientRect().width + 8), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      const node = strip.current;
+      node.scrollTo({ left: panelPosition(node, doorPanels(node)[doorSides.indexOf(next)]), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
     setSide(next);
     if (next !== 'choose') track('door_selected', { door: next });
@@ -91,7 +92,7 @@ export function TwoDoors(props) {
         <button type="button" aria-current={side === 'choose'} onClick={() => select('choose')}>{copy.chooseLabel}</button>
         <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{copy.toolsName}</button>
       </nav>
-      <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (window.matchMedia('(max-width:760px)').matches) { const i = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.querySelector('.td-consultancy').getBoundingClientRect().width + 8)); setSide(['consultancy', 'choose', 'tools'][i] || 'choose'); } }} onMouseLeave={() => setSide(pinned || 'choose')} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
+      <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (mobile) { const node = e.currentTarget; const panels = doorPanels(node); const nearest = panels.reduce((best, panel, i) => Math.abs(panelPosition(node, panel) - node.scrollLeft) < Math.abs(panelPosition(node, panels[best]) - node.scrollLeft) ? i : best, 0); setSide(doorSides[nearest]); } }} onMouseLeave={() => { if (!mobile) setSide(pinned || 'choose'); }} onBlur={(e) => { if (!mobile && !e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
         <span className="td-join-label" aria-hidden="true">{copy.orLabel}</span>
         <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('consultancy'); }}>
           <img src={consultancyImage} alt="" width="640" height="640" />

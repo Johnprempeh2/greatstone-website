@@ -1504,7 +1504,7 @@ export default function App() {
           key={current + ':' + puckKey}
           config={config}
           data={page.data}
-          iframe={{ enabled: false }}
+          iframe={{ enabled: true }}
           onPublish={publish}
           onChange={saveDraft}
           overrides={{
