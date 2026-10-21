@@ -21,6 +21,7 @@
     "seo:report": "node scripts/seo-report.mjs",
     "launch:check": "node scripts/seo-report.mjs --launch && node scripts/legal-check.mjs",
     "rls:check": "node scripts/check-rls.mjs",
+    "design:detect": "node scripts/design-detect.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check"
   },
   "dependencies": {
