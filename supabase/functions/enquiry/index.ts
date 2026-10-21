@@ -1,3 +1,5 @@
+// Replaced by the Netlify Function netlify/functions/enquiry.mjs (GRE-1794): the form posts to /api/enquiry now.
+// This copy stays deployed and unchanged on Supabase until the GRE-1703 cut-over.
 // Contact enquiry (Supabase Edge Function, Deno). Public: the BookDeepDive contact form (GRE-654). Saves the
 // enquiry in service_inquiries (0023 + 0035 + 0040) with the service role, then sends the owner a Resend alert. If
 // the row cannot be saved the alert carries the whole enquiry, so a lead is never silently lost; only when

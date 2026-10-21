@@ -1,0 +1,18 @@
+# greatstone-home (greatstoneint.com). The site is deployed from a local build (`netlify deploy`), not from git.
+# Functions live in netlify/functions; Netlify Database migrations in netlify/database/migrations (GRE-1794).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Content-Type-Options = "nosniff"
