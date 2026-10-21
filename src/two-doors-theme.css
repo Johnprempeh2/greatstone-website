@@ -1,0 +1,15 @@
+.td-home,.td-segment{
+  --td-ink:#121212;
+  --td-text:#f5f5f5;
+  --td-muted:#c4c8c1;
+  --td-lime:#c8ff00;
+  --td-teal:#4ecdc4;
+  --td-draft:#b197fc;
+  --td-font:Montserrat,system-ui,sans-serif;
+  --td-page-width:1160px;
+  --td-page-gutter:48px;
+  --td-panel-radius:18px;
+  --td-pill-radius:100px;
+  --td-motion:500ms;
+  --td-ease:cubic-bezier(.16,1,.3,1);
+}

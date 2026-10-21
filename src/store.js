@@ -110,7 +110,7 @@ function seedPage(title, background, content, seo, status = 'published') {
 }
 
 function twoDoorsHomePage() {
-  return seedPage('Home', 'tide', [blk('TwoDoors', {}), blk('TwoDoorsStory', {}), blk('TwoDoorsProof', {}), blk('TwoDoorsTools', {})], {
+  return seedPage('Home', 'none', [blk('TwoDoors', {}), blk('TwoDoorsStory', {}), blk('TwoDoorsProof', {}), blk('TwoDoorsTools', {})], {
     title: 'Greatstone International · Two ways to work with us',
     description: 'Explore DX Consultancy and DX Dev Tools from Greatstone International.', ogImage: '',
   });
