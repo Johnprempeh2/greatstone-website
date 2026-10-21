@@ -18,7 +18,7 @@ const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarsePointer = matchMedia('(hover:none),(pointer:coarse)').matches; // phones/tablets: render fewer pixels
 
-export function mountGreatstoneLogo(container, opts = {}) {
+function mountNow(container, opts = {}) {
   const o = Object.assign({ envUrl:'env-emerald.jpg', bloom:0.52, exposure:1.4, dpr:2, samples:4,
     transparent:true, proxRadius:0.55, spreadLocal:0.4, idle:true, autoTurn:false,
     keyLo:0.10, keyHi:0.20 }, opts);   /* alpha-key thresholds: near-black empty + faint bloom halo → transparent; mark stays */
@@ -176,7 +176,13 @@ export function mountGreatstoneLogo(container, opts = {}) {
   // render only when on-screen, the tab is foreground, AND this layer is contributing (a faded-out
   // scene in a multi-scene track stops rendering — it's invisible). rAF keeps spinning (it's cheap);
   // only the expensive frame() is gated. dt is capped in frame(), so resuming never jumps.
-  function loop(){ if(visible && active && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
+  /* First render used to compile every shader (5 clearcoat materials, bloom, PMREM) synchronously on
+     the main thread: on a machine with a cold GPU shader cache that froze the page for 1s+, longer on
+     ordinary laptops. compileAsync (KHR_parallel_shader_compile) does the scene's programs in the
+     background; the mark simply appears when they are ready instead of stalling the page for them. */
+  let ready = !renderer.compileAsync;
+  if (!ready) renderer.compileAsync(scene, camera).then(() => { ready = true; }, () => { ready = true; });
+  function loop(){ if(ready && visible && active && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
   loop();
   return {
     setClimb(p){ scrollT = clamp(p,0,1); },   /* Stage drives this from scroll position */
@@ -185,4 +191,25 @@ export function mountGreatstoneLogo(container, opts = {}) {
     destroy(){ cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
       removeEventListener('pointermove', _onPointerMove); removeEventListener('blur', _onPointerLeave);
       composer.dispose(); renderer.forceContextLoss(); renderer.dispose(); pmrem.dispose(); canvas.remove(); } };
+}
+
+/* The stone is decoration, so it never competes with the page for first paint. Building it (geometry,
+   PMREM, composer, WebGL context) waits for window load plus an idle slot, so the words and buttons
+   appear first on a cold machine. Callers get a handle immediately, as before; calls made before the
+   build are replayed onto it. Building is guarded here because it now runs outside the caller's
+   try/catch: where WebGL is unavailable the page just carries on without the mark. */
+export function mountGreatstoneLogo(container, opts = {}) {
+  let h = null, dead = false, climb = 0, act = true;
+  const build = () => {
+    if (dead) return;
+    try { h = mountNow(container, opts); h.setClimb(climb); h.setActive(act); } catch (e) { h = null; }
+  };
+  const idle = () => (window.requestIdleCallback ? requestIdleCallback(build, { timeout: 1500 }) : setTimeout(build, 200));
+  if (document.readyState === 'complete') idle(); else addEventListener('load', idle, { once: true });
+  return {
+    setClimb(p){ climb = p; if (h) h.setClimb(p); },
+    setScroll(p){ climb = p; if (h) h.setScroll(p); },
+    setActive(v){ act = v; if (h) h.setActive(v); },
+    destroy(){ dead = true; if (h) h.destroy(); },
+  };
 }
