@@ -7,41 +7,13 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 // The unconfirmed claims in v15 are review material only. A production build has no
 // switch in the browser that can reveal them.
 const REVIEW_CONTENT = import.meta.env.VITE_TWO_DOORS_DRAFT_CONTENT === 'true';
-const TOOLS = [
-  { name: 'Aspose', line: 'Create, edit and convert Word, Excel, PowerPoint and PDF files from your own code.' },
-  { name: 'Apryse', line: 'A PDF and document SDK to view, annotate, edit and sign files inside your apps.' },
-  { name: 'DevExpress', line: 'UI controls, data grids, charts and reports for .NET and JavaScript apps.' },
-  { name: 'GroupDocs', line: 'Document APIs to view, convert, compare, annotate and sign files across common formats.' },
-  { name: 'Iron Software', line: 'C# and .NET libraries for PDF, OCR, barcodes and Excel files.' },
-  { name: 'Conholdate', line: 'Aspose and GroupDocs APIs together, under one licence.' },
-];
-
-const homeCopy = {
-  headlineSuffix: 'and the tools to deliver it.', cueText: 'Choose your side', cueSubtext: 'DX Consultancy or DX Dev Tools',
-  consultancyName: 'DX Consultancy', toolsName: 'DX Dev Tools', chooseLabel: 'Choose',
-  consultancyTag: 'For leaders who transform', toolsTag: 'For teams who deliver',
-  moreClosed: 'What’s inside ↓', moreOpen: 'Less ↑', logoLabel: 'Our team has delivered for', logoDraft: 'Client logos await written permission.',
-  consultancyPoint1: 'Diagnose', consultancyPoint1Text: 'Find the work worth changing first.', consultancyPoint2: 'Deliver', consultancyPoint2Text: 'Build it with specialists and reviewers.', consultancyPoint3: 'Run', consultancyPoint3Text: 'Keep a managed team on it, with a person approving.',
-  consultancyCta: 'Discuss your transformation →', proofLink: 'See our work', toolsCta: 'Browse DX Dev Tools →',
-  chooserHeading: 'Choose your side', chooserLine: 'Two ways to work with Greatstone.', consultancyChooserLine: 'Transform with AI', toolsChooserLine: 'Proven developer tools', orLabel: 'OR', swipeHint: '← Swipe or tap a side →',
-  toolsPoint1: 'Browse by brand', toolsPoint1Text: 'Start with the platform you know.', toolsPoint2: 'Find the fit', toolsPoint2Text: 'Compare product capabilities.', toolsPoint3: 'Buy or renew', toolsPoint3Text: 'Keep the route direct.',
-  chooseHref: '#choose', contactHref: '#contact', proofHref: '#proof', toolsHref: '#dev-tools',
-};
-const storyCopy = {
-  storyKicker: 'Who we are', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
-  rangeLabel: 'The work we do',
-};
-const defaultRange = [
-  { title: 'Transformation', line: 'Operating models and change programmes.' },
-  { title: 'Delivery', line: 'Programme and project leadership.' },
-  { title: 'Technology', line: 'Systems, integration and developer tools.' },
-  { title: 'Data', line: 'Reporting and data quality.' },
-];
-const proofCopy = { proofKicker: 'Case studies', proofHeading: 'What changed for our clients', draftBadge: 'DRAFT', draftCaseLine: 'Engagement facts, outcome and permission are pending.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '#proof' };
-const draftCases = [{ headline: 'First study', image: '/assets/two-doors/consultancy-hero.webp' }, { headline: 'Second study', image: '/assets/two-doors/tools-hero.webp' }, { headline: 'Third study', image: '/assets/two-doors/consultancy-hero.webp' }];
-const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '#dev-tools', contactHref: '#contact', consultancyHref: '#door-dx', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
-const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
-const copyFields = (defaults) => Object.fromEntries(Object.keys(defaults).map((key) => [key, { type: 'text', label: key.replace(/([A-Z])/g, ' $1') }]));
+const copyFields = (keys) => Object.fromEntries(keys.map((key) => [key, { type: 'text', label: key.replace(/([A-Z])/g, ' $1') }]));
+const textDefaults = (keys) => Object.fromEntries(keys.map((key) => [key, '']));
+const homeFields = 'headlineSuffix cueText cueSubtext consultancyName toolsName chooseLabel consultancyTag toolsTag moreClosed moreOpen logoLabel logoDraft consultancyPoint1 consultancyPoint1Text consultancyPoint2 consultancyPoint2Text consultancyPoint3 consultancyPoint3Text consultancyCta proofLink toolsCta chooserHeading chooserLine consultancyChooserLine toolsChooserLine orLabel swipeHint toolsPoint1 toolsPoint1Text toolsPoint2 toolsPoint2Text toolsPoint3 toolsPoint3Text chooseHref contactHref proofHref toolsHref'.split(' ');
+const storyFields = 'storyKicker numbersLabel draftNumbersHeading draftNumbersLine rangeLabel'.split(' ');
+const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLine pendingLink proofHref'.split(' ');
+const toolsFields = 'toolsKicker toolsHeading toolsIntro toolLinkPrefix toolLinkSuffix closeHeading closeLine closeCta bottomKicker bottomHeading bottomConsultancy bottomTools toolsHref contactHref consultancyHref consultancyImage toolsImage'.split(' ');
+const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
 
 function Carousel({ items, label, render, enabled = true }) {
@@ -67,7 +39,7 @@ function Carousel({ items, label, render, enabled = true }) {
 
 export function TwoDoors(props) {
   const { kicker, heading, intro, consultancyLine, toolsLine, clientLogos = [], tide = true, consultancyImage, toolsImage } = props;
-  const copy = { ...homeCopy, ...props };
+  const copy = { ...props };
   const [side, setSide] = useState('choose');
   const [pinned, setPinned] = useState(null);
   const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:760px)').matches);
@@ -86,12 +58,12 @@ export function TwoDoors(props) {
     const node = strip.current;
     if (!node) return;
     const mobile = window.matchMedia('(max-width:760px)');
-    if (mobile.matches) node.scrollLeft = node.children[0].getBoundingClientRect().width + 8;
+    if (mobile.matches) node.scrollLeft = node.querySelector('.td-consultancy').getBoundingClientRect().width + 8;
   }, []);
   const select = (next) => {
     if (window.matchMedia('(max-width:760px)').matches && strip.current) {
       const index = { consultancy: 0, choose: 1, tools: 2 }[next];
-      strip.current.scrollTo({ left: index * (strip.current.children[0].getBoundingClientRect().width + 8), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      strip.current.scrollTo({ left: index * (strip.current.querySelector('.td-consultancy').getBoundingClientRect().width + 8), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
     setSide(next);
     if (next !== 'choose') track('door_selected', { door: next });
@@ -119,7 +91,8 @@ export function TwoDoors(props) {
         <button type="button" aria-current={side === 'choose'} onClick={() => select('choose')}>{copy.chooseLabel}</button>
         <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{copy.toolsName}</button>
       </nav>
-      <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (window.matchMedia('(max-width:760px)').matches) { const i = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.children[0].getBoundingClientRect().width + 8)); setSide(['consultancy', 'choose', 'tools'][i] || 'choose'); } }} onMouseLeave={() => setSide(pinned || 'choose')} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
+      <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (window.matchMedia('(max-width:760px)').matches) { const i = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.querySelector('.td-consultancy').getBoundingClientRect().width + 8)); setSide(['consultancy', 'choose', 'tools'][i] || 'choose'); } }} onMouseLeave={() => setSide(pinned || 'choose')} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
+        <span className="td-join-label" aria-hidden="true">{copy.orLabel}</span>
         <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('consultancy'); }}>
           <img src={consultancyImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
@@ -137,7 +110,7 @@ export function TwoDoors(props) {
           <img src={toolsImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
           <div className="td-door-copy"><p className="td-door-tag">{copy.toolsTag}</p><h2>{copy.toolsName}</h2><p>{toolsLine}</p>
-            <button type="button" className="td-more" aria-expanded={active === 'tools'} onClick={() => open('tools')}>{active === 'tools' ? 'Less ↑' : 'What’s inside ↓'}</button>
+            <button type="button" className="td-more" aria-expanded={active === 'tools'} onClick={() => open('tools')}>{active === 'tools' ? copy.moreOpen : copy.moreClosed}</button>
             <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active === 'tools' ? undefined : ''}><div className="td-door-detail-inner"><ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
             <a className="td-pill td-pill-teal" href={safeHref(copy.toolsHref)}>{copy.toolsCta}</a>
           </div>
@@ -148,8 +121,8 @@ export function TwoDoors(props) {
 }
 
 export function TwoDoorsStory(props) {
-  const { storyHeading, storyBody, storyBody2, numbers = [], tide = true, range = defaultRange } = props;
-  const copy = { ...storyCopy, ...props };
+  const { storyHeading, storyBody, storyBody2, numbers = [], tide = true, range = [] } = props;
+  const copy = { ...props };
   const approvedNumbers = numbers.filter((number) => number?.value && number?.label && number?.verified);
   return <div className="td-segment td-story-segment">
     <TideField view="calm" enabled={tide} />
@@ -160,8 +133,8 @@ export function TwoDoorsStory(props) {
 }
 
 export function TwoDoorsProof(props) {
-  const { cases = [], draftItems = draftCases, carousel = true } = props;
-  const copy = { ...proofCopy, ...props };
+  const { cases = [], draftItems = [], carousel = true } = props;
+  const copy = { ...props };
   const approvedCases = cases.filter((study) => study?.headline && study?.result && study?.verified);
   return <div className="td-segment">
     <section className="td-section" id="cases"><p className="td-kicker">{copy.proofKicker}</p><h2>{copy.proofHeading}</h2>
@@ -171,8 +144,8 @@ export function TwoDoorsProof(props) {
 }
 
 export function TwoDoorsTools(props) {
-  const { tools = TOOLS, carousel = true } = props;
-  const copy = { ...toolsCopy, ...props };
+  const { tools = [], carousel = true } = props;
+  const copy = { ...props };
   return <div className="td-segment">
     <section className="td-section" id="tools"><p className="td-kicker td-teal">{copy.toolsKicker}</p><h2>{copy.toolsHeading}</h2><p>{copy.toolsIntro}</p>
       <Carousel enabled={carousel} label={copy.toolsKicker} items={tools} render={(tool) => <article className="td-tool-card">{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.toolsHref)}>{copy.toolLinkPrefix} {tool.name} {copy.toolLinkSuffix}</a></article>} />
@@ -183,8 +156,8 @@ export function TwoDoorsTools(props) {
 }
 
 export function DevTools(props) {
-  const { heading, intro, tools = TOOLS } = props;
-  const copy = { ...devCopy, ...props };
+  const { heading, intro, tools = [] } = props;
+  const copy = { ...props };
   return <div className="td-home td-dev-page"><section className="td-intro"><p className="td-kicker td-teal">{copy.devKicker}</p><h1>{heading}</h1><p className="td-lede">{intro}</p><a className="td-pill td-pill-teal" href={safeHref(copy.shopHref)}>{copy.shopCta}</a></section><section className="td-section"><h2>{copy.brandHeading}</h2><div className="td-brand-grid">{tools.map((tool) => <article className="td-tool-card" key={tool.name}>{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.shopHref)}>{copy.brandCta}</a></article>)}</div><p className="td-mail">{copy.helpLine} <a href={safeMailto(copy.helpEmail)}>{copy.helpEmail}</a></p></section></div>;
 }
 
@@ -192,7 +165,7 @@ export const css = '';
 export const puck = {
   label: 'Two Doors homepage',
   fields: {
-    ...copyFields(homeCopy),
+    ...copyFields(homeFields),
     kicker: { type: 'text', label: 'Intro kicker' }, heading: { type: 'text', label: 'Intro highlighted word' }, intro: { type: 'textarea', label: 'Intro text' },
     consultancyLine: { type: 'textarea', label: 'Consultancy door line' }, toolsLine: { type: 'textarea', label: 'Tools door line' },
     tide: { type: 'radio', label: 'Tide effect', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] },
@@ -203,40 +176,40 @@ export const puck = {
       permission: { type: 'select', label: 'Permission on file', options: [{ label: 'Pending', value: 'pending' }, { label: 'Approved in writing', value: 'approved' }] },
     }, defaultItemProps: { image: '', alt: '', permission: 'pending' }, getItemSummary: (item) => item.alt || 'Logo' },
   },
-  defaultProps: { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', tide: true, clientLogos: [] },
+  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, clientLogos: [] },
   render: (props) => <TwoDoors {...props} />,
 };
 
 export const storyPuck = {
   label: 'Two Doors story and numbers',
   fields: {
-    ...copyFields(storyCopy),
+    ...copyFields(storyFields),
     storyHeading: { type: 'text', label: 'Who we are heading' }, storyBody: { type: 'textarea', label: 'Who we are paragraph 1' }, storyBody2: { type: 'textarea', label: 'Who we are paragraph 2' },
     tide: { type: 'radio', label: 'Calm Tide effect', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] },
     range: { type: 'array', label: 'Work areas', arrayFields: { title: { type: 'text', label: 'Title' }, line: { type: 'textarea', label: 'Description' } }, defaultItemProps: { title: '', line: '' }, getItemSummary: (item) => item.title || 'Area' },
     numbers: { type: 'array', label: 'Verified numbers', arrayFields: { value: { type: 'text', label: 'Value' }, label: { type: 'text', label: 'Meaning and counting rule' }, verified: { type: 'radio', label: 'Fact confirmed', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } }, defaultItemProps: { value: '', label: '', verified: false }, getItemSummary: (item) => item.label || 'Number' },
   },
-  defaultProps: { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', tide: true, range: defaultRange, numbers: [] },
+  defaultProps: { ...textDefaults(storyFields), storyHeading: '', storyBody: '', storyBody2: '', tide: true, range: [], numbers: [] },
   render: (props) => <TwoDoorsStory {...props} />,
 };
 
 export const proofPuck = {
   label: 'Two Doors case studies',
   fields: {
-    ...copyFields(proofCopy),
+    ...copyFields(proofFields),
     carousel: { type: 'radio', label: 'Carousel', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] },
     draftItems: { type: 'array', label: 'Draft case placeholders', arrayFields: { headline: { type: 'text', label: 'Placeholder label' }, image: { type: 'custom', label: 'Generic image', render: (props) => <MediaField {...props} /> } }, defaultItemProps: { headline: '', image: '' }, getItemSummary: (item) => item.headline || 'Draft' },
     cases: { type: 'array', label: 'Verified case studies', arrayFields: { headline: { type: 'text', label: 'Outcome headline' }, problem: { type: 'textarea', label: 'Problem and baseline' }, work: { type: 'textarea', label: 'What we did and duration' }, result: { type: 'textarea', label: 'Measured result and period' }, image: { type: 'custom', label: 'Image', render: (props) => <MediaField {...props} /> }, imageAlt: { type: 'text', label: 'Image description' }, verified: { type: 'radio', label: 'Facts and naming permission confirmed', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } }, defaultItemProps: { headline: '', problem: '', work: '', result: '', image: '', imageAlt: '', verified: false }, getItemSummary: (item) => item.headline || 'Case study' },
   },
-  defaultProps: { ...proofCopy, cases: [], draftItems: draftCases, carousel: true },
+  defaultProps: { ...textDefaults(proofFields), cases: [], draftItems: [], carousel: true },
   render: (props) => <TwoDoorsProof {...props} />,
 };
 
-export const toolsPuck = { label: 'Two Doors tools and close', fields: { ...copyFields(toolsCopy), carousel: { type: 'radio', label: 'Carousel', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] }, tools: toolFields }, defaultProps: { ...toolsCopy, tools: TOOLS, carousel: true }, render: (props) => <TwoDoorsTools {...props} /> };
+export const toolsPuck = { label: 'Two Doors tools and close', fields: { ...copyFields(toolsFields), carousel: { type: 'radio', label: 'Carousel', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] }, tools: toolFields }, defaultProps: { ...textDefaults(toolsFields), tools: [], carousel: true }, render: (props) => <TwoDoorsTools {...props} /> };
 
 export const devToolsPuck = {
-  label: 'DX Dev Tools page',
-  fields: { ...copyFields(devCopy), heading: { type: 'text', label: 'Heading' }, intro: { type: 'textarea', label: 'Intro' }, tools: toolFields },
-  defaultProps: { ...devCopy, heading: 'Tools for teams who deliver.', intro: 'Developer components and SDKs from the brands you know.', tools: TOOLS },
+  label: 'Two Doors tools page',
+  fields: { ...copyFields(devFields), heading: { type: 'text', label: 'Heading' }, intro: { type: 'textarea', label: 'Intro' }, tools: toolFields },
+  defaultProps: { ...textDefaults(devFields), heading: '', intro: '', tools: [] },
   render: (props) => <DevTools {...props} />,
 };
