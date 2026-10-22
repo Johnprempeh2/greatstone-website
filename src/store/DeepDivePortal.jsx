@@ -3412,7 +3412,7 @@ function Engagement({ slug, staff, itemKind = null, itemId = null }) {
                 setBusy(true); setWarn(null);
                 try {
                   const r = await createRecord({ slug, client: load.client || slug });
-                  setLoad({ status: 'ready', plan: r.plan, version: r.version, isAuthoritative: r.via === 'supabase' });
+                  setLoad({ status: 'ready', plan: r.plan, version: r.version, isAuthoritative: r.via === 'netlify' });
                 } catch (e) { setWarn(e.message || String(e)); }
                 setBusy(false);
               }}>
