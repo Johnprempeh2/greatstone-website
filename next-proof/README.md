@@ -29,6 +29,8 @@ The Next renderer registers the blocks used by these published pages. The curren
 
 `next-proof/netlify.toml` builds this proof with the Next.js runtime. The existing root Netlify configuration and SPA redirects remain for the current site. `prepare-netlify.mjs` copies the proof into a scratch folder without the SPA redirect and header files. Install its dependencies there with `npm ci`, then use `netlify deploy --context deploy-preview --site <existing-site-id>`. Leave off `--prod`.
 
+The isolated copy includes the existing `netlify/functions` entries and their shared server code. Netlify serves `/api/enquiry` and `/api/catalogue` beside Next, using the same handlers, database access and visitor responses as Vite. Resend, Turnstile and database credentials remain Netlify server environment variables; they are not Next public variables. Run `node scripts/check-dist-secrets.mjs .next/static` after a Next build to scan client assets. Do not switch the public site during this phase.
+
 The checked draft is [GRE-1833 Next.js proof](https://gre-1833-next-proof--greatstone-home.netlify.app/). It is separate from the production URL. The editor is a review surface only. It has no Supabase connection, authentication or content writes. Existing links to the shop and other pages still need real routes in the full move.
 
 ## What the full move still needs

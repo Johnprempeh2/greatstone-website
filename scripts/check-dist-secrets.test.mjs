@@ -87,3 +87,16 @@ test('a publishable key is not a secret, and a binary is skipped rather than gue
   assert.equal(r.code, 0);
   assert.match(r.out, /1 binary files? skipped/, 'the gate no longer reports what it could not read');
 });
+
+test('an explicit Next client directory is scanned and a planted secret fails it', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nextscan-'));
+  const client = join(dir, '.next', 'static');
+  mkdirSync(client, { recursive: true });
+  writeFileSync(join(client, 'app.js'), 'const key="sk_test_abcdefghijklmnop";');
+  try {
+    assert.throws(() => execFileSync(process.execPath, [SCRIPT, client], { encoding: 'utf8' }),
+      (error) => error.status === 1 && String(error.stderr).includes('Stripe secret key'));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -14,7 +14,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const DIST = 'dist';
+const DIST = process.argv[2] || 'dist';
 
 // high-signal server-secret markers; publishable keys (pk_) are intentionally excluded
 const PATTERNS = [
@@ -59,4 +59,4 @@ if (hits.length) {
   console.error('\nServer secrets must live in Supabase Edge Function secrets / the host env, never a VITE_ var.');
   process.exit(1);
 }
-console.log('✓ dist/ secret scan clean: %d text files read, %d binary files skipped. No server secrets in the client bundle.', read, binary);
+console.log('✓ %s/ secret scan clean: %d text files read, %d binary files skipped. No server secrets in the client bundle.', DIST, read, binary);
