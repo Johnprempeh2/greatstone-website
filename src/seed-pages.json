@@ -147,7 +147,7 @@
   {
     "slug": "services",
     "title": "GS Agentic Manager",
-    "background": "tide",
+    "background": "none",
     "seo": {
       "title": "GS Agentic Manager · Greatstone International",
       "description": "A digital office for your organisation: people and AI agents in clear roles on your own instance, set up by Greatstone where it fits, with your people approving what matters.",
@@ -158,20 +158,21 @@
         "type": "Hero",
         "props": {
           "kicker": "GS Agentic Manager",
-          "headline": "Your AI tools, organised into one team.",
+          "headline": "A digital office for the work that comes round every week",
           "highlight": "",
           "headlineSuffix": "",
-          "body": "Most organisations use AI tools the way they would use freelancers: one at a time, with no shared memory and nobody checking the work. Where it fits your blueprint, we set up a digital office on your own instance: your people and AI agents in clear roles, with shared context and a goal. We configure it, connect the systems you agree and train your team. Your people run the daily work, and a named person approves what matters.",
+          "body": "An AI agent team, set up for one area of your work, in your own hosted instance. Your people direct it. Every task is on record, and it stops for a person where you decide.",
           "prompt": "",
           "align": "left",
-          "size": "compact",
+          "size": "standard",
+          "variant": "statement",
           "ctaLabel": "Ask about GS Agentic Manager",
           "ctaHref": "#enquire/gs-agentic-manager",
-          "ctaLabel2": "See how we work",
-          "ctaHref2": "#go/method",
+          "ctaLabel2": "Check your AI readiness",
+          "ctaHref2": "#go/dx-consultancy/ai-readiness",
           "meta": [],
           "lines": [],
-          "gridBackdrop": true
+          "gridBackdrop": false
         }
       },
       {
@@ -205,7 +206,7 @@
         "props": {
           "kicker": "",
           "heading": "What every digital office starts with",
-          "variant": "cards",
+          "variant": "principles",
           "body": "",
           "items": [
             {
@@ -331,6 +332,41 @@
           "align": "left",
           "width": "reading",
           "body": "Agents do not move money, sign anything, give regulated advice or make decisions about people. They do not replace your team; they take repeatable work off it. AI use stays within a budget you approve, and work beyond it stops for a person. We do not build bespoke software inside this service. If the work needs any of these, we say so in the Deep Dive and scope it separately."
+        }
+      },
+      {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "Not sure where to start?",
+          "intro": "Two free tools. One shows how ready you are. The other shows what the manual work costs.",
+          "panelsLabel": "",
+          "columns": "two",
+          "panelStyle": "ruled",
+          "bodyClamp": "none",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "",
+          "headingLevel": "h2",
+          "headAlign": "left",
+          "items": [
+            {
+              "label": "",
+              "title": "AI readiness check",
+              "text": "Find out where AI can help your business first, and what has to be in place before it does.",
+              "ctaLabel": "AI readiness check",
+              "ctaHref": "#go/dx-consultancy/ai-readiness",
+              "icon": ""
+            },
+            {
+              "label": "",
+              "title": "AI cost calculator",
+              "text": "See what your manual work costs you today. This is an estimate of your own time and spend, not a price for our services.",
+              "ctaLabel": "AI cost calculator",
+              "ctaHref": "#go/dx-consultancy/ai-cost-calculator",
+              "icon": ""
+            }
+          ]
         }
       },
       {

@@ -358,6 +358,7 @@ function findMissingAlt(content, products) {
 export default function App() {
   const [state, setState] = useState(load);
   const [current, setCurrent] = useState(() => state.order[0]); // derive from the one load() above, not a 2nd
+  const [pageHash, setPageHash] = useState(() => typeof location !== 'undefined' ? location.hash : '');
   const [mode, setMode] = useState('view');
   const [query, setQuery] = useState('');
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -449,7 +450,7 @@ export default function App() {
   // left to the route parsers above, so an unknown hash can never blank the site.
   const readPageHash = useCallback(() => {
     if (typeof location === 'undefined') return null;
-    const m = location.hash.match(/^#\/?([a-z0-9-]+)$/i);
+    const m = location.hash.match(/^#\/?(?:go\/)?([a-z0-9-]+)(?:\/([a-z0-9-]+))?$/i);
     if (!m) return null;
     const slug = m[1].toLowerCase();
     const pages = stateRef.current && stateRef.current.pages;
@@ -457,7 +458,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
+    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
       // Back, Forward, a pasted link and a reload all land on the right page.
       const page = readPageHash();
       if (page) setCurrent(page);
@@ -472,6 +473,15 @@ export default function App() {
     const page = readPageHash();
     if (page) setCurrent(page);
   }, [readPageHash]);
+  useEffect(() => {
+    const anchor = pageHash.match(/^#go\/[a-z0-9-]+\/([a-z0-9-]+)$/i)?.[1];
+    if (!anchor) return;
+    const frame = requestAnimationFrame(() => {
+      const section = document.getElementById(anchor);
+      if (section) { section.scrollIntoView(); section.focus({ preventScroll: true }); }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [current, pageHash]);
   // Legacy redirect: the AI Intelligence hub used to be a full-screen #intel takeover. It now lives in
   // the site nav as the "Intelligence" page (the renamed Insights), rendered inside the normal chrome.
   // Send any old #intel bookmark/link onto that page so shared links still land somewhere sensible.
@@ -600,10 +610,10 @@ export default function App() {
       // "#enquire/<option>" (GRE-1373 §6): the contact page's enquiry form, with that interest already chosen
       const want = parseEnquireHref(href);
       if (want) { e.preventDefault(); track('cta_click', { cta: 'enquire', cta_location: 'content' }); setPendingInterest(want); navigate('contact'); return; }
-      const m = href.match(/^#go\/([\w-]+)$/);
+      const m = href.match(/^#go\/([\w-]+)(?:\/([\w-]+))?$/);
       // self-heal: a link to a since-renamed page forwards to its current slug via the redirect table
       // (resolveRedirect returns the slug itself when it's already live), so old internal links never dead-end.
-      if (m) { const t = resolveRedirect(state, m[1]); if (t) { e.preventDefault(); navigate(t); } }
+      if (m) { const t = resolveRedirect(state, m[1]); if (t) { e.preventDefault(); navigate(t, m[2]); } }
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
@@ -1089,9 +1099,9 @@ export default function App() {
   // (#service/, #product/, #intel/, #join/, #invoice/) or is a word no page uses (#shop, #admin, #account,
   // #org, #breakdown, #catalogue, #order-confirmed). readPageHash below only accepts a known page slug, so
   // anything unrecognised still falls through to the parsers above.
-  function navigate(slug) {
+  function navigate(slug, anchor = '') {
     if (typeof location !== 'undefined') {
-      const want = slug && slug !== stateRef.current.order[0] ? '#' + slug : '';
+      const want = anchor ? '#go/' + slug + '/' + anchor : slug && slug !== stateRef.current.order[0] ? '#' + slug : '';
       if (location.hash !== want) {
         // replace (not push) when only clearing to the homepage, so Back does not stick on an empty hash
         if (want) location.hash = want;
