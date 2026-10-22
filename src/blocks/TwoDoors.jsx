@@ -59,7 +59,20 @@ export function TwoDoors(props) {
   }, []);
   useLayoutEffect(() => {
     const node = strip.current;
-    if (node && mobile) node.scrollLeft = panelPosition(node, doorPanels(node)[1]);
+    if (!node || !mobile) return;
+    let size = '';
+    const chooser = doorPanels(node)[1];
+    const centreChooser = () => {
+      const nextSize = `${node.clientWidth}:${node.scrollWidth}:${chooser.offsetWidth}`;
+      if (nextSize === size) return;
+      size = nextSize;
+      node.scrollLeft = panelPosition(node, chooser);
+    };
+    const observer = new ResizeObserver(centreChooser);
+    observer.observe(node);
+    observer.observe(chooser);
+    centreChooser();
+    return () => observer.disconnect();
   }, [mobile]);
   const select = (next) => {
     if (window.matchMedia('(max-width:760px)').matches && strip.current) {
