@@ -18,7 +18,9 @@ let local, pool;
 before(async () => {
   local = new NetlifyDB({ logger: () => {} });
   const url = await local.start();
-  assert.deepEqual(await local.applyMigrations(MIGRATIONS), ['001_enquiry_inbox']);
+  // 001 only: PGlite has no citext or pg_trgm, which 002 on need. enquiry-size-band.test.mjs runs the enquiry
+  // store on every migration, on a real Postgres.
+  assert.deepEqual(await local.applyMigrations(MIGRATIONS, '001_enquiry_inbox'), ['001_enquiry_inbox']);
   pool = new pg.Pool({ connectionString: url, max: 1 });
 });
 after(async () => { await pool?.end(); await local?.stop(); });

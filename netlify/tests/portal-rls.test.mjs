@@ -1,34 +1,13 @@
-// Client portal data and security (GRE-1255, spec GRE-1227 revision 2, section 5). Runs every migration on a
-// throwaway local Postgres (supabase/seed/local-roles.sql + supabase/tests/supabase-shim.sql), adds made-up data
+// Client portal data and security (GRE-1255, spec GRE-1227 revision 2, section 5; moved from supabase/tests in
+// GRE-1795). Applies netlify/database/migrations to a throwaway real Postgres (lib/postgres.mjs), adds made-up data
 // (two client companies, people in each, a registered approver, an owner who is not one, and an editor), then
-// acts as each person to prove who can and cannot read and write. Needs the Postgres server binaries (initdb,
-// pg_ctl, psql): found through PG_BIN, pg_config or /usr/lib/postgresql/<n>/bin. Without them the suite is
-// skipped, and says so.
+// acts as each person to prove who can and cannot read and write. Without the Postgres server binaries the suite
+// is skipped, and says so (on CI it fails instead).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { startPostgres, skip, MIGRATIONS } from './lib/postgres.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const MIGRATIONS = join(ROOT, 'supabase/migrations');
-
-function findPgBin() {
-  const ok = (d) => d && existsSync(join(d, 'initdb')) && existsSync(join(d, 'pg_ctl')) && existsSync(join(d, 'psql'));
-  if (ok(process.env.PG_BIN)) return process.env.PG_BIN;
-  const cfg = spawnSync('pg_config', ['--bindir'], { encoding: 'utf8' });
-  if (cfg.status === 0 && ok(cfg.stdout.trim())) return cfg.stdout.trim();
-  const base = '/usr/lib/postgresql';
-  if (existsSync(base)) {
-    for (const v of readdirSync(base).sort((a, b) => Number(b) - Number(a))) if (ok(join(base, v, 'bin'))) return join(base, v, 'bin');
-  }
-  return null;
-}
-
-const BIN = findPgBin();
-const skip = BIN ? false : 'Postgres server binaries not found (set PG_BIN)';
 
 // ── made-up people and companies ──────────────────────────────────────────────────────────────
 const ORG = '11111111-1111-4111-8111-111111111111';
@@ -52,17 +31,9 @@ const SERIES_A = 'e0000000-0000-4000-8000-0000000000a1';
 const CONFIRM = 'I confirm this is a made-up test sentence.';
 const ZERO_SHA = '0'.repeat(64);
 
-let dir;
-let sock;
-let port;
+let db;
 
-function psql(sql) {
-  return spawnSync(join(BIN, 'psql'), ['-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1', '-h', sock, '-p', String(port), '-U', 'postgres', '-d', 'portal', '-f', '-'], {
-    input: sql,
-    encoding: 'utf8',
-    env: { ...process.env, PGOPTIONS: '-c client_min_messages=warning' },
-  });
-}
+const psql = (sql) => db.psql(sql);
 
 /**
  * Run sql in one transaction as a person, as 'anon', as 'service' (the service key: service_role, no user), or
@@ -96,35 +67,17 @@ const publish = (doc, sha, ref = null) => `SELECT portal_approve_and_publish('${
 const submit = (doc, who = 'editor') => ok(who, `UPDATE portal_documents SET status = 'pending_approval' WHERE id = '${doc}' RETURNING content_sha256;`);
 const statusOf = (doc) => ok(null, `SELECT status FROM portal_documents WHERE id = '${doc}';`);
 
-before(() => {
-  if (!BIN) return;
-  // a unix socket path must stay short, so prefer a short temp root
-  const root = tmpdir().length < 60 ? tmpdir() : '/tmp';
-  dir = mkdtempSync(join(root, 'portal-rls-'));
-  sock = dir;
-  port = 20000 + Math.floor(Math.random() * 20000);
-  const init = spawnSync(join(BIN, 'initdb'), ['-D', join(dir, 'data'), '-U', 'postgres', '-A', 'trust'], { encoding: 'utf8' });
-  assert.equal(init.status, 0, init.stderr);
-  const start = spawnSync(
-    join(BIN, 'pg_ctl'),
-    ['-D', join(dir, 'data'), '-w', '-l', join(dir, 'log'), '-o', `-p ${port} -k ${sock} -c listen_addresses=''`, 'start'],
-    { encoding: 'utf8' },
-  );
-  assert.equal(start.status, 0, start.stderr);
-  const create = spawnSync(join(BIN, 'psql'), ['-X', '-q', '-h', sock, '-p', String(port), '-U', 'postgres', '-d', 'postgres', '-c', 'CREATE DATABASE portal'], { encoding: 'utf8' });
-  assert.equal(create.status, 0, create.stderr);
-
+before(async () => {
+  if (skip) return;
+  db = startPostgres('portal-rls');
   const run = (label, sql) => {
     const r = psql(sql);
     assert.equal(r.status, 0, `${label}: ${r.stderr}`);
   };
-  const file = (p) => `\\i '${p.replace(/'/g, "''")}'\n`;
-  run('setup', 'CREATE EXTENSION pgcrypto;\n' + file(join(ROOT, 'supabase/seed/local-roles.sql')) + file(join(ROOT, 'supabase/tests/supabase-shim.sql')));
-  for (const f of readdirSync(MIGRATIONS).filter((n) => n.endsWith('.sql')).sort()) {
-    run(f, file(join(MIGRATIONS, f)));
-    // 0005 onwards expect the single org row that the real seed adds; a made-up one here
-    if (f.startsWith('0001_')) run('org', `INSERT INTO organisations (id, slug, name) VALUES ('${ORG}', 'test-org', 'Test org');`);
-  }
+  // 003 (Supabase 0001) onwards expect the single org row that the real data brings; a made-up one here
+  await db.migrate('003');
+  run('org', `INSERT INTO organisations (id, slug, name) VALUES ('${ORG}', 'test-org', 'Test org');`);
+  await db.migrate();
   run(
     'made-up data',
     `
@@ -153,11 +106,7 @@ before(() => {
   for (const d of [DOC.aSign, DOC.b]) ok('approver', publish(d, submit(d)));
 });
 
-after(() => {
-  if (!dir) return;
-  spawnSync(join(BIN, 'pg_ctl'), ['-D', join(dir, 'data'), '-m', 'immediate', 'stop'], { encoding: 'utf8' });
-  rmSync(dir, { recursive: true, force: true });
-});
+after(() => db?.stop());
 
 // ── 4 and 5: submitting and publishing ────────────────────────────────────────────────────────
 
@@ -453,7 +402,7 @@ test('the worker claims a due job once, even with another worker holding it; stu
 
   // a second session holds the row lock (as a worker mid-claim would); SKIP LOCKED passes over it
   const { spawn } = await import('node:child_process');
-  const holder = spawn(join(BIN, 'psql'), ['-X', '-q', '-h', sock, '-p', String(port), '-U', 'postgres', '-d', 'portal', '-c',
+  const holder = spawn(db.psqlBin, [...db.connArgs(), '-c',
     `BEGIN; SELECT 1 FROM portal_receipt_jobs WHERE id = '${job}' FOR UPDATE; SELECT pg_sleep(1.5); COMMIT;`]);
   const done = new Promise((res) => holder.on('exit', res));
   for (let i = 0; i < 50 && ok(null, "SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(1.5)%' AND pid <> pg_backend_pid();") === '0'; i++) {
@@ -502,19 +451,19 @@ test('portal-files: private; staff write only under a draft; clients get nothing
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
 test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {
-  const down38 = `\\i '${join(ROOT, 'supabase/rollback/0039_portal_receipt_worker_down.sql')}'`;
+  const down38 = `\\i '${join(MIGRATIONS, '041_portal_receipt_worker/rollback.sql')}'`;
   assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs', 'portal_receipt_document');`), '0');
-  const down = `\\i '${join(ROOT, 'supabase/rollback/0037_client_portal_down.sql')}'`;
+  const down = `\\i '${join(MIGRATIONS, '039_client_portal/rollback.sql')}'`;
   const left = `SELECT count(*) FROM pg_class WHERE relname LIKE 'portal\\_%' AND relkind = 'r';
     SELECT count(*) FROM pg_proc WHERE proname LIKE 'portal\\_%';
     SELECT count(*) FROM pg_policies WHERE policyname LIKE 'portal\\_files%';`;
   refused(null, down, /export them/);
   assert.equal(ok(null, left), '6\n15\n2');
   assert.equal(ok(null, `SET LOCAL portal.rollback_drop_acceptances = 'on';\n${down}\n${left}`), '0\n0\n0');
-  ok(null, `\\i '${join(MIGRATIONS, '0037_client_portal.sql')}'\n`);
+  ok(null, `\\i '${join(MIGRATIONS, '039_client_portal/migration.sql')}'\n`);
   assert.equal(ok(null, left), '6\n15\n2');
   // and the migration runs a second time on top of itself
-  ok(null, `\\i '${join(MIGRATIONS, '0037_client_portal.sql')}'\n`);
-  ok(null, `\\i '${join(MIGRATIONS, '0039_portal_receipt_worker.sql')}'\n\\i '${join(MIGRATIONS, '0039_portal_receipt_worker.sql')}'\n`);
+  ok(null, `\\i '${join(MIGRATIONS, '039_client_portal/migration.sql')}'\n`);
+  ok(null, `\\i '${join(MIGRATIONS, '041_portal_receipt_worker/migration.sql')}'\n\\i '${join(MIGRATIONS, '041_portal_receipt_worker/migration.sql')}'\n`);
   assert.equal(ok(null, left), '6\n18\n2');
 });
