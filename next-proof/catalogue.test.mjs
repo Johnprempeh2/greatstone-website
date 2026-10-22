@@ -40,6 +40,14 @@ test('collection reads do not cross organisation boundaries', () => {
   assert.equal(offeringBySlug(catalogueFromRelease(release), 'leak'), null);
 });
 
+test('legacy product URL slugs stay in public data without breaking the release schema', () => {
+  const legacy = structuredClone(snapshot);
+  legacy.catalogue.offerings[0].slug = 'sample-for--net';
+  const release = toProofRelease(legacy);
+  assert.equal(release.collections.offerings.entries[0].slug, undefined);
+  assert.equal(offeringBySlug(catalogueFromRelease(release), 'sample-for--net').slug, 'sample-for--net');
+});
+
 test('public catalogue fixture is usable locally but rejected by required release builds', async () => {
   const previous = process.env.NEXT_CATALOGUE_FIXTURE;
   const required = process.env.NEXT_CATALOGUE_REQUIRED;
