@@ -17,7 +17,7 @@ let local, pool, ipSeq = 0;
 before(async () => {
   local = new NetlifyDB({ logger: () => {} });
   const url = await local.start();
-  await local.applyMigrations(MIGRATIONS);
+  await local.applyMigrations(MIGRATIONS, '001_enquiry_inbox'); // PGlite has no citext or pg_trgm (002 on)
   pool = new pg.Pool({ connectionString: url, max: 1 });
 });
 after(async () => { await pool?.end(); await local?.stop(); });

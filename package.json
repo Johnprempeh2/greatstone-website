@@ -23,14 +23,19 @@
     "rls:check": "node scripts/check-rls.mjs",
     "design:detect": "node scripts/design-detect.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check",
-    "build:next": "node next-proof/scripts/export-pages.mjs && next build",
-    "dev:next": "node next-proof/scripts/export-pages.mjs && next dev --port 5181"
+    "build:next": "node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next build",
+    "check:legacy:next": "node next-proof/scripts/check-legacy-urls.mjs",
+    "dev:next": "node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",
+    "@netlify/blobs": "^11.1.6",
     "@netlify/database": "2.0.1",
     "@puckeditor/core": "^0.23.0",
     "@supabase/supabase-js": "^2.108.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "happy-dom": "^20.14.5",
     "next": "^15.5.28",
     "pg": "8.23.0",
     "react": "^18.3.1",
@@ -40,7 +45,6 @@
   "devDependencies": {
     "@netlify/database-dev": "1.0.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "happy-dom": "^20.14.5",
     "supabase": "^2.106.0",
     "vite": "^6.0.0"
   }

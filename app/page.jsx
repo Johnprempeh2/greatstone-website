@@ -1,5 +1,7 @@
 import ProofPage from './ProofPage.jsx';
-import { pageFor } from './proof-data.js';
+import { pageForPath } from './proof-data.js';
+import { activeRelease } from './release-source.js';
+import { pageMetadata } from './page-metadata.mjs';
 
-export const metadata = { title: pageFor('home').seo.title, description: pageFor('home').seo.description };
-export default function Home() { return <ProofPage slug="home" />; }
+export async function generateMetadata() { const { release } = await activeRelease(); return pageMetadata(pageForPath('/', release), release.release.number); }
+export default async function Home() { const { release } = await activeRelease(); return <ProofPage path="/" release={release} />; }

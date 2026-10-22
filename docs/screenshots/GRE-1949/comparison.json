@@ -1,0 +1,103 @@
+{
+  "source": "Public catalogue visible at greatstoneint.com/#shop",
+  "capturedAt": "2026-10-22",
+  "priceFieldsRemoved": true,
+  "results": [
+    {
+      "name": "shop",
+      "width": 1440,
+      "oldH1": [
+        "Developer software,licensed and supported."
+      ],
+      "nextH1": [
+        "Developer software,licensed and supported."
+      ],
+      "oldCards": 24,
+      "nextCards": 24,
+      "oldTitle": "Products · Greatstone International",
+      "nextTitle": "Software Catalogue · Greatstone International",
+      "oldScrollWidth": 1440,
+      "nextScrollWidth": 1440
+    },
+    {
+      "name": "vendor",
+      "width": 1440,
+      "oldH1": [
+        "Developer software,licensed and supported."
+      ],
+      "nextH1": [
+        "Developer software,licensed and supported."
+      ],
+      "oldCards": 1,
+      "nextCards": 1,
+      "oldTitle": "Products · Greatstone International",
+      "nextTitle": "Investintech software · Greatstone International",
+      "oldScrollWidth": 1440,
+      "nextScrollWidth": 1440
+    },
+    {
+      "name": "product",
+      "width": 1440,
+      "oldH1": [
+        "Able2Extract Professional 20"
+      ],
+      "nextH1": [
+        "Able2Extract Professional 20"
+      ],
+      "oldCards": 0,
+      "nextCards": 0,
+      "oldTitle": "Able2Extract Professional – Perpetual Desktop PDF Converter",
+      "nextTitle": "Able2Extract Professional – Perpetual Desktop PDF Converter",
+      "oldScrollWidth": 1440,
+      "nextScrollWidth": 1440
+    },
+    {
+      "name": "shop",
+      "width": 390,
+      "oldH1": [
+        "Developer software,licensed and supported."
+      ],
+      "nextH1": [
+        "Developer software,licensed and supported."
+      ],
+      "oldCards": 24,
+      "nextCards": 24,
+      "oldTitle": "Products · Greatstone International",
+      "nextTitle": "Software Catalogue · Greatstone International",
+      "oldScrollWidth": 390,
+      "nextScrollWidth": 390
+    },
+    {
+      "name": "vendor",
+      "width": 390,
+      "oldH1": [
+        "Developer software,licensed and supported."
+      ],
+      "nextH1": [
+        "Developer software,licensed and supported."
+      ],
+      "oldCards": 1,
+      "nextCards": 1,
+      "oldTitle": "Products · Greatstone International",
+      "nextTitle": "Investintech software · Greatstone International",
+      "oldScrollWidth": 390,
+      "nextScrollWidth": 390
+    },
+    {
+      "name": "product",
+      "width": 390,
+      "oldH1": [
+        "Able2Extract Professional 20"
+      ],
+      "nextH1": [
+        "Able2Extract Professional 20"
+      ],
+      "oldCards": 0,
+      "nextCards": 0,
+      "oldTitle": "Able2Extract Professional – Perpetual Desktop PDF Converter",
+      "nextTitle": "Able2Extract Professional – Perpetual Desktop PDF Converter",
+      "oldScrollWidth": 413,
+      "nextScrollWidth": 390
+    }
+  ]
+}

@@ -127,6 +127,20 @@ test('the inline sanitiser refuses block content as well as script', async () =>
   assert.ok(out.includes('para') && out.includes('head'), 'unwrapped blocks must keep their text');
 });
 
+test('inline copy and safe links render with a server DOM parser and no window', async () => {
+  const { sanitizeInline } = await load();
+  const had = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  delete globalThis.window;
+  try {
+    const out = sanitizeInline('Read <strong>this</strong> <a href="#go/privacy">policy</a><script>alert(1)</script>');
+    assert.match(out, /<strong>this<\/strong>/);
+    assert.match(out, /href="#go\/privacy"/);
+    assert.ok(!EXECUTABLE.test(out));
+  } finally {
+    if (had) Object.defineProperty(globalThis, 'window', had);
+  }
+});
+
 test('without a DOM it returns nothing rather than the raw string', async () => {
   const { sanitizeHtml } = await load();
   // `window`, because that is the guard the function actually reads.
