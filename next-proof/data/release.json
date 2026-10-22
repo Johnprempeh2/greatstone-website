@@ -6007,7 +6007,20 @@
       }
     }
   ],
-  "collections": {},
+  "collections": {
+    "vendors": {
+      "fieldsVersion": 1,
+      "entries": []
+    },
+    "categories": {
+      "fieldsVersion": 1,
+      "entries": []
+    },
+    "offerings": {
+      "fieldsVersion": 1,
+      "entries": []
+    }
+  },
   "redirects": [],
   "media": {}
 }

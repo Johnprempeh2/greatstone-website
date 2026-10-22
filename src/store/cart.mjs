@@ -51,8 +51,8 @@ const openSubs = new Set();
 export function openCart() { openSubs.forEach((f) => f()); }
 export function onOpenCart(f) { openSubs.add(f); return () => openSubs.delete(f); }
 
-const SUPA_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || '';
-const ANON = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || '';
+const SUPA_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) || '';
+const ANON = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || '';
 
 // Hand the basket to the edge function, which recomputes every price server-side (never trusts the
 // client) + adds VAT, and returns a Stripe Checkout Session URL to redirect to. Throws on failure.

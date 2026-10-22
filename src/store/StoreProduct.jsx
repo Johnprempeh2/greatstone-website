@@ -1,4 +1,5 @@
 // Live product detail — reads one offering (variants/specs/gallery/related) from Supabase.
+'use client';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.mjs';
 import { getOffering, relatedOfferings } from '../data/catalog.mjs';
@@ -11,6 +12,7 @@ const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.me
 const img = (u) => !u ? '' : /^https?:|^data:/.test(u) ? u : BASE + String(u).replace(/^assets\//, '');
 
 const QUOTE_EMAIL = 'dx@greatstonesoftware.co.uk';
+const EMPTY_RELATED = [];
 // "Request a quote" should actually request a quote. The Deep Dive Calendly (#book) is a transformation
 // diagnostic, not a software-licensing quote desk; and POA products can't enter the basket (no price), so
 // the structured cart quote form is unreachable for them. A prefilled enquiry email matches this page's
@@ -24,19 +26,20 @@ const quoteMailto = (o, variant) => {
   return 'mailto:' + QUOTE_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 };
 
-export default function StoreProduct({ slug, onBack, applyHead }) {
-  const [o, setO] = useState(undefined); // undefined = loading, null = not found
-  const [related, setRelated] = useState([]);
+export default function StoreProduct({ slug, onBack, applyHead, initialOffering, initialRelated = EMPTY_RELATED }) {
+  const [o, setO] = useState(initialOffering); // undefined = loading, null = not found
+  const [related, setRelated] = useState(initialRelated);
   const [gi, setGi] = useState(0);
 
   useEffect(() => {
+    if (initialOffering) { setO(initialOffering); setRelated(initialRelated); return; }
     if (!supabase || !slug) { setO(null); return; }
     let alive = true; setO(undefined); setGi(0); setRelated([]);
     getOffering(supabase, slug)
       .then(d => { if (!alive) return; setO(d); if (d) relatedOfferings(supabase, d).then(r => alive && setRelated(r)).catch(e => { console.warn('relatedOfferings', e); }); })
       .catch(e => { console.error('getOffering', e); if (alive) setO(null); });
     return () => { alive = false; };
-  }, [slug]);
+  }, [slug, initialOffering, initialRelated]);
 
   // full head (canonical + og/twitter + description) once the offering resolves, so a product link no
   // longer shares with stale meta. Falls back to a bare title if applyHead wasn't supplied.
@@ -78,8 +81,8 @@ export default function StoreProduct({ slug, onBack, applyHead }) {
     <div className="st-scrim" aria-hidden="true" />
     <div className="sp-wrap">
       <nav className="sp-crumb" aria-label="Breadcrumb">
-        <a href="#shop">Catalogue</a><span className="sep" aria-hidden="true">›</span>
-        <a href={'#shop/' + (o.vendor ? o.vendor.slug : '')}>{o.vendor && o.vendor.name}</a><span className="sep" aria-hidden="true">›</span>
+        <a href={initialOffering ? '/shop' : '#shop'}>Catalogue</a><span className="sep" aria-hidden="true">›</span>
+        <a href={initialOffering ? '/shop/' + (o.vendor ? o.vendor.slug : '') : '#shop/' + (o.vendor ? o.vendor.slug : '')}>{o.vendor && o.vendor.name}</a><span className="sep" aria-hidden="true">›</span>
         <span className="here">{o.name}</span>
       </nav>
 
@@ -127,7 +130,7 @@ export default function StoreProduct({ slug, onBack, applyHead }) {
         <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p><BasketBar /></section>}
 
       {!!related.length && <section className="sp-section"><h2>Related products</h2>
-        <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={'#product/' + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.pricing && r.pricing.final != null ? 'from ' + fmtMoney(r.pricing.final) : 'Request a quote'} ›</div></a>)}</div></section>}
+        <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={(initialOffering ? '/product/' : '#product/') + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.pricing && r.pricing.final != null ? 'from ' + fmtMoney(r.pricing.final) : 'Request a quote'} ›</div></a>)}</div></section>}
 
       <div className="sp-back"><button className="st-more" onClick={onBack}>← Back to the catalogue</button></div>
     </div>

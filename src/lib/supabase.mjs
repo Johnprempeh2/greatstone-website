@@ -6,8 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 const ime = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
 const penv = (typeof process !== 'undefined' && process.env) ? process.env : {};
 
-export const SUPABASE_URL = ime.VITE_SUPABASE_URL || penv.VITE_SUPABASE_URL || '';
-const ANON_KEY = ime.VITE_SUPABASE_ANON_KEY || penv.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_URL = ime.VITE_SUPABASE_URL || penv.NEXT_PUBLIC_SUPABASE_URL || penv.VITE_SUPABASE_URL || '';
+const ANON_KEY = ime.VITE_SUPABASE_ANON_KEY || penv.NEXT_PUBLIC_SUPABASE_ANON_KEY || penv.VITE_SUPABASE_ANON_KEY || '';
 
 export function makeClient(key = ANON_KEY, opts = {}) {
   if (!SUPABASE_URL || !key) throw new Error('Supabase env missing (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');

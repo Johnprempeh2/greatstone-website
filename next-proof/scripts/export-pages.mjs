@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { toProofRelease } from '../release-adapter.mjs';
+import { publishedCatalogue } from '../catalogue-source.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const temp = await mkdtemp(join(root, 'node_modules/.next-proof-'));
@@ -29,13 +30,14 @@ try {
   finally { Math.random = originalRandom; }
   const { pages, settings, navigation } = snapshot;
   const publishedSlugs = snapshot.order.filter((slug) => pages[slug]?.status === 'published' && pages[slug]?.published?.content?.length);
-  const selected = { settings, navigation: navigation.filter((item) => item.type === 'page' && publishedSlugs.includes(item.pageSlug)), pages: Object.fromEntries(publishedSlugs.map((slug) => [slug, {
+  const catalogue = await publishedCatalogue();
+  const selected = { settings, catalogue, navigation: navigation.filter((item) => item.type === 'page' && publishedSlugs.includes(item.pageSlug)), pages: Object.fromEntries(publishedSlugs.map((slug) => [slug, {
     title: pages[slug].title,
     seo: pages[slug].seo,
     data: pages[slug].published,
   }])) };
   await writeFile(resolve(import.meta.dirname, '../data/release.json'), JSON.stringify(toProofRelease(selected), null, 2) + '\n');
-  console.log(`Exported schema 1 release for ${publishedSlugs.length} published pages`);
+  console.log(`Exported schema 1 release for ${publishedSlugs.length} published pages and ${catalogue?.offerings.length || 0} published offerings`);
 } finally {
   await rm(temp, { recursive: true, force: true });
 }

@@ -1,6 +1,7 @@
 import '../src/site.css';
 import '../src/index.css';
 import '../src/two-doors.css';
+import '../src/store/store.css';
 import './proof.css';
 import { Window } from 'happy-dom';
 import { theme } from './proof-data.js';
