@@ -22,12 +22,16 @@
     "launch:check": "node scripts/seo-report.mjs --launch && node scripts/legal-check.mjs",
     "rls:check": "node scripts/check-rls.mjs",
     "design:detect": "node scripts/design-detect.mjs",
-    "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check"
+    "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check",
+    "build:next": "node next-proof/scripts/export-pages.mjs && next build",
+    "dev:next": "node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",
     "@netlify/database": "2.0.1",
+    "@puckeditor/core": "^0.23.0",
     "@supabase/supabase-js": "^2.108.2",
+    "next": "^15.5.28",
     "pg": "8.23.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

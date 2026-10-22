@@ -110,12 +110,12 @@ function seedPage(title, background, content, seo, status = 'published') {
 }
 
 const TOOLS = [
-  { name: 'Aspose', line: 'Create, edit and convert Word, Excel, PowerPoint and PDF files from your own code.' },
-  { name: 'Apryse', line: 'A PDF and document SDK to view, annotate, edit and sign files inside your apps.' },
-  { name: 'DevExpress', line: 'UI controls, data grids, charts and reports for .NET and JavaScript apps.' },
-  { name: 'GroupDocs', line: 'Document APIs to view, convert, compare, annotate and sign files across common formats.' },
-  { name: 'Iron Software', line: 'C# and .NET libraries for PDF, OCR, barcodes and Excel files.' },
-  { name: 'Conholdate', line: 'Aspose and GroupDocs APIs together, under one licence.' },
+  { name: 'Aspose', image: '/assets/two-doors/brands/aspose.png', line: 'Create, edit and convert Word, Excel, PowerPoint and PDF files from your own code.' },
+  { name: 'Apryse', image: '/assets/two-doors/brands/apryse.png', line: 'A PDF and document SDK to view, annotate, edit and sign files inside your apps.' },
+  { name: 'DevExpress', image: '/assets/two-doors/brands/devexpress.png', line: 'UI controls, data grids, charts and reports for .NET and JavaScript apps.' },
+  { name: 'GroupDocs', image: '/assets/two-doors/brands/groupdocs.png', line: 'Document APIs to view, convert, compare, annotate and sign files across common formats.' },
+  { name: 'Iron Software', image: '/assets/two-doors/brands/iron-software.png', line: 'C# and .NET libraries for PDF, OCR, barcodes and Excel files.' },
+  { name: 'Conholdate', image: '/assets/two-doors/brands/conholdate.png', line: 'Aspose and GroupDocs APIs together, under one licence.' },
 ];
 const homeCopy = {
   headlineSuffix: 'and the tools to deliver it.', cueText: 'Choose your side', cueSubtext: 'DX Consultancy or DX Dev Tools',
@@ -143,7 +143,7 @@ const draftCases = [{ headline: 'First study', image: '/assets/two-doors/consult
 const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '#dev-tools', contactHref: '#contact', consultancyHref: '#door-dx', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
 const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
 function twoDoorsHomePage() {
-  return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolsCopy, tools: TOOLS })], {
+  return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolsCopy, tools: TOOLS })], {
     title: 'Greatstone International · Two ways to work with us',
     description: 'Explore DX Consultancy and DX Dev Tools from Greatstone International.', ogImage: '',
   });

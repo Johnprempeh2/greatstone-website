@@ -6,7 +6,7 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 
 // The unconfirmed claims in v15 are review material only. A production build has no
 // switch in the browser that can reveal them.
-const REVIEW_CONTENT = import.meta.env.VITE_TWO_DOORS_DRAFT_CONTENT === 'true';
+const REVIEW_CONTENT = import.meta.env?.VITE_TWO_DOORS_DRAFT_CONTENT === 'true';
 const copyFields = (keys) => Object.fromEntries(keys.map((key) => [key, { type: 'text', label: key.replace(/([A-Z])/g, ' $1') }]));
 const textDefaults = (keys) => Object.fromEntries(keys.map((key) => [key, '']));
 const homeFields = 'headlineSuffix cueText cueSubtext consultancyName toolsName chooseLabel consultancyTag toolsTag moreClosed moreOpen logoLabel logoDraft consultancyPoint1 consultancyPoint1Text consultancyPoint2 consultancyPoint2Text consultancyPoint3 consultancyPoint3Text consultancyCta proofLink toolsCta chooserHeading chooserLine consultancyChooserLine toolsChooserLine orLabel swipeHint toolsPoint1 toolsPoint1Text toolsPoint2 toolsPoint2Text toolsPoint3 toolsPoint3Text chooseHref contactHref proofHref toolsHref'.split(' ');
@@ -30,7 +30,7 @@ function Carousel({ items, label, render, enabled = true }) {
     <div className="td-slide" tabIndex="0" onKeyDown={(e) => { if (e.key === 'ArrowRight') move(1); if (e.key === 'ArrowLeft') move(-1); }}
       onTouchStart={(e) => { touch.current = e.touches[0].clientX; }} onTouchEnd={(e) => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 45) move(dx < 0 ? 1 : -1); touch.current = null; }}>
       <div className="td-carousel-current">{render(items[index], index)}</div>
-      {count > 1 && <div className="td-carousel-next" aria-hidden="true" inert="">{render(items[(index + 1) % count], (index + 1) % count)}</div>}
+      {count > 1 && <div className="td-carousel-next" aria-hidden="true" inert={true}>{render(items[(index + 1) % count], (index + 1) % count)}</div>}
     </div>
     <div className="td-carousel-controls">
       <span className="td-dots" aria-label={`${index + 1} of ${count}`}>{items.map((item, i) => <button key={i} type="button" className={index === i ? 'active' : ''} aria-label={`Show ${label} ${i + 1}`} aria-current={index === i ? 'true' : undefined} onClick={() => setIndex(i)} />)}</span>
@@ -41,7 +41,7 @@ function Carousel({ items, label, render, enabled = true }) {
 }
 
 export function TwoDoors(props) {
-  const { kicker, heading, intro, consultancyLine, toolsLine, clientLogos = [], tide = true, consultancyImage, toolsImage } = props;
+  const { kicker, heading, intro, consultancyLine, toolsLine, clientLogos = [], toolBrands = [], tide = true, consultancyImage, toolsImage } = props;
   const copy = { ...props };
   const [side, setSide] = useState('choose');
   const [pinned, setPinned] = useState(null);
@@ -59,7 +59,20 @@ export function TwoDoors(props) {
   }, []);
   useLayoutEffect(() => {
     const node = strip.current;
-    if (node && mobile) node.scrollLeft = panelPosition(node, doorPanels(node)[1]);
+    if (!node || !mobile) return;
+    let size = '';
+    const chooser = doorPanels(node)[1];
+    const centreChooser = () => {
+      const nextSize = `${node.clientWidth}:${node.scrollWidth}:${chooser.offsetWidth}`;
+      if (nextSize === size) return;
+      size = nextSize;
+      node.scrollLeft = panelPosition(node, chooser);
+    };
+    const observer = new ResizeObserver(centreChooser);
+    observer.observe(node);
+    observer.observe(chooser);
+    centreChooser();
+    return () => observer.disconnect();
   }, [mobile]);
   const select = (next) => {
     if (window.matchMedia('(max-width:760px)').matches && strip.current) {
@@ -93,26 +106,26 @@ export function TwoDoors(props) {
         <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{copy.toolsName}</button>
       </nav>
       <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (mobile) { const node = e.currentTarget; const panels = doorPanels(node); const nearest = panels.reduce((best, panel, i) => Math.abs(panelPosition(node, panel) - node.scrollLeft) < Math.abs(panelPosition(node, panels[best]) - node.scrollLeft) ? i : best, 0); setSide(doorSides[nearest]); } }} onMouseLeave={() => { if (!mobile) setSide(pinned || 'choose'); }} onBlur={(e) => { if (!mobile && !e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
-        <span className="td-join-label" aria-hidden="true">{copy.orLabel}</span>
         <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('consultancy'); }}>
           <img src={consultancyImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
           <div className="td-door-copy"><p className="td-door-tag">{copy.consultancyTag}</p><h2>{copy.consultancyName}</h2><p>{consultancyLine}</p>
             <button type="button" className="td-more" aria-expanded={active === 'consultancy'} onClick={() => open('consultancy')}>{active === 'consultancy' ? copy.moreOpen : copy.moreClosed}</button>
-            <div className={'td-door-detail' + (active === 'consultancy' ? ' is-open' : '')} inert={active === 'consultancy' ? undefined : ''}><div className="td-door-detail-inner">
+            <div className={'td-door-detail' + (active === 'consultancy' ? ' is-open' : '')} inert={active !== 'consultancy'}><div className="td-door-detail-inner">
               {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt || ''} loading="lazy" /></li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
               <ul><li><b>{copy.consultancyPoint1}</b> {copy.consultancyPoint1Text}</li><li><b>{copy.consultancyPoint2}</b> {copy.consultancyPoint2Text}</li><li><b>{copy.consultancyPoint3}</b> {copy.consultancyPoint3Text}</li></ul>
             </div></div>
             <a className="td-pill" href={safeHref(copy.contactHref)}>{copy.consultancyCta}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{copy.proofLink}</a>
           </div>
         </article>
+        <div className="td-divider" aria-hidden="true"><span>{copy.orLabel}</span></div>
         <div className="td-chooser"><h2>{copy.chooserHeading}</h2><p>{copy.chooserLine}</p><div className="td-chooser-split"><button type="button" onClick={() => select('consultancy')}><img src={consultancyImage} alt="" /><span className="td-chooser-arrow">←</span><b>{copy.consultancyName}</b><span>{copy.consultancyChooserLine}</span></button><span className="td-chooser-or">{copy.orLabel}</span><button type="button" onClick={() => select('tools')}><img src={toolsImage} alt="" /><span className="td-chooser-arrow">→</span><b>{copy.toolsName}</b><span>{copy.toolsChooserLine}</span></button></div><small>{copy.swipeHint}</small></div>
         <article className={'td-door td-tools' + (active === 'tools' ? ' expanded' : '')} id="door-tools" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('tools'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('tools'); }}>
           <img src={toolsImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
           <div className="td-door-copy"><p className="td-door-tag">{copy.toolsTag}</p><h2>{copy.toolsName}</h2><p>{toolsLine}</p>
             <button type="button" className="td-more" aria-expanded={active === 'tools'} onClick={() => open('tools')}>{active === 'tools' ? copy.moreOpen : copy.moreClosed}</button>
-            <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active === 'tools' ? undefined : ''}><div className="td-door-detail-inner"><ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
+            <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active !== 'tools'}><div className="td-door-detail-inner">{toolBrands.length > 0 && <div className="td-client-logos"><p>Brands we supply</p><ul>{toolBrands.filter((brand) => brand?.image).map((brand) => <li key={brand.name}><img src={brand.image} alt={brand.name} loading="lazy" /></li>)}</ul></div>}<ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
             <a className="td-pill td-pill-teal" href={safeHref(copy.toolsHref)}>{copy.toolsCta}</a>
           </div>
         </article>
@@ -176,8 +189,9 @@ export const puck = {
       image: { type: 'custom', label: 'Logo image', render: (props) => <MediaField {...props} /> }, alt: { type: 'text', label: 'Organisation name' },
       permission: { type: 'select', label: 'Permission on file', options: [{ label: 'Pending', value: 'pending' }, { label: 'Approved in writing', value: 'approved' }] },
     }, defaultItemProps: { image: '', alt: '', permission: 'pending' }, getItemSummary: (item) => item.alt || 'Logo' },
+    toolBrands: { type: 'array', label: 'DX Dev Tools brands', arrayFields: { name: { type: 'text', label: 'Brand' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> } }, defaultItemProps: { name: '', image: '' }, getItemSummary: (item) => item.name || 'Brand' },
   },
-  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, clientLogos: [] },
+  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, clientLogos: [], toolBrands: [] },
   render: (props) => <TwoDoors {...props} />,
 };
 
