@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Pricing & mass-discount rules manager (catalogue admin). Create a rule (scope all/vendor/category,
 // %/fixed), see a LIVE before→after preview computed by the pricing engine over the real catalogue,
 // then save it (writes pricing_rules + pricing_rule_targets via the authenticated client; staff_all RLS).
@@ -18,15 +19,15 @@ export default function PricingRules({ staff }) {
   const [err, setErr] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const loadRules = () => supabase.from('pricing_rules')
+  const loadRules = () => staffDb.from('pricing_rules')
     .select('id,name,active,scope_type,adjustment_type,adjustment_value,adjustment_value_pct,currency,label,pricing_rule_targets(vendor_id,category_id)')
     .order('created_at', { ascending: false }).then(({ data }) => setRules(data || []));
   useEffect(() => {
     loadRules();
-    supabase.from('vendors').select('id,slug,name').eq('status', 'published').order('name').then(({ data }) => setVendors(data || []));
-    supabase.from('categories').select('id,slug,name').eq('status', 'published').order('name').then(({ data }) => setCategories(data || []));
-    supabase.from('offerings').select('id,name,type,vendor_id,category_id,from_price_minor,from_price_currency').eq('status', 'published').limit(500).then(({ data }) => setCatalogue(data || []));
-    supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle().then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate); if (r > 0) setRate(r); });
+    staffDb.from('vendors').select('id,slug,name').eq('status', 'published').order('name').then(({ data }) => setVendors(data || []));
+    staffDb.from('categories').select('id,slug,name').eq('status', 'published').order('name').then(({ data }) => setCategories(data || []));
+    staffDb.from('offerings').select('id,name,type,vendor_id,category_id,from_price_minor,from_price_currency').eq('status', 'published').limit(500).then(({ data }) => setCatalogue(data || []));
+    staffDb.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle().then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate); if (r > 0) setRate(r); });
   }, []);
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
@@ -57,7 +58,7 @@ export default function PricingRules({ staff }) {
   const save = async () => {
     if (!form.name.trim()) { setErr('Give the rule a name.'); return; }
     setBusy(true); setErr(null);
-    const { data: rule, error } = await supabase.from('pricing_rules').insert({
+    const { data: rule, error } = await staffDb.from('pricing_rules').insert({
       org_id: staff.org_id, name: form.name.trim(), active: form.active, scope_type: form.scopeType,
       adjustment_type: form.adjType,
       adjustment_value: form.adjType === 'fixed' ? Math.round(Number(form.fixed || 0) * 100) : 0,
@@ -68,13 +69,21 @@ export default function PricingRules({ staff }) {
     if (error) { setBusy(false); setErr(error.message); return; }
     if (form.scopeType !== 'all' && form.targetIds.length) {
       const col = form.scopeType + '_id';
-      const { error: e2 } = await supabase.from('pricing_rule_targets').insert(form.targetIds.map(tid => ({ org_id: staff.org_id, rule_id: rule.id, [col]: tid })));
+      const { error: e2 } = await staffDb.from('pricing_rule_targets').insert(form.targetIds.map(tid => ({ org_id: staff.org_id, rule_id: rule.id, [col]: tid })));
       if (e2) { setBusy(false); setErr('Rule saved but targets failed: ' + e2.message); loadRules(); return; }
     }
     setBusy(false); setForm(blankForm); flash('Discount rule saved' + (form.active ? ' and live.' : ' (inactive, toggle on when ready).')); loadRules();
   };
-  const toggleActive = async (r) => { await supabase.from('pricing_rules').update({ active: !r.active }).eq('id', r.id); loadRules(); };
-  const remove = async (r) => { await supabase.from('pricing_rules').update({ deleted_at: new Date().toISOString(), active: false }).eq('id', r.id); loadRules(); flash('Rule removed.'); };
+  const toggleActive = async (r) => {
+    const { error } = await staffDb.from('pricing_rules').update({ active: !r.active }).eq('id', r.id);
+    if (error) { flash('Could not update. ' + error.message); return; }
+    loadRules();
+  };
+  const remove = async (r) => {
+    const { error } = await staffDb.from('pricing_rules').update({ deleted_at: new Date().toISOString(), active: false }).eq('id', r.id);
+    if (error) { flash('Could not remove. ' + error.message); return; }
+    loadRules(); flash('Rule removed.');
+  };
 
   const scopeLabel = (r) => r.scope_type === 'all' ? 'All products'
     : r.scope_type === 'vendor' ? `${r.pricing_rule_targets?.length || 0} vendor(s)`

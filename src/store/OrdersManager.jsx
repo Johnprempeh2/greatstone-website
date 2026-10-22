@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Catalogue admin — orders. Reads orders + items written by the stripe-webhook (staff_all RLS gates
 // access to the signed-in staff org). Expand a row to see line items, ISSUE the licence keys that
 // fulfil the order (manual model: staff buy the key from the vendor, paste it here, the buyer sees it
@@ -22,7 +23,7 @@ export default function OrdersManager({ staff }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    supabase.from('orders')
+    staffDb.from('orders')
       .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, invoice_number, placed_at, created_at, customer_id, customer_email, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor), licence_keys(id, offering_name, variant_name, licence_key, status)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -33,7 +34,7 @@ export default function OrdersManager({ staff }) {
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
   const markFulfilled = async (id) => {
-    const { error } = await supabase.from('orders').update({ status: 'fulfilled' }).eq('id', id);
+    const { error } = await staffDb.from('orders').update({ status: 'fulfilled' }).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
     // Ben's fulfilment flow: marking an order fulfilled tells the buyer their licences are ready to collect.
     // Best-effort + non-blocking — if the edge fn isn't deployed or email is off, the status change stands.
@@ -46,7 +47,7 @@ export default function OrdersManager({ staff }) {
   };
   const cancelOrder = async (id) => {
     if (typeof confirm === 'function' && !confirm('Mark this order cancelled? This records the status only. Issue any refund in Stripe (it will reconcile back here automatically).')) return;
-    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', id);
+    const { error } = await staffDb.from('orders').update({ status: 'cancelled' }).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
     flash('Order cancelled.'); load();
   };

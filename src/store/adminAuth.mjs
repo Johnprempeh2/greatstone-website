@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Supabase Auth helpers for the catalogue admin. A signed-in user's JWT drives the staff_all
 // write RLS (0004); the public.users row gives their role. Keeps catalogue admin auth separate
 // from the legacy Puck-pages prototype session — additive, low-risk.
@@ -25,7 +26,7 @@ export async function getStaffUser() {
   if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data, error } = await supabase.from('users')
+  const { data, error } = await staffDb.from('users')
     .select('id, email, full_name, role, org_id').eq('auth_subject', user.id).maybeSingle();
   if (error) { console.warn('getStaffUser', error); return null; }
   return data; // role ∈ owner/admin/editor/sales/viewer (or null if no profile row)

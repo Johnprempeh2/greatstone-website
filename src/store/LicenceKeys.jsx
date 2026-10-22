@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // The customer's "Licence keys" section on #account — a dedicated home for the activation codes a buyer
 // has been issued, instead of a placeholder note buried in each order. RLS-scoped (customer_self, 0017):
 // a buyer reads only their own company's keys; staff issue them.
@@ -18,7 +19,7 @@ export default function LicenceKeys() {
   const [fileBusy, setFileBusy] = useState(null); // id being fetched, or 'fail:<id>'
   const load = useCallback(() => {
     setErr(null);
-    supabase.from('licence_keys')
+    staffDb.from('licence_keys')
       .select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, download_url, file_path, file_name, order:orders(reference)')
       .is('deleted_at', null).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { setErr(error || null); setKeys(data || []); });
@@ -30,7 +31,7 @@ export default function LicenceKeys() {
   // error we simply show no activation block. Vendors are customer-readable (public_read, published only).
   const [vendors, setVendors] = useState([]);
   useEffect(() => {
-    supabase.from('vendors').select('id, name, activation_instructions').is('deleted_at', null)
+    staffDb.from('vendors').select('id, name, activation_instructions').is('deleted_at', null)
       .then(({ data, error }) => { if (!error) setVendors((data || []).filter((v) => v.activation_instructions)); });
   }, []);
   // Match each licence to its range's steps by product name (token-anchored; see lib/activation-match.mjs).

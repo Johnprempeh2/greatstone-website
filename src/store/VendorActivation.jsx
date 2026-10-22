@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Catalogue admin — Activation instructions. Ben (1 Jul): author the activation steps ONCE per product
 // range (vendor), not per product. Staff edit vendors.activation_instructions here (migration 0025); the
 // steps then show on the customer's account beside every licence in that range (LicenceKeys, matched by the
@@ -15,7 +16,7 @@ export default function VendorActivation() {
 
   const load = useCallback(() => {
     setLoadErr(null);
-    supabase.from('vendors').select('id, name, activation_instructions').is('deleted_at', null).order('sort_order', { ascending: true })
+    staffDb.from('vendors').select('id, name, activation_instructions').is('deleted_at', null).order('sort_order', { ascending: true })
       .then(({ data, error }) => {
         if (error) { console.error('vendors load', error); setLoadErr(error.message || 'load failed'); return; }
         setVendors(data || []);
@@ -30,7 +31,7 @@ export default function VendorActivation() {
   const save = async (v) => {
     setSavingId(v.id);
     const text = (drafts[v.id] || '').trim();
-    const { error } = await supabase.from('vendors').update({ activation_instructions: text || null }).eq('id', v.id);
+    const { error } = await staffDb.from('vendors').update({ activation_instructions: text || null }).eq('id', v.id);
     setSavingId(null);
     if (error) { flash('Could not save. ' + error.message); return; }
     flash('Saved the ' + v.name + ' activation steps.');

@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // FX rate editor (catalogue admin). Edit the single global USD→GBP display rate; the whole catalogue
 // reprices on save because GBP is computed from USD at the live rate. Live before→after preview over a
 // sample of real products + an audit history panel (fx_rate_history). Staff-gated via staff_all RLS.
@@ -20,12 +21,12 @@ export default function FxRateEditor({ staff }) {
   const [toast, setToast] = useState(null);
 
   const load = useCallback(() => {
-    supabase.from('org_settings').select('usd_to_gbp_display_rate, row_version, updated_at').limit(1).maybeSingle()
+    staffDb.from('org_settings').select('usd_to_gbp_display_rate, row_version, updated_at').limit(1).maybeSingle()
       .then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate) || 1.30; setCurrent(r); setDraft(String(r)); setRowVersion(data?.row_version ?? null); setUpdatedAt(data?.updated_at ?? null); });
-    supabase.from('offerings').select('id,name,from_price_minor').eq('status', 'published')
+    staffDb.from('offerings').select('id,name,from_price_minor').eq('status', 'published')
       .not('from_price_minor', 'is', null).order('from_price_minor', { ascending: false }).limit(10)
       .then(({ data }) => setSample(data || []));
-    supabase.from('fx_rate_history').select('old_rate,new_rate,changed_at').order('changed_at', { ascending: false }).limit(20)
+    staffDb.from('fx_rate_history').select('old_rate,new_rate,changed_at').order('changed_at', { ascending: false }).limit(20)
       .then(({ data }) => setHistory(data || []));
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -53,7 +54,7 @@ export default function FxRateEditor({ staff }) {
     setBusy(true); setErr(null);
     // Optimistic lock: only write if nobody else has changed the rate since we loaded (row_version is
     // bumped by the touch_row trigger on every update). A 0-row result means a concurrent save won.
-    let q = supabase.from('org_settings')
+    let q = staffDb.from('org_settings')
       .update({ usd_to_gbp_display_rate: draftRate, updated_by: staff.id })
       .eq('org_id', staff.org_id);
     if (rowVersion != null) q = q.eq('row_version', rowVersion);
