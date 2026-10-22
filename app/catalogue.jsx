@@ -5,9 +5,9 @@ import CatalogueFilters from './CatalogueFilters.jsx';
 
 const image = (value) => !value ? '' : safeHref(value.startsWith('assets/') ? '/' + value.slice(7) : value);
 
-export function CatalogueBrowse({ catalogue, filters = {} }) {
+export function CatalogueBrowse({ catalogue, filters = {}, release }) {
   const offerings = catalogue.rows;
-  return <SiteFrame><div className="st-scrim" aria-hidden="true" /><div className="st-wrap">
+  return <SiteFrame release={release}><div className="st-scrim" aria-hidden="true" /><div className="st-wrap">
     <header className="st-head"><span className="st-kicker">Software Catalogue</span>
       <h1 className="st-h1">Developer software,<br /><span className="accent">licensed and supported.</span></h1>
       <p className="st-lead">The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the vendors who make them, licensed and supported by us in the UK.</p>

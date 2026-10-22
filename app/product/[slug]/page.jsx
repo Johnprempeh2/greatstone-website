@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation';
 import CatalogueProductClient from '../../CatalogueProductClient.jsx';
 import { SiteFrame } from '../../ProofPage.jsx';
-import { catalogue, catalogueReleaseNumber } from '../../catalogue-data.js';
+import { catalogueFromRelease } from '../../catalogue-data.js';
+import { activeRelease } from '../../release-source.js';
 import { offeringBySlug } from '../../../next-proof/catalogue-data.mjs';
-
-export function generateStaticParams() { return catalogue.offerings.map((item) => ({ slug: item.slug })); }
 
 // Next can pass a path segment with encoded punctuation to an App Router page.
 function catalogueSlug(value) {
@@ -13,16 +12,20 @@ function catalogueSlug(value) {
 }
 
 export async function generateMetadata({ params }) {
+  const { release } = await activeRelease();
+  const catalogue = catalogueFromRelease(release);
   const slug = catalogueSlug((await params).slug);
   const item = offeringBySlug(catalogue, slug);
   if (!item) notFound();
   const title = item.seo?.metaTitle || `${item.name} · Greatstone International`;
   const description = item.seo?.metaDescription || item.short_description || item.description;
   const url = `https://greatstoneint.com/product/${encodeURIComponent(slug)}`;
-  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { card: 'summary', title, description }, other: { 'gs-release': String(catalogueReleaseNumber) } };
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { card: 'summary', title, description }, other: { 'gs-release': String(release.release.number) } };
 }
 
 export default async function Product({ params }) {
+  const { release } = await activeRelease();
+  const catalogue = catalogueFromRelease(release);
   const slug = catalogueSlug((await params).slug);
   const item = offeringBySlug(catalogue, slug);
   if (!item) notFound();
@@ -30,5 +33,5 @@ export default async function Product({ params }) {
   const structured = { '@context': 'https://schema.org', '@type': 'Product', name: item.name, description: item.short_description || item.description,
     brand: { '@type': 'Brand', name: item.vendor?.name || 'Greatstone International' },
     offers: { '@type': 'Offer', priceCurrency: item.from_price_currency || 'GBP', availability: 'https://schema.org/InStock', url: 'https://greatstoneint.com/product/' + encodeURIComponent(slug) } };
-  return <SiteFrame><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><CatalogueProductClient item={item} related={related} /></SiteFrame>;
+  return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><CatalogueProductClient item={item} related={related} /></SiteFrame>;
 }
