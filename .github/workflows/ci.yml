@@ -32,3 +32,26 @@ jobs:
         run: npm run secrets:check
       - name: Row-level security on every table (supabase/migrations)
         run: npm run rls:check
+
+  netlify-db-rls:
+    # The Netlify Database migrations and their RLS suites (GRE-1795) on Postgres 18, the version Netlify Database
+    # runs. The build-test job's npm test runs the same suites on the runner's own Postgres.
+    name: Netlify Database migrations and RLS (Postgres 18)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Postgres 18 server binaries
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -q postgresql-18
+      - name: Migrations, auth bridge and RLS suites (netlify/tests)
+        run: node --test netlify/tests/*.test.mjs
+        env:
+          PG_BIN: /usr/lib/postgresql/18/bin
