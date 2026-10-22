@@ -1,8 +1,7 @@
-// Live product detail — reads one offering (variants/specs/gallery/related) from Supabase.
+// Live product detail — reads one offering (variants/specs/gallery/related) from the Netlify API.
 'use client';
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase.mjs';
-import { getOffering, relatedOfferings } from '../data/catalog.mjs';
+import { getOffering, relatedOfferings } from '../data/catalogue-api.mjs';
 import { siteOrigin } from '../lib/site-origin.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { addItem, useCart, openCart } from './cart.mjs';
@@ -33,10 +32,10 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
 
   useEffect(() => {
     if (initialOffering) { setO(initialOffering); setRelated(initialRelated); return; }
-    if (!supabase || !slug) { setO(null); return; }
+    if (!slug) { setO(null); return; }
     let alive = true; setO(undefined); setGi(0); setRelated([]);
-    getOffering(supabase, slug)
-      .then(d => { if (!alive) return; setO(d); if (d) relatedOfferings(supabase, d).then(r => alive && setRelated(r)).catch(e => { console.warn('relatedOfferings', e); }); })
+    getOffering(slug)
+      .then(d => { if (!alive) return; setO(d); if (d) relatedOfferings(d).then(r => alive && setRelated(r)).catch(e => { console.warn('relatedOfferings', e); }); })
       .catch(e => { console.error('getOffering', e); if (alive) setO(null); });
     return () => { alive = false; };
   }, [slug, initialOffering, initialRelated]);

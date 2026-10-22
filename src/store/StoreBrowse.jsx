@@ -1,8 +1,7 @@
-// Live storefront listing — reads the Supabase data layer (RLS-gated, public catalogue).
+// Live storefront listing — public catalogue and pricing come from the Netlify API.
 // Faceted browse by vendor / category / platform + search + sort + load-more.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase.mjs';
-import { listOfferings, listVendors, listCategories } from '../data/catalog.mjs';
+import { listOfferings, listVendors, listCategories } from '../data/catalogue-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import './store.css';
 
@@ -30,18 +29,16 @@ export default function StoreBrowse({ initialVendor = '' }) {
   const reqSeq = useRef(0);                    // ignore out-of-order responses (rapid filter changes)
 
   useEffect(() => {
-    if (!supabase) { setErr('Catalogue offline (Supabase env missing).'); setLoading(false); return; }
-    listVendors(supabase).then(setVendors).catch(() => {});
-    listCategories(supabase).then(setCategories).catch(() => {});
+    listVendors().then(setVendors).catch(() => {});
+    listCategories().then(setCategories).catch(() => {});
   }, []);
 
   useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 250); return () => clearTimeout(t); }, [q]);
 
   const fetchPage = useCallback((p, reset) => {
-    if (!supabase) return;
     const seq = ++reqSeq.current;
     setLoading(true);
-    listOfferings(supabase, { vendor, category, platform, q: dq, sort, page: p, pageSize: PAGE })
+    listOfferings({ vendor, category, platform, q: dq, sort, page: p, pageSize: PAGE })
       .then(r => { if (seq !== reqSeq.current) return; setTotal(r.total); setItems(prev => reset ? r.items : [...prev, ...r.items]); setErr(null); setLoading(false); })
       .catch(e => { if (seq !== reqSeq.current) return; console.error('listOfferings', e); setErr('Could not load the catalogue.'); setLoading(false); });
   }, [vendor, category, platform, dq, sort]);
