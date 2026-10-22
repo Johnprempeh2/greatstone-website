@@ -6,7 +6,7 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 
 // The unconfirmed claims in v15 are review material only. A production build has no
 // switch in the browser that can reveal them.
-const REVIEW_CONTENT = import.meta.env.VITE_TWO_DOORS_DRAFT_CONTENT === 'true';
+const REVIEW_CONTENT = import.meta.env?.VITE_TWO_DOORS_DRAFT_CONTENT === 'true';
 const copyFields = (keys) => Object.fromEntries(keys.map((key) => [key, { type: 'text', label: key.replace(/([A-Z])/g, ' $1') }]));
 const textDefaults = (keys) => Object.fromEntries(keys.map((key) => [key, '']));
 const homeFields = 'headlineSuffix cueText cueSubtext consultancyName toolsName chooseLabel consultancyTag toolsTag moreClosed moreOpen logoLabel logoDraft consultancyPoint1 consultancyPoint1Text consultancyPoint2 consultancyPoint2Text consultancyPoint3 consultancyPoint3Text consultancyCta proofLink toolsCta chooserHeading chooserLine consultancyChooserLine toolsChooserLine orLabel swipeHint toolsPoint1 toolsPoint1Text toolsPoint2 toolsPoint2Text toolsPoint3 toolsPoint3Text chooseHref contactHref proofHref toolsHref'.split(' ');
