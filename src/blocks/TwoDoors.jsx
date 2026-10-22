@@ -41,7 +41,7 @@ function Carousel({ items, label, render, enabled = true }) {
 }
 
 export function TwoDoors(props) {
-  const { kicker, heading, intro, consultancyLine, toolsLine, clientLogos = [], tide = true, consultancyImage, toolsImage } = props;
+  const { kicker, heading, intro, consultancyLine, toolsLine, clientLogos = [], toolBrands = [], tide = true, consultancyImage, toolsImage } = props;
   const copy = { ...props };
   const [side, setSide] = useState('choose');
   const [pinned, setPinned] = useState(null);
@@ -106,7 +106,6 @@ export function TwoDoors(props) {
         <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{copy.toolsName}</button>
       </nav>
       <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (mobile) { const node = e.currentTarget; const panels = doorPanels(node); const nearest = panels.reduce((best, panel, i) => Math.abs(panelPosition(node, panel) - node.scrollLeft) < Math.abs(panelPosition(node, panels[best]) - node.scrollLeft) ? i : best, 0); setSide(doorSides[nearest]); } }} onMouseLeave={() => { if (!mobile) setSide(pinned || 'choose'); }} onBlur={(e) => { if (!mobile && !e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
-        <span className="td-join-label" aria-hidden="true">{copy.orLabel}</span>
         <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('consultancy'); }}>
           <img src={consultancyImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
@@ -119,13 +118,14 @@ export function TwoDoors(props) {
             <a className="td-pill" href={safeHref(copy.contactHref)}>{copy.consultancyCta}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{copy.proofLink}</a>
           </div>
         </article>
+        <div className="td-divider" aria-hidden="true"><span>{copy.orLabel}</span></div>
         <div className="td-chooser"><h2>{copy.chooserHeading}</h2><p>{copy.chooserLine}</p><div className="td-chooser-split"><button type="button" onClick={() => select('consultancy')}><img src={consultancyImage} alt="" /><span className="td-chooser-arrow">←</span><b>{copy.consultancyName}</b><span>{copy.consultancyChooserLine}</span></button><span className="td-chooser-or">{copy.orLabel}</span><button type="button" onClick={() => select('tools')}><img src={toolsImage} alt="" /><span className="td-chooser-arrow">→</span><b>{copy.toolsName}</b><span>{copy.toolsChooserLine}</span></button></div><small>{copy.swipeHint}</small></div>
         <article className={'td-door td-tools' + (active === 'tools' ? ' expanded' : '')} id="door-tools" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('tools'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('tools'); }}>
           <img src={toolsImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
           <div className="td-door-copy"><p className="td-door-tag">{copy.toolsTag}</p><h2>{copy.toolsName}</h2><p>{toolsLine}</p>
             <button type="button" className="td-more" aria-expanded={active === 'tools'} onClick={() => open('tools')}>{active === 'tools' ? copy.moreOpen : copy.moreClosed}</button>
-            <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active === 'tools' ? undefined : ''}><div className="td-door-detail-inner"><ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
+            <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active === 'tools' ? undefined : ''}><div className="td-door-detail-inner">{toolBrands.length > 0 && <div className="td-client-logos"><p>Brands we supply</p><ul>{toolBrands.filter((brand) => brand?.image).map((brand) => <li key={brand.name}><img src={brand.image} alt={brand.name} loading="lazy" /></li>)}</ul></div>}<ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
             <a className="td-pill td-pill-teal" href={safeHref(copy.toolsHref)}>{copy.toolsCta}</a>
           </div>
         </article>
@@ -189,8 +189,9 @@ export const puck = {
       image: { type: 'custom', label: 'Logo image', render: (props) => <MediaField {...props} /> }, alt: { type: 'text', label: 'Organisation name' },
       permission: { type: 'select', label: 'Permission on file', options: [{ label: 'Pending', value: 'pending' }, { label: 'Approved in writing', value: 'approved' }] },
     }, defaultItemProps: { image: '', alt: '', permission: 'pending' }, getItemSummary: (item) => item.alt || 'Logo' },
+    toolBrands: { type: 'array', label: 'DX Dev Tools brands', arrayFields: { name: { type: 'text', label: 'Brand' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> } }, defaultItemProps: { name: '', image: '' }, getItemSummary: (item) => item.name || 'Brand' },
   },
-  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, clientLogos: [] },
+  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, clientLogos: [], toolBrands: [] },
   render: (props) => <TwoDoors {...props} />,
 };
 

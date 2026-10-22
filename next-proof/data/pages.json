@@ -89,6 +89,32 @@
               "toolsImage": "/assets/two-doors/tools-hero.webp",
               "tide": true,
               "clientLogos": [],
+              "toolBrands": [
+                {
+                  "name": "Aspose",
+                  "image": "/assets/two-doors/brands/aspose.png"
+                },
+                {
+                  "name": "Apryse",
+                  "image": "/assets/two-doors/brands/apryse.png"
+                },
+                {
+                  "name": "DevExpress",
+                  "image": "/assets/two-doors/brands/devexpress.png"
+                },
+                {
+                  "name": "GroupDocs",
+                  "image": "/assets/two-doors/brands/groupdocs.png"
+                },
+                {
+                  "name": "Iron Software",
+                  "image": "/assets/two-doors/brands/iron-software.png"
+                },
+                {
+                  "name": "Conholdate",
+                  "image": "/assets/two-doors/brands/conholdate.png"
+                }
+              ],
               "_section": {
                 "surface": "none",
                 "accent": "default",
@@ -199,26 +225,32 @@
               "tools": [
                 {
                   "name": "Aspose",
+                  "image": "/assets/two-doors/brands/aspose.png",
                   "line": "Create, edit and convert Word, Excel, PowerPoint and PDF files from your own code."
                 },
                 {
                   "name": "Apryse",
+                  "image": "/assets/two-doors/brands/apryse.png",
                   "line": "A PDF and document SDK to view, annotate, edit and sign files inside your apps."
                 },
                 {
                   "name": "DevExpress",
+                  "image": "/assets/two-doors/brands/devexpress.png",
                   "line": "UI controls, data grids, charts and reports for .NET and JavaScript apps."
                 },
                 {
                   "name": "GroupDocs",
+                  "image": "/assets/two-doors/brands/groupdocs.png",
                   "line": "Document APIs to view, convert, compare, annotate and sign files across common formats."
                 },
                 {
                   "name": "Iron Software",
+                  "image": "/assets/two-doors/brands/iron-software.png",
                   "line": "C# and .NET libraries for PDF, OCR, barcodes and Excel files."
                 },
                 {
                   "name": "Conholdate",
+                  "image": "/assets/two-doors/brands/conholdate.png",
                   "line": "Aspose and GroupDocs APIs together, under one licence."
                 }
               ],
@@ -265,26 +297,32 @@
               "tools": [
                 {
                   "name": "Aspose",
+                  "image": "/assets/two-doors/brands/aspose.png",
                   "line": "Create, edit and convert Word, Excel, PowerPoint and PDF files from your own code."
                 },
                 {
                   "name": "Apryse",
+                  "image": "/assets/two-doors/brands/apryse.png",
                   "line": "A PDF and document SDK to view, annotate, edit and sign files inside your apps."
                 },
                 {
                   "name": "DevExpress",
+                  "image": "/assets/two-doors/brands/devexpress.png",
                   "line": "UI controls, data grids, charts and reports for .NET and JavaScript apps."
                 },
                 {
                   "name": "GroupDocs",
+                  "image": "/assets/two-doors/brands/groupdocs.png",
                   "line": "Document APIs to view, convert, compare, annotate and sign files across common formats."
                 },
                 {
                   "name": "Iron Software",
+                  "image": "/assets/two-doors/brands/iron-software.png",
                   "line": "C# and .NET libraries for PDF, OCR, barcodes and Excel files."
                 },
                 {
                   "name": "Conholdate",
+                  "image": "/assets/two-doors/brands/conholdate.png",
                   "line": "Aspose and GroupDocs APIs together, under one licence."
                 }
               ],

@@ -13,7 +13,7 @@ Open `/`, `/dev-tools`, `/editor/home` and `/editor/dev-tools` on port 5181. The
 
 The page data comes from `seedState().pages[slug].published`. The same generated JSON feeds the public route and editor. Next returns the headings, title and description in the initial HTML. The two public routes are prerendered by Next at build time; the editor route runs through the Netlify Next.js runtime.
 
-Only `TwoDoors.jsx` needed a block change: optional access to Vite's `import.meta.env` lets Next render it without that Vite global. The other four block modules are unchanged. This proof registers only the five blocks used by its two pages. The current Vite editor remains on Puck 0.20 until the full migration is approved.
+The proof registers only the five blocks used by its two pages. The current Vite editor remains on Puck 0.20 until the full migration is approved. `TwoDoors.jsx` reads the Vite draft flag optionally so Next can render it. After review, the desktop divider became a grid column that follows the widening door; the Tide canvas spans the viewport as in v15. The six published DX Dev Tools supplier marks in the v15 mock-up are local image assets in the seed and appear when the tools door opens. The current Vite page shares those block and seed changes.
 
 ## Draft deploy
 
@@ -38,4 +38,4 @@ These are engineering estimates, assuming the existing content and design stay i
 
 The repository currently contains `netlify/functions/enquiry.mjs` as its one named function. GRE-1835 calls the second function “the other one”; Everest needs to identify it before that part of the full move is estimated firmly.
 
-The v15 mock-up contains draft facts and logos that the published seed intentionally omits. The side-by-side screenshots show that content difference; the Next proof uses the published projection rather than exposing unconfirmed material.
+The v15 mock-up contains draft facts and consultancy client marks that the published seed intentionally omits. The side-by-side screenshots show that content difference; the Next proof uses the published projection rather than exposing unconfirmed material. Consultancy client marks still require recorded written permission before they can appear on a public page.
