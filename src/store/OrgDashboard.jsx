@@ -5,6 +5,7 @@
 // company commerce rollup. Reads are RLS-scoped to the buyer's own company (customer_self, 0008/0013).
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase.mjs';
+import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { getCustomerProfile, isCustomer, isCompanyAdmin, signOut, getSession, onAuth } from './customerAuth.mjs';
 import { AuthGate } from './AccountDashboard.jsx';
@@ -25,7 +26,6 @@ import { PRIMARY_CTA_LABEL } from '../lib/brand.mjs';
 import './store.css';
 import './admin.css';
 
-const ORG_ID = '11111111-1111-4111-8111-111111111111'; // single live org (matches ensure_customer_account)
 const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
 // the viewer's LOCAL calendar date (occurred_on is a local DATE) — a UTC date flips past/upcoming at the day boundary
 const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
@@ -122,9 +122,7 @@ function Org({ profile, session, onProfile }) {
 
   const load = useCallback(() => {
     setErr(null);
-    supabase.from('customer_users').select('id, email, full_name, is_primary, role, created_at')
-      .is('deleted_at', null).eq('customer_id', company.id)
-      .order('is_primary', { ascending: false }).order('created_at', { ascending: true })
+    customerStore('members')
       .then(({ data, error }) => { if (error) setErr(error); setMembers(data || []); });
     // RLS (customer_self, 0013) already scopes to this company's shared, live items; the explicit
     // filters are belt-and-braces so a future RLS regression fails closed (empty) instead of leaking.
@@ -132,10 +130,9 @@ function Org({ profile, session, onProfile }) {
       .select('id, kind, status, title, summary, body_html, external_url, occurred_on, phase, owner_name, attendees, tags, pinned, created_at')
       .is('deleted_at', null).eq('customer_id', company.id).eq('status', 'shared').order('occurred_on', { ascending: false })
       .then(({ data, error }) => { if (error) setErr(error); setEngagements(data || []); });
-    supabase.from('orders').select('id, reference, status, currency, total_minor, placed_at, created_at, customer_user_id, invoice_number')
-      .is('deleted_at', null).eq('customer_id', company.id).order('created_at', { ascending: false }).limit(50)
+    customerStore('org-orders')
       .then(({ data, error }) => { if (error) setErr(error); setOrders(data || []); });
-    supabase.from('quotes').select('id, status').is('deleted_at', null).eq('customer_id', company.id).limit(200)
+    customerStore('org-quotes')
       .then(({ data, error }) => { if (error) setErr(error); setQuotes(data || []); });
   }, [company.id]);
   useEffect(() => { load(); }, [load]);
@@ -242,7 +239,7 @@ function Org({ profile, session, onProfile }) {
       </div>
 
       <div role="tabpanel" id="org-panel-team" aria-labelledby="org-tab-team" hidden={tab !== 'team'}>
-        <Members members={members} meId={profile.id} admin={admin} customerId={company.id} requestedBy={profile.id} companyName={company.name} flash={flash} />
+        <Members members={members} meId={profile.id} admin={admin} companyName={company.name} flash={flash} />
       </div>
 
       <div role="tabpanel" id="org-panel-company" aria-labelledby="org-tab-company" hidden={tab !== 'company'}>
@@ -833,14 +830,13 @@ function GreatstoneTeam({ engagements }) {
 }
 
 // ── members directory + invite requests ───────────────────────────────────────
-function Members({ members, meId, admin, customerId, requestedBy, companyName, flash }) {
+function Members({ members, meId, admin, companyName, flash }) {
   const [requests, setRequests] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const loadReqs = useCallback(() => {
-    supabase.from('member_invite_requests').select('id, full_name, email, role, status, created_at')
-      .eq('customer_id', customerId).order('created_at', { ascending: false })
+    customerStore('invite-requests')
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
-  }, [customerId]);
+  }, []);
   useEffect(() => { loadReqs(); }, [loadReqs]);
   const pending = requests.filter(r => r.status === 'pending');
   const taken = useMemo(() => {
@@ -856,7 +852,7 @@ function Members({ members, meId, admin, customerId, requestedBy, companyName, f
         <h2 id="org-mem-h" tabIndex={-1}>Members &amp; access{pending.length > 0 && <>{' '}<span className="org-pendcount">{pending.length} pending</span></>}</h2>
         {admin && <button className="gs-btn ghost sm" aria-expanded={showForm} onClick={() => setShowForm(s => !s)}>{showForm ? 'Close' : '+ Invite a teammate'}</button>}
       </div>
-      {showForm && <InviteForm customerId={customerId} requestedBy={requestedBy} taken={taken} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
+      {showForm && <InviteForm taken={taken} onDone={(m) => { setShowForm(false); flash(m); loadReqs(); }} />}
       <div className="ca-table-wrap">
         <table className="ca-table ca-cards">
           <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Joined</th></tr></thead>
@@ -897,7 +893,7 @@ function Members({ members, meId, admin, customerId, requestedBy, companyName, f
   );
 }
 
-function InviteForm({ customerId, requestedBy, taken, onDone }) {
+function InviteForm({ taken, onDone }) {
   const [name, setName] = useState(''); const [email, setEmail] = useState('');
   const [role, setRole] = useState('member'); const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
@@ -909,9 +905,8 @@ function InviteForm({ customerId, requestedBy, taken, onDone }) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { fail('Enter a valid email address.'); return; }
     if (taken?.has(em.toLowerCase())) { fail('That person is already a member or already has a pending invitation.'); return; }
     setBusy(true);
-    const { error } = await supabase.from('member_invite_requests').insert({
-      org_id: ORG_ID, customer_id: customerId, requested_by: requestedBy,
-      full_name: name.trim() || null, email: em, role, note: note.trim() || null,
+    const { error } = await customerStore('request-invite', {
+      fullName: name.trim() || null, email: em, role, note: note.trim() || null,
     });
     setBusy(false);
     if (error) { fail(error.code === '23505' ? 'A request for this email is already pending.' : (error.message || 'Could not send the request.')); return; }
@@ -944,7 +939,7 @@ function CompanyProfile({ company, admin, onProfile, flash }) {
 
   const save = async () => {
     setBusy(true);
-    const { error } = await supabase.from('customers').update({ name: name.trim(), domain: domain.trim() || null, notes: notes.trim() || null }).eq('id', company.id);
+    const { error } = await customerStore('update-company', { name: name.trim(), domain: domain.trim() || null, notes: notes.trim() || null });
     setBusy(false);
     if (error) { flash('Could not save company profile.'); return; }
     flash('Company profile saved.');
