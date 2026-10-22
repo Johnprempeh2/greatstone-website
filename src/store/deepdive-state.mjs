@@ -10,8 +10,7 @@
 //
 // PERSISTENCE, in order:
 //
-//   1. Supabase (`deepdive_item_state`) once the table exists. The real one: shared between staff and
-//      visible to the client through row-level security.
+//   1. Netlify Database through an authenticated Function, with row-level security.
 //   2. The dev server's own `.deepdive/<slug>.state.json`, read and written over the middleware in
 //      vite.config.js. Shared with the Deep Dive MCP, so an edit made in the browser and an edit made
 //      by a Claude session are the same bytes. Development only.
@@ -21,7 +20,7 @@
 // see their edits.
 
 import { supabase } from '../lib/supabase.mjs';
-import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
+import { deepdiveStateRequest } from './deepdive-api.mjs';
 import { normaliseFinding, validateFindingInput, initialState, canValidate, stateAfterConclusion, AGREEMENT } from '../data/deepdive-findings.mjs';
 
 // what has happened to an item. `blocked` carries a reason, because "blocked" with no reason is noise.
@@ -157,72 +156,15 @@ const fileRowToEntry = (r) => ({
   attachedTo: r.attached_to || [], visibility: r.visibility || 'internal', note: r.note || '',
   by: r.by || 'portal', actor: r.actor || null, at: r.at,
 });
-const entryToLogRow = (slug, orgId, e) => ({
-  slug, org_id: orgId, at: e.at || new Date().toISOString(), item_id: e.id || null,
-  label: e.label || null, by: e.by || 'portal', actor: e.actor || null,
-  by_user_id: e.actor?.id || null, finding_id: e.findingId || null, changed: e.changed || {},
-});
-
-// The org that owns the record. Every deepdive table carries org_id and the staff_all policy checks
-// it, so a write without it is refused rather than silently misfiled.
-let ORG_ID = null;
-async function orgId(slug) {
-  if (ORG_ID) return ORG_ID;
-  const { data } = await supabase.from('deepdive_plans').select('org_id').eq('slug', slug).maybeSingle();
-  ORG_ID = data?.org_id || null;
-  return ORG_ID;
-}
-
-/** Append entries to the durable trail. Never throws into the caller's save: a change that was
- *  stored but not logged is a gap in the history, and telling the user their edit failed when it
- *  did not is worse. It returns whether the trail took them, so the caller can say so. */
-async function appendLog(slug, entries) {
-  if (!supabase || !entries?.length) return true;
-  const org = await orgId(slug);
-  if (!org) return false;
-  const { error } = await supabase.from('deepdive_log')
-    .insert(entries.map((e) => entryToLogRow(slug, org, e)));
-  if (error && !isAbsentOrForbidden(error)) { console.warn('deepdive_log', error); return false; }
-  return !error;
-}
-
 export async function loadState(slug) {
   if (supabase) {
-    const { data, error } = await supabase
-      .from('deepdive_item_state').select('item_id, status, visibility, note, agreement, updated_at').eq('slug', slug);
-    if (!error && Array.isArray(data)) {
+    const data = await deepdiveStateRequest('load', { slug });
+    if (data) {
       const map = {};
-      data.forEach((r) => { map[r.item_id] = norm({ ...r, updated: r.updated_at }); });
-      // ⚠ THE TRAIL HAS TO BE READ BACK, NOT LEFT EMPTY.
-      // This returned `log: []` while the file backend returned a real one, so the moment the
-      // Supabase tables existed the History tab would have gone blank on a record with a hundred
-      // logged changes, and looked healthy doing it.
-      const { data: rows, error: lErr } = await supabase.from('deepdive_log')
-        .select('at, item_id, label, by, actor, finding_id, changed')
-        .eq('slug', slug).order('at', { ascending: true }).limit(MAX_LOG);
-      if (lErr && !isAbsentOrForbidden(lErr)) throw lErr;
-      const log = Array.isArray(rows) ? rows.map(logRowToEntry) : [];
-      // ⚠ original_name is NOT selected. It is the uploader's own filename, it says things the
-      // record deliberately does not, and only the download path has any business reading it.
-      const { data: docs, error: fErr } = await supabase.from('deepdive_files')
-        .select('id, label, mime, ext, bytes, attached_to, visibility, note, by, actor, at')
-        .eq('slug', slug);
-      if (fErr && !isAbsentOrForbidden(fErr)) throw fErr;
-      const files = (docs || []).map(fileRowToEntry);
-      // ⚠ FINDINGS TOO. They were written here and never read back, so every recorded answer was
-      // invisible: question pages said "nothing recorded yet", the validation queue read zero, and
-      // judge/remove threw "not in this record" because they searched an empty array. Exactly the
-      // bug that had just been fixed for the log, missed for findings in the same pass.
-      const { data: found, error: findErr } = await supabase.from('deepdive_findings')
-        .select('id, question_id, session_id, text, source, source_id, confidence, state, supersedes, by, at, validated_at, note')
-        .eq('slug', slug);
-      if (findErr && !isAbsentOrForbidden(findErr)) throw findErr;
-      const findings = (found || []).map(findingRowToEntry);
-      return { map, log, files, findings, durable: true, backend: 'supabase' };
+      data.items.forEach((r) => { map[r.item_id] = norm({ ...r, updated: r.updated_at }); });
+      return { map, log: data.log.map(logRowToEntry), files: data.files.map(fileRowToEntry),
+        findings: data.findings.map(findingRowToEntry), durable: true, backend: 'netlify' };
     }
-    // absent table or an RLS refusal: fall back rather than blocking the whole Portal on a
-    // migration that has not been applied yet. Anything else is a real failure.
-    if (error && !isAbsentOrForbidden(error)) throw error;
   }
   const file = await readFileState(slug);
   if (file) return { ...file, durable: false, backend: 'file' };
@@ -276,20 +218,8 @@ export async function saveItem(slug, id, patch, current = {}, log = [], label = 
     : log;
 
   if (supabase) {
-    const { error } = await supabase.from('deepdive_item_state').upsert({
-      slug, item_id: id, status: after.status, visibility: after.visibility, note: after.note,
-      // `agreement` is diffed above, logged, rendered on the question page and stored in a column
-      // of its own. It was in neither the select nor the upsert, so clicking "they contradict" lit
-      // the button up and sent nothing.
-      agreement: after.agreement ?? null,
-    }, { onConflict: 'slug,item_id' });
-    if (!error) {
-      // The trail is part of the change, not a side effect of it.
-      const logged = await appendLog(slug, nextLog.slice(log.length));
-      return { map: next, log: nextLog, durable: true, backend: 'supabase',
-        warning: logged ? null : 'Saved, but this change was not written to the history.' };
-    }
-    if (!isAbsentOrForbidden(error)) throw error;
+    await deepdiveStateRequest('items', { slug, items: [{ item_id: id, ...after }], entries: nextLog.slice(log.length) });
+    return { map: next, log: nextLog, durable: true, backend: 'netlify' };
   }
   const wrote = await writeFileState(slug, next, nextLog, version);
   if (wrote) return { map: next, log: nextLog, durable: false, backend: 'file', version: wrote };
@@ -357,16 +287,11 @@ export async function saveMany(slug, ids, patch, current = {}, log = [], labelOf
 
   if (supabase) {
     const rows = Object.keys(next).filter((id) => ids.includes(id)).map((id) => ({
-      slug, item_id: id, status: next[id].status, visibility: next[id].visibility, note: next[id].note,
+      item_id: id, status: next[id].status, visibility: next[id].visibility, note: next[id].note,
       agreement: next[id].agreement ?? null,
     }));
-    const { error } = await supabase.from('deepdive_item_state').upsert(rows, { onConflict: 'slug,item_id' });
-    if (!error) {
-      const logged = await appendLog(slug, entries);
-      return { map: next, log: nextLog, durable: true, backend: 'supabase', changed: entries.length,
-        warning: logged ? null : 'Saved, but these changes were not written to the history.' };
-    }
-    if (!isAbsentOrForbidden(error)) throw error;
+    await deepdiveStateRequest('items', { slug, items: rows, entries });
+    return { map: next, log: nextLog, durable: true, backend: 'netlify', changed: entries.length };
   }
   const wrote = await writeFileState(slug, next, nextLog, version);
   if (wrote) return { map: next, log: nextLog, durable: false, backend: 'file', version: wrote, changed: entries.length };
@@ -389,33 +314,16 @@ export async function saveMany(slug, ids, patch, current = {}, log = [], labelOf
  *  rename, which fires on an ordinary typo fix. Naming the one id is right in both cases. */
 export async function releaseItem(slug, id, entry = null) {
   if (supabase) {
-    const { error } = await supabase.from('deepdive_item_state').delete().eq('slug', slug).eq('item_id', id);
-    if (error && !isAbsentOrForbidden(error)) throw error;
-    if (!error) { if (entry) await appendLog(slug, [entry]); return { durable: true, backend: 'supabase' }; }
+    await deepdiveStateRequest('release', { slug, id, entries: entry ? [entry] : [] });
+    return { durable: true, backend: 'netlify' };
   }
   return null;   // the file backend has no single-row delete; the caller falls back to replaceState
 }
 
 export async function replaceState(slug, map, log, version = null, added = [], release = false) {
   if (supabase) {
-    // ⚠ DELETE ONLY WHEN RELEASING, AND IT DEFAULTS TO OFF.
-    // This used to prune on EVERY call against the browser's own map, and logOp calls it on every
-    // plan change. Now that the MCP writes the same tables, an item whose status a Claude session
-    // set since this page loaded is simply absent from the browser's map, and rewording an
-    // unrelated question deleted it.
-    if (release) {
-      const { error } = await supabase.from('deepdive_item_state').delete().eq('slug', slug)
-        .not('item_id', 'in', `(${Object.keys(map).map((k) => `"${k}"`).join(',') || '""'})`);
-      if (error && !isAbsentOrForbidden(error)) throw error;
-      if (error) { /* fall through to the file path below */ }
-      else { await appendLog(slug, added); return { durable: true, backend: 'supabase' }; }
-    } else {
-      // ⚠ THE TRAIL. Adding a process, rewording a question, deleting an item, editing the North
-      // Star: every plan change comes through logOp → here, and none of it was ever written. The
-      // History tab showed all of it from React state and lost all of it on reload.
-      const ok = await appendLog(slug, added);
-      if (ok) return { durable: true, backend: 'supabase' };
-    }
+    await deepdiveStateRequest('replace', { slug, release, keepIds: Object.keys(map), entries: added });
+    return { durable: true, backend: 'netlify' };
   }
   const wrote = await writeFileState(slug, map, log, version);
   if (wrote) return { durable: false, backend: 'file', version: wrote };
@@ -577,36 +485,8 @@ export async function removeFinding(slug, findingId, current = {}, log = [], fin
  *  never land in separate versions of the same file. */
 async function persist(slug, map, log, findings, version, added = [], removedIds = []) {
   if (supabase) {
-    const org = await orgId(slug);
-    const { error } = await supabase.from('deepdive_findings')
-      .upsert((findings || []).map((f) => ({
-        slug, org_id: org, id: f.id, question_id: f.questionId || null, session_id: f.sessionId || null,
-        text: f.text || '', source: f.source || '', source_id: f.sourceId || null,
-        confidence: f.confidence || null, state: f.state || null, supersedes: f.supersedes || null,
-        by: f.by === 'mcp' ? 'mcp' : 'portal', at: f.at || null, validated_at: f.validatedAt || null,
-        note: f.note || '',
-      })), { onConflict: 'slug,id' });
-    // An upsert cannot remove, so a removal has to say so.
-    // ⚠ AND IT MUST NAME WHAT IT IS REMOVING. The first version pruned everything NOT in the
-    // browser's array — which is the identical mistake replaceState was narrowed to avoid fifty
-    // lines above. `findings` is this tab's copy from page load, so a finding recorded since then
-    // by an MCP session or a second tab is simply absent from it, and the next save from here
-    // deleted it. Silently, under a "Recorded" toast.
-    if (!error && removedIds.length) {
-      const { error: dErr } = await supabase.from('deepdive_findings').delete().eq('slug', slug)
-        .in('id', removedIds);
-      if (dErr && !isAbsentOrForbidden(dErr)) throw dErr;
-    }
-    if (!error) {
-      // `added` is what THIS call appended. It is passed in rather than worked out here: persist()
-      // is handed the whole log, and a module-level "how much have I written" counter would be one
-      // more cache that has to be kept in step with a thing it describes. This build has already
-      // been bitten once by exactly that.
-      const logged = await appendLog(slug, added);
-      return { map, log, findings, durable: true, backend: 'supabase',
-        warning: logged ? null : 'Saved, but this change was not written to the history.' };
-    }
-    if (!isAbsentOrForbidden(error)) throw error;
+    await deepdiveStateRequest('findings', { slug, findings, removedIds, entries: added });
+    return { map, log, findings, durable: true, backend: 'netlify' };
   }
   const wrote = await writeFileState(slug, map, log, version, findings);
   if (wrote) return { map, log, findings, durable: false, backend: 'file', version: wrote };
@@ -644,31 +524,11 @@ export async function attachFile(slug, entry, current = {}, log = [], findings =
                              changed: { document: ['', name] } }];
 
   if (supabase) {
-    const org = await orgId(slug);
-    if (org) {
-      const row = next.find((f) => f.id === id);
-      const { error } = await supabase.from('deepdive_files').upsert({
-        slug, id, org_id: org, label: row.label, original_name: entry.originalName || null,
-        mime: row.mime || null, ext: entry.ext || null, bytes: row.bytes ?? null,
-        attached_to: row.attachedTo, visibility: row.visibility, note: row.note || '',
-        by: row.by || 'portal', actor: row.actor || null, at: row.at,
-        storage_path: `${slug}/${String(id).replace(/^a:/, '')}`,
-      }, { onConflict: 'slug,id' });
-      if (error && !isAbsentOrForbidden(error)) throw error;
-      if (!error) {
-        await appendLog(slug, nextLog.slice(log.length));
-        // Read it back. A write that succeeds while silently dropping the payload is the worst
-        // outcome available: the row appears on screen, the toast says Attached, and nothing was
-        // kept. That has already happened once here.
-        const { data: back } = await supabase.from('deepdive_files')
-          .select('id, label, mime, ext, bytes, attached_to, visibility, note, by, actor, at')
-          .eq('slug', slug);
-        if (!(back || []).some((f) => f.id === id)) {
-          throw new Error('The record did not keep that document. Nothing has been attached.');
-        }
-        return { files: (back || []).map(fileRowToEntry), log: nextLog, version, backend: 'supabase' };
-      }
-    }
+    const row = next.find((f) => f.id === id);
+    const back = await deepdiveStateRequest('attach', { slug,
+      file: { ...row, originalName: entry.originalName, ext: entry.ext }, entries: nextLog.slice(log.length) });
+    if (!(back || []).some((f) => f.id === id)) throw new Error('The record did not keep that document. Nothing has been attached.');
+    return { files: back.map(fileRowToEntry), log: nextLog, version, backend: 'netlify' };
   }
 
   const wrote = await writeFileState(slug, current, nextLog, version, findings, next);
@@ -707,14 +567,8 @@ export async function detachFile(slug, fileId, current = {}, log = [], findings 
                              changed: { document: [gone.label, ''] } }];
 
   if (supabase) {
-    const { error } = last
-      ? await supabase.from('deepdive_files').delete().eq('slug', slug).eq('id', fileId)
-      : await supabase.from('deepdive_files').update({ attached_to: ties }).eq('slug', slug).eq('id', fileId);
-    if (error && !isAbsentOrForbidden(error)) throw error;
-    if (!error) {
-      await appendLog(slug, nextLog.slice(log.length));
-      return { files: next, log: nextLog, version, backend: 'supabase', blobUnused: last };
-    }
+    await deepdiveStateRequest('detach', { slug, id: fileId, last, ties, entries: nextLog.slice(log.length) });
+    return { files: next, log: nextLog, version, backend: 'netlify', blobUnused: last };
   }
 
   const wrote = await writeFileState(slug, current, nextLog, version, findings, next);

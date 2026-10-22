@@ -1,11 +1,11 @@
 import { supabase } from '../lib/supabase.mjs';
 
 // Auth stays with Supabase; record data goes only through the Netlify RLS bridge.
-export async function deepdiveRequest(op, args = {}) {
+export async function deepdiveRequest(op, args = {}, path = '/api/deepdive-plan') {
   if (!supabase) return null;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) return null;
-  const response = await fetch('/api/deepdive-plan', {
+  const response = await fetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
     body: JSON.stringify({ op, args }),
@@ -19,4 +19,10 @@ export async function deepdiveRequest(op, args = {}) {
     throw error;
   }
   return body.data;
+}
+
+export async function deepdiveStateRequest(op, args = {}) {
+  const data = await deepdiveRequest(op, args, '/api/deepdive-state');
+  if (data === null) throw new Error('Record service unavailable. Sign in and try again.');
+  return data;
 }
