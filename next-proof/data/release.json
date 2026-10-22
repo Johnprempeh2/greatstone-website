@@ -1,32 +1,77 @@
 {
-  "settings": {
-    "background": "stone",
-    "siteName": "Greatstone International",
-    "logo": "/assets/greatstone-logo-web.png",
-    "footerTagline": "The Foundation of Digital Excellence",
-    "headerCtaLabel": "Begin the Conversation",
-    "footerEmail": "dx@greatstonesoftware.co.uk",
-    "legalName": "Greatstone International Ltd"
-  },
-  "navigation": [
-    {
-      "id": "nav-2t5ts7",
-      "visible": true,
-      "type": "page",
-      "pageSlug": "home",
-      "label": "DX Consultancy"
+  "schema": 1,
+  "siteId": "00000000-0000-4000-8000-000000001833",
+  "orgId": "org-greatstone",
+  "release": {
+    "id": "78fb9415-08fe-4b27-81ad-7f534cf94ee2",
+    "number": 1,
+    "previous": null,
+    "createdAt": "2026-10-22T00:00:00Z",
+    "publishedBy": {
+      "kind": "agent",
+      "id": "proof-seed"
     },
-    {
-      "id": "nav-2uz6fn",
-      "visible": true,
-      "type": "page",
-      "pageSlug": "dev-tools",
-      "label": "DX Dev Tools"
+    "approvalId": null,
+    "engine": {
+      "version": "0.1.0",
+      "commit": "0000000000000000000000000000000000000000"
     }
-  ],
-  "pages": {
-    "home": {
+  },
+  "site": {
+    "name": "Greatstone International",
+    "settings": {
+      "background": "stone",
+      "siteName": "Greatstone International",
+      "logo": "/assets/greatstone-logo-web.png",
+      "footerTagline": "The Foundation of Digital Excellence",
+      "headerCtaLabel": "Begin the Conversation",
+      "footerEmail": "dx@greatstonesoftware.co.uk",
+      "legalName": "Greatstone International Ltd"
+    },
+    "navigation": [
+      {
+        "id": "nav-2v03jb",
+        "label": "DX Consultancy",
+        "visible": true,
+        "target": {
+          "kind": "page",
+          "pageId": "ce3e6354-062d-4e98-8fbd-f47eba99c8c3"
+        }
+      },
+      {
+        "id": "nav-2wabe3",
+        "label": "DX Dev Tools",
+        "visible": true,
+        "target": {
+          "kind": "page",
+          "pageId": "0d55303f-12c0-41c7-8f8b-d907e9d1f2c1"
+        }
+      }
+    ]
+  },
+  "theme": {
+    "revisionId": "f5b20c0f-feef-4ecd-8dd6-880ce4bca57b",
+    "tokens": {
+      "gs.bg": "#121212",
+      "gs.bg-deep": "#0c0e0c",
+      "gs.accent": "#c8ff00",
+      "gs.emerald": "#1b5039",
+      "gs.emerald-deep": "#0e3122",
+      "gs.teal": "#4ecdc4",
+      "gs.text": "#f5f5f5",
+      "gs.text-muted": "#c4c8c1",
+      "gs.text-faint": "#9ca29b",
+      "gs.dur": "300ms"
+    }
+  },
+  "pages": [
+    {
+      "id": "ce3e6354-062d-4e98-8fbd-f47eba99c8c3",
+      "revisionId": "9e680593-e70e-4632-89bb-8ed161967a51",
+      "slug": "home",
+      "path": "/",
       "title": "Home",
+      "navOrder": 0,
       "seo": {
         "title": "Greatstone International · Two ways to work with us",
         "description": "Explore DX Consultancy and DX Dev Tools from Greatstone International.",
@@ -219,7 +264,7 @@
               "bottomTools": "DX Dev Tools →",
               "toolsHref": "#dev-tools",
               "contactHref": "#contact",
-              "consultancyHref": "#door-dx",
+              "consultancyHref": "#go/dx-consultancy",
               "consultancyImage": "/assets/two-doors/consultancy-hero.webp",
               "toolsImage": "/assets/two-doors/tools-hero.webp",
               "tools": [
@@ -267,8 +312,13 @@
         ]
       }
     },
-    "dev-tools": {
+    {
+      "id": "0d55303f-12c0-41c7-8f8b-d907e9d1f2c1",
+      "revisionId": "8aeff6da-f0e5-478d-8d6f-e6d799e8bca2",
+      "slug": "dev-tools",
+      "path": "/dev-tools",
       "title": "DX Dev Tools",
+      "navOrder": 1,
       "seo": {
         "title": "DX Dev Tools · Greatstone International",
         "description": "Explore developer components and SDKs through Greatstone International.",
@@ -338,5 +388,8 @@
         ]
       }
     }
-  }
+  ],
+  "collections": {},
+  "redirects": [],
+  "media": {}
 }
