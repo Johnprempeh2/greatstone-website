@@ -2,6 +2,7 @@
 // RLS (0008): they read only their own company's orders + profile. Provisioning of the customer +
 // customer_user rows is the SECURITY DEFINER RPC ensure_customer_account() (idempotent; refuses staff).
 import { supabase } from '../lib/supabase.mjs';
+import { customerStore } from './customer-store-api.mjs';
 
 // Auth-email redirect (signup confirmation + password recovery). It must NOT carry a hash route.
 // Supabase's implicit flow returns the session in the URL *fragment* (#access_token=…&type=…); if
@@ -18,7 +19,7 @@ export async function ensureAccount(companyName = null, fullName = null) {
   if (!supabase) return null;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;                       // not signed in yet (confirm-email flow) — provision on next login
-  const { data, error } = await supabase.rpc('ensure_customer_account', { p_company_name: companyName, p_full_name: fullName });
+  const { data, error } = await customerStore('ensure', { companyName, fullName });
   if (error) { console.warn('ensureAccount', error.message); return { error }; }
   return Array.isArray(data) ? data[0] : data;      // { customer_id, customer_user_id }
 }
@@ -67,9 +68,7 @@ export async function getCustomerProfile() {
   if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data, error } = await supabase.from('customer_users')
-    .select('id, email, full_name, phone, is_primary, role, customer:customers(id, name, slug, domain, notes, created_at, tier:customer_tiers(name, rank))')
-    .eq('auth_subject', user.id).maybeSingle();
+  const { data, error } = await customerStore('profile');
   if (error) { console.warn('getCustomerProfile', error.message); return null; }
   return data;
 }

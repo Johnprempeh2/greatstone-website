@@ -3,6 +3,7 @@
 // history (customer_self RLS → only their own). One-click re-order. Mirrors CatalogueAdmin's gate idiom.
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.mjs';
+import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
@@ -192,7 +193,7 @@ function Dashboard({ session, profile, onProfile }) {
   useEffect(() => {
     if (!profile?.customer?.id || isCompanyAdmin(profile)) return;
     let live = true;
-    supabase.from('customer_users').select('email, full_name, is_primary, role').eq('customer_id', profile.customer.id)
+    customerStore('members')
       .then(({ data }) => {
         if (!live) return;
         setCompanyAdmin(pickAdmin(data));
@@ -220,9 +221,7 @@ function Dashboard({ session, profile, onProfile }) {
 
   const loadOrders = useCallback(() => {
     setLoadingOrders(true); setOrdersErr(null);
-    supabase.from('orders')
-      .select('id, reference, status, currency, subtotal_minor, total_minor, refunded_minor, invoice_number, placed_at, created_at, order_items(id, offering_name, variant_name, qty, unit_price_minor, line_total_minor, variant_id)')
-      .is('deleted_at', null).order('created_at', { ascending: false }).limit(100)
+    customerStore('orders')
       .then(({ data, error }) => { setOrdersErr(error || null); setOrders(data || []); setLoadingOrders(false); });
   }, []);
   useEffect(() => { loadOrders(); }, [loadOrders]);
@@ -230,8 +229,7 @@ function Dashboard({ session, profile, onProfile }) {
   const [quotesErr, setQuotesErr] = useState(null);
   const loadQuotes = useCallback(() => {
     setQuotesErr(null);
-    supabase.from('quotes').select('id, reference, status, currency, indicative_total_minor, quoted_total_minor, valid_until, created_at, orders(id, invoice_number)')
-      .is('deleted_at', null).order('created_at', { ascending: false }).limit(50)
+    customerStore('quotes')
       .then(({ data, error }) => { setQuotesErr(error || null); setQuotes(data || []); });
   }, []);
   useEffect(() => { loadQuotes(); }, [loadQuotes]);
@@ -240,8 +238,7 @@ function Dashboard({ session, profile, onProfile }) {
   // purchase. RLS (customer_self, 0017) already scopes this to the buyer's own company.
   const [keysByOrder, setKeysByOrder] = useState({});
   const loadKeyLinks = useCallback(() => {
-    supabase.from('licence_keys').select('id, offering_name, variant_name, status, order_id, licence_key, expires_at')
-      .is('deleted_at', null).not('order_id', 'is', null)
+    customerStore('order-keys')
       .then(({ data, error }) => {
         if (error) return; // non-critical enrichment — leave the order detail as-is on a read error
         const m = {};
@@ -582,7 +579,7 @@ function ProfileCard({ profile, onProfile, flash }) {
   const save = async () => {
     if (!profile?.id || !dirty) return;
     setBusy(true);
-    const { error } = await supabase.from('customer_users').update({ full_name: name.trim() || null, phone: phone.trim() || null }).eq('id', profile.id);
+    const { error } = await customerStore('update-profile', { fullName: name.trim() || null, phone: phone.trim() || null });
     setBusy(false);
     if (error) { flash('Could not save profile.'); return; }
     flash('Profile saved.');
