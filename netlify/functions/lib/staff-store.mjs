@@ -6,6 +6,7 @@ const TABLES = new Set([
   'pricing_rules', 'pricing_rule_targets', 'fx_rate_history', 'import_jobs',
   'customers', 'customer_users', 'customer_tiers', 'engagements', 'member_invite_requests',
   'licence_keys', 'orders', 'order_items', 'quotes', 'quote_items',
+  'portal_documents', 'portal_acceptances', 'portal_receipt_jobs', 'portal_approvals',
 ]);
 const RELATIONS = {
   'offerings:vendors': ['vendor_id', 'id', false],
@@ -73,6 +74,18 @@ function filters(body, values) {
 export async function staffStore(client, body) {
   const { table, kind, columns = '*', values: payload } = body;
   if (kind === 'rpc') {
+    const portalRpc = {
+      portal_is_approver: ['SELECT portal_is_approver() AS data', []],
+      portal_withdraw: ['SELECT portal_withdraw($1::uuid) AS data', [body.args?.p_document_id]],
+      portal_requeue_receipt: ['SELECT portal_requeue_receipt($1::uuid) AS data', [body.args?.p_acceptance_id]],
+      portal_receipt_document: ['SELECT to_jsonb(d) AS data FROM portal_receipt_document($1::uuid) d', [body.args?.p_acceptance_id]],
+      portal_approve_and_publish: ['SELECT portal_approve_and_publish($1::uuid,$2::text,$3::text) AS data',
+        [body.args?.p_document_id, body.args?.p_expected_sha256, body.args?.p_gsam_approval_ref || null]],
+    }[body.name];
+    if (portalRpc) {
+      const { rows } = await client.query(...portalRpc);
+      return { data: body.name === 'portal_receipt_document' ? rows.map((row) => row.data) : rows[0]?.data ?? null };
+    }
     if (body.name === 'import_skus') {
       if (!Array.isArray(body.args?.p_creates) || !Array.isArray(body.args?.p_updates) ||
           body.args.p_creates.length + body.args.p_updates.length > 5000) throw new RangeError('Invalid import');
@@ -86,6 +99,8 @@ export async function staffStore(client, body) {
     throw new RangeError('Invalid operation');
   }
   if (!TABLES.has(table) || !['select', 'insert', 'update'].includes(kind)) throw new RangeError('Invalid operation');
+  if (['portal_acceptances', 'portal_receipt_jobs', 'portal_approvals'].includes(table) && kind !== 'select')
+    throw new RangeError('Invalid operation');
   if (table === 'users' && kind !== 'select') throw new RangeError('Invalid operation');
   if (table !== 'users') {
     const { rows } = await client.query('SELECT app_staff_org() AS org_id');

@@ -4,6 +4,7 @@
 // only: the company comes from the account and the email from the token, never from this page.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.mjs';
+import { portalStore } from './portal-store-api.mjs';
 import { getCustomerProfile, isCustomer, signOut, getSession, onAuth } from '../store/customerAuth.mjs';
 import { AuthGate } from '../store/AccountDashboard.jsx';
 import DocumentView, { PrivacyNote } from './DocumentView.jsx';
@@ -16,9 +17,6 @@ import { receiptRecord, emailStateLabel } from '../../supabase/functions/_shared
 import '../store/store.css';
 import '../store/admin.css';
 import './portal.css';
-
-const DOC_COLS = 'id, customer_id, kind, series, version, title, summary, body, demos, action, confirmation_text, signatory_email, status, content_sha256, published_at, pdf_path';
-const JOB_COLS = 'id, acceptance_id, status, attempts, next_attempt_at, sent_at';
 
 /** Ask the receipt worker to run now (it also runs every minute). Fire and forget: a failed nudge loses nothing. */
 export function nudgeReceiptWorker() {
@@ -55,18 +53,12 @@ function PortalData({ route, profile, email }) {
   const [members, setMembers] = useState([]);
   const [err, setErr] = useState(null);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setErr(null);
-    supabase.from('portal_documents').select(DOC_COLS).eq('customer_id', company.id).eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .then(({ data, error }) => { if (error) setErr(error); setDocs(data || []); });
-    supabase.from('portal_acceptances').select('*').eq('customer_id', company.id).order('accepted_at', { ascending: false })
-      .then(({ data, error }) => { if (error) setErr(error); setAcceptances(data || []); });
-    supabase.from('portal_receipt_jobs').select(JOB_COLS).eq('customer_id', company.id)
-      .then(({ data }) => setJobs(data || []));
-    supabase.from('customer_users').select('id, email, full_name').is('deleted_at', null).eq('customer_id', company.id)
-      .then(({ data }) => setMembers(data || []));
-  }, [company.id]);
+    const { data, error } = await portalStore('overview');
+    if (error) { setErr(error); setDocs(null); setAcceptances(null); return; }
+    setDocs(data.documents); setAcceptances(data.acceptances); setJobs(data.jobs); setMembers(data.members);
+  }, []);
   useEffect(() => { load(); }, [load]);
 
   const loading = docs === null || acceptances === null;
@@ -186,15 +178,14 @@ function Reader({ id, docs, acceptances, jobs, members, company, email, profile,
   const state = panelState(doc, { email, acceptances });
   const acc = acceptanceFor(doc, acceptances);
   const submit = async ({ name, title, confirmed }) => {
-    const { data, error } = await supabase.rpc('portal_accept', { p_document_id: doc.id, p_name: name, p_title: title, p_confirmed: confirmed });
+    const { data, error } = await portalStore('accept', { documentId: doc.id, name, title, confirmed });
     if (error) throw error;
     nudgeReceiptWorker();
-    const { data: row } = await supabase.from('portal_acceptances').select('*').eq('id', data).maybeSingle();
     onAccepted();
-    return { acceptance: row || { id: data, signer_name: name, accepted_at: new Date().toISOString() }, job: null };
+    return { acceptance: data, job: null };
   };
   const loadJob = async (accId) => {
-    const { data } = await supabase.from('portal_receipt_jobs').select(JOB_COLS).eq('acceptance_id', accId).maybeSingle();
+    const { data } = await portalStore('job', { acceptanceId: accId });
     return data;
   };
   return (
@@ -240,11 +231,10 @@ function Receipt({ id, acceptances, jobs }) {
   const [doc, setDoc] = useState(undefined);
   const acc = useMemo(() => (acceptances || []).find((a) => a.id === id), [acceptances, id]);
   useEffect(() => {
-    supabase.rpc('portal_receipt_document', { p_acceptance_id: id }).then(({ data }) => setDoc((data && data[0]) || null));
+    portalStore('receipt-document', { acceptanceId: id }).then(({ data }) => setDoc(data || null));
   }, [id]);
   useEffect(() => { if (acc && doc !== undefined) { const h = document.getElementById('pt-receipt-h'); if (h) h.focus({ preventScroll: true }); } }, [acc, doc]);
   if (acceptances === null || doc === undefined) return <Hold />;
   if (!acc) return <NotFound />;
   return <ReceiptView acceptance={acc} document={doc} job={jobs.find((j) => j.acceptance_id === acc.id)} />;
 }
-

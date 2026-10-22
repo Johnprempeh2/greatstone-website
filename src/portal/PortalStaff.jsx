@@ -5,7 +5,7 @@
 // acceptance with its receipt email state and Send again. Writes go through the staff session and 0037's RLS and
 // functions; nothing here can publish around portal_approve_and_publish().
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { staffDb } from '../store/staff-store-api.mjs';
 import { useModal } from '../store/useModal.mjs';
 import DrawerScrim from '../store/DrawerScrim.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
@@ -40,14 +40,14 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
 
   const load = useCallback(() => {
     setLoadErr(null);
-    supabase.from('portal_documents').select('*').eq('customer_id', customer.id).order('created_at', { ascending: false })
+    staffDb.from('portal_documents').select('*').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { setLoadErr(error || null); setDocs(error ? [] : (data || [])); });
-    supabase.from('portal_acceptances').select('*').eq('customer_id', customer.id).order('accepted_at', { ascending: false })
+    staffDb.from('portal_acceptances').select('*').eq('customer_id', customer.id).order('accepted_at', { ascending: false })
       .then(({ data }) => setAcceptances(data || []));
-    supabase.from('portal_receipt_jobs').select('*').eq('customer_id', customer.id).then(({ data }) => setJobs(data || []));
-    supabase.from('portal_approvals').select('id, document_id, approved_at, approver_user_id, gsam_approval_ref').eq('customer_id', customer.id)
+    staffDb.from('portal_receipt_jobs').select('id,acceptance_id,status,attempts,next_attempt_at,sent_at').eq('customer_id', customer.id).then(({ data }) => setJobs(data || []));
+    staffDb.from('portal_approvals').select('id, document_id, approved_at, approver_user_id, gsam_approval_ref').eq('customer_id', customer.id)
       .then(({ data }) => setApprovals(data || []));
-    supabase.rpc('portal_is_approver').then(({ data }) => setApprover(data === true));
+    staffDb.rpc('portal_is_approver').then(({ data }) => setApprover(data === true));
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
 
@@ -61,16 +61,16 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
     if (error) { flash('Not done: ' + errText(error)); load(); return; }
     flash(ok); load();
   };
-  const submitForApproval = (d) => act(d.id, () => supabase.from('portal_documents').update({ status: 'pending_approval' }).eq('id', d.id).eq('status', 'draft').select('id').single(),
+  const submitForApproval = (d) => act(d.id, () => staffDb.from('portal_documents').update({ status: 'pending_approval' }).eq('id', d.id).eq('status', 'draft').select('id').single(),
     'Submitted for approval. The fingerprint is fixed; John approves it in this section.');
-  const backToDraft = (d) => act(d.id, () => supabase.from('portal_documents').update({ status: 'draft' }).eq('id', d.id).eq('status', 'pending_approval').select('id').single(),
+  const backToDraft = (d) => act(d.id, () => staffDb.from('portal_documents').update({ status: 'draft' }).eq('id', d.id).eq('status', 'pending_approval').select('id').single(),
     'Back to draft. The old fingerprint can no longer be approved.');
   const withdraw = (d) => {
     if (!confirm(`Withdraw “${d.title}” (version ${d.version})? The client stops seeing it. Nothing is deleted and acceptances stay.`)) return;
-    act(d.id, () => supabase.rpc('portal_withdraw', { p_document_id: d.id }), 'Withdrawn. The client no longer sees it.');
+    act(d.id, () => staffDb.rpc('portal_withdraw', { p_document_id: d.id }), 'Withdrawn. The client no longer sees it.');
   };
   const sendAgain = (a) => act(a.id, async () => {
-    const r = await supabase.rpc('portal_requeue_receipt', { p_acceptance_id: a.id });
+    const r = await staffDb.rpc('portal_requeue_receipt', { p_acceptance_id: a.id });
     if (!r.error) nudgeReceiptWorker();
     return r;
   }, 'Queued again. The email goes within a minute.');
@@ -256,7 +256,7 @@ function ApproveDialog({ doc, customer, onClose, onDone }) {
   const [err, setErr] = useState(null);
   const approve = async () => {
     setBusy(true); setErr(null);
-    const { error } = await supabase.rpc('portal_approve_and_publish', { p_document_id: doc.id, p_expected_sha256: doc.content_sha256, p_gsam_approval_ref: ref.trim() || null });
+    const { error } = await staffDb.rpc('portal_approve_and_publish', { p_document_id: doc.id, p_expected_sha256: doc.content_sha256, p_gsam_approval_ref: ref.trim() || null });
     setBusy(false);
     if (error) { setErr(errText(error)); return; }
     onDone(`Published. ${customer.name} sees version ${doc.version} now.`);
@@ -284,7 +284,7 @@ function ApproveDialog({ doc, customer, onClose, onDone }) {
 
 function ReceiptDrawer({ acceptance, job, onClose }) {
   const [doc, setDoc] = useState(undefined);
-  useEffect(() => { supabase.rpc('portal_receipt_document', { p_acceptance_id: acceptance.id }).then(({ data }) => setDoc((data && data[0]) || null)); }, [acceptance.id]);
+  useEffect(() => { staffDb.rpc('portal_receipt_document', { p_acceptance_id: acceptance.id }).then(({ data }) => setDoc((data && data[0]) || null)); }, [acceptance.id]);
   return (
     <Drawer label="Receipt" onClose={onClose} wide>
       <div className="pts-drawer-head"><h2>Receipt</h2><button className="gs-btn ghost sm" onClick={onClose}>Close</button></div>
@@ -334,13 +334,13 @@ function DraftEditor({ draft, customer, members, onClose, onSaved }) {
     let version = draft.version;
     if (isNew) {
       const ins = { ...row, customer_id: customer.id, created_by_kind: 'staff', ...(draft.series ? { series: draft.series } : {}) };
-      const { data, error } = await supabase.from('portal_documents').insert(ins).select('id, version').single();
+      const { data, error } = await staffDb.from('portal_documents').insert(ins).select('id, version').single();
       if (error) { setBusy(false); setErr(errText(error)); return; }
       id = data.id; version = data.version;
     }
     // the confirmation sentence is Harbor's wording filled with this version's title, number and the account's company
     const confirmation_text = action === 'none' ? null : fillWording(confirmationTemplate(action), { title: row.title, version, company: customer.name });
-    const { data: saved, error } = await supabase.from('portal_documents').update(isNew ? { confirmation_text } : { ...row, confirmation_text })
+    const { data: saved, error } = await staffDb.from('portal_documents').update(isNew ? { confirmation_text } : { ...row, confirmation_text })
       .eq('id', id).eq('status', 'draft').select('id');
     setBusy(false);
     if (error) { setErr(errText(error)); return; }
