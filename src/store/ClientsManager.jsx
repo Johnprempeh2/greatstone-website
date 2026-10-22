@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Staff: clients & DX engagements (#catalogue → Clients tab). Pick a client company, then curate its
 // DX engagement timeline — meeting recaps / milestones / deliverables, each inline HTML OR an external
 // link (e.g. a deployed Netlify recap). Writes go through the staff JWT → staff_all RLS (0004/0013).
@@ -51,13 +52,13 @@ export default function ClientsManager({ staff }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    let query = supabase.from('customers')
+    let query = staffDb.from('customers')
       .select('id, name, slug, domain, created_at, tier:customer_tiers(name)')
       .is('deleted_at', null).order('name').limit(500);
     if (q.trim()) query = query.ilike('name', '%' + q.trim() + '%');
     query.then(({ data, error }) => { setLoadErr(error || null); setCustomers(error ? [] : (data || [])); setLoading(false); });
     // staleness: most recent engagement created_at per client, so the list flags dashboards going quiet
-    supabase.from('engagements').select('customer_id, created_at').is('deleted_at', null).limit(2000)
+    staffDb.from('engagements').select('customer_id, created_at').is('deleted_at', null).limit(2000)
       .then(({ data }) => { const m = {}; for (const e of (data || [])) { if (!m[e.customer_id] || e.created_at > m[e.customer_id]) m[e.customer_id] = e.created_at; } setActivity(m); });
   }, [q]);
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t); }, [load]);
@@ -140,21 +141,21 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const [copiedKey, setCopiedKey] = useState(null); // licence-key id (or 'fail:'+id) flashing the copy state
   const [kindFilter, setKindFilter] = useState('all'); // filter the engagement list staff are curating
   const load = useCallback(() => {
-    supabase.from('customer_users').select('id, email, full_name, is_primary, role').is('deleted_at', null).eq('customer_id', customer.id).order('is_primary', { ascending: false })
+    staffDb.from('customer_users').select('id, email, full_name, is_primary, role').is('deleted_at', null).eq('customer_id', customer.id).order('is_primary', { ascending: false })
       .then(({ data }) => setMembers(data || []));
-    supabase.from('engagements').select('*').is('deleted_at', null).eq('customer_id', customer.id).order('occurred_on', { ascending: false })
+    staffDb.from('engagements').select('*').is('deleted_at', null).eq('customer_id', customer.id).order('occurred_on', { ascending: false })
       .then(({ data, error }) => { if (error) console.error(error); setItems(data || []); });
-    supabase.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
+    staffDb.from('member_invite_requests').select('id, full_name, email, role, status, note, created_at').eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setRequests(data || []); }); // keep prior on a transient read error
-    supabase.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url, file_path, file_name, order_id').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
+    staffDb.from('licence_keys').select('id, offering_name, variant_name, licence_key, seats, status, delivered_at, expires_at, notes, download_url, file_path, file_name, order_id').is('deleted_at', null).eq('customer_id', customer.id).order('delivered_at', { ascending: false })
       .then(({ data, error }) => { setKeysErr(error || null); setKeys(error ? [] : (data || [])); });
-    supabase.from('orders').select('id, reference, placed_at, created_at').is('deleted_at', null).eq('customer_id', customer.id).order('created_at', { ascending: false })
+    staffDb.from('orders').select('id, reference, placed_at, created_at').is('deleted_at', null).eq('customer_id', customer.id).order('created_at', { ascending: false })
       .then(({ data, error }) => { if (!error) setOrders(data || []); });
   }, [customer.id]);
   useEffect(() => { load(); }, [load]);
 
   const handleReq = async (r, status) => {
-    const { data, error } = await supabase.from('member_invite_requests').update({ status, handled_at: new Date().toISOString(), handled_by: staff.id }).eq('id', r.id).select('id');
+    const { data, error } = await staffDb.from('member_invite_requests').update({ status, handled_at: new Date().toISOString(), handled_by: staff.id }).eq('id', r.id).select('id');
     if (error || !data?.length) { flash(error ? 'Could not update.' : 'Request not found.'); load(); return; }
     flash(status === 'provisioned' ? 'Marked provisioned.' : 'Request declined.'); load();
   };
@@ -164,14 +165,14 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
 
   const toggleShare = async (e) => {
     const next = e.status === 'shared' ? 'draft' : 'shared';
-    const { data, error } = await supabase.from('engagements').update({ status: next }).eq('id', e.id).select('id');
+    const { data, error } = await staffDb.from('engagements').update({ status: next }).eq('id', e.id).select('id');
     if (error || !data?.length) { flash(error ? 'Could not update.' : 'That item was not found — it may have been removed.'); load(); return; }
     flash(next === 'shared' ? 'Shared with the client.' : 'Hidden from the client (draft).');
     load();
   };
   const del = async (e) => {
     if (!confirm(`Delete “${e.title}”? This removes it from the client's timeline.`)) return;
-    const { data, error } = await supabase.from('engagements').update({ deleted_at: new Date().toISOString() }).eq('id', e.id).select('id');
+    const { data, error } = await staffDb.from('engagements').update({ deleted_at: new Date().toISOString() }).eq('id', e.id).select('id');
     if (error || !data?.length) { flash(error ? 'Could not delete.' : 'That item was already removed.'); load(); return; }
     flash('Deleted.'); load();
   };
@@ -185,7 +186,7 @@ function ClientDetail({ customer, staff, onBack, flash, toast }) {
   const revokeKey = async (k) => {
     const next = k.status === 'revoked' ? 'issued' : 'revoked';
     if (next === 'revoked' && !confirm(`Revoke the key for “${k.offering_name}”? The client will see it marked revoked.`)) return;
-    const { data, error } = await supabase.from('licence_keys').update({ status: next }).eq('id', k.id).select('id');
+    const { data, error } = await staffDb.from('licence_keys').update({ status: next }).eq('id', k.id).select('id');
     if (error || !data?.length) { flash(error ? 'Could not update key.' : 'Key not found.'); load(); return; }
     flash(next === 'revoked' ? 'Key revoked.' : 'Key re-issued.'); load();
   };
@@ -371,8 +372,8 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
       expires_at: expires ? new Date(expires + 'T00:00:00').toISOString() : null,
     };
     let error;
-    if (isNew) ({ error } = await supabase.from('licence_keys').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
-    else ({ error } = await supabase.from('licence_keys').update(payload).eq('id', lkey.id));
+    if (isNew) ({ error } = await staffDb.from('licence_keys').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
+    else ({ error } = await staffDb.from('licence_keys').update(payload).eq('id', lkey.id));
     if (error) {
       // roll back a just-uploaded object so a failed save never leaves an orphan in the private bucket
       if (uploadedPath) { try { await supabase.storage.from('licence-files').remove([uploadedPath]); } catch { /* best effort */ } }
@@ -478,9 +479,9 @@ function EngagementEditor({ engagement, customer, staff, onClose, onSaved }) {
     };
     let error;
     if (isNew) {
-      ({ error } = await supabase.from('engagements').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
+      ({ error } = await staffDb.from('engagements').insert({ ...payload, org_id: staff.org_id, customer_id: customer.id, created_by: staff.id }));
     } else {
-      ({ error } = await supabase.from('engagements').update(payload).eq('id', engagement.id));
+      ({ error } = await staffDb.from('engagements').update(payload).eq('id', engagement.id));
     }
     setBusy(false);
     if (error) { setErr(error.message); return; }

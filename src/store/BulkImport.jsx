@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Bulk SKU price-book import (catalogue admin). Export the catalogue as a SKU CSV, edit USD prices /
 // add new SKUs in Excel, re-import: SKU is the match key. A pre-commit preview reports records,
 // matching / new / invalid / duplicate SKUs + a field-level diff; nothing is written until you commit.
@@ -18,10 +19,10 @@ export default function BulkImport({ staff }) {
 
   const load = useCallback(async () => {
     const [{ data: offs }, { data: vars }, { data: vends }, { data: cats }] = await Promise.all([
-      supabase.from('offerings').select('id,slug,name,status,featured,vendor_id,category_id').limit(2000),
-      supabase.from('offering_variants').select('id,offering_id,sku,name,license_type,billing_period,base_price_minor,currency,offering:offerings(slug,name,status,featured,vendor:vendors(name),category:categories(name))').is('deleted_at', null).limit(5000),
-      supabase.from('vendors').select('id,slug,name'),
-      supabase.from('categories').select('id,slug,name'),
+      staffDb.from('offerings').select('id,slug,name,status,featured,vendor_id,category_id').limit(2000),
+      staffDb.from('offering_variants').select('id,offering_id,sku,name,license_type,billing_period,base_price_minor,currency,offering:offerings(slug,name,status,featured,vendor:vendors(name),category:categories(name))').is('deleted_at', null).limit(5000),
+      staffDb.from('vendors').select('id,slug,name'),
+      staffDb.from('categories').select('id,slug,name'),
     ]);
     setVariants(vars || []);
     const variantsBySku = new Map();
@@ -57,10 +58,10 @@ export default function BulkImport({ staff }) {
     try {
       // One atomic transaction (import_skus RPC, migration 0010): creates + updates + from_price
       // recompute all commit or all roll back — no orphaned offerings/vendors on a mid-import failure.
-      const { data, error } = await supabase.rpc('import_skus', { p_creates: plan.creates, p_updates: plan.updates });
+      const { data, error } = await staffDb.rpc('import_skus', { p_creates: plan.creates, p_updates: plan.updates });
       if (error) throw error;
       // audit log (best-effort, non-blocking — not part of the import transaction)
-      supabase.from('import_jobs').insert({ org_id: staff.org_id, filename: fileName || 'sku-import.csv', type: 'variants', status: 'applied', dry_run: false, applied_at: new Date().toISOString(), total_rows: plan.counts.total, diff_summary: plan.counts, created_by: staff.id }).then(({ error: e }) => { if (e) console.warn('audit', e.message); });
+      staffDb.from('import_jobs').insert({ org_id: staff.org_id, filename: fileName || 'sku-import.csv', type: 'variants', status: 'applied', dry_run: false, applied_at: new Date().toISOString(), total_rows: plan.counts.total, diff_summary: plan.counts, created_by: staff.id }).then(({ error: e }) => { if (e) console.warn('audit', e.message); });
       flash(`Applied · created ${data?.created ?? 0}, updated ${data?.updated ?? 0}.`);
       setPlan(null); setFileName(''); load();
     } catch (e) { flash('Import failed: ' + e.message); console.error(e); }

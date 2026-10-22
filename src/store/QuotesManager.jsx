@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Catalogue admin — quotes (the B2B pay-on-invoice path). List incoming quote requests, work the
 // status, set the finalised inc-VAT total + validity, and convert a won quote to an order + invoice
 // (atomic convert_quote_to_order RPC). Staff_all RLS scopes to the signed-in org.
@@ -16,7 +17,7 @@ export default function QuotesManager({ staff }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    supabase.from('quotes')
+    staffDb.from('quotes')
       .select('id, reference, status, contact_company, contact_name, contact_email, contact_phone, po_reference, po_document_path, po_document_name, message, indicative_total_minor, quoted_total_minor, valid_until, currency, created_at, orders(id, invoice_number), quote_items(id, offering_name, variant_name, qty, list_price_minor, captured_price_minor)')
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(200)
       .then(({ data, error }) => { if (error) { console.error('quotes load', error); setLoadErr(error.message || 'load failed'); } else setLoadErr(null); setQuotes(data || []); setLoading(false); });
@@ -25,19 +26,19 @@ export default function QuotesManager({ staff }) {
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
 
   const setStatus = async (id, status) => {
-    const { error } = await supabase.from('quotes').update({ status }).eq('id', id);
+    const { error } = await staffDb.from('quotes').update({ status }).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
     flash('Status → ' + status); load();
   };
   const saveTerms = async (id, totalPounds, validUntil) => {
     const patch = { quoted_total_minor: totalPounds === '' ? null : Math.round(Number(totalPounds) * 100), valid_until: validUntil || null };
-    const { error } = await supabase.from('quotes').update(patch).eq('id', id);
+    const { error } = await staffDb.from('quotes').update(patch).eq('id', id);
     if (error) { flash('Could not save. ' + error.message); return; }
     flash('Quote terms saved.'); load();
   };
   const convert = async (id) => {
     if (typeof confirm === 'function' && !confirm('Convert this quote to an order and raise an invoice?')) return;
-    const { data, error } = await supabase.rpc('convert_quote_to_order', { p_quote_id: id });
+    const { data, error } = await staffDb.rpc('convert_quote_to_order', { p_quote_id: id });
     if (error) { flash('Could not convert. ' + error.message); return; }
     flash('Converted → ' + (data?.invoice_number || 'order created'));
     load();

@@ -1,3 +1,4 @@
+import { staffDb } from './staff-store-api.mjs';
 // Catalogue admin — Supabase-authenticated. Sign-in gate → offerings manager (list + edit).
 // Writes go through the signed-in user's session; the staff_all RLS (0004) enforces admin-only.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -105,11 +106,11 @@ function OfferingsManager({ staff }) {
   const [toast, setToast] = useState(null);
   const [rate, setRate] = useState(1.30); // from_price is stored USD; show GBP at the live rate
 
-  useEffect(() => { supabase.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle().then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate); if (r > 0) setRate(r); }); }, []);
+  useEffect(() => { staffDb.from('org_settings').select('usd_to_gbp_display_rate').limit(1).maybeSingle().then(({ data }) => { const r = Number(data?.usd_to_gbp_display_rate); if (r > 0) setRate(r); }); }, []);
 
   const load = useCallback(() => {
     setLoading(true);
-    let query = supabase.from('offerings')
+    let query = staffDb.from('offerings')
       .select('id, slug, name, status, featured, short_description, from_price_minor, type, vendor:vendors(name)')
       .order('name').limit(500);
     if (q.trim()) query = query.ilike('name', '%' + q.trim() + '%');
@@ -165,7 +166,7 @@ function EditDrawer({ offering, onClose, onSaved }) {
 
   const save = async () => {
     setBusy(true); setErr(null);
-    const { error } = await supabase.from('offerings')
+    const { error } = await staffDb.from('offerings')
       .update({ name: name.trim(), short_description: shortDesc, status, featured })
       .eq('id', offering.id);
     setBusy(false);

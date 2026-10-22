@@ -1,8 +1,9 @@
 // Studio Home: a content-health overview so a lead (and the future DX-dashboard audience) reads site
-// readiness at a glance — page status, the LIVE catalogue size (from Supabase, not the legacy local
+// readiness at a glance — page status, the LIVE catalogue size (from the staff store, not the legacy local
 // store), team + pending invites, and the most recent changes. Read-only.
 import { useState, useEffect } from 'react';
 import PanelFrame from './PanelFrame.jsx';
+import { staffDb } from '../store/staff-store-api.mjs';
 
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -16,14 +17,11 @@ function when(ts) {
 }
 
 export default function OverviewPanel({ order = [], pages = {}, team = [], activity = [], org, onClose, embedded, onSection, onCatalogue }) {
-  // the live product catalogue is the Supabase one (159 offerings), NOT the legacy local store — fetch
-  // its size lazily (dynamic import keeps the Supabase client out of the eager bundle).
+  // The live product catalogue is the database one, not the legacy local store.
   const [catCount, setCatCount] = useState(null);
   useEffect(() => {
     let alive = true;
-    import('../lib/supabase.mjs').then(async ({ supabase }) => {
-      if (!supabase) return;
-      const { count } = await supabase.from('offerings').select('id', { count: 'exact', head: true });
+    staffDb.from('offerings').select('id', { count: 'exact', head: true }).then(({ count }) => {
       if (alive && typeof count === 'number') setCatCount(count);
     }).catch(() => {});
     return () => { alive = false; };
