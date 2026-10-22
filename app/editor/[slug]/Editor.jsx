@@ -5,6 +5,7 @@ import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx'
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
+import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import './frame.css';
 
 export default function Editor({ page, siteId, engine, origins, mode }) {
@@ -96,6 +97,7 @@ export default function Editor({ page, siteId, engine, origins, mode }) {
     setData(displayData(conflict.currentData)); setGeneration((n) => n + 1); setConflict(null); dirty(false); setStatus('ready'); setMessage('Their version loaded');
   }
   function keepMine() { baseRevision.current = conflict.currentRevisionId; setConflict(null); setStatus('ready'); setMessage('Your version is ready to save'); }
+  const changes = conflict ? changedBlockText(draft.current, conflict.currentData) : [];
   function pick(event) {
     const el = event.target.closest('[data-gs-block-id]');
     if (!el || !draft.current) return;
@@ -107,10 +109,10 @@ export default function Editor({ page, siteId, engine, origins, mode }) {
   }
   if (!data) return <main className="gs-frame-empty" role="status"><span className="gs-frame-kicker">Greatstone Studio</span><h1>{mode === 'editor' ? 'Page editor' : 'Page preview'}</h1><p>{message}</p></main>;
   return <main className={`gs-frame gs-frame-${mode}`}>
-    <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span>{mode === 'editor' && <button type="button" disabled={status === 'saving' || !isDirty} onClick={() => save()}>Save draft</button>}</div></header>
-    {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Choose your changes or load their version. Your changes stay here until you choose.</p><div className="gs-frame-versions"><section><h3>Mine</h3><ul>{draft.current?.content.map((item) => <li key={item.props.id}>{item.type}: {JSON.stringify(item.props).slice(0, 160)}</li>)}</ul></section><section><h3>Theirs</h3><ul>{conflict.currentData.content.map((item) => <li key={item.props.id}>{item.type}: {JSON.stringify(item.props).slice(0, 160)}</li>)}</ul></section></div><div><button type="button" onClick={keepMine}>Keep mine</button><button type="button" onClick={takeTheirs}>Take theirs</button></div></section>}
+    <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span>{mode === 'editor' && <button type="button" disabled={status === 'saving' || !isDirty || !!conflict} onClick={() => save()}>Save draft</button>}</div></header>
+    {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && pending.current && <div className="gs-frame-notice" role="alert"><p>{message}</p><button type="button" onClick={() => save(undefined, true)}>Retry save</button></div>}
-    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} viewports={[{ width: 390, label: 'Phone', icon: 'Smartphone' }, { width: 1440, label: 'Laptop', icon: 'Monitor' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
+    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} ui={{ viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: true, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} viewports={[{ width: 390, label: 'Phone', icon: 'Smartphone' }, { width: 1440, label: 'Laptop', icon: 'Monitor' }, { width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
       : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }

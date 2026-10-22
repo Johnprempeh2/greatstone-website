@@ -14,3 +14,9 @@ The after images came from local Next dev routes on a dedicated `editor.localhos
 The build prepares a local copy of the installed Puck 0.23 MIT stylesheet and removes its remote font import. The editor route makes no third-party font request.
 
 The [phone Text toolbar](toolbar-phone.png) shows the brand colour control inside the Puck iframe after applying the approved accent to a selected text run.
+
+## Mikey review corrections
+
+The revised [desktop preview in light mode](review2-preview-light-1440.png) and [phone preview in light mode](review2-preview-light-390.png) keep the site canvas dark, so the body copy and both CTAs are readable. The editor opens at 100% with a Full width viewport choice; [desktop dark](review2-editor-dark-1440.png), [desktop light](review2-editor-light-1440.png), [phone dark](review2-editor-dark-390.png), and [phone light](review2-editor-light-390.png) show the result. Dark previews are [desktop](review2-preview-dark-1440.png) and [phone](review2-preview-dark-390.png).
+
+The conflict view compares changed text by block and field and explains both choices. See [desktop](review2-conflict-1440.png) and [phone](review2-conflict-390.png). Local browser checks typed into an iframe text field at 100%, found the Text toolbar, enabled Save draft, and displayed a synthetic conflict. The data stayed in the local test frame.
