@@ -28,13 +28,14 @@ try {
   try { snapshot = seedState(); }
   finally { Math.random = originalRandom; }
   const { pages, settings, navigation } = snapshot;
-  const selected = { settings, navigation: navigation.filter((item) => item.type === 'page' && ['home', 'dev-tools'].includes(item.pageSlug)), pages: Object.fromEntries(['home', 'dev-tools'].map((slug) => [slug, {
+  const publishedSlugs = snapshot.order.filter((slug) => pages[slug]?.status === 'published' && pages[slug]?.published?.content?.length);
+  const selected = { settings, navigation: navigation.filter((item) => item.type === 'page' && publishedSlugs.includes(item.pageSlug)), pages: Object.fromEntries(publishedSlugs.map((slug) => [slug, {
     title: pages[slug].title,
     seo: pages[slug].seo,
     data: pages[slug].published,
   }])) };
   await writeFile(resolve(import.meta.dirname, '../data/release.json'), JSON.stringify(toProofRelease(selected), null, 2) + '\n');
-  console.log('Exported schema 1 proof release for home and dev-tools');
+  console.log(`Exported schema 1 release for ${publishedSlugs.length} published pages`);
 } finally {
   await rm(temp, { recursive: true, force: true });
 }

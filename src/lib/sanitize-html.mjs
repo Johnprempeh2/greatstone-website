@@ -128,7 +128,7 @@ function sanitizeInlineOnce(html) {
 }
 
 export function sanitizeInline(html) {
-  if (!html || typeof window === 'undefined') return '';
+  if (!html || typeof DOMParser === 'undefined') return '';
   let out = String(html);
   for (let i = 0; i < 6; i++) { const next = sanitizeInlineOnce(out); if (next === out) break; out = next; } // fixpoint
   return out;
