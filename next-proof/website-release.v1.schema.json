@@ -1,0 +1,355 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:gsam:website-release:1",
+  "title": "GSAM website release file, schema 1",
+  "description": "One frozen JSON file of everything the public site shows. Written by GSAM to the site's Netlify Blobs store as releases/<number>.json and read by the site engine. Rules that JSON Schema cannot express are listed in the release file contract (GRE-1916, document release-contract, section 4). Both sides must apply them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "siteId", "orgId", "release", "site", "theme", "pages", "collections", "redirects", "media"],
+  "properties": {
+    "schema": {
+      "description": "Release file schema version. Any change to this file's shape is a new version. The engine refuses a version it does not list as supported.",
+      "const": 1
+    },
+    "siteId": {
+      "description": "GSAM website_site id. The engine refuses a release whose siteId is not its own (GSAM_SITE_ID).",
+      "$ref": "#/$defs/uuid"
+    },
+    "orgId": {
+      "description": "Tenant id of the organisation that owns the site. Every collection entry carries the same orgId.",
+      "$ref": "#/$defs/orgId"
+    },
+    "release": { "$ref": "#/$defs/releaseMeta" },
+    "site": { "$ref": "#/$defs/site" },
+    "theme": { "$ref": "#/$defs/theme" },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/page" }
+    },
+    "collections": {
+      "description": "Published entries of each collection, keyed by collection key (products, categories, forms, ...).",
+      "type": "object",
+      "maxProperties": 50,
+      "propertyNames": { "$ref": "#/$defs/key" },
+      "additionalProperties": { "$ref": "#/$defs/collection" }
+    },
+    "redirects": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": { "$ref": "#/$defs/redirect" }
+    },
+    "media": {
+      "description": "Every image the release uses, keyed by media id. Content is referenced elsewhere as the string \"media:<id>\".",
+      "type": "object",
+      "maxProperties": 5000,
+      "propertyNames": { "$ref": "#/$defs/mediaId" },
+      "additionalProperties": { "$ref": "#/$defs/mediaItem" }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "orgId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,47}$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 96
+    },
+    "path": {
+      "description": "Site-relative path. \"/\" or segments of lowercase letters, digits and hyphens. No trailing slash, no query, no fragment.",
+      "type": "string",
+      "pattern": "^/(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$",
+      "maxLength": 256
+    },
+    "mediaId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
+    "mediaRef": {
+      "type": "string",
+      "pattern": "^media:[A-Za-z0-9_-]{1,64}$"
+    },
+    "optionalMediaRef": {
+      "anyOf": [{ "$ref": "#/$defs/mediaRef" }, { "const": "" }]
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$"
+    },
+    "plainText": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "releaseMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "number", "createdAt", "publishedBy", "engine"],
+      "properties": {
+        "id": { "description": "website_release id in GSAM.", "$ref": "#/$defs/uuid" },
+        "number": { "description": "Release number per site, from 1, never reused. Also the Blobs key releases/<number>.json.", "type": "integer", "minimum": 1 },
+        "previous": { "description": "Number of the release that was live when this one was built, or null for the first.", "type": ["integer", "null"], "minimum": 1 },
+        "createdAt": { "$ref": "#/$defs/dateTime" },
+        "publishedBy": {
+          "description": "Who published. An id only; no names or emails in the release file.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id"],
+          "properties": {
+            "kind": { "enum": ["user", "agent"] },
+            "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" }
+          }
+        },
+        "approvalId": { "type": ["string", "null"], "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+        "engine": {
+          "description": "The engine the release was checked against before upload.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "commit"],
+          "properties": {
+            "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$" },
+            "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+          }
+        }
+      }
+    },
+    "site": {
+      "description": "Site-wide settings and navigation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "settings", "navigation"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "settings": {
+          "description": "Engine-defined site settings (logo, footer words, header button). Values are scalars or media refs.",
+          "type": "object",
+          "maxProperties": 100,
+          "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]{0,47}$" },
+          "additionalProperties": {
+            "anyOf": [
+              { "type": "string", "maxLength": 2000 },
+              { "type": "number" },
+              { "type": "boolean" }
+            ]
+          }
+        },
+        "navigation": {
+          "type": "array",
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/navItem" }
+        }
+      }
+    },
+    "navItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "visible", "target"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "visible": { "type": "boolean" },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "pageId"],
+              "properties": { "kind": { "const": "page" }, "pageId": { "$ref": "#/$defs/uuid" } }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "href"],
+              "properties": { "kind": { "const": "link" }, "href": { "$ref": "#/$defs/href" } }
+            }
+          ]
+        },
+        "children": {
+          "type": "array",
+          "maxItems": 30,
+          "items": { "$ref": "#/$defs/navItem" }
+        }
+      }
+    },
+    "href": {
+      "description": "A site path (with optional #fragment), an https URL, or mailto:/tel:. Never javascript:, data: or protocol-relative //.",
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^(?:/(?!/)[^\\s]*|#[A-Za-z0-9_-]*|https://[^\\s/]+(?:/[^\\s]*)?|mailto:[^\\s]+|tel:\\+?[0-9 ()-]+)$"
+    },
+    "theme": {
+      "description": "The site's one theme file. The engine turns tokens into CSS variables (--<token with dots as hyphens>).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revisionId", "tokens"],
+      "properties": {
+        "revisionId": { "$ref": "#/$defs/uuid" },
+        "tokens": {
+          "type": "object",
+          "maxProperties": 500,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(?:\\.[a-z0-9][a-z0-9-]*){0,4}$", "maxLength": 96 },
+          "additionalProperties": {
+            "anyOf": [
+              { "type": "number" },
+              {
+                "description": "No characters that can end a CSS declaration or open markup or a url().",
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[^;{}<>\\\\\"'`]*$",
+                "not": { "pattern": "([uU][rR][lL]|[eE][xX][pP][rR][eE][sS][sS][iI][oO][nN]|[iI][mM][aA][gG][eE]-[sS][eE][tT])\\s*\\(|@|[jJ][aA][vV][aA][sS][cC][rR][iI][pP][tT]:" }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revisionId", "slug", "path", "title", "seo", "data"],
+      "properties": {
+        "id": { "description": "website_page id. Stable for the life of the page; used by navigation and click to change.", "$ref": "#/$defs/uuid" },
+        "revisionId": { "description": "The approved document revision this page was taken from.", "$ref": "#/$defs/uuid" },
+        "slug": { "$ref": "#/$defs/slug" },
+        "path": { "$ref": "#/$defs/path" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "navOrder": { "type": ["integer", "null"], "minimum": 0 },
+        "seo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "description"],
+          "properties": {
+            "title": { "type": "string", "maxLength": 200 },
+            "description": { "type": "string", "maxLength": 500 },
+            "ogImage": { "$ref": "#/$defs/optionalMediaRef" },
+            "canonicalPath": { "$ref": "#/$defs/path" },
+            "noindex": { "type": "boolean" }
+          }
+        },
+        "data": { "$ref": "#/$defs/puckData" }
+      }
+    },
+    "puckData": {
+      "description": "Puck data for one page (Puck 0.23 shape). Nested blocks live in slot fields inside props. Legacy zones are not allowed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "content"],
+      "properties": {
+        "root": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["props"],
+          "properties": {
+            "props": { "type": "object", "maxProperties": 100 }
+          }
+        },
+        "content": {
+          "type": "array",
+          "maxItems": 300,
+          "items": { "$ref": "#/$defs/block" }
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "props"],
+      "properties": {
+        "type": { "description": "Block type from the engine's Puck config.", "type": "string", "pattern": "^[A-Z][A-Za-z0-9]{0,63}$" },
+        "props": {
+          "description": "Field values. props.id is the block id: stable across edits, unique within the page including nested slot blocks. Other props are checked by the engine against its Puck config.",
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": { "$ref": "#/$defs/blockId" }
+          }
+        }
+      }
+    },
+    "blockId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+    },
+    "collection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldsVersion", "entries"],
+      "properties": {
+        "fieldsVersion": { "description": "Version of the collection's field schema the entries follow.", "type": "integer", "minimum": 1 },
+        "entries": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": { "$ref": "#/$defs/entry" }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revisionId", "orgId", "fields"],
+      "properties": {
+        "id": { "description": "Stable entry id (for example prod-bedrock). Unique within its collection.", "type": "string", "pattern": "^[A-Za-z0-9_-]{1,96}$" },
+        "revisionId": { "$ref": "#/$defs/uuid" },
+        "orgId": { "$ref": "#/$defs/orgId" },
+        "slug": { "$ref": "#/$defs/slug" },
+        "order": { "type": "integer", "minimum": 0 },
+        "fields": {
+          "description": "Field values, checked against the collection's field schema (fieldsVersion).",
+          "type": "object",
+          "maxProperties": 200,
+          "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]{0,63}$" }
+        }
+      }
+    },
+    "redirect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,96}$" },
+        "from": {
+          "description": "Site path to match exactly (case-sensitive, no query). Old paths may use upper case, dots and underscores.",
+          "type": "string",
+          "maxLength": 512,
+          "pattern": "^/(?!/)[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$"
+        },
+        "to": {
+          "description": "A site path, or an https URL. Never protocol-relative.",
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^(?:/(?!/)[^\\s]*|https://[^\\s/]+(?:/[^\\s]*)?)$"
+        },
+        "status": { "enum": [301, 302, 307, 308] }
+      }
+    },
+    "mediaItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "sha256", "contentType", "bytes", "width", "height", "alt"],
+      "properties": {
+        "key": {
+          "description": "Blobs key. Content-addressed, so uploads are new keys only.",
+          "type": "string",
+          "pattern": "^media/[0-9a-f]{64}\\.(?:png|jpg|webp|avif|gif)$"
+        },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "contentType": { "enum": ["image/png", "image/jpeg", "image/webp", "image/avif", "image/gif"] },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 20971520 },
+        "width": { "type": "integer", "minimum": 1, "maximum": 12000 },
+        "height": { "type": "integer", "minimum": 1, "maximum": 12000 },
+        "alt": { "description": "Default alt text. Empty string means decorative.", "type": "string", "maxLength": 500 }
+      }
+    }
+  }
+}

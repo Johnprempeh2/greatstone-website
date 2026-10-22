@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { toProofRelease } from '../release-adapter.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const temp = await mkdtemp(join(root, 'node_modules/.next-proof-'));
@@ -32,8 +33,8 @@ try {
     seo: pages[slug].seo,
     data: pages[slug].published,
   }])) };
-  await writeFile(resolve(import.meta.dirname, '../data/pages.json'), JSON.stringify(selected, null, 2) + '\n');
-  console.log('Exported published Puck data for home and dev-tools');
+  await writeFile(resolve(import.meta.dirname, '../data/release.json'), JSON.stringify(toProofRelease(selected), null, 2) + '\n');
+  console.log('Exported schema 1 proof release for home and dev-tools');
 } finally {
   await rm(temp, { recursive: true, force: true });
 }

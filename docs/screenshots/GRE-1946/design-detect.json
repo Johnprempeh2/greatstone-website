@@ -1,0 +1,22 @@
+{
+  "engine": {
+    "version": "0.1.16",
+    "commit": "24bdeb776a66a3c36d493072a04541287a327408",
+    "sha256": "a890a5b4b7d9d79ec54aa74612b5e924e5f5b422600a25fde8bcbda11b031787"
+  },
+  "env": {
+    "IMPECCABLE_NO_TELEMETRY": "1",
+    "IMPECCABLE_NO_UPDATE_CHECK": "1",
+    "DO_NOT_TRACK": "1"
+  },
+  "targets": [
+    "app/ProofPage.jsx",
+    "app/layout.jsx",
+    "app/page.jsx",
+    "app/dev-tools/page.jsx",
+    "app/proof-data.js"
+  ],
+  "source": [],
+  "rendered": [],
+  "scannedAt": "2026-10-22T13:40:33.836Z"
+}
