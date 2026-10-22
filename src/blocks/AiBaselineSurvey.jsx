@@ -233,7 +233,7 @@ export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, hea
 }
 
 export const css = `
-.b-abs{padding:clamp(56px,9vw,110px) 0;position:relative}
+.b-abs{padding:max(140px,9vw) 0 clamp(56px,9vw,110px);position:relative;scroll-margin-top:96px}
 .b-abs-wrap{max-width:820px}
 .b-abs-head{margin-bottom:clamp(20px,3.4vw,34px);max-width:660px}
 .b-abs-h{font-size:clamp(1.5rem,3.4vw,2.4rem);font-weight:800;letter-spacing:-.02em;line-height:1.06;margin-top:.5rem}

@@ -167,7 +167,7 @@ export function AiCostCalculator({
 }
 
 export const css = `
-.b-acc{padding:clamp(56px,9vw,110px) 0;position:relative}
+.b-acc{padding:clamp(56px,9vw,110px) 0;position:relative;scroll-margin-top:96px}
 .b-acc-wrap{max-width:960px}
 .b-acc-head{margin-bottom:clamp(22px,4vw,40px);max-width:640px}
 .b-acc-h{font-size:clamp(1.5rem,3.4vw,2.4rem);font-weight:800;letter-spacing:-.02em;line-height:1.06;margin-top:.5rem}
