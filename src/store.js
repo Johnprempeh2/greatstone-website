@@ -126,7 +126,7 @@ const homeCopy = {
   consultancyCta: 'Discuss your transformation →', proofLink: 'See our work', toolsCta: 'Browse DX Dev Tools →',
   chooserHeading: 'Choose your side', chooserLine: 'Two ways to work with Greatstone.', consultancyChooserLine: 'Transform with AI', toolsChooserLine: 'Proven developer tools', orLabel: 'OR', swipeHint: '← Swipe or tap a side →',
   toolsPoint1: 'Browse by brand', toolsPoint1Text: 'Start with the platform you know.', toolsPoint2: 'Find the fit', toolsPoint2Text: 'Compare product capabilities.', toolsPoint3: 'Buy or renew', toolsPoint3Text: 'Keep the route direct.',
-  chooseHref: '#choose', contactHref: '#go/dx-consultancy', proofHref: '#proof', toolsHref: '#dev-tools',
+  chooseHref: '#choose', contactHref: '#contact', proofHref: '#proof', toolsHref: '#dev-tools',
 };
 const storyCopy = {
   storyKicker: 'Who we are', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
@@ -165,7 +165,6 @@ function linkConsultancyFromHome(page) {
   for (const data of [page.data, page.published]) {
     if (!data?.content) continue;
     for (const block of data.content) {
-      if (block.type === 'TwoDoors' && block.props?.contactHref === '#contact') block.props.contactHref = '#go/dx-consultancy';
       if (block.type === 'TwoDoorsTools' && block.props?.consultancyHref === '#door-dx') block.props.consultancyHref = '#go/dx-consultancy';
     }
   }
@@ -809,6 +808,16 @@ function migrate(state) {
     linkConsultancyFromHome(state.pages.home);
     state.order = ['home', 'dx-consultancy', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dx-consultancy')];
     state._aiLeadToolsPlaced = true;
+  }
+  // GRE-1853 review: the home contact CTA must keep its enquiry destination.
+  // Repair only the value introduced by the earlier tools placement, in both projections.
+  if (!state._aiLeadToolsContactCtaRestored) {
+    for (const data of [state.pages.home?.data, state.pages.home?.published]) {
+      for (const block of data?.content || []) {
+        if (block.type === 'TwoDoors' && block.props?.contactHref === '#go/dx-consultancy') block.props.contactHref = '#contact';
+      }
+    }
+    state._aiLeadToolsContactCtaRestored = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';

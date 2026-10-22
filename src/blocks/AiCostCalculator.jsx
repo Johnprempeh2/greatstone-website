@@ -1,4 +1,4 @@
-import { useState, useId, useEffect, useMemo, useCallback } from 'react';
+import { useState, useId, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
@@ -53,6 +53,8 @@ export function AiCostCalculator({
   const [sendState, setSendState] = useState('idle');
   const [token, setToken] = useState(null);
   const [website, setWebsite] = useState('');
+  const resultStatusRef = useRef(null);
+  useEffect(() => { if (unlocked) resultStatusRef.current?.focus(); }, [unlocked]);
   // keep live inputs in step with editable defaults in the Puck editor (no remount there); no-op for visitors
   useEffect(() => { setTeam(defaultTeam); setHours(defaultHours); setCost(defaultCost); }, [defaultTeam, defaultHours, defaultCost]);
 
@@ -131,7 +133,7 @@ export function AiCostCalculator({
 
             {unlocked ? (
               <div className="b-acc-reveal">
-                <p className="b-acc-send-state" role="status">{sendState === 'sent' ? sentNote : failNote.replace('{contact}', LEAD_TOOL_COPY.contactEmail)}</p>
+                <p className="b-acc-send-state" role="status" ref={resultStatusRef} tabIndex={-1}>{sendState === 'sent' ? sentNote : failNote.replace('{contact}', LEAD_TOOL_COPY.contactEmail)}</p>
                 <div className="b-acc-saving">
                   <span className="b-acc-slead">{savingsLead}</span>
                   <span className="b-acc-sbig">{currency}{fmtInt(saving)}<span> {COPY.year}</span></span>
