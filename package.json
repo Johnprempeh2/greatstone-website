@@ -24,6 +24,7 @@
     "design:detect": "node scripts/design-detect.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check",
     "build:next": "node next-proof/scripts/export-pages.mjs && next build",
+    "check:legacy:next": "node next-proof/scripts/check-legacy-urls.mjs",
     "dev:next": "node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },
   "dependencies": {
