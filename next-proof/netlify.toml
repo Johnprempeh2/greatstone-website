@@ -5,3 +5,13 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_CATALOGUE_REQUIRED = "1"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Content-Type-Options = "nosniff"
