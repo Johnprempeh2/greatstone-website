@@ -1,8 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import { readFile } from 'node:fs/promises';
 import { getOffering, listCategories, listOfferings, listVendors } from '../src/data/catalog.mjs';
 
 // Only the public, RLS-gated projection is read. The release contains no service key.
 export async function publishedCatalogue(url = process.env.VITE_SUPABASE_URL, anonKey = process.env.VITE_SUPABASE_ANON_KEY) {
+  if (process.env.NEXT_CATALOGUE_FIXTURE) {
+    if (process.env.NEXT_CATALOGUE_REQUIRED === '1') throw new Error('Catalogue fixture cannot be used for a required release build');
+    const fixture = JSON.parse(await readFile(process.env.NEXT_CATALOGUE_FIXTURE, 'utf8'));
+    return { vendors: fixture.vendors, categories: fixture.categories, offerings: fixture.offerings };
+  }
   if (!url && !anonKey) {
     if (process.env.NEXT_CATALOGUE_REQUIRED === '1') throw new Error('Published catalogue connection is required for the release build');
     return null;

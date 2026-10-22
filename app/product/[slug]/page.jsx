@@ -6,8 +6,14 @@ import { offeringBySlug } from '../../../next-proof/catalogue-data.mjs';
 
 export function generateStaticParams() { return catalogue.offerings.map((item) => ({ slug: item.slug })); }
 
+// Next can pass a path segment with encoded punctuation to an App Router page.
+function catalogueSlug(value) {
+  try { return decodeURIComponent(value); }
+  catch { notFound(); }
+}
+
 export async function generateMetadata({ params }) {
-  const { slug } = await params;
+  const slug = catalogueSlug((await params).slug);
   const item = offeringBySlug(catalogue, slug);
   if (!item) notFound();
   const title = item.seo?.metaTitle || `${item.name} · Greatstone International`;
@@ -17,7 +23,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Product({ params }) {
-  const { slug } = await params;
+  const slug = catalogueSlug((await params).slug);
   const item = offeringBySlug(catalogue, slug);
   if (!item) notFound();
   const related = catalogue.offerings.filter((candidate) => candidate.slug !== slug && (candidate.vendor?.id === item.vendor?.id || candidate.category?.id === item.category?.id)).slice(0, 4);

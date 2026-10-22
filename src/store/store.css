@@ -85,6 +85,9 @@
 .sp-pricebox .amt { font-size:2rem; font-weight:900; color:var(--gs-text); letter-spacing:-.02em; } .sp-pricebox .amt small { font-size:.85rem; font-weight:600; color:var(--gs-text-muted); }
 .sp-pricebox .poa { font-size:1.15rem; font-weight:800; color:var(--gs-text); } .sp-pricebox .sub { font-size:.82rem; color:var(--gs-text-muted); margin-top:6px; }
 .sp-cta { display:flex; flex-wrap:wrap; gap:12px; }
+.sp-cta .gs-btn { display:inline-flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:.78rem; border-radius:100px; padding:9px 16px; border:1px solid transparent; }
+.sp-cta .gs-btn.primary { background:var(--gs-accent); color:#0e1611; }
+.sp-cta .gs-btn.ghost { background:rgba(255,255,255,.05); border-color:var(--gs-border-soft); color:var(--gs-text); }
 .sp-note { font-size:.78rem; color:var(--gs-text-faint); margin-top:14px; }
 .sp-section { margin-top:clamp(40px,6vw,72px); }
 .sp-section h2 { font-size:clamp(1.3rem,2.4vw,1.9rem); font-weight:800; letter-spacing:-.01em; margin-bottom:16px; }
