@@ -7,7 +7,7 @@ const OFFERING_CARD = 'id,slug,name,short_description,from_price_minor,from_pric
 const OFFERING_FULL = `${OFFERING_CARD},description,seo,offering_variants(id,sku,name,license_type,platform,billing_period,base_price_minor,currency,min_order_qty,sort_order),offering_specs(label,value,sort_order)`;
 
 /** Map a pricing_rules row (+ targets) to the engine's rule shape. */
-function toRule(r) {
+export function toRule(r) {
   const t = { vendorIds: [], categoryIds: [], offeringIds: [], tierIds: [] };
   for (const x of r.pricing_rule_targets || []) {
     if (x.vendor_id) t.vendorIds.push(x.vendor_id);
@@ -80,7 +80,7 @@ export async function listOfferings(sb, params = {}) {
 
 /** Decorate a card with a from-price (cheapest variant after rules). Card rows lack variants, so we
  * convert the stored USD from_price to GBP at the live rate, then apply rules at the offering level. */
-function priceCard(o, rules, tier, rate) {
+export function priceCard(o, rules, tier, rate) {
   const gbp = usdToGbpMinor(o.from_price_minor, rate);
   if (gbp == null) return { poa: true, final: null, base: null, hasDiscount: false };
   const pseudoVariant = { basePriceMinor: gbp, currency: 'GBP' };  // converted figure is GBP → GBP discount rules match
@@ -93,6 +93,10 @@ export async function getOffering(sb, slug, tier = null) {
   if (error) throw error;
   if (!data) return null;
   const [rules, rate] = await Promise.all([getActiveRules(sb).catch(() => []), getFxRate(sb).catch(() => 1.30)]);
+  return decorateOffering(data, rules, rate, tier);
+}
+
+export function decorateOffering(data, rules, rate, tier = null) {
   const ctx = ctxOf(data);
   // Each variant's stored price is USD; convert to GBP at the live rate before the engine runs.
   const gbpOf = (v) => ({ basePriceMinor: usdToGbpMinor(v.base_price_minor, rate), currency: 'GBP' });
