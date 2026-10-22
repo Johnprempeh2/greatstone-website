@@ -2,14 +2,12 @@
 //
 // Eight questions, one per Greatstone pillar (order + keys mirror maturity-seed.mjs PILLARS). Each
 // question has four graded answers scored 1..4 (Laggard..Pioneer); the overall average maps to a phase
-// band. The benchmark is an illustrative mid-market industry average per pillar, shown as a marker on the
+// band. The reference point is a Greatstone guide, not measured data, shown as a marker on the
 // result chart. Written in the Greatstone house voice (senior operator to a C-suite reader, no em dashes,
 // British English). Kept as data, separate from the block, so the copy can be tuned without touching logic.
 
 export const SURVEY = {
   title: 'AI readiness baseline',
-  intro:
-    'Eight questions, one per pillar of the Greatstone method. Answer for how things actually run today, not how the deck says they should. It takes about five minutes, and the result is a defensible read on where AI will pay off first and where it will stall.',
   questions: [
     {
       pillarKey: 'people',
@@ -101,9 +99,6 @@ export const SURVEY = {
   benchmark: { people: 2.2, communication: 2.1, innovation: 2.2, data: 2.2, customer: 2.5, competition: 2.3, technology: 2.5, value: 2.1 },
   strongestLead: 'Your strongest pillar is {pillar}. This is where AI investment has the best odds today, so build the first use case here.',
   weakestLead: 'Your weakest pillar is {pillar}. Left as is, it will cap the return on everything else, so address it before you scale spend.',
-  ctaLabel: 'Book a diagnostic',
-  surveyDownloadNote:
-    'Download the survey as a CSV to adapt into Google Forms, Typeform, or Formstack and send round your leadership team. It carries the questions, graded answers, and scores as plain rows. It does not do the scoring or the phase bands for you, so you will wire those into your tool, or send us the results to read.',
 };
 
 export default SURVEY;

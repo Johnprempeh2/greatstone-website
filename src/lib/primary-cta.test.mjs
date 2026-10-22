@@ -22,10 +22,16 @@ test('no block defaults a CTA to the retired "Book a Diagnostic"', () => {
 });
 
 test('the CTA blocks take their label and link from the shared constant', () => {
-  for (const f of ['Hero.jsx', 'Invite.jsx', 'IndustryPicker.jsx', 'MethodExplorer.jsx', 'AiBaselineSurvey.jsx', 'AiCostCalculator.jsx', 'TimeSavingsCalculator.jsx', 'ServiceCatalog.jsx']) {
+  for (const f of ['Hero.jsx', 'Invite.jsx', 'IndustryPicker.jsx', 'MethodExplorer.jsx', 'TimeSavingsCalculator.jsx', 'ServiceCatalog.jsx']) {
     const src = read(f);
     assert.match(src, /PRIMARY_CTA_LABEL/, f);
     assert.match(src, /PRIMARY_CTA_HREF/, f);
+  }
+  // GRE-1853: these lead tools use the approved enquiry CTA rather than the booking CTA.
+  for (const f of ['AiBaselineSurvey.jsx', 'AiCostCalculator.jsx']) {
+    const src = read(f);
+    assert.match(src, /ctaLabel: 'Begin the Conversation'/, f);
+    assert.match(src, /ctaHref: '#enquire\/a-free-executive-discovery'/, f);
   }
 });
 
