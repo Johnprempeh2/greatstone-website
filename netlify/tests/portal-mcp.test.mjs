@@ -1,37 +1,16 @@
-// Portal MCP server, database side (GRE-1228; spec GRE-1227 revision 2, section 6). Runs every migration on a
-// throwaway local Postgres, the same way as portal-rls.test.mjs, with made-up data: two client companies, a
-// person in each, a registered approver, and two MCP tokens (one scoped to client A, one to client B). Then calls
+// Portal MCP server, database side (GRE-1228; spec GRE-1227 revision 2, section 6; moved from supabase/tests in
+// GRE-1795). Applies every Netlify migration to a throwaway real Postgres, as portal-rls.test.mjs does, with
+// made-up data: two client companies, a person in each, a registered approver, and two MCP tokens (one scoped to client A, one to client B). Then calls
 // the mcp_portal_* functions as the service key (what the portal-mcp edge function uses) to prove: drafts work,
 // publishing without John's approval is refused, a token never reaches another client, every write is audited
-// with the agent and the run. Needs the Postgres server binaries (PG_BIN, pg_config or /usr/lib/postgresql);
-// without them the suite is skipped, and says so.
+// with the agent and the run. Without the Postgres server binaries the suite is skipped (on CI it fails).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
+import { startPostgres, skip, MIGRATIONS } from './lib/postgres.mjs';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { createPortalMcp } from '../functions/_shared/portal-mcp.mjs';
+import { createPortalMcp } from '../../supabase/functions/_shared/portal-mcp.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const MIGRATIONS = join(ROOT, 'supabase/migrations');
-
-function findPgBin() {
-  const ok = (d) => d && existsSync(join(d, 'initdb')) && existsSync(join(d, 'pg_ctl')) && existsSync(join(d, 'psql'));
-  if (ok(process.env.PG_BIN)) return process.env.PG_BIN;
-  const cfg = spawnSync('pg_config', ['--bindir'], { encoding: 'utf8' });
-  if (cfg.status === 0 && ok(cfg.stdout.trim())) return cfg.stdout.trim();
-  const base = '/usr/lib/postgresql';
-  if (existsSync(base)) {
-    for (const v of readdirSync(base).sort((a, b) => Number(b) - Number(a))) if (ok(join(base, v, 'bin'))) return join(base, v, 'bin');
-  }
-  return null;
-}
-
-const BIN = findPgBin();
-const skip = BIN ? false : 'Postgres server binaries not found (set PG_BIN)';
 
 // ── made-up companies, people, agents and runs ────────────────────────────────────────────────
 const ORG = '11111111-1111-4111-8111-111111111111';
@@ -49,18 +28,10 @@ const RUN2 = 'f0000000-0000-4000-8000-000000000002';
 const CONFIRM = 'I confirm this is a made-up test sentence.';
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
-let dir;
-let sock;
-let port;
+let db;
 const TOK = {}; // { a, b } -> SHA-256 of the issued token, as the edge function sends it
 
-function psql(sql) {
-  return spawnSync(join(BIN, 'psql'), ['-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1', '-h', sock, '-p', String(port), '-U', 'postgres', '-d', 'portal', '-f', '-'], {
-    input: sql,
-    encoding: 'utf8',
-    env: { ...process.env, PGOPTIONS: '-c client_min_messages=warning' },
-  });
-}
+const psql = (sql) => db.psql(sql);
 
 /** Run sql in one transaction as a person, as 'anon', as 'service' (the service key), or as null (the owner). */
 function as(who, sql) {
@@ -105,34 +76,18 @@ const auditOf = (doc) =>
   ok(null, `SELECT coalesce(jsonb_agg(jsonb_build_object('event', event, 'actor_kind', actor_kind, 'actor_id', actor_id,
               'run_id', run_id, 'detail', detail) ORDER BY at), '[]') FROM portal_audit WHERE document_id = '${doc}';`);
 
-before(() => {
-  if (!BIN) return;
-  const root = tmpdir().length < 60 ? tmpdir() : '/tmp';
-  dir = mkdtempSync(join(root, 'portal-mcp-'));
-  sock = dir;
-  port = 20000 + Math.floor(Math.random() * 20000);
-  const init = spawnSync(join(BIN, 'initdb'), ['-D', join(dir, 'data'), '-U', 'postgres', '-A', 'trust'], { encoding: 'utf8' });
-  assert.equal(init.status, 0, init.stderr);
-  const start = spawnSync(
-    join(BIN, 'pg_ctl'),
-    ['-D', join(dir, 'data'), '-w', '-l', join(dir, 'log'), '-o', `-p ${port} -k ${sock} -c listen_addresses=''`, 'start'],
-    { encoding: 'utf8' },
-  );
-  assert.equal(start.status, 0, start.stderr);
-  const create = spawnSync(join(BIN, 'psql'), ['-X', '-q', '-h', sock, '-p', String(port), '-U', 'postgres', '-d', 'postgres', '-c', 'CREATE DATABASE portal'], { encoding: 'utf8' });
-  assert.equal(create.status, 0, create.stderr);
-
+before(async () => {
+  if (skip) return;
+  db = startPostgres('portal-mcp');
   const run = (label, sql) => {
     const r = psql(sql);
     assert.equal(r.status, 0, `${label}: ${r.stderr}`);
     return r.stdout.trim();
   };
-  const file = (p) => `\\i '${p.replace(/'/g, "''")}'\n`;
-  run('setup', 'CREATE EXTENSION pgcrypto;\n' + file(join(ROOT, 'supabase/seed/local-roles.sql')) + file(join(ROOT, 'supabase/tests/supabase-shim.sql')));
-  for (const f of readdirSync(MIGRATIONS).filter((n) => n.endsWith('.sql')).sort()) {
-    run(f, file(join(MIGRATIONS, f)));
-    if (f.startsWith('0001_')) run('org', `INSERT INTO organisations (id, slug, name) VALUES ('${ORG}', 'test-org', 'Test org');`);
-  }
+  // 003 (Supabase 0001) onwards expect the single org row that the real data brings; a made-up one here
+  await db.migrate('003');
+  run('org', `INSERT INTO organisations (id, slug, name) VALUES ('${ORG}', 'test-org', 'Test org');`);
+  await db.migrate();
   run(
     'made-up data',
     `
@@ -153,11 +108,7 @@ before(() => {
   TOK.b = sha(run('token b', `SELECT mcp_portal_issue_token('Test connection B', ARRAY['${B}']::uuid[]);`));
 });
 
-after(() => {
-  if (!dir) return;
-  spawnSync(join(BIN, 'pg_ctl'), ['-D', join(dir, 'data'), '-m', 'immediate', 'stop'], { encoding: 'utf8' });
-  rmSync(dir, { recursive: true, force: true });
-});
+after(() => db?.stop());
 
 // ── tokens ────────────────────────────────────────────────────────────────────────────────────
 
@@ -432,13 +383,13 @@ test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on to
     SELECT count(*) FROM pg_proc WHERE proname LIKE 'mcp\\_portal\\_%';
     SELECT position('portal.mcp_agent' IN prosrc) > 0 FROM pg_proc WHERE proname = 'portal_documents_audit';`;
   assert.equal(ok(null, left), '2\n19\nt');
-  ok(null, `\\i '${join(ROOT, 'supabase/rollback/0038_portal_mcp_down.sql')}'`);
+  ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/rollback.sql')}'`);
   assert.equal(ok(null, left), '0\n0\nf');
   // the restored trigger still audits a staff write
   const before = ok(null, 'SELECT count(*) FROM portal_audit;');
   ok(null, `INSERT INTO portal_documents (org_id, customer_id, kind, title) VALUES ('${ORG}', '${A}', 'nda', 'After rollback');`);
   assert.equal(Number(ok(null, 'SELECT count(*) FROM portal_audit;')), Number(before) + 1);
-  ok(null, `\\i '${join(MIGRATIONS, '0038_portal_mcp.sql')}'`);
-  ok(null, `\\i '${join(MIGRATIONS, '0038_portal_mcp.sql')}'`);
+  ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/migration.sql')}'`);
+  ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/migration.sql')}'`);
   assert.equal(ok(null, left), '2\n19\nt');
 });
