@@ -7,13 +7,14 @@ import { siteStructuredData } from './site-structured-data.mjs';
 
 const origin = 'https://greatstoneint.com';
 
-test('Next serves the same root-only sitemap and robots rules as Vite', async () => {
-  const [sitemap, robots] = await Promise.all([
-    readFile(new URL('../public/sitemap.xml', import.meta.url), 'utf8'),
-    readFile(new URL('../public/robots.txt', import.meta.url), 'utf8'),
-  ]);
-  assert.equal(sitemap, buildSitemapXml(origin, { lastmod: sitemap.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1] }));
-  assert.equal(robots, buildRobotsTxt(origin));
+test('Next generates the same root-only sitemap and robots rules as Vite', async () => {
+  const scripts = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  for (const name of ['build:next', 'dev:next']) assert.match(scripts[name], /node scripts\/gen-seo-files\.mjs/);
+  const sitemap = buildSitemapXml(origin, { lastmod: '2026-10-22' });
+  const robots = buildRobotsTxt(origin);
+  assert.match(sitemap, /<loc>https:\/\/greatstoneint\.com<\/loc>/);
+  assert.match(robots, /Sitemap: https:\/\/greatstoneint\.com\/sitemap\.xml/);
+  for (const path of ['/admin', '/account', '/org', '/invoice', '/catalogue']) assert.match(robots, new RegExp(`Disallow: ${path}`));
   assert.equal((sitemap.match(/<url>/g) || []).length, 1);
 });
 
