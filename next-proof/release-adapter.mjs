@@ -10,7 +10,8 @@ function fixtureId(value) {
 }
 
 export function toProofRelease(snapshot) {
-  const slugs = ['home', 'dev-tools'];
+  const slugs = Object.keys(snapshot.pages).filter((slug) => snapshot.pages[slug]?.data?.content?.length);
+  if (!slugs.includes('home') || !slugs.includes('dev-tools')) throw new Error('Missing published proof page');
   const pages = slugs.map((slug, navOrder) => {
     const source = snapshot.pages[slug];
     if (!source?.data?.content?.length) throw new Error(`Missing published proof page: ${slug}`);

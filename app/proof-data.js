@@ -3,6 +3,7 @@ import release from '../next-proof/data/release.json';
 export const site = release.site;
 export const theme = release.theme;
 export const releaseNumber = release.release.number;
+export const legalPages = release.pages.filter((page) => ['privacy', 'cookies', 'terms'].includes(page.slug));
 export function pageFor(slug) {
   const page = release.pages.find((item) => item.slug === slug);
   return page && { ...page, orgId: release.orgId };

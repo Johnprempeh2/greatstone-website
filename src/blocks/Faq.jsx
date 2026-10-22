@@ -47,7 +47,7 @@ export function Faq({ id, puck, kicker, heading, intro, items = [], showSchema =
                 {/* animated disclosure: the grid 0fr->1fr row + inner overflow:hidden gives a smooth
                     height transition with no JS measurement; `inert` (not `hidden`) keeps the collapsed
                     panel out of the focus order and a11y tree while still allowing the open animation. */}
-                <div className="b-faq-a" id={uid + 'a' + i} role="region" aria-labelledby={uid + 'q' + i} inert={!isOpen ? '' : undefined}>
+                <div className="b-faq-a" id={uid + 'a' + i} role="region" aria-labelledby={uid + 'q' + i} inert={!isOpen}>
                   <div className="b-faq-a-inner"><EditableText editing={editing} id={id} arrayField="items" index={i} field="a" value={it.a} as="p" placeholder="Answer…" /></div>
                 </div>
               </div>
