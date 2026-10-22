@@ -76,12 +76,12 @@ export function makeEnquiryClient({ endpoint = ENQUIRY_ENDPOINT, fetchImpl = (..
 
 // `generate_lead` after a saved enquiry, only once the visitor has accepted analytics (checked as it fires).
 // Labels only, never what they typed: the campaign is the last touch's, else the first touch's.
-export function fireLead({ track, getConsent, attribution } = {}) {
+export function fireLead({ track, getConsent, attribution, form = 'enquiry' } = {}) {
   if (typeof track !== 'function' || typeof getConsent !== 'function' || getConsent() !== 'granted') return false;
   const a = attribution || {};
   const touch = (a.last && a.last.utm_source ? a.last : null) || (a.first && a.first.utm_source ? a.first : null) || {};
   track('generate_lead', {
-    form: 'enquiry',
+    form,
     utm_source: touch.utm_source || '(direct)',
     utm_medium: touch.utm_medium || '(none)',
     utm_campaign: touch.utm_campaign || '(not set)',
