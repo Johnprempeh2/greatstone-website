@@ -156,7 +156,7 @@ function devToolsPage() {
   });
 }
 function dxConsultancyPage() {
-  return { ...seedPage('DX Consultancy', 'none', [blk('AiBaselineSurvey', { headingLevel: 'h1' }), blk('AiCostCalculator', {})], {
+  return { ...seedPage('DX Consultancy', 'none', [blk('AiBaselineSurvey', { headingLevel: 'h1', anchorId: 'ai-readiness' }), blk('AiCostCalculator', { anchorId: 'ai-cost-calculator' })], {
     title: 'DX Consultancy · Greatstone International',
     description: 'Check your AI readiness and estimate the cost of manual work with two free tools.', ogImage: '',
   }), orgId: ORG.id };

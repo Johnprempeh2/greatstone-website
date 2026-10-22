@@ -168,8 +168,8 @@
           "variant": "statement",
           "ctaLabel": "Ask about GS Agentic Manager",
           "ctaHref": "#enquire/gs-agentic-manager",
-          "ctaLabel2": "See how we work",
-          "ctaHref2": "#go/method",
+          "ctaLabel2": "Check your AI readiness",
+          "ctaHref2": "#go/dx-consultancy/ai-readiness",
           "meta": [],
           "lines": [],
           "gridBackdrop": false
@@ -332,6 +332,41 @@
           "align": "left",
           "width": "reading",
           "body": "Agents do not move money, sign anything, give regulated advice or make decisions about people. They do not replace your team; they take repeatable work off it. AI use stays within a budget you approve, and work beyond it stops for a person. We do not build bespoke software inside this service. If the work needs any of these, we say so in the Deep Dive and scope it separately."
+        }
+      },
+      {
+        "type": "Panels",
+        "props": {
+          "eyebrow": "",
+          "heading": "Not sure where to start?",
+          "intro": "Two free tools. One shows how ready you are. The other shows what the manual work costs.",
+          "panelsLabel": "",
+          "columns": "two",
+          "panelStyle": "ruled",
+          "bodyClamp": "none",
+          "coda": "",
+          "ctaLabel": "",
+          "ctaHref": "",
+          "headingLevel": "h2",
+          "headAlign": "left",
+          "items": [
+            {
+              "label": "",
+              "title": "AI readiness check",
+              "text": "",
+              "ctaLabel": "AI readiness check",
+              "ctaHref": "#go/dx-consultancy/ai-readiness",
+              "icon": ""
+            },
+            {
+              "label": "",
+              "title": "AI cost calculator",
+              "text": "",
+              "ctaLabel": "AI cost calculator",
+              "ctaHref": "#go/dx-consultancy/ai-cost-calculator",
+              "icon": ""
+            }
+          ]
         }
       },
       {

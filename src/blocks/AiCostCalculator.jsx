@@ -37,7 +37,7 @@ function Field({ id, label, value, set, suffix, min, max, disabled }) {
 }
 
 export function AiCostCalculator({
-  kicker, heading, intro, teamLabel, hoursLabel, costLabel,
+  anchorId = '', kicker, heading, intro, teamLabel, hoursLabel, costLabel,
   defaultTeam = 12, defaultHours = 6, defaultCost = 32, weeksPerYear = 46, currency = '£',
   recoveryPct = 55, onTheTableLead, savingsLead, gateHeading, gateBody, nameLabel, companyLabel, emailLabel,
   dataNotice, submitLabel, sentNote, failNote, csvFooter, ctaLabel, ctaHref, footnote,
@@ -111,7 +111,7 @@ export function AiCostCalculator({
   }, [lead, team, hours, cost, weeksPerYear, recoveryPct, currency, csvFooter, costYr, saving, hoursYr, pct]);
 
   return (
-    <section ref={ref} className="b-acc">
+    <section ref={ref} id={anchorId || undefined} className="b-acc" tabIndex={anchorId ? -1 : undefined}>
       <div className="wrap b-acc-wrap">
         <div className="b-acc-head" data-reveal>
           {kicker ? <span className="kicker">{kicker}</span> : null}
@@ -217,6 +217,7 @@ export const css = `
 export const puck = {
   label: 'AI Cost Calculator (lead magnet)',
   fields: {
+    anchorId: { type: 'text', label: 'Section anchor' },
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     heading: { type: 'text', label: 'Heading', contentEditable: true },
     intro: { type: 'textarea', label: 'Intro', contentEditable: true },
@@ -246,6 +247,7 @@ export const puck = {
     footnote: { type: 'textarea', label: 'Footnote', contentEditable: true },
   },
   defaultProps: {
+    anchorId: '',
     kicker: 'The money on the table',
     heading: 'How much could AI save you?',
     intro: 'A rough, honest estimate. Set the numbers for your team, see what the manual work costs in a year, then how much of it AI could take back.',

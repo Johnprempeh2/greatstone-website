@@ -43,7 +43,7 @@ function downloadText(filename, text, type = 'text/csv') {
   } catch (e) { /* download unsupported — the on-screen result still stands */ }
 }
 
-export function AiBaselineSurvey({ id, puck, kicker, heading, headingLevel = 'h2', intro, point1, point2, point3, startLabel,
+export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, headingLevel = 'h2', intro, point1, point2, point3, startLabel,
   surveyDownloadNote, gateHeading, gateBody, nameLabel, companyLabel, emailLabel, dataNotice,
   submitLabel, backLabel, benchmarkLabel, benchmarkNote, chartAriaLabel, csvBenchmarkHeader,
   sentNote, failNote, ctaLabel, ctaHref }) {
@@ -123,7 +123,7 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, headingLevel = 'h2
   const pct = (v) => Math.max(0, Math.min(100, (v / SCALE) * 100));
 
   return (
-    <section ref={ref} className="b-abs">
+    <section ref={ref} id={anchorId || undefined} className="b-abs" tabIndex={anchorId ? -1 : undefined}>
       <div className="wrap b-abs-wrap">
         <div className="b-abs-head" data-reveal>
           {kicker ? <span className="kicker">{kicker}</span> : null}
@@ -318,6 +318,7 @@ export const css = `
 export const puck = {
   label: 'AI Baseline Survey (lead magnet)',
   fields: {
+    anchorId: { type: 'text', label: 'Section anchor' },
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     heading: { type: 'text', label: 'Heading', contentEditable: true },
     headingLevel: { type: 'select', label: 'Heading level', options: [{ label: 'Page heading', value: 'h1' }, { label: 'Section heading', value: 'h2' }] },
@@ -345,6 +346,7 @@ export const puck = {
     ctaHref: { type: 'text', label: 'Results CTA link' },
   },
   defaultProps: {
+    anchorId: '',
     kicker: 'Free AI readiness check',
     heading: 'Where does your business stand on AI?',
     headingLevel: 'h2',
