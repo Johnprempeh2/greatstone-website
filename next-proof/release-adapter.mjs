@@ -9,6 +9,13 @@ function fixtureId(value) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`;
 }
 
+function releaseLinks(value) {
+  if (typeof value === 'string') return value.replace(/^#shop(?=\/|$)/, '/shop').replace(/^#product(?=\/|$)/, '/product');
+  if (Array.isArray(value)) return value.map(releaseLinks);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, releaseLinks(child)]));
+  return value;
+}
+
 export function toProofRelease(snapshot) {
   const slugs = Object.keys(snapshot.pages).filter((slug) => snapshot.pages[slug]?.data?.content?.length);
   if (!slugs.includes('home') || !slugs.includes('dev-tools')) throw new Error('Missing published proof page');
@@ -23,7 +30,7 @@ export function toProofRelease(snapshot) {
       title: source.title,
       navOrder,
       seo: source.seo,
-      data: source.data,
+      data: releaseLinks(source.data),
     };
   });
   const bySlug = Object.fromEntries(pages.map((page) => [page.slug, page]));
@@ -50,6 +57,16 @@ export function toProofRelease(snapshot) {
     },
     theme: { revisionId: fixtureId('theme:1'), tokens: themeTokens },
     pages,
-    collections: {}, redirects: [], media: {},
+    collections: Object.fromEntries(['vendors', 'categories', 'offerings'].map((key) => [key, {
+      fieldsVersion: 1,
+      entries: (snapshot.catalogue?.[key] || []).filter((row) => row.status === undefined || row.status === 'published').map((row, order) => ({
+        id: row.id,
+        revisionId: fixtureId(`${key}:${row.id}`),
+        orgId,
+        slug: row.slug,
+        order,
+        fields: { data: row },
+      })),
+    }])), redirects: [], media: {},
   };
 }
