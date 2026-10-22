@@ -30,7 +30,7 @@ function Carousel({ items, label, render, enabled = true }) {
     <div className="td-slide" tabIndex="0" onKeyDown={(e) => { if (e.key === 'ArrowRight') move(1); if (e.key === 'ArrowLeft') move(-1); }}
       onTouchStart={(e) => { touch.current = e.touches[0].clientX; }} onTouchEnd={(e) => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 45) move(dx < 0 ? 1 : -1); touch.current = null; }}>
       <div className="td-carousel-current">{render(items[index], index)}</div>
-      {count > 1 && <div className="td-carousel-next" aria-hidden="true" inert="">{render(items[(index + 1) % count], (index + 1) % count)}</div>}
+      {count > 1 && <div className="td-carousel-next" aria-hidden="true" inert={true}>{render(items[(index + 1) % count], (index + 1) % count)}</div>}
     </div>
     <div className="td-carousel-controls">
       <span className="td-dots" aria-label={`${index + 1} of ${count}`}>{items.map((item, i) => <button key={i} type="button" className={index === i ? 'active' : ''} aria-label={`Show ${label} ${i + 1}`} aria-current={index === i ? 'true' : undefined} onClick={() => setIndex(i)} />)}</span>
@@ -111,7 +111,7 @@ export function TwoDoors(props) {
           <div className="td-door-shade" />
           <div className="td-door-copy"><p className="td-door-tag">{copy.consultancyTag}</p><h2>{copy.consultancyName}</h2><p>{consultancyLine}</p>
             <button type="button" className="td-more" aria-expanded={active === 'consultancy'} onClick={() => open('consultancy')}>{active === 'consultancy' ? copy.moreOpen : copy.moreClosed}</button>
-            <div className={'td-door-detail' + (active === 'consultancy' ? ' is-open' : '')} inert={active === 'consultancy' ? undefined : ''}><div className="td-door-detail-inner">
+            <div className={'td-door-detail' + (active === 'consultancy' ? ' is-open' : '')} inert={active !== 'consultancy'}><div className="td-door-detail-inner">
               {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt || ''} loading="lazy" /></li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
               <ul><li><b>{copy.consultancyPoint1}</b> {copy.consultancyPoint1Text}</li><li><b>{copy.consultancyPoint2}</b> {copy.consultancyPoint2Text}</li><li><b>{copy.consultancyPoint3}</b> {copy.consultancyPoint3Text}</li></ul>
             </div></div>
@@ -125,7 +125,7 @@ export function TwoDoors(props) {
           <div className="td-door-shade" />
           <div className="td-door-copy"><p className="td-door-tag">{copy.toolsTag}</p><h2>{copy.toolsName}</h2><p>{toolsLine}</p>
             <button type="button" className="td-more" aria-expanded={active === 'tools'} onClick={() => open('tools')}>{active === 'tools' ? copy.moreOpen : copy.moreClosed}</button>
-            <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active === 'tools' ? undefined : ''}><div className="td-door-detail-inner">{toolBrands.length > 0 && <div className="td-client-logos"><p>Brands we supply</p><ul>{toolBrands.filter((brand) => brand?.image).map((brand) => <li key={brand.name}><img src={brand.image} alt={brand.name} loading="lazy" /></li>)}</ul></div>}<ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
+            <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active !== 'tools'}><div className="td-door-detail-inner">{toolBrands.length > 0 && <div className="td-client-logos"><p>Brands we supply</p><ul>{toolBrands.filter((brand) => brand?.image).map((brand) => <li key={brand.name}><img src={brand.image} alt={brand.name} loading="lazy" /></li>)}</ul></div>}<ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
             <a className="td-pill td-pill-teal" href={safeHref(copy.toolsHref)}>{copy.toolsCta}</a>
           </div>
         </article>
