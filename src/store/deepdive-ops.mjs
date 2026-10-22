@@ -6,12 +6,10 @@
 // person typing, never the thing that protects the record.
 //
 // TWO TRANSPORTS, tried in order:
-//   1. Supabase (`deepdive_plans`). The production path. Authorisation is row-level security, and a
-//      row_version check turns a concurrent write into a visible conflict instead of a silent loss.
+//   1. Netlify Function. Postgres RLS authorises the caller, and row_version makes conflicts visible.
 //   2. The dev-only middleware in vite.config.js, over the .deepdive files the MCP shares.
 // Neither available means authoring is OFF, and the UI says so rather than failing on submit.
-import { supabase } from '../lib/supabase.mjs';
-import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
+import { deepdiveRequest } from './deepdive-api.mjs';
 import { applyOp, identityParts, ID_PREFIX, normalisePlan, findItem } from '../data/deepdive-schema.mjs';
 
 const base = () => `${import.meta.env.BASE_URL || '/'}deepdive/`;
@@ -37,11 +35,13 @@ async function mintId(kind, fields) {
 let capability = null;
 export async function probeCanAuthor() {
   if (capability !== null) return capability;
-  if (supabase) {
-    const { error } = await supabase.from('deepdive_plans').select('slug').limit(1);
-    if (!error) { capability = { can: true, via: 'supabase', why: null }; return capability; }
-    if (!isAbsentOrForbidden(error)) { capability = { can: false, via: null, why: error.message }; return capability; }
+  let remote;
+  try { remote = await deepdiveRequest('capability'); }
+  catch (error) {
+    capability = { can: false, via: null, why: error.message };
+    return capability;
   }
+  if (remote) { capability = { ...remote, why: remote.can ? null : 'Staff access required.' }; return capability; }
   const cap = await asJson(await fetch(`${base()}_capabilities.json`, { cache: 'no-store' }).catch(() => null));
   capability = cap?.write
     ? { can: true, via: 'file', why: null }
@@ -51,27 +51,6 @@ export async function probeCanAuthor() {
 export const resetCapability = () => { capability = null; };
 
 // ── the write ─────────────────────────────────────────────────────────────────────────────────
-async function viaSupabase(slug, op, id) {
-  const { data: row, error } = await supabase
-    .from('deepdive_plans').select('plan, row_version').eq('slug', slug).maybeSingle();
-  if (error) { if (isAbsentOrForbidden(error)) return null; throw error; }
-  if (!row) return null;
-  const next = applyOp(row.plan, op, id);
-  next._provenance = { lastEditedBy: 'portal', at: new Date().toISOString() };
-  const { data, error: wErr } = await supabase
-    .from('deepdive_plans')
-    .update({ plan: next, row_version: row.row_version + 1 })
-    .eq('slug', slug).eq('row_version', row.row_version)
-    .select('plan, row_version');
-  if (wErr) { if (isAbsentOrForbidden(wErr)) return null; throw wErr; }
-  // Zero rows back means the version moved under us: somebody else wrote first.
-  if (!data || !data.length) {
-    const e = new Error('This record changed while you were typing. Reload before saving again.');
-    e.conflict = true; throw e;
-  }
-  return { plan: data[0].plan, version: data[0].row_version, via: 'supabase' };
-}
-
 async function viaFile(slug, op, id, version) {
   const res = await fetch(`${base()}op`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -119,10 +98,8 @@ export async function applyRecordOp(slug, op, currentPlan = null, version = null
   // was thrown away, so the caller had to GUESS which item had been re-minted by diffing the new
   // plan against its own stale copy. That guess picked the first id the browser had not seen, which
   // on a record with a second writer is somebody else's item entirely.
-  if (supabase) {
-    const r = await viaSupabase(slug, op, id).catch((e) => { if (e.conflict) throw e; if (!isAbsentOrForbidden(e)) throw e; return null; });
-    if (r) return { ...r, newId: id || op.id || null };
-  }
+  const remote = await deepdiveRequest('edit', { slug, operation: op, id, version });
+  if (remote) return { ...remote, via: 'netlify', newId: id || op.id || null };
   const f = await viaFile(slug, op, id, version);
   if (f) return { ...f, newId: id || op.id || null };
   throw new Error('Nothing here can store a change. Run the dev server, or apply the deepdive_plans migration.');
@@ -142,16 +119,8 @@ export async function createRecord({ slug, client, title = 'Client record', ...r
   });
   plan._provenance = { lastEditedBy: 'portal', at: new Date().toISOString() };
 
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('deepdive_plans').insert({ slug, plan, row_version: 1 }).select('plan, row_version').maybeSingle();
-    // The version has to come back with it. Without it the very first edit after "Start this
-    // record" sent no ifMatch, was refused, and blamed the load rather than the missing version.
-    if (!error && data) return { plan: data.plan, version: data.row_version, via: 'supabase' };
-    if (error && !isAbsentOrForbidden(error)) {
-      throw new Error(/duplicate|unique/i.test(error.message) ? `A record already exists for "${slug}".` : error.message);
-    }
-  }
+  const remote = await deepdiveRequest('create', { slug, plan });
+  if (remote) return { ...remote, via: 'netlify' };
   const res = await fetch(`${base()}op`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ slug, op: { type: 'create' }, plan }),
@@ -169,13 +138,8 @@ export async function createRecord({ slug, client, title = 'Client record', ...r
 
 /** One row per record for the register, so it costs one request rather than one per customer. */
 export async function recordSummaries() {
-  if (supabase) {
-    const { data, error } = await supabase.from('deepdive_plans').select('slug, summary');
-    if (!error && Array.isArray(data)) {
-      return Object.fromEntries(data.map((r) => [r.slug, r.summary || {}]));
-    }
-    if (error && !isAbsentOrForbidden(error)) throw error;
-  }
+  const remote = await deepdiveRequest('summaries');
+  if (remote) return remote;
   const out = await asJson(await fetch(`${base()}summary`, { cache: 'no-store' }).catch(() => null));
   return out?.records || {};
 }

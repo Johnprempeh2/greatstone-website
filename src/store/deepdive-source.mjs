@@ -2,9 +2,7 @@
 //
 // TWO BACKENDS, in this order:
 //
-//   1. Supabase, once the `deepdive_plans` table exists. This is the real one. The Plan is
-//      Confidential, so authorisation has to be enforced server-side by row-level security,
-//      scoped to the client's own company exactly as orders and engagements already are.
+//   1. Netlify Function backed by Postgres RLS. The full plan is staff-only.
 //
 //   2. A local JSON file, DEVELOPMENT ONLY, served from .deepdive/ by the dev-only middleware in
 //      vite.config.js. It is deliberately not in public/, because Vite copies public/ into dist/ and
@@ -13,12 +11,10 @@
 //
 // Which engagements exist is itself Confidential, so the registry is fetched too and never bundled.
 //
-// A client-side check over content that is already in the browser is not access control. Until (1)
-// exists, the Portal is a working shell over local data. `isAuthoritative` on the result says which
+// A client-side check over content that is already in the browser is not access control. `isAuthoritative` says which
 // backend answered, and the Portal shows the difference rather than implying the record is live.
 
-import { supabase } from '../lib/supabase.mjs';
-import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
+import { deepdiveRequest } from './deepdive-api.mjs';
 
 const REQUIRED = ['PROCESSES', 'QUESTIONS', 'SESSIONS', 'PILLAR_ORDER', 'EVIDENCE'];
 const ENG_REQUIRED = ['slug', 'client', 'title', 'stage', 'access'];
@@ -46,13 +42,9 @@ function validate(plan, origin) {
   return plan;
 }
 
-async function fromSupabase(slug) {
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('deepdive_plans').select('plan').eq('slug', slug).maybeSingle();
-  // table not there yet, or not readable by this viewer: fall back. Anything else is a real failure.
-  if (error) { if (isAbsentOrForbidden(error)) return null; throw error; }
-  return data?.plan ? validate(data.plan, 'Supabase') : null;
+async function fromNetlify(slug) {
+  const data = await deepdiveRequest('plan', { slug });
+  return data?.plan ? { plan: validate(data.plan, 'Netlify'), version: data.version } : null;
 }
 
 async function fromLocal(slug) {
@@ -67,8 +59,8 @@ async function fromLocal(slug) {
 }
 
 export async function loadPlan(slug) {
-  const live = await fromSupabase(slug);
-  if (live) return { plan: live, source: 'supabase', isAuthoritative: true };
+  const live = await fromNetlify(slug);
+  if (live) return { ...live, source: 'netlify', isAuthoritative: true };
   const local = await fromLocal(slug);
   if (local) return { plan: local.plan, version: local.version, source: 'local', isAuthoritative: false };
   return { plan: null, source: null, isAuthoritative: false };
@@ -82,23 +74,14 @@ export async function clientNameFor(slug) {
   const idx = await json(`${base()}index.json`);
   const hit = (idx?.engagements || []).find((e) => e.slug === slug);
   if (hit?.client) return hit.client;
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('customers').select('name').eq('slug', slug).is('deleted_at', null).maybeSingle();
-    if (!error && data?.name) return data.name;
-  }
-  return null;
+  return deepdiveRequest('client-name', { slug });
 }
 
-// Which engagements this viewer can open. Server-side once Supabase lands; in development the
+// Which engagements this viewer can open. Server-side through RLS; in development the
 // generated index. Returns [] rather than throwing, so the Portal shows an empty state, not an error.
 export async function listEngagements() {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('deepdive_plans').select('slug, client, title, stage');
-    if (!error && Array.isArray(data)) return data;
-    if (error && !isAbsentOrForbidden(error)) throw error;
-  }
+  const data = await deepdiveRequest('engagements');
+  if (Array.isArray(data)) return data;
   // The dev endpoint derives this from the files on disk. index.json is only a CACHE, and it was
   // rebuilt by the MCP after its writes but never after a write from this browser, so a record
   // created here wrote its file and then did not appear in the register. Ask for the derived list
