@@ -66,7 +66,7 @@ function clearOptionalStorage() {
   try { OPTIONAL_SESSION_KEYS.forEach((k) => sessionStorage.removeItem(k)); } catch (e) { /* ignore */ }
 }
 
-function captureAttribution() {
+export function captureAttribution() {
   if (!w) return;
   thisVisit = readTouch();
   if (getConsent() === 'granted') persistAttribution();
@@ -130,6 +130,9 @@ export function setConsent(granted) {
 // array); GTM consumes it once configured. NEVER pass PII (names, emails) — locations/ids/labels only.
 export function track(event, params = {}) {
   if (!w) return;
+  // The Next site uses basic consent: its container does not load until Accept.
+  // The Vite site keeps its existing advanced Consent Mode behaviour until cutover.
+  if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GTM_ID && getConsent() !== 'granted') return;
   try { dataLayer().push({ event, ...params }); } catch (e) { /* ignore */ }
 }
 
