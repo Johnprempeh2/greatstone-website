@@ -29,9 +29,12 @@
   },
   "dependencies": {
     "@measured/puck": "^0.20.2",
+    "@netlify/blobs": "^11.1.6",
     "@netlify/database": "2.0.1",
     "@puckeditor/core": "^0.23.0",
     "@supabase/supabase-js": "^2.108.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "happy-dom": "^20.14.5",
     "next": "^15.5.28",
     "pg": "8.23.0",

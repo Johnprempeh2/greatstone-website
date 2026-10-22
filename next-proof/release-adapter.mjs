@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { themeTokens } from './theme.mjs';
 
-const proofSiteId = '00000000-0000-4000-8000-000000001833';
-const orgId = 'org-greatstone';
+const proofSiteId = process.env.GSAM_SITE_ID || '00000000-0000-4000-8000-000000001833';
+const orgId = process.env.GSAM_ORG_ID || 'org-greatstone';
 
 function fixtureId(value) {
   const hex = createHash('sha256').update(`greatstone-next-proof:${value}`).digest('hex').slice(0, 32);
@@ -43,7 +43,7 @@ export function toProofRelease(snapshot) {
       createdAt: '2026-10-22T00:00:00Z',
       publishedBy: { kind: 'agent', id: 'proof-seed' },
       approvalId: null,
-      engine: { version: '0.1.0', commit: '0000000000000000000000000000000000000000' },
+      engine: { version: '0.1.0', commit: /^[0-9a-f]{40}$/.test(process.env.COMMIT_REF || '') ? process.env.COMMIT_REF : '0000000000000000000000000000000000000000' },
     },
     site: {
       name: snapshot.settings.siteName,
@@ -63,7 +63,7 @@ export function toProofRelease(snapshot) {
         id: row.id,
         revisionId: fixtureId(`${key}:${row.id}`),
         orgId,
-        slug: row.slug,
+        ...(typeof row.slug === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(row.slug) ? { slug: row.slug } : {}),
         order,
         fields: { data: row },
       })),
