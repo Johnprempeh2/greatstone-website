@@ -1,5 +1,7 @@
 'use client';
 
+import { createContext, useContext } from 'react';
+
 import * as TwoDoors from '../src/blocks/TwoDoors.jsx';
 import * as TwoDoorsStory from '../src/blocks/TwoDoorsStory.jsx';
 import * as TwoDoorsProof from '../src/blocks/TwoDoorsProof.jsx';
@@ -29,13 +31,18 @@ import * as AiCostCalculator from '../src/blocks/AiCostCalculator.jsx';
 import { sectionClass } from '../src/lib/block-style.mjs';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
-const withAnchor = (puck) => ({
+export const PreviewContext = createContext(false);
+function BlockAnchor({ props, puck, type }) {
+  const preview = useContext(PreviewContext);
+  return <div id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} {...(preview ? { 'data-gs-block-id': props.id, 'data-gs-block-type': type } : {})}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{puck.render(props)}</div>;
+}
+const withAnchor = (puck, type) => ({
   ...puck,
-  render: (props) => <div id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section)).trim()}>{puck.render(props)}</div>,
+  render: (props) => <BlockAnchor props={props} puck={puck} type={type} />,
 });
 
 export const proofConfig = {
-  components: Object.fromEntries(Object.entries(modules).map(([name, module]) => [name, withAnchor(module.puck)])),
+  components: Object.fromEntries(Object.entries(modules).map(([name, module]) => [name, withAnchor(module.puck, name)])),
   categories: { page: { title: 'Page', components: Object.keys(modules) } },
 };
 
