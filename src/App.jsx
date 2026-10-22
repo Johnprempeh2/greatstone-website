@@ -358,6 +358,7 @@ function findMissingAlt(content, products) {
 export default function App() {
   const [state, setState] = useState(load);
   const [current, setCurrent] = useState(() => state.order[0]); // derive from the one load() above, not a 2nd
+  const [pageHash, setPageHash] = useState(() => typeof location !== 'undefined' ? location.hash : '');
   const [mode, setMode] = useState('view');
   const [query, setQuery] = useState('');
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -457,7 +458,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => { setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
+    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
       // Back, Forward, a pasted link and a reload all land on the right page.
       const page = readPageHash();
       if (page) setCurrent(page);
@@ -473,14 +474,14 @@ export default function App() {
     if (page) setCurrent(page);
   }, [readPageHash]);
   useEffect(() => {
-    const anchor = location.hash.match(/^#go\/[a-z0-9-]+\/([a-z0-9-]+)$/i)?.[1];
+    const anchor = pageHash.match(/^#go\/[a-z0-9-]+\/([a-z0-9-]+)$/i)?.[1];
     if (!anchor) return;
     const frame = requestAnimationFrame(() => {
       const section = document.getElementById(anchor);
       if (section) { section.scrollIntoView(); section.focus({ preventScroll: true }); }
     });
     return () => cancelAnimationFrame(frame);
-  }, [current]);
+  }, [current, pageHash]);
   // Legacy redirect: the AI Intelligence hub used to be a full-screen #intel takeover. It now lives in
   // the site nav as the "Intelligence" page (the renamed Insights), rendered inside the normal chrome.
   // Send any old #intel bookmark/link onto that page so shared links still land somewhere sensible.
