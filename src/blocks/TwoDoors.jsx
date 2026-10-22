@@ -71,7 +71,7 @@ export function TwoDoors(props) {
   };
   const open = (next) => {
     if (mobile) { setPinned(pinned === next ? null : next); return; }
-    const shouldOpen = side !== next;
+    const shouldOpen = pinned !== next;
     setPinned(shouldOpen ? next : null);
     setSide(shouldOpen ? next : 'choose');
   };
