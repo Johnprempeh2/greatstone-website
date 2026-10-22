@@ -33,7 +33,8 @@ const SCHEMA = 19;
 // K7 navigation. It also carries GRE-635's CTA change, which went out without a bump (plan GRE-638 §3.2).
 // Bumped 11 Oct 2026 (GRE-660): the R1 copy from GRE-1373 draft 4 (GRE-1358 offer journey, packaging v9 claims,
 // services page renamed GS Agentic Manager). Without a bump, returning visitors keep the superseded offer.
-const SEED_VERSION = 20261012;
+// Bumped 22 Oct 2026 (GRE-1854): the approved digital-office page and navigation label must reach saved sites.
+const SEED_VERSION = 20261022;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -92,7 +93,7 @@ export function DEFAULT_NAVIGATION() {
     navItem({ type: 'group', label: 'More', children: [
       navItem({ type: 'page', pageSlug: 'how-we-help' }),
       navItem({ type: 'page', pageSlug: 'method' }),
-      navItem({ type: 'page', pageSlug: 'services' }),
+      navItem({ type: 'page', pageSlug: 'services', label: 'Your digital office' }),
     ] }),
   ];
 }

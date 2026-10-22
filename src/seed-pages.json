@@ -147,7 +147,7 @@
   {
     "slug": "services",
     "title": "GS Agentic Manager",
-    "background": "tide",
+    "background": "none",
     "seo": {
       "title": "GS Agentic Manager · Greatstone International",
       "description": "A digital office for your organisation: people and AI agents in clear roles on your own instance, set up by Greatstone where it fits, with your people approving what matters.",
@@ -158,20 +158,21 @@
         "type": "Hero",
         "props": {
           "kicker": "GS Agentic Manager",
-          "headline": "Your AI tools, organised into one team.",
+          "headline": "A digital office for the work that comes round every week",
           "highlight": "",
           "headlineSuffix": "",
-          "body": "Most organisations use AI tools the way they would use freelancers: one at a time, with no shared memory and nobody checking the work. Where it fits your blueprint, we set up a digital office on your own instance: your people and AI agents in clear roles, with shared context and a goal. We configure it, connect the systems you agree and train your team. Your people run the daily work, and a named person approves what matters.",
+          "body": "An AI agent team, set up for one area of your work, in your own hosted instance. Your people direct it. Every task is on record, and it stops for a person where you decide.",
           "prompt": "",
           "align": "left",
-          "size": "compact",
+          "size": "standard",
+          "variant": "statement",
           "ctaLabel": "Ask about GS Agentic Manager",
           "ctaHref": "#enquire/gs-agentic-manager",
           "ctaLabel2": "See how we work",
           "ctaHref2": "#go/method",
           "meta": [],
           "lines": [],
-          "gridBackdrop": true
+          "gridBackdrop": false
         }
       },
       {
@@ -205,7 +206,7 @@
         "props": {
           "kicker": "",
           "heading": "What every digital office starts with",
-          "variant": "cards",
+          "variant": "principles",
           "body": "",
           "items": [
             {
