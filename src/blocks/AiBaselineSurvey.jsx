@@ -2,17 +2,20 @@ import { useState, useId, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
-import { track } from '../lib/analytics.js';
-import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
+import { track, getConsent, getAttribution } from '../lib/analytics.js';
+import { fireLead, validateEnquiry } from '../lib/enquiry.mjs';
+import { sendToolLead } from '../lib/lead-tools.mjs';
+import { Turnstile, TURNSTILE_KEY } from './Turnstile.jsx';
 import { PILLARS } from '../data/maturity-seed.mjs';
 import { SURVEY } from '../data/ai-baseline-survey.mjs';
+import { LEAD_TOOL_COPY } from '../data/ai-lead-tools-copy.mjs';
 
 // The AI Readiness Baseline: a free, gated lead magnet (Ben + John, 1 Jul marketing session). A visitor
 // answers eight questions, one per Greatstone pillar, then gives name/company/email to see their result:
-// a Laggard→Pioneer benchmark with a per-pillar bar chart against an illustrative industry average, plus
-// two downloads — their own scored result, and the blank survey as a CSV they can adapt into Google Forms /
-// Typeform / Formstack and run internally. Pure frontend: the maths and the CSVs are built client-side, the
-// only side effect is a generate_lead analytics event (dormant until GTM is set). No backend, no storage.
+// a Laggard→Pioneer result with a per-pillar bar chart against a Greatstone reference point, plus
+// two downloads: their own scored result and the blank survey. The enquiry path saves a short result
+// summary; individual answers remain in the browser.
+const COPY = LEAD_TOOL_COPY.survey;
 
 const pillarName = (key) => (PILLARS.find((p) => p.key === key) || {}).name || key;
 const SCALE = 4; // options are graded 1..4 (Laggard..Pioneer)
@@ -40,7 +43,10 @@ function downloadText(filename, text, type = 'text/csv') {
   } catch (e) { /* download unsupported — the on-screen result still stands */ }
 }
 
-export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, ctaHref = '#book' }) {
+export function AiBaselineSurvey({ id, puck, kicker, heading, headingLevel = 'h2', intro, point1, point2, point3, startLabel,
+  surveyDownloadNote, gateHeading, gateBody, nameLabel, companyLabel, emailLabel, dataNotice,
+  submitLabel, backLabel, benchmarkLabel, benchmarkNote, chartAriaLabel, csvBenchmarkHeader,
+  sentNote, failNote, ctaLabel, ctaHref }) {
   const editing = !!(puck && puck.isEditing);
   const ref = useReveal();
   const uid = useId();
@@ -52,6 +58,9 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
   const [answers, setAnswers] = useState({}); // pillarKey -> score(1..4)
   const [lead, setLead] = useState({ name: '', company: '', email: '' });
   const [err, setErr] = useState('');
+  const [sendState, setSendState] = useState('idle');
+  const [token, setToken] = useState(null);
+  const [website, setWebsite] = useState('');
 
   const liveRef = useRef(null);
   const headRef = useRef(null);
@@ -69,12 +78,20 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
 
   const restart = () => { setAnswers({}); setQi(0); setErr(''); setStep('intro'); };
 
-  const submitGate = (e) => {
+  const submitGate = async (e) => {
     e.preventDefault();
     const name = lead.name.trim(), company = lead.company.trim(), email = lead.email.trim();
-    if (!name || !company || !/.+@.+\..+/.test(email)) { setErr('Please add your name, company and a valid email.'); return; }
+    const errors = validateEnquiry({ name, email });
+    if (Object.keys(errors).length) { setErr(Object.values(errors).join(' ')); return; }
+    if (TURNSTILE_KEY && !token) { setErr(LEAD_TOOL_COPY.securityError); return; }
     setErr('');
-    track('generate_lead', { form: 'ai_baseline_survey' });
+    setSendState('sending');
+    const attribution = getAttribution();
+    const out = await sendToolLead({ name, company, email, interest: 'AI Readiness Baseline',
+      summary: `Overall: ${result.avg} of 4, ${result.phase.label}. Strongest: ${result.strongest.name}. First to move: ${result.weakest.name}.`,
+      attribution, page: window.location.pathname + window.location.hash, website, turnstile: token });
+    setSendState(out.ok ? 'sent' : 'failed');
+    if (out.ok) fireLead({ track, getConsent, attribution, form: 'ai_baseline_survey' });
     setStep('results');
   };
 
@@ -92,13 +109,13 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
   }, [answers]);
 
   const downloadResult = () => {
-    const head = [['Greatstone AI Readiness Baseline'], ['Name', lead.name], ['Company', lead.company], [], ['Pillar', 'Your score (1-4)', 'Your level', 'Industry benchmark (1-4)']];
+    const head = [[COPY.resultTitle], [COPY.name, lead.name], [COPY.company, lead.company], [], [COPY.pillar, COPY.scoreHeader, COPY.levelHeader, csvBenchmarkHeader]];
     const body = result.rows.map((r) => [r.name, r.score || '-', r.phase ? r.phase.label : '-', r.bench || '-']);
-    const foot = [[], ['Overall', result.avg, result.phase.label, '']];
+    const foot = [[], [COPY.overall, result.avg, result.phase.label, '']];
     downloadText('greatstone-ai-readiness-result.csv', csvRows([...head, ...body, ...foot]));
   };
   const downloadSurvey = () => {
-    const header = ['Pillar', 'Question', 'Option 1 (lowest)', 'Option 2', 'Option 3', 'Option 4 (highest)'];
+    const header = COPY.surveyHeaders;
     const body = questions.map((qq) => [pillarName(qq.pillarKey), qq.question, ...qq.options.map((o) => o.label)]);
     downloadText('greatstone-ai-readiness-survey.csv', csvRows([header, ...body]));
   };
@@ -110,7 +127,7 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
       <div className="wrap b-abs-wrap">
         <div className="b-abs-head" data-reveal>
           {kicker ? <span className="kicker">{kicker}</span> : null}
-          {heading ? <h2 className="h2 b-abs-h">{heading}</h2> : null}
+          {heading ? (headingLevel === 'h1' ? <h1 className="h2 b-abs-h">{heading}</h1> : <h2 className="h2 b-abs-h">{heading}</h2>) : null}
           {intro ? <p className="b-abs-intro muted">{intro}</p> : null}
         </div>
 
@@ -118,14 +135,14 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
           {step === 'intro' && (
             <div className="b-abs-intro-card">
               <ol className="b-abs-points">
-                <li><b>{total} questions</b>, about two minutes. One per pillar of our method.</li>
-                <li>See where you sit, from <b>Laggard to Pioneer</b>, against an industry benchmark.</li>
-                <li>Download your result and the blank survey to run across your team.</li>
+                <li>{point1}</li>
+                <li>{point2}</li>
+                <li>{point3}</li>
               </ol>
               <button type="button" className="b-cta b-abs-start" onClick={() => { setStep('quiz'); setQi(0); }}>
-                Start the survey<Arrow />
+                {startLabel}<Arrow />
               </button>
-              <p className="b-abs-fine">{SURVEY.surveyDownloadNote}</p>
+              <p className="b-abs-fine">{surveyDownloadNote}</p>
             </div>
           )}
 
@@ -133,7 +150,7 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
             <div className="b-abs-quiz">
               <div className="b-abs-prog">
                 <div className="b-abs-prog-bar"><span style={{ width: ((qi) / total) * 100 + '%' }} /></div>
-                <span className="b-abs-prog-lbl" ref={headRef} tabIndex={-1}>Question {qi + 1} of {total} · {pillarName(q.pillarKey)}</span>
+                <span className="b-abs-prog-lbl" ref={headRef} tabIndex={-1}>{COPY.question} {qi + 1} {COPY.of} {total} · {pillarName(q.pillarKey)}</span>
               </div>
               <h3 className="b-abs-q">{q.question}</h3>
               <div className="b-abs-opts" role="group" aria-label={q.question}>
@@ -148,60 +165,65 @@ export function AiBaselineSurvey({ id, puck, kicker, heading, intro, ctaLabel, c
                 })}
               </div>
               <div className="b-abs-quiz-nav">
-                <button type="button" className="b-abs-back" onClick={() => setQi((i) => Math.max(0, i - 1))} disabled={qi === 0}>← Back</button>
-                <span className="b-abs-quiz-hint">Pick the closest match</span>
+                <button type="button" className="b-abs-back" onClick={() => setQi((i) => Math.max(0, i - 1))} disabled={qi === 0}>{COPY.back}</button>
+                <span className="b-abs-quiz-hint">{COPY.pick}</span>
               </div>
             </div>
           )}
 
           {step === 'gate' && (
             <form className="b-abs-gate" onSubmit={submitGate} noValidate>
-              <h3 className="b-abs-gate-h" ref={headRef} tabIndex={-1}>Your result is ready.</h3>
-              <p className="muted b-abs-gate-p">Tell us where to send it and see your benchmark. No spam, no obligation.</p>
-              <div className="b-abs-field"><label htmlFor={uid + 'n'}>Your name</label><input id={uid + 'n'} className="fld" value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" /></div>
-              <div className="b-abs-field"><label htmlFor={uid + 'c'}>Company</label><input id={uid + 'c'} className="fld" value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" /></div>
-              <div className="b-abs-field"><label htmlFor={uid + 'e'}>Work email</label><input id={uid + 'e'} className="fld" type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" /></div>
+              <h3 className="b-abs-gate-h" ref={headRef} tabIndex={-1}>{gateHeading}</h3>
+              <p className="muted b-abs-gate-p">{gateBody}</p>
+              <div className="b-abs-field"><label htmlFor={uid + 'n'}>{nameLabel}</label><input id={uid + 'n'} className="fld" value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" required /></div>
+              <div className="b-abs-field"><label htmlFor={uid + 'c'}>{companyLabel}</label><input id={uid + 'c'} className="fld" value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" /></div>
+              <div className="b-abs-field"><label htmlFor={uid + 'e'}>{emailLabel}</label><input id={uid + 'e'} className="fld" type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" required /></div>
+              <div className="gs-sr-only" aria-hidden="true"><label htmlFor={uid + 'w'}>{LEAD_TOOL_COPY.honeypot}</label><input id={uid + 'w'} tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
+              {editing ? null : <Turnstile onToken={setToken} />}
               {err ? <div className="b-abs-err" role="alert">{err}</div> : null}
-              <button type="submit" className="b-cta b-abs-reveal">See my result<Arrow /></button>
-              <button type="button" className="b-abs-back b-abs-gate-back" onClick={() => { setStep('quiz'); setQi(total - 1); }}>← Back to the survey</button>
+              <p className="b-abs-notice">{dataNotice} <a href="#go/privacy">{LEAD_TOOL_COPY.privacyPolicy}</a>.</p>
+              <button type="submit" className="b-cta b-abs-reveal" disabled={sendState === 'sending'}>{sendState === 'sending' ? LEAD_TOOL_COPY.sending : submitLabel}<Arrow /></button>
+              <button type="button" className="b-abs-back b-abs-gate-back" onClick={() => { setStep('quiz'); setQi(total - 1); }}>{backLabel}</button>
             </form>
           )}
 
           {step === 'results' && (
             <div className="b-abs-results">
+              <p className="b-abs-send-state" role="status">{sendState === 'sent' ? sentNote : failNote.replace('{contact}', LEAD_TOOL_COPY.contactEmail)}</p>
               <div className="b-abs-verdict">
                 <span className="b-abs-badge">{result.phase.label}</span>
                 <h3 className="b-abs-verdict-h" ref={headRef} tabIndex={-1}>{result.phase.headline}</h3>
                 <p className="b-abs-verdict-read">{result.phase.read}</p>
-                <div className="b-abs-score" aria-hidden="true"><b>{result.avg}</b><span>/ {SCALE} overall</span></div>
+                <div className="b-abs-score" aria-hidden="true"><b>{result.avg}</b><span>/ {SCALE} {COPY.scoreOverall}</span></div>
               </div>
 
-              <div className="b-abs-chart" role="img" aria-label={'Your AI readiness by pillar, scored 1 to 4, against an industry benchmark. Overall ' + result.avg + ' of 4, ' + result.phase.label + '. ' + result.rows.map((r) => r.name + ': ' + (r.phase ? r.phase.label : 'not scored') + ', ' + r.score + ' of 4, industry benchmark ' + r.bench + '.').join(' ')}>
+              <div className="b-abs-chart" role="img" aria-label={chartAriaLabel.replace('{avg}', result.avg).replace('{phase}', result.phase.label).replace('{pillar}', result.rows.map((r) => `${r.name}: ${r.phase?.label || COPY.notScored}, ${r.score} ${COPY.of} 4, ${benchmarkLabel.toLowerCase()} ${r.bench}`).join(' '))}>
                 {result.rows.map((r) => (
                   <div className="b-abs-row" key={r.key}>
-                    <div className="b-abs-row-top"><span className="b-abs-row-name">{r.name}</span><span className="b-abs-row-lvl">{r.phase ? r.phase.label : 'Not scored'}</span></div>
+                    <div className="b-abs-row-top"><span className="b-abs-row-name">{r.name}</span><span className="b-abs-row-lvl">{r.phase ? r.phase.label : COPY.notScored}</span></div>
                     <div className="b-abs-track">
                       <span className="b-abs-fill" style={{ width: pct(r.score) + '%' }} />
-                      {r.bench ? <span className="b-abs-bench" style={{ left: pct(r.bench) + '%' }} title={'Industry benchmark ' + r.bench} /> : null}
+                      {r.bench ? <span className="b-abs-bench" style={{ left: pct(r.bench) + '%' }} title={benchmarkLabel + ' ' + r.bench} /> : null}
                     </div>
                   </div>
                 ))}
-                <div className="b-abs-legend"><span className="b-abs-lg-fill">Your score</span><span className="b-abs-lg-bench">Industry benchmark</span></div>
+                <div className="b-abs-legend"><span className="b-abs-lg-fill">{COPY.yourScore}</span><span className="b-abs-lg-bench">{benchmarkLabel}</span></div>
               </div>
+              <p className="b-abs-fine">{benchmarkNote}</p>
 
               <div className="b-abs-reads">
-                {result.strongest ? <p><b>Strongest:</b> {SURVEY.strongestLead.replace('{pillar}', result.strongest.name)}</p> : null}
-                {result.weakest ? <p><b>First to move:</b> {SURVEY.weakestLead.replace('{pillar}', result.weakest.name)}</p> : null}
+                {result.strongest ? <p><b>{COPY.strongest}</b> {SURVEY.strongestLead.replace('{pillar}', result.strongest.name)}</p> : null}
+                {result.weakest ? <p><b>{COPY.firstToMove}</b> {SURVEY.weakestLead.replace('{pillar}', result.weakest.name)}</p> : null}
               </div>
 
               <div className="b-abs-actions">
-                <button type="button" className="b-cta b-abs-dl" onClick={downloadResult}>Download your result</button>
-                <button type="button" className="b-abs-dl2" onClick={downloadSurvey}>Download the blank survey (CSV)</button>
+                <button type="button" className="b-cta b-abs-dl" onClick={downloadResult}>{COPY.resultDownload}</button>
+                <button type="button" className="b-abs-dl2" onClick={downloadSurvey}>{COPY.surveyDownload}</button>
               </div>
-              <p className="b-abs-fine">{SURVEY.surveyDownloadNote}</p>
+              <p className="b-abs-fine">{surveyDownloadNote}</p>
 
               {ctaLabel ? <a className="b-cta b-abs-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
-              <button type="button" className="b-abs-retake" onClick={restart}>Retake the survey</button>
+              <button type="button" className="b-abs-retake" onClick={restart}>{COPY.retake}</button>
             </div>
           )}
         </div>
@@ -258,6 +280,8 @@ export const css = `
 .b-abs-gate .fld:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.4));box-shadow:0 0 0 3px var(--gs-accent-dim,rgba(200,255,0,.12))}
 .b-abs-reveal{width:100%;justify-content:center;margin-top:.4rem}
 .b-abs-err{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ffb3b3;padding:.7em 1em;border-radius:10px;font-size:.84rem;margin-bottom:12px}
+.b-abs-notice,.b-abs-send-state{font-size:.82rem;line-height:1.6;color:var(--gs-text-muted)}
+.b-abs-notice a{color:var(--gs-text);text-underline-offset:3px}
 .b-abs-gate-back{display:block;width:100%;text-align:center;margin-top:12px}
 
 /* results */
@@ -296,16 +320,52 @@ export const puck = {
   fields: {
     kicker: { type: 'text', label: 'Kicker', contentEditable: true },
     heading: { type: 'text', label: 'Heading', contentEditable: true },
+    headingLevel: { type: 'select', label: 'Heading level', options: [{ label: 'Page heading', value: 'h1' }, { label: 'Section heading', value: 'h2' }] },
     intro: { type: 'textarea', label: 'Intro', contentEditable: true },
+    point1: { type: 'text', label: 'First point' },
+    point2: { type: 'text', label: 'Second point' },
+    point3: { type: 'text', label: 'Third point' },
+    startLabel: { type: 'text', label: 'Start button' },
+    surveyDownloadNote: { type: 'textarea', label: 'Blank survey note' },
+    gateHeading: { type: 'text', label: 'Gate heading' },
+    gateBody: { type: 'textarea', label: 'Gate body' },
+    nameLabel: { type: 'text', label: 'Name label' },
+    companyLabel: { type: 'text', label: 'Company label' },
+    emailLabel: { type: 'text', label: 'Email label' },
+    dataNotice: { type: 'textarea', label: 'Data notice' },
+    submitLabel: { type: 'text', label: 'Submit label' },
+    backLabel: { type: 'text', label: 'Back label' },
+    benchmarkLabel: { type: 'text', label: 'Reference point label' },
+    benchmarkNote: { type: 'textarea', label: 'Reference point note' },
+    chartAriaLabel: { type: 'textarea', label: 'Chart screen-reader text' },
+    csvBenchmarkHeader: { type: 'text', label: 'CSV reference point header' },
+    sentNote: { type: 'textarea', label: 'Sent note' },
+    failNote: { type: 'textarea', label: 'Failed send note' },
     ctaLabel: { type: 'text', label: 'Results CTA label' },
     ctaHref: { type: 'text', label: 'Results CTA link' },
   },
   defaultProps: {
-    kicker: 'Free AI-readiness benchmark',
+    kicker: 'Free AI readiness check',
     heading: 'Where does your business stand on AI?',
-    intro: 'Eight questions, one per pillar of our method. See where you sit against the field, from Laggard to Pioneer, and take the survey away to run across your team.',
-    ctaLabel: PRIMARY_CTA_LABEL,
-    ctaHref: PRIMARY_CTA_HREF,
+    headingLevel: 'h2',
+    intro: 'Eight questions, one for each part of our method. See where you stand from Laggard to Pioneer, then take the survey away to run with your team.',
+    point1: '8 questions, one for each part of our method.',
+    point2: 'See where you stand, from Laggard to Pioneer, next to a Greatstone reference point.',
+    point3: 'Download your result and the blank survey.',
+    startLabel: 'Start the survey',
+    surveyDownloadNote: 'The blank survey downloads as a CSV. You can load it into Google Forms, Typeform or Formstack and send it to your leadership team. It holds the eight questions, each with four answers in order from lowest to highest. It does not score the answers or give a stage.',
+    gateHeading: 'Your result is ready.',
+    gateBody: 'Add your name and work email to see it here and download it.',
+    nameLabel: 'Your name', companyLabel: 'Company (optional)', emailLabel: 'Work email',
+    dataNotice: 'When you press See my result, we send Greatstone your name, work email, company if you give it, and a short summary of your result: your overall stage, your strongest area and the area to move first. Your individual answers stay in your browser. We may reply once about your result. We will not add you to marketing emails.',
+    submitLabel: 'See my result', backLabel: 'Back to the survey',
+    benchmarkLabel: 'Greatstone reference point',
+    benchmarkNote: 'The reference point is a Greatstone guide to help you read the chart. It is not measured data about your sector.',
+    chartAriaLabel: 'Your AI readiness by pillar, scored 1 to 4, next to a Greatstone reference point. Overall {avg} of 4, {phase}. {pillar}',
+    csvBenchmarkHeader: 'Greatstone reference point (1-4)',
+    sentNote: 'Thank you. We have a summary of your result and may reply once about it.',
+    failNote: 'Your result is below. We could not pass it to our team just now; email {contact} if you want to talk it through.',
+    ctaLabel: 'Begin the Conversation', ctaHref: '#enquire/a-free-executive-discovery',
   },
   render: (props) => <AiBaselineSurvey {...props} />,
 };

@@ -140,7 +140,7 @@ const defaultRange = [
 ];
 const proofCopy = { proofKicker: 'Case studies', proofHeading: 'What changed for our clients', draftBadge: 'DRAFT', draftCaseLine: 'Engagement facts, outcome and permission are pending.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '#proof' };
 const draftCases = [{ headline: 'First study', image: '/assets/two-doors/consultancy-hero.webp' }, { headline: 'Second study', image: '/assets/two-doors/tools-hero.webp' }, { headline: 'Third study', image: '/assets/two-doors/consultancy-hero.webp' }];
-const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '#dev-tools', contactHref: '#contact', consultancyHref: '#door-dx', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
+const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '#dev-tools', contactHref: '#contact', consultancyHref: '#go/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
 const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
 function twoDoorsHomePage() {
   return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolsCopy, tools: TOOLS })], {
@@ -153,6 +153,21 @@ function devToolsPage() {
     title: 'DX Dev Tools · Greatstone International',
     description: 'Explore developer components and SDKs through Greatstone International.', ogImage: '',
   });
+}
+function dxConsultancyPage() {
+  return { ...seedPage('DX Consultancy', 'none', [blk('AiBaselineSurvey', { headingLevel: 'h1' }), blk('AiCostCalculator', {})], {
+    title: 'DX Consultancy · Greatstone International',
+    description: 'Check your AI readiness and estimate the cost of manual work with two free tools.', ogImage: '',
+  }), orgId: ORG.id };
+}
+function linkConsultancyFromHome(page) {
+  if (!page) return;
+  for (const data of [page.data, page.published]) {
+    if (!data?.content) continue;
+    for (const block of data.content) {
+      if (block.type === 'TwoDoorsTools' && block.props?.consultancyHref === '#door-dx') block.props.consultancyHref = '#go/dx-consultancy';
+    }
+  }
 }
 
 // the editorial state machine: who can move where (the future Laravel backend enforces this
@@ -719,17 +734,18 @@ export function seedState() {
   });
   pages.home = twoDoorsHomePage();
   pages['dev-tools'] = devToolsPage();
+  pages['dx-consultancy'] = dxConsultancyPage();
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
   // footer order: the R1 launch pages first (as in the nav), then the secondary pages, then legal
-  const order = ['home', 'dev-tools', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  const order = ['home', 'dx-consultancy', 'dev-tools', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
   // The one-time migrate() inserts below are for stores saved BEFORE they existed. A fresh seed is already
   // current, so mark them done. Without this, a visitor's SECOND load ran them and put the time-savings
   // calculator, comparison matrix and catalogue back on the Service page that GRE-652 took them off.
-  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true };
+  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true, _aiLeadToolsPlaced: true };
   return { schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] };
@@ -786,6 +802,22 @@ function migrate(state) {
     state.order = ['home', 'dev-tools', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dev-tools')];
     state.navigation = DEFAULT_NAVIGATION();
     state._twoDoorsV15Blocks = true;
+  }
+  if (!state._aiLeadToolsPlaced) {
+    if (!state.pages['dx-consultancy']) state.pages['dx-consultancy'] = dxConsultancyPage();
+    linkConsultancyFromHome(state.pages.home);
+    state.order = ['home', 'dx-consultancy', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dx-consultancy')];
+    state._aiLeadToolsPlaced = true;
+  }
+  // GRE-1853 review: the home contact CTA must keep its enquiry destination.
+  // Repair only the value introduced by the earlier tools placement, in both projections.
+  if (!state._aiLeadToolsContactCtaRestored) {
+    for (const data of [state.pages.home?.data, state.pages.home?.published]) {
+      for (const block of data?.content || []) {
+        if (block.type === 'TwoDoors' && block.props?.contactHref === '#go/dx-consultancy') block.props.contactHref = '#contact';
+      }
+    }
+    state._aiLeadToolsContactCtaRestored = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';

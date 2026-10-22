@@ -1,9 +1,14 @@
-import { useState, useId, useEffect, useMemo, useCallback } from 'react';
+import { useState, useId, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { resolveLink } from '../lib/link-resolver.mjs';
-import { track } from '../lib/analytics.js';
-import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
+import { track, getConsent, getAttribution } from '../lib/analytics.js';
+import { fireLead, validateEnquiry } from '../lib/enquiry.mjs';
+import { sendToolLead } from '../lib/lead-tools.mjs';
+import { Turnstile, TURNSTILE_KEY } from './Turnstile.jsx';
+import { LEAD_TOOL_COPY } from '../data/ai-lead-tools-copy.mjs';
+
+const COPY = LEAD_TOOL_COPY.calculator;
 
 // The AI Cost Calculator lead magnet (Ben + John, 1 Jul marketing session — "how much money am I leaving
 // on the table"). Three honest inputs show what the manual work costs each year (the hook, live and
@@ -17,13 +22,13 @@ const fmtInt = (n) => Math.round(n).toLocaleString('en-GB');
 
 // Module scope so its identity is stable across renders (an inline component remounts each keystroke and
 // the number input loses focus).
-function Field({ id, label, value, set, suffix, min, max }) {
+function Field({ id, label, value, set, suffix, min, max, disabled }) {
   return (
     <label className="b-acc-field" htmlFor={id}>
       <span className="b-acc-flabel">{label}</span>
       <span className="b-acc-fwrap">
         {suffix && suffix.before ? <span className="b-acc-affix" aria-hidden="true">{suffix.before}</span> : null}
-        <input id={id} className="b-acc-input" type="number" inputMode="numeric" min={min} max={max}
+        <input id={id} className="b-acc-input" type="number" inputMode="numeric" min={min} max={max} disabled={disabled}
           value={value} onChange={(e) => set(e.target.value)} onBlur={() => set(String(clampNum(value, min, max)))} />
         {suffix && suffix.after ? <span className="b-acc-affix" aria-hidden="true">{suffix.after}</span> : null}
       </span>
@@ -34,7 +39,8 @@ function Field({ id, label, value, set, suffix, min, max }) {
 export function AiCostCalculator({
   kicker, heading, intro, teamLabel, hoursLabel, costLabel,
   defaultTeam = 12, defaultHours = 6, defaultCost = 32, weeksPerYear = 46, currency = '£',
-  recoveryPct = 55, onTheTableLead, savingsLead, gateHeading, gateBody, ctaLabel, ctaHref = '#book', footnote,
+  recoveryPct = 55, onTheTableLead, savingsLead, gateHeading, gateBody, nameLabel, companyLabel, emailLabel,
+  dataNotice, submitLabel, sentNote, failNote, csvFooter, ctaLabel, ctaHref, footnote,
 }) {
   const ref = useReveal();
   const uid = useId();
@@ -44,6 +50,11 @@ export function AiCostCalculator({
   const [lead, setLead] = useState({ name: '', company: '', email: '' });
   const [unlocked, setUnlocked] = useState(false);
   const [err, setErr] = useState('');
+  const [sendState, setSendState] = useState('idle');
+  const [token, setToken] = useState(null);
+  const [website, setWebsite] = useState('');
+  const resultStatusRef = useRef(null);
+  useEffect(() => { if (unlocked) resultStatusRef.current?.focus(); }, [unlocked]);
   // keep live inputs in step with editable defaults in the Puck editor (no remount there); no-op for visitors
   useEffect(() => { setTeam(defaultTeam); setHours(defaultHours); setCost(defaultCost); }, [defaultTeam, defaultHours, defaultCost]);
 
@@ -55,32 +66,40 @@ export function AiCostCalculator({
     return { hoursYr: hy, costYr: cy, saving: cy * (p / 100), pct: p };
   }, [team, hours, cost, weeksPerYear, recoveryPct]);
 
-  const submitGate = (e) => {
+  const submitGate = async (e) => {
     e.preventDefault();
     const name = lead.name.trim(), company = lead.company.trim(), email = lead.email.trim();
-    if (!name || !company || !/.+@.+\..+/.test(email)) { setErr('Please add your name, company and a valid email.'); return; }
+    const errors = validateEnquiry({ name, email });
+    if (Object.keys(errors).length) { setErr(Object.values(errors).join(' ')); return; }
+    if (TURNSTILE_KEY && !token) { setErr(LEAD_TOOL_COPY.securityError); return; }
     setErr('');
-    track('generate_lead', { form: 'ai_cost_calc' });
+    setSendState('sending');
+    const attribution = getAttribution();
+    const out = await sendToolLead({ name, company, email, interest: 'AI Cost Calculator',
+      summary: `Team ${clampNum(team, 1, 100000)}, ${clampNum(hours, 0, 80)} hrs/person/week, ${currency}${clampNum(cost, 0, 100000)}/hr. Cost a year: ${currency}${fmtInt(costYr)}. AI could recover about: ${currency}${fmtInt(saving)}.`,
+      attribution, page: window.location.pathname + window.location.hash, website, turnstile: token });
+    setSendState(out.ok ? 'sent' : 'failed');
+    if (out.ok) fireLead({ track, getConsent, attribution, form: 'ai_cost_calc' });
     setUnlocked(true);
   };
 
   const downloadEstimate = useCallback(() => {
     const cell = (v) => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const rows = [
-      ['Greatstone AI Cost Estimate'],
-      ['Name', lead.name], ['Company', lead.company],
+      [COPY.title],
+      [COPY.name, lead.name], [COPY.company, lead.company],
       [],
-      ['People affected', clampNum(team, 1, 100000)],
-      ['Hours lost per person per week', clampNum(hours, 0, 80)],
-      ['Average hourly cost', currency + fmtInt(clampNum(cost, 0, 100000))],
-      ['Working weeks per year', clampNum(weeksPerYear, 1, 52)],
+      [COPY.peopleAffected, clampNum(team, 1, 100000)],
+      [COPY.hoursPerPerson, clampNum(hours, 0, 80)],
+      [COPY.hourlyCost, currency + fmtInt(clampNum(cost, 0, 100000))],
+      [COPY.workingWeeks, clampNum(weeksPerYear, 1, 52)],
       [],
-      ['Hours on manual work per year', fmtInt(hoursYr)],
-      ['Cost of that work per year', currency + fmtInt(costYr)],
-      ['Estimated AI recovery rate', pct + '%'],
-      ['Estimated AI saving per year', currency + fmtInt(saving)],
+      [COPY.annualHours, fmtInt(hoursYr)],
+      [COPY.annualCost, currency + fmtInt(costYr)],
+      [COPY.recoveryRate, pct + '%'],
+      [COPY.annualSaving, currency + fmtInt(saving)],
       [],
-      ['A guide, not a quote. The Diagnostic replaces these round numbers with your real ones.'],
+      [csvFooter],
     ];
     try {
       const blob = new Blob(['﻿' + rows.map((r) => r.map(cell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -89,7 +108,7 @@ export function AiCostCalculator({
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     } catch (e) { /* download unsupported — the on-screen figures still stand */ }
-  }, [lead, team, hours, cost, weeksPerYear, recoveryPct, currency]);
+  }, [lead, team, hours, cost, weeksPerYear, recoveryPct, currency, csvFooter, costYr, saving, hoursYr, pct]);
 
   return (
     <section ref={ref} className="b-acc">
@@ -101,38 +120,42 @@ export function AiCostCalculator({
         </div>
         <div className="b-acc-grid" data-reveal>
           <div className="b-acc-inputs">
-            <Field id={uid + 't'} label={teamLabel} value={team} set={setTeam} min={1} max={100000} suffix={{ after: 'people' }} />
-            <Field id={uid + 'h'} label={hoursLabel} value={hours} set={setHours} min={0} max={80} suffix={{ after: 'hrs / wk' }} />
-            <Field id={uid + 'c'} label={costLabel} value={cost} set={setCost} min={0} max={100000} suffix={{ before: currency, after: '/ hr' }} />
+            <Field id={uid + 't'} label={teamLabel} value={team} set={setTeam} min={1} max={100000} disabled={unlocked || sendState === 'sending'} suffix={{ after: COPY.people }} />
+            <Field id={uid + 'h'} label={hoursLabel} value={hours} set={setHours} min={0} max={80} disabled={unlocked || sendState === 'sending'} suffix={{ after: COPY.hoursSuffix }} />
+            <Field id={uid + 'c'} label={costLabel} value={cost} set={setCost} min={0} max={100000} disabled={unlocked || sendState === 'sending'} suffix={{ before: currency, after: COPY.costSuffix }} />
           </div>
 
           <div className="b-acc-result">
             {/* the hook — live + ungated: what the manual work costs each year */}
             <div className="b-acc-rlead" aria-hidden="true">{onTheTableLead}</div>
-            <div className="b-acc-rbig" aria-hidden="true"><b>{currency}{fmtInt(costYr)}</b> <span>a year, on the table</span></div>
-            <p className="gs-sr-only" role="status" aria-live="polite">{onTheTableLead} {currency}{fmtInt(costYr)} a year, about {fmtInt(hoursYr)} hours of manual work.</p>
+            <div className="b-acc-rbig" aria-hidden="true"><b>{currency}{fmtInt(costYr)}</b> <span>{COPY.onTable}</span></div>
+            <p className="gs-sr-only" role="status" aria-live="polite">{onTheTableLead} {currency}{fmtInt(costYr)} {COPY.year}, about {fmtInt(hoursYr)} {COPY.manualWork}</p>
 
             {unlocked ? (
               <div className="b-acc-reveal">
+                <p className="b-acc-send-state" role="status" ref={resultStatusRef} tabIndex={-1}>{sendState === 'sent' ? sentNote : failNote.replace('{contact}', LEAD_TOOL_COPY.contactEmail)}</p>
                 <div className="b-acc-saving">
                   <span className="b-acc-slead">{savingsLead}</span>
-                  <span className="b-acc-sbig">{currency}{fmtInt(saving)}<span> a year</span></span>
-                  <span className="b-acc-snote">Based on recovering about {pct}% of that manual effort with AI.</span>
+                  <span className="b-acc-sbig">{currency}{fmtInt(saving)}<span> {COPY.year}</span></span>
+                  <span className="b-acc-snote">{COPY.savingNote(pct)}</span>
                 </div>
                 <div className="b-acc-actions">
                   {ctaLabel ? <a className="b-cta b-acc-cta" {...resolveLink(ctaHref)}>{ctaLabel}<Arrow /></a> : null}
-                  <button type="button" className="b-acc-dl" onClick={downloadEstimate}>Download your estimate</button>
+                  <button type="button" className="b-acc-dl" onClick={downloadEstimate}>{COPY.download}</button>
                 </div>
               </div>
             ) : (
               <form className="b-acc-gate" onSubmit={submitGate} noValidate>
                 <p className="b-acc-gate-h">{gateHeading}</p>
                 <p className="b-acc-gate-b muted">{gateBody}</p>
-                <div className="b-acc-gfield"><label htmlFor={uid + 'n'}>Your name</label><input id={uid + 'n'} value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" /></div>
-                <div className="b-acc-gfield"><label htmlFor={uid + 'co'}>Company</label><input id={uid + 'co'} value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" /></div>
-                <div className="b-acc-gfield"><label htmlFor={uid + 'e'}>Work email</label><input id={uid + 'e'} type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" /></div>
+                <div className="b-acc-gfield"><label htmlFor={uid + 'n'}>{nameLabel}</label><input id={uid + 'n'} value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" required /></div>
+                <div className="b-acc-gfield"><label htmlFor={uid + 'co'}>{companyLabel}</label><input id={uid + 'co'} value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" /></div>
+                <div className="b-acc-gfield"><label htmlFor={uid + 'e'}>{emailLabel}</label><input id={uid + 'e'} type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" required /></div>
+                <div className="gs-sr-only" aria-hidden="true"><label htmlFor={uid + 'w'}>{LEAD_TOOL_COPY.honeypot}</label><input id={uid + 'w'} tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
+                <Turnstile onToken={setToken} />
                 {err ? <div className="b-acc-err" role="alert">{err}</div> : null}
-                <button type="submit" className="b-cta b-acc-unlock">Show what AI could save<Arrow /></button>
+                <p className="b-acc-notice">{dataNotice} <a href="#go/privacy">{LEAD_TOOL_COPY.privacyPolicy}</a>.</p>
+                <button type="submit" className="b-cta b-acc-unlock" disabled={sendState === 'sending'}>{sendState === 'sending' ? LEAD_TOOL_COPY.sending : submitLabel}<Arrow /></button>
               </form>
             )}
           </div>
@@ -175,6 +198,8 @@ export const css = `
 .b-acc-gfield input{width:100%;font-family:inherit;font-size:.95rem;color:var(--gs-text);background:rgba(255,255,255,.03);border:1px solid var(--gs-border-soft);border-radius:9px;padding:.65em .8em;transition:border-color .2s var(--gs-ease,ease),box-shadow .2s var(--gs-ease,ease)}
 .b-acc-gfield input:focus{outline:none;border-color:var(--gs-accent-mid,rgba(200,255,0,.4));box-shadow:0 0 0 3px var(--gs-accent-dim,rgba(200,255,0,.12))}
 .b-acc-err{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ffb3b3;padding:.6em .9em;border-radius:9px;font-size:.82rem}
+.b-acc-notice,.b-acc-send-state{font-size:.82rem;line-height:1.6;color:var(--gs-text-muted)}
+.b-acc-notice a{color:var(--gs-text);text-underline-offset:3px}
 .b-acc-unlock{margin-top:4px;width:100%;justify-content:center}
 /* reveal */
 .b-acc-saving{display:flex;flex-direction:column;gap:4px;margin-top:16px;padding-top:16px;border-top:1px solid var(--gs-border-soft)}
@@ -208,6 +233,14 @@ export const puck = {
     savingsLead: { type: 'text', label: 'Savings lead', contentEditable: true },
     gateHeading: { type: 'text', label: 'Gate heading', contentEditable: true },
     gateBody: { type: 'textarea', label: 'Gate body', contentEditable: true },
+    nameLabel: { type: 'text', label: 'Name label' },
+    companyLabel: { type: 'text', label: 'Company label' },
+    emailLabel: { type: 'text', label: 'Email label' },
+    dataNotice: { type: 'textarea', label: 'Data notice' },
+    submitLabel: { type: 'text', label: 'Submit label' },
+    sentNote: { type: 'textarea', label: 'Sent note' },
+    failNote: { type: 'textarea', label: 'Failed send note' },
+    csvFooter: { type: 'textarea', label: 'CSV footer' },
     ctaLabel: { type: 'text', label: 'CTA label' },
     ctaHref: { type: 'text', label: 'CTA link' },
     footnote: { type: 'textarea', label: 'Footnote', contentEditable: true },
@@ -215,18 +248,24 @@ export const puck = {
   defaultProps: {
     kicker: 'The money on the table',
     heading: 'How much could AI save you?',
-    intro: 'A rough, honest estimate in seconds. Set the numbers to match your team, see what the manual work costs across a year, then how much of it AI could reasonably recover.',
+    intro: 'A rough, honest estimate. Set the numbers for your team, see what the manual work costs in a year, then how much of it AI could take back.',
     teamLabel: 'People affected',
     hoursLabel: 'Hours lost per person, per week',
     costLabel: 'Average hourly cost',
     defaultTeam: 12, defaultHours: 6, defaultCost: 32, weeksPerYear: 46, recoveryPct: 55, currency: '£',
     onTheTableLead: 'That work costs you',
     savingsLead: 'AI could recover about',
-    gateHeading: 'See what AI could save you',
-    gateBody: 'Tell us where to send your estimate and we will show the figure. No spam, no obligation.',
-    ctaLabel: PRIMARY_CTA_LABEL,
-    ctaHref: PRIMARY_CTA_HREF,
-    footnote: 'A guide, not a quote. The Diagnostic replaces these round numbers with your real ones, then shows exactly which work AI should take first and what it gives back.',
+    gateHeading: 'See what AI could recover',
+    gateBody: 'Add your name and work email to see the figure here and download it.',
+    nameLabel: 'Your name', companyLabel: 'Company (optional)', emailLabel: 'Work email',
+    dataNotice: 'When you press See the figure, we send Greatstone your name, work email, company if you give it, and a summary of your estimate: the team size, hours and hourly cost you set, and the yearly figures. We may reply once about your estimate. We will not add you to marketing emails.',
+    submitLabel: 'See the figure',
+    sentNote: 'Thank you. We have a summary of your estimate and may reply once about it.',
+    failNote: 'Your estimate is below. We could not pass it to our team just now; email {contact} if you want to talk it through.',
+    csvFooter: 'A guide, not a quote. The recovery rate is an assumption. A free Executive Discovery replaces these round numbers with your real ones.',
+    ctaLabel: 'Begin the Conversation',
+    ctaHref: '#enquire/a-free-executive-discovery',
+    footnote: 'A guide, not a quote. The recovery rate is an assumption. A free Executive Discovery replaces these round numbers with your real ones and shows which work to start with.',
   },
   render: (props) => <AiCostCalculator {...props} />,
 };
