@@ -89,7 +89,7 @@ test('docs-only skips; site changes deploy only with preview gate', async (t) =>
   f.setComments([{ authorAgentId: '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7', body: 'Preview ready for PR #12' }]);
   result = await f.run();
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /^deploy --site gre1795-website-db-staging --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
 });
 
 test('another board user cannot mark an unlabelled PR ready for preview', async (t) => {
@@ -118,7 +118,7 @@ test('unapproved production is refused before upload', async (t) => {
   f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
   const approved = await f.run('prod');
   assert.equal(approved.status, 0, approved.stderr);
-  assert.match(await readFile(f.log, 'utf8'), / --prod\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:[0-9a-f]{40} --prod\n$/);
 });
 
 test('newer run supersedes an in-flight run for the same site', async (t) => {
