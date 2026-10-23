@@ -41,7 +41,14 @@ export default function OrdersManager({ staff }) {
     // (The email never carries keys/files; it links the buyer to their account. Note: issuing a key already
     // sends this same email, so a staffer who issues then marks fulfilled may trigger two — see the handoff.)
     let emailed = false;
-    try { const { data } = await supabase.functions.invoke('notify-licence-issued', { body: { order_id: id } }); emailed = !!(data && data.sent); }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/notify-licence-issued', {
+        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (session?.access_token || '') },
+        body: JSON.stringify({ order_id: id }),
+      });
+      emailed = !!(response.ok && (await response.json()).sent);
+    }
     catch { /* function not deployed / email off — silent */ }
     flash(emailed ? 'Order fulfilled — the buyer has been emailed.' : 'Order marked fulfilled.'); load();
   };

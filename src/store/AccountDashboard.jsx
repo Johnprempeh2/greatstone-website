@@ -265,7 +265,16 @@ function Dashboard({ session, profile, onProfile }) {
 
   const openPortal = async () => {
     setPortalBusy(true);
-    const { data, error } = await supabase.functions.invoke('stripe-portal', { body: { returnUrl: location.origin + location.pathname + '#account' } });
+    let data = null, error = null;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/stripe-portal', {
+        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (session?.access_token || '') },
+        body: JSON.stringify({ returnUrl: location.origin + '/#account' }),
+      });
+      data = await response.json();
+      if (!response.ok) error = { message: data.error };
+    } catch { error = { message: 'Please try again.' }; }
     setPortalBusy(false);
     if (error || !data?.url) { flash('Billing portal unavailable. ' + (error?.message || 'Ask us to enable it.')); return; }
     location.href = data.url;
