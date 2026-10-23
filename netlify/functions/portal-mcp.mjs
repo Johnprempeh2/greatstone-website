@@ -1,16 +1,17 @@
 import { getStore } from '@netlify/blobs';
 import { getPool } from './lib/db.mjs';
 import { portalMcpRpc } from './lib/portal-mcp-db.mjs';
-import { createPortalMcp, MAX_BODY_BYTES } from '../../supabase/functions/_shared/portal-mcp.mjs';
+import { createPortalMcp } from '../../supabase/functions/_shared/portal-mcp.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
+// Leave room below Netlify's 6 MB buffered request limit until GRE-2064 adds chunked uploads.
+const MAX_REQUEST_BYTES = 4 * 1024 * 1024;
+const tooLarge = () => Response.json({ error: 'This PDF upload is too large for this connection. Use a PDF smaller than 3 MB until chunked upload is available.' }, { status: 413, headers: HEADERS });
 const unavailable = () => Response.json({ error: 'Portal tools unavailable. Try again.' }, { status: 503, headers: HEADERS });
 
 export function makePortalMcpHandler({ pool = getPool, store = () => getStore('portal-files'), log = console.error } = {}) {
   return async (req) => {
-    if (req.method === 'POST' && Number(req.headers.get('content-length')) > MAX_BODY_BYTES) {
-      return Response.json({ error: 'Request too large.' }, { status: 413, headers: HEADERS });
-    }
+    if (req.method === 'POST' && Number(req.headers.get('content-length')) > MAX_REQUEST_BYTES) return tooLarge();
     const db = pool();
     if (!db) return unavailable();
     const server = createPortalMcp({
@@ -22,8 +23,9 @@ export function makePortalMcpHandler({ pool = getPool, store = () => getStore('p
       log,
     });
     try {
-      const out = await server.handle({ method: req.method, headers: req.headers,
-        text: req.method === 'POST' ? await req.text() : '' });
+      const body = req.method === 'POST' ? await req.text() : '';
+      if (Buffer.byteLength(body) > MAX_REQUEST_BYTES) return tooLarge();
+      const out = await server.handle({ method: req.method, headers: req.headers, text: body });
       return new Response(out.body, { status: out.status, headers: { ...out.headers, ...HEADERS } });
     } catch (error) {
       log('portal-mcp: request failed (' + (error?.code || error?.name || 'error') + ')');

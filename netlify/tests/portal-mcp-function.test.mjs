@@ -53,3 +53,23 @@ test('Netlify MCP endpoint answers protocol requests through the anon bridge', a
   assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.equal(pool.calls.some((call) => call.sql === 'SET LOCAL ROLE anon'), true);
 });
+
+test('Netlify MCP gives a clear upload limit error before the platform rejects the request', async () => {
+  const handler = makePortalMcpHandler({ pool: () => { throw new Error('database should not open'); } });
+  const request = new Request('https://example.test/api/portal-mcp', { method: 'POST',
+    headers: { 'content-length': String(5 * 1024 * 1024) }, body: '{}' });
+  const response = await handler(request);
+  assert.equal(response.status, 413);
+  assert.match((await response.json()).error, /smaller than 3 MB/);
+});
+
+test('Netlify MCP checks actual body bytes when length is not supplied', async () => {
+  const pool = fakePool();
+  const handler = makePortalMcpHandler({ pool: () => pool });
+  const request = new Request('https://example.test/api/portal-mcp', { method: 'POST',
+    body: 'x'.repeat(4 * 1024 * 1024 + 1) });
+  request.headers.delete('content-length');
+  const response = await handler(request);
+  assert.equal(response.status, 413);
+  assert.equal(pool.calls.length, 0);
+});
