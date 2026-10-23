@@ -102,7 +102,7 @@ test('unapproved production is refused before upload', async (t) => {
   f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
   const approved = await f.run('prod');
   assert.equal(approved.status, 0, approved.stderr);
-  assert.match(await readFile(f.log, 'utf8'), / --prod\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:[0-9a-f]{40} --prod\n$/);
 });
 
 test('newer run supersedes an in-flight run for the same site', async (t) => {
