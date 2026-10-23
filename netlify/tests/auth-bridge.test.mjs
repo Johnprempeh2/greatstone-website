@@ -208,7 +208,7 @@ test('the worker sees every row under FORCE RLS, where anon and an unknown user 
     if (all !== '0') withRows.push(t);
   }
   // the tables the ported migrations keep from the worker, as Supabase 0037 and 0038 revoke them from service_role
-  assert.deepEqual(noGrant, ['public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers']);
+  assert.deepEqual(noGrant, ['public.mcp_pdf_chunks', 'public.mcp_pdf_uploads', 'public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers']);
   for (const t of ['public.customers', 'public.users', 'public.service_inquiries', 'public.offerings']) {
     assert.ok(withRows.includes(t), `${t} has rows the worker sees`);
     if (!PUBLIC_ROWS[t.slice(7)]) assert.ok(['0', 'denied'].includes(countAs('anon', t)), `anon on ${t}`);

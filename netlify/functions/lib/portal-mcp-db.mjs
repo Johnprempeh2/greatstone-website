@@ -8,6 +8,10 @@ const SIGNATURES = Object.freeze({
   mcp_portal_create_draft: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_customer_id:uuid', 'p_fields:jsonb'],
   mcp_portal_update_draft: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_document_id:uuid', 'p_expected_row_version:integer', 'p_fields:jsonb'],
   mcp_portal_set_file: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_document_id:uuid', 'p_path:text', 'p_sha256:text'],
+  mcp_portal_pdf_begin: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_document_id:uuid', 'p_filename:text', 'p_size:integer', 'p_sha256:text'],
+  mcp_portal_pdf_chunk: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_session_id:uuid', 'p_index:integer', 'p_content_base64:text'],
+  mcp_portal_pdf_finish: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_session_id:uuid'],
+  mcp_portal_pdf_discard: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_session_id:uuid'],
   mcp_portal_request_publish: ['p_token_sha256:text', 'p_run_id:uuid', 'p_agent_id:uuid', 'p_document_id:uuid', 'p_expected_row_version:integer'],
 });
 

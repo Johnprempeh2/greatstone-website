@@ -13,6 +13,7 @@ export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 export const TOKEN_RE = /^gspm_[0-9a-f]{64}$/;
 export const MAX_BODY_BYTES = 30 * 1024 * 1024;
 export const MAX_PDF_BYTES = 20 * 1024 * 1024; // the portal-files bucket allows 25 MB
+export const MAX_PDF_CHUNK_BYTES = 2 * 1024 * 1024; // base64 JSON stays well below Netlify's 6 MB request limit
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']{2,}$/;
@@ -299,8 +300,33 @@ export const TOOLS = [
     rpc: 'mcp_portal_request_publish',
   },
 ];
-const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
-export const publicTools = () => TOOLS.map(({ rpc, ...t }) => t);
+export const CHUNKED_PDF_TOOLS = [
+  {
+    name: 'begin_pdf_upload', title: 'Begin a large PDF upload',
+    description: 'Start a 30 minute upload of a PDF up to 20 MB. Use 2 MB binary chunks and finish before the draft is changed. At most three uploads may be open for one token.',
+    inputSchema: { type: 'object', required: ['document_id', 'run_id', 'agent_id', 'filename', 'size_bytes', 'sha256'],
+      properties: { document_id: uuid, ...WHO, filename: { type: 'string' }, size_bytes: { type: 'integer', minimum: 1, maximum: MAX_PDF_BYTES }, sha256: { type: 'string' } }, additionalProperties: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    rpc: 'mcp_portal_pdf_begin',
+  },
+  {
+    name: 'upload_pdf_chunk', title: 'Upload the next PDF chunk',
+    description: 'Send chunks in order, starting at index 0. Each decoded chunk is at most 2 MB. Retry a failed request only after checking its next_index.',
+    inputSchema: { type: 'object', required: ['session_id', 'run_id', 'agent_id', 'index', 'content_base64'],
+      properties: { session_id: uuid, ...WHO, index: { type: 'integer', minimum: 0 }, content_base64: { type: 'string' } }, additionalProperties: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    rpc: 'mcp_portal_pdf_chunk',
+  },
+  {
+    name: 'finish_pdf_upload', title: 'Check and attach the uploaded PDF',
+    description: 'Checks the exact byte count, SHA-256, PDF signature and draft permission again, then attaches the file. The client sees nothing before publish.',
+    inputSchema: { type: 'object', required: ['session_id', 'run_id', 'agent_id'],
+      properties: { session_id: uuid, ...WHO }, additionalProperties: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    rpc: 'mcp_portal_pdf_finish',
+  },
+];
+export const publicTools = (chunkedPdf = false) => (chunkedPdf ? [...TOOLS, ...CHUNKED_PDF_TOOLS] : TOOLS).map(({ rpc, ...t }) => t);
 
 // ── errors ────────────────────────────────────────────────────────────────────────────────────
 
@@ -338,6 +364,8 @@ const needVersion = (v) => {
  */
 export function createPortalMcp(deps) {
   const log = deps.log || (() => {});
+  const tools = deps.chunkedPdf ? [...TOOLS, ...CHUNKED_PDF_TOOLS] : TOOLS;
+  const byName = new Map(tools.map((t) => [t.name, t]));
 
   async function db(fn, params) {
     const { data, error } = await deps.rpc(fn, params);
@@ -350,7 +378,7 @@ export function createPortalMcp(deps) {
   }
 
   async function callTool(tokenSha, name, args) {
-    const tool = BY_NAME.get(name);
+    const tool = byName.get(name);
     if (!tool) fail(`unknown tool: ${name}`);
     if (!args || typeof args !== 'object' || Array.isArray(args)) fail('arguments must be an object');
     const extra = Object.keys(args).filter((k) => !(k in tool.inputSchema.properties));
@@ -358,6 +386,15 @@ export function createPortalMcp(deps) {
     const t = { p_token_sha256: tokenSha };
     const who = () => { need(args, ['run_id', 'agent_id']); needUuid(args, ['run_id', 'agent_id']); return { p_run_id: args.run_id, p_agent_id: args.agent_id }; };
     const problems = (list) => { if (list.length) fail(`Fix these and try again:\n- ${list.join('\n- ')}`); };
+    const storePdf = async (doc, w, bytes, filename, hash) => {
+      const path = `${doc.customer_id}/${doc.id}/${hash.slice(0, 12)}-${safePdfName(filename)}`;
+      const up = await deps.upload(path, bytes);
+      if (up?.error && !/exists|duplicate/i.test(String(up.error.message || up.error))) {
+        log('portal-mcp: upload failed', String(up.error.message || up.error).slice(0, 200));
+        fail('The file could not be stored just now. Try again; the draft is unchanged.');
+      }
+      return db('mcp_portal_set_file', { ...t, ...w, p_document_id: doc.id, p_path: path, p_sha256: hash });
+    };
 
     switch (name) {
       case 'list_clients':
@@ -393,13 +430,40 @@ export function createPortalMcp(deps) {
         const doc = await db('mcp_portal_get_document', { ...t, p_document_id: args.document_id });
         if (doc.status !== 'draft') fail(`a file can be attached only to a draft (this one is ${doc.status})`);
         const hash = await sha256Hex(bytes);
-        const path = `${doc.customer_id}/${doc.id}/${hash.slice(0, 12)}-${safePdfName(args.filename)}`;
-        const up = await deps.upload(path, bytes);
-        if (up?.error && !/exists|duplicate/i.test(String(up.error.message || up.error))) {
-          log('portal-mcp: upload failed', String(up.error.message || up.error).slice(0, 200));
-          fail('The file could not be stored just now. Try again; the draft is unchanged.');
-        }
-        return db(tool.rpc, { ...t, ...w, p_document_id: doc.id, p_path: path, p_sha256: hash });
+        return storePdf(doc, w, bytes, args.filename, hash);
+      }
+      case 'begin_pdf_upload': {
+        needUuid(args, ['document_id']);
+        const w = who();
+        if (!Number.isInteger(args.size_bytes) || args.size_bytes < 1 || args.size_bytes > MAX_PDF_BYTES) fail('the file is 20 MB at most');
+        if (typeof args.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(args.sha256)) fail('sha256 must be 64 lowercase hex characters');
+        if (typeof args.filename !== 'string' || !args.filename.trim() || args.filename.length > 200) fail('filename must be 1 to 200 characters');
+        return db(tool.rpc, { ...t, ...w, p_document_id: args.document_id, p_filename: args.filename,
+          p_size: args.size_bytes, p_sha256: args.sha256 });
+      }
+      case 'upload_pdf_chunk': {
+        needUuid(args, ['session_id']);
+        const w = who();
+        if (!Number.isInteger(args.index) || args.index < 0 || args.index > 9) fail('index must be a chunk number from 0 to 9');
+        const bytes = fromBase64(args.content_base64);
+        if (!bytes || bytes.length < 1 || bytes.length > MAX_PDF_CHUNK_BYTES) fail('content_base64 must be 1 byte to 2 MB of base64');
+        const result = await db(tool.rpc, { ...t, ...w, p_session_id: args.session_id, p_index: args.index,
+          p_content_base64: args.content_base64 });
+        if (result?.error) fail(result.error);
+        return result;
+      }
+      case 'finish_pdf_upload': {
+        needUuid(args, ['session_id']);
+        const w = who();
+        const staged = await db(tool.rpc, { ...t, ...w, p_session_id: args.session_id });
+        if (staged?.error) fail(staged.error);
+        const bytes = fromBase64(staged.content_base64);
+        if (!bytes || bytes.length > MAX_PDF_BYTES) fail('PDF upload size does not match');
+        const doc = { id: staged.document_id, customer_id: staged.customer_id };
+        const attached = await storePdf(doc, w, bytes, staged.filename, staged.sha256);
+        try { await db('mcp_portal_pdf_discard', { ...t, ...w, p_session_id: args.session_id }); }
+        catch { log('portal-mcp: uploaded PDF session cleanup deferred to expiry'); }
+        return attached;
       }
       case 'request_publish': {
         needUuid(args, ['document_id']);
@@ -455,7 +519,7 @@ export function createPortalMcp(deps) {
       case 'ping':
         return reply(200, rpcResult(id, {}));
       case 'tools/list':
-        return reply(200, rpcResult(id, { tools: publicTools() }));
+        return reply(200, rpcResult(id, { tools: publicTools(deps.chunkedPdf) }));
       case 'tools/call': {
         try {
           const data = await callTool(tokenSha, params?.name, params?.arguments ?? {});
