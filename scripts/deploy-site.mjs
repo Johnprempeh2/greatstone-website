@@ -42,7 +42,7 @@ async function stagingCardApproved(sha) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
   for (const card of cards) {
-    const approvedSha = /^confirmation:GRE-\d+:staging-deploy:([0-9a-f]{40})$/.exec(card.idempotencyKey || '')?.[1];
+    const approvedSha = /^confirmation:GRE-\d+:staging-deploy:([0-9a-f]{40})(?::v[1-9]\d*)?$/.exec(card.idempotencyKey || '')?.[1];
     if (card.kind !== 'request_confirmation' || card.status !== 'accepted' ||
         card.requestedResolverPolicy !== 'human_only' || card.effectiveResolverPolicy !== 'human_only' ||
         !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||

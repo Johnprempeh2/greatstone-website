@@ -91,6 +91,16 @@ test('accepted human-only staging card permits exact SHA and guard-only drift', 
   assert.equal(result.status, 0, result.stderr);
 });
 
+test('accepted revised staging card permits its approved SHA', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base, {
+    idempotencyKey: `confirmation:GRE-2064:staging-deploy:${f.base}:v2`,
+  })]);
+  const result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and site code drift', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
