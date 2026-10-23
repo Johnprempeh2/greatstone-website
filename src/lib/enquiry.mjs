@@ -33,10 +33,17 @@ export const withInterest = (message, interest) => (clean(interest) ? 'Interest:
 // "#enquire/<key>" is a CTA that opens the contact page's enquiry form with that choice made. App's click
 // handler parks the key here and the form takes it once, as it mounts.
 export const parseEnquireHref = (href) => { const m = String(href || '').match(/^#enquire\/([a-z0-9-]+)$/); return m ? m[1] : null; };
+export const arrivalAction = (hash) => {
+  if (hash === '#book') return { type: 'book' };
+  const key = parseEnquireHref(hash);
+  return key ? { type: 'enquire', key } : null;
+};
 let pendingInterest = null;
 export const setPendingInterest = (key) => { pendingInterest = key || null; };
 export function takePendingInterest(options = []) {
-  const key = pendingInterest; pendingInterest = null;
+  // On a fresh external visit the contact block mounts before App can consume the action hash.
+  const key = pendingInterest || (typeof location !== 'undefined' ? parseEnquireHref(location.hash) : null);
+  pendingInterest = null;
   return (key && options.find((o) => interestKey(o) === key)) || '';
 }
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { enquiryPayload, makeEnquiryClient, fireLead, isEmail, validateEnquiry, SIZE_BANDS, CONSENT, INTEREST_OPTIONS, interestKey, parseEnquireHref, setPendingInterest, takePendingInterest } from './enquiry.mjs';
+import { enquiryPayload, makeEnquiryClient, fireLead, isEmail, validateEnquiry, SIZE_BANDS, CONSENT, INTEREST_OPTIONS, interestKey, parseEnquireHref, arrivalAction, setPendingInterest, takePendingInterest } from './enquiry.mjs';
 
 const ATTR = {
   first: { utm_source: 'linkedin', utm_medium: 'paid', utm_campaign: 'r1', landing: '/' },
@@ -35,6 +35,25 @@ test('"#enquire/<key>" preselects a listed option once, and nothing else', () =>
   assert.equal(takePendingInterest(INTEREST_OPTIONS), '', 'taken once');
   setPendingInterest('not-an-option');
   assert.equal(takePendingInterest(INTEREST_OPTIONS), '');
+});
+
+test('fresh action fragments choose Contact and preserve the enquiry interest', () => {
+  const previousLocation = globalThis.location;
+  try {
+    globalThis.location = { hash: '#enquire/gs-agentic-manager' };
+    assert.deepEqual(arrivalAction(location.hash), { type: 'enquire', key: 'gs-agentic-manager' });
+    assert.equal(takePendingInterest(INTEREST_OPTIONS), 'GS Agentic Manager');
+    globalThis.location.hash = '#book';
+    assert.deepEqual(arrivalAction(location.hash), { type: 'book' });
+    assert.equal(takePendingInterest(INTEREST_OPTIONS), '');
+    for (const hash of ['#contact', '#services', '#about', '#enquire/not/listed']) {
+      assert.equal(arrivalAction(hash), null);
+    }
+  } finally {
+    if (previousLocation === undefined) delete globalThis.location;
+    else globalThis.location = previousLocation;
+    setPendingInterest(null);
+  }
 });
 
 test('isEmail', () => {
