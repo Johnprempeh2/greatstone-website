@@ -73,3 +73,15 @@ test('Netlify MCP checks actual body bytes when length is not supplied', async (
   assert.equal(response.status, 413);
   assert.equal(pool.calls.length, 0);
 });
+
+test('Netlify lists chunked PDF tools without exposing them on the Supabase MCP server', async () => {
+  const pool = fakePool();
+  const handler = makePortalMcpHandler({ pool: () => pool, store: () => ({ set: async () => {} }) });
+  const request = new Request('https://example.test/api/portal-mcp', { method: 'POST',
+    headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) });
+  const response = await handler(request);
+  const names = (await response.json()).result.tools.map((tool) => tool.name);
+  assert.ok(names.includes('begin_pdf_upload'));
+  assert.ok(names.includes('upload_pdf_chunk'));
+  assert.ok(names.includes('finish_pdf_upload'));
+});

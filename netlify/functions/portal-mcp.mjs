@@ -20,6 +20,7 @@ export function makePortalMcpHandler({ pool = getPool, store = () => getStore('p
         try { await store().set(path, bytes); return { error: null }; }
         catch { return { error: { message: 'storage unavailable' } }; }
       },
+      chunkedPdf: true,
       log,
     });
     try {
