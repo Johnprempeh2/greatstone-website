@@ -237,7 +237,7 @@
             {
               "n": "",
               "title": "Hosting and maintenance",
-              "text": "We host your instance, maintain the platform and keep backups. What platform support covers is written into your agreement."
+              "text": "We host your instance, maintain the platform and keep backups. The terms of this service are written into your agreement."
             }
           ]
         }
@@ -272,7 +272,7 @@
               "ctaHref": "",
               "icon": "layers",
               "title": "Recurring service",
-              "text": "Hosting of your own instance, platform maintenance and bounded platform support. Your people direct the agents and run the daily work."
+              "text": "Hosting of your own instance and platform maintenance, including backups. Your people direct the agents and run the daily work."
             },
             {
               "label": "",
@@ -395,7 +395,7 @@
             },
             {
               "q": "What does it cost?",
-              "a": "Setup is a one-off fee, agreed in writing. A recurring fee covers hosting, maintenance and bounded platform support, and the optional quality review is priced separately. AI use follows a route and a budget you agree with us. You see every figure in writing before you commit."
+              "a": "Setup is a one-off fee, agreed in writing. A recurring fee covers hosting of your own instance and platform maintenance, and the optional quality review is priced separately. AI use follows a route and a budget you agree with us. You see every figure in writing before you commit."
             },
             {
               "q": "Is this a software product or a consultancy?",
