@@ -125,7 +125,7 @@ export default function Stage({ background = 'stone', previewP = null }) {
   if (!cfg.scenes.length) return null;
   return (
     <>
-      <div className="gs-stage" ref={ref} aria-hidden="true" data-cursor="explore" />
+      <div className={'gs-stage' + (cfg.placement === 'right-edge' ? ' gs-stage--right-edge' : '')} ref={ref} aria-hidden="true" data-cursor="explore" />
       <div className="gs-scrim" aria-hidden="true" />
     </>
   );

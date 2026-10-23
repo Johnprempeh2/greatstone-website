@@ -64,6 +64,8 @@ html:not(:has(.is-edit)){scroll-snap-type:y proximity;scroll-padding-top:clamp(7
 .gs-stage{position:fixed;inset:0;z-index:0;pointer-events:none}
 .gs-stage .gs-layer{position:absolute;inset:0}
 .gs-stage .gs-layer canvas{width:100%;height:100%;display:block}
+/* How We Work keeps its mark in the free right margin, clear of the centred opening copy. */
+.gs-stage--right-edge .gs-layer canvas{transform:translateX(42vw) scale(.7)}
 .gs-scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(60% 50% at 50% 50%,transparent,rgba(18,18,18,.35) 80%)}
 /* A phone has no room to keep a full-height 3D mark clear of the content column: the stone ran
@@ -71,6 +73,7 @@ html:not(:has(.is-edit)){scroll-snap-type:y proximity;scroll-padding-top:clamp(7
    the page rather than an object competing with the card the reader is actually in. Multiplies with
    the track's own ceiling, so a page at ceil 0.38 lands near 0.16 on a phone. */
 @media(max-width:640px){.gs-stage{opacity:.42}}
+@media(max-width:1023px){.gs-stage--right-edge{display:none}}
 
 /* the public render layer + footer sit over the stage. The key={current} remount on navigation
    plays a brief page fade-in (opacity only — reduced-motion-safe). */
