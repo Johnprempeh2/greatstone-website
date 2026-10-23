@@ -16,6 +16,59 @@ function releaseLinks(value) {
   return value;
 }
 
+// Only persisted public catalogue fields belong in collection fieldsVersion 1.
+// The public read also decorates products with request-time prices and join IDs.
+const pick = (row, keys) => Object.fromEntries(keys.filter((key) => row?.[key] !== undefined).map((key) => [key, row[key]]));
+function expectKeys(row, allowed, kind) {
+  const unknown = Object.keys(row).filter((key) => !allowed.includes(key));
+  if (unknown.length) throw new Error(`Unmapped ${kind} fields: ${unknown.join(', ')}`);
+}
+const variant = (row) => {
+  const fields = ['id', 'sku', 'name', 'currency', 'platform', 'sort_order', 'license_type', 'min_order_qty', 'billing_period', 'base_price_minor'];
+  expectKeys(row, [...fields, 'pricing'], 'variant');
+  return pick(row, fields);
+};
+const spec = (row) => {
+  const fields = ['label', 'value', 'sort_order'];
+  expectKeys(row, fields, 'specification');
+  return pick(row, fields);
+};
+
+export function catalogueFields(key, row) {
+  if (key === 'vendors') {
+    const fields = ['id', 'slug', 'name', 'logo_url', 'description'];
+    expectKeys(row, fields, 'vendor');
+    return { data: pick(row, fields) };
+  }
+  if (key === 'categories') {
+    const fields = ['id', 'slug', 'name', 'description'];
+    expectKeys(row, fields, 'category');
+    return { data: pick(row, fields) };
+  }
+  if (key !== 'offerings') throw new RangeError(`Unknown catalogue collection: ${key}`);
+  const fields = ['id', 'slug', 'name', 'short_description', 'from_price_minor', 'from_price_currency', 'featured', 'platforms', 'type', 'attributes', 'vendor', 'category', 'description', 'seo'];
+  expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
+  const data = pick(row, fields);
+  const variants = (row.offering_variants || row.variants || []).map(variant);
+  const specs = (row.offering_specs || row.specs || []).map(spec);
+  return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };
+}
+
+export function toCatalogueCollections(catalogue, targetOrgId = orgId) {
+  if (!catalogue) throw new Error('Published catalogue connection is required for collection export');
+  return Object.fromEntries(['vendors', 'categories', 'offerings'].map((key) => [key, {
+    fieldsVersion: 1,
+    entries: catalogue[key].filter((row) => row.status === undefined || row.status === 'published').map((row, order) => ({
+      id: row.id,
+      revisionId: fixtureId(`${key}:${row.id}`),
+      orgId: targetOrgId,
+      ...(typeof row.slug === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(row.slug) ? { slug: row.slug } : {}),
+      order,
+      fields: catalogueFields(key, row),
+    })),
+  }]));
+}
+
 export function toProofRelease(snapshot) {
   const slugs = Object.keys(snapshot.pages).filter((slug) => snapshot.pages[slug]?.data?.content?.length);
   if (!slugs.includes('home') || !slugs.includes('dev-tools')) throw new Error('Missing published proof page');
@@ -57,16 +110,8 @@ export function toProofRelease(snapshot) {
     },
     theme: { revisionId: fixtureId('theme:1'), tokens: themeTokens },
     pages,
-    collections: Object.fromEntries(['vendors', 'categories', 'offerings'].map((key) => [key, {
-      fieldsVersion: 1,
-      entries: (snapshot.catalogue?.[key] || []).filter((row) => row.status === undefined || row.status === 'published').map((row, order) => ({
-        id: row.id,
-        revisionId: fixtureId(`${key}:${row.id}`),
-        orgId,
-        ...(typeof row.slug === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(row.slug) ? { slug: row.slug } : {}),
-        order,
-        fields: { data: row },
-      })),
-    }])), redirects: [], media: {},
+    collections: snapshot.catalogue ? toCatalogueCollections(snapshot.catalogue, orgId) :
+      Object.fromEntries(['vendors', 'categories', 'offerings'].map((key) => [key, { fieldsVersion: 1, entries: [] }])),
+    redirects: [], media: {},
   };
 }
