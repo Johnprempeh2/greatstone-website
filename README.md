@@ -38,6 +38,45 @@ Run `npm run design:detect` and post its summary on the task and in the PR, one 
 (fixed or justified). This is required for every website PR. See
 [docs/design-detector.md](docs/design-detector.md).
 
+## Guarded Netlify uploads
+
+`greatstone-home` and `gre1795-website-db-staging` use local Netlify uploads. They are not
+Git-linked. Agents must use this repo's guarded commands for these two sites, from a clean
+checkout with `NETLIFY_AUTH_TOKEN`, the Netlify CLI, and task-scoped `GSAM_*` credentials:
+
+```bash
+npm run deploy:preview -- greatstone-home 123
+npm run deploy:prod -- greatstone-home
+```
+
+The preview command requires an open, non-draft PR at the checkout's HEAD. It uploads a
+draft only if the PR has the `preview` label or Mikey or a person comments exactly
+`Preview ready for PR #123` on the current task. The production command requires `main`
+and a person to comment `Approve production deploy: greatstone-home <40-character HEAD SHA>`
+on the current task. It is never automatic or scheduled. Replace the site and PR number as
+needed. The command refuses other Netlify sites.
+
+Each successful upload records its source commit in the Netlify deploy title. The next
+run compares HEAD with the last ready upload of the same type. Changes confined to
+`docs/`, `.github/`, the three root guide files, or test files skip the upload. If no
+recorded upload exists, preview compares with the PR base; production uploads rather
+than guessing. A newer local run for the same site and mode stops an older upload in
+progress. Preview and production use separate locks, so a preview cannot stop an
+approved production upload. The guard checks the old process start and command before
+sending a stop signal, so an abandoned lock cannot stop a different process that later
+gets the same PID. Preview baselines are scoped to the same PR number; the first preview
+for a PR compares against that PR's base commit. Locks cover runs on the same machine;
+coordinate separate publishing machines on the task. No Netlify Git build or ignore
+command runs for these local-only sites.
+
+For a read-only Netlify connection check, run `node scripts/deploy-site.mjs inspect <site>`.
+It reports whether the site lookup works and the latest ready upload made by this guard.
+
+Preview uploads do not publish to the main domain and cost 0 Netlify credits under the
+current plan. Count production uploads separately at 15 credits each when reporting
+savings. The guard is a repo convention: direct Netlify CLI/API uploads outside it are
+not technically blocked.
+
 ## Editing
 
 Visit `/#admin` to sign in. Editing only appears once signed in; the public site is read-only.
