@@ -4,7 +4,7 @@
 // lead when the visitor asks. Written only by the `front-door` edge function; staff read via staff_all RLS
 // (migration 0031). Until 0031 is applied the table is absent → the not-enabled state shows.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { staffDb } from './staff-store-api.mjs';
 import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
 import { zipFiles } from '../lib/package-zip.mjs';
 import { buildAgentPackage, packageFolder } from '../../supabase/functions/_shared/front-door-package.mjs';
@@ -31,8 +31,7 @@ export default function FrontDoorLeadsManager() {
 
   const load = useCallback(() => {
     setLoading(true);
-    if (!supabase) { setNotEnabled(true); setLoading(false); return; }
-    supabase.from('front_door_leads').select(COLS).order('created_at', { ascending: false }).limit(300)
+    staffDb.from('front_door_leads').select(COLS).order('created_at', { ascending: false }).limit(300)
       .then(({ data, error }) => {
         if (error) { const absent = isAbsentOrForbidden(error); setNotEnabled(absent); if (!absent) console.error('front door leads load', error); }
         else setNotEnabled(false);
@@ -45,14 +44,14 @@ export default function FrontDoorLeadsManager() {
   // Marking a lead contacted also restarts its 24-month retention clock (spec §3).
   const setStatus = async (id, status) => {
     const patch = status === 'contacted' ? { status, last_contacted_at: new Date().toISOString() } : { status };
-    const { error } = await supabase.from('front_door_leads').update(patch).eq('id', id);
+    const { error } = await staffDb.from('front_door_leads').update(patch).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
     flash('Status: ' + status); load();
   };
   // B8 (GRE-468): the three employees as an Agent Companies package, for the GS Agentic Manager import page.
   // The saved package (0032) when there is one, else built from the row, so older leads download too.
   const downloadPackage = async (r) => {
-    const { data, error } = await supabase.from('front_door_leads').select('agent_package').eq('id', r.id).maybeSingle();
+    const { data, error } = await staffDb.from('front_door_leads').select('agent_package').eq('id', r.id).maybeSingle();
     const files = (!error && data && data.agent_package)
       || buildAgentPackage({ intake: { industry: r.industry, company: r.company_name, words: list(r.brand_words), teamSize: r.team_size }, agents: list(r.agents) });
     if (!files) { flash('This lead has no employees to package.'); return; }
@@ -66,7 +65,7 @@ export default function FrontDoorLeadsManager() {
   const remove = async (r) => {
     const who = r.contact_email || r.company_name;
     if (!window.confirm('Delete this lead for ' + who + '? This removes it for good. Use it when the visitor asks us to delete their data.')) return;
-    const { error } = await supabase.from('front_door_leads').delete().eq('id', r.id);
+    const { error } = await staffDb.from('front_door_leads').delete().eq('id', r.id);
     if (error) { flash('Could not delete. ' + error.message); return; }
     setExpanded(null); flash('Lead deleted'); load();
   };

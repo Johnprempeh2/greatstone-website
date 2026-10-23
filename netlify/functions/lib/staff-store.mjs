@@ -7,6 +7,7 @@ const TABLES = new Set([
   'customers', 'customer_users', 'customer_tiers', 'engagements', 'member_invite_requests',
   'licence_keys', 'orders', 'order_items', 'quotes', 'quote_items',
   'portal_documents', 'portal_acceptances', 'portal_receipt_jobs', 'portal_approvals',
+  'front_door_leads', 'service_inquiries',
 ]);
 const RELATIONS = {
   'offerings:vendors': ['vendor_id', 'id', false],
@@ -98,7 +99,13 @@ export async function staffStore(client, body) {
     }
     throw new RangeError('Invalid operation');
   }
-  if (!TABLES.has(table) || !['select', 'insert', 'update'].includes(kind)) throw new RangeError('Invalid operation');
+  if (!TABLES.has(table) || !['select', 'insert', 'update', 'delete'].includes(kind)) throw new RangeError('Invalid operation');
+  if (kind === 'delete' && table !== 'front_door_leads') throw new RangeError('Invalid operation');
+  if (['front_door_leads', 'service_inquiries'].includes(table)) {
+    if (kind === 'insert') throw new RangeError('Invalid operation');
+    if (kind === 'update' && (!payload || Object.keys(payload).some((key) =>
+      !(table === 'front_door_leads' ? ['status', 'last_contacted_at'] : ['status']).includes(key)))) throw new RangeError('Invalid operation');
+  }
   if (['portal_acceptances', 'portal_receipt_jobs', 'portal_approvals'].includes(table) && kind !== 'select')
     throw new RangeError('Invalid operation');
   if (table === 'users' && kind !== 'select') throw new RangeError('Invalid operation');
@@ -125,6 +132,9 @@ export async function staffStore(client, body) {
       return { data: null, count: rows[0].count };
     }
     sql = `SELECT ${projection(table, 't', columns)} AS data FROM ${id(table)} t${where}${order} LIMIT ${limit}`;
+  } else if (kind === 'delete') {
+    if (body.filters.length !== 1 || body.filters[0].column !== 'id' || body.filters[0].op !== 'eq') throw new RangeError('Invalid delete');
+    sql = `DELETE FROM ${id(table)} t${where}${returning}`;
   } else if (kind === 'update') {
     if (!body.filters.length || !payload || Array.isArray(payload) || typeof payload !== 'object') throw new RangeError('Invalid update');
     const entries = Object.entries(payload);

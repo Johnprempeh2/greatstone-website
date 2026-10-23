@@ -61,7 +61,11 @@ test('customer flows use migrated RLS for own company, orders, quotes and invoic
       INSERT INTO orders(id,org_id,reference,customer_id,subtotal_minor,total_minor) VALUES
       ('${ORDER_A}','${ORG}','TEST-A','${A}',100,120), ('${ORDER_B}','${ORG}','TEST-B','${B}',200,240);
       INSERT INTO quotes(org_id,reference,customer_id) VALUES
-      ('${ORG}','Q-TEST-A','${A}'), ('${ORG}','Q-TEST-B','${B}');`);
+      ('${ORG}','Q-TEST-A','${A}'), ('${ORG}','Q-TEST-B','${B}');
+      INSERT INTO engagements(org_id,customer_id,kind,status,title,occurred_on) VALUES
+      ('${ORG}','${A}','note','shared','Shared fixture','2026-01-03'),
+      ('${ORG}','${A}','note','draft','Draft fixture','2026-01-04'),
+      ('${ORG}','${B}','note','shared','Other fixture','2026-01-05');`);
     assert.equal(seed.status, 0, seed.stderr);
     pool = new pg.Pool({ connectionString: db.url, max: 1 });
     const handler = makeCustomerStoreHandler({ pool: () => pool, verify: async (token) => token === 'valid' ? WHO : OTHER });
@@ -79,6 +83,7 @@ test('customer flows use migrated RLS for own company, orders, quotes and invoic
     assert.equal((await call('invoice', { orderId: ORDER_A })).id, ORDER_A);
     assert.equal(await call('invoice', { orderId: ORDER_B }), null);
     assert.equal((await call('members')).length, 1);
+    assert.deepEqual((await call('engagements')).map((x) => x.title), ['Shared fixture']);
     assert.deepEqual(await call('order-keys'), []);
     await call('request-invite', { email: 'new-person@example.test', role: 'member', fullName: 'New Person', subject: OTHER.id });
     assert.deepEqual((await call('invite-requests')).map((x) => x.email), ['new-person@example.test']);

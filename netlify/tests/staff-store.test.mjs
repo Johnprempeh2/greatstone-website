@@ -51,7 +51,12 @@ test('staff catalogue, client and order requests obey migrated RLS', { skip }, a
       INSERT INTO orders(org_id,reference,total_minor) VALUES
       ('${ORG_A}','TEST-A',100), ('${ORG_B}','TEST-B',200);
       INSERT INTO order_items(org_id,order_id,offering_name,qty,unit_price_minor,line_total_minor)
-      SELECT org_id,id,'Test Item',1,100,100 FROM orders;`);
+      SELECT org_id,id,'Test Item',1,100,100 FROM orders;
+      INSERT INTO front_door_leads(org_id,industry,company_name,agent_package) VALUES
+      ('${ORG_A}','testing','Fixture A','{"COMPANY.md":"fixture"}'::jsonb),
+      ('${ORG_B}','testing','Fixture B',NULL);
+      INSERT INTO service_inquiries(org_id,contact_name) VALUES
+      ('${ORG_A}','Fixture A'), ('${ORG_B}','Fixture B');`);
     assert.equal(seed.status, 0, seed.stderr);
     pool = new pg.Pool({ connectionString: db.url, max: 1 });
     const handler = makeStaffStoreHandler({ pool: () => pool, verify: async (token) => token === 'staff' ? WHO : token === 'other' ? OTHER : BUYER });
@@ -66,6 +71,20 @@ test('staff catalogue, client and order requests obey migrated RLS', { skip }, a
     assert.equal(ownOrders[0].order_items.length, 1);
     assert.equal((await call({ kind: 'select', table: 'orders', columns: 'id' }, 'buyer')).status, 403);
     assert.deepEqual((await call({ kind: 'select', table: 'orders', columns: 'reference' }, 'other')).data.map((row) => row.reference), ['TEST-B']);
+    const leads = (await call({ kind: 'select', table: 'front_door_leads', columns: 'id,company_name,status' })).data;
+    assert.deepEqual(leads.map((row) => row.company_name), ['Fixture A']);
+    assert.deepEqual((await call({ kind: 'select', table: 'front_door_leads', columns: 'agent_package', filters: [{ column: 'id', op: 'eq', value: leads[0].id }], maybeSingle: true })).data.agent_package, { 'COMPANY.md': 'fixture' });
+    assert.equal((await call({ kind: 'update', table: 'front_door_leads', values: { status: 'contacted', last_contacted_at: new Date().toISOString() }, filters: [{ column: 'id', op: 'eq', value: leads[0].id }] })).status, 200);
+    assert.deepEqual((await call({ kind: 'select', table: 'front_door_leads', columns: 'status' })).data.map((row) => row.status), ['contacted']);
+    assert.equal((await call({ kind: 'delete', table: 'front_door_leads', filters: [{ column: 'id', op: 'eq', value: leads[0].id }] })).status, 200);
+    assert.deepEqual((await call({ kind: 'select', table: 'front_door_leads', columns: 'id' })).data, []);
+    assert.equal((await call({ kind: 'select', table: 'front_door_leads', columns: 'id' }, 'other')).data.length, 1);
+    const inquiry = (await call({ kind: 'select', table: 'service_inquiries', columns: 'id,status' })).data;
+    assert.equal(inquiry.length, 1);
+    assert.equal((await call({ kind: 'update', table: 'service_inquiries', values: { status: 'closed' }, filters: [{ column: 'id', op: 'eq', value: inquiry[0].id }] })).status, 200);
+    assert.deepEqual((await call({ kind: 'select', table: 'service_inquiries', columns: 'status' })).data.map((row) => row.status), ['closed']);
+    assert.equal((await call({ kind: 'update', table: 'service_inquiries', values: { contact_email: 'changed@example.test' }, filters: [{ column: 'id', op: 'eq', value: inquiry[0].id }] })).status, 400);
+    assert.equal((await call({ kind: 'delete', table: 'service_inquiries', filters: [{ column: 'id', op: 'eq', value: inquiry[0].id }] })).status, 400);
     assert.equal((await call({ kind: 'update', table: 'orders', values: { status: 'fulfilled' }, filters: [{ column: 'reference', op: 'eq', value: 'TEST-B' }] })).data, null);
     assert.deepEqual((await call({ kind: 'select', table: 'orders', columns: 'status' })).data.map((row) => row.status), ['pending']);
     assert.equal((await call({ kind: 'select', table: 'orders', columns: 'id;drop table orders' })).status, 400);

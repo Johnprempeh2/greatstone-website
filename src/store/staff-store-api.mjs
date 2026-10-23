@@ -22,6 +22,7 @@ class StaffQuery {
   select(columns = '*', options = {}) { this.body.columns = columns; this.body.count = options.count === 'exact'; this.body.head = !!options.head; return this; }
   insert(values) { this.body.kind = 'insert'; this.body.values = values; this.body.columns = null; return this; }
   update(values) { this.body.kind = 'update'; this.body.values = values; this.body.columns = null; return this; }
+  delete() { this.body.kind = 'delete'; this.body.columns = null; return this; }
   eq(column, value) { this.body.filters.push({ column, op: 'eq', value }); return this; }
   is(column, value) { this.body.filters.push({ column, op: 'is', value }); return this; }
   not(column, op, value) { this.body.filters.push({ column, op: 'not-' + op, value }); return this; }

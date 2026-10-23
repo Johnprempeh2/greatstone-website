@@ -7,7 +7,7 @@
 // services, plus industry and first/last-touch attribution (0035) and the size band (0040, GRE-970). Before
 // those are applied the list loads without them.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { staffDb } from './staff-store-api.mjs';
 
 const STATUSES = ['new', 'contacted', 'closed'];
 const ABSENT = /relation|does not exist|schema cache|could not find|not find the table/i;
@@ -30,8 +30,7 @@ export default function InquiriesManager({ staff }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    if (!supabase) { setNotEnabled(true); setLoading(false); return; }
-    const query = (cols) => supabase.from('service_inquiries').select(cols)
+    const query = (cols) => staffDb.from('service_inquiries').select(cols)
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(300);
     query(SIZE_COLS)
       .then((res) => (res.error && SIZE.test(res.error.message || '') ? query(EXTRA_COLS) : res))
@@ -46,7 +45,7 @@ export default function InquiriesManager({ staff }) {
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
 
   const setStatus = async (id, status) => {
-    const { error } = await supabase.from('service_inquiries').update({ status }).eq('id', id);
+    const { error } = await staffDb.from('service_inquiries').update({ status }).eq('id', id);
     if (error) { flash('Could not update. ' + error.message); return; }
     flash('Status → ' + status); load();
   };
