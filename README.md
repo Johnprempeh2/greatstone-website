@@ -50,7 +50,7 @@ npm run deploy:prod -- greatstone-home
 ```
 
 The preview command requires an open, non-draft PR at the checkout's HEAD. It uploads a
-draft only if the PR has the `preview` label or Mikey or a person comments exactly
+draft only if the PR has the `preview` label or Mikey or John comments exactly
 `Preview ready for PR #123` on the current task. The production command requires `main`
 and a person to comment `Approve production deploy: greatstone-home <40-character HEAD SHA>`
 on the current task. It is never automatic or scheduled. Replace the site and PR number as

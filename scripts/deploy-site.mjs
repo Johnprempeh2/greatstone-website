@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 
 const sites = new Set(['greatstone-home', 'gre1795-website-db-staging']);
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
+const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
 const issueId = process.env.GSAM_TASK_ID;
 const token = process.env.NETLIFY_AUTH_TOKEN;
@@ -47,7 +48,7 @@ async function gate(sha) {
   if (pr.state !== 'OPEN' || pr.isDraft || pr.headRefOid !== sha) throw new Error('preview requires an open, ready PR at HEAD');
   const labelled = pr.labels.some((label) => label.name === 'preview');
   const ready = labelled || (await comments()).some((c) =>
-    (c.authorType === 'user' || c.authorAgentId === mikeyId) &&
+    ((c.authorType === 'user' && c.authorUserId === johnId) || c.authorAgentId === mikeyId) &&
     c.body.trim() === `Preview ready for PR #${pr.number}`);
   if (!ready) throw new Error('preview refused: add the preview label or get Mikey or John to mark the PR ready');
   return pr.baseRefOid;
