@@ -1,7 +1,7 @@
 // Portal MCP server, database side (GRE-1228; spec GRE-1227 revision 2, section 6; moved from supabase/tests in
 // GRE-1795). Applies every Netlify migration to a throwaway real Postgres, as portal-rls.test.mjs does, with
 // made-up data: two client companies, a person in each, a registered approver, and two MCP tokens (one scoped to client A, one to client B). Then calls
-// the mcp_portal_* functions as the service key (what the portal-mcp edge function uses) to prove: drafts work,
+// the mcp_portal_* functions as anon (what the Netlify portal-mcp function uses) to prove: drafts work,
 // publishing without John's approval is refused, a token never reaches another client, every write is audited
 // with the agent and the run. Without the Postgres server binaries the suite is skipped (on CI it fails).
 import { test, before, after } from 'node:test';
@@ -37,6 +37,7 @@ const psql = (sql) => db.psql(sql);
 function as(who, sql) {
   let pre = '';
   if (who === 'anon') pre = 'SET LOCAL ROLE anon;';
+  else if (who === 'mcp') pre = `SET LOCAL ROLE anon; SELECT set_config('request.jwt.claims', '{"role":"anon"}', true) \\g /dev/null\n`;
   else if (who === 'service') pre = 'SET LOCAL ROLE service_role;';
   else if (who === 'authenticated') pre = 'SET LOCAL ROLE authenticated;';
   else if (who) pre = `SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims', '${JSON.stringify(U[who])}', true) \\g /dev/null\n`;
@@ -56,9 +57,9 @@ function refused(who, sql, pattern) {
 }
 const q = (v) => (v == null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
 const j = (v) => `${q(JSON.stringify(v))}::jsonb`;
-/** Call an mcp_portal_* function as the service key and parse its jsonb answer. */
-const call = (fn, ...args) => JSON.parse(ok('service', `SELECT ${fn}(${args.join(', ')});`));
-const callRefused = (pattern, fn, ...args) => refused('service', `SELECT ${fn}(${args.join(', ')});`, pattern);
+/** Call an mcp_portal_* function as anon with no subject and parse its jsonb answer. */
+const call = (fn, ...args) => JSON.parse(ok('mcp', `SELECT ${fn}(${args.join(', ')});`));
+const callRefused = (pattern, fn, ...args) => refused('mcp', `SELECT ${fn}(${args.join(', ')});`, pattern);
 
 const draftFields = (over = {}) => ({
   kind: 'engagement_pack',
@@ -125,14 +126,19 @@ test('an unknown token is refused by every tool', { skip }, () => {
   callRefused(/invalid or revoked token/, 'mcp_portal_create_draft', bad, q(RUN1), q(AGENT), q(A), j(draftFields()));
 });
 
-test('no API role can read the token tables or issue a token; anon and signed-in users cannot call the tools', { skip }, () => {
-  for (const who of ['service', 'anon', 'authenticated', 'approver', 'a1']) {
+test('no API role can read the token tables or issue a token; signed-in users cannot call the tools', { skip }, () => {
+  for (const who of ['service', 'anon', 'mcp', 'authenticated', 'approver', 'a1']) {
     refused(who, 'SELECT count(*) FROM mcp_tokens;', /permission denied/);
     refused(who, 'SELECT count(*) FROM mcp_token_clients;', /permission denied/);
     refused(who, `SELECT mcp_portal_issue_token('x', ARRAY['${A}']::uuid[]);`, /permission denied/);
     refused(who, `SELECT mcp_portal_add_client('${A}', '${B}');`, /permission denied/);
   }
-  for (const who of ['anon', 'authenticated', 'approver', 'a1']) {
+  for (const who of ['service', 'anon', 'mcp']) {
+    for (const helper of [`mcp_portal_token('${TOK.a}')`, 'mcp_portal_done()', `mcp_portal_doc_json('${A}')`,
+                          `mcp_portal_revoke_token('${A}')`, `mcp_portal_remove_client('${A}', '${B}')`])
+      refused(who, `SELECT ${helper};`, /permission denied/);
+  }
+  for (const who of ['authenticated', 'approver', 'a1']) {
     refused(who, `SELECT mcp_portal_list_clients('${TOK.a}');`, /permission denied/);
     refused(who, `SELECT mcp_portal_create_draft('${TOK.a}', '${RUN1}', '${AGENT}', '${A}', '{}'::jsonb);`, /permission denied/);
   }
@@ -253,8 +259,9 @@ test('request publish submits the draft for approval and returns its fingerprint
 });
 
 test('publishing without John is refused: the service key, a direct update, and inside an MCP write', { skip }, () => {
-  // the MCP server runs as the service key: no signed-in user, so not the registered approver
   refused('service', `SELECT portal_approve_and_publish('${doc.id}', '${fingerprint}');`, /only the registered approver/);
+  refused('mcp', `SELECT portal_approve_and_publish('${doc.id}', '${fingerprint}');`, /permission denied/);
+  refused('mcp', `UPDATE portal_documents SET status = 'published' WHERE id = '${doc.id}';`, /permission denied/);
   refused('service', `UPDATE portal_documents SET status = 'published' WHERE id = '${doc.id}';`, /only through portal_approve_and_publish/);
   refused('service', `INSERT INTO portal_approvals (org_id, customer_id, document_id, content_sha256, approver_user_id)
                       VALUES ('${ORG}', '${A}', '${doc.id}', '${fingerprint}', '${U.approver.sub}');`, /permission denied/);
@@ -302,14 +309,14 @@ test('every MCP write is in the audit with the agent and its run', { skip }, () 
 
 // ── the MCP handler end to end, on this database ──────────────────────────────────────────────
 // PostgREST calls a function with named parameters, so this drives the real handler with an rpc that does the same
-// through psql, as the service key: it proves the tools and the SQL signatures fit together.
+// through psql, as anon without a subject: it proves the tools and the SQL signatures fit together.
 
 function psqlRpc(fn, params) {
   const lit = (v) => (v === null || v === undefined ? 'NULL'
     : typeof v === 'number' ? String(v)
     : typeof v === 'object' ? `${q(JSON.stringify(v))}::jsonb` : q(v));
   const args = Object.entries(params).map(([k, v]) => `${k} => ${lit(v)}`).join(', ');
-  const r = psql(`\\set VERBOSITY verbose\nBEGIN;\nSET LOCAL ROLE service_role;\nSELECT ${fn}(${args});\nCOMMIT;\n`);
+  const r = psql(`\\set VERBOSITY verbose\nBEGIN;\nSET LOCAL ROLE anon;\nSELECT set_config('request.jwt.claims', '{"role":"anon"}', true) \\g /dev/null\nSELECT ${fn}(${args});\nCOMMIT;\n`);
   if (r.status === 0) return { data: JSON.parse(r.stdout.trim()), error: null };
   const m = /ERROR:\s+([0-9A-Z]{5}):\s+(.*)/.exec(r.stderr) || [];
   return { data: null, error: { code: m[1], message: m[2] || r.stderr } };
@@ -379,6 +386,12 @@ test('end to end: the MCP handler creates, changes, attaches, submits; another c
 // ── rollback (runs last) ──────────────────────────────────────────────────────────────────────
 
 test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on top of itself', { skip }, () => {
+  const anonGrant = `SELECT has_function_privilege('anon', 'mcp_portal_list_clients(text)', 'EXECUTE');`;
+  assert.equal(ok(null, anonGrant), 't');
+  ok(null, `\\i '${join(MIGRATIONS, '046_portal_mcp_anon/rollback.sql')}'`);
+  assert.equal(ok(null, anonGrant), 'f');
+  ok(null, `\\i '${join(MIGRATIONS, '046_portal_mcp_anon/migration.sql')}'`);
+  assert.equal(ok(null, anonGrant), 't');
   const left = `SELECT count(*) FROM pg_class WHERE relname LIKE 'mcp\\_token%' AND relkind = 'r';
     SELECT count(*) FROM pg_proc WHERE proname LIKE 'mcp\\_portal\\_%';
     SELECT position('portal.mcp_agent' IN prosrc) > 0 FROM pg_proc WHERE proname = 'portal_documents_audit';`;
@@ -392,4 +405,7 @@ test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on to
   ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/migration.sql')}'`);
   ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/migration.sql')}'`);
   assert.equal(ok(null, left), '2\n19\nt');
+  assert.equal(ok(null, anonGrant), 'f');
+  ok(null, `\\i '${join(MIGRATIONS, '046_portal_mcp_anon/migration.sql')}'`);
+  assert.equal(ok(null, anonGrant), 't');
 });
