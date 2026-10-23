@@ -27,6 +27,18 @@ catalogue export. A complete import must call `publishedCatalogue()` from
 `../catalogue-source.mjs` with a local or test database connection and verify the row
 counts before cutover. No production database connection is available in this checkout.
 
+For the complete catalogue, run `node next-proof/scripts/export-catalogue.mjs <output.json>`
+with a local or test `DATABASE_URL` (or `NETLIFY_DB_URL`). The script requires the database
+and refuses `NEXT_CATALOGUE_FIXTURE`. It reads every published offering page and detail
+through `publishedCatalogue()`, writes `vendors`, `categories` and `offerings` as
+`fieldsVersion: 1` release collections, validates each entry's fields and prints source
+and export-payload row counts. It fails if a row is omitted, duplicated or has an unmapped
+field. The output file is created with owner-only permissions and must stay outside the
+repository. After the GSAM import, pass its collection JSON as a second argument. The
+script then compares source and editor-imported counts and row IDs before cutover. The public
+projection contains no Studio `team` roster. Request-time price decorations and database
+join IDs are not version 1 collection fields; the persisted public product fields are.
+
 `publicPeople` projects the six displayed About-page cards from the published `Team`
 block, with only name, role, kind and optional photo. `team` in the old Studio store is
 staff account data. It has no release collection or import path: never export its email,
