@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrontDoorHandler } from '../functions/front-door.mjs';
+import { makeFrontDoorHandler, stagingStubAllowed } from '../functions/front-door.mjs';
 import { saveLead, updateContact, stamp } from '../functions/lib/front-door-store.mjs';
 import { signSession } from '../../supabase/functions/_shared/front-door-engine.mjs';
 import pg from 'pg';
@@ -13,6 +13,18 @@ function fakePool(reply = () => ({ rows: [] })) {
 }
 
 const leadId = '123e4567-e89b-42d3-a456-426614174000';
+test('stub only runs on the named staging site with its explicit flag', () => {
+  const env = { FRONT_DOOR_STUB: '1', SITE_NAME: 'gre1795-website-db-staging',
+    SITE_ID: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb',
+    URL: 'https://gre1795-website-db-staging.netlify.app', NETLIFY: 'true' };
+  assert.equal(stagingStubAllowed(env), true);
+  assert.equal(stagingStubAllowed({ ...env, URL: 'http://gre1795-website-db-staging.netlify.app' }), true);
+  assert.equal(stagingStubAllowed({ ...env, ANTHROPIC_API_KEY: 'platform-injected-key' }), true);
+  assert.equal(stagingStubAllowed({ ...env, SITE_ID: 'other' }), false);
+  assert.equal(stagingStubAllowed({ ...env, SITE_NAME: 'greatstone-home' }), false);
+  assert.equal(stagingStubAllowed({ ...env, URL: 'https://greatstoneint.com' }), false);
+  assert.equal(stagingStubAllowed({ ...env, FRONT_DOOR_STUB: '0' }), false);
+});
 test('S5 binds its generated lead, inserts only granted columns, and commits', async () => {
   const { pool, calls } = fakePool((sql) => sql.startsWith('INSERT') ? { rows: [{ id: leadId }] } : { rows: [] });
   const row = { industry: 'Health', industry_other: false, team_size: '1-10', brand_words: ['clear'],

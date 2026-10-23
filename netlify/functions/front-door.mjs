@@ -27,6 +27,16 @@ const MSG = {
 };
 
 const verified = new Map();
+export function stagingStubAllowed(env) {
+  let host;
+  try { host = new URL(env.URL).hostname; } catch { return false; }
+  // This dedicated staging site may receive a platform-injected model credential. The explicit
+  // staging flag still selects the fixed local responses until the live model is approved for testing.
+  return env.FRONT_DOOR_STUB === '1' &&
+    env.SITE_ID === '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb' &&
+    env.SITE_NAME === 'gre1795-website-db-staging' &&
+    host === 'gre1795-website-db-staging.netlify.app';
+}
 async function turnstileOk(token, ip, secret, fetchImpl) {
   if (typeof token !== 'string' || !token || token.length > 4096) return false;
   const key = await sha256(token);
@@ -45,8 +55,9 @@ async function turnstileOk(token, ip, secret, fetchImpl) {
 }
 
 export function makeFrontDoorHandler({ pool = getPool, env = process.env, fetchImpl = fetch, log = console.error } = {}) {
-  const stub = !env.NETLIFY && !env.CONTEXT && stubAllowed({ flag: env.FRONT_DOOR_STUB, apiKey: env.ANTHROPIC_API_KEY,
-    supabaseUrl: env.NETLIFY_DB_URL || env.DATABASE_URL });
+  const stub = stagingStubAllowed(env) || (!env.NETLIFY && !env.CONTEXT &&
+    stubAllowed({ flag: env.FRONT_DOOR_STUB, apiKey: env.ANTHROPIC_API_KEY,
+      supabaseUrl: env.NETLIFY_DB_URL || env.DATABASE_URL }));
   const apiKey = stub ? STUB_KEY : env.ANTHROPIC_API_KEY || '';
   const modelFetch = stub ? stubFetch : fetchImpl;
   const secret = env.FRONT_DOOR_SECRET || '';
