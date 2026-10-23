@@ -92,6 +92,22 @@ test('docs-only skips; site changes deploy only with preview gate', async (t) =>
   assert.match(await readFile(f.log, 'utf8'), /^deploy --site gre1795-website-db-staging --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
 });
 
+test('another board user cannot mark an unlabelled PR ready for preview', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), labels: [] });
+  f.setComments([{ authorType: 'user', authorUserId: 'another-board-user', body: 'Preview ready for PR #12' }]);
+  const refused = await f.run();
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /preview refused/);
+  await assert.rejects(readFile(f.log));
+
+  f.setComments([{ authorType: 'user', authorUserId: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', body: 'Preview ready for PR #12' }]);
+  const approved = await f.run();
+  assert.equal(approved.status, 0, approved.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /gsam-source:preview:12:/);
+});
+
 test('unapproved production is refused before upload', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
