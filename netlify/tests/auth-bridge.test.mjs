@@ -174,6 +174,8 @@ test('no policy opens other rows to anon', { skip }, () => {
     // 044: only the one recent lead the front door bound in its claims (front-door-rls.test.mjs proves it)
     if (table === 'front_door_leads' && name === 'anon_select_own'
       && qual === "((id = front_door_lead_id()) AND (created_at > (now() - '01:00:00'::interval)))") continue;
+    // 045: only the quote the request made in this transaction (visitor-quote-rls.test.mjs proves it)
+    if (table === 'quotes' && name === 'visitor_select_own' && qual === '((id = visitor_quote_id()) AND (created_at = now()))') continue;
     assert.ok(PUBLIC_ROWS[table], `${table}.${name} opens rows to anon: ${qual}`);
     assert.ok(name === 'public_read' || name === 'perms_read', `${table}.${name} is not a reviewed public read`);
   }
