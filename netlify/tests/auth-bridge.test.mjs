@@ -171,6 +171,9 @@ test('no policy opens other rows to anon', { skip }, () => {
     // the org gate needs app.current_org, which no request sets for anon (proved in the claims test above)
     if (/^\(?(org_)?id = app_current_org\(\)\)?$/.test(qual)) continue;
     if (name === 'offerings_tenant_isolation' && qual.includes("current_setting('app.current_org'::text, true)")) continue;
+    // 044: only the one recent lead the front door bound in its claims (front-door-rls.test.mjs proves it)
+    if (table === 'front_door_leads' && name === 'anon_select_own'
+      && qual === "((id = front_door_lead_id()) AND (created_at > (now() - '01:00:00'::interval)))") continue;
     assert.ok(PUBLIC_ROWS[table], `${table}.${name} opens rows to anon: ${qual}`);
     assert.ok(name === 'public_read' || name === 'perms_read', `${table}.${name} is not a reviewed public read`);
   }
