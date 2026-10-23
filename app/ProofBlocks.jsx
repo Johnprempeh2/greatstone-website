@@ -29,6 +29,7 @@ import * as BookDeepDive from '../src/blocks/BookDeepDive.jsx';
 import * as AiBaselineSurvey from '../src/blocks/AiBaselineSurvey.jsx';
 import * as AiCostCalculator from '../src/blocks/AiCostCalculator.jsx';
 import { sectionClass } from '../src/lib/block-style.mjs';
+import { bindFormBlock } from '../next-proof/form-bindings.mjs';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
 export const PreviewContext = createContext(false);
@@ -47,10 +48,10 @@ export const proofConfig = {
 };
 
 const publicPuck = { isEditing: false, renderDropZone: () => null, dragRef: null };
-export function ProofBlocks({ data }) {
+export function ProofBlocks({ data, pageSlug, forms }) {
   return <><style>{Object.values(modules).map((module) => module.css || '').join('\n')}</style>{data.content.map((item) => {
     const component = proofConfig.components[item.type];
     if (!component) throw new Error(`Unsupported published block: ${item.type}`);
-    return <div key={item.props.id}>{component.render({ ...item.props, puck: publicPuck })}</div>;
+    return <div key={item.props.id}>{component.render({ ...bindFormBlock(pageSlug, item, forms), puck: publicPuck })}</div>;
   })}</>;
 }

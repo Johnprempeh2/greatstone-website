@@ -19,5 +19,5 @@ export function SiteFrame({ children, release }) {
 
 export default function ProofPage({ path, release }) {
   const page = pageForPath(path, release);
-  return <SiteFrame release={release}><ProofBlocks data={page.data} /></SiteFrame>;
+  return <SiteFrame release={release}><ProofBlocks data={page.data} pageSlug={page.slug} forms={release.collections?.forms} /></SiteFrame>;
 }

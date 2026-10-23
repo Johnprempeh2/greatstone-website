@@ -1,5 +1,6 @@
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import { formBindingProblem } from './form-bindings.mjs';
 import schema from './website-release.v1.schema.json' with { type: 'json' };
 import collectionSchema from './release-schema/collections.v1.schema.json' with { type: 'json' };
 
@@ -100,5 +101,7 @@ export function validateRelease(release, { siteId, orgId } = {}) {
         (entry.fields.data.id !== entry.id || (entry.slug && entry.fields.data.slug !== entry.slug))) return fail('R10', `Collection identity mismatch in ${key}`);
     }
   }
+  const formProblem = formBindingProblem(release);
+  if (formProblem) return fail('R10', formProblem);
   return null;
 }

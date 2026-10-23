@@ -11,5 +11,5 @@ export default async function EditorPage({ params }) {
   const { release } = await activeRelease();
   const page = pageFor(slug, release);
   if (!page) notFound();
-  return <Editor page={page} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
+  return <Editor page={page} forms={release.collections?.forms} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
 }
