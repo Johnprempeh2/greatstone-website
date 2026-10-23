@@ -57,8 +57,8 @@ async function lastDeployedCommit() {
   if (!token) throw new Error('NETLIFY_AUTH_TOKEN is required');
   const api = process.env.NODE_ENV === 'test' && token === 'test-token'
     ? process.env.NETLIFY_TEST_API_URL : 'https://api.netlify.com';
-  const deploys = await json(`${api}/api/v1/sites/${site}/deploys?per_page=100`, token);
-  const marker = new RegExp(`^gsam-source:${mode}:([0-9a-f]{40})$`);
+  const deploys = await json(`${api}/api/v1/sites/${site}.netlify.app/deploys?per_page=100`, token);
+  const marker = new RegExp(`^gsam-source:${mode}:${mode === 'preview' ? `${prNumber}:` : ''}([0-9a-f]{40})$`);
   for (const deploy of deploys) {
     const match = marker.exec(deploy.title || '');
     if (deploy.state === 'ready' && match) return match[1];
@@ -66,15 +66,31 @@ async function lastDeployedCommit() {
   return null;
 }
 
+async function inspectSite() {
+  if (!token) throw new Error('NETLIFY_AUTH_TOKEN is required');
+  const response = await json(`https://api.netlify.com/api/v1/sites/${site}.netlify.app/deploys?per_page=100`, token);
+  const ready = response.find((deploy) => deploy.state === 'ready' && /^gsam-source:(preview|prod):/.test(deploy.title || ''));
+  console.log(`${site}: Netlify lookup succeeded; latest guarded ready deploy: ${ready?.title || 'none'}`);
+}
+
+function processIdentity(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1) return null;
+  const result = spawnSync('ps', ['-p', String(pid), '-o', 'lstart=', '-o', 'command='], { encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
 async function lockAndDeploy(sha) {
-  const dir = join(tmpdir(), `greatstone-deploy-${site}`);
+  const dir = join(tmpdir(), `greatstone-deploy-${site}-${mode}`);
   const own = randomUUID();
+  const identity = processIdentity(process.pid);
+  if (!identity || !identity.includes('deploy-site.mjs')) throw new Error('cannot verify deploy process identity');
   await mkdir(dir, { recursive: true });
   const file = join(dir, 'owner.json');
   let previous;
   try { previous = JSON.parse(await readFile(file, 'utf8')); } catch { /* no earlier run */ }
-  await writeFile(file, JSON.stringify({ pid: process.pid, own }));
-  if (previous?.pid && previous.pid !== process.pid) {
+  await writeFile(file, JSON.stringify({ pid: process.pid, identity, own }));
+  if (previous?.pid && previous.pid !== process.pid && previous.identity &&
+      previous.identity.includes('deploy-site.mjs') && processIdentity(previous.pid) === previous.identity) {
     try { process.kill(previous.pid, 'SIGTERM'); console.log(`Superseded stale run ${previous.pid}`); }
     catch (error) { if (error.code !== 'ESRCH') throw error; }
   }
@@ -82,7 +98,7 @@ async function lockAndDeploy(sha) {
   process.on('SIGTERM', () => controller.abort());
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
-    const args = ['deploy', '--site', site, '--message', `gsam-source:${mode}:${sha}`];
+    const args = ['deploy', '--site', site, '--message', `gsam-source:${mode}:${mode === 'preview' ? `${prNumber}:` : ''}${sha}`];
     if (mode === 'prod') args.push('--prod');
     console.log(`Deploying ${site} ${mode} at ${sha}`);
     const child = spawn('netlify', args, { stdio: 'inherit', signal: controller.signal });
@@ -95,6 +111,7 @@ async function lockAndDeploy(sha) {
 }
 
 async function main() {
+  if (mode === 'inspect' && sites.has(site)) return inspectSite();
   if (!['preview', 'prod'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod -- <allowed site> [PR number]');
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
   const sha = command('git', ['rev-parse', 'HEAD']);

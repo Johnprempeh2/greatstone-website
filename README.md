@@ -60,9 +60,17 @@ Each successful upload records its source commit in the Netlify deploy title. Th
 run compares HEAD with the last ready upload of the same type. Changes confined to
 `docs/`, `.github/`, the three root guide files, or test files skip the upload. If no
 recorded upload exists, preview compares with the PR base; production uploads rather
-than guessing. A newer local run for the same site stops an older upload in progress.
-This lock covers runs on the same machine; coordinate separate publishing machines on
-the task. No Netlify Git build or ignore command runs for these local-only sites.
+than guessing. A newer local run for the same site and mode stops an older upload in
+progress. Preview and production use separate locks, so a preview cannot stop an
+approved production upload. The guard checks the old process start and command before
+sending a stop signal, so an abandoned lock cannot stop a different process that later
+gets the same PID. Preview baselines are scoped to the same PR number; the first preview
+for a PR compares against that PR's base commit. Locks cover runs on the same machine;
+coordinate separate publishing machines on the task. No Netlify Git build or ignore
+command runs for these local-only sites.
+
+For a read-only Netlify connection check, run `node scripts/deploy-site.mjs inspect <site>`.
+It reports whether the site lookup works and the latest ready upload made by this guard.
 
 Preview uploads do not publish to the main domain and cost 0 Netlify credits under the
 current plan. Count production uploads separately at 15 credits each when reporting

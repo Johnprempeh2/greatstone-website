@@ -32,9 +32,15 @@ async function fixture(t) {
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
   let comments = [];
+  let deploys = [];
   const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(req.url.includes('/comments') ? comments : []));
+    if (req.url.includes('/api/v1/sites/') && !req.url.includes(`${site}.netlify.app/deploys`)) {
+      res.statusCode = 404;
+      res.end('{}');
+      return;
+    }
+    res.end(JSON.stringify(req.url.includes('/comments') ? comments : deploys));
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
@@ -59,7 +65,8 @@ async function fixture(t) {
     const status = await new Promise((resolve) => child.on('exit', resolve));
     return { status, stdout, stderr };
   }
-  return { cwd, base, env, log, commit, run, setComments: (value) => { comments = value; } };
+  return { cwd, base, env, log, commit, run,
+    setComments: (value) => { comments = value; }, setDeploys: (value) => { deploys = value; } };
 }
 
 test('docs-only skips; site changes deploy only with preview gate', async (t) => {
@@ -82,7 +89,7 @@ test('docs-only skips; site changes deploy only with preview gate', async (t) =>
   f.setComments([{ authorAgentId: '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7', body: 'Preview ready for PR #12' }]);
   result = await f.run();
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /^deploy --site gre1795-website-db-staging --message gsam-source:preview:[0-9a-f]{40}\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site gre1795-website-db-staging --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
 });
 
 test('unapproved production is refused before upload', async (t) => {
@@ -114,4 +121,44 @@ test('newer run supersedes an in-flight run for the same site', async (t) => {
   assert.match(second.stdout, /Superseded stale run/);
   const firstCode = await firstExit;
   assert.notEqual(firstCode, 0);
+});
+
+test('a stale lock with a reused PID does not stop an unrelated process', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  const dir = join(tmpdir(), `greatstone-deploy-${site}-preview`);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, 'owner.json'), JSON.stringify({ pid: process.pid, identity: 'old deploy-site.mjs process', own: 'old' }));
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /Superseded stale run/);
+});
+
+test('a preview from another PR is not the change baseline', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  const sha = git(f.cwd, 'rev-parse', 'HEAD');
+  f.setDeploys([{ state: 'ready', title: `gsam-source:preview:99:${sha}` }]);
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /gsam-source:preview:12:/);
+});
+
+test('preview does not stop an approved production upload', async (t) => {
+  const f = await fixture(t);
+  f.env.DEPLOY_SLEEP = '2';
+  f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const prod = spawn(process.execPath, [script, 'prod', site], { cwd: f.cwd, env: f.env });
+  let output = '';
+  prod.stdout.on('data', (part) => { output += part; });
+  const done = new Promise((resolve) => prod.on('exit', resolve));
+  for (let i = 0; i < 150 && !output.includes('Deploying'); i++)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.match(output, /Deploying/);
+  git(f.cwd, 'checkout', '-q', 'test-pr');
+  await f.commit('src/app.js', 'changed');
+  const preview = await f.run();
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.equal(await done, 0);
 });
