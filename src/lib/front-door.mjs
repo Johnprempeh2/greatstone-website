@@ -147,15 +147,15 @@ const FALLBACK_ERROR = 'Something went wrong on our side. Please try again in a 
 // One client for the edge function. fetchImpl and endpoint are injected so tests and the editor canvas
 // never touch the network. `retries` repeats a failed call that is worth repeating (network, 5xx);
 // a 4xx (bad input, rate limit, bot check) is the visitor's answer and is not repeated.
-export function makeFrontDoorClient({ url, anonKey, fetchImpl = (...a) => fetch(...a) } = {}) {
+export function makeFrontDoorClient({ fetchImpl = (...a) => fetch(...a) } = {}) {
   let session = null;
-  const configured = !!(url && anonKey);
+  const configured = true;
   async function once(body) {
     let res;
     try {
-      res = await fetchImpl(url.replace(/\/$/, '') + '/functions/v1/front-door', {
+      res = await fetchImpl('/api/front-door', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', apikey: anonKey, Authorization: 'Bearer ' + anonKey },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify(session ? { ...body, session } : body),
       });
     } catch (e) {

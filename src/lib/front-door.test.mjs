@@ -98,13 +98,13 @@ function fakeFetch(responses) {
   return { f, calls };
 }
 
-test('client: posts to front-door with the anon key and keeps the session for later calls', async () => {
+test('client: posts to the same-origin front door and keeps the session for later calls', async () => {
   const { f, calls } = fakeFetch([reply(200, { reply: 'Hello', closed: null, session: 's1' }), reply(200, { status: 'ok', leadId: 'L1', agents: [] })]);
   const c = makeFrontDoorClient({ url: 'https://p.supabase.co/', anonKey: 'anon', fetchImpl: f });
   await c.chat({ intake: { company: 'A' }, messages: [], turnstile: 't1' });
   await c.propose({ intake: { company: 'A' }, messages: [], source: {} });
-  assert.equal(calls[0].url, 'https://p.supabase.co/functions/v1/front-door');
-  assert.equal(calls[0].headers.apikey, 'anon');
+  assert.equal(calls[0].url, '/api/front-door');
+  assert.deepEqual(calls[0].headers, { 'content-type': 'application/json' });
   assert.equal(calls[0].body.step, 'chat');
   assert.equal(calls[0].body.turnstile, 't1');
   assert.equal(calls[0].body.session, undefined);
@@ -141,12 +141,12 @@ test('client: chat is not retried (the visitor can resend)', async () => {
   assert.equal(calls.length, 1);
 });
 
-test('client: with no Supabase config it refuses without a network call', async () => {
+test('client: the same-origin function can give an unavailable response', async () => {
   let called = false;
-  const c = makeFrontDoorClient({ url: '', anonKey: '', fetchImpl: async () => { called = true; } });
-  assert.equal(c.configured, false);
-  await assert.rejects(c.propose({}), /not set up/);
-  assert.equal(called, false);
+  const c = makeFrontDoorClient({ fetchImpl: async () => { called = true; return reply(503, { error: 'Unavailable.' }); } });
+  assert.equal(c.configured, true);
+  await assert.rejects(c.propose({}), /Unavailable/);
+  assert.equal(called, true);
 });
 
 // B9 (GRE-469): funnel events, consent-gated, no typed text
