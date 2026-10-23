@@ -59,5 +59,5 @@ test('blank starter is a single Hero; pre-filled props survive buildStarterConte
   assert.equal(built[0].props.kicker, 'New page');
   const landing = buildStarterContent(getStarter('landing'), (t) => t + '-y');
   assert.equal(landing[0].props.kicker, 'Landing');
-  assert.equal(landing[0].props.ctaHref, '#book');
+  assert.equal(landing[0].props.ctaHref, '#go/contact');
 });
