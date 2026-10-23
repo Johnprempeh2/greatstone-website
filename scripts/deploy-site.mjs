@@ -4,7 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-const sites = new Set(['greatstone-home', 'gre1795-website-db-staging']);
+const sites = new Map([
+  ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
+  ['gre1795-website-db-staging', '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb'],
+]);
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const [mode, site, prNumber] = process.argv.slice(2);
 const issueId = process.env.GSAM_TASK_ID;
@@ -98,7 +101,7 @@ async function lockAndDeploy(sha) {
   process.on('SIGTERM', () => controller.abort());
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
-    const args = ['deploy', '--site', site, '--message', `gsam-source:${mode}:${mode === 'preview' ? `${prNumber}:` : ''}${sha}`];
+    const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${mode}:${mode === 'preview' ? `${prNumber}:` : ''}${sha}`];
     if (mode === 'prod') args.push('--prod');
     console.log(`Deploying ${site} ${mode} at ${sha}`);
     const child = spawn('netlify', args, { stdio: 'inherit', signal: controller.signal });

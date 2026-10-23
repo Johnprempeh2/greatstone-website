@@ -89,7 +89,7 @@ test('docs-only skips; site changes deploy only with preview gate', async (t) =>
   f.setComments([{ authorAgentId: '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7', body: 'Preview ready for PR #12' }]);
   result = await f.run();
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /^deploy --site gre1795-website-db-staging --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
 });
 
 test('unapproved production is refused before upload', async (t) => {
