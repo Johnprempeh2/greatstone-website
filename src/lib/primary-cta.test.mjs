@@ -8,9 +8,25 @@ import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './brand.mjs';
 const BLOCKS = new URL('../blocks/', import.meta.url);
 const read = (f) => readFileSync(new URL(f, BLOCKS), 'utf8');
 
-test('the primary CTA is "Begin the Conversation" and opens the booking flow', () => {
+test('the primary CTA is "Begin the Conversation" and opens Contact', () => {
   assert.equal(PRIMARY_CTA_LABEL, 'Begin the Conversation');
-  assert.equal(PRIMARY_CTA_HREF, '#book');
+  assert.equal(PRIMARY_CTA_HREF, '#go/contact');
+});
+
+test('R1 seed CTAs labelled Begin the Conversation point to Contact', () => {
+  const seed = JSON.parse(readFileSync(new URL('../seed-pages.json', import.meta.url), 'utf8'));
+  const inspect = (node) => {
+    if (Array.isArray(node)) return node.forEach(inspect);
+    if (!node || typeof node !== 'object') return;
+    for (const [labelKey, hrefKey] of [['ctaLabel', 'ctaHref'], ['ctaLabel2', 'ctaHref2'], ['bookLabel', 'bookHref']]) {
+      if (node[labelKey] === PRIMARY_CTA_LABEL) {
+        const href = node[hrefKey];
+        assert.ok(href === '#go/contact' || (href?.kind === 'page' && href.page === 'contact'));
+      }
+    }
+    Object.values(node).forEach(inspect);
+  };
+  inspect(seed);
 });
 
 test('no block defaults a CTA to the retired "Book a Diagnostic"', () => {

@@ -31,7 +31,7 @@ export const BRAND_NAME = 'Greatstone International';
 export const BRAND_SIGNOFF = `${BRAND_NAME} · ${BRAND_TAGLINE}`;
 
 // The one primary call to action, and where it goes. Ben's Architecture v2.0 fixes the wording and John
-// confirmed it for every block on 4 Oct 2026 (GRE-635), retiring "Book a Diagnostic". '#book' opens the
-// booking flow (App.jsx handles it), so every block default lands the visitor on the same next step.
+// confirmed it for every block on 4 Oct 2026 (GRE-635), retiring "Book a Diagnostic". R1
+// directs this label to Contact; buttons that open the scheduler say "Schedule a Conversation".
 export const PRIMARY_CTA_LABEL = 'Begin the Conversation';
-export const PRIMARY_CTA_HREF = '#book';
+export const PRIMARY_CTA_HREF = '#go/contact';

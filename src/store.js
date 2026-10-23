@@ -34,7 +34,8 @@ const SCHEMA = 19;
 // Bumped 11 Oct 2026 (GRE-660): the R1 copy from GRE-1373 draft 4 (GRE-1358 offer journey, packaging v9 claims,
 // services page renamed GS Agentic Manager). Without a bump, returning visitors keep the superseded offer.
 // Bumped 22 Oct 2026 (GRE-1854): the approved digital-office page and navigation label must reach saved sites.
-const SEED_VERSION = 20261022;
+// Bumped 23 Oct 2026 (GRE-660): align the R1 CTA destinations and the How We Work backdrop on saved sites.
+const SEED_VERSION = 20261023;
 
 // Global site chrome settings (the logo, name, footer tagline + header CTA that wrap every page). Edited
 // in the admin Site-Settings panel; the defaults below match the values previously hardcoded in Header /
@@ -623,7 +624,7 @@ export function seedState() {
       ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes and sets up the work that should run itself, with your people in charge.', ogImage: '' }),
 
       // How We Work (GRE-652 §4.3). Slug stays 'method': it is the routing key for #go/method and #breakdown.
-      method: seedPage('How We Work', 'stone', [
+      method: seedPage('How We Work', { v: 1, scenes: [{ id: 'sc-method-stone', kind: 'stone' }], transitions: [], ceil: 0.16 }, [
         blk('Hero', { kicker: 'How we work', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
           body: 'Every engagement follows the same path, and you decide at each step whether to go on. The Deep Dive reads your organisation across eight pillars, so the work that follows is the work that actually moves you.',
           prompt: '', align: 'center', size: 'full',
