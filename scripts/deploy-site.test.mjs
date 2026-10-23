@@ -20,6 +20,7 @@ async function fixture(t) {
   t.after(() => rm(cwd, { recursive: true, force: true }));
   await mkdir(join(cwd, 'bin'));
   await mkdir(join(cwd, 'src'));
+  await mkdir(join(cwd, 'scripts'));
   await writeFile(join(cwd, '.gitignore'), 'bin/\nnetlify-args.txt\n');
   git(cwd, 'init', '-q', '-b', 'main');
   git(cwd, 'config', 'user.email', 'test@example.invalid');
@@ -32,6 +33,7 @@ async function fixture(t) {
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
   let comments = [];
+  let interactions = [];
   let deploys = [];
   const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -40,7 +42,7 @@ async function fixture(t) {
       res.end('{}');
       return;
     }
-    res.end(JSON.stringify(req.url.includes('/comments') ? comments : deploys));
+    res.end(JSON.stringify(req.url.includes('/comments') ? comments : req.url.includes('/interactions') ? interactions : deploys));
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
@@ -57,8 +59,8 @@ async function fixture(t) {
         headRefOid: git(cwd, 'rev-parse', 'HEAD'), baseRefOid: base, labels: [{ name: 'preview' }] });
     });
   }
-  async function run(mode = 'preview') {
-    const child = spawn(process.execPath, [script, mode, site, '12'], { cwd, env });
+  async function run(mode = 'preview', targetSite = site) {
+    const child = spawn(process.execPath, [script, mode, targetSite, '12'], { cwd, env });
     let stdout = '', stderr = '';
     child.stdout.on('data', (part) => { stdout += part; });
     child.stderr.on('data', (part) => { stderr += part; });
@@ -66,8 +68,60 @@ async function fixture(t) {
     return { status, stdout, stderr };
   }
   return { cwd, base, env, log, commit, run,
-    setComments: (value) => { comments = value; }, setDeploys: (value) => { deploys = value; } };
+    setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
+    setDeploys: (value) => { deploys = value; } };
 }
+
+function stagingCard(sha, changes = {}) {
+  return { kind: 'request_confirmation', status: 'accepted', requestedResolverPolicy: 'human_only',
+    effectiveResolverPolicy: 'human_only',
+    resolvedByUserId: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', resolvedByAgentId: null,
+    idempotencyKey: `confirmation:GRE-2064:staging-deploy:${sha}`,
+    payload: { detailsMarkdown: `Approve production deploy: ${site} ${sha}` }, ...changes };
+}
+
+test('accepted human-only staging card permits exact SHA and guard-only drift', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  let result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+  await f.commit('scripts/deploy-site.mjs', 'guard');
+  result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and site code drift', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const cases = [
+    stagingCard(f.base, { status: 'rejected' }),
+    stagingCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}` } }),
+    stagingCard('a'.repeat(40)),
+    stagingCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
+    stagingCard(f.base, { requestedResolverPolicy: 'anyone' }),
+  ];
+  for (const card of cases) {
+    f.setInteractions([card]);
+    const result = await f.run('prod');
+    assert.equal(result.status, 1, JSON.stringify(card));
+    assert.match(result.stderr, /production refused/);
+  }
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'changed');
+  const result = await f.run('prod');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
+test('a staging card never authorises the public site', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
 
 test('docs-only skips; site changes deploy only with preview gate', async (t) => {
   const f = await fixture(t);

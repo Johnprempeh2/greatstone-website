@@ -56,6 +56,14 @@ and a person to comment `Approve production deploy: greatstone-home <40-characte
 on the current task. It is never automatic or scheduled. Replace the site and PR number as
 needed. The command refuses other Netlify sites.
 
+For `gre1795-website-db-staging` only, an accepted GS Agentic Manager human-only
+`request_confirmation` on the current task also authorises the upload. Its recorded approval
+must name that site and the approved SHA. If a reviewed guard repair changes HEAD after approval,
+the approved commit must be an ancestor and every intervening change must be confined to
+`scripts/deploy-site.mjs`, `scripts/deploy-site.test.mjs`, and `README.md`. Any site code or
+migration change requires a new approval. The public site still requires the exact comment
+for the current HEAD.
+
 Each successful upload records its source commit in the Netlify deploy title. The next
 run compares HEAD with the last ready upload of the same type. Changes confined to
 `docs/`, `.github/`, the three root guide files, or test files skip the upload. If no

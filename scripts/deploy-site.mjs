@@ -38,12 +38,35 @@ async function comments() {
   return json(`${base}/api/issues/${issueId}/comments`, process.env.GSAM_API_KEY);
 }
 
+async function stagingCardApproved(sha) {
+  if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
+  const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
+  for (const card of cards) {
+    const approvedSha = /^confirmation:GRE-\d+:staging-deploy:([0-9a-f]{40})$/.exec(card.idempotencyKey || '')?.[1];
+    if (card.kind !== 'request_confirmation' || card.status !== 'accepted' ||
+        card.requestedResolverPolicy !== 'human_only' || card.effectiveResolverPolicy !== 'human_only' ||
+        !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||
+        !card.payload?.detailsMarkdown?.includes(`Approve production deploy: ${site} ${approvedSha}`)) continue;
+    if (approvedSha === sha) return true;
+    const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', approvedSha, sha]);
+    if (ancestor.status !== 0) continue;
+    const files = command('git', ['diff', '--name-only', '--no-renames', approvedSha, sha]).split('\n').filter(Boolean);
+    if (files.length && files.every((file) =>
+      ['scripts/deploy-site.mjs', 'scripts/deploy-site.test.mjs', 'README.md'].includes(file))) return true;
+  }
+  return false;
+}
+
 async function gate(sha) {
   if (mode === 'prod') {
     if (command('git', ['branch', '--show-current']) !== 'main') throw new Error('production requires main');
     const approval = `Approve production deploy: ${site} ${sha}`;
-    if (!(await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval))
-      throw new Error(`production refused: a person must comment exactly "${approval}" on this task`);
+    const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
+    const stagingCard = !exactComment && site === 'gre1795-website-db-staging' && await stagingCardApproved(sha);
+    if (!exactComment && !stagingCard)
+      throw new Error(site === 'gre1795-website-db-staging'
+        ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
+        : `production refused: a person must comment exactly "${approval}" on this task`);
     return null;
   }
   if (!/^\d+$/.test(prNumber || '')) throw new Error('preview requires a PR number');
