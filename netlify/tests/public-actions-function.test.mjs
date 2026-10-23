@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { asPublicAnon } from './lib/public-actions.mjs';
-import { makePopularityHandler } from './popularity.mjs';
-import { makeServiceInquiryHandler } from './service-inquiry.mjs';
+import { asPublicAnon } from '../functions/lib/public-actions.mjs';
+import { makePopularityHandler } from '../functions/popularity.mjs';
+import { makeServiceInquiryHandler } from '../functions/service-inquiry.mjs';
 
 function fakePool(rows = []) {
   const calls = [];

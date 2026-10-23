@@ -1,9 +1,8 @@
 // Front door (GRE-416 spec rev 2): the browser half of "Meet your first three employees". Pure logic
 // shared by the FrontDoor block and its tests: field limits, the intake shape, and the one client for
-// the `front-door` Supabase edge function (B2). No model call, prompt or key lives here; the edge
-// function owns all of that, so a Laravel move is a port of one endpoint.
+// the `front-door` Netlify Function (B2). No model call, prompt or key lives here.
 //
-// The wire contract with `front-door` (POST /functions/v1/front-door, anon apikey):
+// The wire contract with `front-door` (POST /api/front-door):
 //   { step: 'chat',    turnstile?, session?, intake, messages }          → { reply, closed: 'ok'|'stop'|null, session }
 //   { step: 'propose', turnstile?, session?, intake, messages, source }  → { status: 'ok'|'declined', leadId, agents, session }
 //   { step: 'lead',    session, leadId, contact, consent }               → { ok: true }
@@ -144,7 +143,7 @@ export class FrontDoorError extends Error {
 
 const FALLBACK_ERROR = 'Something went wrong on our side. Please try again in a moment.';
 
-// One client for the edge function. fetchImpl and endpoint are injected so tests and the editor canvas
+// One client for the same-origin function. fetchImpl is injected so tests and the editor canvas
 // never touch the network. `retries` repeats a failed call that is worth repeating (network, 5xx);
 // a 4xx (bad input, rate limit, bot check) is the visitor's answer and is not repeated.
 export function makeFrontDoorClient({ fetchImpl = (...a) => fetch(...a) } = {}) {
@@ -171,7 +170,6 @@ export function makeFrontDoorClient({ fetchImpl = (...a) => fetch(...a) } = {}) 
     return data;
   }
   async function call(body, retries = 0) {
-    if (!configured) throw new FrontDoorError('The team builder is not set up on this site yet.', { retryable: false });
     for (let attempt = 0; ; attempt++) {
       try { return await once(body); } catch (e) {
         if (attempt >= retries || !e.retryable) throw e;

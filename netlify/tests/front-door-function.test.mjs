@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { makeFrontDoorHandler } from '../functions/front-door.mjs';
 import { saveLead, updateContact, stamp } from '../functions/lib/front-door-store.mjs';
 import { signSession } from '../../supabase/functions/_shared/front-door-engine.mjs';
+import pg from 'pg';
+import { startPostgres, skip } from './lib/postgres.mjs';
 
 function fakePool(reply = () => ({ rows: [] })) {
   const calls = [];
@@ -60,4 +62,28 @@ test('S6 sends the fallback alert when the database has no lead', async () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.resend.com/emails');
   assert.match(calls[0].body.subject, /NOT SAVED/);
+});
+
+test('S5/S6 and once-only claims run against migrated Postgres RLS', { skip }, async () => {
+  const db = startPostgres('front-door-function');
+  let pool;
+  try {
+    await db.migrate('003');
+    assert.equal(db.psql("INSERT INTO organisations (id, slug, name) VALUES ('11111111-1111-4111-8111-111111111111', 'test-org', 'Test org')").status, 0);
+    await db.migrate();
+    pool = new pg.Pool({ connectionString: db.url });
+    const row = { industry: 'Services', industry_other: false, team_size: '1-10', brand_words: ['clear'],
+      company_name: 'Example', agents: [], chat_summary: [], chat_turns: 0, source: {}, agent_package: { 'COMPANY.md': 'test' } };
+    assert.equal(await saveLead(pool, leadId, row), leadId);
+    const lead = await updateContact(pool, leadId, { contact_name: 'Test', contact_email: 'test@example.test',
+      contact_role: 'Owner', contact_at: new Date().toISOString(), consent_given: false, consent_at: null,
+      consent_version: 'front-door-consent-v1' });
+    assert.equal(lead.id, leadId);
+    assert.equal(await stamp(pool, leadId, 'pack_sent_at', new Date().toISOString(), true), true);
+    assert.equal(await stamp(pool, leadId, 'pack_sent_at', new Date().toISOString(), true), false);
+    assert.equal(db.psql(`SELECT contact_email FROM front_door_leads WHERE id = '${leadId}'`).stdout.trim(), 'test@example.test');
+  } finally {
+    await pool?.end();
+    db.stop();
+  }
 });
