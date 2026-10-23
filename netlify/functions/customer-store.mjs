@@ -4,7 +4,7 @@ import { asCustomer, customerStore } from './lib/customer-store.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
-const OPS = new Set(['ensure', 'profile', 'members', 'invite-requests', 'request-invite', 'order-keys', 'orders', 'org-orders', 'quotes', 'org-quotes', 'invoice', 'update-profile', 'update-company']);
+const OPS = new Set(['ensure', 'profile', 'members', 'engagements', 'invite-requests', 'request-invite', 'order-keys', 'orders', 'org-orders', 'quotes', 'org-quotes', 'invoice', 'update-profile', 'update-company']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // pg returns BIGINT as text; the existing store calculations expect safe JavaScript numbers.
 function moneyNumbers(value) {

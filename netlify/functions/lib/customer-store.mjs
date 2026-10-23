@@ -45,6 +45,13 @@ export async function customerStore(client, op, args = {}) {
       WHERE customer_id = app_customer_id() AND deleted_at IS NULL ORDER BY is_primary DESC, created_at`, []);
     return rows;
   }
+  if (op === 'engagements') {
+    const { rows } = await client.query(`SELECT id,kind,status,title,summary,body_html,external_url,occurred_on,
+      phase,owner_name,attendees,tags,pinned,created_at FROM engagements
+      WHERE customer_id = app_customer_id() AND deleted_at IS NULL AND status = 'shared'
+      ORDER BY occurred_on DESC LIMIT 1000`);
+    return rows;
+  }
   if (op === 'invite-requests') {
     const { rows } = await client.query(`SELECT id,full_name,email,role,status,created_at FROM member_invite_requests
       WHERE customer_id = app_customer_id() ORDER BY created_at DESC`);

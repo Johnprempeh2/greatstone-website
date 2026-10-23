@@ -4,7 +4,6 @@
 // deliverables, each inline OR an external link), the member directory, the company profile, and a
 // company commerce rollup. Reads are RLS-scoped to the buyer's own company (customer_self, 0008/0013).
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { getCustomerProfile, isCustomer, isCompanyAdmin, signOut, getSession, onAuth } from './customerAuth.mjs';
@@ -124,11 +123,8 @@ function Org({ profile, session, onProfile }) {
     setErr(null);
     customerStore('members')
       .then(({ data, error }) => { if (error) setErr(error); setMembers(data || []); });
-    // RLS (customer_self, 0013) already scopes to this company's shared, live items; the explicit
-    // filters are belt-and-braces so a future RLS regression fails closed (empty) instead of leaking.
-    supabase.from('engagements')
-      .select('id, kind, status, title, summary, body_html, external_url, occurred_on, phase, owner_name, attendees, tags, pinned, created_at')
-      .is('deleted_at', null).eq('customer_id', company.id).eq('status', 'shared').order('occurred_on', { ascending: false })
+    // The function scopes to the signed-in customer and selects only shared, live items under RLS.
+    customerStore('engagements')
       .then(({ data, error }) => { if (error) setErr(error); setEngagements(data || []); });
     customerStore('org-orders')
       .then(({ data, error }) => { if (error) setErr(error); setOrders(data || []); });
