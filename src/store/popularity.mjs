@@ -1,14 +1,11 @@
-// Service popularity — now GLOBAL (cross-visitor) via a Supabase counter, with a local cache for an
+// Service popularity — now GLOBAL (cross-visitor) via the site API, with a local cache for an
 // instant warm start and an offline fallback. Interaction weights: a detail-page view = 1, an
 // add-to-inquiry = 3 (stronger intent). Reads aggregate counts from `service_popularity` (public RLS
-// read) and writes through the locked-down `bump_service_popularity` rpc (anon EXECUTE, SECURITY
+// read) and writes through the locked-down `bump_service_popularity` function (anon EXECUTE, SECURITY
 // DEFINER — no direct table writes). Also mirrors each event to GA4. Module singleton +
 // useSyncExternalStore so the catalogue's "Popular" surface re-derives the moment counts move.
 import { useSyncExternalStore } from 'react';
 import { optionalStorageAllowed } from '../lib/analytics.js';
-// The Supabase client is imported DYNAMICALLY (inside loadGlobalPopularity + bumpService) rather than
-// statically: the public service catalogue pulls this module, so a static import would ship the ~120 KB
-// Supabase client to every visitor. Deferring it loads the client only on the first global read/write.
 
 const KEY = 'gs_service_pop_v1';   // local cache of the global scores (warm start + offline fallback)
 const SEEN = 'gs_service_pop_seen_v1'; // per-session view dedupe so a refresh can't inflate a view
@@ -43,10 +40,10 @@ export function loadGlobalPopularity() {
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
     try {
-      const { supabase } = await import('../lib/supabase.mjs');
-      if (!supabase) return;
-      const { data, error } = await supabase.from('service_popularity').select('slug,views,inquiries');
-      if (error || !Array.isArray(data)) return;
+      const res = await fetch('/api/popularity');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
       const g = {};
       for (const r of data) { if (r && r.slug) g[r.slug] = (r.views || 0) + 3 * (r.inquiries || 0); }
       base = g; recompute(); // recompute persists the merged (global + this session's optimistic) snapshot
@@ -74,12 +71,9 @@ export function bumpService(slug, kind = 'view') {
   const w = kind === 'inquiry' ? 3 : 1;
   optimistic[slug] = (optimistic[slug] || 0) + w; // session delta — recompute() persists the merged snapshot
   recompute();
-  // write through to the global counter (fire-and-forget; failures are non-fatal). Dynamic import keeps the
-  // Supabase client out of the eager public bundle; it loads on the first write.
-  import('../lib/supabase.mjs').then(({ supabase }) => {
-    if (!supabase) return;
-    try { supabase.rpc('bump_service_popularity', { p_slug: GTM_SAFE(slug), p_kind: kind }).then(() => {}, () => {}); } catch { /* ignore */ }
-  }, () => {});
+  // Best effort: the local count still updates when the network is unavailable.
+  fetch('/api/popularity', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ slug: GTM_SAFE(slug), kind }) }).catch(() => {});
 }
 
 // the most-interacted slugs, highest first (only those with any interaction)

@@ -20,7 +20,7 @@ import {
 // never calls the network.
 
 const ime = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-const client = makeFrontDoorClient({ url: ime.VITE_SUPABASE_URL || '', anonKey: ime.VITE_SUPABASE_ANON_KEY || '' });
+const client = makeFrontDoorClient();
 const AVATARS = 6; // monogram tints until the cap-v1 images land (B5, GRE-465)
 
 // events only after the visitor accepted analytics in the ConsentBanner (spec section 3)
