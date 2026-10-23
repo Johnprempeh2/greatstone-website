@@ -73,7 +73,7 @@ test('RLS is on and forced, with the two policies only', async () => {
 
 test('the role and the claims end with the transaction (nothing leaks to the next request)', async () => {
   const inside = await asAnon(pool, async (c) => (await c.query("SELECT current_user AS who, current_setting('request.jwt.claims', true) AS claims")).rows[0]);
-  assert.deepEqual(inside, { who: 'anon', claims: '{"role":"anon"}' });
+  assert.deepEqual(inside, { who: 'anon', claims: '{"role":"anon","sub":null,"email":null,"email_verified":false}' });
   const afterwards = await one("SELECT current_user AS who, coalesce(current_setting('request.jwt.claims', true), '') AS claims");
   assert.notEqual(afterwards.who, 'anon');
   assert.equal(afterwards.claims, '');

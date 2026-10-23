@@ -4,7 +4,7 @@
 // narrow functions; it cannot read rows back, so the id is made here instead of RETURNING it.
 import { randomUUID } from 'node:crypto';
 
-const ANON_CLAIMS = JSON.stringify({ role: 'anon' });
+const ANON_CLAIMS = JSON.stringify({ role: 'anon', sub: null, email: null, email_verified: false });
 // the columns `anon` holds INSERT on; enquiryRow() (supabase/functions/_shared/enquiry.mjs) fills them
 const COLUMNS = ['id', 'services', 'contact_name', 'contact_email', 'contact_company', 'message', 'size_band', 'industry', 'attribution', 'source', 'ip'];
 const JSONB = new Set(['services', 'attribution']);
