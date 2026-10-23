@@ -1,6 +1,7 @@
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import schema from './website-release.v1.schema.json' with { type: 'json' };
+import collectionSchema from './release-schema/collections.v1.schema.json' with { type: 'json' };
 
 export const supportedReleaseSchemas = [1];
 export const supportedBlocks = new Set([
@@ -13,7 +14,12 @@ export const supportedBlocks = new Set([
 
 const ajv = new Ajv({ strict: false, allErrors: false });
 addFormats(ajv);
+ajv.addSchema(collectionSchema);
 const validShape = ajv.compile(schema);
+const collectionKeys = ['vendors', 'categories', 'offerings', 'public-people', 'forms'];
+const fieldValidators = Object.fromEntries([...collectionKeys, 'redirects'].map((key) => [
+  key, ajv.getSchema(`${collectionSchema.$id}#/$defs/${key}`),
+]));
 const fail = (rule, message) => ({ rule, message });
 const mediaRef = /media:([A-Za-z0-9_-]{1,64})/g;
 const mediaExtensions = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif', 'image/gif': 'gif' };
@@ -76,6 +82,7 @@ export function validateRelease(release, { siteId, orgId } = {}) {
   const redirects = new Map(release.redirects.map((item) => [item.from, item]));
   if (redirects.size !== release.redirects.length || release.redirects.some((item) => paths.has(item.from))) return fail('R9', 'Redirect source is duplicate or a page');
   for (const item of release.redirects) {
+    if (!fieldValidators.redirects(item)) return fail('R9', `Invalid redirect fields: ${ajv.errorsText(fieldValidators.redirects.errors)}`);
     let target = item.to;
     for (let depth = 0; depth < 3 && target.startsWith('/'); depth++) {
       if (paths.has(target)) break;
@@ -86,10 +93,12 @@ export function validateRelease(release, { siteId, orgId } = {}) {
   }
 
   for (const [key, collection] of Object.entries(release.collections)) {
-    if (!unique(collection.entries, 'id') || collection.fieldsVersion !== 1 || !['vendors', 'categories', 'offerings'].includes(key) || collection.entries.some((entry) => {
-      const data = entry.fields.data;
-      return !data || typeof data !== 'object' || Array.isArray(data) || data.id !== entry.id || typeof data.name !== 'string' || !data.name || typeof data.slug !== 'string' || !data.slug || (entry.slug && data.slug !== entry.slug);
-    })) return fail('R10', `Unsupported or invalid collection ${key}`);
+    if (!unique(collection.entries, 'id') || collection.fieldsVersion !== 1 || !collectionKeys.includes(key)) return fail('R10', `Unsupported or invalid collection ${key}`);
+    for (const entry of collection.entries) {
+      if (!fieldValidators[key](entry.fields)) return fail('R10', `Invalid ${key} fields: ${ajv.errorsText(fieldValidators[key].errors)}`);
+      if (['vendors', 'categories', 'offerings'].includes(key) &&
+        (entry.fields.data.id !== entry.id || (entry.slug && entry.fields.data.slug !== entry.slug))) return fail('R10', `Collection identity mismatch in ${key}`);
+    }
   }
   return null;
 }
