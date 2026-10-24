@@ -77,7 +77,17 @@ test('startCheckout rejects an empty basket', async () => {
   await assert.rejects(() => startCheckout(), /basket is empty/i);
 });
 
-test('startCheckout rejects when the store URL/key is unconfigured (node env)', async () => {
+test('startCheckout sends the basket to the same-origin Netlify function', async () => {
   addItem(item('a', 1000));
-  await assert.rejects(() => startCheckout(), /not configured/i);
+  const originalFetch = globalThis.fetch;
+  let requested;
+  globalThis.fetch = async (url, options) => {
+    requested = { url, options };
+    return Response.json({ url: 'https://checkout.stripe.com/test', dropped: [] });
+  };
+  try {
+    assert.equal((await startCheckout()).url, 'https://checkout.stripe.com/test');
+    assert.equal(requested.url, '/api/stripe-checkout');
+    assert.deepEqual(JSON.parse(requested.options.body).items, [{ variantId: 'a', quantity: 1 }]);
+  } finally { globalThis.fetch = originalFetch; }
 });

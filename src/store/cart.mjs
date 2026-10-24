@@ -1,4 +1,4 @@
-// The store basket — the single canonical cart. Keys by Supabase variant id and drives the real
+// The store basket — the single canonical cart. Keys by catalogue variant id and drives the real
 // Stripe checkout + the quote request. Module singleton + useSyncExternalStore so the FAB, drawer and
 // "Add" buttons across lazy store pages all share one source of truth without a provider.
 // (The legacy prototype CartContext/CartDrawer was retired — this is the only cart now.)
@@ -51,28 +51,22 @@ const openSubs = new Set();
 export function openCart() { openSubs.forEach((f) => f()); }
 export function onOpenCart(f) { openSubs.add(f); return () => openSubs.delete(f); }
 
-const SUPA_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) || '';
-const ANON = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || '';
 
-// Hand the basket to the edge function, which recomputes every price server-side (never trusts the
+// Hand the basket to the Netlify function, which recomputes every price server-side (never trusts the
 // client) + adds VAT, and returns a Stripe Checkout Session URL to redirect to. Throws on failure.
 export async function startCheckout({ email } = {}) {
   const payload = getCart().map((x) => ({ variantId: x.variantId, quantity: x.qty }));
   if (!payload.length) throw new Error('Your basket is empty.');
-  if (!SUPA_URL || !ANON) throw new Error('Store is not configured.');
-  const base = location.origin + location.pathname;
-  // Forward the buyer's JWT when signed in, so the edge fn can link the order to their account and
-  // attach a Stripe Customer for saved cards. Falls back to the anon key for guest checkout.
-  let token = ANON;
-  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; if (data?.session?.access_token) token = data.session.access_token; } catch { /* guest */ }
-  const res = await fetch(SUPA_URL + '/functions/v1/stripe-checkout', {
+  // Forward the buyer's JWT when signed in, so the function can link the order to their account and
+  // attach a Stripe Customer for saved cards. A guest sends no bearer token.
+  let token = null;
+  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; token = data?.session?.access_token || null; } catch { /* guest */ }
+  const res = await fetch('/api/stripe-checkout', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + token },
+    headers: { 'content-type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
     body: JSON.stringify({
       items: payload,
       customerEmail: email || undefined,
-      successUrl: base + '#order-confirmed?session={CHECKOUT_SESSION_ID}',
-      cancelUrl: base + '#shop',
     }),
   });
   let data = {};
@@ -86,18 +80,15 @@ export async function startCheckout({ email } = {}) {
 // Submit the basket as a B2B quote request (pay on invoice). Server captures indicative prices + the
 // contact/PO details; staff finalise and invoice. Forwards the JWT so a signed-in buyer's quote links
 // to their account. Returns the human quote reference (Q-YYYY-NNNNNN).
-// poDocument (optional): { name, type, dataBase64 } — an uploaded PO the service-role edge fn stores in the
-// private 'po-documents' bucket (migration 0026). Older server builds ignore the field, so it degrades to the
-// online-PO + email fallback until request-quote is redeployed.
+// poDocument (optional): { name, type, dataBase64 } — an uploaded PO stored in private Netlify Blobs.
 export async function requestQuote({ contact, poReference, message, poDocument } = {}) {
   const payload = getCart().map((x) => ({ variantId: x.variantId, quantity: x.qty }));
   if (!payload.length) throw new Error('Your basket is empty.');
-  if (!SUPA_URL || !ANON) throw new Error('Store is not configured.');
-  let token = ANON;
-  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; if (data?.session?.access_token) token = data.session.access_token; } catch { /* guest */ }
-  const res = await fetch(SUPA_URL + '/functions/v1/request-quote', {
+  let token = null;
+  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; token = data?.session?.access_token || null; } catch { /* guest */ }
+  const res = await fetch('/api/request-quote', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + token },
+    headers: { 'content-type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
     body: JSON.stringify({ items: payload, contact, poReference, message, poDocument: poDocument || undefined }),
   });
   let data = {};
