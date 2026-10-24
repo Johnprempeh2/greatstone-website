@@ -207,8 +207,9 @@ test('the worker sees every row under FORCE RLS, where anon and an unknown user 
     assert.equal(worker, all, `worker on ${t}`);
     if (all !== '0') withRows.push(t);
   }
-  // the tables the ported migrations keep from the worker, as Supabase 0037 and 0038 revoke them from service_role
-  assert.deepEqual(noGrant, ['public.mcp_pdf_chunks', 'public.mcp_pdf_uploads', 'public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers']);
+  // the tables the ported migrations keep from the worker, as Supabase 0037 and 0038 revoke them from service_role,
+  // and the GSAM admin bridge's audit and nonces, which only its own functions touch (048)
+  assert.deepEqual(noGrant, ['public.admin_bridge_audit', 'public.admin_bridge_nonce', 'public.mcp_pdf_chunks', 'public.mcp_pdf_uploads', 'public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers']);
   for (const t of ['public.customers', 'public.users', 'public.service_inquiries', 'public.offerings']) {
     assert.ok(withRows.includes(t), `${t} has rows the worker sees`);
     if (!PUBLIC_ROWS[t.slice(7)]) assert.ok(['0', 'denied'].includes(countAs('anon', t)), `anon on ${t}`);
