@@ -23,7 +23,10 @@ put the export or the owner connection in a deploy, issue, log or repository fil
    same run, including on error. The script prints only a count.
 4. Query the eight imported IDs and credential-account count through the
    reviewed migration connection, then test sign-in, email verification, reset
-   and RLS on staging. Record counts and outcomes only, not emails or hashes.
+   and RLS on staging. Confirm the runtime connection role can run
+   `BEGIN; SET LOCAL ROLE auth_server; SELECT current_user; ROLLBACK;` and that
+   `current_user` is `auth_server` before calling `/api/auth/*`. Record counts
+   and outcomes only, not emails or hashes.
 
 The script rejects a different site, a missing owner connection, a non-owner
 database role, a count other than eight, duplicate identities, malformed

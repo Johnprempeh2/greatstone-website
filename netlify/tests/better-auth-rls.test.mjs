@@ -127,6 +127,12 @@ test('one-time import checks all eight ids and hashes, rolls back dry run, and k
   }));
   assert.throws(() => validateImport(fixture.slice(1)), /eight/);
   assert.throws(() => validateImport([{ ...fixture[0], passwordHash: 'plain' }, ...fixture.slice(1)]), /Invalid/);
+  const duplicateId = 'abcdefab-0000-4000-8000-000000000001';
+  assert.throws(() => validateImport([
+    { ...fixture[0], id: duplicateId },
+    { ...fixture[1], id: duplicateId.toUpperCase() },
+    ...fixture.slice(2),
+  ]), /Duplicate source identity/);
   const users = validateImport(fixture);
   assert.equal(await importUsers(pool, users), 8);
   assert.equal(sql(`SELECT count(*) FROM better_auth."user" WHERE "email" LIKE 'import-%@example.test'`), '0');

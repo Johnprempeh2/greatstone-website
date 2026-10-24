@@ -20,10 +20,11 @@ export function validateImport(input) {
     if (typeof user?.email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user.email))
       throw new Error('Invalid source email');
     if (typeof user?.emailVerified !== 'boolean') throw new Error('Invalid source verification flag');
+    const id = user.id.toLowerCase();
     const email = user.email.trim().toLowerCase();
-    if (ids.has(user.id) || emails.has(email)) throw new Error('Duplicate source identity');
-    ids.add(user.id); emails.add(email);
-    return { id: user.id, email, name: String(user.name || email).slice(0, 200),
+    if (ids.has(id) || emails.has(email)) throw new Error('Duplicate source identity');
+    ids.add(id); emails.add(email);
+    return { id, email, name: String(user.name || email).slice(0, 200),
       emailVerified: user.emailVerified, passwordHash: user.passwordHash };
   });
 }
