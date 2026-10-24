@@ -81,5 +81,7 @@
 /puck-proof          /             301!
 /puck-proof/         /             301!
 /puck-proof/*        /:splat       301!
+# Retired staging fixture: return 404 before the SPA fallback for every method.
+/api/staging-mcp-fixture  /staging-mcp-fixture-404.html  404!
 # SPA fallback — must stay last, unforced so real assets are served first
 /*                   /index.html   200
