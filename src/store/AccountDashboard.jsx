@@ -116,7 +116,7 @@ export function AuthGate({ initialError = null } = {}) {
           <label htmlFor="ca-name">Your name<input id="ca-name" value={name} onChange={e => { setName(e.target.value); setErr(null); setMsg(null); }} autoComplete="name" /></label>
         </>}
         <label htmlFor="ca-email">Email<input id="ca-email" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr(null); setMsg(null); }} autoComplete="username" required aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'ca-signin-err' : undefined} /></label>
-        {mode !== 'forgot' && <label htmlFor="ca-password">Password<PasswordInput id="ca-password" value={pw} onChange={e => { setPw(e.target.value); setErr(null); setMsg(null); }} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} showStrength={mode === 'signup'} ariaInvalid={err ? 'true' : undefined} ariaDescribedby={err ? 'ca-signin-err' : undefined} /></label>}
+        {mode !== 'forgot' && <label htmlFor="ca-password">Password<PasswordInput id="ca-password" value={pw} onChange={e => { setPw(e.target.value); setErr(null); setMsg(null); }} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={mode === 'signup' ? 8 : undefined} showStrength={mode === 'signup'} ariaInvalid={err ? 'true' : undefined} ariaDescribedby={err ? 'ca-signin-err' : undefined} /></label>}
         {err && <div id="ca-signin-err" className="ca-err" role="alert">{err}</div>}
         {msg && <div className="ca-ok" role="status">{msg}</div>}
         <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Working…' : mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}</button>
