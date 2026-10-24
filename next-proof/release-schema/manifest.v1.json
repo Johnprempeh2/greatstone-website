@@ -2,6 +2,8 @@
   "schemaVersion": 1,
   "releaseSchema": "../website-release.v1.schema.json",
   "fieldSchema": "./collections.v1.schema.json",
+  "blockMotionSchema": "./blocks-motion.v1.schema.json",
+  "blockMotionFields": { "DevTools": "#/$defs/DevTools", "AiBaselineSurvey": "#/$defs/AiBaselineSurvey", "Hero": "#/$defs/Hero", "MotionBand": "#/$defs/MotionBand" },
   "collections": {
     "vendor": { "releaseKey": "vendors", "fieldsVersion": 1, "ref": "#/$defs/vendors", "source": "publicCatalogue.vendors" },
     "category": { "releaseKey": "categories", "fieldsVersion": 1, "ref": "#/$defs/categories", "source": "publicCatalogue.categories" },

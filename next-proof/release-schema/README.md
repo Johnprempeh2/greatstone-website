@@ -9,6 +9,30 @@ engine's `validateRelease` applies cross-entry rules. A change to a collection's
 requires a new `fieldsVersion` and a new schema file; keep version 1 available for old
 releases. Release file `schema` remains 1 until its envelope changes.
 
+`blocks-motion.v1.schema.json` is the field contract for the Next.js page editor's
+Motion group. `manifest.v1.json` maps each capable Puck block to its `$defs` ref.
+`motion` is optional in release JSON: older saved blocks keep their previous rendering
+and never acquire a new effect merely because the editor gained a default. A newly
+inserted block receives its brand-locked Puck default. `quietAnchor` is fixed to `copy`;
+editors choose only the allowed effect and Off, Subtle or Full intensity. The release
+validator rejects a motion value on a block without a motion field.
+The Two Doors home blocks deliberately have no motion field. John removed the home
+page from GRE-2213's scope on 24 October 2026; its current Tide and layout stay as
+saved. Mica's earlier home mock-up is withdrawn.
+
+Runtime contract: paint a still at the final dimensions before loading code. Register
+each motion block with `createMotionCoordinator` from `../motion-runtime.mjs` and render
+only when its mode is `animate`. `still` keeps the frame without a loop; `paused`
+stops drawing while hidden, off screen or Off. The coordinator gives the viewport's
+largest visible effect the one animation slot. It waits for load and an idle slot,
+honours reduced motion, Save-Data and constrained devices, and uses stills on phones.
+Heavy renderers must use dynamic imports after the coordinator opens the gate and
+release their WebGL context on cleanup. `motionBudget` caps Subtle at 30 fps and 70%
+study alpha/density, Full at 60 fps. Background renderers must mask the copy box plus
+90 by 70 px as the quiet zone, keep lime outside an additional 60 by 50 px margin,
+and measure at least 7:1 body-text contrast in both palettes. The Tide band has no
+body text. The proof curve remains unavailable until John decides on it.
+
 The catalogue is the Next engine's public projection. GSAM `product` maps to `offerings`,
 `category` to `categories`, and `vendor` to `vendors`. For each catalogue entry, write
 `fields: {data: row}`, with `entry.id === row.id` and `entry.slug === row.slug` when the

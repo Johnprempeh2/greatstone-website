@@ -21,9 +21,10 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 //   and the mark arrives when its chunk lands.
 //   greatstone-logo.mjs already self-gates on its own IntersectionObserver, so the loop stops the
 //   moment the hero scrolls away. Nothing extra to wire.
-function HeroStone() {
+function HeroStone({ enabled = true, still = false }) {
   const host = useRef(null);
   useEffect(() => {
+    if (!enabled) return undefined;
     if (typeof matchMedia === 'undefined') return undefined;
     // The mark is only rendered at two-column widths, and standing up a WebGL context for a canvas
     // nobody can see is pure cost on exactly the devices least able to pay. But the breakpoint has to
@@ -60,11 +61,11 @@ function HeroStone() {
       if (mq.removeEventListener) mq.removeEventListener('change', onChange); else mq.removeListener(onChange);
       down();
     };
-  }, []);
-  return <div className="b-hero-stone" ref={host} aria-hidden="true" data-cursor="explore" />;
+  }, [enabled]);
+  return <div className="b-hero-stone" ref={host} aria-hidden="true" data-cursor="explore">{still && <img className="b-hero-stone-still" src="/motion/stone-still.png" alt="" width="660" height="880" />}</div>;
 }
 
-export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb', stone = 'none' }) {
+export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb', stone = 'none', motion, motionRuntime = 'still' }) {
   const ref = useReveal();
   // home-hero only (opt-in): hide the scroll indicator once the visitor scrolls past the fold so it
   // doesn't linger over the content below. Passive listener, removed on unmount; inert unless scrollCue.
@@ -87,7 +88,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   // The wrapper is chosen with plain JSX below rather than a component defined in here: a component
   // declared during render gets a fresh identity every render, and this hero re-renders on scroll
   // (cueHidden), which would tear down and rebuild HeroStone's WebGL context on the first scroll.
-  const stoneOn = stone === 'right';
+  const stoneOn = motion ? motion.effect === 'hero.stone' && motion.intensity !== 'off' : stone === 'right';
   // The hero body, lifted into a variable so the wrapper can change without duplicating it.
   const inner = (
     <>
@@ -124,7 +125,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}${stoneOn ? ' has-stone' : ''}`}>
       {stoneOn
-        ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><HeroStone /></div>
+        ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><HeroStone enabled={!motion || motionRuntime === 'animate'} still={!!motion} /></div>
         : <div className="wrap b-hero-inner">{inner}</div>}
       {scrollCue ? (
         <span className={'b-hero-scrollcue' + (cueHidden ? ' is-gone' : '')} aria-hidden="true">
@@ -270,6 +271,7 @@ export const css = `
    outgrow a short laptop screen and push the primary CTA under the fold. */
 .b-hero-stone{position:relative;width:100%;aspect-ratio:1/1.06;max-height:min(58vh,560px);
   justify-self:center;pointer-events:none}
+.b-hero-stone-still{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .b-hero.v-statement.has-stone{min-height:78vh;min-height:78svh}
 /* Below the breakpoint there is no second column: the copy returns to a single block and the mark is
    not rendered at all (HeroStone refuses to mount under 1024px, so no WebGL context is created). */

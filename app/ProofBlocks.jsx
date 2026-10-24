@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import * as TwoDoors from '../src/blocks/TwoDoors.jsx';
 import * as TwoDoorsStory from '../src/blocks/TwoDoorsStory.jsx';
@@ -28,17 +28,34 @@ import * as IndustryPicker from '../src/blocks/IndustryPicker.jsx';
 import * as BookDeepDive from '../src/blocks/BookDeepDive.jsx';
 import * as AiBaselineSurvey from '../src/blocks/AiBaselineSurvey.jsx';
 import * as AiCostCalculator from '../src/blocks/AiCostCalculator.jsx';
+import * as MotionBand from '../src/blocks/MotionBand.jsx';
 import { sectionClass } from '../src/lib/block-style.mjs';
 import { bindFormBlock } from '../next-proof/form-bindings.mjs';
+import { motionField, MOTION_BY_BLOCK, resolveMotion } from '../next-proof/motion-contract.mjs';
+import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
 
-const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
+const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
 export const PreviewContext = createContext(false);
+let motionCoordinator;
+let motionUsers = 0;
 function BlockAnchor({ props, puck, type }) {
   const preview = useContext(PreviewContext);
-  return <div id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} {...(preview ? { 'data-gs-block-id': props.id, 'data-gs-block-type': type } : {})}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{puck.render(props)}</div>;
+  const node = useRef(null);
+  const [mode, setMode] = useState('still');
+  const motion = resolveMotion(type, props);
+  useEffect(() => {
+    if (!motion || motion.effect === 'none' || !node.current) return undefined;
+    motionCoordinator ||= createMotionCoordinator();
+    motionUsers++;
+    const unregister = motionCoordinator.register(node.current, motion.intensity, setMode);
+    return () => { unregister(); if (--motionUsers === 0) { motionCoordinator.destroy(); motionCoordinator = undefined; } };
+  }, [motion?.effect, motion?.intensity]);
+  return <div ref={node} id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} data-motion-effect={motion?.effect || undefined} data-motion-mode={motion ? mode : undefined} {...(preview ? { 'data-gs-block-id': props.id, 'data-gs-block-type': type } : {})}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{puck.render(motion ? { ...props, motionRuntime: mode } : props)}</div>;
 }
 const withAnchor = (puck, type) => ({
   ...puck,
+  fields: { ...Object.fromEntries(Object.entries(puck.fields).filter(([key]) => !(type === 'Hero' && key === 'stone'))), ...motionField(type) },
+  defaultProps: { ...puck.defaultProps, ...(MOTION_BY_BLOCK[type] ? { motion: MOTION_BY_BLOCK[type].default } : {}) },
   render: (props) => <BlockAnchor props={props} puck={puck} type={type} />,
 });
 
