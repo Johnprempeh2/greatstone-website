@@ -87,7 +87,7 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
   };
   const link = () => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || el.closest('a')) return;
     const href = el.ownerDocument.defaultView.prompt('Link URL');
     if (!href) return;
     const safe = safeHref(href);
@@ -144,7 +144,7 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
       <span>Text</span>
       <button type="button" aria-label="Bold" onClick={() => format('bold')}><b>B</b></button>
       <button type="button" aria-label="Italic" onClick={() => format('italic')}><i>I</i></button>
-      <button type="button" aria-label="Link" onClick={link}>Link</button>
+      <button type="button" aria-label="Link" disabled={!!ref.current?.closest('a')} onClick={link}>Link</button>
       <span className="gs-frame-tool-divider" aria-hidden="true" />
       {RT_COLORS.map((color) => <button key={`colour-${color.id}`} type="button" aria-label={`Text colour ${color.label}`} title={`Text colour ${color.label}`} style={color.id ? { color: RT_HEX[color.id] } : undefined} onClick={() => formatClass(color.className, 'gs-rt-c-')}>A</button>)}
     </div>, canvasDocument.body)}
