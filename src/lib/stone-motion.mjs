@@ -14,10 +14,21 @@ const CENTRES = [[228.2,109],[200.4,194.2],[121.4,254.6],[171.3,323.6],[182.3,41
 const clamp = (value) => Math.max(0, Math.min(1, value));
 export const stoneProgress = (top, height) => clamp(-top / Math.max(height * .8, 1));
 export const stoneSlabOffset = (index, progress) => ({
-  x: (index - 2) * .19 * progress,
-  y: -(1.4 + index * .35) * progress,
+  x: (index - 2) * .32 * progress,
+  y: -(2.4 + index * .65) * progress,
   z: (index % 2 ? -.35 : .35) * progress,
 });
+export function stoneViewport(box, width, height, exitRoom) {
+  const left = Math.max(0, Math.floor(box.left));
+  const right = Math.min(width, Math.ceil(box.right));
+  const bottom = Math.max(0, Math.floor(height - box.bottom - exitRoom));
+  const top = Math.min(height, Math.ceil(height - box.top));
+  if (left >= right || bottom >= top) return null;
+  return {
+    viewport: [box.left, height - box.bottom - exitRoom, box.width, box.height + exitRoom],
+    scissor: [left, bottom, right - left, top - bottom],
+  };
+}
 
 let shared;
 
@@ -39,20 +50,46 @@ function makeShared() {
   renderer.toneMappingExposure = 1.4;
   renderer.autoClear = false;
   const scene = new THREE.Scene();
-  scene.add(new THREE.AmbientLight(0xc3f2c8, 2.2));
-  const key = new THREE.DirectionalLight(0xe9ffd9, 4);
-  key.position.set(3, 6, 8);
+  // One environment map gives the cut faces the old emerald depth without a bloom pass.
+  const environmentCanvas = document.createElement('canvas');
+  environmentCanvas.width = 512;
+  environmentCanvas.height = 256;
+  const paint = environmentCanvas.getContext('2d');
+  const ramp = paint.createLinearGradient(0, 0, 0, 256);
+  for (const [stop, color] of [[0, '#06140d'], [.45, '#16432f'], [.55, '#1d5a3e'], [1, '#04100a']]) ramp.addColorStop(stop, color);
+  paint.fillStyle = ramp;
+  paint.fillRect(0, 0, 512, 256);
+  paint.globalCompositeOperation = 'lighter';
+  for (const [x, y, w, h, color, alpha] of [[40, 28, 360, 10, '#dfffe8', .55], [120, 86, 300, 6, '#c8ff00', .38], [20, 150, 430, 16, '#ffffff', .16]]) {
+    paint.fillStyle = color;
+    paint.globalAlpha = alpha;
+    paint.fillRect(x, y, w, h);
+  }
+  const environmentTexture = new THREE.CanvasTexture(environmentCanvas);
+  environmentTexture.mapping = THREE.EquirectangularReflectionMapping;
+  environmentTexture.colorSpace = THREE.SRGBColorSpace;
+  const environmentGenerator = new THREE.PMREMGenerator(renderer);
+  const environment = environmentGenerator.fromEquirectangular(environmentTexture);
+  scene.environment = environment.texture;
+  environmentGenerator.dispose();
+  environmentTexture.dispose();
+  scene.add(new THREE.AmbientLight(0x96d6a6, 1.1));
+  const key = new THREE.DirectionalLight(0xe9ffd9, 3);
+  key.position.set(5, 8, 5);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xc8ff00, 3);
-  rim.position.set(-5, -2, 4);
+  const rim = new THREE.PointLight(0xc8ff00, 4.5, 30, 2);
+  rim.position.set(-8, 3.5, 7);
   scene.add(rim);
+  const glint = new THREE.PointLight(0xf0fff1, 7, 18, 2);
+  glint.position.set(3, 7, 7);
+  scene.add(glint);
   const camera = new THREE.PerspectiveCamera(38, 1, .1, 50);
   camera.position.z = 9.5;
   const stone = new THREE.Group();
   scene.add(stone);
   const geometries = [];
   const materials = [];
-  const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xc8ff00, transparent: true, opacity: .54 });
+  const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xc8ff00, transparent: true, opacity: .86 });
   materials.push(edgeMaterial);
   const slabs = OUTLINES.map((outline, index) => {
     const group = new THREE.Group();
@@ -71,9 +108,16 @@ function makeShared() {
       geometry.translate(0, 0, step * .2 - .14);
       geometries.push(geometry);
       const material = new THREE.MeshPhysicalMaterial({
-        color: tint, metalness: .32, roughness: .13, clearcoat: 1,
-        flatShading: true, emissive: 0x0c3921, emissiveIntensity: .55,
+        color: tint, metalness: .32, roughness: .08, envMapIntensity: 2.8,
+        clearcoat: 1, clearcoatRoughness: .03, flatShading: true,
+        emissive: 0x0d3b26, emissiveIntensity: .8,
       });
+      material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform vec3 gsRimColor;')
+          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat gsRim = pow(1.0 - abs(dot(normalize(vViewPosition), normal)), 3.0);\ntotalEmissiveRadiance += gsRimColor * gsRim * 1.9;');
+        shader.uniforms.gsRimColor = { value: new THREE.Color(0xc8ff00) };
+      };
       materials.push(material);
       group.add(new THREE.Mesh(geometry, material));
       const edges = new THREE.EdgesGeometry(geometry, 25);
@@ -83,6 +127,13 @@ function makeShared() {
     stone.add(group);
     return group;
   });
+  const glintGeometry = new THREE.SphereGeometry(.055, 8, 6);
+  const glintMaterial = new THREE.MeshBasicMaterial({ color: 0xf1ffdf });
+  geometries.push(glintGeometry);
+  materials.push(glintMaterial);
+  const glintMark = new THREE.Mesh(glintGeometry, glintMaterial);
+  glintMark.position.set(.4, 2.12, .86);
+  slabs[0].add(glintMark);
   const entries = new Set();
   let settlingUntil = 0;
   let frameCount = 0;
@@ -99,18 +150,18 @@ function makeShared() {
     renderer.setScissorTest(true);
     for (const entry of entries) {
       const box = entry.node.getBoundingClientRect();
-      if (!entry.visible || box.bottom <= 0 || box.top >= height || box.right <= 0 || box.left >= width) continue;
-      const x = Math.max(0, Math.floor(box.left));
-      const y = Math.max(0, Math.floor(height - box.bottom));
-      const w = Math.min(width - x, Math.ceil(box.width));
-      const h = Math.min(height - y, Math.ceil(box.height));
-      if (w <= 0 || h <= 0) continue;
-      renderer.setViewport(x, y, w, h);
-      renderer.setScissor(x, y, w, h);
-      camera.aspect = w / h;
-      camera.position.z = entry.kind === 'accent' ? 10.8 : 9.5 / Math.min(camera.aspect, 1);
-      camera.updateProjectionMatrix();
       const progress = entry.kind === 'accent' ? 0 : stoneProgress(box.top, box.height);
+      const exitRoom = entry.kind === 'hero' ? 240 * progress : 0;
+      if ((!entry.visible && !(exitRoom && box.bottom > -exitRoom)) || box.bottom <= -exitRoom || box.top >= height || box.right <= 0 || box.left >= width) continue;
+      const clip = stoneViewport(box, width, height, exitRoom);
+      if (!clip) continue;
+      // Extend the hero's viewport and scissor together as it leaves the page.
+      // Scaling the camera distance by the same ratio preserves the stone's size.
+      renderer.setViewport(...clip.viewport);
+      renderer.setScissor(...clip.scissor);
+      camera.aspect = box.width / (box.height + exitRoom);
+      camera.position.z = entry.kind === 'accent' ? 10.8 : (9.5 / Math.min(box.width / box.height, 1)) * (1 + exitRoom / box.height);
+      camera.updateProjectionMatrix();
       const settle = entry.kind === 'accent' ? 1 : clamp(1 - Math.max(0, settlingUntil - now) / 650);
       stone.rotation.y = (1 - settle) * -.35 + progress * .28;
       stone.scale.setScalar(entry.kind === 'accent' ? .95 : .88);
@@ -169,6 +220,7 @@ function makeShared() {
         resize.disconnect();
         geometries.forEach((geometry) => geometry.dispose());
         materials.forEach((material) => material.dispose());
+        environment.dispose();
         renderer.dispose();
         renderer.forceContextLoss();
         canvas.remove();

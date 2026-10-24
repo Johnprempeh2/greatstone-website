@@ -288,8 +288,9 @@ export const css = `
 .b-hero-stone-still{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .b-hero-stone.is-ready .b-hero-stone-still,.b-hero-gem.is-ready .b-hero-stone-still{visibility:hidden}
 .gs-stone-layer{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:3}
-.b-hero-copy-gem{display:flex;align-items:flex-start;gap:12px}
-.b-hero-copy-gem .b-hero-gem{margin-top:27px}
+.gs-blk:has(.b-hero.has-stone)+.gs-blk{position:relative;z-index:4}
+.b-hero-copy-gem{position:relative}
+.b-hero-copy-gem .b-hero-gem{position:absolute;left:-36px;top:27px}
 .b-hero-gem{display:inline-block;position:relative;width:24px;height:28px;flex:none;pointer-events:none}
 .b-hero.v-statement.has-stone{min-height:78vh;min-height:78svh}
 /* Below the breakpoint the copy returns to one column and the hero mark is hidden. The
@@ -298,6 +299,7 @@ export const css = `
   .b-hero.v-statement.has-stone .b-hero-grid{display:block;max-width:var(--stmt-w)}
   .b-hero.v-statement.has-stone{min-height:66vh;min-height:66svh}
   .b-hero-stone{display:none}
+  .b-hero-copy-gem .b-hero-gem{display:none}
 }
 @media(max-width:640px){
   .b-hero.v-statement.has-stone{min-height:auto}
