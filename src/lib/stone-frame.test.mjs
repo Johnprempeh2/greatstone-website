@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStoneFrameScheduler } from './stone-frame.mjs';
-import { stoneProgress, stoneSlabOffset, stoneViewport } from './stone-motion.mjs';
+import { stoneProgress, stoneSlabOffset, stoneExitVisible, stoneExitRoom, stoneViewport } from './stone-motion.mjs';
 
 test('stone draws once for a burst of view changes, then schedules zero idle frames', () => {
   const callbacks = new Map();
@@ -40,9 +40,14 @@ test('scroll fractures five slabs and sinks them as the hero leaves view', () =>
 
 test('hero scissor extends below its box during the sink, then stops off screen', () => {
   const box = { left: 786, right: 1276, top: -379, bottom: 141, width: 490, height: 520 };
-  const clipped = stoneViewport(box, 1440, 900, 220);
-  assert.deepEqual(clipped.viewport, [786, 539, 490, 740]);
-  assert.deepEqual(clipped.scissor, [786, 539, 490, 361]);
+  const room = stoneExitRoom(box, 900, stoneProgress(box.top, box.height));
+  assert.equal(room, 759);
+  const clipped = stoneViewport(box, 1440, 900, room);
+  assert.deepEqual(clipped.viewport, [786, 0, 490, 1279]);
+  assert.deepEqual(clipped.scissor, [786, 0, 490, 900]);
   assert.ok(clipped.scissor[1] < stoneViewport(box, 1440, 900, 0).scissor[1]);
-  assert.equal(stoneViewport({ ...box, top: -800, bottom: -280 }, 1440, 900, 220), null);
+  const distant = { ...box, top: -1200, bottom: -680 };
+  assert.equal(stoneExitVisible(distant, 900, 1), false);
+  assert.equal(stoneExitRoom(distant, 900, 1), 0);
+  assert.equal(stoneViewport(distant, 1440, 900, 0), null);
 });

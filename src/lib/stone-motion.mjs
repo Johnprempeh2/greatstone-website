@@ -18,6 +18,12 @@ export const stoneSlabOffset = (index, progress) => ({
   y: -(2.4 + index * .65) * progress,
   z: (index % 2 ? -.35 : .35) * progress,
 });
+// Keep the sinking slabs drawable to the viewport edge, but stop once the
+// hero has travelled one full host height above it.
+export const stoneExitVisible = (box, height, progress) =>
+  progress > 0 && box.top < height && box.bottom > -box.height;
+export const stoneExitRoom = (box, height, progress) =>
+  stoneExitVisible(box, height, progress) ? Math.max(0, height - box.bottom) : 0;
 export function stoneViewport(box, width, height, exitRoom) {
   const left = Math.max(0, Math.floor(box.left));
   const right = Math.min(width, Math.ceil(box.right));
@@ -36,7 +42,9 @@ function makeShared() {
   const canvas = document.createElement('canvas');
   canvas.className = 'gs-stone-layer';
   canvas.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(canvas);
+  // Keep the canvas in the public page's stacking context. The following block's
+  // z-index can then cover slabs as they pass beneath its cards.
+  (document.querySelector('.gs-public') || document.body).appendChild(canvas);
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
@@ -151,8 +159,9 @@ function makeShared() {
     for (const entry of entries) {
       const box = entry.node.getBoundingClientRect();
       const progress = entry.kind === 'accent' ? 0 : stoneProgress(box.top, box.height);
-      const exitRoom = entry.kind === 'hero' ? 240 * progress : 0;
-      if ((!entry.visible && !(exitRoom && box.bottom > -exitRoom)) || box.bottom <= -exitRoom || box.top >= height || box.right <= 0 || box.left >= width) continue;
+      const exiting = entry.kind === 'hero' && stoneExitVisible(box, height, progress);
+      const exitRoom = exiting ? stoneExitRoom(box, height, progress) : 0;
+      if ((!entry.visible && !exiting) || box.top >= height || box.right <= 0 || box.left >= width) continue;
       const clip = stoneViewport(box, width, height, exitRoom);
       if (!clip) continue;
       // Extend the hero's viewport and scissor together as it leaves the page.
