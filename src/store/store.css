@@ -16,6 +16,8 @@
 .st-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:22px 0 16px; }
 .st-search { flex:1 1 280px; min-width:200px; position:relative; }
 .st-search input { width:100%; padding:.8em 1em .8em 2.6em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.04); color:var(--gs-text); font:inherit; font-size:.95rem; }
+.st-search input::placeholder { color:#a8a8a8; opacity:1; }
+.st-search--no-icon input { padding-left:1em; }
 .st-search input:focus { outline:none; border-color:var(--gs-accent-mid); }
 .st-search svg { position:absolute; left:1em; top:50%; transform:translateY(-50%); width:17px; height:17px; stroke:var(--gs-text-faint); }
 .st-select { appearance:none; -webkit-appearance:none; padding:.7em 2.4em .7em 1.1em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.1)); background:rgba(255,255,255,.04); color:var(--gs-text); font:inherit; font-size:.9rem; cursor:pointer; }
