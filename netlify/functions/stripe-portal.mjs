@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
+import { buyerForCheckout } from './stripe-checkout.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
@@ -39,7 +40,10 @@ export function makeStripePortalHandler({ env = process.env, pool = getPool, ver
       });
       if (account?.staff) return json({ error: 'Staff accounts have no customer billing portal.' }, 403);
       if (!account) return json({ error: 'No customer account found.' }, 404);
-      // Creating and saving a missing Stripe customer waits for Ridge's approved RLS path.
+      if (!account.stripe_customer_id) {
+        const buyer = await buyerForCheckout(db, user, env, fetchImpl, log);
+        account.stripe_customer_id = buyer?.stripe_customer_id;
+      }
       if (!account.stripe_customer_id) return json({ error: 'Billing portal is not ready for this account.' }, 503);
       if (!/^cus_[A-Za-z0-9]+$/.test(account.stripe_customer_id)) throw new Error('Invalid Stripe customer id');
       const form = new URLSearchParams({ customer: account.stripe_customer_id, return_url: body.returnUrl });

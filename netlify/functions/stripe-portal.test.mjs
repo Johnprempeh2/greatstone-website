@@ -15,6 +15,7 @@ function fixture(account) {
       calls.push([sql, params]);
       if (sql.includes('FROM users')) return { rows: [] };
       if (sql.includes('FROM customer_users')) return { rows: account ? [account] : [] };
+      if (sql.includes('UPDATE customers')) return { rows: [{ stripe_customer_id: 'cus_new123' }] };
       return { rows: [] };
     },
     release: () => calls.push(['release']),
@@ -42,9 +43,21 @@ test('rejects a foreign return URL before database and Stripe calls', async () =
   assert.equal((await handler(request('https://elsewhere.example/#account'))).status, 400);
 });
 
-test('missing Stripe customer does not create one or escape RLS', async () => {
-  const { calls, pool } = fixture({ stripe_customer_id: null });
-  const handler = makeStripePortalHandler({ env, pool, verify: async () => ({ id }), fetchImpl: () => { throw new Error('Stripe reached'); } });
-  assert.equal((await handler(request())).status, 503);
-  assert.equal(calls.at(-2)[0], 'COMMIT');
+test('missing Stripe customer is created once and saved under buyer RLS before portal opens', async () => {
+  const { calls, pool } = fixture({ customer_id: id, user_id: id, email: 'buyer@example.test', name: 'Buyer', stripe_customer_id: null });
+  const stripe = [];
+  const logs = [];
+  const handler = makeStripePortalHandler({ env, pool, verify: async () => ({ id, email: 'buyer@example.test' }),
+    log: (message) => logs.push(message),
+    fetchImpl: async (url, init) => {
+      stripe.push([url, init]);
+      return Response.json(url.endsWith('/customers') ? { id: 'cus_new123' } : { url: 'https://billing.stripe.com/session/new' });
+    } });
+  const response = await handler(request());
+  assert.equal(response.status, 200, JSON.stringify({ logs, body: await response.clone().json(), calls: calls.map(([sql]) => sql) }));
+  assert.equal(stripe.length, 2);
+  assert.equal(stripe[0][1].headers['idempotency-key'], 'gs-cust-' + id);
+  assert.equal(new URLSearchParams(stripe[1][1].body).get('customer'), 'cus_new123');
+  assert.equal(calls.some(([sql]) => sql.includes('WHERE id=app_customer_id() AND stripe_customer_id IS NULL')), true);
+  assert.equal(calls.filter(([sql]) => sql === 'SET LOCAL ROLE authenticated').length, 3);
 });
