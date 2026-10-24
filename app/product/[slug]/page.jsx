@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
   const title = item.seo?.metaTitle || `${item.name} · Greatstone International`;
   const description = item.seo?.metaDescription || item.short_description || item.description;
   const url = `https://greatstoneint.com/product/${encodeURIComponent(slug)}`;
-  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { card: 'summary', title, description }, other: { 'gs-release': String(release.release.number) } };
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { card: 'summary', title, description }, other: { 'gsam-release': String(release.release.number) } };
 }
 
 export default async function Product({ params }) {
