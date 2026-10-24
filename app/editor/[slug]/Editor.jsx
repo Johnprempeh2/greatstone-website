@@ -5,6 +5,7 @@ import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx'
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
 import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
+import { motionHello, setMotion, setMotionResult } from '../../../next-proof/frame-set-motion.mjs';
 import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
@@ -57,10 +58,10 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           window.parent.postMessage(envelope('hello-refused', { nonce, reason: result.refused, supported: [FRAME_PROTOCOL] }), event.origin); return;
         }
         session.current ||= { nonce, origin: event.origin };
-        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], blocks: Object.keys(proofConfig.components).map((type) => ({ type, label: type })) }), event.origin);
+        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...motionHello(proofConfig.components) }), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
-      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'teardown'])) {
+      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'teardown'])) {
         if (event.data?.gs === 'website-frame') console.warn('Dropped frame message: origin, source, session, protocol or payload invalid');
         return;
       }
@@ -83,6 +84,16 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           dirty(true); setStatus('ready'); setMessage('Unsaved changes');
         }
         send('insert-media-result', insertMediaResult(event.data.id, result));
+      } else if (event.data.type === 'set-motion') {
+        const result = mode === 'editor' && draft.current
+          ? setMotion(draft.current, p)
+          : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
+        if (result.ok) {
+          draft.current = result.data;
+          setData(displayData(result.data)); setGeneration((n) => n + 1);
+          dirty(true); setStatus('ready'); setMessage('Unsaved changes');
+        }
+        send('set-motion-result', setMotionResult(event.data.id, result));
       } else if (event.data.type === 'save-result' && pending.current && p.requestId === pending.current.requestId) {
         clearTimeout(timer.current);
         const decision = saveDecision(pending.current, draft.current, p);
