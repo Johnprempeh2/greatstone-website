@@ -10,6 +10,6 @@ export function pageMetadata(page, releaseNumber) {
     alternates: { canonical: url },
     openGraph: { type: 'website', siteName: 'Greatstone International', locale: 'en_GB', title: page.seo.title, description: page.seo.description, url, images: [image] },
     twitter: { card: 'summary_large_image', title: page.seo.title, description: page.seo.description, images: [image] },
-    other: { 'gs-release': String(releaseNumber) },
+    other: { 'gsam-release': String(releaseNumber) },
   };
 }

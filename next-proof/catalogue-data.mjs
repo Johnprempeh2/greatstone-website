@@ -2,7 +2,7 @@ import { resolveMediaRefs } from './release-media.mjs';
 
 export function catalogueFromRelease(release) {
   const rows = (key) => (release.collections?.[key]?.entries || [])
-    .filter((entry) => entry.orgId === release.orgId)
+    .filter((entry) => release.gsamSnapshot || entry.orgId === release.orgId)
     .map((entry) => resolveMediaRefs(entry.fields.data, release.media));
   return { vendors: rows('vendors'), categories: rows('categories'), offerings: rows('offerings') };
 }

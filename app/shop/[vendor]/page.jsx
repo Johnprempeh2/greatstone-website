@@ -10,7 +10,7 @@ export async function generateMetadata({ params }) {
   const { vendor: slug } = await params;
   const vendor = catalogue.vendors.find((item) => item.slug === slug);
   if (!vendor) notFound();
-  return { title: `${vendor.name} software · Greatstone International`, description: vendor.description || `Browse ${vendor.name} software.`, alternates: { canonical: `https://greatstoneint.com/shop/${encodeURIComponent(slug)}` }, other: { 'gs-release': String(release.release.number) } };
+  return { title: `${vendor.name} software · Greatstone International`, description: vendor.description || `Browse ${vendor.name} software.`, alternates: { canonical: `https://greatstoneint.com/shop/${encodeURIComponent(slug)}` }, other: { 'gsam-release': String(release.release.number) } };
 }
 
 export default async function VendorShop({ params, searchParams }) {

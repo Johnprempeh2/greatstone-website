@@ -1,6 +1,6 @@
 export function resolveMediaRefs(value, media) {
   if (typeof value === 'string') {
-    const item = value.startsWith('media:') && media[value.slice(6)];
+    const item = (value.startsWith('media:') && media[value.slice(6)]) || media[value];
     return item ? `/${item.key}` : value;
   }
   if (Array.isArray(value)) return value.map((item) => resolveMediaRefs(item, media));

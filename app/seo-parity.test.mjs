@@ -23,7 +23,7 @@ test('page metadata retains canonical and default social image', () => {
   assert.equal(result.alternates.canonical, origin + '/services');
   assert.equal(result.openGraph.images[0], origin + '/og-default.png');
   assert.equal(result.twitter.card, 'summary_large_image');
-  assert.equal(result.other['gs-release'], '2');
+  assert.equal(result.other['gsam-release'], '2');
 });
 
 test('site structured data keeps the organisation and website graph', () => {
