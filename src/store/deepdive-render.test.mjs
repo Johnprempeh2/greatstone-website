@@ -310,6 +310,13 @@ async function mountAll() {
   const Stub = class { observe() {} unobserve() {} disconnect() {} };
   if (!g.ResizeObserver) put('ResizeObserver', Stub);
   if (!g.IntersectionObserver) put('IntersectionObserver', Stub);
+  // Better Auth checks the same-origin session endpoint when the portal mounts.
+  // The render fixture has no signed-in user; give it the empty HTTP response.
+  put('fetch', async (input) => {
+    if (String(input?.url || input).includes('/api/auth/get-session'))
+      return Response.json(null, { headers: { 'content-type': 'application/json' } });
+    throw new Error('Unexpected network request in render fixture');
+  });
   // Set through `put` like everything else, so it is restored too. `false` is right here: the
   // flush is a real setTimeout, so act() warnings would be noise rather than signal.
   put('IS_REACT_ACT_ENVIRONMENT', false);

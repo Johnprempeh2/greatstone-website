@@ -1,5 +1,5 @@
 // The Netlify function reads the document through this person's claims and returns its private PDF.
-import { supabase } from '../lib/supabase.mjs';
+import { getSession } from '../lib/better-auth-client.mjs';
 
 export async function portalFileStatus() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -10,10 +10,10 @@ export async function portalFileStatus() {
 }
 
 export async function downloadPortalPdf(documentId) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Sign in to download this file.');
+  const session = await getSession();
+  if (!session) throw new Error('Sign in to download this file.');
   const response = await fetch('/api/portal-file', { method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ document_id: documentId }) });
   if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || 'The PDF is unavailable. Try again.');
   const url = URL.createObjectURL(await response.blob());

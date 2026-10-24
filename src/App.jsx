@@ -228,20 +228,12 @@ function readConfirmHash() {
 function readAccountHash() {
   return /^#\/?account\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
-// A Supabase auth email link (signup confirmation, password recovery, magic link, email change) lands
-// on a bare URL with the result in the fragment — EITHER success (#access_token=…&type=…) OR failure
-// (#error=…&error_code=otp_expired&… when the link expired, was already used, or got consumed by an email
-// scanner/prefetch). Either way there's no #account route to match on, so without this both would dump the
-// visitor silently on the homepage. Captured ONCE at module load, before the lazy account chunk pulls in
-// supabase-js (which consumes + scrubs the tokens). AUTH_LANDING mounts the account portal; RECOVERY_LANDING
-// shows the set-a-new-password form; AUTH_ERROR_MSG surfaces a readable reason so the visitor isn't lost.
-const _authHash = typeof location !== 'undefined' ? location.hash : '';
-const AUTH_LANDING = /[#&](?:access_token|error)=/.test(_authHash) || /error_code=/.test(_authHash);
-const RECOVERY_LANDING = /[#&]access_token=/.test(_authHash) && /type=recovery/.test(_authHash);
-const AUTH_ERROR_MSG = (/[#&]error/.test(_authHash) && !/[#&]access_token=/.test(_authHash))
-  ? ((() => { try { return decodeURIComponent((/error_description=([^&]+)/.exec(_authHash) || [])[1] || '').replace(/\+/g, ' '); } catch { return ''; } })()
-     || 'That link is invalid or has expired.')
-  : null;
+// Better Auth returns reset tokens and invalid-link errors in the URL query.
+// Capture them before routing so a bare email landing opens the account screen.
+const _authQuery = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+const AUTH_LANDING = _authQuery.has('token') || _authQuery.has('error');
+const RECOVERY_LANDING = _authQuery.has('token');
+const AUTH_ERROR_MSG = _authQuery.has('error') ? 'That link is invalid or has expired.' : null;
 // #org → customer organization dashboard (company hub, members, DX engagement timeline)
 function readOrgHash() {
   return /^#\/?org\b/i.test(typeof location !== 'undefined' ? location.hash : '');
