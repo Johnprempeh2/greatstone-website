@@ -14,55 +14,68 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 // Editable text props are rendered DIRECTLY as children so Puck's contentEditable transform can
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
-// The hero's own 3D mark, mounted into a CONTAINED box rather than the full-screen Stage, so it sits
-// beside the Opening Statement instead of behind the reading. Two things make this cheap:
-//   three.js is ~520KB and deliberately kept off the critical path (App.jsx lazy-loads Stage for
-//   exactly that reason), so the module is imported dynamically here too: the hero paints immediately
-//   and the mark arrives when its chunk lands.
-//   greatstone-logo.mjs already self-gates on its own IntersectionObserver, so the loop stops the
-//   moment the hero scrolls away. Nothing extra to wire.
-function HeroStone({ enabled = true, still = false }) {
+// The still paints first. A visible desktop mark may load the shared renderer only after load/idle.
+function StoneSymbol({ kind = 'hero', enabled = true }) {
   const host = useRef(null);
   useEffect(() => {
-    if (!enabled) return undefined;
-    if (typeof matchMedia === 'undefined') return undefined;
-    // The mark is only rendered at two-column widths, and standing up a WebGL context for a canvas
-    // nobody can see is pure cost on exactly the devices least able to pay. But the breakpoint has to
-    // be WATCHED, not read once: read once, a visitor who loads at 900px and then maximises their
-    // window keeps an empty column until they reload. So mount and unmount follow the query.
-    const mq = matchMedia('(min-width:1024px)');
-    let handle = null, dead = false, loading = false;
+    if (!enabled || !host.current || typeof matchMedia === 'undefined') return undefined;
+    const desktop = matchMedia('(min-width: 1024px)');
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const node = host.current;
+    let removed = false;
+    let release;
+    let idle;
+    let loading = false;
+    let paintReady = false;
+    let paintObserver;
+    const canAnimate = () => desktop.matches && !reduced.matches && !navigator.connection?.saveData &&
+      !(navigator.hardwareConcurrency <= 4 && navigator.deviceMemory <= 4);
     const up = () => {
-      if (handle || loading || !host.current) return;
+      if (!canAnimate() || release || loading || removed || document.hidden) return;
       loading = true;
-      // three.js is ~520KB and deliberately kept off the critical path (App.jsx lazy-loads Stage for
-      // exactly that reason), so this is a dynamic import too: the hero paints at once and the mark
-      // arrives when its chunk lands.
-      import('../lib/greatstone-logo.mjs').then((m) => {
+      import('../lib/stone-motion.mjs').then(({ mountStoneSymbol }) => {
         loading = false;
-        if (dead || handle || !host.current || !mq.matches) return;
-        // mounting constructs a WebGLRenderer, which THROWS where WebGL is unavailable (blocklisted
-        // GPU, hardened browser, some VMs). Guard it: the hero simply renders without the mark.
-        try {
-          handle = m.mountGreatstoneLogo(host.current, {
-            envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg',
-            bloom: 0.6, exposure: 1.3, idle: true, autoTurn: true,
-          });
-        } catch (e) { handle = null; }
+        if (!removed && canAnimate() && !release && !document.hidden) {
+          try { release = mountStoneSymbol(node, kind); } catch { /* still remains */ }
+        }
       }).catch(() => { loading = false; });
     };
-    const down = () => { if (handle) { try { handle.destroy(); } catch (e) { /* already gone */ } handle = null; } };
-    const onChange = () => (mq.matches ? up() : down());
-    onChange();
-    // Safari before 14 has no addEventListener on MediaQueryList
-    if (mq.addEventListener) mq.addEventListener('change', onChange); else mq.addListener(onChange);
-    return () => {
-      dead = true;
-      if (mq.removeEventListener) mq.removeEventListener('change', onChange); else mq.removeListener(onChange);
-      down();
+    const later = () => {
+      idle = 'requestIdleCallback' in window ? requestIdleCallback(up, { timeout: 600 }) : setTimeout(up, 120);
     };
-  }, [enabled]);
-  return <div className="b-hero-stone" ref={host} aria-hidden="true" data-cursor="explore">{still && <img className="b-hero-stone-still" src="/motion/stone-still.png" alt="" width="660" height="880" />}</div>;
+    const afterPaint = () => { if (!removed) { paintReady = true; later(); } };
+    const afterLoad = () => {
+      if (performance.getEntriesByType('paint').some((entry) => entry.name === 'first-contentful-paint')) { afterPaint(); return; }
+      if (typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes?.includes('paint')) {
+        paintObserver = new PerformanceObserver((list) => {
+          if (list.getEntries().some((entry) => entry.name === 'first-contentful-paint')) {
+            paintObserver.disconnect();
+            afterPaint();
+          }
+        });
+        paintObserver.observe({ type: 'paint', buffered: true });
+      } else requestAnimationFrame(() => requestAnimationFrame(afterPaint));
+    };
+    const onChange = () => {
+      if (canAnimate()) { if (paintReady) later(); }
+      else { release?.(); release = undefined; }
+    };
+    if (document.readyState === 'complete') afterLoad();
+    else window.addEventListener('load', afterLoad, { once: true });
+    desktop.addEventListener('change', onChange);
+    reduced.addEventListener('change', onChange);
+    return () => {
+      removed = true;
+      window.removeEventListener('load', afterLoad);
+      paintObserver?.disconnect();
+      if ('cancelIdleCallback' in window) cancelIdleCallback(idle);
+      else clearTimeout(idle);
+      desktop.removeEventListener('change', onChange);
+      reduced.removeEventListener('change', onChange);
+      release?.();
+    };
+  }, [enabled, kind]);
+  return <span className={kind === 'hero' ? 'b-hero-stone' : 'b-hero-gem'} ref={host} aria-hidden="true"><img className="b-hero-stone-still" src={kind === 'hero' ? '/motion/stone-shared-still.png' : '/motion/stone-accent.svg'} alt="" width="490" height="519" /></span>;
 }
 
 export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb', stone = 'none', motion, motionRuntime = 'still' }) {
@@ -98,7 +111,8 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
           ? lines.map((l, i) => <span className={'b-hero-line' + (l.accent ? ' accent b-hero-glow' : '')} key={i}>{l.text}</span>)
           : <>{headline} {highlight ? <span className="accent">{highlight}</span> : null}{headlineSuffix || ''}</>}
       </h1>
-      <EditableText editing={puck && puck.isEditing} id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" data-reveal />
+      {stoneOn ? <div className="b-hero-copy-gem"><StoneSymbol kind="accent" enabled={!motion || motionRuntime === 'animate'} /><EditableText editing={puck && puck.isEditing} id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" data-reveal /></div>
+        : <EditableText editing={puck && puck.isEditing} id={id} field="body" value={body} as="p" className="lede" placeholder="Add a subheading…" data-reveal />}
       {Array.isArray(meta) && meta.length ? (
         <div className="b-hero-meta" data-reveal>
           {meta.map((m, i) => (
@@ -125,7 +139,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}${stoneOn ? ' has-stone' : ''}`}>
       {stoneOn
-        ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><HeroStone enabled={!motion || motionRuntime === 'animate'} still={!!motion} /></div>
+        ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><StoneSymbol enabled={!motion || motionRuntime === 'animate'} /></div>
         : <div className="wrap b-hero-inner">{inner}</div>}
       {scrollCue ? (
         <span className={'b-hero-scrollcue' + (cueHidden ? ' is-gone' : '')} aria-hidden="true">
@@ -272,14 +286,20 @@ export const css = `
 .b-hero-stone{position:relative;width:100%;aspect-ratio:1/1.06;max-height:min(58vh,560px);
   justify-self:center;pointer-events:none}
 .b-hero-stone-still{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-.b-hero-stone:has(canvas) .b-hero-stone-still{visibility:hidden}
+.b-hero-stone.is-ready .b-hero-stone-still,.b-hero-gem.is-ready .b-hero-stone-still{visibility:hidden}
+.gs-stone-layer{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:3}
+.gs-blk:has(.b-hero.has-stone)+.gs-blk{position:relative;z-index:4}
+.b-hero-copy-gem{position:relative}
+.b-hero-copy-gem .b-hero-gem{position:absolute;left:-36px;top:27px}
+.b-hero-gem{display:inline-block;position:relative;width:24px;height:28px;flex:none;pointer-events:none}
 .b-hero.v-statement.has-stone{min-height:78vh;min-height:78svh}
-/* Below the breakpoint there is no second column: the copy returns to a single block and the mark is
-   not rendered at all (HeroStone refuses to mount under 1024px, so no WebGL context is created). */
+/* Below the breakpoint the copy returns to one column and the hero mark is hidden. The
+   icon-sized accent keeps its static SVG, with no WebGL context on phones. */
 @media(max-width:1023px){
   .b-hero.v-statement.has-stone .b-hero-grid{display:block;max-width:var(--stmt-w)}
   .b-hero.v-statement.has-stone{min-height:66vh;min-height:66svh}
   .b-hero-stone{display:none}
+  .b-hero-copy-gem .b-hero-gem{display:none}
 }
 @media(max-width:640px){
   .b-hero.v-statement.has-stone{min-height:auto}

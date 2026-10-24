@@ -1,0 +1,12 @@
+{
+  "canvas": 1,
+  "canvasParent": "gs-public",
+  "nextZ": "4",
+  "stoneZ": "3",
+  "mainZ": "2",
+  "drawsAtRest": 0,
+  "viewport": [
+    1440,
+    900
+  ]
+}
