@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { usePuck } from '@puckeditor/core';
 import { sanitizeInline } from '../lib/sanitize-html.mjs';
 import { looksLikeHtml, plainToRichHtml } from '../lib/richtext-normalise.mjs';
-import { RT_COLORS, RT_HIGHLIGHTS, RT_HEX } from '../lib/richtext-marks.mjs';
+import { RT_COLORS, RT_HEX } from '../lib/richtext-marks.mjs';
+import { safeHref } from '../lib/safe-url.js';
 
 // Inline-on-canvas rich editor. Renders a block's text field as an editable, formattable element DIRECTLY on the
 // canvas in the Next.js Puck iframe. Its Text toolbar is portaled into that same document, so formatting
@@ -84,6 +85,16 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
     sync();
     el.focus();
   };
+  const link = () => {
+    const el = ref.current;
+    if (!el || el.closest('a')) return;
+    const href = el.ownerDocument.defaultView.prompt('Link URL');
+    if (!href) return;
+    const safe = safeHref(href);
+    if (safe === '#') return;
+    el.ownerDocument.execCommand('createLink', false, safe);
+    sync(); el.focus();
+  };
   const formatClass = (className, prefix) => {
     const el = ref.current; if (!el) return;
     const doc = el.ownerDocument, selection = doc.defaultView.getSelection();
@@ -133,16 +144,9 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
       <span>Text</span>
       <button type="button" aria-label="Bold" onClick={() => format('bold')}><b>B</b></button>
       <button type="button" aria-label="Italic" onClick={() => format('italic')}><i>I</i></button>
-      <button type="button" aria-label="Underline" onClick={() => format('underline')}><u>U</u></button>
+      <button type="button" aria-label="Link" disabled={!!ref.current?.closest('a')} onClick={link}>Link</button>
       <span className="gs-frame-tool-divider" aria-hidden="true" />
       {RT_COLORS.map((color) => <button key={`colour-${color.id}`} type="button" aria-label={`Text colour ${color.label}`} title={`Text colour ${color.label}`} style={color.id ? { color: RT_HEX[color.id] } : undefined} onClick={() => formatClass(color.className, 'gs-rt-c-')}>A</button>)}
-      <span className="gs-frame-tool-divider" aria-hidden="true" />
-      {RT_HIGHLIGHTS.map((mark) => <button key={`highlight-${mark.id}`} type="button" aria-label={`Highlight ${mark.label}`} title={`Highlight ${mark.label}`} style={mark.id ? { background: RT_HEX[mark.colour], color: '#0e1611' } : undefined} onClick={() => formatClass(mark.className, 'gs-rt-bg-')}>H</button>)}
-      <span className="gs-frame-tool-divider" aria-hidden="true" />
-      <button type="button" aria-label="Bulleted list" onClick={() => format('insertUnorderedList')}>List</button>
-      <button type="button" aria-label="Outdent" onClick={() => format('outdent')}>Out</button>
-      <button type="button" aria-label="Indent" onClick={() => format('indent')}>In</button>
-      <button type="button" aria-label="Clear formatting" onClick={() => format('removeFormat')}>Clear</button>
     </div>, canvasDocument.body)}
     </>
   );

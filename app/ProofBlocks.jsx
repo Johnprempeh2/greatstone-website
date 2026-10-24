@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
 
 import * as TwoDoors from '../src/blocks/TwoDoors.jsx';
 import * as TwoDoorsStory from '../src/blocks/TwoDoorsStory.jsx';
@@ -36,6 +36,7 @@ import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
+const InsertAfter = lazy(() => import('./editor/InsertAfter.jsx'));
 export const PreviewContext = createContext(false);
 let motionCoordinator;
 let motionUsers = 0;
@@ -51,7 +52,7 @@ function BlockAnchor({ props, puck, type }) {
     const unregister = motionCoordinator.register(node.current, motion.intensity, setMode);
     return () => { unregister(); if (--motionUsers === 0) { motionCoordinator.destroy(); motionCoordinator = undefined; } };
   }, [motion?.effect, motion?.intensity]);
-  return <div ref={node} id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} data-motion-effect={motion?.effect || undefined} data-motion-mode={motion ? mode : undefined} data-motion-block={type} data-divider={props.divider === 'glow' ? 'glow' : undefined} {...(preview ? { 'data-gs-block-id': props.id, 'data-gs-block-type': type } : {})}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{motion?.effect?.startsWith('bg.') ? <ContainedMotion effect={motion.effect} intensity={motion.intensity} mode={mode} /> : null}{puck.render(motion ? { ...props, motionRuntime: mode } : props)}</div>;
+  return <div ref={node} id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} data-motion-effect={motion?.effect || undefined} data-motion-mode={motion ? mode : undefined} data-motion-block={type} data-divider={props.divider === 'glow' ? 'glow' : undefined} data-gs-block-id={props.id} data-gs-block-type={type}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{motion?.effect?.startsWith('bg.') ? <ContainedMotion effect={motion.effect} intensity={motion.intensity} mode={mode} /> : null}{puck.render(motion ? { ...props, motionRuntime: mode } : props)}{puck.isEditing && <Suspense fallback={null}><InsertAfter id={props.id} /></Suspense>}</div>;
 }
 const withAnchor = (puck, type) => ({
   ...puck,
