@@ -157,6 +157,8 @@ p.pt-ev-to-validate { border-left: 3px dotted var(--pt-muted); }
 
 /* staff: Clients & DX → Portal */
 .pts-sub { font-size: 1rem; margin: 18px 0 8px; }
+.pts-storage-status { min-height: 3.5em; display: flex; align-items: center; gap: .35em; flex-wrap: wrap; border: 1px solid var(--gs-border-soft); border-radius: 10px; padding: 10px 14px; margin: 12px 0; color: var(--gs-text-muted); font-size: .85rem; background: rgba(18,20,18,.7); }
+.pts-storage-status strong { color: var(--gs-text); }
 .pts-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; color: var(--gs-text-faint); margin-top: 4px; }
 .pts-err { font-size: .8rem; margin-top: 4px; max-width: 32ch; overflow-wrap: anywhere; }
 .ca-drawer.pts-wide { width: min(920px, 100vw); max-width: 100vw; }

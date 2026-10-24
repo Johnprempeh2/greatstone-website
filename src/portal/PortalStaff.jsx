@@ -10,7 +10,7 @@ import { useModal } from '../store/useModal.mjs';
 import DrawerScrim from '../store/DrawerScrim.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import DocumentView from './DocumentView.jsx';
-import { downloadPortalPdf } from './portal-file.mjs';
+import { downloadPortalPdf, portalFileStatus } from './portal-file.mjs';
 import ActionPanel from './ActionPanel.jsx';
 import { ReceiptView, nudgeReceiptWorker } from './Portal.jsx';
 import { KIND_LABEL, STAFF_STATUS, receiptJobLabel, cleanSections, cleanDemos, fmtDay } from './portal-model.mjs';
@@ -31,12 +31,19 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
   const [approvals, setApprovals] = useState([]);
   const [approver, setApprover] = useState(false);
   const [loadErr, setLoadErr] = useState(null);
+  const [fileStatus, setFileStatus] = useState(null);
   const [editing, setEditing] = useState(null);   // a draft row, or {} for new, or { series, kind, … } for a new version
   const [preview, setPreview] = useState(null);   // a document row
   const [approving, setApproving] = useState(null);
   const [receipt, setReceipt] = useState(null);   // an acceptance row
   const [busyId, setBusyId] = useState(null);
   const canWithdraw = staff && ['owner', 'admin'].includes(staff.role);
+  useEffect(() => {
+    let active = true;
+    portalFileStatus().then((value) => { if (active) setFileStatus(value); })
+      .catch(() => { if (active) setFileStatus({ error: true }); });
+    return () => { active = false; };
+  }, []);
 
   const load = useCallback(() => {
     setLoadErr(null);
@@ -130,6 +137,11 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
         <button className="gs-btn primary sm" onClick={() => setEditing({})}>+ New document</button>
       </div>
       <p className="ca-note">Documents {customer.name} sees in their client portal. A client sees nothing until the registered approver presses Approve and publish on the exact version.</p>
+      <p className="pts-storage-status" role="status" aria-busy={!fileStatus}>{!fileStatus
+        ? 'Checking file storage…'
+        : fileStatus.error ? 'File storage status unavailable. Portal files remain in private storage.'
+          : fileStatus.connected ? 'OneDrive enabled. Portal files also remain in private storage.'
+            : <><strong>OneDrive not connected yet.</strong> Portal files remain in private storage.</>}</p>
 
       <h3 className="pts-sub">Documents</h3>
       {docs === null ? <p className="ca-muted">Loading…</p>

@@ -11,10 +11,24 @@ const req = (id = DOC, token = 'valid') => new Request('https://example.test/api
 test('portal PDF requires a valid request and verified identity', async () => {
   const handler = makePortalFileHandler({ verify: async (token) => token === 'valid' ? USER : null,
     pool: () => { throw new Error('database reached'); }, log: () => {} });
-  assert.equal((await handler(new Request('https://example.test/api/portal-file'))).status, 405);
+  assert.equal((await handler(new Request('https://example.test/api/portal-file', { method: 'PUT' }))).status, 405);
   assert.equal((await handler(req('bad'))).status, 400);
   assert.equal((await handler(req(DOC, 'bad'))).status, 401);
   assert.equal((await handler(new Request('https://example.test/api/portal-file', { method: 'POST', body: '{}' }))).status, 400);
+});
+
+test('staff can read connection status, but a customer cannot', async () => {
+  const sql = [];
+  const db = (org) => ({ connect: async () => ({
+    query: async (statement) => { sql.push(statement); return { rows: statement === 'SELECT app_staff_org() AS org_id' ? [{ org_id: org }] : [] }; },
+    release: () => {},
+  }) });
+  const request = new Request('https://example.test/api/portal-file', { headers: { authorization: 'Bearer valid' } });
+  const staff = makePortalFileHandler({ verify: async () => USER, pool: () => db(USER.id), settings: () => ({ enabled: false }) });
+  assert.deepEqual(await (await staff(request)).json(), { connected: false });
+  assert.ok(sql.includes('SELECT app_staff_org() AS org_id'));
+  const customer = makePortalFileHandler({ verify: async () => USER, pool: () => db(null) });
+  assert.equal((await customer(request)).status, 403);
 });
 
 test('portal PDF is read through the claims transaction before private blob access', async () => {
