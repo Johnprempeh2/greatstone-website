@@ -29,3 +29,24 @@ The six pairs of stills are `public/motion/<effect>-{dark,light}.webp`; their 2-
 previews are `public/motion/previews/<effect>.webm`. The existing Tide still is
 `public/motion/tide-still.png`; its short preview is
 `public/motion/previews/tide.webm`.
+
+## Mikey review, round 2
+
+`review2-after-*` replaces the affected after views at 1440 and 390, under dark and
+light browser preferences. Meridian, Datum, Ascent and Orbit now show their shapes
+on the right of the desktop hero at Subtle. `review2-live-*` is an actual animated
+desktop frame for each of the five placed effects, captured after the shared
+coordinator reported `animate` and the canvas was ready. `review2-tide-1440.png`
+and `review2-tide-390.png` scroll to the inserted Tide band.
+
+Meridian's phone-width field uses emerald for every line. The desktop highlight
+uses teal, as do Ascent and Orbit, so their brighter lines cannot put lime behind
+copy. The revised stills and previews were re-exported from the same renderer.
+
+`review2-contrast.json` records the lowest sampled body-text contrast: 7.13:1
+on DX Consultancy at 1440 in the dark preference. The check hid paragraphs in
+place, then sampled nine background pixels in each visible paragraph box on all
+five pages at 1440 and 390 under both browser preferences. The site still renders
+the dark surface under the light preference. The temporary release draft was
+restored after capture; no placement, including the home page, is in the saved
+release.
