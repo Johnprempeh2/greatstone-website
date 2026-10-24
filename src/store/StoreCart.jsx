@@ -63,8 +63,8 @@ export default function StoreCart({ confirmed = false }) {
   const submitQuote = useCallback(async (e) => {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
-      // Read an attached PO document to base64 (the service-role edge fn stores it; migration 0026). Guard the
-      // size client-side so we never send a huge body; the server also caps it and treats the doc as best-effort.
+      // Read an attached PO document to base64 for the Netlify function. Guard the size client-side;
+      // the server also caps it before storing the private file.
       let poDocument;
       if (poFile) {
         if (poFile.size > 10 * 1024 * 1024) { setErr('That PO file is over 10 MB. Attach a smaller one, or email it to us with your reference.'); setBusy(false); return; }
