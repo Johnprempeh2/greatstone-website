@@ -1,6 +1,14 @@
 // The Netlify function reads the document through this person's claims and returns its private PDF.
 import { supabase } from '../lib/supabase.mjs';
 
+export async function portalFileStatus() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Sign in required.');
+  const response = await fetch('/api/portal-file', { headers: { authorization: `Bearer ${session.access_token}` } });
+  if (!response.ok) throw new Error('File storage status unavailable.');
+  return response.json();
+}
+
 export async function downloadPortalPdf(documentId) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error('Sign in to download this file.');

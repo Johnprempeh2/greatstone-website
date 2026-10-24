@@ -40,6 +40,30 @@ Run `npm run design:detect` and post its summary on the task and in the PR, one 
 
 ## Guarded Netlify uploads
 
+### Optional portal OneDrive mirror
+
+Portal PDFs always land in private Netlify Blobs first. The optional server-side Microsoft Graph
+mirror reads and writes the default drive of a Microsoft 365 user (`user`) or SharePoint site
+(`site`). If Graph fails, downloads use the Blob copy. The staff portal shows “OneDrive not
+connected yet” while the mirror is disabled. No customer sign-in or portal RLS rule changes.
+
+Configure these **Netlify server environment settings**, never Vite variables or browser code:
+`PORTAL_ONEDRIVE_ENABLED=true`, `PORTAL_ONEDRIVE_TENANT_ID` (tenant GUID),
+`PORTAL_ONEDRIVE_ACCOUNT_TYPE` (`user` or `site`), `PORTAL_ONEDRIVE_ACCOUNT_ID` (user ID/UPN or
+SharePoint site ID), `PORTAL_ONEDRIVE_FOLDER_ID` (folder item ID),
+`PORTAL_ONEDRIVE_CLIENT_ID` (application GUID), and `PORTAL_ONEDRIVE_CLIENT_SECRET` (server secret).
+Leave `ENABLED` unset until John approves Microsoft consent and the account and folder from
+GRE-1788 are known. The app registration needs Graph application permission to write the
+selected drive, with tenant admin consent. The folder must already exist; the connector does
+not create or discover it. OneDrive file names are deterministic encodings of the private
+Blob keys, so existing portal paths and database rows need no migration. The connector only
+uses the default drive for the selected user or site; choose a site ID whose default library
+contains the portal folder.
+
+Graph API operations follow Microsoft’s [upload](https://learn.microsoft.com/en-us/graph/api/driveitem-put-content?view=graph-rest-1.0),
+[download](https://learn.microsoft.com/en-us/graph/api/driveitem-get-content?view=graph-rest-1.0),
+and [client credentials](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow) contracts.
+
 `greatstone-home` and `gre1795-website-db-staging` use local Netlify uploads. They are not
 Git-linked. Agents must use this repo's guarded commands for these two sites, from a clean
 checkout with `NETLIFY_AUTH_TOKEN`, the Netlify CLI, and task-scoped `GSAM_*` credentials:
