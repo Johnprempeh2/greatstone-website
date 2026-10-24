@@ -6,9 +6,13 @@ const draft = { root: { props: {} }, content: [{ type: 'Hero', props: { id: 'blo
 const pending = { requestId: 'request-1', pageId: 'page-1', baseRevisionId: 'revision-1', data: draft };
 
 test('retry keeps the request id and base revision', () => {
-  assert.equal(saveRequest({ pending, retry: true, createId: () => 'new' }), pending);
+  assert.equal(saveRequest({ pending, retry: true, data: draft, createId: () => 'new' }), pending);
   assert.deepEqual(saveRequest({ pending, retry: false, pageId: 'page-1', baseRevisionId: 'revision-2', data: draft, createId: () => 'request-2' }),
     { requestId: 'request-2', pageId: 'page-1', baseRevisionId: 'revision-2', data: draft });
+});
+
+test('populated legacy zones prevent a save request', () => {
+  assert.throws(() => saveRequest({ pageId: 'page-1', baseRevisionId: 'revision-1', data: { ...draft, zones: { old: [{ type: 'Hero' }] } }, createId: () => 'request-2' }), /legacy DropZone blocks/);
 });
 
 test('saved answer keeps new edits dirty and advances the base', () => {
@@ -16,6 +20,8 @@ test('saved answer keeps new edits dirty and advances the base', () => {
     { kind: 'saved', revisionId: 'revision-2', dirty: false });
   assert.deepEqual(saveDecision(pending, { ...draft, content: [] }, { requestId: 'request-1', outcome: 'saved', revisionId: 'revision-2' }),
     { kind: 'saved', revisionId: 'revision-2', dirty: true });
+  assert.deepEqual(saveDecision(pending, { ...draft, root: { ...draft.root, extra: 'metadata' }, zones: {} }, { requestId: 'request-1', outcome: 'saved', revisionId: 'revision-2' }),
+    { kind: 'saved', revisionId: 'revision-2', dirty: false });
 });
 
 test('conflict carries their draft and media for take theirs', () => {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, publicFrameAncestors, validHello, validMessage } from './frame-protocol.mjs';
+import { saveRequest } from './frame-save.mjs';
 
 const origin = 'https://studio.example.test';
 const nonce = 'ABCDEFGHIJKLMNOPQRSTUV';
@@ -90,6 +91,14 @@ test('handshake envelope has no protocol or session before agreement', () => {
   const after = envelope('dirty', { dirty: true }, { origin, nonce });
   assert.equal(after.protocol, 1);
   assert.equal(after.session, nonce);
+});
+
+test('Puck empty zones and extra root fields are absent from the save envelope', () => {
+  const data = { root: { props: { title: 'About' }, extra: 'Puck metadata' }, content: [], zones: {} };
+  const request = saveRequest({ pageId: 'page-1', baseRevisionId: 'revision-1', data, createId: () => 'request-1' });
+  const message = envelope('save', request, { origin, nonce });
+  assert.deepEqual(message.payload.data, { root: { props: { title: 'About' } }, content: [] });
+  assert.equal('zones' in message.payload.data, false);
 });
 
 test('media references display from blobs and save back as references', () => {
