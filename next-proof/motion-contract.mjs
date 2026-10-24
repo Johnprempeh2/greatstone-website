@@ -10,6 +10,18 @@ export const MOTION_BY_BLOCK = {
   MotionBand: { effects: ['none', 'band.tide'], default: { effect: 'band.tide', intensity: 'subtle', quietAnchor: 'copy' } },
 };
 
+// Only effects with a renderer appear in the host picker. Stills are site paths.
+export const MOTION_EFFECTS = [
+  { id: 'hero.stone', label: 'Hero stone', still: '/motion/stone-still.png' },
+  { id: 'band.tide', label: 'Tide band', still: '/motion/tide-still.png' },
+  { id: 'bg.bedrock', label: 'Bedrock', still: '/motion/bedrock-dark.webp', study: '015' },
+  { id: 'bg.ascent', label: 'Ascent', still: '/motion/ascent-dark.webp', study: '016' },
+  { id: 'bg.datum', label: 'Datum', still: '/motion/datum-dark.webp', study: '017' },
+  { id: 'bg.meridian', label: 'Meridian', still: '/motion/meridian-dark.webp', study: '018' },
+  { id: 'bg.veil', label: 'Veil', still: '/motion/veil-dark.webp', study: '019' },
+  { id: 'bg.orbit', label: 'Orbit', still: '/motion/orbit-dark.webp', study: '020' },
+];
+
 export function resolveMotion(type, props = {}) {
   const choice = props.motion;
   if (!choice) return null; // A saved release from before motion fields keeps its old path.
