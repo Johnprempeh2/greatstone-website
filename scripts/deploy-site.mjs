@@ -1,5 +1,6 @@
 import { spawnSync, spawn } from 'node:child_process';
-import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -10,12 +11,14 @@ const sites = new Map([
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
+// A config refresh re-uploads to production, so it shares production's marker and lock.
+const channel = mode === 'refresh' ? 'prod' : mode;
 const issueId = process.env.GSAM_TASK_ID;
 const token = process.env.NETLIFY_AUTH_TOKEN;
 const base = process.env.GSAM_API_URL?.replace(/\/?api\/?$/, '').replace(/\/$/, '');
 
-function command(bin, args) {
-  const result = spawnSync(bin, args, { encoding: 'utf8' });
+function command(bin, args, cwd) {
+  const result = spawnSync(bin, args, { encoding: 'utf8', cwd });
   if (result.status !== 0) throw new Error(`${bin} ${args[0]} failed: ${result.stderr || result.stdout}`);
   return result.stdout.trim();
 }
@@ -37,7 +40,7 @@ async function comments() {
   return json(`${base}/api/issues/${issueId}/comments`, process.env.GSAM_API_KEY);
 }
 
-async function stagingCardApproved(sha) {
+async function stagingCardApproved(sha, exact = false) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
   for (const card of cards) {
@@ -47,6 +50,7 @@ async function stagingCardApproved(sha) {
         !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||
         !card.payload?.detailsMarkdown?.includes(`Approve production deploy: ${site} ${approvedSha}`)) continue;
     if (approvedSha === sha) return true;
+    if (exact) continue;
     const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', approvedSha, sha]);
     if (ancestor.status !== 0) continue;
     const files = command('git', ['diff', '--name-only', '--no-renames', approvedSha, sha]).split('\n').filter(Boolean);
@@ -93,7 +97,7 @@ async function lastDeployedCommit() {
   const api = process.env.NODE_ENV === 'test' && token === 'test-token'
     ? process.env.NETLIFY_TEST_API_URL : 'https://api.netlify.com';
   const deploys = await json(`${api}/api/v1/sites/${site}.netlify.app/deploys?per_page=100`, token);
-  const marker = new RegExp(`^gsam-source:${mode}:${mode === 'preview' ? `${prNumber}:` : ''}([0-9a-f]{40})$`);
+  const marker = new RegExp(`^gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}([0-9a-f]{40})$`);
   for (const deploy of deploys) {
     const match = marker.exec(deploy.title || '');
     if (deploy.state === 'ready' && match) return match[1];
@@ -119,10 +123,10 @@ function processIdentity(pid) {
 // for one PR never stops another PR's preview.
 function lockDir() {
   const common = resolve(command('git', ['rev-parse', '--git-common-dir']));
-  return join(common, 'gsam-deploy-locks', `${site}-${mode}${mode === 'preview' ? `-${prNumber}` : ''}`);
+  return join(common, 'gsam-deploy-locks', `${site}-${channel}${channel === 'preview' ? `-${prNumber}` : ''}`);
 }
 
-async function lockAndDeploy(sha) {
+async function lockAndDeploy(sha, cwd) {
   const dir = lockDir();
   const own = randomUUID();
   const identity = processIdentity(process.pid);
@@ -141,10 +145,10 @@ async function lockAndDeploy(sha) {
   process.on('SIGTERM', () => controller.abort());
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
-    const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${mode}:${mode === 'preview' ? `${prNumber}:` : ''}${sha}`];
-    if (mode === 'prod') args.push('--prod');
+    const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
+    if (channel === 'prod') args.push('--prod');
     console.log(`Deploying ${site} ${mode} at ${sha}`);
-    const child = spawn('netlify', args, { stdio: 'inherit', signal: controller.signal });
+    const child = spawn('netlify', args, { stdio: 'inherit', signal: controller.signal, cwd });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
     if (code !== 0) throw new Error(`netlify deploy exited ${code}`);
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
@@ -153,11 +157,41 @@ async function lockAndDeploy(sha) {
   }
 }
 
+// Netlify applies a changed environment variable only on a new upload, and main() skips
+// a commit that is already live. This staging-only path re-uploads the live commit after
+// a config change. The guard runs from origin main, but the upload is an export of the
+// live commit's tree, so main's newer code never rides along. It needs the accepted
+// human-only card for exactly that commit; guard-only drift does not count here.
+async function refreshStaging(sha) {
+  if (site !== 'gre1795-website-db-staging') throw new Error('config refresh is only for gre1795-website-db-staging');
+  if (command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] !== sha)
+    throw new Error('config refresh requires a checkout at exactly origin main');
+  const live = await lastDeployedCommit();
+  if (!live) throw new Error(`config refresh refused: ${site} has no guarded production upload to refresh`);
+  if (spawnSync('git', ['merge-base', '--is-ancestor', live, sha]).status !== 0)
+    throw new Error(`config refresh refused: live commit ${live} is not on main`);
+  if (!await stagingCardApproved(live, true))
+    throw new Error(`config refresh refused: this task needs an accepted human-only staging card for ${site} and ${live}`);
+  const dir = await mkdtemp(join(tmpdir(), 'gsam-refresh-'));
+  try {
+    const tree = join(dir, 'tree');
+    await mkdir(tree);
+    command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), live]);
+    command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
+    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], tree);
+    console.log(`Refreshing ${site} config: re-uploading live commit ${live}`);
+    await lockAndDeploy(live, tree);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
-  if (!['preview', 'prod'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod -- <allowed site> [PR number]');
+  if (!['preview', 'prod', 'refresh'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod -- <allowed site> [PR number]');
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
   const sha = command('git', ['rev-parse', 'HEAD']);
+  if (mode === 'refresh') return refreshStaging(sha);
   const fallback = await gate(sha);
   const baseline = await lastDeployedCommit() || fallback;
   if (baseline) {

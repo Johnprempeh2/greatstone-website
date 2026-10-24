@@ -31,7 +31,9 @@ async function fixture(t) {
   git(cwd, 'checkout', '-qb', 'test-pr');
   const log = join(cwd, 'netlify-args.txt');
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
-  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  // TREE_LOG records which source tree npm and the upload ran in (config refresh tests).
+  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\nprintf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
   let comments = [];
   let interactions = [];
   let deploys = [];
@@ -306,4 +308,96 @@ test('production from a detached HEAD needs exactly origin main', async (t) => {
   const refused = await f.run('prod');
   assert.equal(refused.status, 1);
   assert.match(refused.stderr, /production requires main/);
+});
+
+async function refreshFixture(t) {
+  const f = await fixture(t);
+  const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
+  t.after(() => rm(remote, { recursive: true, force: true }));
+  git(f.cwd, 'init', '-q', '--bare', remote);
+  git(f.cwd, 'remote', 'add', 'origin', remote);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
+  f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${f.base}` }]);
+  f.setInteractions([stagingCard(f.base)]);
+  // main moves on with site code after the approved upload; a refresh must not ship it.
+  await f.commit('src/app.js', 'newer main code');
+  git(f.cwd, 'push', '-q', 'origin', 'main');
+  return f;
+}
+
+test('config refresh re-uploads the live approved commit tree from origin main', async (t) => {
+  const f = await refreshFixture(t);
+  const result = await f.run('refresh');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, new RegExp(`re-uploading live commit ${f.base}`));
+  assert.equal(await readFile(f.log, 'utf8'),
+    `deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:${f.base} --prod\n`);
+  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
+});
+
+test('config refresh never targets the public site', async (t) => {
+  const f = await refreshFixture(t);
+  const result = await f.run('refresh', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /config refresh is only for gre1795-website-db-staging/);
+  await assert.rejects(readFile(f.log));
+});
+
+test('config refresh refuses without the exact accepted card for the live commit', async (t) => {
+  const f = await refreshFixture(t);
+  const guardOnly = git(f.cwd, 'rev-parse', 'HEAD');
+  const cases = [
+    [],
+    [stagingCard(f.base, { status: 'pending' })],
+    [stagingCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' })],
+    [stagingCard(f.base, { effectiveResolverPolicy: 'anyone' })],
+    [stagingCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}` } })],
+    [stagingCard(guardOnly)],
+  ];
+  for (const cards of cases) {
+    f.setInteractions(cards);
+    const result = await f.run('refresh');
+    assert.equal(result.status, 1, JSON.stringify(cards));
+    assert.match(result.stderr, /config refresh refused: this task needs an accepted human-only staging card/);
+  }
+  // A card for an older commit does not stretch to a live commit reached by guard-only drift.
+  git(f.cwd, 'reset', '-q', '--hard', f.base);
+  await f.commit('scripts/deploy-site.mjs', 'guard');
+  git(f.cwd, 'push', '-q', '--force', 'origin', 'main');
+  const drifted = git(f.cwd, 'rev-parse', 'HEAD');
+  f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${drifted}` }]);
+  f.setInteractions([stagingCard(f.base)]);
+  const result = await f.run('refresh');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /config refresh refused: this task needs an accepted human-only staging card/);
+  await assert.rejects(readFile(f.log));
+});
+
+test('config refresh refuses off origin main, a dirty checkout, or no live upload', async (t) => {
+  const f = await refreshFixture(t);
+  await writeFile(join(f.cwd, 'src', 'app.js'), 'uncommitted');
+  let result = await f.run('refresh');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /clean checkout/);
+  git(f.cwd, 'checkout', '-q', '--', 'src/app.js');
+
+  await f.commit('src/app.js', 'local only');
+  result = await f.run('refresh');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /config refresh requires a checkout at exactly origin main/);
+  git(f.cwd, 'reset', '-q', '--hard', 'HEAD~1');
+
+  f.setDeploys([{ state: 'error', title: `gsam-source:prod:${f.base}` },
+    { state: 'ready', title: `gsam-source:preview:12:${f.base}` }]);
+  result = await f.run('refresh');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /has no guarded production upload to refresh/);
+
+  f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${'a'.repeat(40)}` }]);
+  f.setInteractions([stagingCard('a'.repeat(40))]);
+  result = await f.run('refresh');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /is not on main/);
+  await assert.rejects(readFile(f.log));
 });

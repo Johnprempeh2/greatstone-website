@@ -65,6 +65,15 @@ the approved commit must be an ancestor and every intervening change must be con
 migration change requires a new approval. The public site still requires the exact comment
 for the current HEAD.
 
+Netlify applies a changed environment variable only on a new upload, and the change check
+below skips a commit that is already live. After a staging config change, reload the live
+commit with `node scripts/deploy-site.mjs refresh gre1795-website-db-staging`. It runs only
+for that site, from a clean checkout at exactly the remote `main` commit, and only when the
+live production upload's commit is on `main` and has an accepted human-only staging card on
+the current task for exactly that commit (guard-only drift does not count). It exports that
+commit's tree to a temporary folder, runs `npm ci` there, and uploads it with the same title,
+so newer code on `main` never rides along. There is no refresh for `greatstone-home`.
+
 Each successful upload records its source commit in the Netlify deploy title. The next
 run compares HEAD with the last ready upload of the same type. Changes confined to
 `docs/`, `.github/`, the three root guide files, or test files skip the upload. If no
