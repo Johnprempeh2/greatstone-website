@@ -1,0 +1,42 @@
+{
+  "390": {
+    "cue": {
+      "left": 20,
+      "right": 33,
+      "top": 501.671875,
+      "bottom": 514.671875
+    },
+    "lede": {
+      "left": 20,
+      "right": 370,
+      "top": 191.859375,
+      "bottom": 331.859375
+    },
+    "headerBackground": "rgba(16, 18, 16, 0.94)",
+    "stoneCanvases": 0,
+    "stepText": "rgb(196, 200, 193)",
+    "errors": []
+  },
+  "1440": {
+    "cue": {
+      "left": 164,
+      "right": 239.59375,
+      "top": 628,
+      "bottom": 666
+    },
+    "lede": {
+      "left": 164,
+      "right": 727.984375,
+      "top": 292.046875,
+      "bottom": 423.046875
+    },
+    "headerBackground": "rgba(16, 18, 16, 0.94)",
+    "stoneCanvases": 1,
+    "stepText": "rgb(196, 200, 193)",
+    "errors": []
+  },
+  "sunk": {
+    "scrollY": 380,
+    "canvas": 1
+  }
+}

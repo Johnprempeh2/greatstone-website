@@ -46,7 +46,7 @@ export function Steps({ id, puck, index, eyebrow, headline, highlight, body, ite
 export const css = `
 .b-steps{padding:clamp(64px,11vw,140px) 0;position:relative}
 .b-steps-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:16ch}
-.b-steps-body{margin-top:22px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
+.b-steps-body{margin-top:22px;color:var(--gs-text-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
 .b-steps-grid{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,30px);margin-top:clamp(36px,5vw,58px)}
 @media(max-width:820px){.b-steps-grid{grid-template-columns:1fr}}
 .b-step{position:relative;padding:28px 26px;border:1px solid var(--gs-border-soft);border-radius:18px;
@@ -58,7 +58,7 @@ export const css = `
 .b-step-phase{display:block;margin-top:14px;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gs-accent)}
 .b-step h3{margin-top:18px;font-size:1.22rem;font-weight:800;letter-spacing:-.01em}
 .b-step-phase + h3{margin-top:6px}
-.b-step p{margin-top:10px;color:var(--gs-muted);font-size:.95rem;line-height:1.6}
+.b-step p{margin-top:10px;color:var(--gs-text-muted);font-size:.95rem;line-height:1.6}
 .b-step p.b-step-timing{margin-top:.9rem;font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-text-faint);line-height:1.4}
 /* centred header (live industries wraps kicker/h2/lead in .center); cards stay left */
 .b-steps[data-align="center"] .b-chapter-eyebrow{justify-content:center}

@@ -1,0 +1,11 @@
+{
+  "rest": {
+    "start": 1429,
+    "end": 1429,
+    "canvas": 1
+  },
+  "light": {
+    "stepText": "rgb(60, 69, 62)",
+    "surface": "rgb(255, 255, 255)"
+  }
+}

@@ -54,9 +54,9 @@ test('hero scissor extends below its box during the sink, then stops off screen'
 
 test('sinking stone fades away before the next cards are in reading position', () => {
   assert.equal(stoneExitOpacity(0), 1);
-  assert.equal(stoneExitOpacity(.45), 1);
-  assert.ok(stoneExitOpacity(.6) < .51 && stoneExitOpacity(.6) > .49);
-  assert.ok(stoneExitOpacity(.7) < .1);
+  assert.ok(stoneExitOpacity(.45) < 1);
+  assert.ok(stoneExitOpacity(.6) < .27 && stoneExitOpacity(.6) > .25);
+  assert.equal(stoneExitOpacity(.7), 0);
   assert.equal(stoneExitOpacity(.75), 0);
   assert.equal(stoneExitOpacity(1), 0);
 });
