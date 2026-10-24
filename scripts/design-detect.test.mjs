@@ -3,12 +3,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   ENGINE_SHA256, engineEnv, isLocalUrl, parseArgs, summarise, verifyEngine, defaultEnginePath,
+  changedUiFiles, changedPageUrls, filterRenderedFindings,
 } from './design-detect.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -72,6 +73,37 @@ test('rendered scans are allowed on a local site only', () => {
   assert.ok(!isLocalUrl('file:///etc/passwd'));
   assert.throws(() => parseArgs(['--url', 'https://example.com/']), /local site/);
   assert.deepEqual(parseArgs(['--url', 'http://localhost:5173/', 'src/a.jsx']).urls, ['http://localhost:5173/']);
+  assert.equal(parseArgs(['--changed-pages', 'http://localhost:5181']).changedPages, 'http://localhost:5181');
+  assert.throws(() => parseArgs(['--changed-pages', 'https://example.com/']), /local site/);
+});
+
+test('changed UI files include app and src, and static pages map to local routes', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'design-files-'));
+  try {
+    spawnSync('git', ['init', '-q', dir]);
+    assert.equal(spawnSync('git', ['-C', dir, '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+      'commit', '--allow-empty', '-qm', 'base']).status, 0);
+    for (const file of ['app/page.jsx', 'app/shop/page.jsx', 'app/editor/[slug]/page.jsx', 'src/store/store.css']) {
+      const path = join(dir, file);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, 'x');
+    }
+    assert.equal(spawnSync('git', ['-C', dir, 'add', 'app', 'src']).status, 0);
+    assert.equal(spawnSync('git', ['-C', dir, '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+      'commit', '-qm', 'UI pages']).status, 0);
+    const files = changedUiFiles('HEAD^', dir);
+    assert.deepEqual(files, ['app/editor/[slug]/page.jsx', 'app/page.jsx', 'app/shop/page.jsx', 'src/store/store.css']);
+    assert.deepEqual(changedPageUrls(files, 'http://localhost:5181'), ['http://localhost:5181/', 'http://localhost:5181/shop']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('brand noise is removed from rendered findings only', () => {
+  const findings = ['kicker-above-heading', 'hero-eyebrow-chip', 'repeating-stripes-gradient', 'side-tab']
+    .map((antipattern) => ({ antipattern }));
+  assert.deepEqual(filterRenderedFindings(findings), [{ antipattern: 'side-tab' }]);
+  assert.equal(findings.length, 4);
 });
 
 test('the default engine path is outside the repo and named for the platform', () => {
@@ -86,7 +118,7 @@ test('summary lists one line per finding and notes a rendered timeout without fa
       { antipattern: 'bounce-easing', name: 'Bounce or elastic easing', file: 'src/blocks/Hero.jsx', line: 187, advisory: true },
       { antipattern: 'side-tab', name: 'Side-tab border', file: 'src/intel/intel.css', line: 315 },
     ],
-    rendered: [{ url: 'http://localhost:5173/', failed: true, findings: [], reason: 'timed out' }],
+    rendered: [{ url: 'http://localhost:5173/', viewport: '390x844', failed: true, findings: [], reason: 'timed out' }],
   });
   assert.match(md, /1 finding\(s\)\*\*, 1 advisory/);
   assert.match(md, /- \[ \] `src\/blocks\/Hero\.jsx:187` `bounce-easing` \(advisory\)/);

@@ -12,9 +12,10 @@
 //   - Rendered scans (--url) are allowed on a local site only and are a warning: they never fail the step.
 //
 //   npm run design:detect                 changed UI files vs origin/main (the PR step)
-//   npm run design:detect -- --all        the whole of src/
+//   npm run design:detect -- --all        the whole of src/ and app/
 //   npm run design:detect -- src/a.jsx    named files or folders
-//   npm run design:detect -- --url http://localhost:5173/   also a rendered scan at 390 (warning only)
+//   npm run design:detect -- --url http://localhost:5181/   rendered scans at 390 and 1440 (warning only)
+//   npm run design:detect -- --changed-pages http://localhost:5181   changed static App Router pages
 //
 // Exit: 0 scan completed (with or without findings), 1 scan failed, 3 engine missing or hash mismatch.
 import { createHash } from 'node:crypto';
@@ -45,7 +46,8 @@ export const ENGINE_ENV = {
 };
 
 const UI_FILE = /\.(jsx?|tsx?|css|html|vue|svelte|astro)$/i;
-const RENDERED_VIEWPORT = '390x844';
+const RENDERED_VIEWPORTS = ['390x844', '1440x900'];
+const RENDERED_BRAND_RULES = new Set(['kicker-above-heading', 'hero-eyebrow-chip', 'repeating-stripes-gradient']);
 
 export function platformKey(platform = process.platform, arch = process.arch) {
   return `${platform}-${arch}`;
@@ -95,19 +97,21 @@ export function isLocalUrl(value) {
 }
 
 export function parseArgs(argv) {
-  const opts = { all: false, urls: [], targets: [], base: 'origin/main', out: null };
+  const opts = { all: false, urls: [], changedPages: null, targets: [], base: 'origin/main', out: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--all') opts.all = true;
     else if (a === '--url') opts.urls.push(argv[++i]);
+    else if (a === '--changed-pages') opts.changedPages = argv[++i];
     else if (a === '--base') opts.base = argv[++i];
     else if (a === '--out') opts.out = argv[++i];
     else if (a.startsWith('--')) throw new Error(`unknown option ${a}`);
     else opts.targets.push(a);
   }
-  for (const u of opts.urls) {
+  for (const u of [...opts.urls, ...(opts.changedPages ? [opts.changedPages] : [])]) {
     if (!u || !isLocalUrl(u)) throw new Error(`--url must be a local site (localhost or 127.0.0.1), got ${u}`);
   }
+  if (argv.includes('--changed-pages') && !opts.changedPages) throw new Error('--changed-pages needs a local base URL');
   return opts;
 }
 
@@ -119,7 +123,19 @@ export function changedUiFiles(base, cwd = ROOT) {
   const working = git(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']);
   const untracked = git(['ls-files', '--others', '--exclude-standard']);
   const files = [committed.stdout, working.stdout, untracked.stdout].join('\n').split('\n').map((f) => f.trim());
-  return [...new Set(files)].filter((f) => f && f.startsWith('src/') && UI_FILE.test(f) && existsSync(join(cwd, f))).sort();
+  return [...new Set(files)].filter((f) => f && /^(src|app)\//.test(f) && UI_FILE.test(f) && existsSync(join(cwd, f))).sort();
+}
+
+/** Static App Router page files can be mapped to local URLs; dynamic routes need an explicit --url. */
+export function changedPageUrls(files, baseUrl) {
+  const base = new URL(baseUrl);
+  return [...new Set(files.filter((file) => /^app\/(?:.*\/)?page\.[jt]sx?$/.test(file))
+    .filter((file) => !/\[[^/]+\]/.test(file))
+    .map((file) => new URL('/' + file.slice(4).replace(/(?:\/)?page\.[jt]sx?$/, '').replace(/\([^/]+\)\/?/g, ''), base).href))];
+}
+
+export function filterRenderedFindings(findings) {
+  return findings.filter((finding) => !RENDERED_BRAND_RULES.has(finding.antipattern));
 }
 
 function runEngine(engine, args) {
@@ -158,8 +174,8 @@ export function summarise({ targets, source, rendered = [] }) {
     }
   }
   for (const r of rendered) {
-    lines.push('', `Rendered scan (warning only) ${r.url} at ${RENDERED_VIEWPORT}: ` +
-      (r.failed ? `did not complete (${r.reason}). Noted; the PR goes on.` : `${r.findings.length} finding(s).`));
+    lines.push('', `Rendered scan (warning only) ${r.url} at ${r.viewport}: ` +
+      (r.failed ? `did not complete (${r.reason}). Noted; the PR goes on.` : `${r.rawCount} raw, ${r.findings.length} after rendered-only brand ignores.`));
     for (const f of r.findings) lines.push(`- [ ] \`${f.antipattern}\` ${f.selector ?? ''}: ${f.name}`);
   }
   return lines.join('\n');
@@ -184,7 +200,8 @@ function main() {
   }
   console.error(`design:detect: engine ${ENGINE_VERSION} sha256 ${check.sha256} OK; telemetry and update check off.`);
 
-  const targets = opts.targets.length ? opts.targets : opts.all ? ['src'] : changedUiFiles(opts.base);
+  const changed = opts.changedPages || (!opts.targets.length && !opts.all) ? changedUiFiles(opts.base) : [];
+  const targets = opts.targets.length ? opts.targets : opts.all ? ['src', 'app'] : changed;
   let source = [];
   if (targets.length) {
     const r = runEngine(check.path, targets);
@@ -194,13 +211,18 @@ function main() {
     }
     source = r.findings;
   } else {
-    console.error(`design:detect: no UI files under src/ changed against ${opts.base}.`);
+    console.error(`design:detect: no UI files under src/ or app/ changed against ${opts.base}.`);
   }
 
-  const rendered = opts.urls.map((url) => {
-    const r = runEngine(check.path, ['--viewport', RENDERED_VIEWPORT, url]);
-    return { url, failed: r.failed, findings: r.findings, reason: r.error?.message ?? (r.stderr.split('\n').pop() || `exit ${r.status}`) };
-  });
+  const urls = [...new Set([...opts.urls, ...(opts.changedPages ? changedPageUrls(changed, opts.changedPages) : [])])];
+  if (opts.changedPages && changed.some((file) => /^app\/(?:.*\/)?page\.[jt]sx?$/.test(file) && /\[[^/]+\]/.test(file))) {
+    console.error('design:detect: changed dynamic page routes need an explicit local --url.');
+  }
+  const rendered = urls.flatMap((url) => RENDERED_VIEWPORTS.map((viewport) => {
+    const r = runEngine(check.path, ['--viewport', viewport, url]);
+    return { url, viewport, failed: r.failed, rawCount: r.findings.length,
+      findings: filterRenderedFindings(r.findings), reason: r.error?.message ?? (r.stderr.split('\n').pop() || `exit ${r.status}`) };
+  }));
 
   const report = { engine: { version: ENGINE_VERSION, commit: ENGINE_COMMIT, sha256: check.sha256 }, env: ENGINE_ENV,
     targets, source, rendered, scannedAt: new Date().toISOString() };
