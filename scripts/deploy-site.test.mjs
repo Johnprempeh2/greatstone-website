@@ -206,7 +206,7 @@ test('newer run supersedes an in-flight run for the same site', async (t) => {
 test('a stale lock with a reused PID does not stop an unrelated process', async (t) => {
   const f = await fixture(t);
   await f.commit('src/app.js', 'changed');
-  const dir = join(tmpdir(), `greatstone-deploy-${site}-preview`);
+  const dir = join(f.cwd, '.git', 'gsam-deploy-locks', `${site}-preview-12`);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, 'owner.json'), JSON.stringify({ pid: process.pid, identity: 'old deploy-site.mjs process', own: 'old' }));
   const result = await f.run();
@@ -241,4 +241,69 @@ test('preview does not stop an approved production upload', async (t) => {
   const preview = await f.run();
   assert.equal(preview.status, 0, preview.stderr);
   assert.equal(await done, 0);
+});
+
+async function runIn(f, args, cwd = f.cwd) {
+  const child = spawn(process.execPath, [script, ...args], { cwd, env: f.env });
+  let stdout = '', stderr = '';
+  child.stdout.on('data', (part) => { stdout += part; });
+  child.stderr.on('data', (part) => { stderr += part; });
+  const status = await new Promise((resolve) => child.on('exit', resolve));
+  return { status, stdout, stderr };
+}
+
+async function startDeploy(f, args, cwd = f.cwd) {
+  const child = spawn(process.execPath, [script, ...args], { cwd, env: f.env });
+  let output = '';
+  child.stdout.on('data', (part) => { output += part; });
+  child.stderr.on('data', (part) => { output += part; });
+  const exit = new Promise((resolve) => child.on('exit', resolve));
+  for (let i = 0; i < 150 && !output.includes('Deploying'); i++)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.match(output, /Deploying/);
+  return { exit, output: () => output };
+}
+
+test('a newer run in another worktree supersedes the same PR preview', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.DEPLOY_SLEEP = '2';
+  const first = await startDeploy(f, ['preview', site, '12']);
+  const other = join(await mkdtemp(join(tmpdir(), 'deploy-wt-')), 'wt');
+  t.after(() => rm(other, { recursive: true, force: true }));
+  git(f.cwd, 'worktree', 'add', '-q', '--detach', other, 'HEAD');
+  const second = await runIn(f, ['preview', site, '12'], other);
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /Superseded stale run/);
+  assert.notEqual(await first.exit, 0);
+});
+
+test('previews for different PRs do not stop each other', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.DEPLOY_SLEEP = '2';
+  const first = await startDeploy(f, ['preview', site, '12']);
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), number: 13 });
+  const second = await runIn(f, ['preview', site, '13']);
+  assert.equal(second.status, 0, second.stderr);
+  assert.doesNotMatch(second.stdout, /Superseded stale run/);
+  assert.equal(await first.exit, 0, first.output());
+});
+
+test('production from a detached HEAD needs exactly origin main', async (t) => {
+  const f = await fixture(t);
+  const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
+  t.after(() => rm(remote, { recursive: true, force: true }));
+  git(f.cwd, 'init', '-q', '--bare', remote);
+  git(f.cwd, 'remote', 'add', 'origin', remote);
+  git(f.cwd, 'push', '-q', 'origin', 'main');
+  f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
+  git(f.cwd, 'checkout', '-q', '--detach', 'main');
+  const approved = await f.run('prod');
+  assert.equal(approved.status, 0, approved.stderr);
+  await f.commit('src/app.js', 'changed');
+  git(f.cwd, 'checkout', '-q', '--detach', 'HEAD');
+  const refused = await f.run('prod');
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /production requires main/);
 });
