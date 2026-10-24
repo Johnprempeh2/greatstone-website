@@ -15,7 +15,7 @@ const clamp = (value) => Math.max(0, Math.min(1, value));
 export const stoneProgress = (top, height) => clamp(-top / Math.max(height * .8, 1));
 // The next section has frosted cards: fade the stone before it can colour their copy.
 export const stoneExitOpacity = (progress) => {
-  const t = clamp((progress - .45) / .3);
+  const t = clamp((progress - .4) / .3);
   return 1 - t * t * (3 - 2 * t);
 };
 export const stoneSlabOffset = (index, progress) => ({
@@ -141,13 +141,6 @@ function makeShared() {
     stone.add(group);
     return group;
   });
-  const glintGeometry = new THREE.SphereGeometry(.055, 8, 6);
-  const glintMaterial = new THREE.MeshBasicMaterial({ color: 0xf1ffdf, transparent: true });
-  geometries.push(glintGeometry);
-  materials.push(glintMaterial);
-  const glintMark = new THREE.Mesh(glintGeometry, glintMaterial);
-  glintMark.position.set(.4, 2.12, .86);
-  slabs[0].add(glintMark);
   const entries = new Set();
   let settlingUntil = 0;
   let frameCount = 0;
