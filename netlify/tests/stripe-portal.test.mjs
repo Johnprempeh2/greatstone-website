@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeStripePortalHandler } from './stripe-portal.mjs';
+import { makeStripePortalHandler } from '../functions/stripe-portal.mjs';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const env = { STRIPE_SECRET_KEY: 'sk_test_example', APP_SITE_ORIGIN: 'https://staging.example.test' };

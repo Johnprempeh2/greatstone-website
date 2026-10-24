@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeRequestQuoteHandler } from './request-quote.mjs';
-import { makeStripeCheckoutHandler } from './stripe-checkout.mjs';
+import { makeRequestQuoteHandler } from '../functions/request-quote.mjs';
+import { makeStripeCheckoutHandler } from '../functions/stripe-checkout.mjs';
 
 const variantId = '11111111-1111-4111-8111-111111111112';
 const offeringId = '22222222-2222-4222-8222-222222222222';
