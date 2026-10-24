@@ -1,6 +1,8 @@
 // One-time, reviewed staging migration for the eight existing identities.
 // Read the approved export from stdin in run scratch; never store it in git.
 // Dry-run by default. --apply commits only on the named staging site.
+// Run out of band in a reviewed migration environment with the owner connection;
+// never call this from a site request or deploy function.
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { getDatabase } from '@netlify/database';
@@ -30,6 +32,8 @@ export async function importUsers(pool, users, apply = false) {
   const client = await pool.connect();
   await client.query('BEGIN');
   try {
+    const { rows: [identity] } = await client.query('SELECT current_user AS role');
+    if (identity?.role !== 'netlifydb_owner') throw new Error('Import requires the migration owner role');
     for (const user of users) {
       const inserted = await client.query(`INSERT INTO better_auth."user"
         ("id","name","email","emailVerified") VALUES ($1,$2,$3,$4)
@@ -64,8 +68,10 @@ export async function importUsers(pool, users, apply = false) {
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
-  if (process.env.NETLIFY_SITE_NAME !== 'gre1795-website-db-staging')
+  if (process.env.NETLIFY_SITE_NAME !== 'gre1795-website-db-staging'
+    || process.env.SITE_ID !== '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb')
     throw new Error('This import runs only on the approved staging site');
+  if (!process.env.NETLIFY_DB_URL) throw new Error('Import requires the owner connection from the migration environment');
   const users = validateImport(JSON.parse(readFileSync(0, 'utf8')));
   const pool = getDatabase().pool;
   try {

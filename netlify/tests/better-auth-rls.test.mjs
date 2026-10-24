@@ -135,3 +135,29 @@ test('one-time import checks all eight ids and hashes, rolls back dry run, and k
   assert.equal(sql(`SELECT count(*) FROM auth.users WHERE email::text LIKE 'import-%@example.test'`), '8');
   assert.equal(await importUsers(pool, users, true), 8, 'rerunning never changes a hash');
 });
+
+test('one-time import refuses a non-owner connection before writing identities', { skip }, async () => {
+  const fixture = Array.from({ length: 8 }, (_, index) => ({
+    id: `f00d0001-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    email: `non-owner-${index + 1}@example.test`, name: 'Test', emailVerified: true,
+    passwordHash: '$2b$12$' + 'A'.repeat(53),
+  }));
+  const rolePool = {
+    async connect() {
+      const client = await pool.connect();
+      return {
+        query: async (...args) => {
+          if (args[0] === 'BEGIN') {
+            await client.query('BEGIN');
+            await client.query('SET LOCAL ROLE anon');
+            return;
+          }
+          return client.query(...args);
+        },
+        release: () => client.release(),
+      };
+    },
+  };
+  await assert.rejects(importUsers(rolePool, validateImport(fixture), true), /migration owner role/);
+  assert.equal(sql(`SELECT count(*) FROM better_auth."user" WHERE "email" LIKE 'non-owner-%@example.test'`), '0');
+});
