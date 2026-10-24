@@ -1,12 +1,12 @@
-import { supabase } from '../lib/supabase.mjs';
+import { getSession } from '../lib/better-auth-client.mjs';
 
 async function request(body) {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return { data: null, error: { message: 'Sign in required.' } };
+    const session = await getSession();
+    if (!session) return { data: null, error: { message: 'Sign in required.' } };
     const response = await fetch('/api/staff-store', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + session.access_token },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
     const result = await response.json();
