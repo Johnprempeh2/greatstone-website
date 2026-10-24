@@ -35,6 +35,8 @@ test('origin allowlist and route CSP exclude wildcard and third party scripts', 
   const csp = frameCsp([origin], 'nonce123');
   assert.match(csp, /script-src 'self' 'nonce-nonce123' 'strict-dynamic'/);
   assert.match(csp, /frame-ancestors https:\/\/studio.example.test/);
+  assert.match(csp, /img-src 'self' https: blob: data:/);
+  assert.match(csp, /media-src 'self' https: blob:/);
   assert.match(csp, /form-action 'none'/);
   assert.doesNotMatch(csp, /https:\/\/fonts|unsafe-eval/);
 });
