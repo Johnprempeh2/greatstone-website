@@ -2,6 +2,7 @@ import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
+import { hashSync } from 'bcryptjs';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import { createAuthRequest } from '../functions/lib/better-auth.mjs';
 
@@ -107,4 +108,16 @@ test('sign-up writes user and account in nested transaction and keeps uuid; veri
   assert.notEqual(oldPassword.status, 200);
   const newPassword = await call('sign-in/email', { email, password: 'new-test-password-48' });
   assert.equal(newPassword.status, 200, await newPassword.clone().text());
+});
+
+test('an imported bcrypt password signs in under the original UUID', { skip }, async () => {
+  const id = 'c0ffee00-0000-4000-8000-000000000049';
+  const email = 'legacy-auth-flow@example.test';
+  const password = 'legacy-test-password-49';
+  await pool.query('INSERT INTO better_auth."user" ("id","name","email","emailVerified") VALUES ($1,$2,$3,true)', [id, 'Legacy Test', email]);
+  await pool.query('INSERT INTO better_auth."account" ("id","accountId","providerId","userId","password") VALUES ($1,$2,$3,$4,$5)',
+    ['legacy-account-49', id, 'credential', id, hashSync(password, 4)]);
+  const response = await call('sign-in/email', { email, password });
+  assert.equal(response.status, 200, await response.clone().text());
+  assert.equal((await response.json()).user.id, id);
 });

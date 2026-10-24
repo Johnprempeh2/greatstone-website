@@ -45,8 +45,14 @@ export async function signOutAll() {
 export const resendConfirmation = (email) => authClient.sendVerificationEmail({ email: email.trim(), callbackURL: '/#account' });
 export const resetPassword = (email) => authClient.requestPasswordReset({ email: email.trim(), redirectTo: '/#account' });
 
+export function resetTokenFromLocation(locationValue = typeof location !== 'undefined' ? location : null) {
+  if (!locationValue) return null;
+  return new URLSearchParams(locationValue.search).get('token') ||
+    new URLSearchParams(String(locationValue.hash || '').split('?')[1] || '').get('token');
+}
+
 export async function updatePassword(newPassword, currentPassword) {
-  const token = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('token') : null;
+  const token = resetTokenFromLocation();
   const result = token
     ? await authClient.resetPassword({ newPassword, token })
     : await authClient.changePassword({ newPassword, currentPassword, revokeOtherSessions: true });

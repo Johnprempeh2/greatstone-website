@@ -2,9 +2,8 @@
 import { getSession } from '../lib/better-auth-client.mjs';
 
 export async function portalFileStatus() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Sign in required.');
-  const response = await fetch('/api/portal-file', { headers: { authorization: `Bearer ${session.access_token}` } });
+  if (!await getSession()) throw new Error('Sign in required.');
+  const response = await fetch('/api/portal-file');
   if (!response.ok) throw new Error('File storage status unavailable.');
   return response.json();
 }
