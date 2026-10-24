@@ -21,6 +21,10 @@ export function allowedHostOrigins(value, development = false) {
   });
 }
 
+export function publicFrameAncestors(value = 'https://gsam.tail83d26c.ts.net:3100') {
+  return `frame-ancestors 'self' ${allowedHostOrigins(value).join(' ')}`.trim();
+}
+
 export function validHello(event, origins, siteId, bound) {
   const data = event.data;
   if (!origins.includes(event.origin) || event.source !== window.parent || !data || data.gs !== FRAME_TAG || data.type !== 'hello') return null;
