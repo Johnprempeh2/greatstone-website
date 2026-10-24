@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, validHello, validMessage } from './frame-protocol.mjs';
+import { readFileSync } from 'node:fs';
+import { allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, publicFrameAncestors, validHello, validMessage } from './frame-protocol.mjs';
 
 const origin = 'https://studio.example.test';
 const nonce = 'ABCDEFGHIJKLMNOPQRSTUV';
@@ -35,14 +36,44 @@ test('origin allowlist and route CSP exclude wildcard and third party scripts', 
   const csp = frameCsp([origin], 'nonce123');
   assert.match(csp, /script-src 'self' 'nonce-nonce123' 'strict-dynamic'/);
   assert.match(csp, /frame-ancestors https:\/\/studio.example.test/);
+  assert.match(csp, /img-src 'self' https: blob: data:/);
+  assert.match(csp, /media-src 'self' https: blob:/);
   assert.match(csp, /form-action 'none'/);
   assert.doesNotMatch(csp, /https:\/\/fonts|unsafe-eval/);
+});
+
+test('public pages allow only self and the configured GSAM origins', () => {
+  assert.equal(publicFrameAncestors(), "frame-ancestors 'self' https://gsam.tail83d26c.ts.net:3100");
+  assert.equal(publicFrameAncestors('https://gsam.example.test,*,https://other.test/path'), "frame-ancestors 'self' https://gsam.example.test");
+});
+
+test('static public headers permit GSAM framing without conflicting X-Frame-Options', () => {
+  const headers = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8');
+  const publicRule = headers.split('\n\n')[0];
+  assert.match(publicRule, /^\/\*\n/m);
+  assert.match(publicRule, /^  Content-Security-Policy: frame-ancestors 'self' https:\/\/gsam\.tail83d26c\.ts\.net:3100$/m);
+  assert.doesNotMatch(headers, /^  X-Frame-Options:/m);
 });
 
 test('block reference carries stable identity and treats source as a hint', () => {
   const ref = blockRef({ type: 'Hero', props: { id: 'block-1' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', { version: '1', commit: 'a'.repeat(40) });
   assert.deepEqual([ref.siteId, ref.pageId, ref.pageRevisionId, ref.blockId, ref.blockType], ['site-1', 'page-1', 'revision-1', 'block-1', 'Hero']);
-  assert.equal(ref.source, null);
+  assert.deepEqual(ref.source, { file: 'src/blocks/Hero.jsx', line: 290 });
+  assert.match(readFileSync(new URL('../src/blocks/Hero.jsx', import.meta.url), 'utf8').split('\n')[ref.source.line - 1], /export const puck/);
+  const alias = blockRef({ type: 'TwoDoorsStory', props: { id: 'story' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', ref.engine);
+  assert.deepEqual(alias.source, { file: 'src/blocks/TwoDoors.jsx', line: 198 });
+  assert.equal(blockRef({ type: 'Unknown', props: { id: 'other' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', ref.engine).source, null);
+});
+
+test('every preview block points to a current source definition', () => {
+  const registry = readFileSync(new URL('../app/ProofBlocks.jsx', import.meta.url), 'utf8');
+  const types = [...registry.matchAll(/^import \* as (\w+) from '\.\.\/src\/blocks\//gm)].map((match) => match[1]);
+  assert.ok(types.length > 0);
+  for (const type of types) {
+    const source = blockRef({ type, props: { id: 'example' } }, { id: 'page', revisionId: 'revision' }, 'site', {}).source;
+    assert.ok(source, `${type} needs a source hint`);
+    assert.match(readFileSync(new URL(`../${source.file}`, import.meta.url), 'utf8').split('\n')[source.line - 1], /^export const \w+Puck =|^export const puck =/, `${type} hint points to its Puck definition`);
+  }
 });
 
 test('nested blocks resolve by id and type', () => {

@@ -451,6 +451,7 @@ test('portal-files: private; staff write only under a draft; clients get nothing
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
 test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {
+  ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/rollback.sql')}'`);
   const down38 = `\\i '${join(MIGRATIONS, '041_portal_receipt_worker/rollback.sql')}'`;
   assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs', 'portal_receipt_document');`), '0');
   const down = `\\i '${join(MIGRATIONS, '039_client_portal/rollback.sql')}'`;

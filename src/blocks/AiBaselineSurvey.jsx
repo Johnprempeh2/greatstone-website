@@ -46,7 +46,7 @@ function downloadText(filename, text, type = 'text/csv') {
 export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, headingLevel = 'h2', intro, point1, point2, point3, startLabel,
   surveyDownloadNote, gateHeading, gateBody, nameLabel, companyLabel, emailLabel, dataNotice,
   submitLabel, backLabel, benchmarkLabel, benchmarkNote, chartAriaLabel, csvBenchmarkHeader,
-  sentNote, failNote, ctaLabel, ctaHref }) {
+  sentNote, failNote, ctaLabel, ctaHref, formFields }) {
   const editing = !!(puck && puck.isEditing);
   const ref = useReveal();
   const uid = useId();
@@ -80,6 +80,7 @@ export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, hea
 
   const submitGate = async (e) => {
     e.preventDefault();
+    if (!e.currentTarget.reportValidity()) return;
     const name = lead.name.trim(), company = lead.company.trim(), email = lead.email.trim();
     const errors = validateEnquiry({ name, email });
     if (Object.keys(errors).length) { setErr(Object.values(errors).join(' ')); return; }
@@ -175,9 +176,9 @@ export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, hea
             <form className="b-abs-gate" onSubmit={submitGate} noValidate>
               <h3 className="b-abs-gate-h" ref={headRef} tabIndex={-1}>{gateHeading}</h3>
               <p className="muted b-abs-gate-p">{gateBody}</p>
-              <div className="b-abs-field"><label htmlFor={uid + 'n'}>{nameLabel}</label><input id={uid + 'n'} className="fld" value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" required /></div>
-              <div className="b-abs-field"><label htmlFor={uid + 'c'}>{companyLabel}</label><input id={uid + 'c'} className="fld" value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" /></div>
-              <div className="b-abs-field"><label htmlFor={uid + 'e'}>{emailLabel}</label><input id={uid + 'e'} className="fld" type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" required /></div>
+              <div className="b-abs-field"><label htmlFor={uid + 'n'}>{nameLabel}</label><input id={uid + 'n'} className="fld" value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" placeholder={formFields?.name?.placeholder} required /></div>
+              {(!formFields || formFields.company) ? <div className="b-abs-field"><label htmlFor={uid + 'c'}>{companyLabel}</label><input id={uid + 'c'} className="fld" value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" placeholder={formFields?.company?.placeholder} required={!!formFields?.company?.required} /></div> : null}
+              <div className="b-abs-field"><label htmlFor={uid + 'e'}>{emailLabel}</label><input id={uid + 'e'} className="fld" type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" placeholder={formFields?.email?.placeholder} required /></div>
               <div className="gs-sr-only" aria-hidden="true"><label htmlFor={uid + 'w'}>{LEAD_TOOL_COPY.honeypot}</label><input id={uid + 'w'} tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
               {editing ? null : <Turnstile onToken={setToken} />}
               {err ? <div className="b-abs-err" role="alert">{err}</div> : null}

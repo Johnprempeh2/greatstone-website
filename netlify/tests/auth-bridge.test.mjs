@@ -174,6 +174,8 @@ test('no policy opens other rows to anon', { skip }, () => {
     // 044: only the one recent lead the front door bound in its claims (front-door-rls.test.mjs proves it)
     if (table === 'front_door_leads' && name === 'anon_select_own'
       && qual === "((id = front_door_lead_id()) AND (created_at > (now() - '01:00:00'::interval)))") continue;
+    // 045: only the quote the request made in this transaction (visitor-quote-rls.test.mjs proves it)
+    if (table === 'quotes' && name === 'visitor_select_own' && qual === '((id = visitor_quote_id()) AND (created_at = now()))') continue;
     assert.ok(PUBLIC_ROWS[table], `${table}.${name} opens rows to anon: ${qual}`);
     assert.ok(name === 'public_read' || name === 'perms_read', `${table}.${name} is not a reviewed public read`);
   }
@@ -206,7 +208,7 @@ test('the worker sees every row under FORCE RLS, where anon and an unknown user 
     if (all !== '0') withRows.push(t);
   }
   // the tables the ported migrations keep from the worker, as Supabase 0037 and 0038 revoke them from service_role
-  assert.deepEqual(noGrant, ['public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers']);
+  assert.deepEqual(noGrant, ['public.mcp_pdf_chunks', 'public.mcp_pdf_uploads', 'public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers']);
   for (const t of ['public.customers', 'public.users', 'public.service_inquiries', 'public.offerings']) {
     assert.ok(withRows.includes(t), `${t} has rows the worker sees`);
     if (!PUBLIC_ROWS[t.slice(7)]) assert.ok(['0', 'denied'].includes(countAs('anon', t)), `anon on ${t}`);

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { pageFor } from '../../proof-data.js';
+import { framePageFor } from '../../../next-proof/frame-page.mjs';
 import { activeRelease } from '../../release-source.js';
 import { allowedHostOrigins } from '../../../next-proof/frame-protocol.mjs';
 import { frameEngine } from '../../../next-proof/frame-engine.mjs';
@@ -9,7 +9,7 @@ export const metadata = { title: 'Page editor | Greatstone Studio', robots: { in
 export default async function EditorPage({ params }) {
   const { slug } = await params;
   const { release } = await activeRelease();
-  const page = pageFor(slug, release);
+  const page = framePageFor(slug, release);
   if (!page) notFound();
-  return <Editor page={page} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
+  return <Editor page={page} forms={release.collections?.forms} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
 }

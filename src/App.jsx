@@ -5,7 +5,7 @@ import PublicRender from './PublicRender.jsx';
 import { STAGE_OPTIONS } from './stage-presets.js';
 import { publicNavOrder } from './lib/nav-order.js';
 import { initAnalytics, pageview, track, analyticsConfigured } from './lib/analytics.js';
-import { parseEnquireHref, setPendingInterest } from './lib/enquiry.mjs';
+import { arrivalAction, parseEnquireHref, setPendingInterest } from './lib/enquiry.mjs';
 import { openBooking } from './lib/booking.js';
 import { siteOrigin } from './lib/site-origin.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
@@ -357,7 +357,7 @@ function findMissingAlt(content, products) {
 
 export default function App() {
   const [state, setState] = useState(load);
-  const [current, setCurrent] = useState(() => state.order[0]); // derive from the one load() above, not a 2nd
+  const [current, setCurrent] = useState(() => arrivalAction(typeof location !== 'undefined' ? location.hash : '') ? 'contact' : state.order[0]);
   const [pageHash, setPageHash] = useState(() => typeof location !== 'undefined' ? location.hash : '');
   const [mode, setMode] = useState('view');
   const [query, setQuery] = useState('');
@@ -473,6 +473,15 @@ export default function App() {
     const page = readPageHash();
     if (page) setCurrent(page);
   }, [readPageHash]);
+  // Action fragments are also public entry URLs. They have no anchor to click on a fresh visit.
+  useEffect(() => {
+    if (typeof location === 'undefined') return;
+    const action = arrivalAction(location.hash);
+    if (!action) return;
+    // The contact form has already read the interest from the arrival hash on its first render.
+    history.replaceState(null, '', location.pathname + location.search + '#contact');
+    if (action.type === 'book') openBooking();
+  }, []);
   useEffect(() => {
     const anchor = pageHash.match(/^#go\/[a-z0-9-]+\/([a-z0-9-]+)$/i)?.[1];
     if (!anchor) return;

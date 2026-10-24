@@ -14,7 +14,7 @@ export function CatalogueBrowse({ catalogue, filters = {}, release }) {
       <div className="st-stats"><span className="st-stat"><b>{catalogue.offerings.length}</b> products</span><span className="st-stat"><b>{catalogue.vendors.length}</b> vendors</span><span className="st-stat"><b>{catalogue.categories.length}</b> categories</span></div>
     </header>
     <form method="get" action="/shop" className="st-toolbar" role="search">
-      <label className="st-search"><span className="gs-sr-only">Search products</span><input type="search" name="q" defaultValue={filters.q || ''} placeholder="Search products" /></label>
+      <label className="st-search st-search--no-icon"><span className="gs-sr-only">Search products</span><input type="search" name="q" defaultValue={filters.q || ''} placeholder="Search products" /></label>
       {filters.vendor && <input type="hidden" name="vendor" value={filters.vendor} />}
       <select className="st-select" name="sort" defaultValue={filters.sort || 'featured'} aria-label="Sort products"><option value="featured">Featured</option><option value="az">Name A to Z</option><option value="price">Price: low to high</option><option value="price-desc">Price: high to low</option></select>
       <button className="st-more" type="submit">Search</button><span className="st-count"><b>{catalogue.matches}</b> result{catalogue.matches === 1 ? '' : 's'}</span>

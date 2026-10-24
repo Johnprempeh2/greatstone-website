@@ -1,7 +1,7 @@
 // Portal MCP server, database side (GRE-1228; spec GRE-1227 revision 2, section 6; moved from supabase/tests in
 // GRE-1795). Applies every Netlify migration to a throwaway real Postgres, as portal-rls.test.mjs does, with
 // made-up data: two client companies, a person in each, a registered approver, and two MCP tokens (one scoped to client A, one to client B). Then calls
-// the mcp_portal_* functions as the service key (what the portal-mcp edge function uses) to prove: drafts work,
+// the mcp_portal_* functions as anon (what the Netlify portal-mcp function uses) to prove: drafts work,
 // publishing without John's approval is refused, a token never reaches another client, every write is audited
 // with the agent and the run. Without the Postgres server binaries the suite is skipped (on CI it fails).
 import { test, before, after } from 'node:test';
@@ -9,7 +9,9 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { startPostgres, skip, MIGRATIONS } from './lib/postgres.mjs';
 import { createHash } from 'node:crypto';
+import pg from 'pg';
 import { createPortalMcp } from '../../supabase/functions/_shared/portal-mcp.mjs';
+import { makePortalMcpHandler } from '../functions/portal-mcp.mjs';
 
 
 // ── made-up companies, people, agents and runs ────────────────────────────────────────────────
@@ -37,6 +39,7 @@ const psql = (sql) => db.psql(sql);
 function as(who, sql) {
   let pre = '';
   if (who === 'anon') pre = 'SET LOCAL ROLE anon;';
+  else if (who === 'mcp') pre = `SET LOCAL ROLE anon; SELECT set_config('request.jwt.claims', '{"role":"anon"}', true) \\g /dev/null\n`;
   else if (who === 'service') pre = 'SET LOCAL ROLE service_role;';
   else if (who === 'authenticated') pre = 'SET LOCAL ROLE authenticated;';
   else if (who) pre = `SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims', '${JSON.stringify(U[who])}', true) \\g /dev/null\n`;
@@ -56,9 +59,9 @@ function refused(who, sql, pattern) {
 }
 const q = (v) => (v == null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
 const j = (v) => `${q(JSON.stringify(v))}::jsonb`;
-/** Call an mcp_portal_* function as the service key and parse its jsonb answer. */
-const call = (fn, ...args) => JSON.parse(ok('service', `SELECT ${fn}(${args.join(', ')});`));
-const callRefused = (pattern, fn, ...args) => refused('service', `SELECT ${fn}(${args.join(', ')});`, pattern);
+/** Call an mcp_portal_* function as anon with no subject and parse its jsonb answer. */
+const call = (fn, ...args) => JSON.parse(ok('mcp', `SELECT ${fn}(${args.join(', ')});`));
+const callRefused = (pattern, fn, ...args) => refused('mcp', `SELECT ${fn}(${args.join(', ')});`, pattern);
 
 const draftFields = (over = {}) => ({
   kind: 'engagement_pack',
@@ -125,14 +128,19 @@ test('an unknown token is refused by every tool', { skip }, () => {
   callRefused(/invalid or revoked token/, 'mcp_portal_create_draft', bad, q(RUN1), q(AGENT), q(A), j(draftFields()));
 });
 
-test('no API role can read the token tables or issue a token; anon and signed-in users cannot call the tools', { skip }, () => {
-  for (const who of ['service', 'anon', 'authenticated', 'approver', 'a1']) {
+test('no API role can read the token tables or issue a token; signed-in users cannot call the tools', { skip }, () => {
+  for (const who of ['service', 'anon', 'mcp', 'authenticated', 'approver', 'a1']) {
     refused(who, 'SELECT count(*) FROM mcp_tokens;', /permission denied/);
     refused(who, 'SELECT count(*) FROM mcp_token_clients;', /permission denied/);
     refused(who, `SELECT mcp_portal_issue_token('x', ARRAY['${A}']::uuid[]);`, /permission denied/);
     refused(who, `SELECT mcp_portal_add_client('${A}', '${B}');`, /permission denied/);
   }
-  for (const who of ['anon', 'authenticated', 'approver', 'a1']) {
+  for (const who of ['service', 'anon', 'mcp']) {
+    for (const helper of [`mcp_portal_token('${TOK.a}')`, 'mcp_portal_done()', `mcp_portal_doc_json('${A}')`,
+                          `mcp_portal_revoke_token('${A}')`, `mcp_portal_remove_client('${A}', '${B}')`])
+      refused(who, `SELECT ${helper};`, /permission denied/);
+  }
+  for (const who of ['authenticated', 'approver', 'a1']) {
     refused(who, `SELECT mcp_portal_list_clients('${TOK.a}');`, /permission denied/);
     refused(who, `SELECT mcp_portal_create_draft('${TOK.a}', '${RUN1}', '${AGENT}', '${A}', '{}'::jsonb);`, /permission denied/);
   }
@@ -253,8 +261,9 @@ test('request publish submits the draft for approval and returns its fingerprint
 });
 
 test('publishing without John is refused: the service key, a direct update, and inside an MCP write', { skip }, () => {
-  // the MCP server runs as the service key: no signed-in user, so not the registered approver
   refused('service', `SELECT portal_approve_and_publish('${doc.id}', '${fingerprint}');`, /only the registered approver/);
+  refused('mcp', `SELECT portal_approve_and_publish('${doc.id}', '${fingerprint}');`, /permission denied/);
+  refused('mcp', `UPDATE portal_documents SET status = 'published' WHERE id = '${doc.id}';`, /permission denied/);
   refused('service', `UPDATE portal_documents SET status = 'published' WHERE id = '${doc.id}';`, /only through portal_approve_and_publish/);
   refused('service', `INSERT INTO portal_approvals (org_id, customer_id, document_id, content_sha256, approver_user_id)
                       VALUES ('${ORG}', '${A}', '${doc.id}', '${fingerprint}', '${U.approver.sub}');`, /permission denied/);
@@ -302,14 +311,14 @@ test('every MCP write is in the audit with the agent and its run', { skip }, () 
 
 // ── the MCP handler end to end, on this database ──────────────────────────────────────────────
 // PostgREST calls a function with named parameters, so this drives the real handler with an rpc that does the same
-// through psql, as the service key: it proves the tools and the SQL signatures fit together.
+// through psql, as anon without a subject: it proves the tools and the SQL signatures fit together.
 
 function psqlRpc(fn, params) {
   const lit = (v) => (v === null || v === undefined ? 'NULL'
     : typeof v === 'number' ? String(v)
     : typeof v === 'object' ? `${q(JSON.stringify(v))}::jsonb` : q(v));
   const args = Object.entries(params).map(([k, v]) => `${k} => ${lit(v)}`).join(', ');
-  const r = psql(`\\set VERBOSITY verbose\nBEGIN;\nSET LOCAL ROLE service_role;\nSELECT ${fn}(${args});\nCOMMIT;\n`);
+  const r = psql(`\\set VERBOSITY verbose\nBEGIN;\nSET LOCAL ROLE anon;\nSELECT set_config('request.jwt.claims', '{"role":"anon"}', true) \\g /dev/null\nSELECT ${fn}(${args});\nCOMMIT;\n`);
   if (r.status === 0) return { data: JSON.parse(r.stdout.trim()), error: null };
   const m = /ERROR:\s+([0-9A-Z]{5}):\s+(.*)/.exec(r.stderr) || [];
   return { data: null, error: { code: m[1], message: m[2] || r.stderr } };
@@ -376,9 +385,107 @@ test('end to end: the MCP handler creates, changes, attaches, submits; another c
   ]);
 });
 
+test('chunked PDF sessions enforce order, token and run binding, size, hash, signature and expiry', { skip }, () => {
+  const d = create(TOK.a, A, draftFields({ title: 'Chunked PDF test' }));
+  const pdf = Buffer.from('%PDF-1.7\nmade-up chunked test\n%%EOF');
+  const hash = sha(pdf);
+  const begin = (size = pdf.length, digest = hash) => call('mcp_portal_pdf_begin', q(TOK.a), q(RUN1), q(AGENT), q(d.id), q('test.pdf'), size, q(digest)).session_id;
+  const chunk = (session, index, bytes = pdf) => call('mcp_portal_pdf_chunk', q(TOK.a), q(RUN1), q(AGENT), q(session), index, q(bytes.toString('base64')));
+  const finish = (session) => call('mcp_portal_pdf_finish', q(TOK.a), q(RUN1), q(AGENT), q(session));
+
+  callRefused(/20 MB at most/, 'mcp_portal_pdf_begin', q(TOK.a), q(RUN1), q(AGENT), q(d.id), q('test.pdf'), 20.5 * 1024 * 1024, q(hash));
+  const session = begin();
+  callRefused(/expected chunk index 0/, 'mcp_portal_pdf_chunk', q(TOK.a), q(RUN1), q(AGENT), q(session), 1, q(pdf.toString('base64')));
+  callRefused(/upload session not found/, 'mcp_portal_pdf_chunk', q(TOK.b), q(RUN1), q(AGENT), q(session), 0, q(pdf.toString('base64')));
+  callRefused(/upload session not found/, 'mcp_portal_pdf_chunk', q(TOK.a), q(RUN2), q(AGENT), q(session), 0, q(pdf.toString('base64')));
+  callRefused(/upload session not found/, 'mcp_portal_pdf_chunk', q(TOK.a), q(RUN1), q(AGENT2), q(session), 0, q(pdf.toString('base64')));
+  callRefused(/incomplete/, 'mcp_portal_pdf_finish', q(TOK.a), q(RUN1), q(AGENT), q(session));
+  assert.equal(chunk(session, 0).next_index, 1);
+  assert.equal(Buffer.from(finish(session).content_base64, 'base64').toString(), pdf.toString());
+  assert.equal(call('mcp_portal_get_document', q(TOK.a), q(d.id)).pdf_path, null); // still invisible
+
+  const tooManyBytes = begin(pdf.length - 1);
+  callRefused(/exceed the declared file size/, 'mcp_portal_pdf_chunk', q(TOK.a), q(RUN1), q(AGENT), q(tooManyBytes), 0, q(pdf.toString('base64')));
+  call('mcp_portal_pdf_discard', q(TOK.a), q(RUN1), q(AGENT), q(tooManyBytes));
+
+  const wrongHash = begin(pdf.length, '0'.repeat(64));
+  chunk(wrongHash, 0);
+  callRefused(/sha256 does not match/, 'mcp_portal_pdf_finish', q(TOK.a), q(RUN1), q(AGENT), q(wrongHash));
+  call('mcp_portal_pdf_discard', q(TOK.a), q(RUN1), q(AGENT), q(wrongHash));
+  const html = Buffer.from('<html>not a pdf</html>');
+  const nonPdf = begin(html.length, sha(html));
+  chunk(nonPdf, 0, html);
+  callRefused(/must be a PDF/, 'mcp_portal_pdf_finish', q(TOK.a), q(RUN1), q(AGENT), q(nonPdf));
+  call('mcp_portal_pdf_discard', q(TOK.a), q(RUN1), q(AGENT), q(nonPdf));
+
+  const expired = begin();
+  chunk(expired, 0);
+  ok(null, `UPDATE mcp_pdf_uploads SET expires_at = now() - interval '1 second' WHERE id = '${expired}';`);
+  assert.equal(ok(null, 'SELECT mcp_portal_pdf_cleanup();'), '1');
+  assert.equal(ok(null, `SELECT count(*) FROM mcp_pdf_uploads WHERE id = '${expired}';`), '0');
+  assert.equal(ok(null, `SELECT count(*) FROM mcp_pdf_chunks WHERE upload_id = '${expired}';`), '0');
+  const second = begin();
+  const third = begin();
+  callRefused(/finish or wait for an open PDF upload/, 'mcp_portal_pdf_begin', q(TOK.a), q(RUN1), q(AGENT), q(d.id), q('test.pdf'), pdf.length, q(hash));
+  for (const id of [second, third]) call('mcp_portal_pdf_discard', q(TOK.a), q(RUN1), q(AGENT), q(id));
+  call('mcp_portal_pdf_discard', q(TOK.a), q(RUN1), q(AGENT), q(session));
+  assert.equal(ok(null, `SELECT count(*) FROM mcp_pdf_chunks WHERE upload_id = '${session}';`), '0');
+});
+
+test('Netlify MCP handler attaches a 19.5 MB PDF in bounded requests and refuses 20.5 MB', { skip }, async () => {
+  const token = ok(null, `SELECT mcp_portal_issue_token('Chunked request test', ARRAY['${A}']::uuid[]);`);
+  const d = create(sha(token), A, draftFields({ title: 'Large PDF request test' }));
+  const pool = new pg.Pool({ connectionString: db.url });
+  let stored;
+  const handler = makePortalMcpHandler({ pool: () => pool, store: () => ({ set: async (path, bytes) => { stored = { path, bytes }; } }), log: () => {} });
+  let id = 0;
+  const tool = async (name, args) => {
+    const body = JSON.stringify({ jsonrpc: '2.0', id: ++id, method: 'tools/call', params: { name, arguments: args } });
+    assert.ok(Buffer.byteLength(body) < 4 * 1024 * 1024, `${name} request exceeds 4 MB`);
+    const response = await handler(new Request('https://example.test/api/portal-mcp', { method: 'POST',
+      headers: { authorization: `Bearer ${token}` }, body }));
+    assert.equal(response.status, 200);
+    return (await response.json()).result;
+  };
+  try {
+    const pdf = Buffer.alloc(19.5 * 1024 * 1024, 0x20);
+    pdf.write('%PDF-1.7\n');
+    const hash = sha(pdf);
+    const who = { run_id: RUN1, agent_id: AGENT };
+    const tooLarge = await tool('begin_pdf_upload', { document_id: d.id, ...who, filename: 'large.pdf', size_bytes: 20.5 * 1024 * 1024, sha256: hash });
+    assert.equal(tooLarge.isError, true);
+    assert.match(tooLarge.content[0].text, /20 MB at most/);
+    const begun = await tool('begin_pdf_upload', { document_id: d.id, ...who, filename: 'large.pdf', size_bytes: pdf.length, sha256: hash });
+    assert.equal(begun.isError, undefined, begun.content[0].text);
+    const session_id = begun.structuredContent.session_id;
+    for (let index = 0, offset = 0; offset < pdf.length; index++, offset += 2 * 1024 * 1024) {
+      const part = pdf.subarray(offset, offset + 2 * 1024 * 1024);
+      const sent = await tool('upload_pdf_chunk', { session_id, ...who, index, content_base64: part.toString('base64') });
+      assert.equal(sent.isError, undefined, sent.content[0].text);
+      assert.equal(sent.structuredContent.next_index, index + 1);
+    }
+    assert.equal(ok(null, `SELECT pdf_path IS NULL FROM portal_documents WHERE id = '${d.id}';`), 't');
+    const finished = await tool('finish_pdf_upload', { session_id, ...who });
+    assert.equal(finished.isError, undefined, finished.content[0].text);
+    assert.equal(Buffer.from(stored.bytes).length, pdf.length);
+    assert.equal(sha(stored.bytes), hash);
+    assert.equal(finished.structuredContent.pdf_sha256, hash);
+    assert.equal(ok(null, `SELECT count(*) FROM mcp_pdf_uploads WHERE id = '${session_id}';`), '0');
+  } finally {
+    await pool.end();
+  }
+});
+
 // ── rollback (runs last) ──────────────────────────────────────────────────────────────────────
 
 test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on top of itself', { skip }, () => {
+  ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/rollback.sql')}'`);
+  const anonGrant = `SELECT has_function_privilege('anon', 'mcp_portal_list_clients(text)', 'EXECUTE');`;
+  assert.equal(ok(null, anonGrant), 't');
+  ok(null, `\\i '${join(MIGRATIONS, '046_portal_mcp_anon/rollback.sql')}'`);
+  assert.equal(ok(null, anonGrant), 'f');
+  ok(null, `\\i '${join(MIGRATIONS, '046_portal_mcp_anon/migration.sql')}'`);
+  assert.equal(ok(null, anonGrant), 't');
   const left = `SELECT count(*) FROM pg_class WHERE relname LIKE 'mcp\\_token%' AND relkind = 'r';
     SELECT count(*) FROM pg_proc WHERE proname LIKE 'mcp\\_portal\\_%';
     SELECT position('portal.mcp_agent' IN prosrc) > 0 FROM pg_proc WHERE proname = 'portal_documents_audit';`;
@@ -392,4 +499,9 @@ test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on to
   ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/migration.sql')}'`);
   ok(null, `\\i '${join(MIGRATIONS, '040_portal_mcp/migration.sql')}'`);
   assert.equal(ok(null, left), '2\n19\nt');
+  assert.equal(ok(null, anonGrant), 'f');
+  ok(null, `\\i '${join(MIGRATIONS, '046_portal_mcp_anon/migration.sql')}'`);
+  assert.equal(ok(null, anonGrant), 't');
+  ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/migration.sql')}'`);
+  assert.equal(ok(null, `SELECT has_function_privilege('anon', 'mcp_portal_pdf_begin(text,uuid,uuid,uuid,text,integer,text)', 'EXECUTE');`), 't');
 });

@@ -10,6 +10,8 @@
     "build": "vite build",
     "postbuild": "node scripts/check-dist-secrets.mjs",
     "preview": "vite preview",
+    "deploy:preview": "node scripts/deploy-site.mjs preview",
+    "deploy:prod": "node scripts/deploy-site.mjs prod",
     "test": "node --test",
     "check:dist": "node scripts/check-dist-secrets.mjs",
     "redirects": "node scripts/gen-legacy-redirects.mjs",

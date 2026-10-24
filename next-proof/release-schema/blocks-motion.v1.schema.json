@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:greatstone:website-block-motion:1",
+  "title": "Greatstone brand-locked block motion fields",
+  "$defs": {
+    "intensity": { "type": "string", "enum": ["off", "subtle", "full"] },
+    "backgroundEffects": { "enum": ["bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] },
+    "quietAnchor": { "const": "copy" },
+    "base": {
+      "type": "object", "additionalProperties": false,
+      "required": ["effect", "intensity"],
+      "properties": { "effect": { "type": "string" }, "intensity": { "$ref": "#/$defs/intensity" }, "quietAnchor": { "$ref": "#/$defs/quietAnchor" } }
+    },
+    "DevTools": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "AiBaselineSurvey": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "Hero": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "hero.stone", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "MotionBand": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "band.tide"] } } }] }
+  }
+}

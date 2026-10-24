@@ -7,7 +7,7 @@ code read on GRE-1836; the brand ignores come from Mica's evaluation on GRE-1821
 ## The step
 
 ```bash
-npm run design:detect                      # UI files under src/ changed against origin/main
+npm run design:detect                      # UI files under src/ and app/ changed against origin/main
 ```
 
 1. Run it on your branch before `gh pr create`.
@@ -21,16 +21,19 @@ If no UI file changed (copy-only, data-only or server work), the script says so.
 Other forms:
 
 ```bash
-npm run design:detect -- --all             # the whole of src/
+npm run design:detect -- --all             # the whole of src/ and app/
 npm run design:detect -- src/blocks/Hero.jsx src/two-doors.css
-npm run design:detect -- --url http://localhost:5180/   # adds a rendered scan at 390
+npm run design:detect -- --url http://localhost:5180/   # scans this local page at 390 and 1440
+npm run design:detect -- --changed-pages http://localhost:5181   # scans changed static app/ pages
 ```
 
 ## Rendered scan: local only, a warning
 
-`--url` accepts `localhost` or `127.0.0.1` only. It never fails the step: if it times out or the browser
-is missing, the summary says so and the PR goes on. The desktop (1440) rendered scan timed out in the
-GRE-1821 trial, so it is not part of the step.
+`--url` accepts `localhost` or `127.0.0.1` only. Repeat it for each changed page affected by a shared
+component or a dynamic route. `--changed-pages` maps changed static `app/**/page.jsx` files to local
+routes; it warns when a changed dynamic route needs an explicit `--url`. Both modes scan at 390 and
+1440 px. They never fail the step: if a scan times out or the browser is missing, the summary says so
+and the PR goes on. Rendered brand noise is filtered from the report, with raw and retained counts shown.
 
 The engine needs a Chromium. On the GSAM host, use the Playwright copy:
 
@@ -41,8 +44,11 @@ export LD_LIBRARY_PATH=~/.cache/ms-playwright/gs-chromium-libs/root/usr/lib/x86_
 
 ## Brand ignores
 
-`.impeccable/config.json` holds the four scoped ignores from GRE-1821. Each one ignores a value in named
-files, never a whole rule. Do not add `ignoreRules` entries. Change this file only with Mica's agreement.
+`.impeccable/config.json` holds the four scoped source ignores from GRE-1821. Each one ignores a value
+in named files, never a whole rule. Do not add `ignoreRules` entries. Change this file only with Mica's
+agreement. The runner filters `kicker-above-heading`, `hero-eyebrow-chip` and
+`repeating-stripes-gradient` only from rendered results; source scans still report them outside the
+existing scoped source ignores.
 
 | Rule | Value | Files | Why |
 | --- | --- | --- | --- |

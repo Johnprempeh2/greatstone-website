@@ -15,6 +15,10 @@ export async function publishedCatalogue() {
     return null;
   }
   const read = (op, params) => asCatalogueAnon(pool, (client) => catalogueRead(client, op, params));
+  return collectPublishedCatalogue(read);
+}
+
+export async function collectPublishedCatalogue(read) {
   const [vendors, categories] = await Promise.all([read('vendors'), read('categories')]);
   const cards = [];
   for (let page = 1, total = Infinity; cards.length < total; page++) {

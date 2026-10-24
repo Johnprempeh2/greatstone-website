@@ -4,11 +4,16 @@ import { Puck } from '@puckeditor/core';
 import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
+import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
+import { MediaField } from '../../../src/cms/MediaField.jsx';
 import './frame.css';
 
-export default function Editor({ page, siteId, engine, origins, mode }) {
+const isMediaField = (field) => field.type === 'image' || field.type === 'video' ||
+  (field.type === 'custom' && field.render?.({ value: '', onChange: () => {} })?.type === MediaField);
+
+export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('waiting');
   const [message, setMessage] = useState('Waiting for the website builder');
@@ -54,7 +59,7 @@ export default function Editor({ page, siteId, engine, origins, mode }) {
         window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], blocks: Object.keys(proofConfig.components).map((type) => ({ type, label: type })) }), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
-      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'teardown'])) {
+      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'teardown'])) {
         if (event.data?.gs === 'website-frame') console.warn('Dropped frame message: origin, source, session, protocol or payload invalid');
         return;
       }
@@ -66,6 +71,17 @@ export default function Editor({ page, siteId, engine, origins, mode }) {
         addMedia(p.media); draft.current = p.data; baseRevision.current = p.revisionId; setData(displayData(p.data)); setStatus('ready'); setMessage('Draft ready');
       } else if (event.data.type === 'highlight' && mode === 'preview') {
         setHighlight(typeof p.blockId === 'string' ? p.blockId : null);
+      } else if (event.data.type === 'insert-media') {
+        const result = mode === 'editor' && draft.current
+          ? insertMedia(draft.current, proofConfig.components, p, isMediaField)
+          : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
+        if (result.ok) {
+          draft.current = result.data;
+          mediaUrls.current[result.mediaRef] = result.assetUrl;
+          setData(displayData(result.data)); setGeneration((n) => n + 1);
+          dirty(true); setStatus('ready'); setMessage('Unsaved changes');
+        }
+        send('insert-media-result', insertMediaResult(event.data.id, result));
       } else if (event.data.type === 'save-result' && pending.current && p.requestId === pending.current.requestId) {
         clearTimeout(timer.current);
         const decision = saveDecision(pending.current, draft.current, p);
@@ -113,6 +129,6 @@ export default function Editor({ page, siteId, engine, origins, mode }) {
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && pending.current && <div className="gs-frame-notice" role="alert"><p>{message}</p><button type="button" onClick={() => save(undefined, true)}>Retry save</button></div>}
     {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} ui={{ viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: true, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} viewports={[{ width: 390, label: 'Phone', icon: 'Smartphone' }, { width: 1440, label: 'Laptop', icon: 'Monitor' }, { width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
-      : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
+      : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} pageSlug={page.slug} forms={forms} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }

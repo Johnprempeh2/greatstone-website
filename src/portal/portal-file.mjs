@@ -1,11 +1,17 @@
-// The designed PDF of a portal document (GRE-1257). The portal-file edge function checks the document with this
-// person's own token (RLS: clients get their own company's published documents, staff their organisation's) and
-// returns a signed link that lasts a minute. The link is a download, so the page stays where it is. Used by the
-// client reader and by staff "Preview as the client". Throws on failure; the caller says what to do next.
+// The Netlify function reads the document through this person's claims and returns its private PDF.
 import { supabase } from '../lib/supabase.mjs';
 
 export async function downloadPortalPdf(documentId) {
-  const { data, error } = await supabase.functions.invoke('portal-file', { body: { document_id: documentId } });
-  if (error || !data || !data.url) throw error || new Error('no link');
-  window.location.assign(data.url);
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Sign in to download this file.');
+  const response = await fetch('/api/portal-file', { method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ document_id: documentId }) });
+  if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || 'The PDF is unavailable. Try again.');
+  const url = URL.createObjectURL(await response.blob());
+  const name = /filename="([a-z0-9._-]+)"/i.exec(response.headers.get('content-disposition') || '')?.[1] || 'document.pdf';
+  const link = document.createElement('a');
+  link.href = url; link.download = name;
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }

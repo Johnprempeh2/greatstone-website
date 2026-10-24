@@ -1,0 +1,309 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync, spawn } from 'node:child_process';
+import { createServer } from 'node:http';
+
+const script = new URL('./deploy-site.mjs', import.meta.url).pathname;
+const site = 'gre1795-website-db-staging';
+
+function git(cwd, ...args) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+async function fixture(t) {
+  const cwd = await mkdtemp(join(tmpdir(), 'deploy-test-'));
+  t.after(() => rm(cwd, { recursive: true, force: true }));
+  await mkdir(join(cwd, 'bin'));
+  await mkdir(join(cwd, 'src'));
+  await mkdir(join(cwd, 'scripts'));
+  await writeFile(join(cwd, '.gitignore'), 'bin/\nnetlify-args.txt\n');
+  git(cwd, 'init', '-q', '-b', 'main');
+  git(cwd, 'config', 'user.email', 'test@example.invalid');
+  git(cwd, 'config', 'user.name', 'Test');
+  await writeFile(join(cwd, 'src', 'app.js'), 'original');
+  git(cwd, 'add', '.gitignore', 'src/app.js'); git(cwd, 'commit', '-qm', 'base');
+  const base = git(cwd, 'rev-parse', 'HEAD');
+  git(cwd, 'checkout', '-qb', 'test-pr');
+  const log = join(cwd, 'netlify-args.txt');
+  await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
+  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  let comments = [];
+  let interactions = [];
+  let deploys = [];
+  const server = createServer((req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    if (req.url.includes('/api/v1/sites/') && !req.url.includes(`${site}.netlify.app/deploys`)) {
+      res.statusCode = 404;
+      res.end('{}');
+      return;
+    }
+    res.end(JSON.stringify(req.url.includes('/comments') ? comments : req.url.includes('/interactions') ? interactions : deploys));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const env = {
+    ...process.env, PATH: `${join(cwd, 'bin')}:${process.env.PATH}`,
+    NODE_ENV: 'test', NETLIFY_AUTH_TOKEN: 'test-token', NETLIFY_TEST_API_URL: url,
+    GSAM_API_URL: url, GSAM_API_KEY: 'test-key', GSAM_TASK_ID: 'test-task', DEPLOY_LOG: log,
+  };
+  function commit(path, content) {
+    return writeFile(join(cwd, path), content).then(() => {
+      git(cwd, 'add', path); git(cwd, 'commit', '-qm', 'change');
+      env.FAKE_PR_JSON = JSON.stringify({ number: 12, state: 'OPEN', isDraft: false,
+        headRefOid: git(cwd, 'rev-parse', 'HEAD'), baseRefOid: base, labels: [{ name: 'preview' }] });
+    });
+  }
+  async function run(mode = 'preview', targetSite = site) {
+    const child = spawn(process.execPath, [script, mode, targetSite, '12'], { cwd, env });
+    let stdout = '', stderr = '';
+    child.stdout.on('data', (part) => { stdout += part; });
+    child.stderr.on('data', (part) => { stderr += part; });
+    const status = await new Promise((resolve) => child.on('exit', resolve));
+    return { status, stdout, stderr };
+  }
+  return { cwd, base, env, log, commit, run,
+    setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
+    setDeploys: (value) => { deploys = value; } };
+}
+
+function stagingCard(sha, changes = {}) {
+  return { kind: 'request_confirmation', status: 'accepted', requestedResolverPolicy: 'human_only',
+    effectiveResolverPolicy: 'human_only',
+    resolvedByUserId: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', resolvedByAgentId: null,
+    idempotencyKey: `confirmation:GRE-2064:staging-deploy:${sha}`,
+    payload: { detailsMarkdown: `Approve production deploy: ${site} ${sha}` }, ...changes };
+}
+
+test('accepted human-only staging card permits exact SHA and guard-only drift', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  let result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+  await f.commit('scripts/deploy-site.mjs', 'guard');
+  result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('accepted revised staging card permits its approved SHA', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base, {
+    idempotencyKey: `confirmation:GRE-2064:staging-deploy:${f.base}:v2`,
+  })]);
+  const result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and site code drift', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const cases = [
+    stagingCard(f.base, { status: 'rejected' }),
+    stagingCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}` } }),
+    stagingCard('a'.repeat(40)),
+    stagingCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
+    stagingCard(f.base, { requestedResolverPolicy: 'anyone' }),
+  ];
+  for (const card of cases) {
+    f.setInteractions([card]);
+    const result = await f.run('prod');
+    assert.equal(result.status, 1, JSON.stringify(card));
+    assert.match(result.stderr, /production refused/);
+  }
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'changed');
+  const result = await f.run('prod');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
+test('a staging card never authorises the public site', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
+test('docs-only skips; site changes deploy only with preview gate', async (t) => {
+  const f = await fixture(t);
+  await f.commit('README.md', 'docs');
+  let result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Skipped.*docs, tests or CI only/);
+  await assert.rejects(readFile(f.log));
+  await f.commit('src/app.js', 'changed');
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), isDraft: true });
+  result = await f.run();
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /open, ready PR/);
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), labels: [] });
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), isDraft: false });
+  result = await f.run();
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /preview refused/);
+  f.setComments([{ authorAgentId: '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7', body: 'Preview ready for PR #12' }]);
+  result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
+});
+
+test('another board user cannot mark an unlabelled PR ready for preview', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), labels: [] });
+  f.setComments([{ authorType: 'user', authorUserId: 'another-board-user', body: 'Preview ready for PR #12' }]);
+  const refused = await f.run();
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /preview refused/);
+  await assert.rejects(readFile(f.log));
+
+  f.setComments([{ authorType: 'user', authorUserId: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', body: 'Preview ready for PR #12' }]);
+  const approved = await f.run();
+  assert.equal(approved.status, 0, approved.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /gsam-source:preview:12:/);
+});
+
+test('unapproved production is refused before upload', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const result = await f.run('prod');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+  await assert.rejects(readFile(f.log));
+  f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
+  const approved = await f.run('prod');
+  assert.equal(approved.status, 0, approved.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:[0-9a-f]{40} --prod\n$/);
+});
+
+test('newer run supersedes an in-flight run for the same site', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.DEPLOY_SLEEP = '2';
+  const first = spawn(process.execPath, [script, 'preview', site, '12'], { cwd: f.cwd, env: f.env });
+  const firstExit = new Promise((resolve) => first.on('exit', resolve));
+  let firstOutput = '';
+  first.stdout.on('data', (part) => { firstOutput += part; });
+  for (let i = 0; i < 150 && !firstOutput.includes('Deploying'); i++)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.match(firstOutput, /Deploying/);
+  const second = await f.run();
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /Superseded stale run/);
+  const firstCode = await firstExit;
+  assert.notEqual(firstCode, 0);
+});
+
+test('a stale lock with a reused PID does not stop an unrelated process', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  const dir = join(f.cwd, '.git', 'gsam-deploy-locks', `${site}-preview-12`);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, 'owner.json'), JSON.stringify({ pid: process.pid, identity: 'old deploy-site.mjs process', own: 'old' }));
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /Superseded stale run/);
+});
+
+test('a preview from another PR is not the change baseline', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  const sha = git(f.cwd, 'rev-parse', 'HEAD');
+  f.setDeploys([{ state: 'ready', title: `gsam-source:preview:99:${sha}` }]);
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /gsam-source:preview:12:/);
+});
+
+test('preview does not stop an approved production upload', async (t) => {
+  const f = await fixture(t);
+  f.env.DEPLOY_SLEEP = '2';
+  f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const prod = spawn(process.execPath, [script, 'prod', site], { cwd: f.cwd, env: f.env });
+  let output = '';
+  prod.stdout.on('data', (part) => { output += part; });
+  const done = new Promise((resolve) => prod.on('exit', resolve));
+  for (let i = 0; i < 150 && !output.includes('Deploying'); i++)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.match(output, /Deploying/);
+  git(f.cwd, 'checkout', '-q', 'test-pr');
+  await f.commit('src/app.js', 'changed');
+  const preview = await f.run();
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.equal(await done, 0);
+});
+
+async function runIn(f, args, cwd = f.cwd) {
+  const child = spawn(process.execPath, [script, ...args], { cwd, env: f.env });
+  let stdout = '', stderr = '';
+  child.stdout.on('data', (part) => { stdout += part; });
+  child.stderr.on('data', (part) => { stderr += part; });
+  const status = await new Promise((resolve) => child.on('exit', resolve));
+  return { status, stdout, stderr };
+}
+
+async function startDeploy(f, args, cwd = f.cwd) {
+  const child = spawn(process.execPath, [script, ...args], { cwd, env: f.env });
+  let output = '';
+  child.stdout.on('data', (part) => { output += part; });
+  child.stderr.on('data', (part) => { output += part; });
+  const exit = new Promise((resolve) => child.on('exit', resolve));
+  for (let i = 0; i < 150 && !output.includes('Deploying'); i++)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.match(output, /Deploying/);
+  return { exit, output: () => output };
+}
+
+test('a newer run in another worktree supersedes the same PR preview', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.DEPLOY_SLEEP = '2';
+  const first = await startDeploy(f, ['preview', site, '12']);
+  const other = join(await mkdtemp(join(tmpdir(), 'deploy-wt-')), 'wt');
+  t.after(() => rm(other, { recursive: true, force: true }));
+  git(f.cwd, 'worktree', 'add', '-q', '--detach', other, 'HEAD');
+  const second = await runIn(f, ['preview', site, '12'], other);
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /Superseded stale run/);
+  assert.notEqual(await first.exit, 0);
+});
+
+test('previews for different PRs do not stop each other', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'changed');
+  f.env.DEPLOY_SLEEP = '2';
+  const first = await startDeploy(f, ['preview', site, '12']);
+  f.env.FAKE_PR_JSON = JSON.stringify({ ...JSON.parse(f.env.FAKE_PR_JSON), number: 13 });
+  const second = await runIn(f, ['preview', site, '13']);
+  assert.equal(second.status, 0, second.stderr);
+  assert.doesNotMatch(second.stdout, /Superseded stale run/);
+  assert.equal(await first.exit, 0, first.output());
+});
+
+test('production from a detached HEAD needs exactly origin main', async (t) => {
+  const f = await fixture(t);
+  const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
+  t.after(() => rm(remote, { recursive: true, force: true }));
+  git(f.cwd, 'init', '-q', '--bare', remote);
+  git(f.cwd, 'remote', 'add', 'origin', remote);
+  git(f.cwd, 'push', '-q', 'origin', 'main');
+  f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
+  git(f.cwd, 'checkout', '-q', '--detach', 'main');
+  const approved = await f.run('prod');
+  assert.equal(approved.status, 0, approved.stderr);
+  await f.commit('src/app.js', 'changed');
+  git(f.cwd, 'checkout', '-q', '--detach', 'HEAD');
+  const refused = await f.run('prod');
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /production requires main/);
+});

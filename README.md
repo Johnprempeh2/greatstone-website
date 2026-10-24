@@ -38,6 +38,65 @@ Run `npm run design:detect` and post its summary on the task and in the PR, one 
 (fixed or justified). This is required for every website PR. See
 [docs/design-detector.md](docs/design-detector.md).
 
+## Guarded Netlify uploads
+
+`greatstone-home` and `gre1795-website-db-staging` use local Netlify uploads. They are not
+Git-linked. Agents must use this repo's guarded commands for these two sites, from a clean
+checkout with `NETLIFY_AUTH_TOKEN`, the Netlify CLI, and task-scoped `GSAM_*` credentials:
+
+```bash
+npm run deploy:preview -- greatstone-home 123
+npm run deploy:prod -- greatstone-home
+```
+
+The preview command requires an open, non-draft PR at the checkout's HEAD. It uploads a
+draft only if the PR has the `preview` label or Mikey or John comments exactly
+`Preview ready for PR #123` on the current task. The production command requires `main`
+(or, in a task worktree, a detached HEAD at exactly the remote `main` commit:
+`git fetch origin main && git checkout --detach origin/main`) and a person to comment `Approve production deploy: greatstone-home <40-character HEAD SHA>`
+on the current task. It is never automatic or scheduled. Replace the site and PR number as
+needed. The command refuses other Netlify sites.
+
+For `gre1795-website-db-staging` only, an accepted GS Agentic Manager human-only
+`request_confirmation` on the current task also authorises the upload. Its recorded approval
+must name that site and the approved SHA. If a reviewed guard repair changes HEAD after approval,
+the approved commit must be an ancestor and every intervening change must be confined to
+`scripts/deploy-site.mjs`, `scripts/deploy-site.test.mjs`, and `README.md`. Any site code or
+migration change requires a new approval. The public site still requires the exact comment
+for the current HEAD.
+
+Each successful upload records its source commit in the Netlify deploy title. The next
+run compares HEAD with the last ready upload of the same type. Changes confined to
+`docs/`, `.github/`, the three root guide files, or test files skip the upload. If no
+recorded upload exists, preview compares with the PR base; production uploads rather
+than guessing. A newer local run for the same site and mode (and, for previews, the same PR) stops an
+older upload in progress. Previews of different PRs never stop each other. Locks live in
+the repo's shared git folder, so they cover every worktree of the checkout, not only one
+agent run. Preview and production use separate locks, so a preview cannot stop an
+approved production upload. The guard checks the old process start and command before
+sending a stop signal, so an abandoned lock cannot stop a different process that later
+gets the same PID. Preview baselines are scoped to the same PR number; the first preview
+for a PR compares against that PR's base commit. Locks cover runs on the same machine;
+coordinate separate publishing machines on the task. No Netlify Git build or ignore
+command runs for these local-only sites.
+
+## Task worktrees
+
+GSAM gives each website task its own git worktree (GRE-2248), so parallel tasks never
+switch each other's branch. `scripts/provision-worktree.sh` prepares each one: it
+hardlinks `node_modules` from the primary checkout, runs `npm install` only when the
+branch's lockfile differs, and warns (`GSAM-DISK-ALERT`) when all task worktrees together
+pass the size budget (`GSAM_WEBSITE_WORKTREE_BUDGET_GB`, default 15). GSAM removes a
+worktree when its task is done or cancelled and nothing in it would be lost.
+
+For a read-only Netlify connection check, run `node scripts/deploy-site.mjs inspect <site>`.
+It reports whether the site lookup works and the latest ready upload made by this guard.
+
+Preview uploads do not publish to the main domain and cost 0 Netlify credits under the
+current plan. Count production uploads separately at 15 credits each when reporting
+savings. The guard is a repo convention: direct Netlify CLI/API uploads outside it are
+not technically blocked.
+
 ## Editing
 
 Visit `/#admin` to sign in. Editing only appears once signed in; the public site is read-only.
