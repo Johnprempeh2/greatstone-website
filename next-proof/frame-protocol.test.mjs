@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, validHello, validMessage } from './frame-protocol.mjs';
+import { readFileSync } from 'node:fs';
+import { allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, publicFrameAncestors, validHello, validMessage } from './frame-protocol.mjs';
 
 const origin = 'https://studio.example.test';
 const nonce = 'ABCDEFGHIJKLMNOPQRSTUV';
@@ -39,6 +40,19 @@ test('origin allowlist and route CSP exclude wildcard and third party scripts', 
   assert.match(csp, /media-src 'self' https: blob:/);
   assert.match(csp, /form-action 'none'/);
   assert.doesNotMatch(csp, /https:\/\/fonts|unsafe-eval/);
+});
+
+test('public pages allow only self and the configured GSAM origins', () => {
+  assert.equal(publicFrameAncestors(), "frame-ancestors 'self' https://gsam.tail83d26c.ts.net:3100");
+  assert.equal(publicFrameAncestors('https://gsam.example.test,*,https://other.test/path'), "frame-ancestors 'self' https://gsam.example.test");
+});
+
+test('static public headers permit GSAM framing without conflicting X-Frame-Options', () => {
+  const headers = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8');
+  const publicRule = headers.split('\n\n')[0];
+  assert.match(publicRule, /^\/\*\n/m);
+  assert.match(publicRule, /^  Content-Security-Policy: frame-ancestors 'self' https:\/\/gsam\.tail83d26c\.ts\.net:3100$/m);
+  assert.doesNotMatch(headers, /^  X-Frame-Options:/m);
 });
 
 test('block reference carries stable identity and treats source as a hint', () => {

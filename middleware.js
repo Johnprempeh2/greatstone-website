@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { allowedHostOrigins, frameCsp } from './next-proof/frame-protocol.mjs';
+import { allowedHostOrigins, frameCsp, publicFrameAncestors } from './next-proof/frame-protocol.mjs';
 import { frameRouteDecision } from './next-proof/frame-routing.mjs';
 
 export function middleware(request) {
@@ -22,7 +22,10 @@ export function middleware(request) {
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('Origin-Agent-Cluster', '?1');
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=()');
-  } else if (!isEditorHost) response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+  } else if (!isEditorHost) {
+    response.headers.set('Content-Security-Policy', publicFrameAncestors(process.env.GSAM_EDITOR_ORIGINS || undefined));
+    response.headers.delete('X-Frame-Options');
+  }
   return response;
 }
 
