@@ -4,7 +4,7 @@ import Ajv from 'ajv/dist/2020.js';
 import manifest from './release-schema/manifest.v1.json' with { type: 'json' };
 import schema from './release-schema/blocks-motion.v1.schema.json' with { type: 'json' };
 import baked from './data/release.json' with { type: 'json' };
-import { MOTION_BY_BLOCK, motionField, resolveMotion, resolveMotionFields } from './motion-contract.mjs';
+import { BACKGROUND_EFFECTS, MOTION_BY_BLOCK, motionField, resolveMotion, resolveMotionFields } from './motion-contract.mjs';
 import { validateRelease } from './release-validator.mjs';
 
 test('GSAM field manifest and Puck defaults agree for every motion-capable block', () => {
@@ -49,11 +49,14 @@ test('release rejects invalid motion without changing the stored block', () => {
 test('editor offers rendered effects with plain labels and hides intensity for None', () => {
   assert.deepEqual(motionField('Hero').motion.objectFields.effect.options, [
     { label: 'None', value: 'none' }, { label: 'Hero stone', value: 'hero.stone' },
+    { label: 'Bedrock', value: 'bg.bedrock' }, { label: 'Ascent', value: 'bg.ascent' },
+    { label: 'Datum', value: 'bg.datum' }, { label: 'Meridian', value: 'bg.meridian' },
+    { label: 'Veil', value: 'bg.veil' }, { label: 'Orbit', value: 'bg.orbit' },
   ]);
   assert.deepEqual(motionField('MotionBand').motion.objectFields.effect.options[1], { label: 'Tide band', value: 'band.tide' });
   for (const type of ['DevTools', 'AiBaselineSurvey']) {
     assert.deepEqual(MOTION_BY_BLOCK[type].default, { effect: 'none', intensity: 'off', quietAnchor: 'copy' });
-    assert.deepEqual(motionField(type).motion.objectFields.effect.options.map((item) => item.value), ['none']);
+    assert.deepEqual(motionField(type).motion.objectFields.effect.options.map((item) => item.value), ['none', ...BACKGROUND_EFFECTS]);
   }
   const fields = motionField('Hero');
   assert.equal(resolveMotionFields('Hero', { props: { motion: { effect: 'none' } } }, fields).motion.objectFields.intensity, undefined);
