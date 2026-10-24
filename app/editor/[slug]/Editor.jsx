@@ -5,6 +5,7 @@ import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx'
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
 import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
+import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
@@ -31,7 +32,7 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   }
   function displayData(raw) { return mapMediaRefs(raw, mediaUrls.current); }
   function rawData(shown) { return mapMediaRefs(shown, Object.fromEntries(Object.entries(mediaUrls.current).map(([id, url]) => [url, id]))); }
-  function releaseMedia() { for (const url of Object.values(mediaUrls.current)) URL.revokeObjectURL(url); mediaUrls.current = {}; }
+  function releaseMedia() { for (const url of Object.values(mediaUrls.current)) if (url.startsWith('blob:')) URL.revokeObjectURL(url); mediaUrls.current = {}; }
 
   function send(type, payload) {
     const bound = session.current;
@@ -77,7 +78,7 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
           draft.current = result.data;
-          mediaUrls.current[result.mediaRef] = result.assetUrl;
+          useInsertedMediaUrl(mediaUrls.current, result.mediaRef, p.media, result.assetUrl);
           setData(displayData(result.data)); setGeneration((n) => n + 1);
           dirty(true); setStatus('ready'); setMessage('Unsaved changes');
         }
