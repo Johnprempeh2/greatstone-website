@@ -15,6 +15,9 @@ here="$(pwd -P)"
 if [ -n "$primary" ] && [ -d "$primary/node_modules" ] && [ ! -e node_modules ] &&
    [ "$(cd "$primary" && pwd -P)" != "$here" ]; then
   cp -al "$primary/node_modules" node_modules || rm -rf node_modules
+  # npm and build tools rewrite these in place, which would also change the
+  # primary's copy. npm rebuilds .package-lock.json from the real tree.
+  rm -rf node_modules/.package-lock.json node_modules/.cache node_modules/.vite
 fi
 
 # Skip npm when node_modules already matches this lockfile.
@@ -24,10 +27,13 @@ if ! cmp -s package-lock.json node_modules/.gsam-provisioned-lock 2>/dev/null; t
 fi
 
 # Size budget for all task worktrees together. du counts a hardlinked file once,
-# at its first path, so listing the primary first leaves only the extra cost.
+# so the extra cost is (primary + worktrees) minus the primary alone. Worktrees
+# may sit inside the primary (<primary>/.gsam/worktrees), hence the --exclude.
 parent="$(dirname "$here")"
 if [ "${GSAM_WORKSPACE_CREATED:-}" = "true" ] && [ -n "$primary" ] && [ "$parent" != "$primary" ]; then
-  used_kb="$(du -sk "$primary" "$parent" 2>/dev/null | tail -n 1 | cut -f1)"
+  total_kb="$(du -skc "$primary" "$parent" 2>/dev/null | tail -n 1 | cut -f1)"
+  base_kb="$(du -sk --exclude="$parent" "$primary" 2>/dev/null | cut -f1)"
+  used_kb=$(( ${total_kb:-0} - ${base_kb:-0} ))
   if [ "${used_kb:-0}" -gt $((BUDGET_GB * 1024 * 1024)) ]; then
     echo "GSAM-DISK-ALERT: website task worktrees use $((used_kb / 1024 / 1024)) GB, over the ${BUDGET_GB} GB budget, in $parent" >&2
   fi
