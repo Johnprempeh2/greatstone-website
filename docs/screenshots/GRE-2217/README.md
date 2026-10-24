@@ -23,3 +23,7 @@ The rim and one small white glint now read over a darker emerald body. The deskt
 ## Mikey round 3
 
 `round3-strip.png` and `round3-{settled,mid,sunk,past}.png` show the scissor reaching the viewport bottom during the sink. At 380 px scroll, the lower slabs continue into the next section with no horizontal cut above its cards. The shared canvas now lives inside `.gs-public`, so the next block's z-index 4 covers the canvas at z-index 3 within the same stacking context. The glass card shows a softened glimpse of the stone underneath while its text remains in front. `round3-trace.json` records one canvas and zero WebGL draw calls during an 800 ms rest window after scrolling. The renderer stops drawing once the hero is a full host height beyond view. Existing dark and light desktop and phone views remain the round 2 comparison; this revision changes only the desktop exit and layering.
+
+## Mikey round 4
+
+`round4-strip.png` and `round4-{settled,mid,sunk,past}.png` show the earlier exit fade at 1440 px. At 380 px scroll, the separated slabs remain faintly visible above the cards and nearly disappear at their top edge; at 480 px the cards are clear. The local capture hides the decorative cursor and disables scroll snap only to hold these review positions. `round4-trace.json` records one canvas and zero WebGL draw calls during an 800 ms rest window at the past position. The viewport-bottom scissor and distant-scroll culling from round 3 remain. No page content or public deploy changed.

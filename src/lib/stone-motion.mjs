@@ -13,6 +13,11 @@ const OUTLINES = [
 const CENTRES = [[228.2,109],[200.4,194.2],[121.4,254.6],[171.3,323.6],[182.3,411.1]];
 const clamp = (value) => Math.max(0, Math.min(1, value));
 export const stoneProgress = (top, height) => clamp(-top / Math.max(height * .8, 1));
+// The next section has frosted cards: fade the stone before it can colour their copy.
+export const stoneExitOpacity = (progress) => {
+  const t = clamp((progress - .45) / .3);
+  return 1 - t * t * (3 - 2 * t);
+};
 export const stoneSlabOffset = (index, progress) => ({
   x: (index - 2) * .32 * progress,
   y: -(2.4 + index * .65) * progress,
@@ -117,6 +122,7 @@ function makeShared() {
       geometries.push(geometry);
       const material = new THREE.MeshPhysicalMaterial({
         color: tint, metalness: .32, roughness: .08, envMapIntensity: 2.8,
+        transparent: true,
         clearcoat: 1, clearcoatRoughness: .03, flatShading: true,
         emissive: 0x0d3b26, emissiveIntensity: .8,
       });
@@ -136,7 +142,7 @@ function makeShared() {
     return group;
   });
   const glintGeometry = new THREE.SphereGeometry(.055, 8, 6);
-  const glintMaterial = new THREE.MeshBasicMaterial({ color: 0xf1ffdf });
+  const glintMaterial = new THREE.MeshBasicMaterial({ color: 0xf1ffdf, transparent: true });
   geometries.push(glintGeometry);
   materials.push(glintMaterial);
   const glintMark = new THREE.Mesh(glintGeometry, glintMaterial);
@@ -159,11 +165,13 @@ function makeShared() {
     for (const entry of entries) {
       const box = entry.node.getBoundingClientRect();
       const progress = entry.kind === 'accent' ? 0 : stoneProgress(box.top, box.height);
+      const opacity = stoneExitOpacity(progress);
       const exiting = entry.kind === 'hero' && stoneExitVisible(box, height, progress);
       const exitRoom = exiting ? stoneExitRoom(box, height, progress) : 0;
       if ((!entry.visible && !exiting) || box.top >= height || box.right <= 0 || box.left >= width) continue;
       const clip = stoneViewport(box, width, height, exitRoom);
       if (!clip) continue;
+      if (opacity === 0) continue;
       // Extend the hero's viewport and scissor together as it leaves the page.
       // Scaling the camera distance by the same ratio preserves the stone's size.
       renderer.setViewport(...clip.viewport);
@@ -179,6 +187,7 @@ function makeShared() {
         slab.position.set(offset.x, offset.y, offset.z);
         slab.rotation.z = (index - 2) * .12 * progress;
       });
+      for (const material of materials) material.opacity = material === edgeMaterial ? .86 * opacity : opacity;
       renderer.render(scene, camera);
       frameCount++;
       entry.node.classList.add('is-ready');

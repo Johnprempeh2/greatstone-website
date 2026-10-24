@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStoneFrameScheduler } from './stone-frame.mjs';
-import { stoneProgress, stoneSlabOffset, stoneExitVisible, stoneExitRoom, stoneViewport } from './stone-motion.mjs';
+import { stoneProgress, stoneSlabOffset, stoneExitOpacity, stoneExitVisible, stoneExitRoom, stoneViewport } from './stone-motion.mjs';
 
 test('stone draws once for a burst of view changes, then schedules zero idle frames', () => {
   const callbacks = new Map();
@@ -50,4 +50,13 @@ test('hero scissor extends below its box during the sink, then stops off screen'
   assert.equal(stoneExitVisible(distant, 900, 1), false);
   assert.equal(stoneExitRoom(distant, 900, 1), 0);
   assert.equal(stoneViewport(distant, 1440, 900, 0), null);
+});
+
+test('sinking stone fades away before the next cards are in reading position', () => {
+  assert.equal(stoneExitOpacity(0), 1);
+  assert.equal(stoneExitOpacity(.45), 1);
+  assert.ok(stoneExitOpacity(.6) < .51 && stoneExitOpacity(.6) > .49);
+  assert.ok(stoneExitOpacity(.7) < .1);
+  assert.equal(stoneExitOpacity(.75), 0);
+  assert.equal(stoneExitOpacity(1), 0);
 });
