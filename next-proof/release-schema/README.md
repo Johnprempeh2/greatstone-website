@@ -16,8 +16,9 @@ and never acquire a new effect merely because the editor gained a default. A new
 inserted block receives its brand-locked Puck default. `quietAnchor` is fixed to `copy`;
 editors choose only the allowed effect and Off, Subtle or Full intensity. The release
 validator rejects a motion value on a block without a motion field.
-Only rendered effects are selectable: Hero stone and Tide band. Background IDs are
-listed as reserved in the schema for later renderers; Dev Tools and the survey default to None/Off. The
+Only rendered effects are selectable: Hero stone, Tide band and the six contained
+backgrounds. Dev Tools and the survey default to None/Off, so an editor must choose
+an effect before it appears. The
 editor hides Intensity while None is selected. Hero stone currently uses the same
 renderer for Subtle and Full; its intensity setting has no visual effect yet.
 The Two Doors home blocks deliberately have no motion field. John removed the home

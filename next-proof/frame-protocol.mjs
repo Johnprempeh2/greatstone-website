@@ -9,7 +9,7 @@ const blockSourceLines = {
   Steps: 74, FeatureGrid: 54, Faq: 96, PillarCards: 77, MaturityModel: 78,
   Chapter: 80, Team: 103, LogoWall: 60, IntelBand: 86, MaturityMap: 189,
   Ladder: 60, MethodTieIn: 79, IndustryPicker: 211, BookDeepDive: 271,
-  AiBaselineSurvey: 319, AiCostCalculator: 218, MotionBand: 26,
+  AiBaselineSurvey: 319, AiCostCalculator: 218, MotionBand: 29,
 };
 
 export function allowedHostOrigins(value, development = false) {
