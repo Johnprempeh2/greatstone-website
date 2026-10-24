@@ -1,0 +1,32 @@
+[
+  {
+    "mode": "normal",
+    "canvas": 1,
+    "heroStillVisible": "hidden",
+    "accentStillVisible": "hidden"
+  },
+  {
+    "mode": "reduced",
+    "canvas": 0,
+    "heroStillVisible": "visible",
+    "accentStillVisible": "visible"
+  },
+  {
+    "mode": "save-data",
+    "canvas": 0,
+    "heroStillVisible": "visible",
+    "accentStillVisible": "visible"
+  },
+  {
+    "mode": "low-power",
+    "canvas": 0,
+    "heroStillVisible": "visible",
+    "accentStillVisible": "visible"
+  },
+  {
+    "mode": "phone",
+    "canvas": 0,
+    "heroStillVisible": "visible",
+    "accentStillVisible": "visible"
+  }
+]

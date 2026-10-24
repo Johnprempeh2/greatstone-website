@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 526" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="emerald" x2=".8" y2="1"><stop stop-color="#25694b"/><stop offset=".58" stop-color="#0e3122"/><stop offset="1" stop-color="#052314"/></linearGradient>
+  </defs>
+  <g fill="url(#emerald)" stroke="#c8ff00" stroke-width="8" stroke-linejoin="round">
+    <path d="M218 58 228 58 285 86 304 150 193 149 182 142 145 99 160 84Z"/>
+    <path d="M137 127 155 129 194 172 303 174 323 237 241 247 79 195 75 185 81 174 124 135Z"/>
+    <path d="M69 207 257 266 49 293 52 232 63 211Z"/>
+    <path d="M301 274 304 274 304 281 298 375 262 335 162 339 65 396 39 307Z"/>
+    <path d="M248 353 262 356 292 391 291 395 264 432 256 450 243 456 240 446 183 478 171 477 125 457 112 464 61 413 151 358Z"/>
+  </g>
+</svg>

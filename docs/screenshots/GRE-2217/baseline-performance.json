@@ -1,0 +1,52 @@
+[
+  {
+    "fcp": 316,
+    "moduleStart": 365.30000001192093,
+    "drawsAtRest": 0,
+    "contexts": 1,
+    "hosts": 2,
+    "headerZ": "40",
+    "stoneZ": "3",
+    "nextZ": "auto"
+  },
+  {
+    "fcp": 344,
+    "moduleStart": 395.5,
+    "drawsAtRest": 0,
+    "contexts": 1,
+    "hosts": 2,
+    "headerZ": "40",
+    "stoneZ": "3",
+    "nextZ": "auto"
+  },
+  {
+    "fcp": 312,
+    "moduleStart": 354,
+    "drawsAtRest": 0,
+    "contexts": 1,
+    "hosts": 2,
+    "headerZ": "40",
+    "stoneZ": "3",
+    "nextZ": "auto"
+  },
+  {
+    "fcp": 316,
+    "moduleStart": 371.19999998807907,
+    "drawsAtRest": 0,
+    "contexts": 1,
+    "hosts": 2,
+    "headerZ": "40",
+    "stoneZ": "3",
+    "nextZ": "auto"
+  },
+  {
+    "fcp": 300,
+    "moduleStart": 354.80000001192093,
+    "drawsAtRest": 0,
+    "contexts": 1,
+    "hosts": 2,
+    "headerZ": "40",
+    "stoneZ": "3",
+    "nextZ": "auto"
+  }
+]

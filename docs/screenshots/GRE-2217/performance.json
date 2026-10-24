@@ -1,0 +1,98 @@
+[
+  {
+    "name": "before",
+    "width": 1440,
+    "theme": "dark",
+    "fcp": 1152,
+    "drawsAtRest": 360,
+    "stats": {
+      "sharedCanvases": 0,
+      "symbolHosts": 1
+    },
+    "errors": []
+  },
+  {
+    "name": "before",
+    "width": 1440,
+    "theme": "light",
+    "fcp": 940,
+    "drawsAtRest": 150,
+    "stats": {
+      "sharedCanvases": 0,
+      "symbolHosts": 1
+    },
+    "errors": []
+  },
+  {
+    "name": "before",
+    "width": 390,
+    "theme": "dark",
+    "fcp": 908,
+    "drawsAtRest": 0,
+    "stats": {
+      "sharedCanvases": 0,
+      "symbolHosts": 1
+    },
+    "errors": []
+  },
+  {
+    "name": "before",
+    "width": 390,
+    "theme": "light",
+    "fcp": 460,
+    "drawsAtRest": 0,
+    "stats": {
+      "sharedCanvases": 0,
+      "symbolHosts": 1
+    },
+    "errors": []
+  },
+  {
+    "name": "after",
+    "width": 1440,
+    "theme": "dark",
+    "fcp": 736,
+    "drawsAtRest": 0,
+    "stats": {
+      "sharedCanvases": 1,
+      "symbolHosts": 2
+    },
+    "errors": []
+  },
+  {
+    "name": "after",
+    "width": 1440,
+    "theme": "light",
+    "fcp": 992,
+    "drawsAtRest": 0,
+    "stats": {
+      "sharedCanvases": 1,
+      "symbolHosts": 2
+    },
+    "errors": []
+  },
+  {
+    "name": "after",
+    "width": 390,
+    "theme": "dark",
+    "fcp": 640,
+    "drawsAtRest": 0,
+    "stats": {
+      "sharedCanvases": 0,
+      "symbolHosts": 2
+    },
+    "errors": []
+  },
+  {
+    "name": "after",
+    "width": 390,
+    "theme": "light",
+    "fcp": 428,
+    "drawsAtRest": 0,
+    "stats": {
+      "sharedCanvases": 0,
+      "symbolHosts": 2
+    },
+    "errors": []
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "name": "before",
+    "run": 0,
+    "fp": 360,
+    "fcp": 484,
+    "stoneLoad": 463.19999998807907
+  },
+  {
+    "name": "before",
+    "run": 1,
+    "fp": 324,
+    "fcp": 448,
+    "stoneLoad": 433.0999999642372
+  },
+  {
+    "name": "before",
+    "run": 2,
+    "fp": 348,
+    "fcp": 472,
+    "stoneLoad": 487.30000001192093
+  },
+  {
+    "name": "before",
+    "run": 3,
+    "fp": 332,
+    "fcp": 456,
+    "stoneLoad": 467.10000002384186
+  },
+  {
+    "name": "before",
+    "run": 4,
+    "fp": 308,
+    "fcp": 432,
+    "stoneLoad": 415.19999998807907
+  },
+  {
+    "name": "after",
+    "run": 0,
+    "fp": 320,
+    "fcp": 444,
+    "stoneLoad": 478.5
+  },
+  {
+    "name": "after",
+    "run": 1,
+    "fp": 428,
+    "fcp": 428,
+    "stoneLoad": 462.39999997615814
+  },
+  {
+    "name": "after",
+    "run": 2,
+    "fp": 304,
+    "fcp": 424,
+    "stoneLoad": 459.80000001192093
+  },
+  {
+    "name": "after",
+    "run": 3,
+    "fp": 316,
+    "fcp": 436,
+    "stoneLoad": 473.89999997615814
+  },
+  {
+    "name": "after",
+    "run": 4,
+    "fp": 308,
+    "fcp": 428,
+    "stoneLoad": 465.89999997615814
+  }
+]
