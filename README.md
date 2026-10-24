@@ -52,7 +52,8 @@ npm run deploy:prod -- greatstone-home
 The preview command requires an open, non-draft PR at the checkout's HEAD. It uploads a
 draft only if the PR has the `preview` label or Mikey or John comments exactly
 `Preview ready for PR #123` on the current task. The production command requires `main`
-and a person to comment `Approve production deploy: greatstone-home <40-character HEAD SHA>`
+(or, in a task worktree, a detached HEAD at exactly the remote `main` commit:
+`git fetch origin main && git checkout --detach origin/main`) and a person to comment `Approve production deploy: greatstone-home <40-character HEAD SHA>`
 on the current task. It is never automatic or scheduled. Replace the site and PR number as
 needed. The command refuses other Netlify sites.
 
@@ -68,14 +69,25 @@ Each successful upload records its source commit in the Netlify deploy title. Th
 run compares HEAD with the last ready upload of the same type. Changes confined to
 `docs/`, `.github/`, the three root guide files, or test files skip the upload. If no
 recorded upload exists, preview compares with the PR base; production uploads rather
-than guessing. A newer local run for the same site and mode stops an older upload in
-progress. Preview and production use separate locks, so a preview cannot stop an
+than guessing. A newer local run for the same site and mode (and, for previews, the same PR) stops an
+older upload in progress. Previews of different PRs never stop each other. Locks live in
+the repo's shared git folder, so they cover every worktree of the checkout, not only one
+agent run. Preview and production use separate locks, so a preview cannot stop an
 approved production upload. The guard checks the old process start and command before
 sending a stop signal, so an abandoned lock cannot stop a different process that later
 gets the same PID. Preview baselines are scoped to the same PR number; the first preview
 for a PR compares against that PR's base commit. Locks cover runs on the same machine;
 coordinate separate publishing machines on the task. No Netlify Git build or ignore
 command runs for these local-only sites.
+
+## Task worktrees
+
+GSAM gives each website task its own git worktree (GRE-2248), so parallel tasks never
+switch each other's branch. `scripts/provision-worktree.sh` prepares each one: it
+hardlinks `node_modules` from the primary checkout, runs `npm install` only when the
+branch's lockfile differs, and warns (`GSAM-DISK-ALERT`) when all task worktrees together
+pass the size budget (`GSAM_WEBSITE_WORKTREE_BUDGET_GB`, default 15). GSAM removes a
+worktree when its task is done or cancelled and nothing in it would be lost.
 
 For a read-only Netlify connection check, run `node scripts/deploy-site.mjs inspect <site>`.
 It reports whether the site lookup works and the latest ready upload made by this guard.

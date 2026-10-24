@@ -1,7 +1,6 @@
 import { spawnSync, spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const sites = new Map([
@@ -57,9 +56,18 @@ async function stagingCardApproved(sha) {
   return false;
 }
 
+// A task worktree cannot check out main while the primary checkout holds it, so a
+// detached HEAD is accepted when it is exactly the remote main commit.
+function onMain(sha) {
+  const branch = command('git', ['branch', '--show-current']);
+  if (branch === 'main') return true;
+  if (branch) return false;
+  return command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] === sha;
+}
+
 async function gate(sha) {
   if (mode === 'prod') {
-    if (command('git', ['branch', '--show-current']) !== 'main') throw new Error('production requires main');
+    if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
     const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
     const stagingCard = !exactComment && site === 'gre1795-website-db-staging' && await stagingCardApproved(sha);
@@ -106,8 +114,16 @@ function processIdentity(pid) {
   return result.status === 0 ? result.stdout.trim() : null;
 }
 
+// Locks live in the git common dir: every worktree of this repo shares it, while
+// the OS temp dir is private to each agent run. Previews lock per PR, so a preview
+// for one PR never stops another PR's preview.
+function lockDir() {
+  const common = resolve(command('git', ['rev-parse', '--git-common-dir']));
+  return join(common, 'gsam-deploy-locks', `${site}-${mode}${mode === 'preview' ? `-${prNumber}` : ''}`);
+}
+
 async function lockAndDeploy(sha) {
-  const dir = join(tmpdir(), `greatstone-deploy-${site}-${mode}`);
+  const dir = lockDir();
   const own = randomUUID();
   const identity = processIdentity(process.pid);
   if (!identity || !identity.includes('deploy-site.mjs')) throw new Error('cannot verify deploy process identity');
