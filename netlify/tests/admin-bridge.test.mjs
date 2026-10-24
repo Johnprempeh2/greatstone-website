@@ -122,6 +122,10 @@ test('health answers a signed request and records who asked', { skip }, async ()
   assert.equal(res.status, 200);
   assert.deepEqual({ ...res.body, serverTime: undefined }, { ok: true, kid: KID, capability: 'read', serverTime: undefined, schema: 'gs-bridge-v1' });
   assert.equal(audit(nonce), `agent:d5651a41-e5e0-4512-8fb0-069815ff4278 ${RUN} health ok 0`);
+  const sys = randomBytes(16).toString('base64url');
+  assert.equal((await call(signed('/api/admin/v1/health', { nonce: sys, actor: 'system:website-enquiry-pull', run: null }))).status, 200);
+  assert.equal(audit(sys), 'system:website-enquiry-pull - health ok 0');
+  assert.equal((await call(signed('/api/admin/v1/health', { actor: 'robot:x' }))).body.error.code, 'bad_signature');
 });
 
 test('lists page on a cursor, read only the first organisation and never the Stripe ids', { skip }, async () => {

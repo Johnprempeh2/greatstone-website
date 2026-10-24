@@ -12,7 +12,8 @@ const CAPABILITIES = new Set(['read', 'write', 'refund_request']);
 
 const KID = /^[a-z0-9][a-z0-9-]{2,63}$/;
 const NONCE = /^[A-Za-z0-9_-]{22}$/; // 128 bits, base64url, no padding
-const ACTOR = /^(agent|user):[A-Za-z0-9_-]{1,64}$/;
+// system: GSAM's own scheduled reads (the enquiry pull), with no person or agent behind them
+const ACTOR = /^(agent|user|system):[A-Za-z0-9_-]{1,64}$/;
 const RUN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const B64URL = /^[A-Za-z0-9_-]+$/;
 

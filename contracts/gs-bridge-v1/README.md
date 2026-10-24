@@ -18,7 +18,7 @@ GRE-2323. This folder is at the same path in `greatstone-website` and `gs-agenti
 | `X-GS-Bridge-Key` | the kid |
 | `X-GS-Bridge-Time` | unix seconds; must be within 60 s of the site's clock and the database's clock |
 | `X-GS-Bridge-Nonce` | 16 random bytes, base64url (22 characters); a nonce works once per kid |
-| `X-GS-Bridge-Actor` | `agent:<id>` or `user:<id>`, where the id is `[A-Za-z0-9_-]{1,64}` |
+| `X-GS-Bridge-Actor` | `agent:<id>`, `user:<id>`, or `system:<id>` for GSAM's own scheduled reads; the id is `[A-Za-z0-9_-]{1,64}` |
 | `X-GS-Bridge-Run` | optional GSAM run id (uuid) |
 | `X-GS-Bridge-Signature` | Ed25519 signature of the canonical string, base64url |
 

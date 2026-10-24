@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.admin_bridge_audit (
   at           timestamptz NOT NULL DEFAULT now(),
   kid          text NOT NULL,
   capability   text NOT NULL CHECK (capability IN ('read', 'write', 'refund_request')),
-  actor_type   text NOT NULL CHECK (actor_type IN ('agent', 'user')),
+  actor_type   text NOT NULL CHECK (actor_type IN ('agent', 'user', 'system')),
   actor_id     text NOT NULL CHECK (actor_id ~ '^[A-Za-z0-9_-]{1,64}$'),
   gsam_run_id  uuid,
   method       text NOT NULL CHECK (method IN ('GET', 'POST', 'PATCH', 'PUT', 'DELETE')),
