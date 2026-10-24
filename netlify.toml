@@ -6,6 +6,9 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # The root next.config.mjs (Next proof) makes Netlify add its Next.js plugin, which rejects this Vite build (GRE-2285).
+  # The isolated Next deploys copy next-proof/netlify*.toml over this file, so they keep the plugin.
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
 [functions]
   directory = "netlify/functions"

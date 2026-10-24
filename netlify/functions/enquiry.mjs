@@ -6,6 +6,9 @@
 import { makeEnquiryHandler } from './lib/enquiry-handler.mjs';
 import { getPool } from './lib/db.mjs';
 
-export default (req, context) => makeEnquiryHandler({ env: process.env, getPool })(req, context);
+// Built on the first request and kept for the life of the instance, so the "Turnstile is off" warning is
+// logged once per cold start, not once per enquiry.
+let handler = null;
+export default (req, context) => (handler ||= makeEnquiryHandler({ env: process.env, getPool }))(req, context);
 
 export const config = { path: '/api/enquiry' };

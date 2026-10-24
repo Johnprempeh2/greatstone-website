@@ -104,6 +104,31 @@ test('Turnstile: with a secret set, no token or a failed check is refused and no
   assert.ok(outage.logs.some(([l, m]) => l === 'error' && /Turnstile unreachable/.test(m)));
 });
 
+test('Turnstile: with no secret set, the check is skipped and one warning is logged per handler', async () => {
+  const fetch = fakeFetch({ turnstile: false }); // would refuse every token if it were ever asked
+  const logs = [];
+  const handler = makeEnquiryHandler({ env: ENV, getPool: () => pool, fetchImpl: fetch.impl, log: (l, m) => logs.push([l, m]) });
+  const go = async (body, ip) => { const res = await handler(post(body), { ip }); return { status: res.status, body: await res.json() }; };
+
+  const first = await go(BODY, '192.0.2.1');
+  const second = await go({ ...BODY, turnstile: 'ignored' }, '192.0.2.2');
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.ok((await row(first.body.ref)).alert_sent_at, 'saved and alerted with no token');
+  assert.ok(await row(second.body.ref), 'a stray token does not matter');
+  assert.equal(fetch.calls.turnstile.length, 0, 'Cloudflare is never called');
+  assert.equal(logs.filter(([l, m]) => l === 'warn' && /Turnstile is off/.test(m)).length, 1, 'one warning, not one per enquiry');
+
+  // what stands in for it: the honeypot, the field caps (size band at 40), and the per-IP limit
+  assert.deepEqual(await go({ ...BODY, email: 'bot2@example.test', website: 'x' }, '192.0.2.3'), { status: 200, body: { ok: true } });
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM service_inquiries WHERE contact_email = 'bot2@example.test'")).rows[0].n, 0);
+  const long = await go({ ...BODY, size_band: 'x'.repeat(500) }, '192.0.2.4');
+  assert.equal((await row(long.body.ref)).size_band.length, 40);
+  for (let i = 0; i < 10; i++) assert.equal((await go(BODY, '192.0.2.5')).status, 200);
+  assert.equal((await go(BODY, '192.0.2.5')).status, 429);
+  assert.equal(logs.filter(([, m]) => /Turnstile is off/.test(m)).length, 1);
+});
+
 test('ten enquiries per IP a day; the eleventh is refused with 429', async () => {
   const ip = '198.51.100.200';
   for (let i = 0; i < 10; i++) assert.equal((await send(BODY, { ip })).status, 200);

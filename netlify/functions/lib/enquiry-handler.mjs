@@ -24,6 +24,9 @@ export const clientIp = (req, context) =>
 export function makeEnquiryHandler({ env = {}, getPool = () => null, fetchImpl = (...a) => fetch(...a), now, log = defaultLog } = {}) {
   const alertTo = String(env.ENQUIRY_ALERT_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
   const origin = String(env.APP_SITE_ORIGIN || 'https://greatstoneint.com').replace(/\/+$/, '');
+  // With no TURNSTILE_SECRET_KEY the check is skipped (John, GRE-1794, 24 Oct) and the honeypot, the per-IP
+  // limit and the field caps stand alone. Said once per handler, which enquiry.mjs builds once per cold start.
+  let warnedOff = false;
   return async function handler(req, context) {
     if (req.method !== 'POST') return json({ ok: false, error: 'Use POST.' }, 405);
     let body = null;
@@ -32,7 +35,7 @@ export function makeEnquiryHandler({ env = {}, getPool = () => null, fetchImpl =
     try {
       if (!(body && typeof body === 'object' && body.website)) {
         const check = await verifyTurnstile({ secret: env.TURNSTILE_SECRET_KEY, token: body && body.turnstile, ip, fetchImpl });
-        if (check.reason === 'off') log('warn', 'enquiry: Turnstile is off (TURNSTILE_SECRET_KEY not set)');
+        if (check.reason === 'off' && !warnedOff) { warnedOff = true; log('warn', 'enquiry: Turnstile is off (TURNSTILE_SECRET_KEY not set)'); }
         if (check.reason === 'unreachable') log('error', 'enquiry: Turnstile unreachable, let through');
         if (!check.ok) return json({ ok: false, error: 'Please complete the check and try again.' }, 403);
       }
