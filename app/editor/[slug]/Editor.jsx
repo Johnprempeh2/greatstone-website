@@ -4,7 +4,7 @@ import { Puck } from '@puckeditor/core';
 import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
-import { insertMedia } from '../../../next-proof/frame-insert-media.mjs';
+import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
@@ -74,14 +74,14 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
       } else if (event.data.type === 'insert-media') {
         const result = mode === 'editor' && draft.current
           ? insertMedia(draft.current, proofConfig.components, p, isMediaField)
-          : { ok: false, code: 'block_not_found', message: 'The editor draft is not ready.' };
+          : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
           draft.current = result.data;
           mediaUrls.current[result.mediaRef] = result.assetUrl;
           setData(displayData(result.data)); setGeneration((n) => n + 1);
           dirty(true); setStatus('ready'); setMessage('Unsaved changes');
         }
-        send('insert-media-result', result.ok ? { ok: true } : result);
+        send('insert-media-result', insertMediaResult(event.data.id, result));
       } else if (event.data.type === 'save-result' && pending.current && p.requestId === pending.current.requestId) {
         clearTimeout(timer.current);
         const decision = saveDecision(pending.current, draft.current, p);

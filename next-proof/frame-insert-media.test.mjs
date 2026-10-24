@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { insertMedia } from './frame-insert-media.mjs';
+import { insertMedia, insertMediaResult } from './frame-insert-media.mjs';
 import { validMessage } from './frame-protocol.mjs';
 
 const mediaField = { type: 'custom', render: () => ({ type: 'MediaField' }) };
@@ -49,4 +49,21 @@ test('insert-media uses the same bound origin, parent, session and protocol chec
   assert.equal(validMessage({ ...event, source: {} }, bound, ['insert-media']), false);
   assert.equal(validMessage({ ...event, data: { ...event.data, session: 'wrong' } }, bound, ['insert-media']), false);
   assert.equal(validMessage({ ...event, data: { ...event.data, protocol: 2 } }, bound, ['insert-media']), false);
+});
+
+test('insert-media replies with the matching request id and only contract fields', () => {
+  assert.deepEqual(insertMediaResult('request-1', { ok: true, dirty: true }), { requestId: 'request-1', ok: true });
+  assert.deepEqual(insertMediaResult('request-2', { ok: false, code: 'field_not_media', message: 'Wrong field', data: {} }),
+    { requestId: 'request-2', ok: false, code: 'field_not_media', message: 'Wrong field' });
+});
+
+test('insert-media rejects invalid payloads and unsafe asset URLs', () => {
+  const draft = { content: [{ type: 'Figure', props: { id: 'block-1', image: '', alt: '' } }] };
+  for (const assetUrl of ['http://media.example.test/a.png', '//media.example.test/a.png', '/\\media.example.test/a.png', 'javascript:alert(1)', 'https://user:pass@media.example.test/a.png', 'a.png']) {
+    assert.equal(insertMedia(draft, components, { ...payload, assetUrl }, isMediaField).code, 'invalid_payload');
+  }
+  assert.equal(insertMedia(draft, components, { ...payload, assetUrl: '/media/a.png' }, isMediaField).ok, true);
+  assert.equal(insertMedia(draft, components, { ...payload, mediaEntryId: '' }, isMediaField).code, 'invalid_payload');
+  assert.equal(insertMedia(draft, components, { ...payload, alt: null }, isMediaField).code, 'invalid_payload');
+  assert.equal(draft.content[0].props.image, '');
 });

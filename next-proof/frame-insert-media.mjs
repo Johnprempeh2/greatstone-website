@@ -2,8 +2,26 @@ import { findBlock } from './frame-protocol.mjs';
 
 const failure = (code, message) => ({ ok: false, code, message });
 
+function validAssetUrl(value) {
+  if (typeof value !== 'string' || !value || value.length > 2048 || /[\s\\]/.test(value)) return false;
+  if (value.startsWith('/')) return !value.startsWith('//');
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password && !!url.hostname;
+  } catch { return false; }
+}
+
+export function insertMediaResult(requestId, result) {
+  return result.ok
+    ? { requestId, ok: true }
+    : { requestId, ok: false, code: result.code, message: result.message };
+}
+
 export function insertMedia(draft, components, payload, isMediaField) {
   const { blockId, field, mediaEntryId, assetUrl, alt } = payload || {};
+  if (typeof mediaEntryId !== 'string' || !/^[A-Za-z0-9_-]{1,200}$/.test(mediaEntryId) || !validAssetUrl(assetUrl) || typeof alt !== 'string' || alt.length > 500) {
+    return failure('invalid_payload', 'The media entry is invalid.');
+  }
   const data = structuredClone(draft);
   const block = findBlock(data?.content, blockId);
   if (!block) return failure('block_not_found', 'That block is no longer in the draft.');
@@ -25,10 +43,6 @@ export function insertMedia(draft, components, payload, isMediaField) {
   const definition = name && schema?.[name];
   if (!definition || !values || !Object.hasOwn(values, name)) return failure('field_not_found', 'That field is no longer in the block.');
   if (!isMediaField(definition)) return failure('field_not_media', 'That field does not take an image or video.');
-  if (typeof mediaEntryId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(mediaEntryId) || typeof assetUrl !== 'string' || typeof alt !== 'string') {
-    return failure('field_not_media', 'The media entry is invalid.');
-  }
-
   values[name] = `media:${mediaEntryId}`;
   const altField = [`${name}Alt`, 'alt'].find((candidate) => schema?.[candidate]?.type === 'text' && Object.hasOwn(values, candidate));
   if (altField) values[altField] = alt;
