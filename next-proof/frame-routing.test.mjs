@@ -5,11 +5,13 @@ import { frameRouteDecision } from './frame-routing.mjs';
 const base = { hostname: 'editor.example.test', editorHost: 'editor.example.test', method: 'GET', origin: null, fetchSite: null, publicOrigin: 'https://www.example.test' };
 const decide = (overrides) => frameRouteDecision({ ...base, ...overrides }).status;
 
-test('only frame routes and static assets load on the dedicated editor host', () => {
+test('editor host serves public pages and frame routes, but not stateful endpoints', () => {
   assert.equal(decide({ pathname: '/editor/home' }), 200);
   assert.equal(decide({ pathname: '/preview/home' }), 200);
   assert.equal(decide({ pathname: '/_next/static/chunk.js' }), 200);
-  for (const pathname of ['/', '/shop', '/studio', '/api/save', '/_release']) assert.equal(decide({ pathname }), 404);
+  for (const pathname of ['/', '/about', '/contact', '/shop', '/_release']) assert.equal(decide({ pathname }), 200);
+  for (const pathname of ['/studio', '/api/save']) assert.equal(decide({ pathname }), 404);
+  assert.equal(decide({ pathname: '/', method: 'POST' }), 404);
 });
 
 test('public host refuses frame routes and framing public pages', () => {
