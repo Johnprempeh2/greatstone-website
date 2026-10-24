@@ -33,7 +33,7 @@ export function envelope(type, payload, bound) {
 }
 
 export function frameCsp(origins, nonce, development = false) {
-  return ["default-src 'none'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ''}`, "style-src 'self' 'unsafe-inline'", "img-src 'self' blob: data:", "font-src 'self'", "connect-src 'self'", "frame-src 'self'", "worker-src 'none'", "manifest-src 'none'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", `frame-ancestors ${origins.join(' ') || "'none'"}`].join('; ');
+  return ["default-src 'none'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ''}`, "style-src 'self' 'unsafe-inline'", "img-src 'self' https: blob: data:", "media-src 'self' https: blob:", "font-src 'self'", "connect-src 'self'", "frame-src 'self'", "worker-src 'none'", "manifest-src 'none'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", `frame-ancestors ${origins.join(' ') || "'none'"}`].join('; ');
 }
 
 export function blockRef(item, page, siteId, engine) {
@@ -42,7 +42,7 @@ export function blockRef(item, page, siteId, engine) {
 
 export function findBlock(value, id, type) {
   if (!value || typeof value !== 'object') return null;
-  if (value.props?.id === id && value.type === type) return value;
+  if (value.props?.id === id && (type === undefined || value.type === type)) return value;
   for (const child of Object.values(value)) {
     const match = findBlock(child, id, type);
     if (match) return match;
