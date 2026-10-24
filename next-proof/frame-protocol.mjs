@@ -2,6 +2,16 @@ export const FRAME_TAG = 'website-frame';
 export const FRAME_PROTOCOL = 1;
 export const NONCE_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 
+// Navigation hints for the block library at this engine commit. Identity comes from the block id and type.
+const blockSourceLines = {
+  TwoDoors: 179, TwoDoorsStory: 198, TwoDoorsProof: 211, TwoDoorsTools: 223, DevTools: 225,
+  Hero: 287, Prose: 41, Panels: 208, ServiceCatalog: 292, Invite: 101,
+  Steps: 74, FeatureGrid: 54, Faq: 96, PillarCards: 77, MaturityModel: 78,
+  Chapter: 80, Team: 103, LogoWall: 60, IntelBand: 86, MaturityMap: 189,
+  Ladder: 60, MethodTieIn: 79, IndustryPicker: 211, BookDeepDive: 271,
+  AiBaselineSurvey: 319, AiCostCalculator: 218,
+};
+
 export function allowedHostOrigins(value, development = false) {
   return String(value || '').split(',').map((part) => part.trim()).filter((part) => {
     try {
@@ -37,7 +47,10 @@ export function frameCsp(origins, nonce, development = false) {
 }
 
 export function blockRef(item, page, siteId, engine) {
-  return { siteId, pageId: page.id, pageRevisionId: page.revisionId, blockId: item.props.id, blockType: item.type, engine, source: null };
+  const line = blockSourceLines[item.type];
+  const file = ['TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'DevTools'].includes(item.type) ? 'TwoDoors' : item.type;
+  const source = line ? { file: `src/blocks/${file}.jsx`, line } : null;
+  return { siteId, pageId: page.id, pageRevisionId: page.revisionId, blockId: item.props.id, blockType: item.type, engine, source };
 }
 
 export function findBlock(value, id, type) {
