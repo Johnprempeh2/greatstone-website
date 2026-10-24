@@ -30,6 +30,16 @@ test('light palette uses dark ink instead of lime', () => {
   assert.deepEqual(effectPalette(false).accent, [200, 255, 0]);
 });
 
+test('Meridian uses field colour on phones and teal in the desktop quiet zone', () => {
+  const phone = canvasSpy();
+  effectFrame(phone.ctx, 'bg.meridian', 390, 420);
+  assert.ok(phone.operations.filter(([name]) => name === 'strokeStyle').every(([, colour]) => colour.startsWith('rgba(60,150,110,')));
+
+  const desktop = canvasSpy();
+  effectFrame(desktop.ctx, 'bg.meridian', 1200, 420);
+  assert.ok(desktop.operations.some(([name, colour]) => name === 'strokeStyle' && colour.startsWith('rgba(78,205,196,')));
+});
+
 test('each selectable background has both first-paint stills and a short preview', () => {
   for (const effect of Object.keys(BACKGROUNDS)) {
     const name = effect.slice(3);
