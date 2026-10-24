@@ -3,6 +3,9 @@ import { TideField } from './TideField.jsx';
 import { track } from '../lib/analytics.js';
 import { MediaField } from '../cms/MediaField.jsx';
 import { safeHref, safeMailto } from '../lib/safe-url.js';
+import EditableText from './EditableText.jsx';
+
+const editText = (props, field, value, as = 'span', className, arrayField, index) => <EditableText editing={props.puck?.isEditing} id={props.id} field={field} value={value} as={as} className={className} arrayField={arrayField} index={index} singleLine={as !== 'p'} />;
 
 // The unconfirmed claims in v15 are review material only. A production build has no
 // switch in the browser that can reveal them.
@@ -93,29 +96,29 @@ export function TwoDoors(props) {
   return <div className="td-home" id="top">
     <section className="td-intro" aria-labelledby="td-heading">
       <TideField enabled={tide} />
-      <p className="td-kicker">{kicker}</p>
-      <h1 id="td-heading"><span>{heading}</span> {copy.headlineSuffix}</h1>
-      <p className="td-lede">{intro}</p>
-      <a className="td-cue" href={safeHref(copy.chooseHref)}>↓ &nbsp; {copy.cueText} <small>· {copy.cueSubtext}</small></a>
+      {editText(props, 'kicker', kicker, 'p', 'td-kicker')}
+      <h1 id="td-heading">{editText(props, 'heading', heading)} {editText(props, 'headlineSuffix', copy.headlineSuffix, 'span', 'td-heading-suffix')}</h1>
+      {editText(props, 'intro', intro, 'p', 'td-lede')}
+      <a className="td-cue" href={safeHref(copy.chooseHref)}>↓ &nbsp; {editText(props, 'cueText', copy.cueText)} <small>· {editText(props, 'cueSubtext', copy.cueSubtext)}</small></a>
     </section>
 
     <section className="td-door-section" id="choose" aria-label={copy.chooserHeading}>
       <nav className="td-stepbar" aria-label={copy.chooserHeading}>
-        <button type="button" aria-current={side === 'consultancy'} onClick={() => select('consultancy')}>{copy.consultancyName}</button>
-        <button type="button" aria-current={side === 'choose'} onClick={() => select('choose')}>{copy.chooseLabel}</button>
-        <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{copy.toolsName}</button>
+        <button type="button" aria-current={side === 'consultancy'} onClick={() => select('consultancy')}>{editText(props, 'consultancyName', copy.consultancyName)}</button>
+        <button type="button" aria-current={side === 'choose'} onClick={() => select('choose')}>{editText(props, 'chooseLabel', copy.chooseLabel)}</button>
+        <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{editText(props, 'toolsName', copy.toolsName)}</button>
       </nav>
       <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (mobile) { const node = e.currentTarget; const panels = doorPanels(node); const nearest = panels.reduce((best, panel, i) => Math.abs(panelPosition(node, panel) - node.scrollLeft) < Math.abs(panelPosition(node, panels[best]) - node.scrollLeft) ? i : best, 0); setSide(doorSides[nearest]); } }} onMouseLeave={() => { if (!mobile) setSide(pinned || 'choose'); }} onBlur={(e) => { if (!mobile && !e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
         <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('consultancy'); }}>
           <img src={consultancyImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
-          <div className="td-door-copy"><p className="td-door-tag">{copy.consultancyTag}</p><h2>{copy.consultancyName}</h2><p>{consultancyLine}</p>
+          <div className="td-door-copy">{editText(props, 'consultancyTag', copy.consultancyTag, 'p', 'td-door-tag')}<h2>{editText(props, 'consultancyName', copy.consultancyName)}</h2>{editText(props, 'consultancyLine', consultancyLine, 'p')}
             <button type="button" className="td-more" aria-expanded={active === 'consultancy'} onClick={() => open('consultancy')}>{active === 'consultancy' ? copy.moreOpen : copy.moreClosed}</button>
             <div className={'td-door-detail' + (active === 'consultancy' ? ' is-open' : '')} inert={active !== 'consultancy'}><div className="td-door-detail-inner">
               {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt || ''} loading="lazy" /></li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
               <ul><li><b>{copy.consultancyPoint1}</b> {copy.consultancyPoint1Text}</li><li><b>{copy.consultancyPoint2}</b> {copy.consultancyPoint2Text}</li><li><b>{copy.consultancyPoint3}</b> {copy.consultancyPoint3Text}</li></ul>
             </div></div>
-            <a className="td-pill" href={safeHref(copy.contactHref)}>{copy.consultancyCta}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{copy.proofLink}</a>
+            <a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'consultancyCta', copy.consultancyCta)}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{editText(props, 'proofLink', copy.proofLink)}</a>
           </div>
         </article>
         <div className="td-divider" aria-hidden="true"><span>{copy.orLabel}</span></div>
@@ -123,10 +126,10 @@ export function TwoDoors(props) {
         <article className={'td-door td-tools' + (active === 'tools' ? ' expanded' : '')} id="door-tools" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('tools'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('tools'); }}>
           <img src={toolsImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
-          <div className="td-door-copy"><p className="td-door-tag">{copy.toolsTag}</p><h2>{copy.toolsName}</h2><p>{toolsLine}</p>
+          <div className="td-door-copy">{editText(props, 'toolsTag', copy.toolsTag, 'p', 'td-door-tag')}<h2>{editText(props, 'toolsName', copy.toolsName)}</h2>{editText(props, 'toolsLine', toolsLine, 'p')}
             <button type="button" className="td-more" aria-expanded={active === 'tools'} onClick={() => open('tools')}>{active === 'tools' ? copy.moreOpen : copy.moreClosed}</button>
             <div className={'td-door-detail' + (active === 'tools' ? ' is-open' : '')} inert={active !== 'tools'}><div className="td-door-detail-inner">{toolBrands.length > 0 && <div className="td-client-logos"><p>Brands we supply</p><ul>{toolBrands.filter((brand) => brand?.image).map((brand) => <li key={brand.name}><img src={brand.image} alt={brand.name} loading="lazy" /></li>)}</ul></div>}<ul><li><b>{copy.toolsPoint1}</b> {copy.toolsPoint1Text}</li><li><b>{copy.toolsPoint2}</b> {copy.toolsPoint2Text}</li><li><b>{copy.toolsPoint3}</b> {copy.toolsPoint3Text}</li></ul></div></div>
-            <a className="td-pill td-pill-teal" href={safeHref(copy.toolsHref)}>{copy.toolsCta}</a>
+            <a className="td-pill td-pill-teal" href={safeHref(copy.toolsHref)}>{editText(props, 'toolsCta', copy.toolsCta)}</a>
           </div>
         </article>
       </div>
@@ -140,7 +143,7 @@ export function TwoDoorsStory(props) {
   const approvedNumbers = numbers.filter((number) => number?.value && number?.label && number?.verified);
   return <div className="td-segment td-story-segment">
     <TideField view="calm" enabled={tide} />
-    <section className="td-story" id="about"><div><p className="td-kicker">{copy.storyKicker}</p><h2>{storyHeading}</h2></div><div><p>{storyBody}</p><p>{storyBody2}</p></div></section>
+    <section className="td-story" id="about"><div>{editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
     {approvedNumbers.length ? <div className="td-review-strip td-numbers" aria-label={copy.numbersLabel}>{approvedNumbers.map((item, i) => <div key={i}><b>{item.value}</b><span>{item.label}</span></div>)}</div> : REVIEW_CONTENT && <div className="td-review-strip" role="note"><b>{copy.draftNumbersHeading}</b><span>{copy.draftNumbersLine}</span></div>}
     <section className="td-range" aria-label={copy.rangeLabel}>{range.map((item, i) => <div key={i}><b>{item.title}</b><p>{item.line}</p></div>)}</section>
   </div>;
@@ -151,8 +154,8 @@ export function TwoDoorsProof(props) {
   const copy = { ...props };
   const approvedCases = cases.filter((study) => study?.headline && study?.result && study?.verified);
   return <div className="td-segment">
-    <section className="td-section" id="cases"><p className="td-kicker">{copy.proofKicker}</p><h2>{copy.proofHeading}</h2>
-      {approvedCases.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={approvedCases} render={(study) => <div className="td-case">{study.image && <img className="td-case-image" src={study.image} alt={study.imageAlt || ''} loading="lazy" />}<div className="td-case-copy"><strong>{study.headline}</strong><p>{study.problem}</p><p>{study.work}</p><p>{study.result}</p></div></div>} /> : REVIEW_CONTENT ? <Carousel enabled={carousel} label={copy.proofKicker} items={draftItems} render={(item) => <div className="td-case td-case-draft">{item.image && <img className="td-case-image" src={item.image} alt="" loading="lazy" />}<div className="td-case-copy"><span className="td-draft-badge">{copy.draftBadge}</span><strong>{item.headline}</strong><p>{copy.draftCaseLine}</p></div></div>} /> : <p className="td-pending">{copy.pendingLine} <a href={safeHref(copy.proofHref)}>{copy.pendingLink}</a>.</p>}
+    <section className="td-section" id="cases">{editText(props, 'proofKicker', copy.proofKicker, 'p', 'td-kicker')}<h2>{editText(props, 'proofHeading', copy.proofHeading)}</h2>
+      {approvedCases.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={approvedCases} render={(study, index) => <div className="td-case">{study.image && <img className="td-case-image" src={study.image} alt={study.imageAlt || ''} loading="lazy" />}<div className="td-case-copy"><strong>{editText(props, 'headline', study.headline, 'span', undefined, 'cases', index)}</strong><p>{study.problem}</p><p>{study.work}</p><p>{study.result}</p></div></div>} /> : REVIEW_CONTENT ? <Carousel enabled={carousel} label={copy.proofKicker} items={draftItems} render={(item) => <div className="td-case td-case-draft">{item.image && <img className="td-case-image" src={item.image} alt="" loading="lazy" />}<div className="td-case-copy"><span className="td-draft-badge">{copy.draftBadge}</span><strong>{item.headline}</strong><p>{copy.draftCaseLine}</p></div></div>} /> : <p className="td-pending">{editText(props, 'pendingLine', copy.pendingLine)} <a href={safeHref(copy.proofHref)}>{editText(props, 'pendingLink', copy.pendingLink)}</a>.</p>}
     </section>
   </div>;
 }
@@ -161,18 +164,18 @@ export function TwoDoorsTools(props) {
   const { tools = [], carousel = true } = props;
   const copy = { ...props };
   return <div className="td-segment">
-    <section className="td-section" id="tools"><p className="td-kicker td-teal">{copy.toolsKicker}</p><h2>{copy.toolsHeading}</h2><p>{copy.toolsIntro}</p>
+    <section className="td-section" id="tools">{editText(props, 'toolsKicker', copy.toolsKicker, 'p', 'td-kicker td-teal')}<h2>{editText(props, 'toolsHeading', copy.toolsHeading)}</h2>{editText(props, 'toolsIntro', copy.toolsIntro, 'p')}
       <Carousel enabled={carousel} label={copy.toolsKicker} items={tools} render={(tool) => <article className="td-tool-card">{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.toolsHref)}>{copy.toolLinkPrefix} {tool.name} {copy.toolLinkSuffix}</a></article>} />
     </section>
-    <section className="td-close"><h2>{copy.closeHeading}</h2><p>{copy.closeLine}</p><a className="td-pill" href={safeHref(copy.contactHref)}>{copy.closeCta}</a></section>
-    <section className="td-section td-bottom"><p className="td-kicker">{copy.bottomKicker}</p><h2>{copy.bottomHeading}</h2><div><a href={safeHref(copy.consultancyHref)}><img src={copy.consultancyImage} alt="" /><span>{copy.bottomConsultancy}</span></a><a href={safeHref(copy.toolsHref)}><img src={copy.toolsImage} alt="" /><span>{copy.bottomTools}</span></a></div></section>
+    <section className="td-close"><h2>{editText(props, 'closeHeading', copy.closeHeading)}</h2>{editText(props, 'closeLine', copy.closeLine, 'p')}<a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'closeCta', copy.closeCta)}</a></section>
+    <section className="td-section td-bottom">{editText(props, 'bottomKicker', copy.bottomKicker, 'p', 'td-kicker')}<h2>{editText(props, 'bottomHeading', copy.bottomHeading)}</h2><div><a href={safeHref(copy.consultancyHref)}><img src={copy.consultancyImage} alt="" /><span>{editText(props, 'bottomConsultancy', copy.bottomConsultancy)}</span></a><a href={safeHref(copy.toolsHref)}><img src={copy.toolsImage} alt="" /><span>{editText(props, 'bottomTools', copy.bottomTools)}</span></a></div></section>
   </div>;
 }
 
 export function DevTools(props) {
   const { heading, intro, tools = [] } = props;
   const copy = { ...props };
-  return <div className="td-home td-dev-page"><section className="td-intro"><p className="td-kicker td-teal">{copy.devKicker}</p><h1>{heading}</h1><p className="td-lede">{intro}</p><a className="td-pill td-pill-teal" href={safeHref(copy.shopHref)}>{copy.shopCta}</a></section><section className="td-section"><h2>{copy.brandHeading}</h2><div className="td-brand-grid">{tools.map((tool) => <article className="td-tool-card" key={tool.name}>{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.shopHref)}>{copy.brandCta}</a></article>)}</div><p className="td-mail">{copy.helpLine} <a href={safeMailto(copy.helpEmail)}>{copy.helpEmail}</a></p></section></div>;
+  return <div className="td-home td-dev-page"><section className="td-intro">{editText(props, 'devKicker', copy.devKicker, 'p', 'td-kicker td-teal')}<h1>{editText(props, 'heading', heading)}</h1>{editText(props, 'intro', intro, 'p', 'td-lede')}<a className="td-pill td-pill-teal" href={safeHref(copy.shopHref)}>{editText(props, 'shopCta', copy.shopCta)}</a></section><section className="td-section"><h2>{editText(props, 'brandHeading', copy.brandHeading)}</h2><div className="td-brand-grid">{tools.map((tool) => <article className="td-tool-card" key={tool.name}>{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.shopHref)}>{editText(props, 'brandCta', copy.brandCta)}</a></article>)}</div><p className="td-mail">{editText(props, 'helpLine', copy.helpLine)} <a href={safeMailto(copy.helpEmail)}>{editText(props, 'helpEmail', copy.helpEmail)}</a></p></section></div>;
 }
 
 export const css = '';

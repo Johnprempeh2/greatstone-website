@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Puck } from '@puckeditor/core';
+import { createPortal } from 'react-dom';
+import { Puck, createUsePuck } from '@puckeditor/core';
 import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
@@ -10,7 +11,108 @@ import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
+import { EDITOR_COMMANDS, editorState, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
 import './frame.css';
+
+const usePuckSelection = createUsePuck();
+
+function FrameControls({ send, save, commands }) {
+  const selected = usePuckSelection((s) => s.selectedItem);
+  const history = usePuckSelection((s) => s.history);
+  const ui = usePuckSelection((s) => s.appState.ui);
+  const dispatch = usePuckSelection((s) => s.dispatch);
+  const getSelectorForId = usePuckSelection((s) => s.getSelectorForId);
+  const getItemById = usePuckSelection((s) => s.getItemById);
+  const contentLength = usePuckSelection((s) => s.appState.data.content.length);
+  const [outline, setOutline] = useState(false);
+  const [library, setLibrary] = useState(false);
+  const selectedId = selected?.props?.id;
+  const selector = selectedId ? getSelectorForId(selectedId) : null;
+
+  useEffect(() => { send('editor-state', editorState(selected, history, outline)); }, [selectedId, selected?.type, history.hasPast, history.hasFuture, outline]);
+  useEffect(() => {
+    if (selectedId) { setLibrary(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: true, leftSideBarVisible: false } }); }
+  }, [selectedId]);
+  useEffect(() => {
+    if (!selectedId && ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { rightSideBarVisible: false } });
+  }, [selectedId, ui.rightSideBarVisible]);
+
+  function close() {
+    setLibrary(false);
+    dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
+  }
+  function add() {
+    setLibrary(true);
+    dispatch({ type: 'setUi', ui: { itemSelector: null, rightSideBarVisible: false, leftSideBarVisible: true, plugin: { current: 'blocks' } } });
+  }
+  function toggleOutline(on) {
+    setOutline(on);
+    setLibrary(false);
+    dispatch({ type: 'setUi', ui: { itemSelector: null, rightSideBarVisible: false, leftSideBarVisible: on, plugin: { current: 'outline' } } });
+  }
+  function command(payload) {
+    if (!validEditorCommand(payload)) return;
+    switch (payload.command) {
+      case 'undo': history.back(); break;
+      case 'redo': history.forward(); break;
+      case 'save': save(); break;
+      case 'add-block': add(); break;
+      case 'deselect': close(); break;
+      case 'outline': toggleOutline(payload.on); break;
+    }
+  }
+  useEffect(() => { commands.current = command; return () => { commands.current = null; }; });
+  useEffect(() => {
+    function onKey(event) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') { event.preventDefault(); save(); return; }
+      if (event.key !== 'Escape') return;
+      if (event.target?.isContentEditable) return;
+      if (selectedId || library || outline || ui.leftSideBarVisible || ui.rightSideBarVisible) { close(); setOutline(false); return; }
+      send('editor-key', { key: 'escape' });
+    }
+    window.addEventListener('keydown', onKey);
+    const frame = document.querySelector('.gs-frame-editor iframe');
+    let doc;
+    function bind() { doc?.removeEventListener('keydown', onKey); doc = frame?.contentDocument; doc?.addEventListener('keydown', onKey); }
+    frame?.addEventListener('load', bind);
+    bind();
+    return () => { window.removeEventListener('keydown', onKey); frame?.removeEventListener('load', bind); doc?.removeEventListener('keydown', onKey); };
+  }, [selectedId, library, outline, ui.leftSideBarVisible, ui.rightSideBarVisible]);
+  useEffect(() => {
+    const frame = document.querySelector('.gs-frame-editor iframe');
+    if (!frame) return;
+    function onClick(event) {
+      const media = event.target.closest?.('img,video');
+      const block = media?.closest('[data-gs-block-id]');
+      const item = block && getItemById(block.dataset.gsBlockId);
+      const request = mediaRequest(item, media, proofConfig.components);
+      if (request) { event.preventDefault(); event.stopPropagation(); send('media-requested', request); }
+    }
+    let doc;
+    function bind() { doc?.removeEventListener('click', onClick, true); doc = frame.contentDocument; doc?.addEventListener('click', onClick, true); }
+    frame.addEventListener('load', bind);
+    bind();
+    return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('click', onClick, true); };
+  }, [getItemById]);
+  function act(type, destinationIndex) {
+    if (!selector) return;
+    if (type === 'reorder') dispatch({ type, sourceIndex: selector.index, destinationIndex, destinationZone: selector.zone });
+    else if (type === 'duplicate') dispatch({ type, sourceIndex: selector.index, sourceZone: selector.zone });
+    else dispatch({ type, index: selector.index, zone: selector.zone });
+  }
+  const count = selector?.zone === 'root:default-zone' ? contentLength : 999;
+  return createPortal(<div className={'gs-frame-controls' + (library || outline || selected ? ' is-drawer-open' : '')}>
+    {selected && <div className="gs-frame-block-tools" role="toolbar" aria-label="Selected block">
+      <span>{selected.type}</span><button type="button" disabled={!selector || selector.index === 0} onClick={() => act('reorder', selector.index - 1)}>Move up</button>
+      <button type="button" disabled={!selector || selector.index >= count - 1} onClick={() => act('reorder', selector.index + 1)}>Move down</button>
+      <button type="button" onClick={() => act('duplicate')}>Duplicate</button><button type="button" onClick={() => act('remove')}>Delete</button>
+      <button type="button" onClick={close}>Close</button>
+    </div>}
+    <button type="button" onClick={add}>Add block</button>
+    {(library || outline || selected) && <button type="button" onClick={() => { close(); setOutline(false); }}>Close drawer</button>}
+    {(library || outline) && <span className="gs-frame-drawer-label">{outline ? 'Outline' : 'Block library'}</span>}
+  </div>, document.body);
+}
 
 const isMediaField = (field) => field.type === 'image' || field.type === 'video' ||
   (field.type === 'custom' && field.render?.({ value: '', onChange: () => {} })?.type === MediaField);
@@ -25,6 +127,7 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   const [isDirty, setIsDirty] = useState(false);
   const session = useRef(null), draft = useRef(null), baseRevision = useRef(null), pending = useRef(null), timer = useRef(null);
   const mediaUrls = useRef({});
+  const commands = useRef(null);
 
   function addMedia(media) {
     for (const [id, entry] of Object.entries(media || {})) {
@@ -63,15 +166,17 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           window.parent.postMessage(envelope('hello-refused', { nonce, reason: result.refused, supported: [FRAME_PROTOCOL] }), event.origin); return;
         }
         session.current ||= { nonce, origin: event.origin };
-        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...motionHello(proofConfig.components) }), event.origin);
+        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS } : {}), ...motionHello(proofConfig.components) }), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
-      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'teardown'])) {
+      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'editor-command', 'teardown'])) {
         if (event.data?.gs === 'website-frame') console.warn('Dropped frame message: origin, source, session, protocol or payload invalid');
         return;
       }
       const p = event.data.payload;
-      if (event.data.type === 'teardown') {
+      if (event.data.type === 'editor-command') {
+        if (mode === 'editor' && validEditorCommand(p)) commands.current?.(p);
+      } else if (event.data.type === 'teardown') {
         draft.current = null; baseRevision.current = null; session.current = null; pending.current = null;
         clearTimeout(timer.current); releaseMedia(); setData(null); setStatus('closed'); setMessage('Editor closed');
       } else if (event.data.type === 'load-draft' && !draft.current && p.pageId === page.id && typeof p.revisionId === 'string' && Array.isArray(p.data?.content)) {
@@ -142,10 +247,10 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   }
   if (!data) return <main className="gs-frame-empty" role="status"><span className="gs-frame-kicker">Greatstone Studio</span><h1>{mode === 'editor' ? 'Page editor' : 'Page preview'}</h1><p>{message}</p></main>;
   return <main className={`gs-frame gs-frame-${mode}`}>
-    <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span>{mode === 'editor' && <button type="button" disabled={status === 'saving' || !isDirty || !!conflict} onClick={() => save()}>Save draft</button>}</div></header>
+    {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && <div className="gs-frame-notice" role="alert"><p>{message}</p>{pending.current && <button type="button" onClick={() => save(undefined, true)}>Retry save</button>}</div>}
-    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} ui={{ viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: true, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} viewports={[{ width: 390, label: 'Phone', icon: 'Smartphone' }, { width: 1440, label: 'Laptop', icon: 'Monitor' }, { width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
+    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} ui={{ leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
       : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} pageSlug={page.slug} forms={forms} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }
