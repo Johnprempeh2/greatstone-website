@@ -4,15 +4,16 @@
   "title": "Greatstone brand-locked block motion fields",
   "$defs": {
     "intensity": { "type": "string", "enum": ["off", "subtle", "full"] },
+    "reservedEffects": { "description": "Approved names without renderers; not selectable by any block yet", "enum": ["bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] },
     "quietAnchor": { "const": "copy" },
     "base": {
       "type": "object", "additionalProperties": false,
       "required": ["effect", "intensity"],
       "properties": { "effect": { "type": "string" }, "intensity": { "$ref": "#/$defs/intensity" }, "quietAnchor": { "$ref": "#/$defs/quietAnchor" } }
     },
-    "DevTools": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.datum", "band.tide"] } } }] },
-    "AiBaselineSurvey": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.meridian"] } } }] },
-    "Hero": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "hero.stone", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "DevTools": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none"] } } }] },
+    "AiBaselineSurvey": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none"] } } }] },
+    "Hero": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "hero.stone"] } } }] },
     "MotionBand": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "band.tide"] } } }] }
   }
 }

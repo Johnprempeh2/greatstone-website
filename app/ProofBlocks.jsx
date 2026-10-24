@@ -31,7 +31,7 @@ import * as AiCostCalculator from '../src/blocks/AiCostCalculator.jsx';
 import * as MotionBand from '../src/blocks/MotionBand.jsx';
 import { sectionClass } from '../src/lib/block-style.mjs';
 import { bindFormBlock } from '../next-proof/form-bindings.mjs';
-import { motionField, MOTION_BY_BLOCK, resolveMotion } from '../next-proof/motion-contract.mjs';
+import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from '../next-proof/motion-contract.mjs';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
@@ -55,6 +55,7 @@ function BlockAnchor({ props, puck, type }) {
 const withAnchor = (puck, type) => ({
   ...puck,
   fields: { ...Object.fromEntries(Object.entries(puck.fields).filter(([key]) => !(type === 'Hero' && key === 'stone'))), ...motionField(type) },
+  resolveFields: MOTION_BY_BLOCK[type] ? (data, { fields }) => resolveMotionFields(type, data, fields) : puck.resolveFields,
   defaultProps: { ...puck.defaultProps, ...(MOTION_BY_BLOCK[type] ? { motion: MOTION_BY_BLOCK[type].default } : {}) },
   render: (props) => <BlockAnchor props={props} puck={puck} type={type} />,
 });

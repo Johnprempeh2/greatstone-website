@@ -4,7 +4,7 @@ import Ajv from 'ajv/dist/2020.js';
 import manifest from './release-schema/manifest.v1.json' with { type: 'json' };
 import schema from './release-schema/blocks-motion.v1.schema.json' with { type: 'json' };
 import baked from './data/release.json' with { type: 'json' };
-import { MOTION_BY_BLOCK, motionField, resolveMotion } from './motion-contract.mjs';
+import { MOTION_BY_BLOCK, motionField, resolveMotion, resolveMotionFields } from './motion-contract.mjs';
 import { validateRelease } from './release-validator.mjs';
 
 test('GSAM field manifest and Puck defaults agree for every motion-capable block', () => {
@@ -39,9 +39,24 @@ test('old saved release remains valid and absent motion does not create a new ef
 test('release rejects invalid motion without changing the stored block', () => {
   const release = structuredClone(baked);
   const block = release.pages.flatMap((page) => page.data.content).find((item) => item.type === 'Hero');
-  block.props.motion = { effect: 'bg.veil', intensity: 'subtle', quietAnchor: 'copy' };
+  block.props.motion = { effect: 'hero.stone', intensity: 'subtle', quietAnchor: 'copy' };
   assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId }), null);
   block.props.motion.effect = 'script.effect';
   assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId })?.rule, 'R6');
   assert.equal(resolveMotion('Hero', block.props).effect, 'none');
+});
+
+test('editor offers rendered effects with plain labels and hides intensity for None', () => {
+  assert.deepEqual(motionField('Hero').motion.objectFields.effect.options, [
+    { label: 'None', value: 'none' }, { label: 'Hero stone', value: 'hero.stone' },
+  ]);
+  assert.deepEqual(motionField('MotionBand').motion.objectFields.effect.options[1], { label: 'Tide band', value: 'band.tide' });
+  for (const type of ['DevTools', 'AiBaselineSurvey']) {
+    assert.deepEqual(MOTION_BY_BLOCK[type].default, { effect: 'none', intensity: 'off', quietAnchor: 'copy' });
+    assert.deepEqual(motionField(type).motion.objectFields.effect.options.map((item) => item.value), ['none']);
+  }
+  const fields = motionField('Hero');
+  assert.equal(resolveMotionFields('Hero', { props: { motion: { effect: 'none' } } }, fields).motion.objectFields.intensity, undefined);
+  assert.equal(resolveMotionFields('Hero', { props: {} }, fields).motion.objectFields.intensity, undefined);
+  assert.ok(resolveMotionFields('Hero', { props: { motion: { effect: 'hero.stone' } } }, fields).motion.objectFields.intensity);
 });

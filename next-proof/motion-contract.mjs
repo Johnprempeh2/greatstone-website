@@ -3,9 +3,9 @@
 export const EFFECTS = ['none', 'hero.stone', 'band.tide', 'bg.bedrock', 'bg.ascent', 'bg.datum', 'bg.meridian', 'bg.veil', 'bg.orbit'];
 export const INTENSITIES = ['off', 'subtle', 'full'];
 export const MOTION_BY_BLOCK = {
-  DevTools: { effects: ['none', 'bg.datum', 'band.tide'], default: { effect: 'bg.datum', intensity: 'subtle', quietAnchor: 'copy' } },
-  AiBaselineSurvey: { effects: ['none', 'bg.meridian'], default: { effect: 'bg.meridian', intensity: 'subtle', quietAnchor: 'copy' } },
-  Hero: { effects: ['none', 'hero.stone', 'bg.bedrock', 'bg.ascent', 'bg.datum', 'bg.meridian', 'bg.veil', 'bg.orbit'], default: { effect: 'none', intensity: 'off', quietAnchor: 'copy' } },
+  DevTools: { effects: ['none'], default: { effect: 'none', intensity: 'off', quietAnchor: 'copy' } },
+  AiBaselineSurvey: { effects: ['none'], default: { effect: 'none', intensity: 'off', quietAnchor: 'copy' } },
+  Hero: { effects: ['none', 'hero.stone'], default: { effect: 'none', intensity: 'off', quietAnchor: 'copy' } },
   MotionBand: { effects: ['none', 'band.tide'], default: { effect: 'band.tide', intensity: 'subtle', quietAnchor: 'copy' } },
 };
 
@@ -22,7 +22,13 @@ export function motionField(type) {
   const definition = MOTION_BY_BLOCK[type];
   if (!definition) return {};
   return { motion: { type: 'object', label: 'Motion', objectFields: {
-    effect: { type: 'select', label: 'Effect', options: definition.effects.map((value) => ({ label: value === 'none' ? 'None' : value, value })) },
+    effect: { type: 'select', label: 'Effect', options: definition.effects.map((value) => ({ label: ({ none: 'None', 'hero.stone': 'Hero stone', 'band.tide': 'Tide band' })[value], value })) },
     intensity: { type: 'radio', label: 'Intensity', options: INTENSITIES.map((value) => ({ label: value[0].toUpperCase() + value.slice(1), value })) },
   } } };
+}
+
+export function resolveMotionFields(type, data, fields) {
+  if (!MOTION_BY_BLOCK[type] || (data.props?.motion?.effect && data.props.motion.effect !== 'none')) return fields;
+  const { intensity, ...visible } = fields.motion.objectFields;
+  return { ...fields, motion: { ...fields.motion, objectFields: visible } };
 }

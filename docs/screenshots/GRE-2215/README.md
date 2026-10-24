@@ -11,8 +11,16 @@ Captured on 24 October 2026 with `next dev`, Chromium headless, 1440 × 900 and
   handshake. The Dev Tools block was selected through Outline. Its Motion
   section has Effect and Off, Subtle, Full intensity controls. Nothing was saved.
 
+Mikey review revision: `after-review-dev-tools-*` is a second local draft with
+the 120 px Tide still (80 px on phone) between the Dev Tools block and a
+temporary next-step Prose block. It uses a captured frame of the existing Tide
+renderer. The draft was validated, then removed. The committed release is
+unchanged. `after-review-editor-motion-1440-dark.png` shows the selected Tide
+divider, the Motion panel, the plain “Tide band” label and its Subtle intensity.
+`after-review-editor-none-1440-dark.png` shows that choosing None hides
+Intensity. No editor change was saved.
+
 The site currently has no light theme, so the light preference renders the dark
-palette. The band is a calm, copy-free still on the phone and under reduced
-motion. These shots test block insertion and the runtime fallback without a
-public deploy. The Two Doors home page was not changed or captured after
-John removed it from this motion work on 24 October.
+palette. These shots test block insertion and the runtime fallback without a
+public deploy. The Two Doors home page was not changed or captured after John
+removed it from this motion work on 24 October.

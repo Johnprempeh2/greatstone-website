@@ -17,9 +17,9 @@ export function MotionBand({ motion, motionRuntime = 'still' }) {
 }
 
 export const css = `
-.b-motion-band{position:relative;height:210px;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse 65% 38% at 50% 55%,rgba(27,80,57,.32),transparent 80%);pointer-events:none}
+.b-motion-band{position:relative;height:120px;overflow:hidden;isolation:isolate;background:#07120e url('/motion/tide-still.png') center/cover no-repeat;pointer-events:none}
 .b-motion-band>.td-tide{position:absolute;inset:0;opacity:.6;mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
-@media(max-width:760px){.b-motion-band{height:150px}}
+@media(max-width:760px){.b-motion-band{height:80px}}
 @media(prefers-reduced-motion:reduce){.b-motion-band>.td-tide{display:none}}
 `;
 

@@ -272,6 +272,7 @@ export const css = `
 .b-hero-stone{position:relative;width:100%;aspect-ratio:1/1.06;max-height:min(58vh,560px);
   justify-self:center;pointer-events:none}
 .b-hero-stone-still{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.b-hero-stone:has(canvas) .b-hero-stone-still{visibility:hidden}
 .b-hero.v-statement.has-stone{min-height:78vh;min-height:78svh}
 /* Below the breakpoint there is no second column: the copy returns to a single block and the mark is
    not rendered at all (HeroStone refuses to mount under 1024px, so no WebGL context is created). */
