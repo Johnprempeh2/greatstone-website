@@ -11,10 +11,14 @@ export function middleware(request) {
   const isFrame = decision.frame;
   const requestHeaders = new Headers(request.headers);
   const nonce = btoa(crypto.randomUUID());
-  if (isFrame) requestHeaders.set('x-nonce', nonce);
+  const csp = isFrame ? frameCsp(allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development'), nonce, process.env.NODE_ENV === 'development') : null;
+  if (isFrame) {
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('Content-Security-Policy', csp);
+  }
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   if (isFrame) {
-    response.headers.set('Content-Security-Policy', frameCsp(allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development'), nonce, process.env.NODE_ENV === 'development'));
+    response.headers.set('Content-Security-Policy', csp);
     response.headers.set('Cache-Control', 'no-store');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
     response.headers.set('Referrer-Policy', 'no-referrer');
