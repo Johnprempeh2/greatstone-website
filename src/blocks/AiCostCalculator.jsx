@@ -40,7 +40,7 @@ export function AiCostCalculator({
   anchorId = '', kicker, heading, intro, teamLabel, hoursLabel, costLabel,
   defaultTeam = 12, defaultHours = 6, defaultCost = 32, weeksPerYear = 46, currency = '£',
   recoveryPct = 55, onTheTableLead, savingsLead, gateHeading, gateBody, nameLabel, companyLabel, emailLabel,
-  dataNotice, submitLabel, sentNote, failNote, csvFooter, ctaLabel, ctaHref, footnote,
+  dataNotice, submitLabel, sentNote, failNote, csvFooter, ctaLabel, ctaHref, footnote, formFields,
 }) {
   const ref = useReveal();
   const uid = useId();
@@ -68,6 +68,7 @@ export function AiCostCalculator({
 
   const submitGate = async (e) => {
     e.preventDefault();
+    if (!e.currentTarget.reportValidity()) return;
     const name = lead.name.trim(), company = lead.company.trim(), email = lead.email.trim();
     const errors = validateEnquiry({ name, email });
     if (Object.keys(errors).length) { setErr(Object.values(errors).join(' ')); return; }
@@ -148,9 +149,9 @@ export function AiCostCalculator({
               <form className="b-acc-gate" onSubmit={submitGate} noValidate>
                 <p className="b-acc-gate-h">{gateHeading}</p>
                 <p className="b-acc-gate-b muted">{gateBody}</p>
-                <div className="b-acc-gfield"><label htmlFor={uid + 'n'}>{nameLabel}</label><input id={uid + 'n'} value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" required /></div>
-                <div className="b-acc-gfield"><label htmlFor={uid + 'co'}>{companyLabel}</label><input id={uid + 'co'} value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" /></div>
-                <div className="b-acc-gfield"><label htmlFor={uid + 'e'}>{emailLabel}</label><input id={uid + 'e'} type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" required /></div>
+                <div className="b-acc-gfield"><label htmlFor={uid + 'n'}>{nameLabel}</label><input id={uid + 'n'} value={lead.name} onChange={(e) => setLead((l) => ({ ...l, name: e.target.value }))} autoComplete="name" placeholder={formFields?.name?.placeholder} required /></div>
+                {(!formFields || formFields.company) ? <div className="b-acc-gfield"><label htmlFor={uid + 'co'}>{companyLabel}</label><input id={uid + 'co'} value={lead.company} onChange={(e) => setLead((l) => ({ ...l, company: e.target.value }))} autoComplete="organization" placeholder={formFields?.company?.placeholder} required={!!formFields?.company?.required} /></div> : null}
+                <div className="b-acc-gfield"><label htmlFor={uid + 'e'}>{emailLabel}</label><input id={uid + 'e'} type="email" value={lead.email} onChange={(e) => setLead((l) => ({ ...l, email: e.target.value }))} autoComplete="email" placeholder={formFields?.email?.placeholder} required /></div>
                 <div className="gs-sr-only" aria-hidden="true"><label htmlFor={uid + 'w'}>{LEAD_TOOL_COPY.honeypot}</label><input id={uid + 'w'} tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
                 <Turnstile onToken={setToken} />
                 {err ? <div className="b-acc-err" role="alert">{err}</div> : null}

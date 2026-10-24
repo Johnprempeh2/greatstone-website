@@ -45,6 +45,10 @@ staff account data. It has no release collection or import path: never export it
 role permissions, invitation token or invite history. GSAM may assign stable entry IDs
 when it imports public people. `publicForms` describes the visible inputs on the three
 current form blocks; `publicFormBlocks` preserves their published page props for a full
-page import. Those blocks still render from page Puck data, so editing a `form` entry
-alone does not yet change a live form. GRE-2110 must keep page block editing available
-until the engine gains a form-entry binding. No consent or privacy text is generated here.
+page import. The Next renderer binds these three blocks to
+the matching `forms` collection entry by `<page-slug>-<block-type-lowercase>` (or an
+explicit `formKey` block prop). The form entry controls heading, intro, submit label,
+field labels, placeholders, required state and select options. Missing entries retain
+the page props for older releases. The visitor handlers and consent text stay in the
+blocks. Release validation refuses unsupported field keys/types and a missing or
+optional name or email on a bound form, so edits cannot silently drop lead data.

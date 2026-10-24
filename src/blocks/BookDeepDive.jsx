@@ -50,18 +50,18 @@ export function BookDeepDive({
   sentHeading = 'Thank you. Your enquiry has reached us.',
   sentBody = 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
   sentLinkLabel = 'Read how we work', sentLinkHref = '#go/method',
-  failedHeading = 'Your message did not reach us.', failedBody = 'Please email us at',
+  failedHeading = 'Your message did not reach us.', failedBody = 'Please email us at', formFields,
 }) {
   const editing = puck && puck.isEditing;
   // the industry dropdown is now an editable list (mirrors every other string in this block); fall back
   // to the default sectors if an editor empties it. Tolerates both {label} items and legacy bare strings.
-  const sectorList = (Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS)
-    .map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
-  const labelsOf = (arr) => (Array.isArray(arr) ? arr : []).map((s) => (typeof s === 'string' ? s : (s && s.label) || '')).filter(Boolean);
-  const interestList = labelsOf(interests);
-  const sizeList = labelsOf(sizes);
+  const optionsOf = (arr) => (Array.isArray(arr) ? arr : []).map((s) =>
+    typeof s === 'string' ? { value: s, label: s } : { value: s?.value || s?.label || '', label: s?.label || '' }).filter((s) => s.value && s.label);
+  const sectorList = optionsOf(Array.isArray(sectors) && sectors.length ? sectors : DEFAULT_SECTORS);
+  const interestList = optionsOf(interests);
+  const sizeList = optionsOf(sizes);
   // a "#enquire/<key>" CTA elsewhere chose an option before this page opened: take it once, then bring the form into view
-  const [initialInterest] = useState(() => (editing ? '' : takePendingInterest(interestList)));
+  const [initialInterest] = useState(() => (editing ? '' : takePendingInterest(interestList.map((item) => item.value))));
   useEffect(() => {
     if (!initialInterest || !anchorId || typeof document === 'undefined') return;
     const el = document.getElementById(anchorId);
@@ -109,6 +109,7 @@ export function BookDeepDive({
       if (first && first.focus) first.focus();
       return;
     }
+    if (!e.currentTarget.reportValidity()) return;
     if (TURNSTILE_KEY && !token) { setErrors({ bot: 'Please wait for the check above to finish, then try again.' }); return; }
     setFallbackHref(composeMailto(g));
     setStatus('sending');
@@ -151,37 +152,37 @@ export function BookDeepDive({
                 {/* honeypot: hidden from people and screen readers; a bot that fills it is dropped by the function */}
                 <div className="b-book-hp" aria-hidden="true"><label htmlFor={uid + 'website'}>Website</label><input id={uid + 'website'} name="website" type="text" tabIndex={-1} autoComplete="off" /></div>
                 <div className="field-row">
-                  <div className="field"><label htmlFor={uid + 'name'}>{nameLabel}</label><input className="fld" id={uid + 'name'} name="name" type="text" required aria-required="true" placeholder="Jane Stonewell" autoComplete="name"
+                  <div className="field"><label htmlFor={uid + 'name'}>{nameLabel}</label><input className="fld" id={uid + 'name'} name="name" type="text" required aria-required="true" placeholder={formFields?.name?.placeholder || 'Jane Stonewell'} autoComplete="name"
                     onChange={() => { if (errors.name) setErrors((x) => ({ ...x, name: '' })); }} aria-invalid={errors.name ? 'true' : undefined} aria-describedby={errors.name ? uid + 'name-err' : undefined} />
                     {errors.name ? <p className="b-book-err" id={uid + 'name-err'} role="alert">{errors.name}</p> : null}</div>
-                  <div className="field"><label htmlFor={uid + 'email'}>{emailLabel}</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder="jane@stonewell.co" autoComplete="email"
+                  <div className="field"><label htmlFor={uid + 'email'}>{emailLabel}</label><input className="fld" id={uid + 'email'} name="email" type="email" required aria-required="true" placeholder={formFields?.email?.placeholder || 'jane@stonewell.co'} autoComplete="email"
                     onChange={() => { if (errors.email) setErrors((x) => ({ ...x, email: '' })); }} aria-invalid={errors.email ? 'true' : undefined} aria-describedby={errors.email ? uid + 'email-err' : undefined} />
                     {errors.email ? <p className="b-book-err" id={uid + 'email-err'} role="alert">{errors.email}</p> : null}</div>
                 </div>
                 <div className="field-row field-row-end">
-                  <div className="field"><label htmlFor={uid + 'company'}>{companyLabel}</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder="Stonewell & Co." autoComplete="organization" /></div>
-                  {sizeList.length ? (
+                  {(!formFields || formFields.company) ? <div className="field"><label htmlFor={uid + 'company'}>{companyLabel}</label><input className="fld" id={uid + 'company'} name="company" type="text" placeholder={formFields?.company?.placeholder || 'Stonewell & Co.'} autoComplete="organization" required={!!formFields?.company?.required} /></div> : null}
+                  {sizeList.length && (!formFields || formFields.size) ? (
                     <div className="field"><label htmlFor={uid + 'size'}>{sizeLabel}</label>
-                      <select className="fld" id={uid + 'size'} name="size" defaultValue=""><option value="">{sizePlaceholder}</option>{sizeList.map((s) => <option key={s}>{s}</option>)}</select>
+                      <select className="fld" id={uid + 'size'} name="size" defaultValue="" required={!!formFields?.size?.required}><option value="">{sizePlaceholder}</option>{sizeList.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
                     </div>
                   ) : null}
                 </div>
                 {/* Optional by default now. Forcing a visitor to classify their own sector before they may
                     say hello is a qualification barrier, and the placeholder stays selectable so choosing
                     nothing is a real answer rather than a dead first option. The contact page hides it (§4.6). */}
-                {showSector ? (
+                {(formFields ? !!formFields.sector : showSector) ? (
                   <div className="field"><label htmlFor={uid + 'industry'}>{sectorLabel}</label>
-                    <select className="fld" id={uid + 'industry'} name="industry" {...(sectorRequired ? { required: true, 'aria-required': 'true' } : null)} defaultValue=""><option value="" disabled={!!sectorRequired}>{sectorPlaceholder}</option>{sectorList.map((s) => <option key={s}>{s}</option>)}</select>
+                    <select className="fld" id={uid + 'industry'} name="industry" {...((formFields?.sector?.required ?? sectorRequired) ? { required: true, 'aria-required': 'true' } : null)} defaultValue=""><option value="" disabled={!!(formFields?.sector?.required ?? sectorRequired)}>{sectorPlaceholder}</option>{sectorList.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
                   </div>
                 ) : null}
-                {interestList.length ? (
+                {interestList.length && (!formFields || formFields.interest) ? (
                   <div className="field"><label htmlFor={uid + 'interest'}>{interestLabel}</label>
-                    <select className="fld" id={uid + 'interest'} name="interest" defaultValue={initialInterest}><option value="">{interestPlaceholder}</option>{interestList.map((s) => <option key={s}>{s}</option>)}</select>
+                    <select className="fld" id={uid + 'interest'} name="interest" defaultValue={initialInterest} required={!!formFields?.interest?.required}><option value="">{interestPlaceholder}</option>{interestList.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
                   </div>
                 ) : null}
-                <div className="field"><label htmlFor={uid + 'week'}>{messageLabel}</label>
-                  <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} />
-                </div>
+                {(!formFields || formFields.message) ? <div className="field"><label htmlFor={uid + 'week'}>{messageLabel}</label>
+                  <textarea className="fld" id={uid + 'week'} name="week" placeholder={messagePlaceholder} required={!!formFields?.message?.required} />
+                </div> : null}
                 {editing || consent ? <EditableText editing={editing} id={id} field="consent" value={consent} as="p" className="b-book-consent" placeholder="Consent line…" /> : null}
                 {editing ? null : <Turnstile onToken={(t) => { setToken(t); if (t) setErrors((x) => (x.bot ? { ...x, bot: '' } : x)); }} className="b-book-turnstile" />}
                 {errors.bot ? <p className="b-book-err" role="alert">{errors.bot}</p> : null}
