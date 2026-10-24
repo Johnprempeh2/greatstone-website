@@ -3,6 +3,7 @@ import addFormats from 'ajv-formats';
 import { formBindingProblem } from './form-bindings.mjs';
 import schema from './website-release.v1.schema.json' with { type: 'json' };
 import collectionSchema from './release-schema/collections.v1.schema.json' with { type: 'json' };
+import motionSchema from './release-schema/blocks-motion.v1.schema.json' with { type: 'json' };
 
 export const supportedReleaseSchemas = [1];
 export const supportedBlocks = new Set([
@@ -11,11 +12,14 @@ export const supportedBlocks = new Set([
   'Faq', 'PillarCards', 'MaturityModel', 'Chapter', 'Team', 'LogoWall',
   'IntelBand', 'MaturityMap', 'Ladder', 'MethodTieIn', 'IndustryPicker',
   'BookDeepDive', 'AiBaselineSurvey', 'AiCostCalculator',
+  'MotionBand',
 ]);
 
 const ajv = new Ajv({ strict: false, allErrors: false });
 addFormats(ajv);
 ajv.addSchema(collectionSchema);
+ajv.addSchema(motionSchema);
+const motionValidators = Object.fromEntries(['DevTools', 'AiBaselineSurvey', 'Hero', 'MotionBand'].map((type) => [type, ajv.getSchema(`${motionSchema.$id}#/$defs/${type}`)]));
 const validShape = ajv.compile(schema);
 const collectionKeys = ['vendors', 'categories', 'offerings', 'public-people', 'forms'];
 const fieldValidators = Object.fromEntries([...collectionKeys, 'redirects'].map((key) => [
@@ -38,6 +42,7 @@ function checkBlocks(blocks, ids) {
     if (ids.has(block.props.id)) return fail('R6', `Duplicate block id ${block.props.id}`);
     ids.add(block.props.id);
     if ('zones' in block || 'zones' in block.props) return fail('R6', 'Legacy zones are unsupported');
+    if (block.props.motion !== undefined && (!motionValidators[block.type] || !motionValidators[block.type](block.props.motion))) return fail('R6', `Invalid motion fields on ${block.type}`);
     const nested = [];
     const find = (value) => {
       if (Array.isArray(value)) value.forEach(find);
