@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import pg from 'pg';
 import { startPostgres, skip, OWNER } from './lib/postgres.mjs';
 import { authServerPool } from '../functions/lib/auth-server-pool.mjs';
-import { validateImport, importUsers } from '../database/migrations/048_better_auth/import-users.mjs';
+import { validateImport, importUsers } from '../database/migrations/049_better_auth/import-users.mjs';
 
 let db;
 let pool;
