@@ -1,4 +1,4 @@
--- Restores the pre-050 anon write grant and caller-controlled org_isolation policy; use only with a reviewed rollback.
+-- Restores the pre-053 anon write grant and caller-controlled org_isolation policy; use only with a reviewed rollback.
 REVOKE INSERT, UPDATE, DELETE ON public.users FROM authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.users TO anon;
 DROP POLICY IF EXISTS staff_users_read ON public.users;

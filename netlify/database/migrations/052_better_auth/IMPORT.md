@@ -7,11 +7,11 @@ put the export or the owner connection in a deploy, issue, log or repository fil
 
 ## Run order
 
-1. Confirm migration 048 (`gsam_bridge`) is applied, then apply schema
-   migrations 049 (`better_auth`) and 050 (`staff_user_writes`) to staging through
-   the reviewed migration process. Confirm all three appear in the
-   `netlify.migrations` log before importing. The last applied staging migration
-   was 047 on 24 October, before Ridge's 048 owner run.
+1. Confirm migrations 048 (`gsam_bridge`), 049 (`gsam_bridge_commerce`),
+   050 (`deep_dive_client`) and 051 (`deep_dive_answer_status`) are applied.
+   Then apply 052 (`better_auth`) and 053 (`staff_user_writes`) to staging through
+   the reviewed migration process. Confirm all six appear in the
+   `netlify.migrations` log before importing.
 2. Use a trusted, one-time migration environment with the staging site's owner
    `NETLIFY_DB_URL`. Outside a deploy, the available connection is read-only and
    cannot perform this import. The runner must set `NETLIFY_SITE_NAME` to
@@ -19,7 +19,7 @@ put the export or the owner connection in a deploy, issue, log or repository fil
    also checks that PostgreSQL reports `netlifydb_owner` before any write. Do
    not make an HTTP endpoint or add this step to a site build command.
 3. Read `access.GS_STAFF_EXPORT` into run scratch with restrictive permissions.
-   Pipe it to `node netlify/database/migrations/049_better_auth/import-users.mjs`
+   Pipe it to `node netlify/database/migrations/052_better_auth/import-users.mjs`
    for the rollback-only dry run. If that succeeds, repeat with `--apply`. Do
    not echo the input or enable shell tracing. Remove the scratch file in the
    same run, including on error. The script prints only a count.
@@ -35,7 +35,7 @@ database role, a count other than eight, duplicate identities, malformed
 bcrypt hashes, or a mismatch with a previous import. Dry run rolls back. Apply
 commits one transaction. A failed apply rolls back. To undo an applied import,
 restore the staging snapshot taken before the import; do not delete shared
-`auth.users` rows by hand. Migration 049 has its own schema rollback, which
+`auth.users` rows by hand. Migration 052 has its own schema rollback, which
 must not run after anyone has signed in without restoring that snapshot.
 
 For production, obtain a fresh export and change the fixed count only in a
