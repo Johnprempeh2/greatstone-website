@@ -40,7 +40,6 @@ const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); //
 const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // the AI Intelligence section — renders inline as the body of the "Intelligence" page (the renamed Insights)
 const LazyIntelArticle = lazy(() => import('./intel/IntelArticle.jsx')); // #intel/<id> — a single briefing's own article page
 const LazyServiceDetail = lazy(() => import('./store/ServiceDetail.jsx')); // #service/<slug> — a single service's own page
-const LazyInquiryDrawer = lazy(() => import('./store/InquiryUI.jsx'));      // floating multi-select service-inquiry drawer
 
 // Branded loading state for the lazy Intel Hub chunk. Self-contained (inline styles + scoped
 // keyframes) because intel.css ships *inside* that chunk and isn't available while it loads.
@@ -1621,8 +1620,7 @@ export default function App() {
             : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}
         </EditorBoundary>
       </main>
-      {(shopRoute || productSlug) && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
-      {(svcSlug || current === 'services') && <Suspense fallback={null}><LazyInquiryDrawer email={publishedServices.email} /></Suspense>}
+      {(shopRoute || productSlug || svcSlug || current === 'services') && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} logo={state.settings.logo} tagline={state.settings.footerTagline} siteName={state.settings.siteName} footerEmail={state.settings.footerEmail} legalName={state.settings.legalName} />
     </div>
     </ServicesContext.Provider>

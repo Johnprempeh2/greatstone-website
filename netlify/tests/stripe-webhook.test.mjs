@@ -38,6 +38,7 @@ test('paid webhook uses the worker transaction and repeated delivery does not ad
     commands.push(sql);
     if (sql.includes('FROM offering_variants')) return { rows: [{ id: variant, name: 'Test edition',
       offering_id: 'a0000000-0000-4000-8000-000000000002', offering_name: 'Test offering', org_id: org }] };
+    if (sql.includes("to_regclass('public.service_inquiries')")) return { rows: [{ name: 'service_inquiries' }] };
     if (sql.includes('INSERT INTO orders')) return { rows: orderCount++ ? [] : [{ id: 'a0000000-0000-4000-8000-000000000003' }] };
     return { rows: [] };
   } };
@@ -52,6 +53,8 @@ test('paid webhook uses the worker transaction and repeated delivery does not ad
   assert.equal((await call()).status, 200);
   assert.equal((await call()).status, 200);
   assert.equal(commands.filter((sql) => sql.includes('INSERT INTO order_items')).length, 1);
+  assert.equal(commands.filter((sql) => sql.includes('UPDATE service_inquiries')).length, 2,
+    'repeated delivery checks the linked enquiry; SQL prevents duplicate paid references');
   assert.equal(commands.filter((sql) => sql === 'SET LOCAL ROLE service_role').length, 2);
   assert.equal(commands.filter((sql) => sql === 'COMMIT').length, 2);
 });

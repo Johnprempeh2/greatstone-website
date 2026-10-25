@@ -87,6 +87,13 @@ async function recordOrder(pool, session, key, fetchImpl) {
     [org, session.id, currency, subtotal, total, optionalId(metadata.customer_id), optionalId(metadata.customer_user_id),
       metadata.customer_email || session.customer_details?.email || session.customer_email || null,
       typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null]);
+    // The quote was stored before the visitor left for Stripe. Link it only once payment is
+    // confirmed. On cancelled or failed payments the same enquiry remains available to the team.
+    const { rows: inquiryTable } = await client.query("SELECT to_regclass('public.service_inquiries') AS name");
+    if (inquiryTable[0]?.name) await client.query(`UPDATE service_inquiries
+      SET message = concat_ws(E'\n', nullif(message, ''), 'Paid order reference: ' || $1)
+      WHERE services @> jsonb_build_array(jsonb_build_object('checkoutSessionId', $1))
+        AND position('Paid order reference: ' || $1 in coalesce(message, '')) = 0`, [session.id]);
     if (!rows.length) return null;
     for (const item of items) {
       await client.query(`INSERT INTO order_items

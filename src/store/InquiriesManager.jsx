@@ -84,13 +84,13 @@ export default function InquiriesManager({ staff }) {
               <thead><tr><th scope="col">Date</th><th scope="col">From</th><th scope="col">Services</th><th scope="col">Status</th><th scope="col"><span className="gs-sr-only">Detail</span></th></tr></thead>
               <tbody>
                 {loading ? <tr><td colSpan="5" className="ca-muted">Loading…</td></tr>
-                  : !shown.length ? <tr><td colSpan="5" className="ca-muted">{rows.length ? 'No inquiries match.' : 'No inquiries yet. They arrive when a visitor sends one from the services catalogue or the contact form.'}</td></tr>
+                  : !shown.length ? <tr><td colSpan="5" className="ca-muted">{rows.length ? 'No inquiries match.' : 'No inquiries yet. They arrive from the basket or the contact form.'}</td></tr>
                     : shown.map((r) => (
                       <React.Fragment key={r.id}>
                         <tr>
                           <td>{fmtDate(r.created_at)}</td>
                           <td className="ca-name">{r.contact_company || r.contact_name || r.contact_email || '(no name)'}{r.contact_email ? <><br /><a className="ca-muted" href={'mailto:' + r.contact_email}>{r.contact_email}</a></> : null}</td>
-                          <td>{isContact(r) ? <>Contact form{r.size_band ? <span className="ca-muted"> · {r.size_band}</span> : null}{r.industry ? <span className="ca-muted"> · {r.industry}</span> : null}</> : <>{(r.services || []).length} service{(r.services || []).length === 1 ? '' : 's'}<span className="ca-muted"> · {(r.services || []).map((s) => s.name || s.slug).slice(0, 2).join(', ')}{(r.services || []).length > 2 ? '…' : ''}</span></>}</td>
+                          <td>{isContact(r) ? <>Contact form{r.size_band ? <span className="ca-muted"> · {r.size_band}</span> : null}{r.industry ? <span className="ca-muted"> · {r.industry}</span> : null}</> : <>{(r.services || []).length} quote item{(r.services || []).length === 1 ? '' : 's'}<span className="ca-muted"> · {(r.services || []).map((s) => s.name || s.slug).slice(0, 2).join(', ')}{(r.services || []).length > 2 ? '…' : ''}</span></>}</td>
                           <td>
                             <select value={r.status} onChange={(e) => setStatus(r.id, e.target.value)} aria-label="Inquiry status" className={'ca-status ca-q-' + r.status}>
                               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}

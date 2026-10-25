@@ -11,7 +11,8 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 
-const { addItem, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, getCart, startCheckout } = await import('./cart.mjs');
+const { addItem, addService, setQty, removeItem, clearCart, cartCount, cartSubtotalMinor, getCart,
+  paidLines, quoteLines, clearQuoteLines, startCheckout, requestBasketQuote } = await import('./cart.mjs');
 
 const item = (id, unitMinor, extra = {}) => ({ variantId: id, offeringSlug: 's', name: 'N', edition: 'E', vendor: 'V', unitMinor, currency: 'GBP', ...extra });
 
@@ -90,4 +91,57 @@ test('startCheckout sends the basket to the same-origin Netlify function', async
     assert.equal(requested.url, '/api/stripe-checkout');
     assert.deepEqual(JSON.parse(requested.options.body).items, [{ variantId: 'a', quantity: 1 }]);
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test('services-only basket sends one quote request and makes no Stripe call', async () => {
+  addService({ slug: 'website-build', name: 'Website build' });
+  assert.equal(paidLines().length, 0);
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (url, options) => { requests.push({ url, body: JSON.parse(options.body) }); return Response.json({ ok: true, id: 'inquiry-1' }); };
+  try {
+    assert.equal(await requestBasketQuote({ contact: { email: 'buyer@example.test' } }), 'inquiry-1');
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, '/api/service-inquiry');
+    assert.equal(requests[0].body.services[0].slug, 'website-build');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('mixed basket sends only priced tool to Stripe and one quote with the full basket and order reference', async () => {
+  addItem(item('tool-id', 1200), 2);
+  addService({ slug: 'website-build', name: 'Website build' });
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return Response.json(url.includes('stripe') ? { url: 'https://checkout.stripe.com/test', id: 'cs_test_order' } : { ok: true, id: 'inquiry-2' });
+  };
+  try {
+    const checkout = await startCheckout();
+    await requestBasketQuote({ contact: { email: 'buyer@example.test' }, paidOrderReference: checkout.id });
+    assert.deepEqual(requests[0].body.items, [{ variantId: 'tool-id', quantity: 2 }]);
+    assert.equal(requests[1].body.services.length, 1);
+    assert.equal(requests[1].body.services[0].checkoutSessionId, 'cs_test_order');
+    assert.match(requests[1].body.message, /Website build/);
+    assert.match(requests[1].body.message, /cs_test_order/);
+    assert.equal(cartSubtotalMinor(), 2400);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('sending the quote alone leaves priced tools available for a payment retry', () => {
+  addItem(item('tool-id', 1200));
+  addService({ slug: 'website-build', name: 'Website build' });
+  clearQuoteLines();
+  assert.deepEqual(getCart().map((x) => x.variantId), ['tool-id']);
+  assert.equal(cartSubtotalMinor(), 1200);
+});
+
+test('an old saved service inquiry joins the existing saved tool basket once', async () => {
+  store.set('gs_store_cart_v1', JSON.stringify([item('saved-tool', 1000, { qty: 1 })]));
+  store.set('gs_service_inquiry_v1', JSON.stringify([{ slug: 'website-build', name: 'Website build' }]));
+  const migrated = await import('./cart.mjs?legacy-migration-test');
+  assert.equal(migrated.getCart().length, 2);
+  assert.equal(migrated.getCart()[1].serviceSlug, 'website-build');
+  assert.equal(store.has('gs_service_inquiry_v1'), false);
+  assert.equal(JSON.parse(store.get('gs_store_cart_v1')).length, 2);
 });
