@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "organisation": {
+  "customer": {
     "id": "050a4d9d-ecb2-4e61-ad24-8b35cf8cbbc2",
     "slug": "greatstone-test-client",
     "name": "Greatstone Test Client (TEST DATA)",

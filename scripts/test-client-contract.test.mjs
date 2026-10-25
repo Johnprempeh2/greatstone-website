@@ -13,7 +13,7 @@ test('fixture validation fails closed for a real address or changed client ident
   realAddress.teams[0].clients[0].email = 'client@example.com';
   assert.throws(() => assertTestClientContract(realAddress), /unsafe/);
   const changedClient = copy();
-  changedClient.organisation.slug = 'real-client';
+  changedClient.customer.slug = 'real-client';
   assert.throws(() => assertTestClientContract(changedClient), /differs/);
 });
 
