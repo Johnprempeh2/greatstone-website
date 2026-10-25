@@ -1,4 +1,4 @@
-// GSAM admin bridge, read queries (GRE-2323). Every query runs inside asBridgeReader: the transaction is
+// GSAM admin bridge, read queries (GRE-2323; commerce resources GRE-2354). Every query runs inside asBridgeReader: the transaction is
 // gsam_bridge_read with claims naming the org admin_bridge_begin returned, so RLS decides the rows and the
 // migration's column grants decide the columns. Each resource lists its columns: no select *.
 
@@ -44,8 +44,18 @@ export async function asBridgeReader(pool, call, work) {
   }
 }
 
-const items = (table, fk, columns) => `(SELECT COALESCE(jsonb_agg(jsonb_build_object(${columns.map((c) => `'${c}',i.${c}`).join(',')})
-  ORDER BY i.created_at, i.id), '[]'::jsonb) FROM ${table} i WHERE i.${fk} = x.id)`;
+const items = (table, fk, columns, { order = 'i.created_at, i.id', where = 'true' } = {}) =>
+  `(SELECT COALESCE(jsonb_agg(jsonb_build_object(${columns.map((c) => `'${c}',i.${c}`).join(',')})
+  ORDER BY ${order}), '[]'::jsonb) FROM ${table} i WHERE i.${fk} = x.id AND ${where})`;
+
+// Child rows of the catalogue, as the write routes return them too.
+export const CHILD_COLUMNS = {
+  offering_variants: ['id', 'offering_id', 'sku', 'name', 'license_type', 'platform', 'billing_period', 'base_price_minor',
+    'currency', 'min_order_qty', 'list_discount_pct', 'sort_order', 'created_at', 'updated_at', 'row_version'],
+  offering_specs: ['id', 'offering_id', 'label', 'value', 'sort_order'],
+  offering_media: ['id', 'offering_id', 'asset_id', 'sort_order', 'created_at'],
+  pricing_rule_targets: ['id', 'rule_id', 'vendor_id', 'category_id', 'offering_id', 'tier_id'],
+};
 
 const RESOURCES = {
   customers: {
@@ -59,7 +69,7 @@ const RESOURCES = {
     table: 'quotes', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
     columns: ['id', 'reference', 'customer_id', 'customer_user_id', 'contact_name', 'contact_email', 'contact_company',
       'contact_phone', 'message', 'status', 'source', 'currency', 'indicative_total_minor', 'quoted_total_minor',
-      'po_reference', 'valid_until', 'created_at', 'updated_at'],
+      'po_reference', 'valid_until', 'created_at', 'updated_at', 'row_version'],
     extra: { items: items('quote_items', 'quote_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
       'qty', 'list_price_minor', 'captured_price_minor', 'currency']) },
   },
@@ -67,7 +77,7 @@ const RESOURCES = {
     table: 'orders', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
     columns: ['id', 'reference', 'quote_id', 'customer_id', 'customer_user_id', 'customer_email', 'status', 'currency',
       'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'invoice_number', 'placed_at', 'created_at',
-      'updated_at'],
+      'updated_at', 'row_version'],
     extra: { items: items('order_items', 'order_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
       'qty', 'unit_price_minor', 'line_total_minor', 'currency']) },
   },
@@ -76,7 +86,8 @@ const RESOURCES = {
     table: 'orders', time: 'created_at', updated: 'updated_at', customer: 'customer_id',
     live: 'x.deleted_at IS NULL AND x.invoice_number IS NOT NULL',
     columns: ['id', 'invoice_number', 'reference', 'customer_id', 'customer_email', 'status', 'currency',
-      'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'placed_at', 'created_at', 'updated_at'],
+      'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'placed_at', 'created_at', 'updated_at',
+      'row_version'],
   },
   licences: {
     table: 'licence_keys', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
@@ -94,8 +105,52 @@ const RESOURCES = {
     columns: ['id', 'customer_id', 'document_id', 'document_version', 'content_sha256', 'action', 'signer_name',
       'signer_title', 'account_company_name', 'signer_email', 'customer_user_id', 'confirmation_text', 'accepted_at'],
   },
+  // Commerce (GRE-2354). The catalogue has no customer, so these lists take no customer filter. No user ids.
+  offerings: {
+    table: 'offerings', time: 'created_at', updated: 'updated_at', customer: null, live: 'x.deleted_at IS NULL',
+    columns: ['id', 'type', 'vendor_id', 'category_id', 'slug', 'name', 'short_description', 'description', 'platforms',
+      'tags', 'status', 'featured', 'fulfilment', 'primary_image_id', 'from_price_minor', 'from_price_currency',
+      'attributes', 'seo', 'created_at', 'updated_at', 'published_at', 'row_version'],
+    extra: {
+      variants: items('offering_variants', 'offering_id', CHILD_COLUMNS.offering_variants,
+        { order: 'i.sort_order, i.created_at, i.id', where: 'i.deleted_at IS NULL' }),
+      specs: items('offering_specs', 'offering_id', CHILD_COLUMNS.offering_specs, { order: 'i.sort_order, i.id' }),
+      media: items('offering_media', 'offering_id', CHILD_COLUMNS.offering_media, { order: 'i.sort_order, i.id' }),
+    },
+  },
+  categories: {
+    table: 'categories', time: 'created_at', updated: 'updated_at', customer: null, live: 'x.deleted_at IS NULL',
+    columns: ['id', 'parent_id', 'slug', 'name', 'description', 'icon_asset_id', 'icon_url', 'status', 'sort_order',
+      'created_at', 'updated_at', 'published_at', 'row_version'],
+  },
+  vendors: {
+    table: 'vendors', time: 'created_at', updated: 'updated_at', customer: null, live: 'x.deleted_at IS NULL',
+    columns: ['id', 'slug', 'name', 'domain', 'logo_asset_id', 'logo_url', 'description', 'status', 'sort_order',
+      'activation_instructions', 'created_at', 'updated_at', 'published_at', 'row_version'],
+  },
+  'pricing-rules': {
+    table: 'pricing_rules', time: 'created_at', updated: 'updated_at', customer: null, live: 'x.deleted_at IS NULL',
+    columns: ['id', 'name', 'active', 'scope_type', 'applies_to_offering_type', 'adjustment_type', 'adjustment_value',
+      'adjustment_value_pct', 'currency', 'audience', 'audience_tier_id', 'starts_at', 'ends_at', 'priority',
+      'floor_fraction', 'label', 'status', 'created_at', 'updated_at', 'published_at', 'row_version'],
+    extra: { targets: items('pricing_rule_targets', 'rule_id', CHILD_COLUMNS.pricing_rule_targets, { order: 'i.id' }) },
+  },
+  'customer-tiers': {
+    table: 'customer_tiers', time: 'created_at', updated: 'updated_at', customer: null, live: 'x.deleted_at IS NULL',
+    columns: ['id', 'slug', 'name', 'rank', 'description', 'created_at', 'updated_at'],
+  },
+  // no rollback_token, no created_by; a get adds the rows (without the raw spreadsheet row), paged
+  imports: {
+    table: 'import_jobs', time: 'created_at', updated: 'created_at', customer: null, live: 'x.deleted_at IS NULL',
+    columns: ['id', 'filename', 'type', 'status', 'dry_run', 'source_checksum', 'column_mapping', 'diff_summary',
+      'error_summary', 'total_rows', 'applied_at', 'rolled_back_at', 'created_at'],
+  },
 };
-export const RESOURCE_NAMES = [...Object.keys(RESOURCES), 'enquiries'];
+export const RESOURCE_NAMES = [...Object.keys(RESOURCES), 'enquiries', 'fx', 'payments'];
+/** Whether a list takes ?customer=. */
+export const takesCustomer = (resource) => resource !== 'enquiries' && RESOURCES[resource]?.customer != null;
+/** The table and read columns of a resource, for the write routes' answers. */
+export const resourceDef = (resource) => RESOURCES[resource];
 
 // Enquiries: the service enquiry form and the front door, mapped to GSAM's WebsiteEnquiry shape (GRE-2324). Only
 // those that left an email; the id says which table, so a get reads one row.
@@ -211,4 +266,87 @@ export async function bridgeGet(client, resource, id) {
   const { rows } = await client.query(`SELECT ${selectList(def)} FROM ${def.table} x WHERE x.id = $1::uuid AND ${def.live}`, [id]);
   if (!rows.length) throw new BridgeRequestError('not_found');
   return rows[0];
+}
+
+/** One row of a resource by id, deleted or not, or null: what a write answers with. */
+export async function bridgeRow(client, resource, id) {
+  const def = RESOURCES[resource];
+  const { rows } = await client.query(`SELECT ${selectList(def)} FROM ${def.table} x WHERE x.id = $1::uuid`, [id]);
+  return rows[0] || null;
+}
+
+/** The FX rate, its row version and the last 50 changes (no user ids). */
+export async function bridgeFx(client) {
+  const { rows } = await client.query(`SELECT s.id, s.usd_to_gbp_display_rate::text AS usd_to_gbp_display_rate,
+      s.row_version, s.updated_at,
+      (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', h.id, 'old_rate', h.old_rate::text, 'new_rate', h.new_rate::text,
+         'changed_at', h.changed_at, 'note', h.note) ORDER BY h.changed_at DESC, h.id), '[]'::jsonb)
+         FROM (SELECT id, old_rate, new_rate, changed_at, note FROM fx_rate_history ORDER BY changed_at DESC, id LIMIT 50) h) AS history
+    FROM org_settings s LIMIT 1`);
+  if (!rows.length) throw new BridgeRequestError('not_found');
+  return rows[0];
+}
+
+const ROWS_CURSOR = /^\d{1,9}$/;
+/** An import job and one page of its rows, by row number. ?limit=&cursor= page the rows. */
+export async function bridgeImport(client, id, searchParams) {
+  for (const name of searchParams.keys()) if (!['limit', 'cursor'].includes(name)) throw new BridgeRequestError('bad_request', `unknown parameter ${name}`);
+  const raw = searchParams.get('limit');
+  const limit = raw == null ? DEFAULT_LIMIT : /^\d{1,3}$/.test(raw) ? Number(raw) : NaN;
+  if (!(limit >= 1 && limit <= MAX_LIMIT)) throw new BridgeRequestError('bad_request', 'limit');
+  let after = 0;
+  const cursor = searchParams.get('cursor');
+  if (cursor) {
+    try { after = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'))[0]; } catch { after = NaN; }
+    if (!ROWS_CURSOR.test(String(after))) throw new BridgeRequestError('bad_request', 'cursor');
+  }
+  const item = await bridgeGet(client, 'imports', id);
+  const { rows } = await client.query(`SELECT id, row_number, mapped, target_entity, match_key, action, errors, before, after
+    FROM import_job_rows WHERE job_id = $1::uuid AND row_number > $2 ORDER BY row_number LIMIT $3`, [id, after, limit + 1]);
+  const more = rows.length > limit;
+  const kept = more ? rows.slice(0, limit) : rows;
+  const nextCursor = more ? Buffer.from(JSON.stringify([kept[kept.length - 1].row_number]), 'utf8').toString('base64url') : null;
+  return { ...item, rows: { items: kept, nextCursor } };
+}
+
+/**
+ * The payment report, from the site's database only: orders Stripe took payment for (a boolean, never the payment
+ * intent), their refunds and refund requests, totals per currency and requests by status. ?from=&to= bound the
+ * order's created_at; ?limit=&cursor= page the orders. A refund with no request shows as unallocated_refund_minor; an
+ * approved request older than 7 days with no refund shows as waiting_on_stripe.
+ */
+export async function bridgePayments(client, searchParams, stripeMode) {
+  const known = new Set(['from', 'to', 'limit', 'cursor']);
+  for (const name of searchParams.keys()) if (!known.has(name)) throw new BridgeRequestError('bad_request', `unknown parameter ${name}`);
+  const opts = listOptions(new URLSearchParams([...searchParams].filter(([k]) => k === 'limit' || k === 'cursor')), { customerFilter: false });
+  const range = ['x.deleted_at IS NULL', 'x.paid_by_stripe'];
+  const params = [];
+  const p = (v) => { params.push(v); return `$${params.length}`; };
+  for (const [name, op] of [['from', '>='], ['to', '<']]) {
+    const v = searchParams.get(name);
+    if (v == null) continue;
+    if (Number.isNaN(Date.parse(v))) throw new BridgeRequestError('bad_request', name);
+    range.push(`x.created_at ${op} ${p(v)}::timestamptz`);
+  }
+  const rangeParams = [...params];
+  const where = [...range];
+  if (opts.cursor) where.push(`(x.created_at, x.id) > (${p(opts.cursor.t)}::timestamptz, ${p(opts.cursor.id)}::uuid)`);
+  const { rows } = await client.query(`SELECT x.id, x.reference, x.status, x.currency, x.subtotal_minor, x.total_minor,
+      x.refunded_minor, x.paid_by_stripe, x.placed_at, x.created_at,
+      x.refunded_minor - COALESCE((SELECT sum(r.amount_minor) FROM refund_requests r WHERE r.order_id = x.id AND r.status = 'done'), 0)
+        AS unallocated_refund_minor,
+      (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', r.id, 'status', r.status, 'amount_minor', r.amount_minor,
+         'reason', r.reason, 'requested_by', r.requested_by, 'decided_by', r.decided_by, 'decided_at', r.decided_at,
+         'created_at', r.created_at,
+         'waiting_on_stripe', r.status = 'approved' AND r.decided_at < now() - interval '7 days')
+         ORDER BY r.created_at, r.id), '[]'::jsonb) FROM refund_requests r WHERE r.order_id = x.id) AS refund_requests,
+      x.created_at::text AS _t
+    FROM orders x WHERE ${where.join(' AND ')} ORDER BY x.created_at, x.id LIMIT ${p(opts.limit + 1)}`, params);
+  const orders = page(rows, opts.limit, (r) => r.id);
+  const { rows: totals } = await client.query(`SELECT x.currency, count(*)::int AS orders, sum(x.total_minor)::bigint AS total_minor,
+      sum(x.refunded_minor)::bigint AS refunded_minor
+    FROM orders x WHERE ${range.join(' AND ')} GROUP BY x.currency ORDER BY x.currency`, rangeParams);
+  const { rows: requests } = await client.query(`SELECT r.status, count(*)::int AS requests, sum(r.amount_minor)::bigint AS amount_minor
+    FROM refund_requests r JOIN orders x ON x.id = r.order_id WHERE ${range.join(' AND ')} GROUP BY r.status ORDER BY r.status`, rangeParams);
+  return { stripeMode, totals, refundRequests: requests, items: orders.items, nextCursor: orders.nextCursor };
 }

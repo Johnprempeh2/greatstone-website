@@ -1,16 +1,75 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EDITOR_COMMANDS, editorState, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
+import { readFileSync } from 'node:fs';
+import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, keepTextDeleteInField, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
 import { envelope, validMessage } from './frame-protocol.mjs';
+import { Window } from 'happy-dom';
 
 const parent = {};
 globalThis.window = { parent };
 const bound = { origin: 'https://host.example', nonce: 'ABCDEFGHIJKLMNOPQRSTUV' };
 const event = (type, payload) => ({ origin: bound.origin, source: parent, data: { gs: 'website-frame', protocol: 1, session: bound.nonce, type, payload } });
 
+test('editor hello-ack advertises editor contract 2 and live content only in editor mode', () => {
+  const editor = readFileSync(new URL('../app/editor/[slug]/Editor.jsx', import.meta.url), 'utf8');
+  assert.equal(EDITOR_CONTRACT, 2);
+  assert.match(editor, /envelope\('hello-ack',[^\n]*mode === 'editor' \? \{ editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, editorMessages: EDITOR_MESSAGES, liveContent: liveContentOf\(liveData\) \} : \{\}/);
+});
+
+test('Edit copy (GSAM GRE-2394): mode from hello, refused commands and Puck permissions', () => {
+  assert.deepEqual(EDITOR_COMMANDS, ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live']);
+  assert.equal(editModeOf({ editMode: 'copy' }), 'copy');
+  assert.equal(editModeOf({ editMode: 'layout' }), 'layout');
+  // An older GSAM sends no edit mode: today's editor.
+  assert.equal(editModeOf({}), 'layout');
+  assert.equal(editModeOf({ editMode: 'anything' }), 'layout');
+  for (const command of ['add-block', 'outline']) assert.equal(copyModeAllows(command), false);
+  for (const command of ['undo', 'redo', 'save', 'deselect', 'layout', 'import-live']) assert.equal(copyModeAllows(command), true);
+  assert.deepEqual({ ...COPY_PERMISSIONS }, { drag: false, duplicate: false, delete: false, insert: false });
+  assert.equal(validEditorCommand({ command: 'layout', on: true }), true);
+  assert.equal(validEditorCommand({ command: 'layout' }), false);
+  assert.equal(validEditorCommand({ command: 'import-live' }), true);
+  assert.equal(validEditorCommand({ command: 'import-live', on: true }), false);
+  const editor = readFileSync(new URL('../app/editor/[slug]/Editor.jsx', import.meta.url), 'utf8');
+  assert.match(editor, /copy \? \{ permissions: COPY_PERMISSIONS \} : \{\}/);
+});
+
+test('Backspace and Delete stay in a focused text field inside a selected block', () => {
+  const dom = new Window();
+  const selectedBlock = dom.document.createElement('div');
+  const field = dom.document.createElement('p');
+  field.contentEditable = 'true';
+  field.setAttribute('role', 'textbox');
+  selectedBlock.append(field);
+  dom.document.body.append(selectedBlock);
+  let blockShortcutCalls = 0;
+  selectedBlock.addEventListener('keydown', () => { blockShortcutCalls++; });
+  field.addEventListener('keydown', keepTextDeleteInField);
+  field.focus();
+  for (const key of ['Backspace', 'Delete']) {
+    const event = new dom.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    field.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, false, `${key} must keep its browser text-editing action`);
+  }
+  assert.equal(blockShortcutCalls, 0, 'selected block does not receive either delete shortcut');
+});
+
+test('live content: counted for hello-ack, imported only into an empty draft with block ids unchanged', () => {
+  const live = { root: { props: { title: 'About' } }, content: [{ type: 'Hero', props: { id: 'hero-1', heading: 'About us' } }, { type: 'Invite', props: { id: 'invite-1' } }] };
+  assert.deepEqual(liveContentOf(live), { blocks: 2 });
+  assert.equal(liveContentOf(null), null);
+  assert.equal(liveContentOf({ root: {}, content: [] }), null);
+  const imported = importLiveData(live, { root: { props: {} }, content: [] });
+  assert.deepEqual(imported.content.map((block) => block.props.id), ['hero-1', 'invite-1']);
+  assert.deepEqual(imported.root, live.root);
+  assert.notEqual(imported.content, live.content); // a copy: editing the draft never changes the live page
+  assert.equal(importLiveData(live, { root: {}, content: [{ type: 'Hero', props: { id: 'x' } }] }), null);
+  assert.equal(importLiveData(null, { root: {}, content: [] }), null);
+});
+
 test('editor commands accept every advertised command and reject bad payloads or sessions', () => {
   for (const command of EDITOR_COMMANDS) {
-    const payload = { command, ...(command === 'outline' ? { on: true } : {}) };
+    const payload = { command, ...(command === 'outline' || command === 'layout' ? { on: true } : {}) };
     assert.equal(validMessage(event('editor-command', payload), bound, ['editor-command']) && validEditorCommand(payload), true);
   }
   for (const payload of [null, [], {}, { command: 'publish' }, { command: 'outline' }, { command: 'save', on: true }]) assert.equal(validEditorCommand(payload), false);

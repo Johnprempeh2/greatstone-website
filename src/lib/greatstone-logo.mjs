@@ -127,10 +127,12 @@ export function mountGreatstoneLogo(container, opts = {}) {
   window.addEventListener('blur', _onPointerLeave);
 
   const _dbs=new THREE.Vector2();
+  let ready=false;
   function resize(){ const w=container.clientWidth||400, h=container.clientHeight||400;
     renderer.setSize(w,h,false); composer.setSize(w,h); bloom.setSize(w,h);
     if (sceneRT){ renderer.getDrawingBufferSize(_dbs); sceneRT.setSize(_dbs.x, _dbs.y); }
-    camera.aspect=w/h; camera.position.z = 9.5 / Math.min(camera.aspect,1); camera.updateProjectionMatrix(); }
+    camera.aspect=w/h; camera.position.z = 9.5 / Math.min(camera.aspect,1); camera.updateProjectionMatrix();
+    if(ready) frame(); }
   const ro=new ResizeObserver(resize); ro.observe(container); resize();
 
   const clock=new THREE.Clock(); const tmpV=new THREE.Vector3(); let raf=0, visible=true, active=true;
@@ -177,7 +179,7 @@ export function mountGreatstoneLogo(container, opts = {}) {
   // scene in a multi-scene track stops rendering — it's invisible). rAF keeps spinning (it's cheap);
   // only the expensive frame() is gated. dt is capped in frame(), so resuming never jumps.
   function loop(){ if(visible && active && !document.hidden) frame(); raf=requestAnimationFrame(loop); }
-  loop();
+  ready=true; loop();
   return {
     setClimb(p){ scrollT = clamp(p,0,1); },   /* Stage drives this from scroll position */
     setScroll(p){ scrollT = clamp(p,0,1); },

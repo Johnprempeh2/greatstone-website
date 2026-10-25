@@ -186,11 +186,18 @@ test('the migration refuses a gsam_bridge_read role that bypasses RLS', { skip }
 
 test('048 rolls back cleanly and applies again', { skip }, () => {
   const dir = join(MIGRATIONS, '048_gsam_bridge');
+  const next = join(MIGRATIONS, '049_gsam_bridge_commerce');
+  const deepDive = join(MIGRATIONS, '050_deep_dive_client');
+  // rollbacks go newest first: 050 uses 049's write role, and 049 builds on 048
+  owner(readFileSync(join(deepDive, 'rollback.sql'), 'utf8'));
+  owner(readFileSync(join(next, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(dir, 'rollback.sql'), 'utf8'));
   assert.equal(owner(`SELECT count(*) FROM pg_roles WHERE rolname = 'gsam_bridge_read';`), '0');
   assert.equal(owner(`SELECT count(*) FROM pg_policies WHERE policyname = 'gsam_bridge_read';`), '0');
   owner(readFileSync(join(dir, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(dir, 'migration.sql'), 'utf8'));
+  owner(readFileSync(join(next, 'migration.sql'), 'utf8'));
+  owner(readFileSync(join(deepDive, 'migration.sql'), 'utf8'));
   assert.equal(ok(GOOD, 'SELECT count(*) FROM customers;'), '1');
   assert.equal(ok(GOOD, 'SELECT licence_key_last4 FROM licence_keys;'), 'AB12');
 });

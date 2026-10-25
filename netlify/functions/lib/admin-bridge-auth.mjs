@@ -1,13 +1,16 @@
 // GSAM admin bridge, request signing (GRE-2323). GSAM signs each request with an Ed25519 private key it keeps as a
 // company secret; the site holds only the public keys, in GSAM_BRIDGE_KEYS, so a leak of the site's settings cannot
 // forge a request. The canonical string and the check order are the contract in contracts/gs-bridge-v1/, the same
-// file in both repos: change it in both pull requests or neither.
+// file in both repos: change it in both pull requests or neither. Reads sign gs-bridge-v1; write and refund_request
+// keys sign gs-bridge-v2, which adds the idempotency key as a last line (GRE-2354).
 import { createHash, createPublicKey, verify } from 'node:crypto';
 
 export const SCHEME = 'gs-bridge-v1';
+export const SCHEME_V2 = 'gs-bridge-v2';
 export const WINDOW_SECONDS = 60;
-// Only read ships in this phase. Write and refund_request keys are refused until their phases add routes and roles.
-export const CAPABILITY_METHODS = { read: ['GET'] };
+// Capability comes from the key only: a read key cannot write, and a write key cannot GET.
+export const CAPABILITY_METHODS = { read: ['GET'], write: ['POST', 'PATCH', 'DELETE', 'PUT'], refund_request: ['POST'] };
+const CAPABILITY_SCHEME = { read: SCHEME, write: SCHEME_V2, refund_request: SCHEME_V2 };
 const CAPABILITIES = new Set(['read', 'write', 'refund_request']);
 
 const KID = /^[a-z0-9][a-z0-9-]{2,63}$/;
@@ -33,10 +36,12 @@ export function canonicalQuery(searchParams) {
   return pairs.map(([k, v]) => `${enc(k)}=${enc(v)}`).join('&');
 }
 
-/** The string GSAM signs: one field per line, joined by "\n". */
-export function canonicalString({ method, host, path, query = '', time, nonce, actor, run, bodySha256 }) {
-  return [SCHEME, method.toUpperCase(), host.toLowerCase(), query ? `${path}?${query}` : path, String(time), nonce,
-    actor, run || '-', bodySha256].join('\n');
+/** The string GSAM signs: one field per line, joined by "\n". v2 adds the idempotency key as the last line. */
+export function canonicalString({ scheme = SCHEME, method, host, path, query = '', time, nonce, actor, run, bodySha256,
+  idempotencyKey }) {
+  const lines = [scheme, method.toUpperCase(), host.toLowerCase(), query ? `${path}?${query}` : path, String(time), nonce,
+    actor, run || '-', bodySha256];
+  return (scheme === SCHEME_V2 ? [...lines, idempotencyKey] : lines).join('\n');
 }
 
 /**
@@ -73,9 +78,9 @@ export function parseAllowedIps(raw) {
 }
 
 /**
- * Checks a request in the contract's order and returns { kid, capability, nonce, time, actor, run } or throws a
- * BridgeAuthError. The nonce is claimed later, in the database transaction (admin_bridge_begin), together with a
- * second window check on the database clock.
+ * Checks a request in the contract's order and returns { kid, capability, nonce, time, actor, run, bodySha256,
+ * idempotencyKey } or throws a BridgeAuthError. The nonce (and a v2 call's idempotency key) is claimed later, in the
+ * database transaction (admin_bridge_begin*), together with a second window check on the database clock.
  */
 export function verifyBridgeRequest({ method, url, headers, body = '', keys, allowedIps, nowSeconds }) {
   const h = (name) => headers.get(name);
@@ -94,13 +99,22 @@ export function verifyBridgeRequest({ method, url, headers, body = '', keys, all
   const actor = h('x-gs-bridge-actor') || '';
   const run = h('x-gs-bridge-run') || null;
   const signature = h('x-gs-bridge-signature') || '';
-  if (!NONCE.test(nonce) || !ACTOR.test(actor) || (run !== null && !RUN.test(run)) || !B64URL.test(signature)) {
+  // GRE-2439's whole-snapshot PUT uses the original v1 signature, without a write idempotency header.
+  // Existing commerce writes retain v2. The route itself is checked again by admin-bridge.mjs.
+  const deepDivePut = entry.capability === 'write' && method.toUpperCase() === 'PUT' &&
+    /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(url).pathname);
+  const scheme = deepDivePut ? SCHEME : CAPABILITY_SCHEME[entry.capability];
+  // the key of one logical write: the same on every retry, so a retry after a timeout cannot write twice
+  const idempotencyKey = scheme === SCHEME_V2 ? h('x-gs-bridge-idempotency-key') || '' : null;
+  if (!NONCE.test(nonce) || !ACTOR.test(actor) || (run !== null && !RUN.test(run)) || !B64URL.test(signature)
+    || (idempotencyKey !== null && !NONCE.test(idempotencyKey))) {
     throw new BridgeAuthError('bad_signature', 'malformed bridge headers');
   }
   const u = new URL(url);
+  const bodySha256 = sha256hex(typeof body === 'string' ? Buffer.from(body, 'utf8') : body);
   const message = canonicalString({
-    method, host: u.host, path: u.pathname, query: canonicalQuery(u.searchParams), time, nonce, actor, run,
-    bodySha256: sha256hex(typeof body === 'string' ? Buffer.from(body, 'utf8') : body),
+    scheme, method, host: u.host, path: u.pathname, query: canonicalQuery(u.searchParams), time, nonce, actor, run,
+    bodySha256, idempotencyKey,
   });
   const sig = Buffer.from(signature, 'base64url');
   if (sig.length !== 64 || !verify(null, Buffer.from(message, 'utf8'), entry.key, sig)) {
@@ -111,5 +125,5 @@ export function verifyBridgeRequest({ method, url, headers, body = '', keys, all
     const ip = h('x-nf-client-connection-ip') || '';
     if (!allowedIps.has(ip)) throw new BridgeAuthError('ip_denied', 'client ip not on GSAM_BRIDGE_ALLOWED_IPS');
   }
-  return { kid, capability: entry.capability, nonce, time, actor, run };
+  return { kid, capability: entry.capability, nonce, time, actor, run, bodySha256, idempotencyKey };
 }

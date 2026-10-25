@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Puck, createUsePuck } from '@puckeditor/core';
-import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
-import { FrameEditingContext } from '../frame-context.jsx';
+import { proofBlockCss, proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
+import { FrameCopyContext, FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
 import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
 import { motionHello, setMotion, setMotionResult } from '../../../next-proof/frame-set-motion.mjs';
@@ -11,13 +11,17 @@ import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
-import { EDITOR_COMMANDS, editorState, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
+import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, liveContentOf, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
+import { EDITOR_MESSAGES, askAgent, capturePng, captureTarget, renderPins, validPins } from '../../../next-proof/frame-comments.mjs';
 import './frame.css';
 
 const usePuckSelection = createUsePuck();
+const EDITOR_UI = { leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } };
 
-function FrameControls({ send, save, commands }) {
-  const selected = usePuckSelection((s) => s.selectedItem);
+function FrameControls({ send, save, commands, copy, pins, onLayout, onImport, pageSettingsRef }) {
+  const puckSelected = usePuckSelection((s) => s.selectedItem);
+  const [clicked, setClicked] = useState(null);
+  const selected = puckSelected || clicked;
   const history = usePuckSelection((s) => s.history);
   const ui = usePuckSelection((s) => s.appState.ui);
   const dispatch = usePuckSelection((s) => s.dispatch);
@@ -26,32 +30,85 @@ function FrameControls({ send, save, commands }) {
   const contentLength = usePuckSelection((s) => s.appState.data.content.length);
   const [outline, setOutline] = useState(false);
   const [library, setLibrary] = useState(false);
+  const [pageSettings, setPageSettings] = useState(() => pageSettingsRef.current);
+  const pageButton = useRef(null);
   const selectedId = selected?.props?.id;
   const selector = selectedId ? getSelectorForId(selectedId) : null;
 
+  useEffect(() => {
+    const frame = document.querySelector('.gs-frame-editor iframe');
+    if (!frame) return;
+    let doc;
+    function onClick(event) {
+      if (event.target.closest?.('.gs-comment-pin')) return;
+      const block = event.target.closest?.('[data-gs-block-id]');
+      setClicked(block ? getItemById(block.dataset.gsBlockId) : null);
+    }
+    function bind() { doc?.removeEventListener('click', onClick, true); doc = frame.contentDocument; doc?.addEventListener('click', onClick, true); }
+    frame.addEventListener('load', bind); bind();
+    return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('click', onClick, true); };
+  }, [getItemById]);
+
+  useEffect(() => {
+    const frame = document.querySelector('.gs-frame-editor iframe');
+    if (!frame) return;
+    let observer;
+    let doc;
+    function draw() {
+      observer?.disconnect();
+      if (frame.contentDocument) renderPins(frame.contentDocument, pins, (pin) => send('pin-clicked', pin));
+      if (frame.contentDocument?.body) observer?.observe(frame.contentDocument.body, { childList: true, subtree: true });
+    }
+    function bind() {
+      observer?.disconnect(); doc?.removeEventListener('scroll', draw, true);
+      doc = frame.contentDocument;
+      doc?.addEventListener('scroll', draw, true);
+      observer = new MutationObserver(draw); draw();
+    }
+    frame.addEventListener('load', bind); bind();
+    return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('scroll', draw, true); observer?.disconnect(); };
+  }, [pins]);
+  useEffect(() => {
+    if (pageSettingsRef.current && !copy) dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: true } });
+  }, []); // Restore the page drawer when Puck remounts header actions after a field edit.
+
   useEffect(() => { send('editor-state', editorState(selected, history, outline)); }, [selectedId, selected?.type, history.hasPast, history.hasFuture, outline]);
   useEffect(() => {
-    if (selectedId) { setLibrary(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: true, leftSideBarVisible: false } }); }
-  }, [selectedId]);
+    // Edit copy: clicking words selects the block but never opens its settings.
+    if (selectedId) { setLibrary(false); pageSettingsRef.current = false; setPageSettings(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: !copy, leftSideBarVisible: false } }); }
+  }, [selectedId, copy]);
   useEffect(() => {
-    if (!selectedId && ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { rightSideBarVisible: false } });
-  }, [selectedId, ui.rightSideBarVisible]);
+    if (!copy) return;
+    setLibrary(false); setOutline(false); pageSettingsRef.current = false; setPageSettings(false);
+    if (ui.leftSideBarVisible || ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
+  }, [copy, ui.leftSideBarVisible, ui.rightSideBarVisible]);
+  useEffect(() => {
+    if (!selectedId && !pageSettings && ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { rightSideBarVisible: false } });
+  }, [selectedId, pageSettings, ui.rightSideBarVisible]);
 
   function close() {
-    setLibrary(false);
+    if (pageSettings) pageButton.current?.focus();
+    setLibrary(false); pageSettingsRef.current = false; setPageSettings(false);
+    setClicked(null);
     dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
   }
   function add() {
-    setLibrary(true);
+    setLibrary(true); pageSettingsRef.current = false; setPageSettings(false);
     dispatch({ type: 'setUi', ui: { itemSelector: null, rightSideBarVisible: false, leftSideBarVisible: true, plugin: { current: 'blocks' } } });
   }
   function toggleOutline(on) {
-    setOutline(on);
+    setOutline(on); pageSettingsRef.current = false; setPageSettings(false);
     setLibrary(false);
     dispatch({ type: 'setUi', ui: { itemSelector: null, rightSideBarVisible: false, leftSideBarVisible: on, plugin: { current: 'outline' } } });
   }
+  function openPageSettings() {
+    setLibrary(false); setOutline(false); pageSettingsRef.current = true; setPageSettings(true);
+    setClicked(null);
+    dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: true } });
+  }
   function command(payload) {
     if (!validEditorCommand(payload)) return;
+    if (copy && !copyModeAllows(payload.command)) return;
     switch (payload.command) {
       case 'undo': history.back(); break;
       case 'redo': history.forward(); break;
@@ -59,6 +116,8 @@ function FrameControls({ send, save, commands }) {
       case 'add-block': add(); break;
       case 'deselect': close(); break;
       case 'outline': toggleOutline(payload.on); break;
+      case 'layout': onLayout(payload.on); break;
+      case 'import-live': onImport(); break;
     }
   }
   useEffect(() => { commands.current = command; return () => { commands.current = null; }; });
@@ -67,7 +126,7 @@ function FrameControls({ send, save, commands }) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') { event.preventDefault(); save(); return; }
       if (event.key !== 'Escape') return;
       if (event.target?.isContentEditable) return;
-      if (selectedId || library || outline || ui.leftSideBarVisible || ui.rightSideBarVisible) { close(); setOutline(false); return; }
+      if (selectedId || library || outline || pageSettings || ui.leftSideBarVisible || ui.rightSideBarVisible) { close(); setOutline(false); return; }
       send('editor-key', { key: 'escape' });
     }
     window.addEventListener('keydown', onKey);
@@ -77,11 +136,12 @@ function FrameControls({ send, save, commands }) {
     frame?.addEventListener('load', bind);
     bind();
     return () => { window.removeEventListener('keydown', onKey); frame?.removeEventListener('load', bind); doc?.removeEventListener('keydown', onKey); };
-  }, [selectedId, library, outline, ui.leftSideBarVisible, ui.rightSideBarVisible]);
+  }, [selectedId, library, outline, pageSettings, ui.leftSideBarVisible, ui.rightSideBarVisible]);
   useEffect(() => {
     const frame = document.querySelector('.gs-frame-editor iframe');
     if (!frame) return;
     function onClick(event) {
+      if (copy) return;
       const media = event.target.closest?.('img,video');
       const block = media?.closest('[data-gs-block-id]');
       const item = block && getItemById(block.dataset.gsBlockId);
@@ -93,7 +153,7 @@ function FrameControls({ send, save, commands }) {
     frame.addEventListener('load', bind);
     bind();
     return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('click', onClick, true); };
-  }, [getItemById]);
+  }, [getItemById, copy]);
   function act(type, destinationIndex) {
     if (!selector) return;
     if (type === 'reorder') dispatch({ type, sourceIndex: selector.index, destinationIndex, destinationZone: selector.zone });
@@ -101,15 +161,18 @@ function FrameControls({ send, save, commands }) {
     else dispatch({ type, index: selector.index, zone: selector.zone });
   }
   const count = selector?.zone === 'root:default-zone' ? contentLength : 999;
-  return createPortal(<div className={'gs-frame-controls' + (library || outline || selected ? ' is-drawer-open' : '')}>
+  if (copy && !selected) return null;
+  return createPortal(<div className={'gs-frame-controls' + (library || outline || selected || pageSettings ? ' is-drawer-open' : '')}>
     {selected && <div className="gs-frame-block-tools" role="toolbar" aria-label="Selected block">
-      <span>{selected.type}</span><button type="button" disabled={!selector || selector.index === 0} onClick={() => act('reorder', selector.index - 1)}>Move up</button>
+      <span>{selected.type}</span><button type="button" onClick={() => { const payload = askAgent(selected); if (payload) send('ask-agent', payload); }}>Ask an agent</button>
+      {!copy && <><button type="button" disabled={!selector || selector.index === 0} onClick={() => act('reorder', selector.index - 1)}>Move up</button>
       <button type="button" disabled={!selector || selector.index >= count - 1} onClick={() => act('reorder', selector.index + 1)}>Move down</button>
       <button type="button" onClick={() => act('duplicate')}>Duplicate</button><button type="button" onClick={() => act('remove')}>Delete</button>
-      <button type="button" onClick={close}>Close</button>
+      </>}<button type="button" onClick={close}>Close</button>
     </div>}
-    <button type="button" onClick={add}>Add block</button>
-    {(library || outline || selected) && <button type="button" onClick={() => { close(); setOutline(false); }}>Close drawer</button>}
+    {!copy && <button type="button" onClick={add}>Add block</button>}
+    {!copy && <button ref={pageButton} type="button" onClick={openPageSettings}>Page background</button>}
+    {(library || outline || selected || pageSettings) && <button type="button" onClick={() => { close(); setOutline(false); }}>Close drawer</button>}
     {(library || outline) && <span className="gs-frame-drawer-label">{outline ? 'Outline' : 'Block library'}</span>}
   </div>, document.body);
 }
@@ -117,7 +180,7 @@ function FrameControls({ send, save, commands }) {
 const isMediaField = (field) => field.type === 'image' || field.type === 'video' ||
   (field.type === 'custom' && field.render?.({ value: '', onChange: () => {} })?.type === MediaField);
 
-export default function Editor({ page, forms, siteId, engine, origins, mode }) {
+export default function Editor({ page, liveData = null, forms, siteId, engine, origins, mode }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('waiting');
   const [message, setMessage] = useState('Waiting for the website builder');
@@ -125,9 +188,22 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   const [highlight, setHighlight] = useState(null);
   const [generation, setGeneration] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
+  const [editMode, setEditMode] = useState('layout');
+  const [pins, setPins] = useState([]);
+  const pageSettingsRef = useRef(false);
   const session = useRef(null), draft = useRef(null), baseRevision = useRef(null), pending = useRef(null), timer = useRef(null);
   const mediaUrls = useRef({});
   const commands = useRef(null);
+  const copyRef = useRef(false);
+
+  useEffect(() => {
+    if (mode !== 'editor') return undefined;
+    const style = document.createElement('style');
+    style.dataset.gsProofBlocks = '';
+    style.textContent = proofBlockCss;
+    document.head.append(style);
+    return () => style.remove();
+  }, [mode]);
 
   function addMedia(media) {
     for (const [id, entry] of Object.entries(media || {})) {
@@ -166,25 +242,38 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           window.parent.postMessage(envelope('hello-refused', { nonce, reason: result.refused, supported: [FRAME_PROTOCOL] }), event.origin); return;
         }
         session.current ||= { nonce, origin: event.origin };
-        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS } : {}), ...motionHello(proofConfig.components) }), event.origin);
+        if (mode === 'editor') setEditMode(editModeOf(result.payload));
+        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, editorMessages: EDITOR_MESSAGES, liveContent: liveContentOf(liveData) } : {}), ...motionHello(proofConfig.components) }), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
-      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'editor-command', 'teardown'])) {
+      if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'editor-command', 'comment-pins', 'capture', 'teardown'])) {
         if (event.data?.gs === 'website-frame') console.warn('Dropped frame message: origin, source, session, protocol or payload invalid');
         return;
       }
       const p = event.data.payload;
       if (event.data.type === 'editor-command') {
         if (mode === 'editor' && validEditorCommand(p)) commands.current?.(p);
+      } else if (event.data.type === 'comment-pins' && mode === 'editor') {
+        const next = validPins(p, draft.current);
+        if (next) setPins(next);
+      } else if (event.data.type === 'capture' && mode === 'editor') {
+        const requestId = event.data.id;
+        if (typeof requestId !== 'string' || !requestId) return;
+        if (!captureTarget(p, draft.current)) { send('capture-result', { requestId, ok: false, message: 'The requested block is not in the draft.' }); return; }
+        const doc = document.querySelector('.gs-frame-editor iframe')?.contentDocument;
+        if (!doc) { send('capture-result', { requestId, ok: false, message: 'The page is not visible yet.' }); return; }
+        capturePng(doc, p.blockId).then((result) => send('capture-result', { requestId, ok: true, ...result })).catch((error) => send('capture-result', { requestId, ok: false, message: String(error.message || error).slice(0, 2000) }));
       } else if (event.data.type === 'teardown') {
         draft.current = null; baseRevision.current = null; session.current = null; pending.current = null;
-        clearTimeout(timer.current); releaseMedia(); setData(null); setStatus('closed'); setMessage('Editor closed');
+        clearTimeout(timer.current); releaseMedia(); setPins([]); setData(null); setStatus('closed'); setMessage('Editor closed');
       } else if (event.data.type === 'load-draft' && !draft.current && p.pageId === page.id && typeof p.revisionId === 'string' && Array.isArray(p.data?.content)) {
         addMedia(p.media); draft.current = p.data; baseRevision.current = p.revisionId; setData(displayData(p.data)); setStatus('ready'); setMessage('Draft ready');
       } else if (event.data.type === 'highlight' && mode === 'preview') {
         setHighlight(typeof p.blockId === 'string' ? p.blockId : null);
       } else if (event.data.type === 'insert-media') {
-        const result = mode === 'editor' && draft.current
+        const result = mode === 'editor' && draft.current && copyRef.current
+          ? { ok: false, code: 'error', message: 'Edit copy changes words only. Switch to Layout to change images.' }
+          : mode === 'editor' && draft.current
           ? insertMedia(draft.current, proofConfig.components, p, isMediaField)
           : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
@@ -195,7 +284,9 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
         }
         send('insert-media-result', insertMediaResult(event.data.id, result));
       } else if (event.data.type === 'set-motion') {
-        const result = mode === 'editor' && draft.current
+        const result = mode === 'editor' && draft.current && copyRef.current
+          ? { ok: false, code: 'error', message: 'Edit copy changes words only. Switch to Layout to change motion.' }
+          : mode === 'editor' && draft.current
           ? setMotion(draft.current, p)
           : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
@@ -222,8 +313,24 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
     function onPageHide() { draft.current = null; session.current = null; pending.current = null; clearTimeout(timer.current); releaseMedia(); }
     window.addEventListener('message', onMessage); window.addEventListener('pagehide', onPageHide);
     return () => { window.removeEventListener('message', onMessage); window.removeEventListener('pagehide', onPageHide); clearTimeout(timer.current); };
-  }, [engine, mode, origins, page.id, siteId]);
+  }, [engine, mode, origins, page.id, siteId, liveData]);
 
+  const copy = mode === 'editor' && editMode === 'copy';
+  copyRef.current = copy;
+  // Puck reads its permissions when it mounts: remount on the current draft, unsaved words kept.
+  function switchEditMode(on) {
+    const next = on ? 'layout' : 'copy';
+    if (next === editMode) return;
+    if (draft.current) setData(displayData(draft.current));
+    setEditMode(next); setGeneration((n) => n + 1);
+  }
+  function importLive() {
+    const imported = importLiveData(liveData, draft.current);
+    if (!imported) return;
+    draft.current = imported; setData(displayData(imported)); setGeneration((n) => n + 1);
+    dirty(true); setStatus('ready'); setMessage('Live page imported. Saving draft');
+    save(imported);
+  }
   function onChange(nextData) {
     const nextRaw = rawData(nextData);
     if (JSON.stringify(nextRaw) === JSON.stringify(draft.current)) return;
@@ -250,7 +357,7 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
     {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && <div className="gs-frame-notice" role="alert"><p>{message}</p>{pending.current && <button type="button" onClick={() => save(undefined, true)}>Retry save</button>}</div>}
-    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} ui={{ leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
+    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><FrameCopyContext.Provider value={copy}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={EDITOR_UI} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} pins={pins} onLayout={switchEditMode} onImport={importLive} pageSettingsRef={pageSettingsRef} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameCopyContext.Provider></FrameEditingContext.Provider>
       : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} pageSlug={page.slug} forms={forms} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }

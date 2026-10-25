@@ -5,6 +5,8 @@ import { sanitizeInline } from '../lib/sanitize-html.mjs';
 import { looksLikeHtml, plainToRichHtml } from '../lib/richtext-normalise.mjs';
 import { RT_COLORS, RT_HEX } from '../lib/richtext-marks.mjs';
 import { safeHref } from '../lib/safe-url.js';
+import { useFrameCopy } from '../../app/editor/frame-context.jsx';
+import { keepTextDeleteInField } from '../../next-proof/frame-editor.mjs';
 
 // Inline-on-canvas rich editor. Renders a block's text field as an editable, formattable element DIRECTLY on the
 // canvas in the Next.js Puck iframe. Its Text toolbar is portaled into that same document, so formatting
@@ -30,6 +32,7 @@ function writeNested(obj, path, field, html) {
 export default function InlineRichText({ id, field, value, as: Tag = 'span', className = '', singleLine = false, placeholder = 'Type here…', arrayField = null, index = null, path = null }) {
   const resolvedPath = Array.isArray(path) ? path : (arrayField != null && index != null ? [{ key: arrayField, index }] : []);
   const { dispatch, getItemById, getSelectorForId } = usePuck();
+  const copy = useFrameCopy(); // Edit copy: Bold, Italic and Link only, no text colour
   const ref = useRef(null);
   const [focused, setFocused] = useState(false);
   const [canvasDocument, setCanvasDocument] = useState(null);
@@ -59,6 +62,7 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
   }, [dispatch, getItemById, getSelectorForId, id, field, singleLine, JSON.stringify(resolvedPath)]);
 
   const onKeyDown = (e) => {
+    keepTextDeleteInField(e);
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (singleLine) return;
@@ -145,8 +149,10 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
       <button type="button" aria-label="Bold" onClick={() => format('bold')}><b>B</b></button>
       <button type="button" aria-label="Italic" onClick={() => format('italic')}><i>I</i></button>
       <button type="button" aria-label="Link" disabled={!!ref.current?.closest('a')} onClick={link}>Link</button>
-      <span className="gs-frame-tool-divider" aria-hidden="true" />
-      {RT_COLORS.map((color) => <button key={`colour-${color.id}`} type="button" aria-label={`Text colour ${color.label}`} title={`Text colour ${color.label}`} style={color.id ? { color: RT_HEX[color.id] } : undefined} onClick={() => formatClass(color.className, 'gs-rt-c-')}>A</button>)}
+      {!copy && <>
+        <span className="gs-frame-tool-divider" aria-hidden="true" />
+        {RT_COLORS.map((color) => <button key={`colour-${color.id}`} type="button" aria-label={`Text colour ${color.label}`} title={`Text colour ${color.label}`} style={color.id ? { color: RT_HEX[color.id] } : undefined} onClick={() => formatClass(color.className, 'gs-rt-c-')}>A</button>)}
+      </>}
     </div>, canvasDocument.body)}
     </>
   );

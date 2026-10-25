@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 
 import * as TwoDoors from '../src/blocks/TwoDoors.jsx';
 import * as TwoDoorsStory from '../src/blocks/TwoDoorsStory.jsx';
@@ -34,10 +35,18 @@ import { sectionClass } from '../src/lib/block-style.mjs';
 import { bindFormBlock } from '../next-proof/form-bindings.mjs';
 import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from '../next-proof/motion-contract.mjs';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
+import { PAGE_SCENE_PRESETS, PAGE_SCENE_MODES, pageSceneBackground, resolvePageSceneFields } from '../next-proof/page-scene.mjs';
+import { STAGE_OPTIONS } from '../src/stage-presets.js';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
+export const proofBlockCss = Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss;
 const InsertAfter = lazy(() => import('./editor/InsertAfter.jsx'));
+const Stage = dynamic(() => import('../src/Stage.jsx'), { ssr: false });
 export const PreviewContext = createContext(false);
+function PageScene({ value }) {
+  const background = pageSceneBackground(value);
+  return background ? <Stage background={background} motionMode={value.motion} /> : null;
+}
 let motionCoordinator;
 let motionUsers = 0;
 function BlockAnchor({ props, puck, type }) {
@@ -63,15 +72,29 @@ const withAnchor = (puck, type) => ({
 });
 
 export const proofConfig = {
+  root: {
+    label: 'Page settings',
+    fields: {
+      title: { type: 'text', label: 'Page title' },
+      pageScene: { type: 'object', label: '3D background', objectFields: {
+        surface: { type: 'radio', label: 'Background', options: [{ value: 'plain', label: 'Plain surface' }, { value: '3d', label: '3D on' }] },
+        preset: { type: 'select', label: 'Scene', options: PAGE_SCENE_PRESETS.map((value) => ({ value, label: STAGE_OPTIONS.find((option) => option.id === value).label })) },
+        motion: { type: 'radio', label: 'Motion', options: PAGE_SCENE_MODES.map((value) => ({ value, label: value === 'animate' ? 'Animate' : 'Still' })) },
+      } },
+    },
+    resolveFields: (data, { fields }) => resolvePageSceneFields(data, fields),
+    defaultProps: { pageScene: { surface: 'plain', preset: 'stone', motion: 'animate' } },
+    render: ({ children, pageScene }) => <><PageScene value={pageScene} /><div className="gs-proof-content">{children}</div></>,
+  },
   components: Object.fromEntries(Object.entries(modules).map(([name, module]) => [name, withAnchor(module.puck, name)])),
   categories: { page: { title: 'Page', components: Object.keys(modules) } },
 };
 
 const publicPuck = { isEditing: false, renderDropZone: () => null, dragRef: null };
 export function ProofBlocks({ data, pageSlug, forms }) {
-  return <><style>{Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss}</style>{data.content.map((item) => {
+  return <><style>{proofBlockCss}</style><PageScene value={data.root?.props?.pageScene} /><div className="gs-proof-content">{data.content.map((item) => {
     const component = proofConfig.components[item.type];
     if (!component) throw new Error(`Unsupported published block: ${item.type}`);
     return <div key={item.props.id}>{component.render({ ...bindFormBlock(pageSlug, item, forms), puck: publicPuck })}</div>;
-  })}</>;
+  })}</div></>;
 }

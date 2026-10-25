@@ -10,6 +10,7 @@ import { AuthGate } from '../store/AccountDashboard.jsx';
 import DocumentView, { PrivacyNote } from './DocumentView.jsx';
 import ActionPanel from './ActionPanel.jsx';
 import { downloadPortalPdf } from './portal-file.mjs';
+import DeepDiveClient from './DeepDiveClient.jsx';
 import {
   JOURNEY, KIND_LABEL, journeyStage, docState, panelState, waitingForYou, acceptanceFor, signatoryLabel,
 } from './portal-model.mjs';
@@ -42,6 +43,7 @@ export default function Portal({ route }) {
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
+  if (route.view === 'deep-dive') return <DeepDiveClient company={profile.customer} />;
   return <PortalData route={route} profile={profile} email={session.user?.email || profile.email} />;
 }
 
@@ -83,6 +85,7 @@ function Shell({ company, crumb = false, children }) {
         {crumb ? <a className="pt-back" href="#portal">← Your portal</a> : <span className="st-kicker">Client portal</span>}
         <span className="pt-bar-co">{company.name}</span>
         <nav className="pt-bar-links" aria-label="Your accounts">
+          <a href="#portal/deep-dive">Deep Dive</a>
           <a href="#org">Your organisation</a>
           <a href="#account">Your account</a>
         </nav>

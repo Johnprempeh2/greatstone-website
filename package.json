@@ -40,6 +40,7 @@
     "bcryptjs": "3.0.3",
     "better-auth": "^1.7.12",
     "happy-dom": "^20.14.5",
+    "html2canvas-pro": "2.5.2",
     "next": "^15.5.28",
     "pg": "8.23.0",
     "react": "^18.3.1",
