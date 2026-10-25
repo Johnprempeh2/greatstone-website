@@ -10,6 +10,7 @@ import { themeStyle } from './theme-style.mjs';
 import ConsentAnalytics from './ConsentAnalytics.jsx';
 import { siteStructuredData } from './site-structured-data.mjs';
 import { releaseNumber } from './release-observation.mjs';
+import LegacyHashRedirect from './LegacyHashRedirect.jsx';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,5 +19,5 @@ export default async function RootLayout({ children }) {
   const { release } = await activeRelease();
   const nonce = (await headers()).get('x-nonce') || undefined;
   const structured = JSON.stringify(siteStructuredData(release.site.name)).replace(/</g, '\\u003c');
-  return <html lang="en" style={themeStyle(release.theme.tokens)}><head><meta name="gsam-release" content={String(releaseNumber(release))} /></head><body><script id="gs-ld-org" type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: structured }} />{children}<ConsentAnalytics /></body></html>;
+  return <html lang="en" style={themeStyle(release.theme.tokens)}><head><meta name="gsam-release" content={String(releaseNumber(release))} /></head><body><script id="gs-ld-org" type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: structured }} />{children}<LegacyHashRedirect pagePaths={release.pages.map((page) => page.path)} /><ConsentAnalytics /></body></html>;
 }

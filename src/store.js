@@ -127,7 +127,7 @@ const homeCopy = {
   consultancyCta: 'Discuss your transformation →', proofLink: 'See our work', toolsCta: 'Browse DX Dev Tools →',
   chooserHeading: 'Choose your side', chooserLine: 'Two ways to work with Greatstone.', consultancyChooserLine: 'Transform with AI', toolsChooserLine: 'Proven developer tools', orLabel: 'OR', swipeHint: '← Swipe or tap a side →',
   toolsPoint1: 'Browse by brand', toolsPoint1Text: 'Start with the platform you know.', toolsPoint2: 'Find the fit', toolsPoint2Text: 'Compare product capabilities.', toolsPoint3: 'Buy or renew', toolsPoint3Text: 'Keep the route direct.',
-  chooseHref: '#choose', contactHref: '#contact', proofHref: '#proof', toolsHref: '#dev-tools',
+  chooseHref: '#choose', contactHref: '/contact', proofHref: '/proof', toolsHref: '/dev-tools',
 };
 const storyCopy = {
   storyKicker: 'Who we are', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
@@ -139,9 +139,9 @@ const defaultRange = [
   { title: 'Technology', line: 'Systems, integration and developer tools.' },
   { title: 'Data', line: 'Reporting and data quality.' },
 ];
-const proofCopy = { proofKicker: 'Case studies', proofHeading: 'What changed for our clients', draftBadge: 'DRAFT', draftCaseLine: 'Engagement facts, outcome and permission are pending.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '#proof' };
+const proofCopy = { proofKicker: 'Case studies', proofHeading: 'What changed for our clients', draftBadge: 'DRAFT', draftCaseLine: 'Engagement facts, outcome and permission are pending.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '/proof' };
 const draftCases = [{ headline: 'First study', image: '/assets/two-doors/consultancy-hero.webp' }, { headline: 'Second study', image: '/assets/two-doors/tools-hero.webp' }, { headline: 'Third study', image: '/assets/two-doors/consultancy-hero.webp' }];
-const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '#dev-tools', contactHref: '#contact', consultancyHref: '#go/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
+const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '/dev-tools', contactHref: '/contact', consultancyHref: '/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
 const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
 function twoDoorsHomePage() {
   return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolsCopy, tools: TOOLS })], {
@@ -166,7 +166,7 @@ function linkConsultancyFromHome(page) {
   for (const data of [page.data, page.published]) {
     if (!data?.content) continue;
     for (const block of data.content) {
-      if (block.type === 'TwoDoorsTools' && block.props?.consultancyHref === '#door-dx') block.props.consultancyHref = '#go/dx-consultancy';
+      if (block.type === 'TwoDoorsTools' && block.props?.consultancyHref === '#door-dx') block.props.consultancyHref = '/dx-consultancy';
     }
   }
 }
@@ -819,6 +819,20 @@ function migrate(state) {
       }
     }
     state._aiLeadToolsContactCtaRestored = true;
+  }
+  // Keep saved studio drafts in step with the Two Doors route correction.
+  // Only replace the four broken historical targets; preserve editor choices.
+  if (!state._twoDoorsPageLinksFixed) {
+    const routes = { '#contact': '/contact', '#proof': '/proof', '#dev-tools': '/dev-tools', '#go/dx-consultancy': '/dx-consultancy' };
+    for (const data of [state.pages.home?.data, state.pages.home?.published]) {
+      for (const block of data?.content || []) {
+        if (!['TwoDoors', 'TwoDoorsProof', 'TwoDoorsTools'].includes(block.type)) continue;
+        for (const key of ['contactHref', 'proofHref', 'toolsHref', 'consultancyHref']) {
+          if (routes[block.props?.[key]]) block.props[key] = routes[block.props[key]];
+        }
+      }
+    }
+    state._twoDoorsPageLinksFixed = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
