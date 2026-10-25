@@ -130,7 +130,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
   return (
     <div className="gs-navgroup" ref={ref} onMouseEnter={openNow} onMouseLeave={scheduleClose}>
       <button ref={btnRef} className={'gs-navlink gs-navgroup-btn' + (active ? ' is-active' : '')}
-        aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); } }}>
         {label}<Chevron />
       </button>

@@ -112,7 +112,7 @@ function seedPage(title, background, content, seo, status = 'published') {
 }
 
 function transformationServicesPage() {
-  return seedPage('Transformation Services', 'stone', [blk('TransformationServices', {})], {
+  return seedPage('Transformation Services', 'none', [blk('TransformationServices', {})], {
     title: 'Transformation Services · Greatstone International',
     description: 'Take one step on its own, or plan it as part of the full transformation.', ogImage: '',
   });
