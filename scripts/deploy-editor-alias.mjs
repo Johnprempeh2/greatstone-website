@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import release from '../next-proof/data/release.json' with { type: 'json' };
+import { checkBuiltLinks } from '../next-proof/scripts/check-built-links.mjs';
 
 export const EDITOR_SITE_ID = 'b546812d-8d25-49dc-94c2-e04a5b31bde4';
 export const EDITOR_CONTRACT = '2';
@@ -41,7 +43,10 @@ async function main() {
     if (result.status !== 0) throw new Error(`Netlify alias deploy failed (${result.status})`);
   }
   const result = await verifyEditorAlias();
+  const links = await checkBuiltLinks('https://gsam-editor--greatstone-home.netlify.app', release.pages.map((page) => page.path));
+  if (links.failures.length) throw new Error(`Editor alias link check failed:\n${links.failures.join('\n')}`);
   console.log(`Editor alias verified: siteId=${result.siteId}, contract=${result.contract}`);
+  console.log(`Editor alias links verified: ${links.pages} pages, ${links.checkedLinks} links`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
