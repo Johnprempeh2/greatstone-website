@@ -18,6 +18,21 @@ const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLi
 const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
 const doorSides = ['consultancy', 'choose', 'tools'], touchLayoutQuery = '(max-width:1023px)';
+// GRE-2570: order and names follow the public Greatstone Software slider. Only
+// the six visually matched local files are rendered as marks; missing files stay neutral.
+const publicClientMarks = [
+  { name: 'Allen & Overy', image: '/assets/two-doors/clients/06.png' },
+  { name: 'LCP', image: null },
+  { name: 'London Business School', image: '/assets/two-doors/clients/04.png' },
+  { name: 'University Hospitals Bristol and Weston NHS Foundation Trust', image: '/assets/two-doors/clients/02.png' },
+  { name: 'Bank of Ireland UK', image: null },
+  { name: 'Welsh Government', image: '/assets/two-doors/clients/05.png' },
+  { name: 'Phillips 66', image: null },
+  { name: 'Lloyds Bank', image: '/assets/two-doors/clients/03.png' },
+  { name: 'Civica', image: null },
+  { name: 'D.', image: '/assets/two-doors/clients/01.png' },
+  { name: 'Shawbrook Bank', image: null },
+];
 const doorPanels = (node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
 const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - node.clientWidth, panel.offsetLeft - (node.clientWidth - panel.offsetWidth) / 2));
 
@@ -157,6 +172,12 @@ export function TwoDoorsStory(props) {
   const approvedNumbers = numbers.filter((number) => number?.value && number?.label && number?.verified);
   return <div className="td-segment td-story-segment">
     <TideField view="calm" enabled={tide} />
+    <section className="td-public-clients" aria-labelledby="td-public-clients-heading">
+      <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2 id="td-public-clients-heading">Organisations we have worked with</h2></div>
+      <ul>{publicClientMarks.map(({ name, image }) => <li key={name}>
+        {image ? <img src={image} alt={name} loading="lazy" width="160" height="80" /> : <span className="td-public-client-pending">{name}</span>}
+      </li>)}</ul>
+    </section>
     <section className="td-story" id="about"><div>{editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
     {approvedNumbers.length ? <div className="td-review-strip td-numbers" aria-label={copy.numbersLabel}>{approvedNumbers.map((item, i) => <div key={i}><b>{item.value}</b><span>{item.label}</span></div>)}</div> : REVIEW_CONTENT && <div className="td-review-strip" role="note"><b>{copy.draftNumbersHeading}</b><span>{copy.draftNumbersLine}</span></div>}
     <section className="td-range" aria-label={copy.rangeLabel}>{range.map((item, i) => <div key={i}><b>{item.title}</b><p>{item.line}</p>{item.href && <a href={safeHref(item.href)}>{item.linkLabel || `Explore ${item.title} →`}</a>}</div>)}</section>
