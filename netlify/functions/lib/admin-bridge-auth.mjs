@@ -9,7 +9,7 @@ export const SCHEME = 'gs-bridge-v1';
 export const SCHEME_V2 = 'gs-bridge-v2';
 export const WINDOW_SECONDS = 60;
 // Capability comes from the key only: a read key cannot write, and a write key cannot GET.
-export const CAPABILITY_METHODS = { read: ['GET'], write: ['POST', 'PATCH', 'DELETE'], refund_request: ['POST'] };
+export const CAPABILITY_METHODS = { read: ['GET'], write: ['POST', 'PATCH', 'DELETE', 'PUT'], refund_request: ['POST'] };
 const CAPABILITY_SCHEME = { read: SCHEME, write: SCHEME_V2, refund_request: SCHEME_V2 };
 const CAPABILITIES = new Set(['read', 'write', 'refund_request']);
 
@@ -99,7 +99,11 @@ export function verifyBridgeRequest({ method, url, headers, body = '', keys, all
   const actor = h('x-gs-bridge-actor') || '';
   const run = h('x-gs-bridge-run') || null;
   const signature = h('x-gs-bridge-signature') || '';
-  const scheme = CAPABILITY_SCHEME[entry.capability];
+  // GRE-2439's whole-snapshot PUT uses the original v1 signature, without a write idempotency header.
+  // Existing commerce writes retain v2. The route itself is checked again by admin-bridge.mjs.
+  const deepDivePut = entry.capability === 'write' && method.toUpperCase() === 'PUT' &&
+    /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(url).pathname);
+  const scheme = deepDivePut ? SCHEME : CAPABILITY_SCHEME[entry.capability];
   // the key of one logical write: the same on every retry, so a retry after a timeout cannot write twice
   const idempotencyKey = scheme === SCHEME_V2 ? h('x-gs-bridge-idempotency-key') || '' : null;
   if (!NONCE.test(nonce) || !ACTOR.test(actor) || (run !== null && !RUN.test(run)) || !B64URL.test(signature)

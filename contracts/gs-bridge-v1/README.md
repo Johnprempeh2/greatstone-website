@@ -7,7 +7,7 @@ GRE-2323. This folder is at the same path in `greatstone-website` and `gs-agenti
 
 - Each capability has its own Ed25519 key pair, and staging and live use different keys. GSAM makes the pair and keeps the private key as a company secret.
 - The site holds only the public keys, in `GSAM_BRIDGE_KEYS`. This is a JSON list of `{ "kid", "capability", "publicKey", "notAfter"? }`, where `publicKey` is the raw 32-byte key in base64url. A `kid` is lower case, 3 to 64 characters, for example `stg-read-2026-10`.
-- `capability` is `read`, `write` or `refund_request`, and comes from the key only. `read` may only `GET`; `write` may `POST`, `PATCH` and `DELETE` the write routes; `refund_request` may only `POST` the refund-request routes (GRE-2354).
+- `capability` is `read`, `write` or `refund_request`. `read` is accepted only for `GET`. `write` is accepted only for `PUT /api/admin/v1/deep-dive/tenants/:tenantId` (GRE-2439, below).
 - To rotate a key: list both keys, move GSAM to the new one, then remove the old one. To revoke a key: remove it and redeploy.
 - `GSAM_BRIDGE_ALLOWED_IPS` is optional: a comma-separated list of exact client IPs. It is off when empty.
 
@@ -20,7 +20,6 @@ GRE-2323. This folder is at the same path in `greatstone-website` and `gs-agenti
 | `X-GS-Bridge-Nonce` | 16 random bytes, base64url (22 characters); a nonce works once per kid |
 | `X-GS-Bridge-Actor` | `agent:<id>`, `user:<id>`, or `system:<id>` for GSAM's own scheduled reads; the id is `[A-Za-z0-9_-]{1,64}` |
 | `X-GS-Bridge-Run` | optional GSAM run id (uuid) |
-| `X-GS-Bridge-Idempotency-Key` | write and refund_request keys only: 16 random bytes, base64url (22 characters), made once per logical write and sent again on each retry |
 | `X-GS-Bridge-Signature` | Ed25519 signature of the canonical string, base64url |
 
 ## Canonical string
@@ -39,13 +38,72 @@ gs-bridge-v1
 <sha256 hex of the body bytes; GET signs the hash of "">
 ```
 
-Write and refund_request keys sign `gs-bridge-v2`: the same lines with `gs-bridge-v2` first, and the idempotency key as a tenth line. Reads stay `gs-bridge-v1`. The v2 vectors are `vectorsV2` in `vectors.json`, after the v1 ones, which are unchanged.
-
 To build the canonical query, decode the query as `URLSearchParams` does. Sort the pairs by name, then by value, comparing code units. Encode each name and value with `encodeURIComponent`, and also encode `!'()*`. Join the pairs with `&`. Leave out the `?` when there are no pairs.
 
 ## Answers
 
 - A list returns `{ items, nextCursor }`. The cursor is opaque, and `null` ends the read. A get returns `{ item }`.
 - An error returns `{ error: { code } }` only. The codes are `bad_key`, `expired`, `bad_signature` and `replay` (401), `capability_denied` and `ip_denied` (403), `not_found` (404), `bad_request` (400) and `unavailable` (503).
-- A write also answers `denied` (403: a people-only route called by an actor that is not `user:`, or an agent changing a row that is not a draft), `conflict` (409, with `current`, the row as it is now, when `expectedRowVersion` is stale), `over_refundable` (409) and `idempotency_mismatch` (409: the key was used for another method, path or body). Every PATCH and versioned DELETE takes `expectedRowVersion`.
-- The same idempotency key with the same method, path and body gets the first answer again and writes nothing. Retry only after a network error, a timeout or a 503, at most twice, with the same key and a new nonce; never retry a 4xx.
+
+## Deep Dive sync (GRE-2439)
+
+The public site never queries GSAM. GSAM pushes one client's Deep Dive snapshot, and the site calls back when a
+client answers a document request. Staging only until John's release card says otherwise; test data only.
+
+### Tenant
+
+- The tenant is one GSAM client engagement. `tenantId` is GSAM's client id (a uuid). The site maps its own
+  customer accounts to a `tenantId`; a signed-in customer sees only the snapshot of their tenant.
+- One site key and one write key belong to one site, so to one GSAM company. A tenant of another company is never
+  sent and never accepted.
+
+### Push: GSAM to the site
+
+`PUT /api/admin/v1/deep-dive/tenants/:tenantId`, signed as above with a `write` key (`stg-write-...`). The body is
+JSON; the canonical string signs the sha256 of its exact bytes. The site checks that `body.tenantId` equals the path.
+
+The body is the whole snapshot of that tenant. The site replaces everything it held for the tenant with it: an item
+that is missing from a later push was unshared (or a deliverable withdrawn) and must be removed. A retry sends the
+same snapshot, so a PUT twice is the same as once.
+
+```
+{
+  "schema": "gs-deep-dive-sync-v1",
+  "tenantId": "<uuid>", "tenantName": "...", "generatedAt": "<iso>",
+  "items": [{ "id", "type", "key", "title", "summary", "status", "fields", "parentId", "updatedAt" }],
+  "files": [{ "id", "itemId", "title", "kind", "status": "held" | "missing", "heldAt" }],
+  "documentRequests": [{ "id", "title", "note", "itemIds", "status": "open" | "received", "receivedAt", "createdAt" }],
+  "deliverables": [{ "id", "title", "version", "status": "published" | "accepted", "publishedAt", "acceptedAt" }]
+}
+```
+
+- Only Shared items are sent. A Shared item whose parent is Internal is sent with `parentId: null`.
+- Only files and document requests linked Shared to a Shared item are sent.
+- Only deliverables that are published or accepted are sent; metadata only, no file content in this step.
+- The site answers `{ "ok": true, "tenantId": "<uuid>" }`, or an error as below.
+
+### Call back: the site to GSAM
+
+`POST <gsam>/api/website-bridge/v1/tenants/:tenantId/document-requests/:requestId/answer`
+
+- Signed with the site's own Ed25519 key, the same headers and canonical string as above. The site keeps the
+  private key; a person with Publish rights registers the public key and its id in GSAM with
+  `PUT /api/companies/:companyId/website/sites/:siteId/data-bridge/site-key` `{ "keyId", "publicKey" }`. GSAM's
+  write key is made with `POST .../data-bridge/key` `{ "environment": "stg", "capability": "write" }`; its public
+  key goes in the site's `GSAM_BRIDGE_KEYS` with `capability: "write"`. The host in the canonical
+  string is the Host header GSAM receives (or GSAM's public address).
+- `X-GS-Bridge-Actor` is `client:<customerId>`: the website customer who answered. It must equal
+  `answeredBy.customerId` in the body.
+- Body:
+
+```
+{ "answerId": "<site's id, [A-Za-z0-9_-]{1,80}>",
+  "answeredBy": { "customerId": "<[A-Za-z0-9_-]{1,64}>", "name": "..." | null, "email": "..." | null },
+  "note": "..." | null, "fileName": "..." | null }
+```
+
+- GSAM marks the request received with its own time and the answering client, and shows it on the Deep Dive
+  "Evidence and files" screen. The same `answerId` again changes nothing. The file stays on the site in this step.
+- Answer: `{ "ok": true, "requestId", "receivedAt" }`. Errors are `{ "error": { "code" } }` only: `bad_key`,
+  `expired` (outside 60 s), `bad_signature`, `replay` (401); `bad_request` (400); `not_found` (404: the tenant is
+  not a client of the site's company, or the request was never sent to that tenant).
