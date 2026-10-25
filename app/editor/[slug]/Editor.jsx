@@ -291,7 +291,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
         const result = mode === 'editor' && draft.current && copyRef.current
           ? { ok: false, code: 'error', message: 'Edit copy changes words only. Switch to Layout to change motion.' }
           : mode === 'editor' && draft.current
-          ? setMotion(draft.current, p)
+          ? setMotion(draft.current, p, page.slug)
           : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
           draft.current = result.data;

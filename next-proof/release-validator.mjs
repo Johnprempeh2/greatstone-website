@@ -4,6 +4,7 @@ import { formBindingProblem } from './form-bindings.mjs';
 import schema from './website-release.v1.schema.json' with { type: 'json' };
 import collectionSchema from './release-schema/collections.v1.schema.json' with { type: 'json' };
 import motionSchema from './release-schema/blocks-motion.v1.schema.json' with { type: 'json' };
+import motionManifest from './release-schema/manifest.v1.json' with { type: 'json' };
 import { validPageScene } from './page-scene.mjs';
 
 export const supportedReleaseSchemas = [1];
@@ -20,7 +21,7 @@ const ajv = new Ajv({ strict: false, allErrors: false });
 addFormats(ajv);
 ajv.addSchema(collectionSchema);
 ajv.addSchema(motionSchema);
-const motionValidators = Object.fromEntries(['DevTools', 'AiBaselineSurvey', 'Hero', 'MotionBand'].map((type) => [type, ajv.getSchema(`${motionSchema.$id}#/$defs/${type}`)]));
+const motionValidators = Object.fromEntries(Object.entries(motionManifest.blockMotionFields).map(([type, ref]) => [type, ajv.getSchema(`${motionSchema.$id}${ref}`)]));
 const validShape = ajv.compile(schema);
 const collectionKeys = ['vendors', 'categories', 'offerings', 'public-people', 'forms'];
 const fieldValidators = Object.fromEntries([...collectionKeys, 'redirects'].map((key) => [

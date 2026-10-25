@@ -34,6 +34,7 @@ import * as AiCostCalculator from '../src/blocks/AiCostCalculator.jsx';
 import * as MotionBand from '../src/blocks/MotionBand.jsx';
 import { ContainedMotion, css as containedMotionCss } from '../src/blocks/ContainedMotion.jsx';
 import { sectionClass } from '../src/lib/block-style.mjs';
+import { SECTION_FIELD, SECTION_DEFAULT } from '../src/cms/style-field.jsx';
 import { bindFormBlock } from '../next-proof/form-bindings.mjs';
 import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from '../next-proof/motion-contract.mjs';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
@@ -63,13 +64,13 @@ function BlockAnchor({ props, puck, type }) {
     const unregister = motionCoordinator.register(node.current, motion.intensity, setMode);
     return () => { unregister(); if (--motionUsers === 0) { motionCoordinator.destroy(); motionCoordinator = undefined; } };
   }, [motion?.effect, motion?.intensity]);
-  return <div ref={node} id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} data-motion-effect={motion?.effect || undefined} data-motion-mode={motion ? mode : undefined} data-motion-block={type} data-divider={props.divider === 'glow' ? 'glow' : undefined} data-gs-block-id={props.id} data-gs-block-type={type}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{motion?.effect?.startsWith('bg.') ? <ContainedMotion effect={motion.effect} intensity={motion.intensity} mode={mode} /> : null}{puck.render(motion ? { ...props, motionRuntime: mode } : props)}{puck.isEditing && <Suspense fallback={null}><InsertAfter id={props.id} /></Suspense>}</div>;
+  return <div ref={node} id={'gs-blk-' + props.id} className={('gs-blk ' + sectionClass(props._section) + (preview ? ' gs-preview-block' : '')).trim()} data-motion-effect={motion?.effect || undefined} data-motion-intensity={motion?.intensity || undefined} data-motion-mode={motion ? mode : undefined} data-motion-block={type} data-divider={props.divider === 'glow' ? 'glow' : undefined} data-gs-block-id={props.id} data-gs-block-type={type}>{preview && <button type="button" className="gs-preview-pick" aria-label={`Select ${type} block`}>Select block</button>}{motion?.effect?.startsWith('bg.') ? <ContainedMotion effect={motion.effect} intensity={motion.intensity} mode={mode} speed={motion.speed} colour={motion.colour} /> : null}{puck.render(motion ? { ...props, motionRuntime: mode } : props)}{puck.isEditing && <Suspense fallback={null}><InsertAfter id={props.id} /></Suspense>}</div>;
 }
 const withAnchor = (puck, type) => ({
   ...puck,
-  fields: { ...Object.fromEntries(Object.entries(puck.fields).filter(([key]) => !(type === 'Hero' && key === 'stone'))), ...motionField(type), ...(['Hero', 'DevTools', 'AiBaselineSurvey'].includes(type) ? { divider: { type: 'radio', label: 'Divider', options: [{ label: 'None', value: 'none' }, { label: 'Glow', value: 'glow' }] } } : {}) },
+  fields: { ...Object.fromEntries(Object.entries(puck.fields).filter(([key]) => !(type === 'Hero' && key === 'stone'))), ...(!type.startsWith('TwoDoors') ? { _section: SECTION_FIELD } : {}), ...motionField(type), ...(['Hero', 'DevTools', 'AiBaselineSurvey'].includes(type) ? { divider: { type: 'radio', label: 'Divider', options: [{ label: 'None', value: 'none' }, { label: 'Glow', value: 'glow' }] } } : {}) },
   resolveFields: MOTION_BY_BLOCK[type] ? (data, { fields }) => resolveMotionFields(type, data, fields) : puck.resolveFields,
-  defaultProps: { ...puck.defaultProps, ...(MOTION_BY_BLOCK[type] ? { motion: MOTION_BY_BLOCK[type].default } : {}), ...(['Hero', 'DevTools', 'AiBaselineSurvey'].includes(type) ? { divider: 'none' } : {}) },
+  defaultProps: { ...puck.defaultProps, ...(!type.startsWith('TwoDoors') ? { _section: SECTION_DEFAULT } : {}), ...(MOTION_BY_BLOCK[type] ? { motion: MOTION_BY_BLOCK[type].default } : {}), ...(['Hero', 'DevTools', 'AiBaselineSurvey'].includes(type) ? { divider: 'none' } : {}) },
   render: (props) => <BlockAnchor props={props} puck={puck} type={type} />,
 });
 

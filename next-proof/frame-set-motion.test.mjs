@@ -8,6 +8,7 @@ import { validMessage } from './frame-protocol.mjs';
 const draft = { content: [
   { type: 'Hero', props: { id: 'hero-1', title: 'Keep this' } },
   { type: 'Prose', props: { id: 'prose-1', text: 'Legacy' } },
+  { type: 'TwoDoors', props: { id: 'doors-1' } },
 ] };
 
 test('hello-ack advertises motion only for blocks with a motion field, with rendered effect stills and study ids', () => {
@@ -16,14 +17,18 @@ test('hello-ack advertises motion only for blocks with a motion field, with rend
     MotionBand: { fields: { motion: { type: 'object' } } },
     Prose: { fields: {} },
   };
-  const { blocks, motionEffects } = motionHello(components);
+  const { blocks, motionEffects, backgroundSurfaces } = motionHello(components);
   assert.deepEqual(blocks[0].motion, { effects: MOTION_BY_BLOCK.Hero.effects, default: { effect: 'none', intensity: 'off' } });
   assert.deepEqual(blocks[1].motion, { effects: MOTION_BY_BLOCK.MotionBand.effects, default: { effect: 'band.tide', intensity: 'subtle' } });
   assert.equal(Object.hasOwn(blocks[2], 'motion'), false);
   assert.deepEqual(motionEffects, MOTION_EFFECTS);
+  assert.deepEqual(backgroundSurfaces.map((item) => item.id), ['none', 'panel', 'emerald', 'deep']);
   for (const effect of motionEffects) {
     assert.equal(existsSync(`public${effect.still}`), true, effect.id);
-    if (effect.id.startsWith('bg.')) assert.match(effect.study, /^0(1[5-9]|20)$/);
+    if (['bg.bedrock', 'bg.ascent', 'bg.datum', 'bg.meridian', 'bg.veil', 'bg.orbit'].includes(effect.id)) assert.match(effect.study, /^0(1[5-9]|20)$/);
+    assert.equal(effect.textSafety.minimumBodyContrast, '7:1');
+    assert.equal(effect.textSafety.limeBehindCopy, false);
+    assert.deepEqual(effect.settings.speed, ['still', 'slow', 'normal']);
   }
 });
 
@@ -38,10 +43,19 @@ test('set-motion changes only the chosen block in an unsaved draft', () => {
   assert.equal(off.data.content[0].props.motion.intensity, 'off');
 });
 
+test('a normal page can set a background on a text block, while home stays frozen', () => {
+  const choice = { effect: 'bg.ascent', intensity: 'subtle' };
+  assert.equal(setMotion(draft, { blockId: 'prose-1', motion: choice }, 'method').ok, true);
+  assert.equal(setMotion(draft, { blockId: 'hero-1', motion: choice }, 'home').code, 'frozen_page');
+  const surface = setMotion(draft, { blockId: 'prose-1', motion: { effect: 'none', intensity: 'off' }, surface: 'emerald' }, 'method');
+  assert.equal(surface.data.content[1].props._section.surface, 'emerald');
+  assert.equal(setMotion(draft, { blockId: 'prose-1', motion: choice, surface: 'panel' }, 'method').code, 'invalid_payload');
+});
+
 test('set-motion returns every refusal code without touching legacy blocks', () => {
   const choice = { effect: 'bg.ascent', intensity: 'subtle' };
   assert.equal(setMotion(draft, { blockId: 'missing', motion: choice }).code, 'block_not_found');
-  assert.equal(setMotion(draft, { blockId: 'prose-1', motion: choice }).code, 'block_has_no_motion');
+  assert.equal(setMotion(draft, { blockId: 'doors-1', motion: choice }).code, 'block_has_no_motion');
   assert.equal(setMotion(draft, { blockId: 'hero-1', motion: { effect: 'band.tide', intensity: 'subtle' } }).code, 'effect_not_allowed');
   for (const invalid of [null, {}, { effect: 'bg.ascent', intensity: 'extreme' }, { effect: 1, intensity: 'full' }]) {
     assert.equal(setMotion(draft, { blockId: 'hero-1', motion: invalid }).code, 'invalid_payload');

@@ -3,7 +3,7 @@
   "releaseSchema": "../website-release.v1.schema.json",
   "fieldSchema": "./collections.v1.schema.json",
   "blockMotionSchema": "./blocks-motion.v1.schema.json",
-  "blockMotionFields": { "DevTools": "#/$defs/DevTools", "AiBaselineSurvey": "#/$defs/AiBaselineSurvey", "Hero": "#/$defs/Hero", "MotionBand": "#/$defs/MotionBand" },
+  "blockMotionFields": { "DevTools": "#/$defs/DevTools", "AiBaselineSurvey": "#/$defs/AiBaselineSurvey", "Hero": "#/$defs/Hero", "MotionBand": "#/$defs/MotionBand", "Prose": "#/$defs/BackgroundBlock", "Panels": "#/$defs/BackgroundBlock", "ServiceCatalog": "#/$defs/BackgroundBlock", "Invite": "#/$defs/BackgroundBlock", "Steps": "#/$defs/BackgroundBlock", "FeatureGrid": "#/$defs/BackgroundBlock", "Faq": "#/$defs/BackgroundBlock", "PillarCards": "#/$defs/BackgroundBlock", "MaturityModel": "#/$defs/BackgroundBlock", "Chapter": "#/$defs/BackgroundBlock", "Team": "#/$defs/BackgroundBlock", "LogoWall": "#/$defs/BackgroundBlock", "IntelBand": "#/$defs/BackgroundBlock", "MaturityMap": "#/$defs/BackgroundBlock", "Ladder": "#/$defs/BackgroundBlock", "MethodTieIn": "#/$defs/BackgroundBlock", "IndustryPicker": "#/$defs/BackgroundBlock", "BookDeepDive": "#/$defs/BackgroundBlock", "AiCostCalculator": "#/$defs/BackgroundBlock" },
   "collections": {
     "vendor": { "releaseKey": "vendors", "fieldsVersion": 1, "ref": "#/$defs/vendors", "source": "publicCatalogue.vendors" },
     "category": { "releaseKey": "categories", "fieldsVersion": 1, "ref": "#/$defs/categories", "source": "publicCatalogue.categories" },
