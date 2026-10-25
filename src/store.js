@@ -15,6 +15,7 @@ export { addSection, removeSection, renameSection, listSections, buildInsertBloc
 export { listStarters, getStarter } from './lib/templates-model.mjs'; // page-starter recipes (cycle 17)
 import { getStarter as starterById, buildStarterContent } from './lib/templates-model.mjs';
 import { moveProofToCaseStudies } from './lib/case-studies-route.mjs';
+import { transformationServices } from './data/transformation-services.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped
@@ -89,9 +90,8 @@ export function DEFAULT_NAVIGATION() {
     navItem({ type: 'page', pageSlug: 'dx-consultancy', label: 'DX Consultancy' }),
     navItem({ type: 'page', pageSlug: 'dev-tools', label: 'DX Dev Tools' }),
     navItem({ type: 'group', label: 'Transformation Services', children: [
-      navItem({ type: 'page', pageSlug: 'services', label: 'GS Agentic Manager' }),
-      navItem({ type: 'page', pageSlug: 'method', label: 'How We Work' }),
-      navItem({ type: 'page', pageSlug: 'how-we-help', label: 'How We Help' }),
+      navItem({ type: 'page', pageSlug: 'method', label: 'The full transformation', subtext: 'Every step, planned together' }),
+      ...transformationServices.map(({ id, title, nav }) => navItem({ type: 'link', href: '#go/transformation-services/' + id, label: title, subtext: nav })),
     ] }),
     navItem({ type: 'page', pageSlug: 'case-studies', label: 'Case Studies' }),
     navItem({ type: 'page', pageSlug: 'about', label: 'About' }),
@@ -109,6 +109,13 @@ const blk = (type, props) => {
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
   return { title, background, publishedBackground: background, status, seo: seo || { title: title + ' · Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
+}
+
+function transformationServicesPage() {
+  return seedPage('Transformation Services', 'stone', [blk('TransformationServices', {})], {
+    title: 'Transformation Services · Greatstone International',
+    description: 'Take one step on its own, or plan it as part of the full transformation.', ogImage: '',
+  });
 }
 
 const TOOLS = [
@@ -736,10 +743,11 @@ export function seedState() {
   pages.home = twoDoorsHomePage();
   pages['dev-tools'] = devToolsPage();
   pages['dx-consultancy'] = dxConsultancyPage();
+  pages['transformation-services'] = transformationServicesPage();
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
   // footer order: the R1 launch pages first (as in the nav), then the secondary pages, then legal
-  const order = ['home', 'dx-consultancy', 'dev-tools', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  const order = ['home', 'dx-consultancy', 'dev-tools', 'transformation-services', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
@@ -1264,6 +1272,16 @@ function migrate(state) {
         });
       }
     });
+  }
+  // Add the approved section to saved studios without replacing unrelated drafts or custom menus.
+  if (!state.pages['transformation-services']) state.pages['transformation-services'] = transformationServicesPage();
+  if (!state.order.includes('transformation-services')) {
+    const after = state.order.indexOf('dev-tools');
+    state.order.splice(after < 0 ? 0 : after + 1, 0, 'transformation-services');
+  }
+  const group = state.navigation?.find((item) => item.type === 'group' && item.label === 'Transformation Services');
+  if (group && (group.children || []).map((child) => child.pageSlug).join('|') === 'services|method|how-we-help') {
+    group.children = DEFAULT_NAVIGATION().find((item) => item.type === 'group' && item.label === 'Transformation Services').children;
   }
   return moveProofToCaseStudies(state);
 }

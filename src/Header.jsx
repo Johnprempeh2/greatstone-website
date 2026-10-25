@@ -35,14 +35,14 @@ function resolveNavItem(item, pages, canEdit) {
   }
   if (item.type === 'link') {
     if (!item.href) return null;
-    return { kind: 'url', href: item.href, label: item.label || item.href, newTab: !!item.newTab };
+    return { kind: 'url', href: item.href, label: item.label || item.href, subtext: item.subtext, newTab: !!item.newTab };
   }
   // default: a page link
   const slug = item.pageSlug;
   const p = slug && pages[slug];
   if (!p) return null;
   if (!canEdit && !(p.status === 'published' || p.published)) return null;
-  return { kind: 'page', slug, label: item.label || p.title || slug };
+  return { kind: 'page', slug, label: item.label || p.title || slug, subtext: item.subtext };
 }
 
 // Build the header nav render model from the CMS navigation tree. Falls back to a flat list of pages
@@ -62,9 +62,9 @@ function buildNavModel(navigation, order, pages, canEdit, q) {
 
 // render a single page/url leaf as an inline nav link (page = SPA navigate; url = anchor, internal
 // '#…' hrefs are caught by App's global click handler, external opens per newTab)
-function NavLeaf({ item, current, shopActive, onNavigate, className }) {
+function NavLeaf({ item, current, shopActive, onNavigate, onActivate, className }) {
   if (item.kind === 'url') {
-    return <a className={className} href={safeHref(item.href)} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined}>{item.label}</a>;
+    return <a className={className} href={safeHref(item.href)} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined} onClick={onActivate}><span>{item.label}{item.subtext && <small>{item.subtext}</small>}</span></a>;
   }
   const active = item.slug === current && !shopActive;
   // A real link, not a button: a page has an address now, so let people cmd-click it into a new tab, copy
@@ -76,7 +76,7 @@ function NavLeaf({ item, current, shopActive, onNavigate, className }) {
       className={className + (active ? ' is-active' : '')}
       href={'#' + item.slug}
       onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); onNavigate(item.slug); }}
-    >{item.label}</a>
+    ><span>{item.label}{item.subtext && <small>{item.subtext}</small>}</span></a>
   );
 }
 
@@ -89,7 +89,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
   const ref = useRef(null);
   const btnRef = useRef(null);
   const popRef = useRef(null);
-  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => m.kind === 'page' && m.slug === current);
+  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => (m.kind === 'page' && m.slug === current) || (m.kind === 'url' && m.href?.startsWith('#go/' + current + '/')));
 
   // Hover intent: open immediately, but close on a short grace delay that is cancelled the moment the
   // cursor re-enters the group (button OR menu). This is what stops the menu vanishing while the cursor
@@ -140,7 +140,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
             <button key="shop" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} aria-current={shopActive ? 'page' : undefined}
               onClick={() => { m.onSelect(); setOpen(false); }}>{m.label}</button>
           ) : (
-            <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} className="gs-navmenu-item"
+            <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} className="gs-navmenu-item" onActivate={() => setOpen(false)}
               onNavigate={(slug) => { onNavigate(slug); setOpen(false); }} />
           ))}
         </div>
@@ -268,9 +268,9 @@ export default function Header({ order, pages, navigation, current, query, onSea
 
   // render a leaf inside the collapsed menu (page = menuitem button; url = menuitem anchor)
   const menuLeaf = (m, sub) => m.kind === 'url' ? (
-    <a key={m.href} role="menuitem" className={'gs-navmenu-item' + (sub ? ' is-sub' : '')} href={safeHref(m.href)} target={m.newTab ? '_blank' : undefined} rel={m.newTab ? 'noopener noreferrer' : undefined} onClick={() => setMenuOpen(false)}>{m.label}</a>
+    <a key={m.href} role="menuitem" className={'gs-navmenu-item' + (sub ? ' is-sub' : '')} href={safeHref(m.href)} target={m.newTab ? '_blank' : undefined} rel={m.newTab ? 'noopener noreferrer' : undefined} onClick={() => setMenuOpen(false)}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
   ) : (
-    <a key={m.slug} role="menuitem" href={'#' + m.slug} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}>{m.label}</a>
+    <a key={m.slug} role="menuitem" href={'#' + m.slug} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
   );
 
   return (
