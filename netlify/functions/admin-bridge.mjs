@@ -13,10 +13,12 @@ import { BridgeAuthError, SCHEME, parseAllowedIps, parseBridgeKeys, verifyBridge
 import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeFx, bridgeGet, bridgeImport, bridgeList, bridgePayments,
   listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
 import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
+import { validateSnapshot } from './lib/deep-dive-client.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const PREFIX = '/api/admin/v1/';
 const MAX_BODY_BYTES = 64 * 1024;
+const MAX_SNAPSHOT_BYTES = 2 * 1024 * 1024;
 const STATUS = {
   bad_key: 401, expired: 401, bad_signature: 401, replay: 401,
   capability_denied: 403, ip_denied: 403, not_found: 404, bad_request: 400, unavailable: 503, ...WRITE_STATUS,
@@ -52,9 +54,11 @@ export function makeAdminBridgeHandler({
   stripe = () => stripeMode(),
 } = {}) {
   return async (req) => {
-    if (Number(req.headers.get('content-length')) > MAX_BODY_BYTES) return fail('bad_request');
+    const isSnapshot = req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname);
+    const maxBytes = isSnapshot ? MAX_SNAPSHOT_BYTES : MAX_BODY_BYTES;
+    if (Number(req.headers.get('content-length')) > maxBytes) return fail('bad_request');
     const body = req.method === 'GET' || req.method === 'HEAD' ? '' : await req.text();
-    if (Buffer.byteLength(body) > MAX_BODY_BYTES) return fail('bad_request');
+    if (Buffer.byteLength(body) > maxBytes) return fail('bad_request');
     let call;
     try {
       call = verifyBridgeRequest({ method: req.method, url: req.url, headers: req.headers, body, keys, allowedIps,
@@ -69,7 +73,18 @@ export function makeAdminBridgeHandler({
     const p = parts(url.pathname);
     if (!p) return fail('not_found');
     const isRead = req.method === 'GET';
-    const target = isRead ? readRoute(p) : writeRoute(req.method, p);
+    const target = isSnapshot && p.length === 3 && p[0] === 'deep-dive' && p[1] === 'tenants'
+      ? { capability: 'write', resource: 'deep-dive', run: async (client, ctx, snapshot) => {
+        let checked;
+        try { checked = validateSnapshot(p[2], snapshot); } catch { throw new BridgeRequestError('bad_request', 'invalid snapshot'); }
+        const result = await client.query(`INSERT INTO deep_dive_snapshots (tenant_id, org_id, snapshot)
+          VALUES ($1::uuid, $2::uuid, $3::jsonb)
+          ON CONFLICT (tenant_id) DO UPDATE SET snapshot=EXCLUDED.snapshot,synced_at=now()
+          WHERE deep_dive_snapshots.org_id=EXCLUDED.org_id`, [p[2], ctx.org, JSON.stringify(checked)]);
+        if (result.rowCount !== 1) throw new BridgeRequestError('not_found', 'tenant belongs to another organisation');
+        return { status: 200, body: { ok: true, tenantId: p[2] }, rowCount: 1, resourceId: p[2] };
+      } }
+      : isRead ? readRoute(p) : writeRoute(req.method, p);
     if (!target) return fail('not_found');
     // the key's capability must be the route's: a write key cannot ask for a refund, nor a refund key write
     if (!isRead && target.capability !== call.capability) {
@@ -84,7 +99,8 @@ export function makeAdminBridgeHandler({
     try {
       if (!isRead) {
         if ([...url.searchParams.keys()].length) return fail('bad_request');
-        const out = await asBridgeWriter(db, { ...audit, current: target.current }, runRoute(target, body));
+        const out = await asBridgeWriter(db, { ...audit, idempotencyKey: isSnapshot ? call.nonce : call.idempotencyKey,
+          current: target.current }, runRoute(target, body));
         return Response.json(out.body, { status: out.status, headers: HEADERS });
       }
       const out = await asBridgeReader(db, audit, async (client) => {
