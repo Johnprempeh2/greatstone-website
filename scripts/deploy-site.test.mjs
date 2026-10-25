@@ -162,6 +162,29 @@ test('staging card never covers drift into migrations, functions, auth or build 
   }
 });
 
+async function assertProtectedDriftRefused(t, path) {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
+  await f.commit(path, 'protected');
+  const result = await f.run('prod');
+  assert.equal(result.status, 1, path);
+  assert.match(result.stderr, /production refused/, path);
+}
+
+test('staging card never covers drift into CI config', async (t) => {
+  await assertProtectedDriftRefused(t, '.github/workflows/ci.yml');
+});
+
+test('staging card never covers drift into a TypeScript Next config', async (t) => {
+  await assertProtectedDriftRefused(t, 'next.config.ts');
+});
+
+test('staging card never covers drift into a nested Netlify config', async (t) => {
+  await assertProtectedDriftRefused(t, 'next-proof/netlify.editor.toml');
+});
+
 test('front-end drift never lets a staging card reach the public site', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');

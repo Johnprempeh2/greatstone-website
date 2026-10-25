@@ -40,8 +40,8 @@ function onlyNonSiteFiles(files) {
 // migrations, functions, server routes, auth, secrets, dependencies, build config or
 // these scripts. Anything that matches here needs a card for the exact commit.
 function protectedFile(file) {
-  return /^(?:netlify|supabase|scripts)\//.test(file) ||
-    /^(?:netlify\.toml|middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?js|vite\.config\.[cm]?js|public\/_headers)$/.test(file) ||
+  return /^(?:netlify|supabase|scripts|\.github)\//.test(file) || /(?:^|\/)netlify[^/]*\.toml$/.test(file) ||
+    /^(?:middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?[jt]s|vite\.config\.[cm]?js|public\/_headers)$/.test(file) ||
     /(?:^|\/)\.env/.test(file) || /\.sql$/.test(file) ||
     /^app\/(?:.+\/)?route\.[cm]?[jt]sx?$/.test(file) || /^app\/api\//.test(file) ||
     /auth|password|passwd|credential|secret|login|sign-?in/i.test(file);
