@@ -198,7 +198,9 @@ test('a request is refused for each way it can be wrong', { skip }, async () => 
   const moved = (url) => new Request(new URL(url, ORIGIN), { headers: good.headers });
   assert.equal(await code(moved('/api/admin/v1/customers?limit=2')), '401 bad_signature');
   assert.equal(await code(moved('/api/admin/v1/orders?limit=3')), '401 bad_signature');
-  assert.equal(await code(signed('/api/admin/v1/health', { method: 'POST', kid: 'test-write-1', body: '{}', tamper: {} })), '403 capability_denied');
+  // a write key signs v2: a v1 signature with no idempotency key does not verify
+  assert.equal(await code(signed('/api/admin/v1/health', { method: 'POST', kid: 'test-write-1', body: '{}', tamper: {} })), '401 bad_signature');
+  assert.equal(await code(signed('/api/admin/v1/health', { kid: 'test-write-1' })), '403 capability_denied');
   assert.equal(await code(signed('/api/admin/v1/health', { method: 'POST', body: '{}' })), '403 capability_denied');
   assert.equal(await code(signed('/api/admin/v1/health', { method: 'DELETE' })), '403 capability_denied');
   // replay: the same signed request twice
