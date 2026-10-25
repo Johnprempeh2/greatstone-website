@@ -789,6 +789,47 @@ function deEmDash(v) {
   return v;
 }
 
+function placeHomeStoryBlock(blocks, type, replacement) {
+  const doorIndex = blocks.findIndex((block) => block.type === 'TwoDoors');
+  if (doorIndex === -1) return;
+  const currentIndex = blocks.findIndex((block) => block.type === type);
+  const bottomIndex = blocks.findIndex((block) => block.type === 'TwoDoorsBottom');
+  if (currentIndex !== -1 && (bottomIndex === -1 || currentIndex < bottomIndex)) return;
+  const block = currentIndex === -1 ? replacement : blocks.splice(currentIndex, 1)[0];
+  const anchor = type === 'TwoDoorsProof' ? 'TwoDoorsStory' : 'TwoDoors';
+  const anchorIndex = blocks.findIndex((item) => item.type === anchor);
+  blocks.splice((anchorIndex === -1 ? doorIndex : anchorIndex) + 1, 0, block);
+}
+
+const LEGACY_HOME_COPY = {
+  TwoDoorsStory: {
+    storyKicker: 'Who we are', rangeLabel: 'The work we do', storyHeading: 'Making change work.',
+    storyBody: 'Greatstone is a transformation and technology firm.',
+    storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.',
+    range: [
+      { title: 'Transformation', line: 'Operating models and change programmes.' },
+      { title: 'Delivery', line: 'Programme and project leadership.' },
+      { title: 'Technology', line: 'Systems, integration and developer tools.' },
+      { title: 'Data', line: 'Reporting and data quality.' },
+    ],
+  },
+  TwoDoorsProof: {
+    proofHeading: 'What changed for our clients', draftBadge: 'DRAFT',
+    draftCaseLine: 'Engagement facts, outcome and permission are pending.',
+    draftItems: [
+      { headline: 'First study', image: '/assets/two-doors/consultancy-hero.webp' },
+      { headline: 'Second study', image: '/assets/two-doors/tools-hero.webp' },
+      { headline: 'Third study', image: '/assets/two-doors/consultancy-hero.webp' },
+    ],
+  },
+};
+
+function updateLegacyHomeCopy(existing, replacement) {
+  for (const [key, oldValue] of Object.entries(LEGACY_HOME_COPY[existing.type])) {
+    if (JSON.stringify(existing.props?.[key]) === JSON.stringify(oldValue)) existing.props[key] = replacement.props[key];
+  }
+}
+
 function migrate(state) {
   if (!state || !state.pages) return seedState();
   // Apply the accepted front door once to saved studio data, without a seed-version reset
@@ -843,16 +884,24 @@ function migrate(state) {
       for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
         const existing = blocks.find((block) => block.type === type);
         const replacement = fresh[projection].content.find((block) => block.type === type);
-        if (!existing) { blocks.push(replacement); continue; }
-        if (type === 'TwoDoorsStory' && existing.props?.storyHeading === 'Making change work.') {
-          Object.assign(existing.props, replacement.props);
-        }
-        if (type === 'TwoDoorsProof' && existing.props?.proofHeading === 'What changed for our clients') {
-          Object.assign(existing.props, replacement.props);
-        }
+        if (!existing) { placeHomeStoryBlock(blocks, type, replacement); continue; }
+        updateLegacyHomeCopy(existing, replacement);
       }
     }
     state._homeRoutesAndPlaceholders = true;
+  }
+  // Earlier saved-page migrations appended missing story blocks after the final choice.
+  // Move only that misplaced tail, retaining the exact editor-written block objects.
+  if (!state._homeRoutesOrderFixed) {
+    const fresh = twoDoorsHomePage();
+    for (const projection of ['data', 'published']) {
+      const blocks = state.pages.home?.[projection]?.content;
+      if (!blocks) continue;
+      for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
+        placeHomeStoryBlock(blocks, type, fresh[projection].content.find((block) => block.type === type));
+      }
+    }
+    state._homeRoutesOrderFixed = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
