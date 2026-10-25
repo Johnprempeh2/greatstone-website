@@ -55,8 +55,10 @@ export function mountCairn(container, opts = {}) {
     scaleBase = maxR / SQN;          // c such that the outermost seed sits at maxR
   }
   // observe the container's own box (catches layout changes a window 'resize' would miss); fall back to window resize
-  const ro = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(() => resize()) : null;
-  if (ro) ro.observe(container); else addEventListener('resize', resize, { passive: true });
+  let repaint = () => {};
+  const onResize = () => { resize(); repaint(); };
+  const ro = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(onResize) : null;
+  if (ro) ro.observe(container); else addEventListener('resize', onResize, { passive: true });
 
   // pointer — the cursor gathers nearby seeds toward it (fine pointers only), measured RELATIVE to the
   // container so the influence lands correctly even when the canvas isn't the full viewport.
@@ -140,6 +142,7 @@ export function mountCairn(container, opts = {}) {
   for (let k = 0; k < warm; k++) { T += 0.016; step(T); }
   if (reduce) { climb.cur = climb.tgt = 0.75; }   // reduced motion settles at a grown cairn
   paint(T);
+  repaint = () => paint(T); // resizing clears the canvas; keep the settled frame visible
 
   let raf = 0;   // active (declared above) is toggled by setActive; Stage pauses faded-out layers (opacity ~0)
   if (!reduce) {
@@ -159,10 +162,10 @@ export function mountCairn(container, opts = {}) {
     setClimb(v) { climb.tgt = Math.min(1, Math.max(0, v)); },
     setActive(v) { active = v !== false; },   // Stage pauses this layer when faded out
     renderFrame(dt) { T += (typeof dt === 'number' ? dt : 0.016); step(T); paint(T); },  // manual tick (preview/debug)
-    resize,
+    resize: onResize,
     destroy() {
       if (raf) cancelAnimationFrame(raf);
-      if (ro) ro.disconnect(); else removeEventListener('resize', resize);
+      if (ro) ro.disconnect(); else removeEventListener('resize', onResize);
       if (onPointer) removeEventListener('pointermove', onPointer);
       if (onLeave) removeEventListener('pointerleave', onLeave);
       if (cv.parentNode) cv.parentNode.removeChild(cv);
