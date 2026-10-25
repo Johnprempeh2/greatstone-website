@@ -130,7 +130,7 @@ const homeCopy = {
   chooseHref: '#choose', contactHref: '/contact', proofHref: '/proof', toolsHref: '/dev-tools',
 };
 const storyCopy = {
-  storyKicker: 'Two routes, one company', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
+  storyKicker: 'Copy placeholder · two routes, one company', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
   rangeLabel: 'Explore the two routes',
 };
 const defaultRange = [
