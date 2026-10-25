@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import './portal.css';
 import './deep-dive-client.css';
 
 async function call(op, args = {}) {
-  if (!supabase) throw new Error('Deep Dive unavailable. Please try again later.');
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Your session has ended. Sign in again.');
   const response = await fetch('/api/deep-dive-client', { method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + session.access_token },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ op, ...args }) });
   const body = await response.json();
   if (!response.ok && response.status !== 202) throw new Error(body.error || 'The request could not be saved.');
