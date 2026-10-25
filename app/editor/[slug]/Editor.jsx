@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Puck, createUsePuck } from '@puckeditor/core';
-import { proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
+import { proofBlockCss, proofConfig, ProofBlocks, PreviewContext } from '../../ProofBlocks.jsx';
 import { FrameEditingContext } from '../frame-context.jsx';
 import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, FRAME_PROTOCOL } from '../../../next-proof/frame-protocol.mjs';
 import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
@@ -128,6 +128,15 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   const session = useRef(null), draft = useRef(null), baseRevision = useRef(null), pending = useRef(null), timer = useRef(null);
   const mediaUrls = useRef({});
   const commands = useRef(null);
+
+  useEffect(() => {
+    if (mode !== 'editor') return undefined;
+    const style = document.createElement('style');
+    style.dataset.gsProofBlocks = '';
+    style.textContent = proofBlockCss;
+    document.head.append(style);
+    return () => style.remove();
+  }, [mode]);
 
   function addMedia(media) {
     for (const [id, entry] of Object.entries(media || {})) {
