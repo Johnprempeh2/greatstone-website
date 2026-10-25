@@ -437,6 +437,21 @@ function commerceRoute(method, parts) {
   return null;
 }
 
+// A client user (GRE-2631): the Better Auth user and its membership of one client organisation (a customers row),
+// in bridge_create_client_user (054). 201 when it created either, 200 with the same ids when both were there.
+function clientUserRoute(method, parts) {
+  const [res, customerId, sub, extra] = parts;
+  if (res !== 'customers' || sub !== 'users' || extra !== undefined || method !== 'POST') return null;
+  return { resource: 'customer-users', run: async (client, ctx, body) => {
+    const u = pick(body, { email: ['email', text(254, { required: true })], name: ['name', text(200, { required: true })] },
+      { required: ['email', 'name'] });
+    const { rows: [r] } = await client.query('SELECT bridge_create_client_user($1::uuid, $2, $3) AS item',
+      [needId(customerId), u.email, u.name]);
+    const { userId, organisationId, membershipId, created } = r.item;
+    return { status: created ? 201 : 200, body: { userId, organisationId, membershipId }, rowCount: 1, resourceId: membershipId };
+  } };
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -464,7 +479,7 @@ function refundRoute(method, parts) {
 export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
-  const route = catalogueRoute(method, parts) || commerceRoute(method, parts);
+  const route = catalogueRoute(method, parts) || commerceRoute(method, parts) || clientUserRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
 
