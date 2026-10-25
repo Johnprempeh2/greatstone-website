@@ -163,9 +163,9 @@ function devToolsPage() {
   });
 }
 function dxConsultancyPage() {
-  return { ...seedPage('DX Consultancy', 'none', [blk('AiBaselineSurvey', { headingLevel: 'h1', anchorId: 'ai-readiness' }), blk('AiCostCalculator', { anchorId: 'ai-cost-calculator' })], {
+  return { ...seedPage('DX Consultancy', 'none', [blk('DxConsultancyMethod', {}), blk('AiBaselineSurvey', { headingLevel: 'h2', anchorId: 'ai-readiness' }), blk('AiCostCalculator', { anchorId: 'ai-cost-calculator' })], {
     title: 'DX Consultancy · Greatstone International',
-    description: 'Check your AI readiness and estimate the cost of manual work with two free tools.', ogImage: '',
+    description: 'Explore the four steps of DX Consultancy, then use our free AI tools.', ogImage: '',
   }), orgId: ORG.id };
 }
 function linkConsultancyFromHome(page) {
@@ -829,6 +829,22 @@ function migrate(state) {
     linkConsultancyFromHome(state.pages.home);
     state.order = ['home', 'dx-consultancy', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dx-consultancy')];
     state._aiLeadToolsPlaced = true;
+  }
+  if (!state._dxConsultancyMethodPlaced) {
+    const page = state.pages['dx-consultancy'];
+    if (page) {
+      for (const projection of ['data', 'published']) {
+        const blocks = page[projection]?.content;
+        if (!blocks) continue;
+        if (!blocks.some((block) => block.type === 'DxConsultancyMethod')) blocks.unshift(blk('DxConsultancyMethod', {}));
+        const survey = blocks.find((block) => block.type === 'AiBaselineSurvey');
+        if (survey?.props?.headingLevel === 'h1') survey.props.headingLevel = 'h2';
+      }
+      if (page.seo?.description === 'Check your AI readiness and estimate the cost of manual work with two free tools.') {
+        page.seo.description = 'Explore the four steps of DX Consultancy, then use our free AI tools.';
+      }
+    }
+    state._dxConsultancyMethodPlaced = true;
   }
   // GRE-1853 review: the home contact CTA must keep its enquiry destination.
   // Repair only the value introduced by the earlier tools placement, in both projections.
