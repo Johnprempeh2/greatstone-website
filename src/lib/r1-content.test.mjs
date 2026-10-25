@@ -121,6 +121,14 @@ test('Two Doors navigation follows the approved six-page order and keeps service
   assert.doesNotMatch(nav, /label: 'Sign in', href: '#portal'/);
 });
 
+test('store-only customers can reach orders from the portal and the account button stays active', () => {
+  const portal = read('../portal/Portal.jsx');
+  const noClient = portal.slice(portal.indexOf("if (!isCustomer(profile))"), portal.indexOf("if (route.view === 'deep-dive')"));
+  assert.match(noClient, /<a href="#account">Your account and orders/);
+  const app = read('../App.jsx');
+  assert.match(app, /accountActive=\{!!\(portalRoute \|\| accountRoute\)\}/);
+});
+
 // GRE-970: the contact form carries GRE-652 §4.6, reconciled with GRE-1358 (interest choice kept, size band is
 // qualification only), and no reply-time promise until decision D6 (claim C23).
 test('the contact enquiry form follows GRE-652 §4.6 and makes no reply-time promise', () => {
