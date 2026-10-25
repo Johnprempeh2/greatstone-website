@@ -7,7 +7,7 @@ GRE-2323. This folder is at the same path in `greatstone-website` and `gs-agenti
 
 - Each capability has its own Ed25519 key pair, and staging and live use different keys. GSAM makes the pair and keeps the private key as a company secret.
 - The site holds only the public keys, in `GSAM_BRIDGE_KEYS`. This is a JSON list of `{ "kid", "capability", "publicKey", "notAfter"? }`, where `publicKey` is the raw 32-byte key in base64url. A `kid` is lower case, 3 to 64 characters, for example `stg-read-2026-10`.
-- `capability` is `read`, `write` or `refund_request`. Only `read` is accepted in this phase, and only for `GET`.
+- `capability` is `read`, `write` or `refund_request`, and comes from the key only. `read` may only `GET`; `write` may `POST`, `PATCH` and `DELETE` the write routes; `refund_request` may only `POST` the refund-request routes (GRE-2354).
 - To rotate a key: list both keys, move GSAM to the new one, then remove the old one. To revoke a key: remove it and redeploy.
 - `GSAM_BRIDGE_ALLOWED_IPS` is optional: a comma-separated list of exact client IPs. It is off when empty.
 
@@ -20,6 +20,7 @@ GRE-2323. This folder is at the same path in `greatstone-website` and `gs-agenti
 | `X-GS-Bridge-Nonce` | 16 random bytes, base64url (22 characters); a nonce works once per kid |
 | `X-GS-Bridge-Actor` | `agent:<id>`, `user:<id>`, or `system:<id>` for GSAM's own scheduled reads; the id is `[A-Za-z0-9_-]{1,64}` |
 | `X-GS-Bridge-Run` | optional GSAM run id (uuid) |
+| `X-GS-Bridge-Idempotency-Key` | write and refund_request keys only: 16 random bytes, base64url (22 characters), made once per logical write and sent again on each retry |
 | `X-GS-Bridge-Signature` | Ed25519 signature of the canonical string, base64url |
 
 ## Canonical string
@@ -38,9 +39,13 @@ gs-bridge-v1
 <sha256 hex of the body bytes; GET signs the hash of "">
 ```
 
+Write and refund_request keys sign `gs-bridge-v2`: the same lines with `gs-bridge-v2` first, and the idempotency key as a tenth line. Reads stay `gs-bridge-v1`. The v2 vectors are `vectorsV2` in `vectors.json`, after the v1 ones, which are unchanged.
+
 To build the canonical query, decode the query as `URLSearchParams` does. Sort the pairs by name, then by value, comparing code units. Encode each name and value with `encodeURIComponent`, and also encode `!'()*`. Join the pairs with `&`. Leave out the `?` when there are no pairs.
 
 ## Answers
 
 - A list returns `{ items, nextCursor }`. The cursor is opaque, and `null` ends the read. A get returns `{ item }`.
 - An error returns `{ error: { code } }` only. The codes are `bad_key`, `expired`, `bad_signature` and `replay` (401), `capability_denied` and `ip_denied` (403), `not_found` (404), `bad_request` (400) and `unavailable` (503).
+- A write also answers `denied` (403: a people-only route called by an actor that is not `user:`, or an agent changing a row that is not a draft), `conflict` (409, with `current`, the row as it is now, when `expectedRowVersion` is stale), `over_refundable` (409) and `idempotency_mismatch` (409: the key was used for another method, path or body). Every PATCH and versioned DELETE takes `expectedRowVersion`.
+- The same idempotency key with the same method, path and body gets the first answer again and writes nothing. Retry only after a network error, a timeout or a 503, at most twice, with the same key and a new nonce; never retry a 4xx.
