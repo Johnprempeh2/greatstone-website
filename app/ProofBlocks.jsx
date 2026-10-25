@@ -36,6 +36,7 @@ import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
+export const proofBlockCss = Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss;
 const InsertAfter = lazy(() => import('./editor/InsertAfter.jsx'));
 export const PreviewContext = createContext(false);
 let motionCoordinator;
@@ -69,7 +70,7 @@ export const proofConfig = {
 
 const publicPuck = { isEditing: false, renderDropZone: () => null, dragRef: null };
 export function ProofBlocks({ data, pageSlug, forms }) {
-  return <><style>{Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss}</style>{data.content.map((item) => {
+  return <><style>{proofBlockCss}</style>{data.content.map((item) => {
     const component = proofConfig.components[item.type];
     if (!component) throw new Error(`Unsupported published block: ${item.type}`);
     return <div key={item.props.id}>{component.render({ ...bindFormBlock(pageSlug, item, forms), puck: publicPuck })}</div>;
