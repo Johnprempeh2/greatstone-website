@@ -12,3 +12,7 @@
 .dd-row textarea:focus-visible { outline: 2px solid var(--pt-accent); outline-offset: 2px; }
 .dd-row .pt-actions { margin-top: 0; }
 .dd-row .gs-btn { border-radius: 999px; }
+.dd-progress-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 3px 12px; }
+.dd-progress-row > .pt-muted { grid-column: 1 / -1; }
+.dd-progress-status { color: var(--pt-text); font-size: .875rem; white-space: nowrap; }
+@media (max-width: 480px) { .dd-progress-row { grid-template-columns: 1fr; } .dd-progress-row > .pt-muted { grid-column: 1; } }

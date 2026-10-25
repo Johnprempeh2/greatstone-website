@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './portal.css';
 import './deep-dive-client.css';
+import { sharedStreams } from './deep-dive-progress.mjs';
 
 async function call(op, args = {}) {
   const response = await fetch('/api/deep-dive-client', { method: 'POST',
@@ -54,9 +55,17 @@ export default function DeepDiveClient({ company, api = call }) {
     {snapshot === undefined && !error && <div className="pt-hold" aria-busy="true">Loading…</div>}
     {snapshot === null && <p className="pt-muted">No Deep Dive has been shared with this account yet.</p>}
     {snapshot && <>
+      <section className="pt-card" aria-labelledby="dd-progress"><h2 className="pt-h2" id="dd-progress">Progress by stream</h2>
+        {!sharedStreams(snapshot.items).length ? <p className="pt-muted">No streams have been shared yet.</p> : <ul className="pt-list">
+          {sharedStreams(snapshot.items).map((stream) => <li key={stream.id} className="dd-row dd-progress-row">
+            <strong>{stream.title}</strong><span className="dd-progress-status">{stream.status}</span>
+            {stream.summary && <p className="pt-muted">{stream.summary}</p>}
+          </li>)}
+        </ul>}
+      </section>
       <section className="pt-card" aria-labelledby="dd-items"><h2 className="pt-h2" id="dd-items">Shared work</h2>
-        {!snapshot.items.length ? <p className="pt-muted">Nothing has been shared yet.</p> : <ul className="pt-list">
-          {snapshot.items.map((item) => <li key={item.id} className="dd-row"><strong>{item.title}</strong>
+        {!snapshot.items.some((item) => item.type !== 'deep_dive_stream') ? <p className="pt-muted">Nothing else has been shared yet.</p> : <ul className="pt-list">
+          {snapshot.items.filter((item) => item.type !== 'deep_dive_stream').map((item) => <li key={item.id} className="dd-row"><strong>{item.title}</strong>
             {item.summary && <p className="pt-muted">{item.summary}</p>}</li>)}
         </ul>}
       </section>
