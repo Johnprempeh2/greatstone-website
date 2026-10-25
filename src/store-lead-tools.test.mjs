@@ -75,3 +75,36 @@ test('review correction restores the enquiry CTA on already placed pages', async
     globalThis.document = previous.document;
   }
 });
+
+test('saved home receives route explanations and placeholders without changing the doors', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
+  globalThis.localStorage = dom.localStorage;
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
+  try {
+    const { seedState, load } = await vite.ssrLoadModule('/src/store.js');
+    const saved = seedState();
+    saved._homeRoutesAndPlaceholders = false;
+    for (const projection of ['data', 'published']) {
+      const blocks = saved.pages.home[projection].content;
+      blocks[0].props.heading = 'Keep this hero';
+      blocks.find((block) => block.type === 'TwoDoorsStory').props.storyHeading = 'Making change work.';
+      blocks.find((block) => block.type === 'TwoDoorsProof').props.proofHeading = 'What changed for our clients';
+    }
+    dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
+    const next = load().pages.home;
+    for (const projection of ['data', 'published']) {
+      const blocks = next[projection].content;
+      assert.equal(blocks[0].props.heading, 'Keep this hero');
+      assert.deepEqual(blocks.find((block) => block.type === 'TwoDoorsStory').props.range.map((item) => item.href), ['#go/dx-consultancy', '#go/dev-tools']);
+      assert.equal(blocks.find((block) => block.type === 'TwoDoorsProof').props.draftItems.length, 3);
+    }
+  } finally {
+    await vite.close();
+    globalThis.localStorage = previous.localStorage;
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+  }
+});

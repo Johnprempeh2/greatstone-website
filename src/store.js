@@ -130,22 +130,20 @@ const homeCopy = {
   chooseHref: '#choose', contactHref: '/contact', proofHref: '/proof', toolsHref: '/dev-tools',
 };
 const storyCopy = {
-  storyKicker: 'Who we are', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
-  rangeLabel: 'The work we do',
+  storyKicker: 'Copy placeholder · two routes, one company', numbersLabel: 'Greatstone in numbers', draftNumbersHeading: 'Draft numbers strip', draftNumbersLine: 'Figures and counting rules await confirmation.',
+  rangeLabel: 'Explore the two routes',
 };
 const defaultRange = [
-  { title: 'Transformation', line: 'Operating models and change programmes.' },
-  { title: 'Delivery', line: 'Programme and project leadership.' },
-  { title: 'Technology', line: 'Systems, integration and developer tools.' },
-  { title: 'Data', line: 'Reporting and data quality.' },
+  { title: 'DX Consultancy', line: 'For leaders changing how work gets done. Start with a conversation, examine the work, then decide what to build.', href: '#go/dx-consultancy', linkLabel: 'Explore DX Consultancy →' },
+  { title: 'DX Dev Tools', line: 'For developers building and maintaining software. Browse components and SDKs from established suppliers.', href: '#go/dev-tools', linkLabel: 'Explore DX Dev Tools →' },
 ];
-const proofCopy = { proofKicker: 'Case studies', proofHeading: 'What changed for our clients', draftBadge: 'DRAFT', draftCaseLine: 'Engagement facts, outcome and permission are pending.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '/proof' };
-const draftCases = [{ headline: 'First study', image: '/assets/two-doors/consultancy-hero.webp' }, { headline: 'Second study', image: '/assets/two-doors/tools-hero.webp' }, { headline: 'Third study', image: '/assets/two-doors/consultancy-hero.webp' }];
+const proofCopy = { proofKicker: 'Case studies', proofHeading: 'Work we will show here', draftBadge: 'PLACEHOLDER', draftCaseLine: 'Client story, evidence and permission are pending. No result is claimed here.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '/proof' };
+const draftCases = [{ headline: 'Case study placeholder 01' }, { headline: 'Case study placeholder 02' }, { headline: 'Case study placeholder 03' }];
 const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '/dev-tools', contactHref: '/contact', consultancyHref: '/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
 const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
 function twoDoorsHomePage() {
   const { closeHeading, closeLine, closeCta, contactHref, bottomKicker, bottomHeading, bottomConsultancy, bottomTools, consultancyHref, consultancyImage, toolsImage, ...toolProps } = toolsCopy;
-  return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolProps, tools: TOOLS }), blk('TwoDoorsClose', { closeHeading, closeLine, closeCta, contactHref }), blk('TwoDoorsBottom', { bottomKicker, bottomHeading, bottomConsultancy, bottomTools, consultancyHref, consultancyImage, toolsImage, toolsHref: toolsCopy.toolsHref })], {
+  return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'From developer tools to transformation.', storyBody: 'For roughly 20 years, Greatstone has helped development teams find the tools they need to build software.', storyBody2: 'That work grew into DX Consultancy: helping organisations decide what to change, then helping their teams deliver it. The tools remain a route of their own.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolProps, tools: TOOLS }), blk('TwoDoorsClose', { closeHeading, closeLine, closeCta, contactHref }), blk('TwoDoorsBottom', { bottomKicker, bottomHeading, bottomConsultancy, bottomTools, consultancyHref, consultancyImage, toolsImage, toolsHref: toolsCopy.toolsHref })], {
     title: 'Greatstone International · Two ways to work with us',
     description: 'Explore DX Consultancy and DX Dev Tools from Greatstone International.', ogImage: '',
   });
@@ -834,6 +832,27 @@ function migrate(state) {
       }
     }
     state._twoDoorsPageLinksFixed = true;
+  }
+  // Add the approved lower-page explanation to existing studio homes while leaving
+  // the hero, doors and any editor-written lower-page copy alone.
+  if (!state._homeRoutesAndPlaceholders) {
+    const fresh = twoDoorsHomePage();
+    for (const projection of ['data', 'published']) {
+      const blocks = state.pages.home?.[projection]?.content;
+      if (!blocks) continue;
+      for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
+        const existing = blocks.find((block) => block.type === type);
+        const replacement = fresh[projection].content.find((block) => block.type === type);
+        if (!existing) { blocks.push(replacement); continue; }
+        if (type === 'TwoDoorsStory' && existing.props?.storyHeading === 'Making change work.') {
+          Object.assign(existing.props, replacement.props);
+        }
+        if (type === 'TwoDoorsProof' && existing.props?.proofHeading === 'What changed for our clients') {
+          Object.assign(existing.props, replacement.props);
+        }
+      }
+    }
+    state._homeRoutesAndPlaceholders = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
