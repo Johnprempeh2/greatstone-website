@@ -88,7 +88,7 @@ Interviewee (Better Auth session cookie; 401 without it):
   `redirect('/interview/x')` becomes `{ redirect: '#portal/interview/x' }`.
 - `POST /api/interview/join` — `{ op: 'info', token }` (public, no personal data) and `{ op: 'enrol', token, name,
   unitId? }` (signed in, verified email).
-- `POST /api/interview/voice/start` — source `/api/voice/start`; 404 when `VOICE_ENABLED` is not `1`.
+- `POST /api/interview/voice/start` — source `/api/voice/start`; 404 when `VOICE_ENABLED=0` or no Deepgram key.
 
 Public, for Deepgram only:
 
@@ -111,7 +111,7 @@ Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/
 | `INTERVIEW_MODEL` | `claude-sonnet-4-6` | as the source |
 | `EXTRACTION_MODEL` | `claude-haiku-4-5` | as the source |
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
-| `VOICE_THINK_MODEL` | as the source | Haiku for voice |
+| `VOICE_INTERVIEW_MODEL` | `claude-haiku-4-5` | as the source: Haiku for voice |
 | `VOICE_ENABLED` | on when `DEEPGRAM_API_KEY` is set | as the source: `0` takes voice away from everyone at once, typed stays |
 | `INTERVIEW_ENABLED` | off | kill switch for the whole engine on a site |
 | `CHAT_RATE_SESSION_PER_MIN`, `CHAT_RATE_EMPLOYEE_PER_MIN`, `CHAT_HARD_BUDGET_RATIO`, `JOIN_RATE_*` | as the source | |
@@ -129,3 +129,23 @@ migrations applied (`netlify/tests/lib/postgres.mjs`) and a fake Anthropic clien
 `INTERVIEW_LIVE=1` with `ANTHROPIC_API_KEY` to run the model-dependent ones live. Suites: security probe,
 adversarial chat, concurrency, fuzzy merge, corroboration, interview smoke, plus the RLS suite for schema
 `interview`.
+
+## Staging and rollback
+
+Staging is the site `gre1795-website-db-staging`. A preview deploy of a ready pull request gets its own database
+branch (a copy of staging data) and Netlify applies `054_interview_engine` to it before the deploy goes live. Only
+synthetic test accounts and test rounds are used; no client data before John's card.
+
+Environment on the staging site (Functions scope):
+
+- Set by Bedrock: `INTERVIEW_ENABLED=1`, `INTERVIEW_INTERNAL_SECRET` (random, secret; the bridge uses it to start
+  the synthesis background function).
+- Set by John (step card on GRE-2612): `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`. Without the Deepgram key voice is
+  simply not offered; without the Anthropic key a chat turn fails with the calm error.
+- Existing: `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `GSAM_BRIDGE_KEYS`,
+  `APP_SITE_ORIGIN` (the join link's origin).
+
+Rollback, in order: set `INTERVIEW_ENABLED` to anything but `1` (every interviewee endpoint answers 404 at once);
+set `VOICE_ENABLED=0` to take voice away alone; remove the GSAM bridge keys to stop round changes. Code rollback is
+a redeploy of the previous commit. `054_interview_engine/rollback.sql` drops schema `interview` and everything in it:
+run it only after the round's outputs are exported to GSAM and a database snapshot is taken.
