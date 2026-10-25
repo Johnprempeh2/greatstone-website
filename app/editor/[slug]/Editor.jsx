@@ -11,12 +11,12 @@ import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
-import { EDITOR_COMMANDS, editorState, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
+import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, liveContentOf, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
 import './frame.css';
 
 const usePuckSelection = createUsePuck();
 
-function FrameControls({ send, save, commands }) {
+function FrameControls({ send, save, commands, copy, onLayout, onImport }) {
   const selected = usePuckSelection((s) => s.selectedItem);
   const history = usePuckSelection((s) => s.history);
   const ui = usePuckSelection((s) => s.appState.ui);
@@ -31,8 +31,14 @@ function FrameControls({ send, save, commands }) {
 
   useEffect(() => { send('editor-state', editorState(selected, history, outline)); }, [selectedId, selected?.type, history.hasPast, history.hasFuture, outline]);
   useEffect(() => {
-    if (selectedId) { setLibrary(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: true, leftSideBarVisible: false } }); }
-  }, [selectedId]);
+    // Edit copy: clicking words selects the block but never opens its settings.
+    if (selectedId) { setLibrary(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: !copy, leftSideBarVisible: false } }); }
+  }, [selectedId, copy]);
+  useEffect(() => {
+    if (!copy) return;
+    setLibrary(false); setOutline(false);
+    if (ui.leftSideBarVisible || ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
+  }, [copy, ui.leftSideBarVisible, ui.rightSideBarVisible]);
   useEffect(() => {
     if (!selectedId && ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { rightSideBarVisible: false } });
   }, [selectedId, ui.rightSideBarVisible]);
@@ -52,6 +58,7 @@ function FrameControls({ send, save, commands }) {
   }
   function command(payload) {
     if (!validEditorCommand(payload)) return;
+    if (copy && !copyModeAllows(payload.command)) return;
     switch (payload.command) {
       case 'undo': history.back(); break;
       case 'redo': history.forward(); break;
@@ -59,6 +66,8 @@ function FrameControls({ send, save, commands }) {
       case 'add-block': add(); break;
       case 'deselect': close(); break;
       case 'outline': toggleOutline(payload.on); break;
+      case 'layout': onLayout(payload.on); break;
+      case 'import-live': onImport(); break;
     }
   }
   useEffect(() => { commands.current = command; return () => { commands.current = null; }; });
@@ -82,6 +91,7 @@ function FrameControls({ send, save, commands }) {
     const frame = document.querySelector('.gs-frame-editor iframe');
     if (!frame) return;
     function onClick(event) {
+      if (copy) return;
       const media = event.target.closest?.('img,video');
       const block = media?.closest('[data-gs-block-id]');
       const item = block && getItemById(block.dataset.gsBlockId);
@@ -93,7 +103,7 @@ function FrameControls({ send, save, commands }) {
     frame.addEventListener('load', bind);
     bind();
     return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('click', onClick, true); };
-  }, [getItemById]);
+  }, [getItemById, copy]);
   function act(type, destinationIndex) {
     if (!selector) return;
     if (type === 'reorder') dispatch({ type, sourceIndex: selector.index, destinationIndex, destinationZone: selector.zone });
@@ -101,6 +111,7 @@ function FrameControls({ send, save, commands }) {
     else dispatch({ type, index: selector.index, zone: selector.zone });
   }
   const count = selector?.zone === 'root:default-zone' ? contentLength : 999;
+  if (copy) return null;
   return createPortal(<div className={'gs-frame-controls' + (library || outline || selected ? ' is-drawer-open' : '')}>
     {selected && <div className="gs-frame-block-tools" role="toolbar" aria-label="Selected block">
       <span>{selected.type}</span><button type="button" disabled={!selector || selector.index === 0} onClick={() => act('reorder', selector.index - 1)}>Move up</button>
@@ -117,7 +128,7 @@ function FrameControls({ send, save, commands }) {
 const isMediaField = (field) => field.type === 'image' || field.type === 'video' ||
   (field.type === 'custom' && field.render?.({ value: '', onChange: () => {} })?.type === MediaField);
 
-export default function Editor({ page, forms, siteId, engine, origins, mode }) {
+export default function Editor({ page, liveData = null, forms, siteId, engine, origins, mode }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('waiting');
   const [message, setMessage] = useState('Waiting for the website builder');
@@ -125,9 +136,11 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
   const [highlight, setHighlight] = useState(null);
   const [generation, setGeneration] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
+  const [editMode, setEditMode] = useState('layout');
   const session = useRef(null), draft = useRef(null), baseRevision = useRef(null), pending = useRef(null), timer = useRef(null);
   const mediaUrls = useRef({});
   const commands = useRef(null);
+  const copyRef = useRef(false);
 
   function addMedia(media) {
     for (const [id, entry] of Object.entries(media || {})) {
@@ -166,7 +179,8 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           window.parent.postMessage(envelope('hello-refused', { nonce, reason: result.refused, supported: [FRAME_PROTOCOL] }), event.origin); return;
         }
         session.current ||= { nonce, origin: event.origin };
-        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: 1 } : {}), ...motionHello(proofConfig.components) }), event.origin);
+        if (mode === 'editor') setEditMode(editModeOf(result.payload));
+        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, liveContent: liveContentOf(liveData) } : {}), ...motionHello(proofConfig.components) }), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
       if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'editor-command', 'teardown'])) {
@@ -184,7 +198,9 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
       } else if (event.data.type === 'highlight' && mode === 'preview') {
         setHighlight(typeof p.blockId === 'string' ? p.blockId : null);
       } else if (event.data.type === 'insert-media') {
-        const result = mode === 'editor' && draft.current
+        const result = mode === 'editor' && draft.current && copyRef.current
+          ? { ok: false, code: 'error', message: 'Edit copy changes words only. Switch to Layout to change images.' }
+          : mode === 'editor' && draft.current
           ? insertMedia(draft.current, proofConfig.components, p, isMediaField)
           : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
@@ -195,7 +211,9 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
         }
         send('insert-media-result', insertMediaResult(event.data.id, result));
       } else if (event.data.type === 'set-motion') {
-        const result = mode === 'editor' && draft.current
+        const result = mode === 'editor' && draft.current && copyRef.current
+          ? { ok: false, code: 'error', message: 'Edit copy changes words only. Switch to Layout to change motion.' }
+          : mode === 'editor' && draft.current
           ? setMotion(draft.current, p)
           : { ok: false, code: 'error', message: 'The editor draft is not ready.' };
         if (result.ok) {
@@ -222,8 +240,24 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
     function onPageHide() { draft.current = null; session.current = null; pending.current = null; clearTimeout(timer.current); releaseMedia(); }
     window.addEventListener('message', onMessage); window.addEventListener('pagehide', onPageHide);
     return () => { window.removeEventListener('message', onMessage); window.removeEventListener('pagehide', onPageHide); clearTimeout(timer.current); };
-  }, [engine, mode, origins, page.id, siteId]);
+  }, [engine, mode, origins, page.id, siteId, liveData]);
 
+  const copy = mode === 'editor' && editMode === 'copy';
+  copyRef.current = copy;
+  // Puck reads its permissions when it mounts: remount on the current draft, unsaved words kept.
+  function switchEditMode(on) {
+    const next = on ? 'layout' : 'copy';
+    if (next === editMode) return;
+    if (draft.current) setData(displayData(draft.current));
+    setEditMode(next); setGeneration((n) => n + 1);
+  }
+  function importLive() {
+    const imported = importLiveData(liveData, draft.current);
+    if (!imported) return;
+    draft.current = imported; setData(displayData(imported)); setGeneration((n) => n + 1);
+    dirty(true); setStatus('ready'); setMessage('Live page imported. Saving draft');
+    save(imported);
+  }
   function onChange(nextData) {
     const nextRaw = rawData(nextData);
     if (JSON.stringify(nextRaw) === JSON.stringify(draft.current)) return;
@@ -250,7 +284,7 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
     {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && <div className="gs-frame-notice" role="alert"><p>{message}</p>{pending.current && <button type="button" onClick={() => save(undefined, true)}>Retry save</button>}</div>}
-    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} ui={{ leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
+    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={{ leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} onLayout={switchEditMode} onImport={importLive} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameEditingContext.Provider>
       : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} pageSlug={page.slug} forms={forms} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }
