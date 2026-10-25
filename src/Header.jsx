@@ -5,6 +5,7 @@ import { ROLE_LABEL } from './cms/staffRoles.mjs';
 import { track } from './lib/analytics.js';
 import { safeHref } from './lib/safe-url.js';
 import { PRIMARY_CTA_LABEL } from './lib/brand.mjs';
+import { getSession, onAuth } from './store/customerAuth.mjs';
 
 const LOGO = '/assets/greatstone-logo-web.png';
 const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is the built-in default (a CMS-overridden logo has no .webp sibling)
@@ -81,8 +82,8 @@ function NavLeaf({ item, current, shopActive, onNavigate, className }) {
 
 // An inline nav dropdown (desktop). Opens on hover and on click/Enter; full menu-button keyboard pattern
 // (ArrowDown opens + enters the menu, roving Up/Down/Home/End, Escape closes + restores focus, outside
-// click closes). Highlights itself when the current page is one of its members. Also the "More" overflow,
-// which can hold the Products route (kind 'shop').
+// click closes). Highlights itself when the current page is one of its members. The DX Dev Tools
+// group holds the Products route (kind 'shop'); "More" holds only genuine overflow.
 function NavGroup({ label, members, current, shopActive, onNavigate }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -156,6 +157,14 @@ const MIN_INLINE = 3;
 // review); only when fewer than MIN_INLINE fit, or on a phone, does the bar collapse into a single dropdown.
 // All measured, not breakpoint-guessed. Editing affordances appear only for a signed-in user with edit rights.
 export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
+  const [clientSignedIn, setClientSignedIn] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    getSession().then((session) => { if (mounted) setClientSignedIn(!!session); });
+    const { data } = onAuth((session) => { if (mounted) setClientSignedIn(!!session); });
+    return () => { mounted = false; data?.subscription?.unsubscribe?.(); };
+  }, []);
+  const accountLabel = clientSignedIn ? 'Account' : 'Sign in';
   // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
   const logoSrc = logo || LOGO;
   const bookLabel = ctaLabel || PRIMARY_CTA_LABEL; // Ben's fixed primary CTA wording
@@ -163,7 +172,10 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const q = (query || '').trim().toLowerCase();
   // nav is driven by the editable CMS navigation tree (state.navigation); public sees only published
   // pages, editors see everything, and a blank tree falls back to page order so the bar is never empty.
-  const navModel = buildNavModel(navigation, order, pages, canEdit, q);
+  const navModel = buildNavModel(navigation, order, pages, canEdit, q).map((item) =>
+    item.kind === 'page' && item.slug === 'dev-tools' && onShop
+      ? { kind: 'group', label: item.label, members: [item, { kind: 'shop', label: 'Products', onSelect: onShop }] }
+      : item);
   // the persistent CTA lands on the Contact / booking page (form + one-click Calendly) instead of
   // jumping straight to Calendly. Keep the GA4 value (book_deep_dive) stable so history doesn't fragment.
   const goBook = (where) => { track('cta_click', { cta: 'book_deep_dive', cta_location: where }); onNavigate(BOOK_PAGE); };
@@ -171,12 +183,12 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (current === 'home' || current === 'dev-tools') ? 'Menu' : (pages[current] && pages[current].title) || 'Menu';
 
   // the inline bar's items in priority order (the configured nav); the end of the list is the first to move
-  // into "More". The storefront is not a launch page, so it always sits in "More" and the bar stays light.
+  // into "More" when the row is narrow. The storefront sits under DX Dev Tools.
   // The booking page's nav entry also sits in "More": the lime CTA beside the bar already goes there, and two
   // copies of the same action side by side compete (GRE-659 review). The phone menu keeps the full tree.
   const isBookLeaf = (it) => it.kind === 'page' && it.slug === BOOK_PAGE;
   const baseLeaves = navModel.filter((it) => !isBookLeaf(it));
-  const pins = [...navModel.filter(isBookLeaf), ...(onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [])];
+  const pins = navModel.filter(isBookLeaf);
   const hasNamedMore = baseLeaves.some((it) => it.kind === 'group' && it.label === 'More');
   const leaves = hasNamedMore ? baseLeaves.map((it) => it.kind === 'group' && it.label === 'More' ? { ...it, members: [...it.members, ...pins] } : it) : baseLeaves;
   const pinnedMore = hasNamedMore ? [] : pins;
@@ -286,12 +298,12 @@ export default function Header({ order, pages, navigation, current, query, onSea
                 {navModel.map((it, i) => it.kind === 'group' ? (
                   <div key={'g' + i} className="gs-navmenu-section" role="presentation">
                     <span className="gs-navmenu-grouplabel" aria-hidden="true">{it.label}</span>
-                    {it.members.map((m) => menuLeaf(m, true))}
+                    {it.members.map((m) => m.kind === 'shop'
+                      ? <button key="shop" role="menuitem" className={'gs-navmenu-item is-sub' + (shopActive ? ' is-active' : '')} onClick={() => { m.onSelect(); setMenuOpen(false); }}>Products</button>
+                      : menuLeaf(m, true))}
                   </div>
                 ) : menuLeaf(it, false))}
-                {onShop && <button role="menuitem" aria-current={shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
                 <button role="menuitem" className="gs-navmenu-item gs-navmenu-book" onClick={() => { setMenuOpen(false); goBook('menu'); }}>{bookLabel}</button>
-                {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Your account</button>}
                 {navModel.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
             )}
@@ -314,8 +326,8 @@ export default function Header({ order, pages, navigation, current, query, onSea
             to the Contact / booking page rather than opening Calendly directly. */}
         <button className="gs-btn primary gs-book" onClick={() => goBook('header')}>{bookLabel}</button>
         {onAccount && (
-          <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label="Your account" aria-current={accountActive ? 'page' : undefined} title="Your account">
-            <UserIcon />
+          <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label={accountLabel} title={accountLabel}>
+            <UserIcon /><span className="gs-accountlabel">{accountLabel}</span>
           </button>
         )}
         {/* the inline page-search input was redundant with the ⌘K command palette; removing it frees the

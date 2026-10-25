@@ -117,7 +117,8 @@ test('Two Doors navigation follows the approved six-page order and keeps service
   assert.match(nav, /label: 'Transformation Services', children:/);
   assert.match(nav, /pageSlug: 'case-studies', label: 'Case Studies'/);
   assert.match(nav, /pageSlug: 'about', label: 'About'/);
-  assert.match(nav, /label: 'Sign in', href: '#portal'/);
+  assert.match(nav, /pageSlug: 'services', label: 'GS Agentic Manager'/);
+  assert.doesNotMatch(nav, /label: 'Sign in', href: '#portal'/);
 });
 
 // GRE-970: the contact form carries GRE-652 §4.6, reconciled with GRE-1358 (interest choice kept, size band is

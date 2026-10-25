@@ -54,7 +54,8 @@
 .gs-tools{display:flex;align-items:center;gap:10px}
 /* persistent navbar CTA + account icon (Ben's 18 Jun review) */
 .gs-book{flex:none;white-space:nowrap}
-.gs-accountbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:100px;color:var(--gs-muted);cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.gs-accountbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:38px;height:38px;padding:0 11px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:100px;color:var(--gs-muted);cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.gs-accountlabel{font-size:.76rem;font-weight:650;white-space:nowrap}
 .gs-accountbtn:hover{color:var(--gs-text);border-color:var(--gs-border)}
 .gs-accountbtn.is-active{color:var(--gs-accent);border-color:var(--gs-border)}
 /* the booking CTA reads as the lime primary even in the collapsed dropdown */
@@ -116,6 +117,8 @@
 
 @media(max-width:760px){
   .gs-header{gap:10px}
+  .gs-accountbtn{width:38px;padding:0}
+  .gs-accountlabel{display:none}
   .gs-search{display:none}
   /* the persistent CTA would crowd the collapsed nav on phones — it stays reachable as the lime
      "Book a Deep Dive" item at the top of the Pages dropdown. The account icon + ⌘K button stay visible. */
@@ -135,7 +138,7 @@
      comes later with equal specificity, a bare `.gs-btn{display:inline-flex}` would UN-HIDE the header
      "Book a Diagnostic" on touch phones and crowd the collapsed nav. :not(.gs-book) keeps it hidden. */
   .gs-btn:not(.gs-book){display:inline-flex;align-items:center;justify-content:center}
-  .gs-accountbtn{width:44px;height:44px}
+  .gs-accountbtn{min-width:44px;height:44px}
   .gs-navmenu-item{min-height:44px;display:flex;align-items:center}
 }
 

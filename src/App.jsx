@@ -1597,7 +1597,7 @@ export default function App() {
       <Header
         order={state.order} pages={state.pages} navigation={state.navigation} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
-        onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }} accountActive={accountRoute}
+        onAccount={() => { if (typeof location !== 'undefined') location.hash = 'portal'; }} accountActive={!!portalRoute}
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
         logo={state.settings.logo} ctaLabel={state.settings.headerCtaLabel} siteName={state.settings.siteName}

@@ -89,14 +89,13 @@ export function DEFAULT_NAVIGATION() {
     navItem({ type: 'page', pageSlug: 'dx-consultancy', label: 'DX Consultancy' }),
     navItem({ type: 'page', pageSlug: 'dev-tools', label: 'DX Dev Tools' }),
     navItem({ type: 'group', label: 'Transformation Services', children: [
-      navItem({ type: 'page', pageSlug: 'services', label: 'Transformation Services' }),
+      navItem({ type: 'page', pageSlug: 'services', label: 'GS Agentic Manager' }),
       navItem({ type: 'page', pageSlug: 'method', label: 'How We Work' }),
       navItem({ type: 'page', pageSlug: 'how-we-help', label: 'How We Help' }),
     ] }),
     navItem({ type: 'page', pageSlug: 'case-studies', label: 'Case Studies' }),
     navItem({ type: 'page', pageSlug: 'about', label: 'About' }),
     navItem({ type: 'page', pageSlug: 'insights', label: 'Insights' }),
-    navItem({ type: 'link', label: 'Sign in', href: '#portal' }),
   ];
 }
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
@@ -1254,6 +1253,18 @@ function migrate(state) {
   state.schema = SCHEMA;
   const oldDefaultNav = (state.navigation || []).map((item) => item.pageSlug || item.label).join('|');
   if (oldDefaultNav === 'home|dev-tools|proof|about|insights|More') state.navigation = DEFAULT_NAVIGATION();
+  // The first GRE-2565 seed added a duplicate portal link and an inaccurate services label.
+  // Repair only those exact defaults; leave editor-customised navigation alone.
+  if (Array.isArray(state.navigation)) {
+    state.navigation = state.navigation.filter((item) => !(item.type === 'link' && item.label === 'Sign in' && item.href === '#portal'));
+    state.navigation.forEach((item) => {
+      if (item.type === 'group' && item.label === 'Transformation Services') {
+        (item.children || []).forEach((child) => {
+          if (child.pageSlug === 'services' && child.label === 'Transformation Services') child.label = 'GS Agentic Manager';
+        });
+      }
+    });
+  }
   return moveProofToCaseStudies(state);
 }
 
