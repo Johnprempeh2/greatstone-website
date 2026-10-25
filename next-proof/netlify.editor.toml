@@ -6,3 +6,4 @@
   NODE_VERSION = "22"
   GSAM_EDITOR_HOST = "gsam-editor--greatstone-home.netlify.app"
   GSAM_EDITOR_ORIGINS = "https://gsam.tail83d26c.ts.net:3100"
+  GSAM_EDITOR_SITE_ID = "b546812d-8d25-49dc-94c2-e04a5b31bde4"
