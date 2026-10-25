@@ -2,7 +2,6 @@
 // account: identity header + Profile / Security / Billing, and a collapsible, mobile-friendly order
 // history (customer_self RLS → only their own). One-click re-order. Mirrors CatalogueAdmin's gate idiom.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
@@ -14,10 +13,11 @@ import { orderRefDisplay } from '../lib/order-ref.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
 import { PRIMARY_CTA_LABEL } from '../lib/brand.mjs';
+import { resetTokenFromLocation } from '../lib/better-auth-client.mjs';
 import './store.css';
 import './admin.css';
 
-const isResetMode = () => typeof location !== 'undefined' && /reset=1/.test(location.hash);
+const isResetMode = () => !!resetTokenFromLocation();
 const initialsOf = (s) => (String(s || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
 // Customer-facing quote status labels: the raw enum is the internal sales pipeline (new/contacted/quoted/
 // won/lost/cancelled); customers should see plain-English states, not "Lost"/"Cancelled".
@@ -30,8 +30,7 @@ export default function AccountDashboard({ recovery = false, authError = null, o
   const [session, setSession] = useState(undefined); // undefined = checking
   const [profile, setProfile] = useState(undefined); // undefined = not yet fetched (vs null = fetched, no customer row)
   useEffect(() => {
-    // The first resolution settles a Supabase auth-email landing: supabase-js has now read the session
-    // from (and scrubbed) the URL, so tell App to normalise the bare landing URL back to #account.
+    // Settle the email landing and keep the account route visible.
     getSession().then(s => { setSession(s || null); onLanded?.(); });
     const { data } = onAuth(s => setSession(s || null));
     return () => data?.subscription?.unsubscribe?.();
@@ -39,9 +38,7 @@ export default function AccountDashboard({ recovery = false, authError = null, o
   useEffect(() => { if (session) getCustomerProfile().then(setProfile); else setProfile(null); }, [session]);
 
   if (session === undefined) return <div className="ca-wrap"><div className="ca-center">Checking…</div></div>;
-  // A reset link (recovery prop, set by App from the landing URL) — or a legacy ?reset=1 hash — drops the
-  // buyer here with a live recovery session; show the new-password form, not their dashboard.
-  if (session && (recovery || isResetMode())) return <SetNewPassword onDone={onRecoveryDone} />;
+  if (recovery || isResetMode()) return <SetNewPassword onDone={onRecoveryDone} />;
   if (!session) return <AuthGate initialError={authError} />;
   if (profile === undefined) return <div className="ca-wrap"><div className="ca-center">Loading your account…</div></div>;
   // resolved to no customer row → a staff member, or someone not yet set up as a customer. Either way
@@ -147,12 +144,14 @@ function SetNewPassword({ onDone }) {
     e.preventDefault(); setBusy(true); setErr(null);
     const { error } = await updatePassword(pw); setBusy(false);
     if (error) { setErr(error.message); return; }
-    setDone(true); onDone?.(); if (typeof location !== 'undefined') location.hash = 'account';
+    setDone(true);
+    if (typeof location !== 'undefined') history.replaceState(null, '', location.pathname + '#account');
+    onDone?.();
   };
   return (
     <div className="ca-wrap"><div className="ca-signin">
       <span className="st-kicker">Your account</span><h1>Set a new password</h1>
-      {done ? <p className="ca-ok">Password updated. You're signed in.</p> : (
+      {done ? <p className="ca-ok">Password updated. Sign in with your new password.</p> : (
         <form onSubmit={submit}>
           <label htmlFor="ca-newpw">New password<PasswordInput id="ca-newpw" value={pw} onChange={e => { setPw(e.target.value); setErr(null); }} required minLength={8} autoComplete="new-password" showStrength ariaInvalid={err ? 'true' : undefined} ariaDescribedby={err ? 'ca-newpw-err' : undefined} /></label>
           {err && <div id="ca-newpw-err" className="ca-err" role="alert">{err}</div>}
@@ -176,17 +175,6 @@ function Dashboard({ session, profile, onProfile }) {
   const [orderQ, setOrderQ] = useState('');
   // the #account h1 already greets by name, so only surface the "since last visit" line on a return visit
   const [lastVisit] = useState(() => sinceLastVisit('gs:lastvisit:account'));
-  // First-visit welcome email (Ben 1 Jul): fire-and-forget; send-welcome-email is the once-only authority
-  // (atomic claim on customer_users.welcome_email_sent_at), the localStorage flag just avoids re-invoking
-  // the function on every dashboard load from this browser. Silent on failure — never disturbs the account.
-  useEffect(() => {
-    const uid = session?.user?.id; if (!uid || !supabase) return;
-    const flag = 'gs:welcomed:' + uid;
-    try { if (localStorage.getItem(flag)) return; } catch { /* still safe: the server claim is the guard */ }
-    supabase.functions.invoke('send-welcome-email')
-      .then(({ data }) => { if (data && (data.sent || data.skipped === 'already sent')) { try { localStorage.setItem(flag, '1'); } catch { /* ignore */ } } })
-      .catch(() => { /* retried on a later visit */ });
-  }, [session?.user?.id]);
   // for a non-admin member: who to ask for access (their company's primary contact / admin). RLS customer_self
   // already scopes customer_users to the member's own company; this read is a no-op for admins.
   const [companyAdmin, setCompanyAdmin] = useState(null);
@@ -267,9 +255,8 @@ function Dashboard({ session, profile, onProfile }) {
     setPortalBusy(true);
     let data = null, error = null;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/stripe-portal', {
-        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (session?.access_token || '') },
+        method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ returnUrl: location.origin + '/#account' }),
       });
       data = await response.json();
@@ -607,7 +594,7 @@ function ProfileCard({ profile, onProfile, flash }) {
 }
 
 function SecurityCard({ email, lastSignIn, flash }) {
-  const [pw, setPw] = useState(''); const [confirmPw, setConfirmPw] = useState('');
+  const [pw, setPw] = useState(''); const [confirmPw, setConfirmPw] = useState(''); const [currentPw, setCurrentPw] = useState('');
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
   const fmtWhen = (s) => { try { return new Date(s).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return s; } };
@@ -616,9 +603,9 @@ function SecurityCard({ email, lastSignIn, flash }) {
     if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
     if (pw !== confirmPw) { setErr('Passwords do not match.'); return; }
     setBusy(true);
-    const { error } = await updatePassword(pw); setBusy(false);
+    const { error } = await updatePassword(pw, currentPw); setBusy(false);
     if (error) { setErr(error.message); return; }
-    setPw(''); setConfirmPw(''); flash('Password updated.');
+    setPw(''); setConfirmPw(''); setCurrentPw(''); flash('Password updated.');
   };
   const signOutEverywhere = async () => {
     if (typeof window !== 'undefined' && !window.confirm('Sign out of Greatstone on all your devices?')) return;
@@ -635,6 +622,7 @@ function SecurityCard({ email, lastSignIn, flash }) {
         <svg className="ca-trust-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
         Your account is protected by your password over an encrypted connection. Use a strong, unique password, and sign out of all your devices below if you ever lose one.
       </p>
+      <label>Current password<PasswordInput value={currentPw} onChange={e => setCurrentPw(e.target.value)} autoComplete="current-password" required /></label>
       <label>New password<PasswordInput value={pw} onChange={e => setPw(e.target.value)} minLength={8} autoComplete="new-password" showStrength /></label>
       <label>Confirm new password<PasswordInput value={confirmPw} onChange={e => setConfirmPw(e.target.value)} minLength={8} autoComplete="new-password" /></label>
       {err && <div className="ca-err" role="alert">{err}</div>}

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asStaff } from './lib/staff-store.mjs';
 import { buildLicenceEmail } from '../../src/lib/licence-email.mjs';
@@ -11,24 +11,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function makeNotifyLicenceIssuedHandler({ env = process.env, pool = getPool, verify, fetchImpl = fetch, log = console.error } = {}) {
   return async (req) => {
     if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-    const match = /^Bearer ([^\s]+)$/.exec(req.headers.get('authorization') || '');
-    if (!match) return json({ error: 'Staff sign in required.' }, 401);
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
     if (!UUID.test(body?.order_id || '')) return json({ error: 'Invalid order.' }, 400);
     try {
-      const check = verify || (async (token) => {
-        const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-        const key = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
-        if (!url || !key) throw new Error('Auth service not configured');
-        const { data, error } = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-        return error ? null : data.user;
-      });
-      const user = await check(match[1]);
+      const user = await userFromRequest(req, verify);
       if (!user?.id || !UUID.test(user.id)) return json({ error: 'Staff sign in required.' }, 401);
       const db = pool();
       if (!db) return json({ error: 'Email service unavailable.' }, 503);
-      const result = await asStaff(db, { id: user.id, email: user.email || null, email_verified: !!user.email_confirmed_at }, async (client) => {
+      const result = await asStaff(db, authIdentity(user), async (client) => {
         const { rows: staff } = await client.query('SELECT id FROM users WHERE auth_subject=$1 AND deleted_at IS NULL', [user.id]);
         if (!staff.length) return { forbidden: true };
         const { rows: orders } = await client.query('SELECT id,reference,customer_email FROM orders WHERE id=$1 AND deleted_at IS NULL', [body.order_id]);

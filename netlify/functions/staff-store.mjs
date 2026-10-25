@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asStaff, staffStore } from './lib/staff-store.mjs';
 
@@ -13,21 +13,12 @@ export function makeStaffStoreHandler({ pool = getPool, query = staffStore, veri
     try { body = await req.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Invalid request.' }, 400);
     if (JSON.stringify(body).length > 2_000_000) return json({ error: 'Request too large.' }, 413);
-    const match = /^Bearer ([^\s]+)$/.exec(req.headers.get('authorization') || '');
-    if (!match) return json({ error: 'Sign in required.' }, 401);
     try {
-      const check = verify || (async (token) => {
-        const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-        if (!url || !key) throw new Error('Auth service not configured');
-        const { data, error } = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-        return error ? null : data.user;
-      });
-      const user = await check(match[1]);
+      const user = await userFromRequest(req, verify);
       if (!user?.id || !UUID.test(user.id)) return json({ error: 'Session expired. Sign in again.' }, 401);
       const db = pool();
       if (!db) return json({ error: 'Staff service unavailable.' }, 503);
-      const identity = { id: user.id, email: user.email || null, email_verified: !!user.email_confirmed_at };
+      const identity = authIdentity(user);
       const result = await asStaff(db, identity, (client) => query(client, { ...body, subject: identity.id }));
       if (result.forbidden) return json({ error: 'Staff access required.' }, 403);
       if (result.notFound) return json({ error: 'Record not found.' }, 404);

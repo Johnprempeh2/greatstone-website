@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer, customerStore } from './lib/customer-store.mjs';
 
@@ -35,22 +35,12 @@ export function makeCustomerStoreHandler({ pool = getPool, query = customerStore
       !['member', 'admin'].includes(args.role) ||
       ['fullName', 'note'].some((key) => args[key] != null && (typeof args[key] !== 'string' || args[key].length > 500))
     )) return json({ error: 'Invalid invitation details.' }, 400);
-    const match = /^Bearer ([^\s]+)$/.exec(req.headers.get('authorization') || '');
-    if (!match) return json({ error: 'Sign in required.' }, 401);
     try {
-      const check = verify || (async (token) => {
-        const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-        if (!url || !key) throw new Error('Auth service not configured');
-        const { data, error } = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-        if (error) return null;
-        return data.user;
-      });
-      const user = await check(match[1]);
+      const user = await userFromRequest(req, verify);
       if (!user?.id || !UUID.test(user.id)) return json({ error: 'Session expired. Sign in again.' }, 401);
       const db = pool();
       if (!db) return json({ error: 'Account service unavailable.' }, 503);
-      const identity = { id: user.id, email: user.email || null, email_verified: !!user.email_confirmed_at };
+      const identity = authIdentity(user);
       const data = await asCustomer(db, identity, (client) => query(client, op, { ...args, subject: identity.id }));
       return json({ data: moneyNumbers(data) });
     } catch (error) {
