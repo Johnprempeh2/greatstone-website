@@ -71,10 +71,11 @@ test('no superseded offer, size tier, AI-route promise or "run it for you" on th
   }
 });
 
-test('How We Work and the service page tell the six-step journey; their CTAs open the enquiry with the package chosen', () => {
-  const method = STORE.slice(STORE.indexOf("method: seedPage("), STORE.indexOf("contact: seedPage("));
-  const titles = [...method.matchAll(/\{ title: '([^']+)', text:/g)].map((m) => m[1]);
-  assert.deepEqual(titles, ['Executive Discovery', 'Initial assessment', 'Agreement', 'Deep Dive', 'Actionable blueprint', 'Digital office, where it fits']);
+test('How We Work and DX Consultancy use the same four-step method; service enquiries stay linked', () => {
+  const method = STORE.slice(STORE.indexOf('method: howWeWorkPage()'), STORE.indexOf('contact: seedPage('));
+  assert.match(method, /method: howWeWorkPage\(\)/);
+  assert.match(STORE, /function howWeWorkPage\(\)[\s\S]*?blk\('DxConsultancyMethod', \{ eyebrow: 'How we work' \}\)/);
+  assert.doesNotMatch(method, /eight pillars|Agreement|Digital office, where it fits/i);
   const svc = ctas(page('services').blocks).filter((c) => c.label === 'Ask about GS Agentic Manager');
   assert.equal(svc.length, 2);
   for (const c of svc) assert.equal(c.href, '#enquire/gs-agentic-manager');
