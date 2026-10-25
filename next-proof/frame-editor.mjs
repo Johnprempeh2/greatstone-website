@@ -18,6 +18,11 @@ export function editModeOf(helloPayload) {
 /** Edit copy changes words only: Puck may not drag, duplicate, delete or insert blocks. */
 export const COPY_PERMISSIONS = Object.freeze({ drag: false, duplicate: false, delete: false, insert: false });
 
+/** Puck's delete guard misses iframe elements across realms; keep its shortcut outside inline text. */
+export function keepTextDeleteInField(event) {
+  if (event.key === 'Backspace' || event.key === 'Delete') event.stopPropagation();
+}
+
 /** Commands Edit copy refuses: they open the block library or the outline. */
 export function copyModeAllows(command) {
   return command !== 'add-block' && command !== 'outline';

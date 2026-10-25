@@ -6,6 +6,7 @@ import { looksLikeHtml, plainToRichHtml } from '../lib/richtext-normalise.mjs';
 import { RT_COLORS, RT_HEX } from '../lib/richtext-marks.mjs';
 import { safeHref } from '../lib/safe-url.js';
 import { useFrameCopy } from '../../app/editor/frame-context.jsx';
+import { keepTextDeleteInField } from '../../next-proof/frame-editor.mjs';
 
 // Inline-on-canvas rich editor. Renders a block's text field as an editable, formattable element DIRECTLY on the
 // canvas in the Next.js Puck iframe. Its Text toolbar is portaled into that same document, so formatting
@@ -61,6 +62,7 @@ export default function InlineRichText({ id, field, value, as: Tag = 'span', cla
   }, [dispatch, getItemById, getSelectorForId, id, field, singleLine, JSON.stringify(resolvedPath)]);
 
   const onKeyDown = (e) => {
+    keepTextDeleteInField(e);
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (singleLine) return;

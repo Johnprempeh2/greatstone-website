@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
+import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, keepTextDeleteInField, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
 import { envelope, validMessage } from './frame-protocol.mjs';
+import { Window } from 'happy-dom';
 
 const parent = {};
 globalThis.window = { parent };
@@ -31,6 +32,26 @@ test('Edit copy (GSAM GRE-2394): mode from hello, refused commands and Puck perm
   assert.equal(validEditorCommand({ command: 'import-live', on: true }), false);
   const editor = readFileSync(new URL('../app/editor/[slug]/Editor.jsx', import.meta.url), 'utf8');
   assert.match(editor, /copy \? \{ permissions: COPY_PERMISSIONS \} : \{\}/);
+});
+
+test('Backspace and Delete stay in a focused text field inside a selected block', () => {
+  const dom = new Window();
+  const selectedBlock = dom.document.createElement('div');
+  const field = dom.document.createElement('p');
+  field.contentEditable = 'true';
+  field.setAttribute('role', 'textbox');
+  selectedBlock.append(field);
+  dom.document.body.append(selectedBlock);
+  let blockShortcutCalls = 0;
+  selectedBlock.addEventListener('keydown', () => { blockShortcutCalls++; });
+  field.addEventListener('keydown', keepTextDeleteInField);
+  field.focus();
+  for (const key of ['Backspace', 'Delete']) {
+    const event = new dom.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    field.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, false, `${key} must keep its browser text-editing action`);
+  }
+  assert.equal(blockShortcutCalls, 0, 'selected block does not receive either delete shortcut');
 });
 
 test('live content: counted for hello-ack, imported only into an empty draft with block ids unchanged', () => {
