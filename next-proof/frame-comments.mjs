@@ -21,9 +21,9 @@ export function encodeCapture(image, width, height, makeCanvas) {
 export function validPins(payload, draft) {
   if (!Array.isArray(payload?.pins) || payload.pins.length > 200 || !draft) return null;
   for (const pin of payload.pins) {
-    if (!pin || typeof pin.blockId !== 'string' || !pin.blockId || !Number.isInteger(pin.number) || pin.number < 1 || pin.number > 9999 || !findBlock(draft.content, pin.blockId)) return null;
+    if (!pin || typeof pin.blockId !== 'string' || !pin.blockId || !Number.isInteger(pin.number) || pin.number < 1 || pin.number > 9999) return null;
   }
-  return payload.pins;
+  return payload.pins.filter((pin) => findBlock(draft.content, pin.blockId));
 }
 
 export function askAgent(item) {
@@ -57,18 +57,28 @@ export function renderPins(doc, pins, onClick) {
   }
 }
 
+export function captureOptions(doc, blockId, rect) {
+  if (blockId !== null) return { width: Math.min(10000, Math.ceil(rect.width)), height: Math.ceil(rect.height) };
+  return {
+    width: Math.min(10000, Math.ceil(doc.documentElement.clientWidth)),
+    height: Math.ceil(doc.documentElement.clientHeight),
+    x: doc.defaultView.scrollX,
+    y: doc.defaultView.scrollY,
+  };
+}
+
 /** Render the editor document in-browser; the host receives only the bounded PNG. */
 export async function capturePng(doc, blockId) {
   const source = blockId === null ? doc.body : [...doc.querySelectorAll('[data-gs-block-id]')].find((node) => node.dataset.gsBlockId === blockId);
   if (!source) throw new Error('The requested block is not visible.');
   const rect = source.getBoundingClientRect();
-  const width = Math.min(10000, Math.ceil(blockId === null ? doc.documentElement.clientWidth : rect.width));
-  const height = Math.ceil(blockId === null ? doc.documentElement.clientHeight : rect.height);
+  const bounds = captureOptions(doc, blockId, rect);
+  const { width, height } = bounds;
   if (!width || !height) throw new Error('The page has no visible content.');
   const { default: html2canvas } = await import('html2canvas-pro');
   const canvas = await html2canvas(source, {
     backgroundColor: null, useCORS: true, allowTaint: false, logging: false,
-    width, height, scale: Math.min(1, 10000 / width, 10000 / height),
+    ...bounds, scale: Math.min(1, 10000 / width, 10000 / height),
     onclone(clone) {
       for (const pin of clone.querySelectorAll('.gs-comment-pin')) pin.remove();
       const style = clone.createElement('style');

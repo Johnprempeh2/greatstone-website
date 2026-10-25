@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Window } from 'happy-dom';
-import { askAgent, captureTarget, EDITOR_MESSAGES, encodeCapture, renderPins, validPins } from './frame-comments.mjs';
+import { askAgent, captureOptions, captureTarget, EDITOR_MESSAGES, encodeCapture, renderPins, validPins } from './frame-comments.mjs';
 import { envelope, validMessage } from './frame-protocol.mjs';
 
 const parent = {};
@@ -22,7 +22,8 @@ test('comment-pins validates the host envelope and replaces visible pins without
   const pins = [{ blockId: 'hero-1', number: 1 }, { blockId: 'prose-2', number: 2 }];
   assert.equal(validMessage(incoming('comment-pins', { pins }), bound, ['comment-pins']), true);
   assert.deepEqual(validPins({ pins }, draft), pins);
-  assert.equal(validPins({ pins: [{ blockId: 'missing', number: 1 }] }, draft), null);
+  assert.deepEqual(validPins({ pins: [{ blockId: 'missing', number: 1 }] }, draft), []);
+  assert.deepEqual(validPins({ pins: [pins[0], { blockId: 'missing', number: 3 }, pins[1]] }, draft), pins);
   assert.equal(validPins({ pins: [{ blockId: 'hero-1', number: 0 }] }, draft), null);
   assert.equal(validPins({ pins: Array.from({ length: 201 }, () => pins[0]) }, draft), null);
   const win = new Window();
@@ -35,6 +36,9 @@ test('comment-pins validates the host envelope and replaces visible pins without
   renderPins(win.document, [pins[1]], () => {});
   assert.equal(win.document.querySelectorAll('.gs-comment-pin').length, 1);
   assert.equal(win.document.querySelector('.gs-comment-pin')?.textContent, '2');
+  renderPins(win.document, validPins({ pins: [{ blockId: 'missing', number: 3 }, pins[0]] }, draft), () => {});
+  assert.equal(win.document.querySelectorAll('.gs-comment-pin').length, 1);
+  assert.equal(win.document.querySelector('.gs-comment-pin')?.textContent, '1');
   assert.deepEqual(draft.content[0].props, { id: 'hero-1' });
   renderPins(win.document, [{ blockId: 'hero-1', number: 3 }, { blockId: 'hero-1', number: 4 }], () => {});
   assert.equal(win.document.querySelectorAll('.gs-comment-pin').length, 2);
@@ -66,4 +70,7 @@ test('capture accepts a page or known block and answers with request id', () => 
   }));
   assert.equal(attempts, 2);
   assert.equal(result.width, 700);
+  const scrolled = { defaultView: { scrollX: 17, scrollY: 640 }, documentElement: { clientWidth: 390, clientHeight: 900 } };
+  assert.deepEqual(captureOptions(scrolled, null, { width: 1000, height: 2000 }), { width: 390, height: 900, x: 17, y: 640 });
+  assert.deepEqual(captureOptions(scrolled, 'hero-1', { width: 320, height: 400 }), { width: 320, height: 400 });
 });
