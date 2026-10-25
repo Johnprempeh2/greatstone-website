@@ -26,6 +26,17 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
           VITE_VAT_RATE: '0.20'
+      - name: Next built pages and internal links
+        run: |
+          npm run build:next
+          npx next start --port 5181 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5181/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node next-proof/scripts/check-built-links.mjs
       - name: Legacy redirects in sync (public/_redirects)
         run: npm run redirects:check
       - name: Edge secrets list in sync (scripts/edge-secrets.json)
