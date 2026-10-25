@@ -78,6 +78,9 @@
 # END legacy-redirects
 
 # Legacy studio URL (was served under /puck-proof/) → now the site root.
+# Case Studies is the new SPA page. Preserve links to the retired Proof path.
+/proof               /#case-studies  301!
+/case-studies        /#case-studies  301!
 /puck-proof          /             301!
 /puck-proof/         /             301!
 /puck-proof/*        /:splat       301!

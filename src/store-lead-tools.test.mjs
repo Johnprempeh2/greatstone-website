@@ -41,6 +41,35 @@ test('tool placement preserves saved home draft and published projections', asyn
   }
 });
 
+test('missing home story and proof are inserted after the doors in both projections', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
+  globalThis.localStorage = dom.localStorage;
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
+  try {
+    const { seedState, load } = await vite.ssrLoadModule('/src/store.js');
+    const saved = seedState();
+    saved._homeRoutesAndPlaceholders = false;
+    for (const projection of ['data', 'published']) {
+      saved.pages.home[projection] = structuredClone(saved.pages.home[projection]);
+      saved.pages.home[projection].content = saved.pages.home[projection].content.filter((block) => !['TwoDoorsStory', 'TwoDoorsProof'].includes(block.type));
+    }
+    dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
+    const home = load().pages.home;
+    for (const projection of ['data', 'published']) {
+      assert.deepEqual(home[projection].content.slice(0, 4).map((block) => block.type), ['TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools']);
+      assert.equal(home[projection].content.at(-1).type, 'TwoDoorsBottom');
+    }
+  } finally {
+    await vite.close();
+    globalThis.localStorage = previous.localStorage;
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+  }
+});
+
 test('review correction restores the enquiry CTA on already placed pages', async () => {
   const dom = new Window({ url: 'http://localhost/' });
   const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
@@ -100,6 +129,42 @@ test('saved home receives route explanations and placeholders without changing t
       assert.equal(blocks[0].props.heading, 'Keep this hero');
       assert.deepEqual(blocks.find((block) => block.type === 'TwoDoorsStory').props.range.map((item) => item.href), ['#go/dx-consultancy', '#go/dev-tools']);
       assert.equal(blocks.find((block) => block.type === 'TwoDoorsProof').props.draftItems.length, 3);
+    }
+  } finally {
+    await vite.close();
+    globalThis.localStorage = previous.localStorage;
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+  }
+});
+
+test('saved home moves appended story blocks below the doors without changing editor copy', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
+  globalThis.localStorage = dom.localStorage;
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
+  try {
+    const { seedState, load } = await vite.ssrLoadModule('/src/store.js');
+    const saved = seedState();
+    saved.pages.home.data = structuredClone(saved.pages.home.data);
+    saved.pages.home.published = structuredClone(saved.pages.home.published);
+    saved._homeRoutesAndPlaceholders = true;
+    for (const projection of ['data', 'published']) {
+      const blocks = saved.pages.home[projection].content;
+      blocks.push(blocks.splice(1, 1)[0], blocks.splice(1, 1)[0]);
+      blocks.at(-2).props.storyHeading = `${projection} editor story`;
+      blocks.at(-1).props.proofHeading = `${projection} editor proof`;
+    }
+    dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
+    const next = load().pages.home;
+    for (const projection of ['data', 'published']) {
+      const blocks = next[projection].content;
+      assert.deepEqual(blocks.slice(0, 3).map((block) => block.type), ['TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof']);
+      assert.equal(blocks[1].props.storyHeading, `${projection} editor story`);
+      assert.equal(blocks[2].props.proofHeading, `${projection} editor proof`);
+      assert.equal(blocks.at(-1).type, 'TwoDoorsBottom');
     }
   } finally {
     await vite.close();

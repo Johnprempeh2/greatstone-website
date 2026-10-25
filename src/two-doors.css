@@ -26,7 +26,7 @@
 .td-lede{position:relative;max-width:60ch;font-size:18px;line-height:1.65;color:var(--td-muted);margin:20px 0 28px}
 .td-cue{position:relative;text-decoration:none;font-weight:800;color:var(--td-text)}
 .td-cue small{color:var(--td-palette-08);font-weight:600}
-.td-door-section{width:100%;padding:0 0 var(--td-size-80);scroll-margin-top:var(--td-size-85)}
+.td-door-section{width:100%;padding:0 0 var(--td-size-32);scroll-margin-top:var(--td-size-85)}
 .td-stepbar{position:sticky;top:var(--td-size-75);z-index:15;display:none;width:max-content;max-width:100%;gap:var(--td-size-4);padding:var(--td-size-5);border:var(--td-size-1) solid var(--td-palette-03);border-radius:var(--td-pill-radius);background:var(--td-palette-09);backdrop-filter:blur(var(--td-glass-menu));margin:0 auto var(--td-size-24)}
 .td-stepbar button{border:0;color:var(--td-palette-10);background:transparent;padding:var(--td-size-12) var(--td-size-20);border-radius:var(--td-pill-radius);font-size:var(--td-size-13);font-weight:800}
 .td-stepbar button[aria-current=true]{background:var(--td-palette-11);color:var(--td-lime)}

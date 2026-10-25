@@ -30,16 +30,16 @@
     },
     "navigation": [
       {
-        "id": "nav-2v03jb",
+        "id": "nav-2zd9qu",
         "label": "DX Consultancy",
         "visible": true,
         "target": {
           "kind": "page",
-          "pageId": "ce3e6354-062d-4e98-8fbd-f47eba99c8c3"
+          "pageId": "1462ea7b-add9-401b-808a-65b0c45ae89d"
         }
       },
       {
-        "id": "nav-2wabe3",
+        "id": "nav-30yhsz",
         "label": "DX Dev Tools",
         "visible": true,
         "target": {
@@ -48,16 +48,16 @@
         }
       },
       {
-        "id": "nav-2xfug0",
-        "label": "Proof",
+        "id": "nav-3bmxyl",
+        "label": "Case Studies",
         "visible": true,
         "target": {
           "kind": "page",
-          "pageId": "79ab9adc-d2ce-44dc-8fd6-c1798e959df0"
+          "pageId": "b43578ee-4434-4710-8d24-0de9e96f8ae0"
         }
       },
       {
-        "id": "nav-2yslnr",
+        "id": "nav-3cszlh",
         "label": "About",
         "visible": true,
         "target": {
@@ -66,7 +66,7 @@
         }
       },
       {
-        "id": "nav-2zd9qu",
+        "id": "nav-3dgdoh",
         "label": "Insights",
         "visible": true,
         "target": {
@@ -114,7 +114,7 @@
           {
             "type": "TwoDoors",
             "props": {
-              "id": "twodoors-1ls1oy",
+              "id": "twodoors-1mnk4e",
               "headlineSuffix": "and the tools to deliver it.",
               "cueText": "Choose your side",
               "cueSubtext": "DX Consultancy or DX Dev Tools",
@@ -150,7 +150,7 @@
               "toolsPoint3Text": "Keep the route direct.",
               "chooseHref": "#choose",
               "contactHref": "/contact",
-              "proofHref": "/proof",
+              "proofHref": "/case-studies",
               "toolsHref": "/dev-tools",
               "kicker": "The Foundation of Digital Excellence",
               "heading": "Transformation",
@@ -199,32 +199,28 @@
           {
             "type": "TwoDoorsStory",
             "props": {
-              "id": "twodoorsstory-1mnk4e",
-              "storyKicker": "Who we are",
+              "id": "twodoorsstory-1n7111",
+              "storyKicker": "Copy placeholder · two routes, one company",
               "numbersLabel": "Greatstone in numbers",
               "draftNumbersHeading": "Draft numbers strip",
               "draftNumbersLine": "Figures and counting rules await confirmation.",
-              "rangeLabel": "The work we do",
-              "storyHeading": "Making change work.",
-              "storyBody": "Greatstone is a transformation and technology firm.",
-              "storyBody2": "Today we bring that experience to AI, and to the tools developers build with.",
+              "rangeLabel": "Explore the two routes",
+              "storyHeading": "From developer tools to transformation.",
+              "storyBody": "For roughly 20 years, Greatstone has helped development teams find the tools they need to build software.",
+              "storyBody2": "That work grew into DX Consultancy: helping organisations decide what to change, then helping their teams deliver it. The tools remain a route of their own.",
               "tide": true,
               "range": [
                 {
-                  "title": "Transformation",
-                  "line": "Operating models and change programmes."
+                  "title": "DX Consultancy",
+                  "line": "For leaders changing how work gets done. Start with a conversation, examine the work, then decide what to build.",
+                  "href": "#go/dx-consultancy",
+                  "linkLabel": "Explore DX Consultancy →"
                 },
                 {
-                  "title": "Delivery",
-                  "line": "Programme and project leadership."
-                },
-                {
-                  "title": "Technology",
-                  "line": "Systems, integration and developer tools."
-                },
-                {
-                  "title": "Data",
-                  "line": "Reporting and data quality."
+                  "title": "DX Dev Tools",
+                  "line": "For developers building and maintaining software. Browse components and SDKs from established suppliers.",
+                  "href": "#go/dev-tools",
+                  "linkLabel": "Explore DX Dev Tools →"
                 }
               ],
               "numbers": [],
@@ -240,27 +236,24 @@
           {
             "type": "TwoDoorsProof",
             "props": {
-              "id": "twodoorsproof-1n7111",
+              "id": "twodoorsproof-1oc1p5",
               "proofKicker": "Case studies",
-              "proofHeading": "What changed for our clients",
-              "draftBadge": "DRAFT",
-              "draftCaseLine": "Engagement facts, outcome and permission are pending.",
+              "proofHeading": "Work we will show here",
+              "draftBadge": "PLACEHOLDER",
+              "draftCaseLine": "Client story, evidence and permission are pending. No result is claimed here.",
               "pendingLine": "Verified case studies are being prepared.",
               "pendingLink": "See our current proof",
-              "proofHref": "/proof",
+              "proofHref": "/case-studies",
               "cases": [],
               "draftItems": [
                 {
-                  "headline": "First study",
-                  "image": "/assets/two-doors/consultancy-hero.webp"
+                  "headline": "Case study placeholder 01"
                 },
                 {
-                  "headline": "Second study",
-                  "image": "/assets/two-doors/tools-hero.webp"
+                  "headline": "Case study placeholder 02"
                 },
                 {
-                  "headline": "Third study",
-                  "image": "/assets/two-doors/consultancy-hero.webp"
+                  "headline": "Case study placeholder 03"
                 }
               ],
               "carousel": true,
@@ -276,24 +269,13 @@
           {
             "type": "TwoDoorsTools",
             "props": {
-              "id": "twodoorstools-1oc1p5",
+              "id": "twodoorstools-1pyhln",
               "toolsKicker": "DX Dev Tools",
               "toolsHeading": "The tools we supply",
               "toolsIntro": "Developer components and SDKs from the brands you know.",
               "toolLinkPrefix": "Browse",
               "toolLinkSuffix": "→",
-              "closeHeading": "Begin the conversation",
-              "closeLine": "Tell us what you are working on. We will suggest a next step.",
-              "closeCta": "Begin the conversation →",
-              "bottomKicker": "Two ways to work with Greatstone",
-              "bottomHeading": "Choose your side",
-              "bottomConsultancy": "DX Consultancy →",
-              "bottomTools": "DX Dev Tools →",
               "toolsHref": "/dev-tools",
-              "contactHref": "/contact",
-              "consultancyHref": "/dx-consultancy",
-              "consultancyImage": "/assets/two-doors/consultancy-hero.webp",
-              "toolsImage": "/assets/two-doors/tools-hero.webp",
               "tools": [
                 {
                   "name": "Aspose",
@@ -335,6 +317,44 @@
               },
               "_note": ""
             }
+          },
+          {
+            "type": "TwoDoorsClose",
+            "props": {
+              "id": "twodoorsclose-1qfnya",
+              "closeHeading": "Begin the conversation",
+              "closeLine": "Tell us what you are working on. We will suggest a next step.",
+              "closeCta": "Begin the conversation →",
+              "contactHref": "/contact",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": ""
+            }
+          },
+          {
+            "type": "TwoDoorsBottom",
+            "props": {
+              "id": "twodoorsbottom-1rslkn",
+              "bottomKicker": "Two ways to work with Greatstone",
+              "bottomHeading": "Choose your side",
+              "bottomConsultancy": "DX Consultancy →",
+              "bottomTools": "DX Dev Tools →",
+              "consultancyHref": "/dx-consultancy",
+              "toolsHref": "/dev-tools",
+              "consultancyImage": "/assets/two-doors/consultancy-hero.webp",
+              "toolsImage": "/assets/two-doors/tools-hero.webp",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": ""
+            }
           }
         ]
       }
@@ -361,7 +381,8 @@
           {
             "type": "AiBaselineSurvey",
             "props": {
-              "id": "aibaselinesurvey-1qfnya",
+              "id": "aibaselinesurvey-1t4fok",
+              "anchorId": "ai-readiness",
               "kicker": "Free AI readiness check",
               "heading": "Where does your business stand on AI?",
               "headingLevel": "h1",
@@ -399,7 +420,8 @@
           {
             "type": "AiCostCalculator",
             "props": {
-              "id": "aicostcalculator-1rslkn",
+              "id": "aicostcalculator-1u66y2",
+              "anchorId": "ai-cost-calculator",
               "kicker": "The money on the table",
               "heading": "How much could AI save you?",
               "intro": "A rough, honest estimate. Set the numbers for your team, see what the manual work costs in a year, then how much of it AI could take back.",
@@ -461,14 +483,14 @@
           {
             "type": "DevTools",
             "props": {
-              "id": "devtools-1pyhln",
+              "id": "devtools-1sdpqz",
               "devKicker": "DX Dev Tools",
               "shopCta": "Browse the Greatstone Software shop →",
               "brandHeading": "Browse by brand",
               "brandCta": "Browse in the shop →",
               "helpLine": "Need help choosing?",
               "helpEmail": "DX@greatstonesoftware.co.uk",
-              "shopHref": "#shop",
+              "shopHref": "/shop",
               "heading": "Tools for teams who deliver.",
               "intro": "Developer components and SDKs from the brands you know.",
               "tools": [
@@ -516,12 +538,52 @@
       }
     },
     {
+      "id": "ade9b5d2-ae06-463c-8527-37ac16c4b59b",
+      "revisionId": "3f28925d-ec69-46f6-8fab-f8ecf1d14924",
+      "slug": "transformation-services",
+      "path": "/transformation-services",
+      "title": "Transformation Services",
+      "navOrder": 3,
+      "seo": {
+        "title": "Transformation Services · Greatstone International",
+        "description": "Take one step on its own, or plan it as part of the full transformation.",
+        "ogImage": ""
+      },
+      "data": {
+        "root": {
+          "props": {
+            "title": "Transformation Services"
+          }
+        },
+        "content": [
+          {
+            "type": "TransformationServices",
+            "props": {
+              "id": "transformationservices-1vggb8",
+              "eyebrow": "Transformation Services",
+              "heading": "Take one step, or the whole way.",
+              "body": "Take a step on its own when that is what you need now. Or take it as part of the full transformation, where every step is planned with the others. Either way, we show you what could come next.",
+              "closeHeading": "Not sure which step comes first?",
+              "closeBody": "That is what the full transformation is for. We look at the whole business, then plan each step so they work together. It starts with a free conversation.",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": ""
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "dfe657e4-ef24-46ba-827b-734f60a90a23",
       "revisionId": "4993b649-857c-4707-8944-f58b6c6d446a",
       "slug": "how-we-help",
       "path": "/how-we-help",
       "title": "How We Help",
-      "navOrder": 3,
+      "navOrder": 4,
       "seo": {
         "title": "How We Help · Greatstone International",
         "description": "Every organisation has the potential to become stronger. Greatstone helps organisations transform with confidence, strengthen organisational capability and invest in technology that matters.",
@@ -2860,7 +2922,7 @@
       "slug": "services",
       "path": "/services",
       "title": "GS Agentic Manager",
-      "navOrder": 4,
+      "navOrder": 5,
       "seo": {
         "title": "GS Agentic Manager · Greatstone International",
         "description": "A digital office for your organisation: people and AI agents in clear roles on your own instance, set up by Greatstone where it fits, with your people approving what matters.",
@@ -2878,25 +2940,25 @@
             "props": {
               "id": "hero-nhj5x",
               "kicker": "GS Agentic Manager",
-              "headline": "Your AI tools, organised into one team.",
+              "headline": "A digital office for the work that comes round every week",
               "highlight": "",
-              "body": "Most organisations use AI tools the way they would use freelancers: one at a time, with no shared memory and nobody checking the work. Where it fits your blueprint, we set up a digital office on your own instance: your people and AI agents in clear roles, with shared context and a goal. We configure it, connect the systems you agree and train your team. Your people run the daily work, and a named person approves what matters.",
+              "body": "An AI agent team, set up for one area of your work, in your own hosted instance. Your people direct it. Every task is on record, and it stops for a person where you decide.",
               "prompt": "",
               "cueStyle": "text",
               "headlineSuffix": "",
               "align": "left",
-              "size": "compact",
+              "size": "standard",
               "ctaLabel": "Ask about GS Agentic Manager",
               "ctaHref": "#enquire/gs-agentic-manager",
-              "ctaLabel2": "See how we work",
-              "ctaHref2": "#go/method",
+              "ctaLabel2": "Check your AI readiness",
+              "ctaHref2": "#go/dx-consultancy/ai-readiness",
               "meta": [],
               "lines": [],
               "pillEyebrow": false,
-              "gridBackdrop": true,
+              "gridBackdrop": false,
               "scrollCue": false,
               "stone": "none",
-              "variant": "default",
+              "variant": "statement",
               "cueLabel": "Scroll down to start the climb",
               "_section": {
                 "surface": "none",
@@ -2947,7 +3009,7 @@
               "id": "featuregrid-pa9ih",
               "kicker": "",
               "heading": "What every digital office starts with",
-              "variant": "cards",
+              "variant": "principles",
               "items": [
                 {
                   "n": "",
@@ -2977,7 +3039,7 @@
                 {
                   "n": "",
                   "title": "Hosting and maintenance",
-                  "text": "We host your instance, maintain the platform and keep backups. What platform support covers is written into your agreement."
+                  "text": "We host your instance, maintain the platform and keep backups. The terms of this service are written into your agreement."
                 }
               ],
               "_section": {
@@ -3026,7 +3088,7 @@
                   "ctaHref": "",
                   "icon": "layers",
                   "title": "Recurring service",
-                  "text": "Hosting of your own instance, platform maintenance and bounded platform support. Your people direct the agents and run the daily work."
+                  "text": "Hosting of your own instance and platform maintenance, including backups. Your people direct the agents and run the daily work."
                 },
                 {
                   "label": "",
@@ -3112,9 +3174,57 @@
             }
           },
           {
+            "type": "Panels",
+            "props": {
+              "id": "panels-tdrxk",
+              "eyebrow": "",
+              "heading": "Not sure where to start?",
+              "intro": "Two free tools. One shows how ready you are. The other shows what the manual work costs.",
+              "panelsLabel": "",
+              "columns": "two",
+              "panelStyle": "ruled",
+              "headAlign": "left",
+              "bodyClamp": "none",
+              "coda": "",
+              "ctaLabel": "",
+              "ctaHref": "",
+              "ctaVariant": "ghost",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "headingLevel": "h2",
+              "items": [
+                {
+                  "label": "",
+                  "title": "AI readiness check",
+                  "text": "Find out where AI can help your business first, and what has to be in place before it does.",
+                  "ctaLabel": "AI readiness check",
+                  "ctaHref": "#go/dx-consultancy/ai-readiness",
+                  "icon": ""
+                },
+                {
+                  "label": "",
+                  "title": "AI cost calculator",
+                  "text": "See what your manual work costs you today. This is an estimate of your own time and spend, not a price for our services.",
+                  "ctaLabel": "AI cost calculator",
+                  "ctaHref": "#go/dx-consultancy/ai-cost-calculator",
+                  "icon": ""
+                }
+              ],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": ""
+            }
+          },
+          {
             "type": "Faq",
             "props": {
-              "id": "faq-tdrxk",
+              "id": "faq-ujqqt",
               "showSchema": true,
               "kicker": "Common questions",
               "heading": "The questions buyers ask first.",
@@ -3138,7 +3248,7 @@
                 },
                 {
                   "q": "What does it cost?",
-                  "a": "Setup is a one-off fee, agreed in writing. A recurring fee covers hosting, maintenance and bounded platform support, and the optional quality review is priced separately. AI use follows a route and a budget you agree with us. You see every figure in writing before you commit."
+                  "a": "Setup is a one-off fee, agreed in writing. A recurring fee covers hosting of your own instance and platform maintenance, and the optional quality review is priced separately. AI use follows a route and a budget you agree with us. You see every figure in writing before you commit."
                 },
                 {
                   "q": "Is this a software product or a consultancy?",
@@ -3157,7 +3267,7 @@
           {
             "type": "Invite",
             "props": {
-              "id": "invite-ujqqt",
+              "id": "invite-v06aw",
               "eyebrow": "Start here",
               "headline": "Tell us which work keeps coming back.",
               "highlight": "",
@@ -3192,7 +3302,7 @@
       "slug": "method",
       "path": "/method",
       "title": "How We Work",
-      "navOrder": 5,
+      "navOrder": 6,
       "seo": {
         "title": "How We Work · Eight Pillars · Greatstone International",
         "description": "Executive Discovery, an initial assessment, a Deep Dive and an actionable blueprint, then a digital office only where it fits. The Deep Dive reads your organisation across eight pillars before anything is built.",
@@ -3580,14 +3690,14 @@
       }
     },
     {
-      "id": "79ab9adc-d2ce-44dc-8fd6-c1798e959df0",
-      "revisionId": "1a78f8fc-96d4-4f85-863c-dc9cfa9b9a5b",
-      "slug": "proof",
-      "path": "/proof",
-      "title": "Proof",
-      "navOrder": 6,
+      "id": "b43578ee-4434-4710-8d24-0de9e96f8ae0",
+      "revisionId": "c0af0dea-3681-4d49-8a60-cf7badefdbf3",
+      "slug": "case-studies",
+      "path": "/case-studies",
+      "title": "Case Studies",
+      "navOrder": 7,
       "seo": {
-        "title": "Proof · Greatstone International",
+        "title": "Case Studies · Greatstone International",
         "description": "How Greatstone runs its own operations as a digital office of people and agents, what a demonstration shows, and how we measure results with each client.",
         "ogImage": ""
       },
@@ -3601,7 +3711,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-z203z",
+              "id": "hero-1032pg",
               "kicker": "Proof, not promises",
               "headline": "We run Greatstone this way. Then we set it up for you.",
               "highlight": "",
@@ -3635,7 +3745,7 @@
           {
             "type": "Chapter",
             "props": {
-              "id": "chapter-1032pg",
+              "id": "chapter-11gyim",
               "index": "",
               "eyebrow": "Our own operations",
               "headline": "Our agents work in teams, with managers, budgets and people who approve.",
@@ -3668,7 +3778,7 @@
           {
             "type": "FeatureGrid",
             "props": {
-              "id": "featuregrid-11gyim",
+              "id": "featuregrid-12ureg",
               "kicker": "",
               "heading": "What you will see in a demonstration",
               "variant": "cards",
@@ -3707,7 +3817,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-12ureg",
+              "id": "prose-138ml8",
               "kicker": "Your numbers",
               "kickerLevel": "p",
               "body": "The Deep Dive records a starting point for the work in scope: how long it takes today, how often it happens and who does it. When your digital office has run for an agreed period, we compare against it with you. Those are the only figures we will quote to you, and the only ones we will ever publish about you, with your permission.",
@@ -3730,7 +3840,7 @@
           {
             "type": "Invite",
             "props": {
-              "id": "invite-138ml8",
+              "id": "invite-142kir",
               "eyebrow": "See it working",
               "headline": "Ask us for a demonstration.",
               "highlight": "",
@@ -3765,7 +3875,7 @@
       "slug": "about",
       "path": "/about",
       "title": "About Greatstone",
-      "navOrder": 7,
+      "navOrder": 8,
       "seo": {
         "title": "About Greatstone · Greatstone International",
         "description": "Greatstone exists to help organisations become stronger. Our purpose, our philosophy, the character of the institution and the people who do the work.",
@@ -3781,7 +3891,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-142kir",
+              "id": "hero-15bz7z",
               "kicker": "",
               "headline": "",
               "highlight": "",
@@ -3824,7 +3934,7 @@
           {
             "type": "Chapter",
             "props": {
-              "id": "chapter-15bz7z",
+              "id": "chapter-167zoa",
               "index": "",
               "eyebrow": "",
               "headline": "What We Believe",
@@ -3857,7 +3967,7 @@
           {
             "type": "Panels",
             "props": {
-              "id": "panels-167zoa",
+              "id": "panels-17rbu3",
               "eyebrow": "",
               "heading": "The Character of the Institution",
               "intro": "Organisations choose their partners carefully, and rightly so. These are the characteristics that shape how Greatstone works, and the ones our clients hold us to.",
@@ -3916,7 +4026,7 @@
           {
             "type": "Panels",
             "props": {
-              "id": "panels-17rbu3",
+              "id": "panels-18fvx2",
               "eyebrow": "",
               "heading": "The Greatstone Principles",
               "intro": "",
@@ -3980,7 +4090,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-18fvx2",
+              "id": "prose-19n51x",
               "kicker": "Experience",
               "kickerLevel": "p",
               "body": "Greatstone brings two decades of work inside organisations, across a broad range of industries and at every level from the executive team to the people doing the work each day. That experience is why we begin with understanding. We have seen enough organisations to know that the presenting problem is rarely the real one, and that the difference between an initiative that holds and one that quietly unwinds is almost always decided before any change begins. Today we bring that experience together with AI-enabled automation, and we run our own company on the same agent teams we set up for clients.",
@@ -4003,7 +4113,7 @@
           {
             "type": "Team",
             "props": {
-              "id": "team-19n51x",
+              "id": "team-1afzxu",
               "kicker": "Leadership",
               "heading": "The people who do the work",
               "body": "Senior people, involved directly rather than represented. Your engagement is led by the people you meet, and the remaining seats on your team are named once the engagement is confirmed.",
@@ -4051,7 +4161,7 @@
           {
             "type": "LogoWall",
             "props": {
-              "id": "logowall-1afzxu",
+              "id": "logowall-1bskd5",
               "eyebrow": "Strategic relationships",
               "logos": [],
               "_section": {
@@ -4066,7 +4176,7 @@
           {
             "type": "Invite",
             "props": {
-              "id": "invite-1bskd5",
+              "id": "invite-1cksn3",
               "eyebrow": "",
               "headline": "Let’s Build a Stronger Organisation",
               "highlight": "",
@@ -4132,7 +4242,7 @@
       "slug": "insights",
       "path": "/insights",
       "title": "Executive Intelligence",
-      "navOrder": 8,
+      "navOrder": 9,
       "seo": {
         "title": "Executive Intelligence · Greatstone International",
         "description": "The quality of an organisation’s decisions will never exceed the quality of its thinking. Greatstone’s perspective on organisations, leadership, technology and transformation.",
@@ -4148,7 +4258,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-1cksn3",
+              "id": "hero-1d36xa",
               "kicker": "",
               "headline": "",
               "highlight": "",
@@ -4187,7 +4297,7 @@
           {
             "type": "Panels",
             "props": {
-              "id": "panels-1d36xa",
+              "id": "panels-1ek8oe",
               "eyebrow": "",
               "heading": "The Intelligence Centres",
               "intro": "Executive Intelligence is not a marketing function, a news service or a content library. It exists to help executive leaders think more clearly about the challenges, opportunities and decisions that shape stronger organisations.",
@@ -4258,7 +4368,7 @@
           {
             "type": "IntelBand",
             "props": {
-              "id": "intelband-1ek8oe",
+              "id": "intelband-1fs5le",
               "kicker": "AI Market Intelligence",
               "heading": "Where Artificial Intelligence genuinely matters,",
               "highlight": "and where it does not.",
@@ -4305,7 +4415,7 @@
           {
             "type": "Invite",
             "props": {
-              "id": "invite-1fs5le",
+              "id": "invite-1gdfpb",
               "eyebrow": "",
               "headline": "Let’s Build a Stronger Organisation",
               "highlight": "",
@@ -4368,7 +4478,7 @@
       "slug": "climb",
       "path": "/climb",
       "title": "The Climb",
-      "navOrder": 9,
+      "navOrder": 10,
       "seo": {
         "title": "The Climb · Maturity Model · Greatstone International",
         "description": "Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up.",
@@ -4384,7 +4494,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-1gdfpb",
+              "id": "hero-1hox13",
               "kicker": "The Climb",
               "headline": "Pebble. Plateau.",
               "highlight": "Peak.",
@@ -4431,7 +4541,7 @@
           {
             "type": "MaturityMap",
             "props": {
-              "id": "maturitymap-1hox13",
+              "id": "maturitymap-1i2sea",
               "tiers": [
                 {
                   "tag": "Pebble",
@@ -4467,7 +4577,7 @@
           {
             "type": "Ladder",
             "props": {
-              "id": "ladder-1i2sea",
+              "id": "ladder-1jnstv",
               "kicker": "Where your organisation sits",
               "headline": "Laggard to",
               "highlight": "Pioneer.",
@@ -4510,7 +4620,7 @@
           {
             "type": "MethodTieIn",
             "props": {
-              "id": "methodtiein-1jnstv",
+              "id": "methodtiein-1knjt0",
               "kicker": "The climb meets the method",
               "heading": "We score all eight. Then climb the",
               "highlight": "lowest first.",
@@ -4575,7 +4685,7 @@
           {
             "type": "Invite",
             "props": {
-              "id": "invite-1knjt0",
+              "id": "invite-1ls1oy",
               "eyebrow": "Find your altitude",
               "headline": "Let's find out where you",
               "highlight": "stand.",
@@ -4610,7 +4720,7 @@
       "slug": "industries",
       "path": "/industries",
       "title": "Industries",
-      "navOrder": 10,
+      "navOrder": 11,
       "seo": {
         "title": "Industries · Greatstone International",
         "description": "Pick your sector and the rest adjusts to your drains and your numbers. The same eight-pillar foundation, shaped to the way your industry actually works.",
@@ -4626,7 +4736,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-v06aw",
+              "id": "hero-w3aav",
               "kicker": "Industries",
               "headline": "Start with your",
               "highlight": "industry.",
@@ -4660,7 +4770,7 @@
           {
             "type": "IndustryPicker",
             "props": {
-              "id": "industrypicker-w3aav",
+              "id": "industrypicker-xz7lx",
               "universalHead": "The universal drains",
               "universalTitle": "Everyone leaks here.",
               "universal": [
@@ -4858,7 +4968,7 @@
           {
             "type": "Steps",
             "props": {
-              "id": "steps-xz7lx",
+              "id": "steps-yq10u",
               "index": "",
               "eyebrow": "Same foundation, your shape",
               "headline": "How we",
@@ -4892,7 +5002,7 @@
           {
             "type": "Invite",
             "props": {
-              "id": "invite-yq10u",
+              "id": "invite-z203z",
               "eyebrow": "Your sector, seen clearly",
               "headline": "Let's start with",
               "highlight": "your sector.",
@@ -4927,7 +5037,7 @@
       "slug": "contact",
       "path": "/contact",
       "title": "Begin the Conversation",
-      "navOrder": 11,
+      "navOrder": 12,
       "seo": {
         "title": "Begin the Conversation · Greatstone International",
         "description": "The journey towards a stronger organisation begins with a conversation. Schedule a conversation, send an enquiry, telephone or email Greatstone International.",
@@ -5177,7 +5287,7 @@
       "slug": "privacy",
       "path": "/privacy",
       "title": "Privacy policy",
-      "navOrder": 12,
+      "navOrder": 13,
       "seo": {
         "title": "Privacy policy · Greatstone International",
         "description": "How Greatstone uses the personal data you give us through greatstoneint.com, and the choices you have.",
@@ -5193,7 +5303,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-1u66y2",
+              "id": "hero-1ympl8",
               "kicker": "Legal",
               "headline": "Privacy policy",
               "highlight": "",
@@ -5227,7 +5337,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-1vggb8",
+              "id": "prose-1zq940",
               "kicker": "Who we are",
               "kickerLevel": "h2",
               "body": "Greatstone International Limited (“Greatstone”, “we”, “us”) runs greatstoneint.com and is the controller of the personal data described on this page. We are registered in England and Wales under company number 06248967, with our registered office at Parley Brook Farm, Littlewick Road, Woking, Surrey, GU21 4XR.<br><br>For anything about your data, email <a href=\"mailto:dx@greatstonesoftware.co.uk\">dx@greatstonesoftware.co.uk</a>. We will reply to privacy questions at that address.",
@@ -5250,7 +5360,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-1wwvym",
+              "id": "prose-200vpa",
               "kicker": "What this page covers",
               "kickerLevel": "h2",
               "body": "This website and the enquiry form on it. If you become a client, we tell you separately how we handle data in that work.",
@@ -5273,7 +5383,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-1xqwva",
+              "id": "prose-21zc0b",
               "kicker": "What we collect",
               "kickerLevel": "h2",
               "body": "<strong>When you send an enquiry.</strong> Your work email, which we need to reply, plus anything else you choose to give: your name, company, organisation size, sector and message. With it we save the date and time, the page you sent it from, and how you reached us on this visit (the site that referred you and any campaign tags in the link, such as utm_source). If you accepted analytics cookies, we also save how you first found us. We keep your IP address for 30 days to stop spam and abuse of the form.<br><br><strong>When you browse.</strong> If you accept analytics cookies, Google Analytics records how the site is used: pages viewed, device and browser type, and an approximate location. Google Analytics does not store your IP address. We never send your name or email to Google Analytics. If you decline, no analytics cookies are set. Google may still receive basic signals with no cookies and no identifier, such as the fact that a page loaded, which it uses to estimate overall traffic.<br><br>We do not ask for sensitive information such as health or political views. Please leave it out of your message.",
@@ -5296,7 +5406,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-1ympl8",
+              "id": "prose-22yu3a",
               "kicker": "How we use it, and why we are allowed to",
               "kickerLevel": "h2",
               "body": "• <strong>Reply to your enquiry and discuss working together.</strong> Data used: enquiry details. Lawful basis: legitimate interests, answering a business that asked about our services. If you write to us for yourself, steps you asked us to take before a contract.<br>• <strong>Tell our team a new enquiry has arrived.</strong> Data used: enquiry details. Lawful basis: legitimate interests.<br>• <strong>See which campaigns and pages lead to enquiries.</strong> Data used: referrer, landing page, campaign tags. Lawful basis: legitimate interests.<br>• <strong>Protect the form from spam and abuse.</strong> Data used: IP address. Lawful basis: legitimate interests.<br>• <strong>Measure how the site is used.</strong> Data used: analytics data. Lawful basis: your consent, which you can withdraw at any time.<br><br>Sending an enquiry does not sign you up to marketing emails. We do not make automated decisions about you.",
@@ -5319,7 +5429,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-1zq940",
+              "id": "prose-23tl6k",
               "kicker": "Who we share it with",
               "kickerLevel": "h2",
               "body": "We use a small number of providers to run the site. Each works under a contract that allows it to use your data only on our instructions.<br>• <strong>Supabase</strong> stores enquiries in our database, in London.<br>• <strong>Resend</strong> sends our team the email alert for each new enquiry.<br>• <strong>Pipedrive</strong> is where our team records an enquiry and follows it up.<br>• <strong>Netlify</strong> hosts the website and keeps short-lived server logs, which include IP addresses.<br>• <strong>Google</strong> runs Tag Manager and Analytics. It sets analytics cookies only if you accept them; if you decline, it receives only the basic signals described above.<br><br>We do not sell your data. We share it with others only if the law requires us to.",
@@ -5342,7 +5452,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-200vpa",
+              "id": "prose-2450di",
               "kicker": "Data outside the UK",
               "kickerLevel": "h2",
               "body": "Some of these providers process data in the United States. Where they do, we rely on UK adequacy regulations (including the UK Extension to the EU-US Data Privacy Framework, where the provider is certified) or the ICO’s International Data Transfer Agreement or Addendum. Email us for details.",
@@ -5365,7 +5475,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-21zc0b",
+              "id": "prose-25bm5r",
               "kicker": "How long we keep it",
               "kickerLevel": "h2",
               "body": "• <strong>Enquiries:</strong> 24 months after our last contact with you, then deleted. Copies in our team’s email are deleted on the same schedule. If you become a client, we keep what the work needs under that contract.<br>• <strong>IP address saved with an enquiry:</strong> 30 days.<br>• <strong>Analytics data:</strong> 14 months.",
@@ -5388,7 +5498,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-22yu3a",
+              "id": "prose-2615r1",
               "kicker": "Your rights",
               "kickerLevel": "h2",
               "body": "You can ask us to give you a copy of your data, correct it, delete it, restrict how we use it, or move it to another provider where that applies. You can object to any use based on legitimate interests, and you can withdraw consent for analytics at any time from <strong>Cookie settings</strong> in the footer. Email <a href=\"mailto:dx@greatstonesoftware.co.uk\">dx@greatstonesoftware.co.uk</a>. It is free, and we reply within one month.<br><br>If you are unhappy with how we handle your data, please tell us first so we can put it right. You can also complain to the Information Commissioner’s Office at <a href=\"https://ico.org.uk/make-a-complaint\">ico.org.uk/make-a-complaint</a> or on 0303 123 1113.",
@@ -5411,7 +5521,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-23tl6k",
+              "id": "prose-279wet",
               "kicker": "Security",
               "kickerLevel": "h2",
               "body": "Enquiries are sent over an encrypted connection and stored in a database that only named Greatstone staff can read.",
@@ -5434,7 +5544,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2450di",
+              "id": "prose-2800au",
               "kicker": "Children",
               "kickerLevel": "h2",
               "body": "This site is for businesses. It is not aimed at anyone under 18.",
@@ -5457,7 +5567,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-25bm5r",
+              "id": "prose-29vfj6",
               "kicker": "Changes",
               "kickerLevel": "h2",
               "body": "When this page changes, the date at the top changes too.",
@@ -5486,7 +5596,7 @@
       "slug": "cookies",
       "path": "/cookies",
       "title": "Cookie policy",
-      "navOrder": 13,
+      "navOrder": 14,
       "seo": {
         "title": "Cookie policy · Greatstone International",
         "description": "The cookies and browser storage greatstoneint.com uses, and how to change your choice.",
@@ -5502,7 +5612,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-2615r1",
+              "id": "hero-2asunu",
               "kicker": "Legal",
               "headline": "Cookie policy",
               "highlight": "",
@@ -5536,7 +5646,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-279wet",
+              "id": "prose-2bt6yy",
               "kicker": "The short version",
               "kickerLevel": "h2",
               "body": "We use a few small files and browser storage entries to make the site work, and, only if you say yes, analytics and preference cookies to see how the site is used and show you more of what you read. We do not use advertising cookies.",
@@ -5559,7 +5669,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2800au",
+              "id": "prose-2cln1v",
               "kicker": "What cookies are",
               "kickerLevel": "h2",
               "body": "Cookies are small text files a website saves on your device. Sites can also save similar information in your browser’s local storage. This page covers both and calls them “cookies”.",
@@ -5582,7 +5692,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-29vfj6",
+              "id": "prose-2dg5ba",
               "kicker": "Essential cookies (always on)",
               "kickerLevel": "h2",
               "body": "The site needs these to work, so they do not ask for consent.<br>• <strong>gs-studio</strong>: holds a copy of the site’s pages in your browser, so pages load and show correctly. It holds site content only, nothing about you. Kept until you clear your browser storage.<br>• <strong>gs-consent</strong>: remembers your cookie choice, so we do not ask again. Kept until you clear your browser storage.<br>• <strong>gs_service_inquiry_v1</strong>: remembers the services you added to an enquiry. Kept until you send the enquiry or clear your browser storage.<br>• <strong>gs-studio-session</strong>: keeps Greatstone staff signed in to the site editor. Not set for visitors. Kept until the browser tab is closed.<br>• <strong>sb-…-auth-token</strong>: keeps you signed in, only if you sign in to an account. Kept until you sign out.",
@@ -5605,7 +5715,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2asunu",
+              "id": "prose-2ee8zn",
               "kicker": "Analytics and preference cookies (only if you accept)",
               "kickerLevel": "h2",
               "body": "These run only after you choose <strong>Accept analytics</strong>. They help us see which pages are useful and which campaigns bring people to the site, and remember what you looked at so the site can show you more of it. If you decline, or later change your mind in <strong>Cookie settings</strong>, we remove the ones we set.<br>• <strong>_ga</strong> (Google Analytics): tells one visitor from another, without identifying you. 2 years.<br>• <strong>_ga_…</strong> (Google Analytics): keeps track of a single visit. 2 years.<br>• <strong>gs-attr-first, gs-attr-last</strong> (Greatstone): remembers how you first and most recently reached the site (referring site, campaign tags, landing page), so an enquiry can tell us which campaign worked. Kept until you clear your browser storage.<br>• <strong>gs-intel-profile</strong> (Greatstone): on the AI Market Intelligence page, remembers which topics and vendors you read, so the “For you” feed shows related items. The profile stays in your browser. Kept until you clear your browser storage.<br>• <strong>gs_service_pop_v1</strong> (Greatstone): on service pages, keeps a copy of which services are most viewed, so the “Popular” list loads quickly. Kept until you clear your browser storage.<br>• <strong>gs_service_pop_seen_v1</strong> (Greatstone): on service pages, notes which services you viewed in this visit, so a page refresh is not counted twice. Kept until the browser tab is closed.<br><br>Google holds the analytics data for 14 months. Google’s own explanation is at <a href=\"https://policies.google.com/technologies/partner-sites\">policies.google.com/technologies/partner-sites</a>.<br><br>If you decline, Google may still receive basic signals with no cookies and no identifier, which it uses to estimate overall traffic.",
@@ -5628,7 +5738,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2bt6yy",
+              "id": "prose-2f9lfe",
               "kicker": "Changing your choice",
               "kickerLevel": "h2",
               "body": "Use <strong>Cookie settings</strong> in the footer at any time to accept or decline analytics. You can also delete cookies and site storage in your browser settings, or install Google’s opt-out add-on at <a href=\"https://tools.google.com/dlpage/gaoptout\">tools.google.com/dlpage/gaoptout</a>.",
@@ -5651,7 +5761,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2cln1v",
+              "id": "prose-2gnchk",
               "kicker": "Questions",
               "kickerLevel": "h2",
               "body": "Email <a href=\"mailto:dx@greatstonesoftware.co.uk\">dx@greatstonesoftware.co.uk</a>. More on how we use personal data is in our <a href=\"#go/privacy\">Privacy policy</a>.",
@@ -5680,7 +5790,7 @@
       "slug": "terms",
       "path": "/terms",
       "title": "Website terms of use",
-      "navOrder": 14,
+      "navOrder": 15,
       "seo": {
         "title": "Website terms of use · Greatstone International",
         "description": "The terms for using greatstoneint.com.",
@@ -5696,7 +5806,7 @@
           {
             "type": "Hero",
             "props": {
-              "id": "hero-2dg5ba",
+              "id": "hero-2h20mz",
               "kicker": "Legal",
               "headline": "Website terms of use",
               "highlight": "",
@@ -5730,7 +5840,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2ee8zn",
+              "id": "prose-2idr2u",
               "kicker": "Who we are",
               "kickerLevel": "h2",
               "body": "greatstoneint.com is run by Greatstone International Limited, registered in England and Wales under company number 06248967, registered office Parley Brook Farm, Littlewick Road, Woking, Surrey, GU21 4XR. Contact us at <a href=\"mailto:dx@greatstonesoftware.co.uk\">dx@greatstonesoftware.co.uk</a>.",
@@ -5753,7 +5863,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2f9lfe",
+              "id": "prose-2jqtmw",
               "kicker": "Using this site",
               "kickerLevel": "h2",
               "body": "By using this site you accept these terms. If you do not accept them, please do not use the site.",
@@ -5776,7 +5886,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2gnchk",
+              "id": "prose-2kdpqs",
               "kicker": "Information, not advice",
               "kickerLevel": "h2",
               "body": "The content here describes our services and our thinking. It is general information. It is not professional advice for your situation, and you should not rely on it as such. Advice comes under a written agreement with us.",
@@ -5799,7 +5909,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2h20mz",
+              "id": "prose-2li6yd",
               "kicker": "Enquiries",
               "kickerLevel": "h2",
               "body": "Sending an enquiry starts a conversation. It does not create a contract. Any work we do for you is under a separate written agreement.",
@@ -5822,7 +5932,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2idr2u",
+              "id": "prose-2mbbmt",
               "kicker": "Our content",
               "kickerLevel": "h2",
               "body": "We own, or have permission to use, the text, design, images and code on this site. You may view it, and share links to it. You may not copy, republish or sell it without our written permission.",
@@ -5845,7 +5955,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2jqtmw",
+              "id": "prose-2ndmmo",
               "kicker": "Fair use of the site",
               "kickerLevel": "h2",
               "body": "Please do not misuse the site: no attempts to break in, overload it, add harmful code, or collect data from it by automated means. We may block access if we see this.",
@@ -5868,7 +5978,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2kdpqs",
+              "id": "prose-2otlfa",
               "kicker": "Links to other sites",
               "kickerLevel": "h2",
               "body": "Links to other websites are there for convenience. We do not control those sites and are not responsible for them.",
@@ -5891,7 +6001,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2li6yd",
+              "id": "prose-2p640m",
               "kicker": "Availability and changes",
               "kickerLevel": "h2",
               "body": "We work to keep the site available and accurate, but we do not promise that it will always be available, error-free or up to date. We may change or remove content at any time.",
@@ -5914,7 +6024,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2mbbmt",
+              "id": "prose-2qpx8i",
               "kicker": "Our liability",
               "kickerLevel": "h2",
               "body": "The content on this site is general information. It is not advice for your business, so please talk to us before you act on it.<br><br>To the extent the law allows, we are not responsible for:<br>• loss that comes from relying on the general content of this site without talking to us first;<br>• loss of profit, revenue, business, contracts or data;<br>• loss we could not reasonably foresee.<br><br>Nothing in these terms excludes or limits any liability that the law does not allow us to exclude or limit, such as liability for death or personal injury caused by our negligence, or for fraud.",
@@ -5937,7 +6047,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2ndmmo",
+              "id": "prose-2rc9sj",
               "kicker": "Privacy and cookies",
               "kickerLevel": "h2",
               "body": "How we use personal data is in our <a href=\"#go/privacy\">Privacy policy</a>, and our use of cookies is in our <a href=\"#go/cookies\">Cookie policy</a>.",
@@ -5960,7 +6070,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2otlfa",
+              "id": "prose-2sso8v",
               "kicker": "Law",
               "kickerLevel": "h2",
               "body": "These terms are governed by the law of England and Wales, and its courts have exclusive jurisdiction.",
@@ -5983,7 +6093,7 @@
           {
             "type": "Prose",
             "props": {
-              "id": "prose-2p640m",
+              "id": "prose-2t5ts7",
               "kicker": "Changes to these terms",
               "kickerLevel": "h2",
               "body": "We may update these terms. The date at the top shows the latest version.",

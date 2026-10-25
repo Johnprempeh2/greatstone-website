@@ -5,6 +5,7 @@ import { ROLE_LABEL } from './cms/staffRoles.mjs';
 import { track } from './lib/analytics.js';
 import { safeHref } from './lib/safe-url.js';
 import { PRIMARY_CTA_LABEL } from './lib/brand.mjs';
+import { getSession, onAuth } from './store/customerAuth.mjs';
 
 const LOGO = '/assets/greatstone-logo-web.png';
 const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is the built-in default (a CMS-overridden logo has no .webp sibling)
@@ -34,14 +35,14 @@ function resolveNavItem(item, pages, canEdit) {
   }
   if (item.type === 'link') {
     if (!item.href) return null;
-    return { kind: 'url', href: item.href, label: item.label || item.href, newTab: !!item.newTab };
+    return { kind: 'url', href: item.href, label: item.label || item.href, subtext: item.subtext, newTab: !!item.newTab };
   }
   // default: a page link
   const slug = item.pageSlug;
   const p = slug && pages[slug];
   if (!p) return null;
   if (!canEdit && !(p.status === 'published' || p.published)) return null;
-  return { kind: 'page', slug, label: item.label || p.title || slug };
+  return { kind: 'page', slug, label: item.label || p.title || slug, subtext: item.subtext };
 }
 
 // Build the header nav render model from the CMS navigation tree. Falls back to a flat list of pages
@@ -61,9 +62,9 @@ function buildNavModel(navigation, order, pages, canEdit, q) {
 
 // render a single page/url leaf as an inline nav link (page = SPA navigate; url = anchor, internal
 // '#…' hrefs are caught by App's global click handler, external opens per newTab)
-function NavLeaf({ item, current, shopActive, onNavigate, className }) {
+function NavLeaf({ item, current, shopActive, onNavigate, onActivate, className }) {
   if (item.kind === 'url') {
-    return <a className={className} href={safeHref(item.href)} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined}>{item.label}</a>;
+    return <a className={className} href={safeHref(item.href)} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined} onClick={onActivate}><span>{item.label}{item.subtext && <small>{item.subtext}</small>}</span></a>;
   }
   const active = item.slug === current && !shopActive;
   // A real link, not a button: a page has an address now, so let people cmd-click it into a new tab, copy
@@ -75,20 +76,20 @@ function NavLeaf({ item, current, shopActive, onNavigate, className }) {
       className={className + (active ? ' is-active' : '')}
       href={'#' + item.slug}
       onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); onNavigate(item.slug); }}
-    >{item.label}</a>
+    ><span>{item.label}{item.subtext && <small>{item.subtext}</small>}</span></a>
   );
 }
 
 // An inline nav dropdown (desktop). Opens on hover and on click/Enter; full menu-button keyboard pattern
 // (ArrowDown opens + enters the menu, roving Up/Down/Home/End, Escape closes + restores focus, outside
-// click closes). Highlights itself when the current page is one of its members. Also the "More" overflow,
-// which can hold the Products route (kind 'shop').
+// click closes). Highlights itself when the current page is one of its members. The DX Dev Tools
+// group holds the Products route (kind 'shop'); "More" holds only genuine overflow.
 function NavGroup({ label, members, current, shopActive, onNavigate }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const btnRef = useRef(null);
   const popRef = useRef(null);
-  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => m.kind === 'page' && m.slug === current);
+  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => (m.kind === 'page' && m.slug === current) || (m.kind === 'url' && m.href?.startsWith('#go/' + current + '/')));
 
   // Hover intent: open immediately, but close on a short grace delay that is cancelled the moment the
   // cursor re-enters the group (button OR menu). This is what stops the menu vanishing while the cursor
@@ -129,7 +130,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
   return (
     <div className="gs-navgroup" ref={ref} onMouseEnter={openNow} onMouseLeave={scheduleClose}>
       <button ref={btnRef} className={'gs-navlink gs-navgroup-btn' + (active ? ' is-active' : '')}
-        aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); } }}>
         {label}<Chevron />
       </button>
@@ -139,7 +140,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
             <button key="shop" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} aria-current={shopActive ? 'page' : undefined}
               onClick={() => { m.onSelect(); setOpen(false); }}>{m.label}</button>
           ) : (
-            <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} className="gs-navmenu-item"
+            <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} className="gs-navmenu-item" onActivate={() => setOpen(false)}
               onNavigate={(slug) => { onNavigate(slug); setOpen(false); }} />
           ))}
         </div>
@@ -156,6 +157,14 @@ const MIN_INLINE = 3;
 // review); only when fewer than MIN_INLINE fit, or on a phone, does the bar collapse into a single dropdown.
 // All measured, not breakpoint-guessed. Editing affordances appear only for a signed-in user with edit rights.
 export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
+  const [clientSignedIn, setClientSignedIn] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    getSession().then((session) => { if (mounted) setClientSignedIn(!!session); });
+    const { data } = onAuth((session) => { if (mounted) setClientSignedIn(!!session); });
+    return () => { mounted = false; data?.subscription?.unsubscribe?.(); };
+  }, []);
+  const accountLabel = clientSignedIn ? 'Account' : 'Sign in';
   // global chrome from Site-Settings (fall back to the build-time defaults if a prop is missing)
   const logoSrc = logo || LOGO;
   const bookLabel = ctaLabel || PRIMARY_CTA_LABEL; // Ben's fixed primary CTA wording
@@ -163,7 +172,10 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const q = (query || '').trim().toLowerCase();
   // nav is driven by the editable CMS navigation tree (state.navigation); public sees only published
   // pages, editors see everything, and a blank tree falls back to page order so the bar is never empty.
-  const navModel = buildNavModel(navigation, order, pages, canEdit, q);
+  const navModel = buildNavModel(navigation, order, pages, canEdit, q).map((item) =>
+    item.kind === 'page' && item.slug === 'dev-tools' && onShop
+      ? { kind: 'group', label: item.label, members: [item, { kind: 'shop', label: 'Products', onSelect: onShop }] }
+      : item);
   // the persistent CTA lands on the Contact / booking page (form + one-click Calendly) instead of
   // jumping straight to Calendly. Keep the GA4 value (book_deep_dive) stable so history doesn't fragment.
   const goBook = (where) => { track('cta_click', { cta: 'book_deep_dive', cta_location: where }); onNavigate(BOOK_PAGE); };
@@ -171,12 +183,12 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (current === 'home' || current === 'dev-tools') ? 'Menu' : (pages[current] && pages[current].title) || 'Menu';
 
   // the inline bar's items in priority order (the configured nav); the end of the list is the first to move
-  // into "More". The storefront is not a launch page, so it always sits in "More" and the bar stays light.
+  // into "More" when the row is narrow. The storefront sits under DX Dev Tools.
   // The booking page's nav entry also sits in "More": the lime CTA beside the bar already goes there, and two
   // copies of the same action side by side compete (GRE-659 review). The phone menu keeps the full tree.
   const isBookLeaf = (it) => it.kind === 'page' && it.slug === BOOK_PAGE;
   const baseLeaves = navModel.filter((it) => !isBookLeaf(it));
-  const pins = [...navModel.filter(isBookLeaf), ...(onShop ? [{ kind: 'shop', label: 'Products', onSelect: onShop }] : [])];
+  const pins = navModel.filter(isBookLeaf);
   const hasNamedMore = baseLeaves.some((it) => it.kind === 'group' && it.label === 'More');
   const leaves = hasNamedMore ? baseLeaves.map((it) => it.kind === 'group' && it.label === 'More' ? { ...it, members: [...it.members, ...pins] } : it) : baseLeaves;
   const pinnedMore = hasNamedMore ? [] : pins;
@@ -256,9 +268,9 @@ export default function Header({ order, pages, navigation, current, query, onSea
 
   // render a leaf inside the collapsed menu (page = menuitem button; url = menuitem anchor)
   const menuLeaf = (m, sub) => m.kind === 'url' ? (
-    <a key={m.href} role="menuitem" className={'gs-navmenu-item' + (sub ? ' is-sub' : '')} href={safeHref(m.href)} target={m.newTab ? '_blank' : undefined} rel={m.newTab ? 'noopener noreferrer' : undefined} onClick={() => setMenuOpen(false)}>{m.label}</a>
+    <a key={m.href} role="menuitem" className={'gs-navmenu-item' + (sub ? ' is-sub' : '')} href={safeHref(m.href)} target={m.newTab ? '_blank' : undefined} rel={m.newTab ? 'noopener noreferrer' : undefined} onClick={() => setMenuOpen(false)}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
   ) : (
-    <a key={m.slug} role="menuitem" href={'#' + m.slug} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}>{m.label}</a>
+    <a key={m.slug} role="menuitem" href={'#' + m.slug} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
   );
 
   return (
@@ -286,12 +298,12 @@ export default function Header({ order, pages, navigation, current, query, onSea
                 {navModel.map((it, i) => it.kind === 'group' ? (
                   <div key={'g' + i} className="gs-navmenu-section" role="presentation">
                     <span className="gs-navmenu-grouplabel" aria-hidden="true">{it.label}</span>
-                    {it.members.map((m) => menuLeaf(m, true))}
+                    {it.members.map((m) => m.kind === 'shop'
+                      ? <button key="shop" role="menuitem" className={'gs-navmenu-item is-sub' + (shopActive ? ' is-active' : '')} onClick={() => { m.onSelect(); setMenuOpen(false); }}>Products</button>
+                      : menuLeaf(m, true))}
                   </div>
                 ) : menuLeaf(it, false))}
-                {onShop && <button role="menuitem" aria-current={shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} onClick={() => { onShop(); setMenuOpen(false); }}>Products</button>}
                 <button role="menuitem" className="gs-navmenu-item gs-navmenu-book" onClick={() => { setMenuOpen(false); goBook('menu'); }}>{bookLabel}</button>
-                {onAccount && <button role="menuitem" className={'gs-navmenu-item' + (accountActive ? ' is-active' : '')} onClick={() => { onAccount(); setMenuOpen(false); }}>Your account</button>}
                 {navModel.length === 0 && <span className="gs-navmenu-empty">no pages match “{query}”</span>}
               </div>
             )}
@@ -314,8 +326,8 @@ export default function Header({ order, pages, navigation, current, query, onSea
             to the Contact / booking page rather than opening Calendly directly. */}
         <button className="gs-btn primary gs-book" onClick={() => goBook('header')}>{bookLabel}</button>
         {onAccount && (
-          <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label="Your account" aria-current={accountActive ? 'page' : undefined} title="Your account">
-            <UserIcon />
+          <button className={'gs-accountbtn' + (accountActive ? ' is-active' : '')} onClick={onAccount} aria-label={accountLabel} title={accountLabel}>
+            <UserIcon /><span className="gs-accountlabel">{accountLabel}</span>
           </button>
         )}
         {/* the inline page-search input was redundant with the ⌘K command palette; removing it frees the

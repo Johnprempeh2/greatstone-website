@@ -37,6 +37,8 @@
 .gs-navmenu-item{text-align:left;background:none;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:600;
   color:var(--gs-muted);padding:10px 12px;border-radius:9px;transition:color .15s,background .15s}
 .gs-navmenu-item:hover{color:var(--gs-text);background:rgba(255,255,255,.05)}
+.gs-navmenu-item small{display:block;margin-top:4px;font-size:.72rem;font-weight:400;line-height:1.35;color:var(--gs-faint)}
+.gs-navmenu-item:focus-visible{outline:2px solid var(--gs-accent);outline-offset:-2px}
 .gs-navmenu-item.is-active{color:var(--gs-accent);background:rgba(200,255,0,.08)}
 .gs-navmenu-empty{padding:10px 12px;font-size:.8rem;color:var(--gs-faint)}
 
@@ -44,17 +46,19 @@
    reuses the collapsed-menu box (.gs-navmenu-pop), just left-aligned under the button */
 .gs-navgroup{position:relative;display:inline-flex}
 .gs-navgroup-btn{display:inline-flex;align-items:center;gap:5px}
-.gs-navgroup-pop{right:auto;left:0;min-width:200px}
+.gs-navgroup-pop{right:auto;left:0;min-width:320px}
 /* transparent hover bridge over the 8px gap so moving from the button to the menu doesn't trip mouseleave */
 .gs-navgroup-pop::before{content:'';position:absolute;left:0;right:0;top:-8px;height:8px}
 /* the mobile menu shows the group's pages under a small label, lightly indented */
 .gs-navmenu-grouplabel{display:block;padding:8px 12px 2px;font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gs-faint)}
 .gs-navmenu-item.is-sub{padding-left:22px}
+@media(max-width:760px){.gs-navmenu-pop{position:fixed;top:64px;left:12px;right:12px;width:auto;max-width:none;max-height:calc(100dvh - 76px)}}
 
 .gs-tools{display:flex;align-items:center;gap:10px}
 /* persistent navbar CTA + account icon (Ben's 18 Jun review) */
 .gs-book{flex:none;white-space:nowrap}
-.gs-accountbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:100px;color:var(--gs-muted);cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.gs-accountbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:38px;height:38px;padding:0 11px;background:rgba(255,255,255,.05);border:1px solid var(--gs-border-soft);border-radius:100px;color:var(--gs-muted);cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.gs-accountlabel{font-size:.76rem;font-weight:650;white-space:nowrap}
 .gs-accountbtn:hover{color:var(--gs-text);border-color:var(--gs-border)}
 .gs-accountbtn.is-active{color:var(--gs-accent);border-color:var(--gs-border)}
 /* the booking CTA reads as the lime primary even in the collapsed dropdown */
@@ -116,6 +120,8 @@
 
 @media(max-width:760px){
   .gs-header{gap:10px}
+  .gs-accountbtn{width:38px;padding:0}
+  .gs-accountlabel{display:none}
   .gs-search{display:none}
   /* the persistent CTA would crowd the collapsed nav on phones — it stays reachable as the lime
      "Book a Deep Dive" item at the top of the Pages dropdown. The account icon + ⌘K button stay visible. */
@@ -135,7 +141,7 @@
      comes later with equal specificity, a bare `.gs-btn{display:inline-flex}` would UN-HIDE the header
      "Book a Diagnostic" on touch phones and crowd the collapsed nav. :not(.gs-book) keeps it hidden. */
   .gs-btn:not(.gs-book){display:inline-flex;align-items:center;justify-content:center}
-  .gs-accountbtn{width:44px;height:44px}
+  .gs-accountbtn{min-width:44px;height:44px}
   .gs-navmenu-item{min-height:44px;display:flex;align-items:center}
 }
 

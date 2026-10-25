@@ -40,6 +40,7 @@ export default function Portal({ route }) {
     <div className="ca-wrap pt-wrap"><div className="ca-center">
       <h1 className="pt-h1">This is not a client account</h1>
       <p>{session.user?.email} is not linked to a client company, so there is nothing to show here. Staff preview client documents in Clients &amp; DX → Portal.</p>
+      <p><a href="#account">Your account and orders →</a></p>
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );

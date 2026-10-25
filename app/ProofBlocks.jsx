@@ -14,6 +14,7 @@ import * as Hero from '../src/blocks/Hero.jsx';
 import * as Prose from '../src/blocks/Prose.jsx';
 import * as Panels from '../src/blocks/Panels.jsx';
 import * as ServiceCatalog from '../src/blocks/ServiceCatalog.jsx';
+import * as TransformationServices from '../src/blocks/TransformationServices.jsx';
 import * as Invite from '../src/blocks/Invite.jsx';
 import * as Steps from '../src/blocks/Steps.jsx';
 import * as FeatureGrid from '../src/blocks/FeatureGrid.jsx';
@@ -41,7 +42,7 @@ import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
 import { PAGE_SCENE_PRESETS, PAGE_SCENE_MODES, pageSceneBackground, resolvePageSceneFields } from '../next-proof/page-scene.mjs';
 import { STAGE_OPTIONS } from '../src/stage-presets.js';
 
-const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
+const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, TransformationServices, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
 export const proofBlockCss = Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss;
 const InsertAfter = lazy(() => import('./editor/InsertAfter.jsx'));
 const Stage = dynamic(() => import('../src/Stage.jsx'), { ssr: false });

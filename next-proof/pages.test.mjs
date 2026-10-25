@@ -11,7 +11,7 @@ const pages = Object.fromEntries(release.pages.map((page) => [page.slug, page]))
 test('the release carries every published marketing and legal page with complete SEO and stable block identities', () => {
   assert.equal(release.schema, 1);
   assert.deepEqual(release.pages.map((page) => page.slug), [
-    'home', 'dx-consultancy', 'dev-tools', 'how-we-help', 'services', 'method', 'proof',
+    'home', 'dx-consultancy', 'dev-tools', 'transformation-services', 'how-we-help', 'services', 'method', 'case-studies',
     'about', 'insights', 'climb', 'industries', 'contact', 'privacy', 'cookies', 'terms',
   ]);
   for (const slug of release.pages.map((page) => page.slug)) {
@@ -21,14 +21,14 @@ test('the release carries every published marketing and legal page with complete
     assert.ok(page.data.content.length, `${slug} blocks`);
     assert.equal(new Set(page.data.content.map((block) => block.props.id)).size, page.data.content.length, `${slug} unique block IDs`);
   }
-  assert.deepEqual(pages.home.data.content.map((block) => block.type), ['TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools']);
+  assert.deepEqual(pages.home.data.content.map((block) => block.type), ['TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom']);
   assert.deepEqual(pages['dev-tools'].data.content.map((block) => block.type), ['DevTools']);
   assert.ok(!pages.refunds && !pages['ai-market-intelligence']);
 });
 
 test('release navigation resolves to published page ids and all pages inherit one org', () => {
   const paths = new Map(release.pages.map((page) => [page.id, page.path]));
-  assert.deepEqual(release.site.navigation.map((item) => paths.get(item.target.pageId)), ['/', '/dev-tools', '/proof', '/about', '/insights']);
+  assert.deepEqual(release.site.navigation.map((item) => paths.get(item.target.pageId)), ['/dx-consultancy', '/dev-tools', '/case-studies', '/about', '/insights']);
   assert.equal(release.orgId, 'org-greatstone');
   assert.equal(new Set(release.pages.map((page) => page.id)).size, release.pages.length);
   assert.deepEqual(themeStyle(release.theme.tokens)['--gs-accent'], '#c8ff00');

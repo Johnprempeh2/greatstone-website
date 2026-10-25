@@ -14,6 +14,8 @@ export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedire
 export { addSection, removeSection, renameSection, listSections, buildInsertBlock } from './lib/sections-model.mjs';
 export { listStarters, getStarter } from './lib/templates-model.mjs'; // page-starter recipes (cycle 17)
 import { getStarter as starterById, buildStarterContent } from './lib/templates-model.mjs';
+import { moveProofToCaseStudies } from './lib/case-studies-route.mjs';
+import { transformationServices } from './data/transformation-services.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped
@@ -85,16 +87,15 @@ export function DEFAULT_NAVIGATION() {
   // moves to the footer and the Home panels. Labels are the page titles (services = "GS Agentic Manager" since GRE-660,
   // method = "How We Work").
   return [
-    navItem({ type: 'page', pageSlug: 'home', label: 'DX Consultancy' }),
+    navItem({ type: 'page', pageSlug: 'dx-consultancy', label: 'DX Consultancy' }),
     navItem({ type: 'page', pageSlug: 'dev-tools', label: 'DX Dev Tools' }),
-    navItem({ type: 'page', pageSlug: 'proof', label: 'Proof' }),
+    navItem({ type: 'group', label: 'Transformation Services', children: [
+      navItem({ type: 'page', pageSlug: 'method', label: 'The full transformation', subtext: 'Every step, planned together' }),
+      ...transformationServices.map(({ id, title, nav }) => navItem({ type: 'link', href: '#go/transformation-services/' + id, label: title, subtext: nav })),
+    ] }),
+    navItem({ type: 'page', pageSlug: 'case-studies', label: 'Case Studies' }),
     navItem({ type: 'page', pageSlug: 'about', label: 'About' }),
     navItem({ type: 'page', pageSlug: 'insights', label: 'Insights' }),
-    navItem({ type: 'group', label: 'More', children: [
-      navItem({ type: 'page', pageSlug: 'how-we-help' }),
-      navItem({ type: 'page', pageSlug: 'method' }),
-      navItem({ type: 'page', pageSlug: 'services', label: 'Your digital office' }),
-    ] }),
   ];
 }
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
@@ -108,6 +109,13 @@ const blk = (type, props) => {
 function seedPage(title, background, content, seo, status = 'published') {
   const data = { root: { props: { title } }, content };
   return { title, background, publishedBackground: background, status, seo: seo || { title: title + ' · Greatstone International', description: '', ogImage: '' }, data, published: data, versions: [], statusHistory: [], approvedBy: null };
+}
+
+function transformationServicesPage() {
+  return seedPage('Transformation Services', 'none', [blk('TransformationServices', {})], {
+    title: 'Transformation Services · Greatstone International',
+    description: 'Take one step on its own, or plan it as part of the full transformation.', ogImage: '',
+  });
 }
 
 const TOOLS = [
@@ -735,10 +743,11 @@ export function seedState() {
   pages.home = twoDoorsHomePage();
   pages['dev-tools'] = devToolsPage();
   pages['dx-consultancy'] = dxConsultancyPage();
+  pages['transformation-services'] = transformationServicesPage();
   pages.products = productsPage(); // kept for any deep links, but NOT in the nav — the live storefront (#shop, labelled "Products") is the catalogue
   const legalSlugs = seedLegalPages(pages); // Terms/Privacy/Cookies/Refunds — footer-only, kept out of the primary nav
   // footer order: the R1 launch pages first (as in the nav), then the secondary pages, then legal
-  const order = ['home', 'dx-consultancy', 'dev-tools', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
+  const order = ['home', 'dx-consultancy', 'dev-tools', 'transformation-services', 'how-we-help', 'services', 'method', 'proof', 'about', 'insights', 'ai-market-intelligence', 'climb', 'industries', 'contact', ...legalSlugs].filter((s) => pages[s]);
   const withOrg = (arr) => arr.map((x) => ({ ...x, orgId: ORG.id }));
   const seedProducts = withOrg(SEED_PRODUCTS); const seedCats = withOrg(SEED_CATEGORIES);
   // the catalogue ships published: draft (products/categories) and the public projection start identical
@@ -746,9 +755,9 @@ export function seedState() {
   // current, so mark them done. Without this, a visitor's SECOND load ran them and put the time-savings
   // calculator, comparison matrix and catalogue back on the Service page that GRE-652 took them off.
   const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true, _aiLeadToolsPlaced: true };
-  return { schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
+  return moveProofToCaseStudies({ schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
-    team: withOrg(SEED_TEAM), activity: [] };
+    team: withOrg(SEED_TEAM), activity: [] });
 }
 
 // the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
@@ -787,6 +796,18 @@ function deEmDash(v) {
   if (Array.isArray(v)) { let ch = false; const out = v.map((x) => { const n = deEmDash(x); if (n !== x) ch = true; return n; }); return ch ? out : v; }
   if (v && typeof v === 'object') { let ch = false; const out = {}; for (const k of Object.keys(v)) { const n = deEmDash(v[k]); if (n !== v[k]) ch = true; out[k] = n; } return ch ? out : v; }
   return v;
+}
+
+function placeHomeStoryBlock(blocks, type, replacement) {
+  const doorIndex = blocks.findIndex((block) => block.type === 'TwoDoors');
+  if (doorIndex === -1) return;
+  const currentIndex = blocks.findIndex((block) => block.type === type);
+  const bottomIndex = blocks.findIndex((block) => block.type === 'TwoDoorsBottom');
+  if (currentIndex !== -1 && (bottomIndex === -1 || currentIndex < bottomIndex)) return;
+  const block = currentIndex === -1 ? replacement : blocks.splice(currentIndex, 1)[0];
+  const anchor = type === 'TwoDoorsProof' ? 'TwoDoorsStory' : 'TwoDoors';
+  const anchorIndex = blocks.findIndex((item) => item.type === anchor);
+  blocks.splice((anchorIndex === -1 ? doorIndex : anchorIndex) + 1, 0, block);
 }
 
 function migrate(state) {
@@ -833,7 +854,7 @@ function migrate(state) {
     }
     state._twoDoorsPageLinksFixed = true;
   }
-  // Add the approved lower-page explanation to existing studio homes while leaving
+  // Add the draft lower-page explanation to existing studio homes while leaving
   // the hero, doors and any editor-written lower-page copy alone.
   if (!state._homeRoutesAndPlaceholders) {
     const fresh = twoDoorsHomePage();
@@ -843,7 +864,11 @@ function migrate(state) {
       for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
         const existing = blocks.find((block) => block.type === type);
         const replacement = fresh[projection].content.find((block) => block.type === type);
-        if (!existing) { blocks.push(replacement); continue; }
+        if (!existing) {
+          const heroIndex = blocks.findIndex((block) => block.type === 'TwoDoors');
+          blocks.splice(heroIndex + 1 + (type === 'TwoDoorsProof' && blocks[heroIndex + 1]?.type === 'TwoDoorsStory' ? 1 : 0), 0, replacement);
+          continue;
+        }
         if (type === 'TwoDoorsStory' && existing.props?.storyHeading === 'Making change work.') {
           Object.assign(existing.props, replacement.props);
         }
@@ -853,6 +878,18 @@ function migrate(state) {
       }
     }
     state._homeRoutesAndPlaceholders = true;
+  }
+  // Repair saved pages where an earlier migration appended these blocks after the final choice.
+  if (!state._homeRoutesOrderFixed) {
+    const fresh = twoDoorsHomePage();
+    for (const projection of ['data', 'published']) {
+      const blocks = state.pages.home?.[projection]?.content;
+      if (!blocks) continue;
+      for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
+        placeHomeStoryBlock(blocks, type, fresh[projection].content.find((block) => block.type === type));
+      }
+    }
+    state._homeRoutesOrderFixed = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
@@ -1246,7 +1283,31 @@ function migrate(state) {
     state._svcCatalogV3 = true;
   }
   state.schema = SCHEMA;
-  return state;
+  const oldDefaultNav = (state.navigation || []).map((item) => item.pageSlug || item.label).join('|');
+  if (oldDefaultNav === 'home|dev-tools|proof|about|insights|More') state.navigation = DEFAULT_NAVIGATION();
+  // The first GRE-2565 seed added a duplicate portal link and an inaccurate services label.
+  // Repair only those exact defaults; leave editor-customised navigation alone.
+  if (Array.isArray(state.navigation)) {
+    state.navigation = state.navigation.filter((item) => !(item.type === 'link' && item.label === 'Sign in' && item.href === '#portal'));
+    state.navigation.forEach((item) => {
+      if (item.type === 'group' && item.label === 'Transformation Services') {
+        (item.children || []).forEach((child) => {
+          if (child.pageSlug === 'services' && child.label === 'Transformation Services') child.label = 'GS Agentic Manager';
+        });
+      }
+    });
+  }
+  // Add the approved section to saved studios without replacing unrelated drafts or custom menus.
+  if (!state.pages['transformation-services']) state.pages['transformation-services'] = transformationServicesPage();
+  if (!state.order.includes('transformation-services')) {
+    const after = state.order.indexOf('dev-tools');
+    state.order.splice(after < 0 ? 0 : after + 1, 0, 'transformation-services');
+  }
+  const group = state.navigation?.find((item) => item.type === 'group' && item.label === 'Transformation Services');
+  if (group && (group.children || []).map((child) => child.pageSlug).join('|') === 'services|method|how-we-help') {
+    group.children = DEFAULT_NAVIGATION().find((item) => item.type === 'group' && item.label === 'Transformation Services').children;
+  }
+  return moveProofToCaseStudies(state);
 }
 
 // Update global site-chrome settings (logo, siteName, footerTagline, headerCtaLabel, background). Shallow
