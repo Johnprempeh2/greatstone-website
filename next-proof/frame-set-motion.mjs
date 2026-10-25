@@ -1,5 +1,6 @@
 import { findBlock } from './frame-protocol.mjs';
-import { INTENSITIES, MOTION_BY_BLOCK, MOTION_EFFECTS } from './motion-contract.mjs';
+import { COLOURS, INTENSITIES, MOTION_BY_BLOCK, MOTION_EFFECTS, SPEEDS } from './motion-contract.mjs';
+import { SECTION_SURFACES } from '../src/lib/block-style.mjs';
 
 const failure = (code, message) => ({ ok: false, code, message });
 
@@ -18,6 +19,7 @@ export function motionHello(components) {
       } : {}),
     })),
     motionEffects: MOTION_EFFECTS,
+    backgroundSurfaces: SECTION_SURFACES,
   };
 }
 
@@ -27,10 +29,15 @@ export function setMotionResult(requestId, result) {
     : { requestId, ok: false, code: result.code, message: result.message };
 }
 
-export function setMotion(draft, payload) {
-  const { blockId, motion } = payload || {};
+export function setMotion(draft, payload, pageSlug) {
+  if (pageSlug === 'home') return failure('frozen_page', 'The Two Doors home page is frozen.');
+  const { blockId, motion, surface } = payload || {};
   if (typeof blockId !== 'string' || !blockId || !motion || typeof motion !== 'object' || Array.isArray(motion) ||
-    typeof motion.effect !== 'string' || !INTENSITIES.includes(motion.intensity)) {
+    typeof motion.effect !== 'string' || !INTENSITIES.includes(motion.intensity) ||
+    (motion.speed !== undefined && !SPEEDS.includes(motion.speed)) ||
+    (motion.colour !== undefined && !COLOURS.includes(motion.colour)) ||
+    (surface !== undefined && !SECTION_SURFACES.some((item) => item.id === surface)) ||
+    (motion.effect !== 'none' && surface && surface !== 'none')) {
     return failure('invalid_payload', 'The motion choice is invalid.');
   }
   try {
@@ -40,7 +47,8 @@ export function setMotion(draft, payload) {
     const allowed = MOTION_BY_BLOCK[block.type];
     if (!allowed) return failure('block_has_no_motion', 'That block does not support motion.');
     if (!allowed.effects.includes(motion.effect)) return failure('effect_not_allowed', 'That effect is not available for this block.');
-    block.props.motion = { effect: motion.effect, intensity: motion.effect === 'none' ? 'off' : motion.intensity, quietAnchor: 'copy' };
+    block.props.motion = { effect: motion.effect, intensity: motion.effect === 'none' ? 'off' : motion.intensity, quietAnchor: 'copy', ...(motion.speed ? { speed: motion.speed } : {}), ...(motion.colour ? { colour: motion.colour } : {}) };
+    if (surface !== undefined || motion.effect !== 'none') block.props._section = { ...(block.props._section || {}), surface: surface ?? 'none' };
     return { ok: true, data, dirty: true };
   } catch {
     return failure('error', 'The motion choice could not be applied.');

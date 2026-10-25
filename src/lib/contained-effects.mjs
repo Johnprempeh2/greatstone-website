@@ -22,10 +22,11 @@ export function effectPalette(light = false) {
   return { field: light ? [27, 80, 57] : emerald, teal: light ? deepTeal : teal, accent: light ? ink : lime };
 }
 
-export function effectFrame(ctx, effect, width, height, seconds = 0, { intensity = 'subtle', light = false } = {}) {
+export function effectFrame(ctx, effect, width, height, seconds = 0, { intensity = 'subtle', light = false, colour = 'emerald' } = {}) {
   const definition = BACKGROUNDS[effect];
   if (!definition || intensity === 'off' || width <= 0 || height <= 0) return false;
-  const { field, teal: water, accent } = effectPalette(light);
+  const palette = effectPalette(light);
+  const { field, teal: water, accent } = colour === 'teal' ? { field: palette.teal, teal: palette.field, accent: palette.accent } : palette;
   const alpha = definition.ceil * (intensity === 'full' ? 1 : .7) * (light ? .85 : 1);
   const w = width, h = height, t = seconds;
   ctx.clearRect(0, 0, w, h);

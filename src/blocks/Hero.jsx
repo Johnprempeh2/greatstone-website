@@ -15,7 +15,7 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 // swap them for inline-editable fields on the canvas. Never string-manipulate an editable prop,
 // and never feed one into an attribute (href, etc.) — those stay plain (non-contentEditable) fields.
 // The still paints first. A visible desktop mark may load the shared renderer only after load/idle.
-function StoneSymbol({ kind = 'hero', enabled = true }) {
+export function StoneSymbol({ kind = 'hero', enabled = true }) {
   const host = useRef(null);
   useEffect(() => {
     if (!enabled || !host.current || typeof matchMedia === 'undefined') return undefined;
