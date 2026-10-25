@@ -17,7 +17,7 @@ const storyFields = 'storyKicker numbersLabel draftNumbersHeading draftNumbersLi
 const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLine pendingLink proofHref'.split(' ');
 const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
-const doorSides = ['consultancy', 'choose', 'tools'];
+const doorSides = ['consultancy', 'choose', 'tools'], touchLayoutQuery = '(max-width:1023px)';
 const doorPanels = (node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
 const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - node.clientWidth, panel.offsetLeft - (node.clientWidth - panel.offsetWidth) / 2));
 
@@ -62,10 +62,10 @@ export function TwoDoors(props) {
   const copy = { ...props };
   const [side, setSide] = useState('choose');
   const [pinned, setPinned] = useState(null);
-  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:760px)').matches);
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia(touchLayoutQuery).matches);
   const strip = useRef(null);
   useEffect(() => {
-    const query = window.matchMedia('(max-width:760px)');
+    const query = window.matchMedia(touchLayoutQuery);
     const update = () => setMobile(query.matches);
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
@@ -92,7 +92,7 @@ export function TwoDoors(props) {
     return () => observer.disconnect();
   }, [mobile]);
   const select = (next) => {
-    if (window.matchMedia('(max-width:760px)').matches && strip.current) {
+    if (window.matchMedia(touchLayoutQuery).matches && strip.current) {
       const node = strip.current;
       node.scrollTo({ left: panelPosition(node, doorPanels(node)[doorSides.indexOf(next)]), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
@@ -123,7 +123,7 @@ export function TwoDoors(props) {
         <button type="button" aria-current={side === 'tools'} onClick={() => select('tools')}>{editText(props, 'toolsName', copy.toolsName)}</button>
       </nav>
       <div ref={strip} className={'td-doors td-state-' + side} onScroll={(e) => { if (mobile) { const node = e.currentTarget; const panels = doorPanels(node); const nearest = panels.reduce((best, panel, i) => Math.abs(panelPosition(node, panel) - node.scrollLeft) < Math.abs(panelPosition(node, panels[best]) - node.scrollLeft) ? i : best, 0); setSide(doorSides[nearest]); } }} onMouseLeave={() => { if (!mobile) setSide(pinned || 'choose'); }} onBlur={(e) => { if (!mobile && !e.currentTarget.contains(e.relatedTarget)) setSide(pinned || 'choose'); }} onKeyDown={(e) => { if (e.key === 'Escape') { setPinned(null); setSide('choose'); } }}>
-        <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('consultancy'); }}>
+        <article className={'td-door td-consultancy' + (active === 'consultancy' ? ' expanded' : '')} id="door-dx" onMouseEnter={() => { if (window.matchMedia('(min-width:1024px) and (hover:hover)').matches) setSide('consultancy'); }} onFocus={() => { if (window.matchMedia('(min-width:1024px)').matches) setSide('consultancy'); }}>
           <img src={consultancyImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
           <div className="td-door-copy">{editText(props, 'consultancyTag', copy.consultancyTag, 'p', 'td-door-tag')}<h2>{editText(props, 'consultancyName', copy.consultancyName)}</h2>{editText(props, 'consultancyLine', consultancyLine, 'p')}
@@ -137,7 +137,7 @@ export function TwoDoors(props) {
         </article>
         <div className="td-divider" aria-hidden="true"><span>{copy.orLabel}</span></div>
         <div className="td-chooser"><h2>{copy.chooserHeading}</h2><p>{copy.chooserLine}</p><div className="td-chooser-split"><button type="button" onClick={() => select('consultancy')}><img src={consultancyImage} alt="" /><span className="td-chooser-arrow">←</span><b>{copy.consultancyName}</b><span>{copy.consultancyChooserLine}</span></button><span className="td-chooser-or">{copy.orLabel}</span><button type="button" onClick={() => select('tools')}><img src={toolsImage} alt="" /><span className="td-chooser-arrow">→</span><b>{copy.toolsName}</b><span>{copy.toolsChooserLine}</span></button></div><small>{copy.swipeHint}</small></div>
-        <article className={'td-door td-tools' + (active === 'tools' ? ' expanded' : '')} id="door-tools" onMouseEnter={() => { if (window.matchMedia('(min-width:761px) and (hover:hover)').matches) setSide('tools'); }} onFocus={() => { if (window.matchMedia('(min-width:761px)').matches) setSide('tools'); }}>
+        <article className={'td-door td-tools' + (active === 'tools' ? ' expanded' : '')} id="door-tools" onMouseEnter={() => { if (window.matchMedia('(min-width:1024px) and (hover:hover)').matches) setSide('tools'); }} onFocus={() => { if (window.matchMedia('(min-width:1024px)').matches) setSide('tools'); }}>
           <img src={toolsImage} alt="" width="640" height="640" />
           <div className="td-door-shade" />
           <div className="td-door-copy">{editText(props, 'toolsTag', copy.toolsTag, 'p', 'td-door-tag')}<h2>{editText(props, 'toolsName', copy.toolsName)}</h2>{editText(props, 'toolsLine', toolsLine, 'p')}
@@ -167,9 +167,9 @@ export function TwoDoorsProof(props) {
   const { cases = [], draftItems = [], carousel = true } = props;
   const copy = { ...props };
   const approvedCases = cases.filter((study) => study?.headline && study?.result && study?.verified);
-  return <div className="td-segment">
-    <section className="td-section" id="cases">{editText(props, 'proofKicker', copy.proofKicker, 'p', 'td-kicker')}<h2>{editText(props, 'proofHeading', copy.proofHeading)}</h2>
-      {approvedCases.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={approvedCases} render={(study) => <div className="td-case">{study.image && <img className="td-case-image" src={study.image} alt={study.imageAlt || ''} loading="lazy" />}<div className="td-case-copy"><strong>{editText(props, 'headline', study.headline, 'span', undefined, 'cases', cases.indexOf(study))}</strong><p>{study.problem}</p><p>{study.work}</p><p>{study.result}</p></div></div>} /> : REVIEW_CONTENT ? <Carousel enabled={carousel} label={copy.proofKicker} items={draftItems} render={(item) => <div className="td-case td-case-draft">{item.image && <img className="td-case-image" src={item.image} alt="" loading="lazy" />}<div className="td-case-copy"><span className="td-draft-badge">{copy.draftBadge}</span><strong>{item.headline}</strong><p>{copy.draftCaseLine}</p></div></div>} /> : <p className="td-pending">{editText(props, 'pendingLine', copy.pendingLine)} <a href={safeHref(copy.proofHref)}>{editText(props, 'pendingLink', copy.pendingLink)}</a>.</p>}
+  return <div className="td-segment td-proof-segment">
+    <section className={'td-section td-proof-section' + (!approvedCases.length && !REVIEW_CONTENT ? ' td-proof-awaiting' : '')} id="cases"><div className="td-proof-heading">{editText(props, 'proofKicker', copy.proofKicker, 'p', 'td-kicker')}<h2>{editText(props, 'proofHeading', copy.proofHeading)}</h2></div>
+      {approvedCases.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={approvedCases} render={(study) => <div className="td-case">{study.image && <img className="td-case-image" src={study.image} alt={study.imageAlt || ''} loading="lazy" />}<div className="td-case-copy"><strong>{editText(props, 'headline', study.headline, 'span', undefined, 'cases', cases.indexOf(study))}</strong><p>{study.problem}</p><p>{study.work}</p><p>{study.result}</p></div></div>} /> : REVIEW_CONTENT ? <Carousel enabled={carousel} label={copy.proofKicker} items={draftItems} render={(item) => <div className="td-case td-case-draft">{item.image && <img className="td-case-image" src={item.image} alt="" loading="lazy" />}<div className="td-case-copy"><span className="td-draft-badge">{copy.draftBadge}</span><strong>{item.headline}</strong><p>{copy.draftCaseLine}</p></div></div>} /> : <div className="td-proof-pending"><span className="td-proof-motif" aria-hidden="true" /><p className="td-pending">{editText(props, 'pendingLine', copy.pendingLine)} <a href={safeHref(copy.proofHref)}>{editText(props, 'pendingLink', copy.pendingLink)}</a>.</p></div>}
     </section>
   </div>;
 }

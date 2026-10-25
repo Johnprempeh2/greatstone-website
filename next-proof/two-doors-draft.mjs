@@ -10,7 +10,7 @@ export function splitTwoDoorsToolsDraft(data) {
     if (block.type !== 'TwoDoorsTools' || !block.props?.closeHeading || !block.props?.bottomHeading) return [block];
     changed = true;
     const props = block.props;
-    const moved = new Set([...closeKeys, ...bottomKeys]);
+    const moved = new Set([...closeKeys, ...bottomKeys.filter((key) => key !== 'toolsHref')]);
     return [
       { ...block, props: Object.fromEntries(Object.entries(props).filter(([key]) => !moved.has(key))) },
       { type: 'TwoDoorsClose', props: { id: `${props.id}-close`, ...pick(props, closeKeys) } },

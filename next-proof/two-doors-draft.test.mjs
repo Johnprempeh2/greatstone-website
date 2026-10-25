@@ -13,6 +13,7 @@ test('old tools draft becomes three selectable blocks without losing content or 
   assert.deepEqual(split.content[0].props.tools, [{ name: 'One' }]);
   assert.equal(split.content[1].props.contactHref, '#contact');
   assert.equal(split.content[2].props.toolsHref, '#tools');
+  assert.equal(split.content[0].props.toolsHref, '#tools');
   assert.equal(split.content[0].props.closeHeading, undefined);
   assert.equal(splitTwoDoorsToolsDraft(split), split);
   assert.equal(original.content.length, 1);
