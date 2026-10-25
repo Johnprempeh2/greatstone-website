@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { EDITOR_COMMANDS, editorState, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
 import { envelope, validMessage } from './frame-protocol.mjs';
 
@@ -7,6 +8,11 @@ const parent = {};
 globalThis.window = { parent };
 const bound = { origin: 'https://host.example', nonce: 'ABCDEFGHIJKLMNOPQRSTUV' };
 const event = (type, payload) => ({ origin: bound.origin, source: parent, data: { gs: 'website-frame', protocol: 1, session: bound.nonce, type, payload } });
+
+test('editor hello-ack advertises editor contract 1 only in editor mode', () => {
+  const editor = readFileSync(new URL('../app/editor/[slug]/Editor.jsx', import.meta.url), 'utf8');
+  assert.match(editor, /envelope\('hello-ack',[^\n]*mode === 'editor' \? \{ editorCommands: EDITOR_COMMANDS, editorContract: 1 \} : \{\}/);
+});
 
 test('editor commands accept every advertised command and reject bad payloads or sessions', () => {
   for (const command of EDITOR_COMMANDS) {

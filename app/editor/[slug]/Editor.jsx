@@ -166,7 +166,7 @@ export default function Editor({ page, forms, siteId, engine, origins, mode }) {
           window.parent.postMessage(envelope('hello-refused', { nonce, reason: result.refused, supported: [FRAME_PROTOCOL] }), event.origin); return;
         }
         session.current ||= { nonce, origin: event.origin };
-        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS } : {}), ...motionHello(proofConfig.components) }), event.origin);
+        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: 1 } : {}), ...motionHello(proofConfig.components) }), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
       if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'editor-command', 'teardown'])) {
