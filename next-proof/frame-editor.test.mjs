@@ -12,7 +12,7 @@ const event = (type, payload) => ({ origin: bound.origin, source: parent, data: 
 test('editor hello-ack advertises editor contract 2 and live content only in editor mode', () => {
   const editor = readFileSync(new URL('../app/editor/[slug]/Editor.jsx', import.meta.url), 'utf8');
   assert.equal(EDITOR_CONTRACT, 2);
-  assert.match(editor, /envelope\('hello-ack',[^\n]*mode === 'editor' \? \{ editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, liveContent: liveContentOf\(liveData\) \} : \{\}/);
+  assert.match(editor, /envelope\('hello-ack',[^\n]*mode === 'editor' \? \{ editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, editorMessages: EDITOR_MESSAGES, liveContent: liveContentOf\(liveData\) \} : \{\}/);
 });
 
 test('Edit copy (GSAM GRE-2394): mode from hello, refused commands and Puck permissions', () => {

@@ -31,6 +31,8 @@
 .gs-frame-controls button:disabled{opacity:.45;cursor:not-allowed}
 .gs-frame-controls button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .gs-frame-block-tools{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.gs-frame-block-tools span,.gs-frame-drawer-label{padding:0 7px;color:#c8ff00}
+.gs-comment-pin{position:fixed;z-index:2147483647;display:grid;place-items:center;min-width:32px;min-height:32px;padding:3px 7px;border:2px solid #101712;border-radius:999px;background:#c8ff00;color:#101712;font:800 13px Montserrat,Arial,sans-serif;box-shadow:0 3px 10px #0009;cursor:pointer}
+.gs-comment-pin:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .gs-frame-insert-after{position:relative;z-index:5;display:block;margin:-19px auto 0;padding:7px 13px;border:1px solid #c8ff00;border-radius:999px;background:#101712;color:#c8ff00;font:700 12px Montserrat,Arial,sans-serif;opacity:0;cursor:pointer}
 .gs-blk:hover>.gs-frame-insert-after,.gs-frame-insert-after:focus-visible{opacity:1}
 @media(max-width:639px){.gs-frame-editor [class*="Sidebar--left"],.gs-frame-editor [class*="Sidebar--right"]{top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;height:min(58dvh,560px);border-radius:16px 16px 0 0;box-shadow:0 -16px 42px #0008}.gs-frame-controls,.gs-frame-controls.is-drawer-open{top:8px;right:8px;left:8px;max-width:none}.gs-frame-block-tools{width:100%}}
