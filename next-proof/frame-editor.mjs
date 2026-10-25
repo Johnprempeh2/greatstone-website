@@ -1,9 +1,38 @@
-export const EDITOR_COMMANDS = ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline'];
+// Editor contract 2 (GSAM GRE-2394): Edit copy. GSAM's hello says `editMode`; `layout` switches it live;
+// `import-live` puts the live page into an empty draft. An older GSAM sends no `editMode`: today's editor.
+export const EDITOR_CONTRACT = 2;
+export const EDITOR_COMMANDS = ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live'];
+const SWITCH_COMMANDS = ['outline', 'layout'];
 
 export function validEditorCommand(payload) {
   return !!payload && typeof payload === 'object' && !Array.isArray(payload) &&
     EDITOR_COMMANDS.includes(payload.command) &&
-    (payload.command === 'outline' ? typeof payload.on === 'boolean' : payload.on === undefined);
+    (SWITCH_COMMANDS.includes(payload.command) ? typeof payload.on === 'boolean' : payload.on === undefined);
+}
+
+/** The edit mode GSAM's hello asks for. Missing or unknown: Layout, the editor before Edit copy. */
+export function editModeOf(helloPayload) {
+  return helloPayload?.editMode === 'copy' ? 'copy' : 'layout';
+}
+
+/** Edit copy changes words only: Puck may not drag, duplicate, delete or insert blocks. */
+export const COPY_PERMISSIONS = Object.freeze({ drag: false, duplicate: false, delete: false, insert: false });
+
+/** Commands Edit copy refuses: they open the block library or the outline. */
+export function copyModeAllows(command) {
+  return command !== 'add-block' && command !== 'outline';
+}
+
+/** `liveContent` for hello-ack: the live page's top-level block count, or null when it has none. */
+export function liveContentOf(liveData) {
+  const blocks = Array.isArray(liveData?.content) ? liveData.content.length : 0;
+  return blocks > 0 ? { blocks: Math.min(blocks, 500) } : null;
+}
+
+/** The live page to import into an empty draft, block ids unchanged; null when there is nothing to do. */
+export function importLiveData(liveData, draft) {
+  if (!liveContentOf(liveData) || !Array.isArray(draft?.content) || draft.content.length > 0) return null;
+  return structuredClone({ root: liveData.root ?? { props: {} }, content: liveData.content, ...(liveData.zones ? { zones: liveData.zones } : {}) });
 }
 
 export function editorState(selectedItem, history, outline = false) {

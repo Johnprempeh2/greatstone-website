@@ -11,5 +11,7 @@ export default async function EditorPage({ params }) {
   const { release } = await activeRelease();
   const page = framePageFor(slug, release);
   if (!page) notFound();
-  return <Editor page={page} forms={release.collections?.forms} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
+  // The live page's own data (GSAM GRE-2394): Edit copy offers to import it into an empty GSAM draft.
+  const liveData = release.pages.find((item) => item.id === slug || item.slug === slug)?.data ?? null;
+  return <Editor page={page} liveData={liveData} forms={release.collections?.forms} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
 }
