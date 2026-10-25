@@ -344,8 +344,10 @@ test('every deep dive screen mounts without throwing', async () => {
 test('every deep dive screen paints something', async () => {
   const { out: r } = await results();
   // A component that renders null throws nothing. The floor is deliberately low: this asks whether
-  // the screen produced a page at all, which is the one thing no other test here can see.
-  assert.deepEqual(r.filter((x) => !x.err && x.chars < 30).map((x) => `${x.name}: ${x.chars}`), [],
+  // the screen produced a page at all. The portal's session-check shell is shorter than a page;
+  // its separate test checks for the navigation control and title while auth is still pending.
+  assert.deepEqual(r.filter((x) => !x.err && x.chars < (x.name === 'DeepDivePortal' ? 10 : 30))
+    .map((x) => `${x.name}: ${x.chars}`), [],
     'a screen rendered nothing');
 });
 
