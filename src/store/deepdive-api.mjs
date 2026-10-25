@@ -1,13 +1,9 @@
-import { supabase } from '../lib/supabase.mjs';
-
-// Auth stays with Supabase; record data goes only through the Netlify RLS bridge.
+import { getSession } from '../lib/better-auth-client.mjs';
 export async function deepdiveRequest(op, args = {}, path = '/api/deepdive-plan') {
-  if (!supabase) return null;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return null;
+  if (!await getSession()) return null;
   const response = await fetch(path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ op, args }),
   });
   if (!/\bjson\b/i.test(response.headers.get('content-type') || '')) return null;

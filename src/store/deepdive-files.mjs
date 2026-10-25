@@ -14,7 +14,7 @@
 // practitioner's disk would ride into a document a client's browser downloads entire, past the
 // visibility flag. The practitioner types a label instead, seeded from the filename where they can
 // see and change it first. The raw name stays in a sidecar only the download route reads.
-import { supabase } from '../lib/supabase.mjs';
+import { getSession } from '../lib/better-auth-client.mjs';
 import { FILE_ID_RE, BARE_ID_RE, MAX_FILE_BYTES as CAP } from '../data/deepdive-sniff.mjs';
 
 const base = () => `${import.meta.env.BASE_URL || '/'}deepdive-file`;
@@ -36,9 +36,8 @@ export async function fileBackend() {
 export const resetFileBackend = () => {};
 
 async function authHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Sign in to use files.');
-  return { authorization: `Bearer ${session.access_token}` };
+  if (!await getSession()) throw new Error('Sign in to use files.');
+  return {};
 }
 
 /** Send the bytes. Returns the content id and a suggested label; nothing is recorded against an

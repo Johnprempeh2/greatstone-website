@@ -5,7 +5,6 @@ import { staffDb } from './staff-store-api.mjs';
 // on their account instantly), see the keys already issued, then mark the order fulfilled. Refunds and
 // cancellations are recorded here but any money movement happens in Stripe — this view doesn't move funds.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { orderRefDisplay } from '../lib/order-ref.mjs';
 import { KeyEditor } from './ClientsManager.jsx';
@@ -42,9 +41,8 @@ export default function OrdersManager({ staff }) {
     // sends this same email, so a staffer who issues then marks fulfilled may trigger two — see the handoff.)
     let emailed = false;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/notify-licence-issued', {
-        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (session?.access_token || '') },
+        method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ order_id: id }),
       });
       emailed = !!(response.ok && (await response.json()).sent);

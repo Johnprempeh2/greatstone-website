@@ -1,20 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
-import { createClient } from '@supabase/supabase-js';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { basketItems, priceBasket } from './lib/store-pricing.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => Response.json(body, { status, headers: HEADERS });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-async function verifyToken(token, env) {
-  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-  const key = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
-  if (!token || !url || !key || token === key) return null;
-  const { data, error } = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-  return error ? null : data.user;
-}
 
 async function saveQuote(pool, identity, quoteId, rows, details, document) {
   const client = await pool.connect();
@@ -57,7 +49,7 @@ async function saveQuote(pool, identity, quoteId, rows, details, document) {
   } finally { client.release(); }
 }
 
-export function makeRequestQuoteHandler({ env = process.env, pool = getPool, verify = verifyToken,
+export function makeRequestQuoteHandler({ env = process.env, pool = getPool, verify,
   store = () => getStore('po-documents'), log = console.error } = {}) {
   return async (req) => {
     if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -77,10 +69,8 @@ export function makeRequestQuoteHandler({ env = process.env, pool = getPool, ver
     try {
       const db = pool();
       if (!db) return json({ error: 'Quote service unavailable. Please try again.' }, 503);
-      const token = /^Bearer ([^\s]+)$/.exec(req.headers.get('authorization') || '')?.[1];
-      const user = await verify(token, env).catch(() => null);
-      const identity = user?.id && UUID.test(user.id)
-        ? { id: user.id, email: user.email || null, email_verified: !!user.email_confirmed_at } : null;
+      const user = await userFromRequest(req, verify).catch(() => null);
+      const identity = user?.id && UUID.test(user.id) ? authIdentity(user) : null;
       const quoteId = randomUUID();
       const doc = body.poDocument;
       let document = null;
