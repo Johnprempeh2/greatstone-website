@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "organisation": {
+    "id": "050a4d9d-ecb2-4e61-ad24-8b35cf8cbbc2",
+    "slug": "greatstone-test-client",
+    "name": "Greatstone Test Client (TEST DATA)",
+    "domain": "greatstone-test.invalid"
+  },
+  "staff": [
+    { "id": "f105f8ab-09bb-4dde-bac4-2f149c3b4858", "email": "staff-one@greatstone-test.invalid", "name": "Test Staff One", "role": "admin" },
+    { "id": "f682781c-586e-4eaf-b3ea-f2718de91e13", "email": "staff-two@greatstone-test.invalid", "name": "Test Staff Two", "role": "editor" },
+    { "id": "b3a41673-7d4a-454e-9080-7097b4e5f9ac", "email": "staff-three@greatstone-test.invalid", "name": "Test Staff Three", "role": "viewer" }
+  ],
+  "teams": [
+    {
+      "key": "alpha",
+      "name": "Test Team Alpha",
+      "clients": [
+        { "id": "f0c8c1b0-ed5e-489a-bde7-7ab9c6ff87ae", "email": "client-alpha-one@greatstone-test.invalid", "name": "Test Client Alpha One", "role": "admin" },
+        { "id": "714108b3-28c1-4779-a01c-ea17ee1df912", "email": "client-alpha-two@greatstone-test.invalid", "name": "Test Client Alpha Two", "role": "member" },
+        { "id": "ec9cc1a6-1aae-400f-bba4-5b4663557ed4", "email": "client-alpha-three@greatstone-test.invalid", "name": "Test Client Alpha Three", "role": "member" }
+      ]
+    },
+    {
+      "key": "beta",
+      "name": "Test Team Beta",
+      "clients": [
+        { "id": "1b73cc31-1d39-485e-9161-491a3d18c18b", "email": "client-beta-one@greatstone-test.invalid", "name": "Test Client Beta One", "role": "member" },
+        { "id": "48feeabf-3058-4831-bc11-762efb17ad39", "email": "client-beta-two@greatstone-test.invalid", "name": "Test Client Beta Two", "role": "member" },
+        { "id": "86c3ad8a-722b-4c8d-bba5-dd5ce16e2ab5", "email": "client-beta-three@greatstone-test.invalid", "name": "Test Client Beta Three", "role": "member" }
+      ]
+    }
+  ]
+}
