@@ -94,3 +94,44 @@ test('tablet doors use tap to open rather than hover or focus', async () => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
   }
 });
+
+test('tools carousel scrolls to a card and follows trackpad position', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { window: globalThis.window, document: globalThis.document, navigator: globalThis.navigator, act: globalThis.IS_REACT_ACT_ENVIRONMENT };
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  Object.defineProperty(globalThis, 'navigator', { value: dom.navigator, configurable: true });
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  dom.matchMedia = () => ({ matches: false });
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  try {
+    const { TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
+    const root = createRoot(document.body.appendChild(document.createElement('div')));
+    try {
+      await act(async () => root.render(React.createElement(React.Fragment, null,
+        React.createElement(TwoDoorsTools, { toolsKicker: 'Tools', tools: [{ name: 'One' }, { name: 'Two' }, { name: 'Three' }] }),
+        React.createElement(TwoDoorsClose, { closeHeading: 'Talk' }),
+        React.createElement(TwoDoorsBottom, { bottomHeading: 'Choose' }))));
+      const slide = document.querySelector('.td-slide');
+      const cards = [...slide.children];
+      assert.equal(cards.length, 3);
+      cards.forEach((card, i) => Object.defineProperty(card, 'offsetLeft', { value: i * 500 }));
+      let scrollRequest;
+      slide.scrollTo = (request) => { scrollRequest = request; };
+      await act(async () => document.querySelector('[aria-label="Next Tools"]').click());
+      assert.deepEqual(scrollRequest, { left: 500, behavior: 'smooth' });
+      slide.scrollLeft = 500;
+      await act(async () => slide.dispatchEvent(new dom.Event('scroll', { bubbles: true })));
+      assert.equal(document.querySelector('[aria-label="Show Tools 2"]').getAttribute('aria-current'), 'true');
+      assert.equal(document.querySelectorAll('.td-segment').length, 3);
+    } finally {
+      await act(async () => root.unmount());
+    }
+  } finally {
+    await vite.close();
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+    Object.defineProperty(globalThis, 'navigator', { value: previous.navigator, configurable: true });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
+  }
+});

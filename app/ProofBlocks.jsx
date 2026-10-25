@@ -7,6 +7,8 @@ import * as TwoDoors from '../src/blocks/TwoDoors.jsx';
 import * as TwoDoorsStory from '../src/blocks/TwoDoorsStory.jsx';
 import * as TwoDoorsProof from '../src/blocks/TwoDoorsProof.jsx';
 import * as TwoDoorsTools from '../src/blocks/TwoDoorsTools.jsx';
+import * as TwoDoorsClose from '../src/blocks/TwoDoorsClose.jsx';
+import * as TwoDoorsBottom from '../src/blocks/TwoDoorsBottom.jsx';
 import * as DevTools from '../src/blocks/DevTools.jsx';
 import * as Hero from '../src/blocks/Hero.jsx';
 import * as Prose from '../src/blocks/Prose.jsx';
@@ -38,7 +40,7 @@ import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
 import { PAGE_SCENE_PRESETS, PAGE_SCENE_MODES, pageSceneBackground, resolvePageSceneFields } from '../next-proof/page-scene.mjs';
 import { STAGE_OPTIONS } from '../src/stage-presets.js';
 
-const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
+const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
 export const proofBlockCss = Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss;
 const InsertAfter = lazy(() => import('./editor/InsertAfter.jsx'));
 const Stage = dynamic(() => import('../src/Stage.jsx'), { ssr: false });

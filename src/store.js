@@ -144,7 +144,8 @@ const draftCases = [{ headline: 'First study', image: '/assets/two-doors/consult
 const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '/dev-tools', contactHref: '/contact', consultancyHref: '/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
 const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
 function twoDoorsHomePage() {
-  return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolsCopy, tools: TOOLS })], {
+  const { closeHeading, closeLine, closeCta, contactHref, bottomKicker, bottomHeading, bottomConsultancy, bottomTools, consultancyHref, consultancyImage, toolsImage, ...toolProps } = toolsCopy;
+  return seedPage('Home', 'none', [blk('TwoDoors', { ...homeCopy, kicker: 'The Foundation of Digital Excellence', heading: 'Transformation', intro: 'Greatstone International is a transformation and technology firm. Today we bring our experience to AI, and to the tools developers build with.', consultancyLine: 'Turn slow, hidden work into AI delivery you can inspect and approve.', toolsLine: 'Developer components and SDKs from the brands you know.', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp', toolBrands: TOOLS.map(({ name, image }) => ({ name, image })) }), blk('TwoDoorsStory', { ...storyCopy, storyHeading: 'Making change work.', storyBody: 'Greatstone is a transformation and technology firm.', storyBody2: 'Today we bring that experience to AI, and to the tools developers build with.', range: defaultRange }), blk('TwoDoorsProof', { ...proofCopy, draftItems: draftCases }), blk('TwoDoorsTools', { ...toolProps, tools: TOOLS }), blk('TwoDoorsClose', { closeHeading, closeLine, closeCta, contactHref }), blk('TwoDoorsBottom', { bottomKicker, bottomHeading, bottomConsultancy, bottomTools, consultancyHref, consultancyImage, toolsImage, toolsHref: toolsCopy.toolsHref })], {
     title: 'Greatstone International · Two ways to work with us',
     description: 'Explore DX Consultancy and DX Dev Tools from Greatstone International.', ogImage: '',
   });
@@ -166,7 +167,7 @@ function linkConsultancyFromHome(page) {
   for (const data of [page.data, page.published]) {
     if (!data?.content) continue;
     for (const block of data.content) {
-      if (block.type === 'TwoDoorsTools' && block.props?.consultancyHref === '#door-dx') block.props.consultancyHref = '/dx-consultancy';
+      if ((block.type === 'TwoDoorsTools' || block.type === 'TwoDoorsBottom') && block.props?.consultancyHref === '#door-dx') block.props.consultancyHref = '/dx-consultancy';
     }
   }
 }
@@ -826,7 +827,7 @@ function migrate(state) {
     const routes = { '#contact': '/contact', '#proof': '/proof', '#dev-tools': '/dev-tools', '#go/dx-consultancy': '/dx-consultancy' };
     for (const data of [state.pages.home?.data, state.pages.home?.published]) {
       for (const block of data?.content || []) {
-        if (!['TwoDoors', 'TwoDoorsProof', 'TwoDoorsTools'].includes(block.type)) continue;
+        if (!['TwoDoors', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom'].includes(block.type)) continue;
         for (const key of ['contactHref', 'proofHref', 'toolsHref', 'consultancyHref']) {
           if (routes[block.props?.[key]]) block.props[key] = routes[block.props[key]];
         }

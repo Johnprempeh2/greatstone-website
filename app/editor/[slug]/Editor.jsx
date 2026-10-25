@@ -9,6 +9,7 @@ import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert
 import { motionHello, setMotion, setMotionResult } from '../../../next-proof/frame-set-motion.mjs';
 import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
+import { splitTwoDoorsToolsDraft } from '../../../next-proof/two-doors-draft.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
 import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, liveContentOf, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
@@ -267,7 +268,10 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
         draft.current = null; baseRevision.current = null; session.current = null; pending.current = null;
         clearTimeout(timer.current); releaseMedia(); setPins([]); setData(null); setStatus('closed'); setMessage('Editor closed');
       } else if (event.data.type === 'load-draft' && !draft.current && p.pageId === page.id && typeof p.revisionId === 'string' && Array.isArray(p.data?.content)) {
-        addMedia(p.media); draft.current = p.data; baseRevision.current = p.revisionId; setData(displayData(p.data)); setStatus('ready'); setMessage('Draft ready');
+        addMedia(p.media); baseRevision.current = p.revisionId;
+        const next = splitTwoDoorsToolsDraft(p.data);
+        draft.current = next; setData(displayData(next)); setStatus('ready'); setMessage('Draft ready');
+        if (next !== p.data) { dirty(true); save(next); }
       } else if (event.data.type === 'highlight' && mode === 'preview') {
         setHighlight(typeof p.blockId === 'string' ? p.blockId : null);
       } else if (event.data.type === 'insert-media') {

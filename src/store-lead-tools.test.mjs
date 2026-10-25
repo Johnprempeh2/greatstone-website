@@ -27,8 +27,8 @@ test('tool placement preserves saved home draft and published projections', asyn
     assert.equal(next.pages.home.published.root.props.title, 'Published home');
     assert.equal(next.pages.home.data.content[0].props.contactHref, '/contact');
     assert.equal(next.pages.home.published.content[0].props.contactHref, '/contact');
-    assert.equal(next.pages.home.data.content[3].props.consultancyHref, '/dx-consultancy');
-    assert.equal(next.pages.home.published.content[3].props.consultancyHref, '/dx-consultancy');
+    assert.equal(next.pages.home.data.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref, '/dx-consultancy');
+    assert.equal(next.pages.home.published.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref, '/dx-consultancy');
     assert.equal(next.pages['dx-consultancy'].orgId, 'org-greatstone');
     assert.deepEqual(next.pages['dx-consultancy'].data.content.map((b) => b.type), ['AiBaselineSurvey', 'AiCostCalculator']);
     assert.deepEqual(next.pages['dx-consultancy'].published.content.map((b) => b.type), ['AiBaselineSurvey', 'AiCostCalculator']);
@@ -56,12 +56,18 @@ test('review correction restores the enquiry CTA on already placed pages', async
     saved.pages.home.published = structuredClone(saved.pages.home.published);
     saved.pages.home.data.content[0].props.contactHref = '#go/dx-consultancy';
     saved.pages.home.published.content[0].props.contactHref = '#go/dx-consultancy';
+    for (const data of [saved.pages.home.data, saved.pages.home.published]) {
+      data.content.find((b) => b.type === 'TwoDoorsClose').props.contactHref = '#contact';
+      data.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref = '#go/dx-consultancy';
+    }
     dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
     const next = load();
     assert.equal(next.pages.home.data.content[0].props.contactHref, '/contact');
     assert.equal(next.pages.home.published.content[0].props.contactHref, '/contact');
-    assert.equal(next.pages.home.data.content[3].props.consultancyHref, '/dx-consultancy');
-    assert.equal(next.pages.home.published.content[3].props.consultancyHref, '/dx-consultancy');
+    assert.equal(next.pages.home.data.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref, '/dx-consultancy');
+    assert.equal(next.pages.home.published.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref, '/dx-consultancy');
+    assert.equal(next.pages.home.data.content.find((b) => b.type === 'TwoDoorsClose').props.contactHref, '/contact');
+    assert.equal(next.pages.home.published.content.find((b) => b.type === 'TwoDoorsClose').props.contactHref, '/contact');
   } finally {
     await vite.close();
     globalThis.localStorage = previous.localStorage;

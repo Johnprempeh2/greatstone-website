@@ -15,7 +15,6 @@ const textDefaults = (keys) => Object.fromEntries(keys.map((key) => [key, '']));
 const homeFields = 'headlineSuffix cueText cueSubtext consultancyName toolsName chooseLabel consultancyTag toolsTag moreClosed moreOpen logoLabel logoDraft consultancyPoint1 consultancyPoint1Text consultancyPoint2 consultancyPoint2Text consultancyPoint3 consultancyPoint3Text consultancyCta proofLink toolsCta chooserHeading chooserLine consultancyChooserLine toolsChooserLine orLabel swipeHint toolsPoint1 toolsPoint1Text toolsPoint2 toolsPoint2Text toolsPoint3 toolsPoint3Text chooseHref contactHref proofHref toolsHref'.split(' ');
 const storyFields = 'storyKicker numbersLabel draftNumbersHeading draftNumbersLine rangeLabel'.split(' ');
 const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLine pendingLink proofHref'.split(' ');
-const toolsFields = 'toolsKicker toolsHeading toolsIntro toolLinkPrefix toolLinkSuffix closeHeading closeLine closeCta bottomKicker bottomHeading bottomConsultancy bottomTools toolsHref contactHref consultancyHref consultancyImage toolsImage'.split(' ');
 const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
 const doorSides = ['consultancy', 'choose', 'tools'], touchLayoutQuery = '(max-width:1023px)';
@@ -25,18 +24,33 @@ const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - n
 function Carousel({ items, label, render, enabled = true }) {
   const [index, setIndex] = useState(0);
   const count = items.length;
-  const move = (step) => setIndex((i) => (i + step + count) % count);
-  const touch = useRef(null);
+  const track = useRef(null);
+  const position = (next) => {
+    const node = track.current;
+    if (!node) return;
+    const cards = [...node.children];
+    const target = cards[(next + count) % count];
+    node.scrollTo({ left: target.offsetLeft - cards[0].offsetLeft,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  };
+  const move = (step) => position(index + step);
+  const onScroll = () => {
+    const node = track.current;
+    if (!node) return;
+    const cards = [...node.children];
+    const first = cards[0].offsetLeft;
+    setIndex(cards.reduce((nearest, card, i) =>
+      Math.abs(card.offsetLeft - first - node.scrollLeft) < Math.abs(cards[nearest].offsetLeft - first - node.scrollLeft) ? i : nearest, 0));
+  };
   if (!count) return null;
   if (!enabled) return <div className="td-carousel td-carousel-still">{render(items[0], 0)}</div>;
   return <div className="td-carousel" role="region" aria-roledescription="carousel" aria-label={label}>
-    <div className="td-slide" tabIndex="0" onKeyDown={(e) => { if (e.key === 'ArrowRight') move(1); if (e.key === 'ArrowLeft') move(-1); }}
-      onTouchStart={(e) => { touch.current = e.touches[0].clientX; }} onTouchEnd={(e) => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 45) move(dx < 0 ? 1 : -1); touch.current = null; }}>
-      <div className="td-carousel-current">{render(items[index], index)}</div>
-      {count > 1 && <div className="td-carousel-next" aria-hidden="true" inert={true}>{render(items[(index + 1) % count], (index + 1) % count)}</div>}
+    <div className="td-slide" ref={track} tabIndex="0" onScroll={onScroll}
+      onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); move(e.key === 'ArrowRight' ? 1 : -1); } }}>
+      {items.map((item, i) => <div className={'td-carousel-card' + (index === i ? ' is-active' : '')} key={i}>{render(item, i)}</div>)}
     </div>
     <div className="td-carousel-controls">
-      <span className="td-dots" aria-label={`${index + 1} of ${count}`}>{items.map((item, i) => <button key={i} type="button" className={index === i ? 'active' : ''} aria-label={`Show ${label} ${i + 1}`} aria-current={index === i ? 'true' : undefined} onClick={() => setIndex(i)} />)}</span>
+      <span className="td-dots" aria-label={`${index + 1} of ${count}`}>{items.map((item, i) => <button key={i} type="button" className={index === i ? 'active' : ''} aria-label={`Show ${label} ${i + 1}`} aria-current={index === i ? 'true' : undefined} onClick={() => position(i)} />)}</span>
       <button type="button" aria-label={`Previous ${label}`} onClick={() => move(-1)}>←</button>
       <button type="button" aria-label={`Next ${label}`} onClick={() => move(1)}>→</button>
     </div>
@@ -167,9 +181,19 @@ export function TwoDoorsTools(props) {
     <section className="td-section" id="tools">{editText(props, 'toolsKicker', copy.toolsKicker, 'p', 'td-kicker td-teal')}<h2>{editText(props, 'toolsHeading', copy.toolsHeading)}</h2>{editText(props, 'toolsIntro', copy.toolsIntro, 'p')}
       <Carousel enabled={carousel} label={copy.toolsKicker} items={tools} render={(tool) => <article className="td-tool-card">{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.toolsHref)}>{copy.toolLinkPrefix} {tool.name} {copy.toolLinkSuffix}</a></article>} />
     </section>
-    <section className="td-close"><h2>{editText(props, 'closeHeading', copy.closeHeading)}</h2>{editText(props, 'closeLine', copy.closeLine, 'p')}<a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'closeCta', copy.closeCta)}</a></section>
-    <section className="td-section td-bottom">{editText(props, 'bottomKicker', copy.bottomKicker, 'p', 'td-kicker')}<h2>{editText(props, 'bottomHeading', copy.bottomHeading)}</h2><div><a href={safeHref(copy.consultancyHref)}><img src={copy.consultancyImage} alt="" /><span>{editText(props, 'bottomConsultancy', copy.bottomConsultancy)}</span></a><a href={safeHref(copy.toolsHref)}><img src={copy.toolsImage} alt="" /><span>{editText(props, 'bottomTools', copy.bottomTools)}</span></a></div></section>
+    {copy.closeHeading && <TwoDoorsClose {...props} />}
+    {copy.bottomHeading && <TwoDoorsBottom {...props} />}
   </div>;
+}
+
+export function TwoDoorsClose(props) {
+  const copy = { ...props };
+  return <div className="td-segment"><section className="td-close"><h2>{editText(props, 'closeHeading', copy.closeHeading)}</h2>{editText(props, 'closeLine', copy.closeLine, 'p')}<a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'closeCta', copy.closeCta)}</a></section></div>;
+}
+
+export function TwoDoorsBottom(props) {
+  const copy = { ...props };
+  return <div className="td-segment"><section className="td-section td-bottom">{editText(props, 'bottomKicker', copy.bottomKicker, 'p', 'td-kicker')}<h2>{editText(props, 'bottomHeading', copy.bottomHeading)}</h2><div><a href={safeHref(copy.consultancyHref)}><img src={copy.consultancyImage} alt="" /><span>{editText(props, 'bottomConsultancy', copy.bottomConsultancy)}</span></a><a href={safeHref(copy.toolsHref)}><img src={copy.toolsImage} alt="" /><span>{editText(props, 'bottomTools', copy.bottomTools)}</span></a></div></section></div>;
 }
 
 export function DevTools(props) {
@@ -223,7 +247,9 @@ export const proofPuck = {
   render: (props) => <TwoDoorsProof {...props} />,
 };
 
-export const toolsPuck = { label: 'Two Doors tools and close', fields: { ...copyFields(toolsFields), carousel: { type: 'radio', label: 'Carousel', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] }, tools: toolFields }, defaultProps: { ...textDefaults(toolsFields), tools: [], carousel: true }, render: (props) => <TwoDoorsTools {...props} /> };
+export const toolsPuck = { label: 'Two Doors tools', fields: { ...copyFields('toolsKicker toolsHeading toolsIntro toolLinkPrefix toolLinkSuffix toolsHref'.split(' ')), carousel: { type: 'radio', label: 'Carousel', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] }, tools: toolFields }, defaultProps: { ...textDefaults('toolsKicker toolsHeading toolsIntro toolLinkPrefix toolLinkSuffix toolsHref'.split(' ')), tools: [], carousel: true }, render: (props) => <TwoDoorsTools {...props} /> };
+export const closePuck = { label: 'Two Doors conversation', fields: copyFields('closeHeading closeLine closeCta contactHref'.split(' ')), defaultProps: textDefaults('closeHeading closeLine closeCta contactHref'.split(' ')), render: (props) => <TwoDoorsClose {...props} /> };
+export const bottomPuck = { label: 'Two Doors choice', fields: copyFields('bottomKicker bottomHeading bottomConsultancy bottomTools consultancyHref toolsHref consultancyImage toolsImage'.split(' ')), defaultProps: textDefaults('bottomKicker bottomHeading bottomConsultancy bottomTools consultancyHref toolsHref consultancyImage toolsImage'.split(' ')), render: (props) => <TwoDoorsBottom {...props} /> };
 
 export const devToolsPuck = {
   label: 'Two Doors tools page',
