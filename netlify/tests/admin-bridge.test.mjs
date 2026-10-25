@@ -218,7 +218,7 @@ test('a request is refused for each way it can be wrong', { skip }, async () => 
   assert.equal(await code(signed('/api/admin/v1/health'), listed), '403 ip_denied');
   assert.equal(await code(signed('/api/admin/v1/health', { ip: '203.0.113.7' }), listed), '200 undefined');
   // after the signature: unknown routes and bad parameters
-  assert.equal(await code(signed('/api/admin/v1/users')), '404 not_found');
+  assert.equal(await code(signed('/api/admin/v1/staff')), '404 not_found');
   assert.equal(await code(signed('/api/admin/v1/orders?limit=500')), '400 bad_request');
   assert.equal(await code(signed('/api/admin/v1/orders?cursor=%%%')), '400 bad_request');
   const typo = randomBytes(16).toString('base64url');

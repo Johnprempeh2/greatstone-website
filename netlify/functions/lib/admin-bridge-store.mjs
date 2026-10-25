@@ -295,6 +295,20 @@ export async function bridgeFx(client) {
   return rows[0];
 }
 
+/**
+ * Client users by Better Auth id (GRE-2631): ?ids=<id,id,...>, 1 to 100 uuids. id, email, name and memberships
+ * ({ organisationId, membershipId }) from bridge_client_users (054). An id with no client user is left out.
+ */
+export async function bridgeUsers(client, searchParams) {
+  for (const name of searchParams.keys()) if (name !== 'ids') throw new BridgeRequestError('bad_request', `unknown parameter ${name}`);
+  const raw = searchParams.getAll('ids');
+  if (raw.length !== 1) throw new BridgeRequestError('bad_request', 'ids');
+  const ids = raw[0].split(',').map((s) => s.trim().toLowerCase());
+  if (ids.length > MAX_LIMIT || !ids.every((x) => UUID.test(x))) throw new BridgeRequestError('bad_request', 'ids');
+  const { rows: [r] } = await client.query('SELECT bridge_client_users($1::uuid[]) AS items', [[...new Set(ids)]]);
+  return r.items;
+}
+
 const ROWS_CURSOR = /^\d{1,9}$/;
 /** An import job and one page of its rows, by row number. ?limit=&cursor= page the rows. */
 export async function bridgeImport(client, id, searchParams) {
