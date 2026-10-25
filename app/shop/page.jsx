@@ -8,7 +8,7 @@ const baseMetadata = {
   description: 'Browse developer software from the vendors Greatstone licenses and supports.',
   alternates: { canonical: 'https://greatstoneint.com/shop' },
 };
-export async function generateMetadata() { const { release } = await activeRelease(); return { ...baseMetadata, other: { 'gs-release': String(release.release.number) } }; }
+export async function generateMetadata() { const { release } = await activeRelease(); return { ...baseMetadata, other: { 'gsam-release': String(release.release.number) } }; }
 
 export default async function Shop({ searchParams }) {
   const { release } = await activeRelease();

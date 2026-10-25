@@ -5,8 +5,8 @@ import { cache } from 'react';
 import baked from '../next-proof/data/release.json';
 import { createReleaseReader } from '../next-proof/release-reader.mjs';
 
-const storeName = process.env.GSAM_RELEASE_BLOBS_STORE || 'website-releases';
-export const releaseStore = () => getStore(storeName);
+const storeName = process.env.GSAM_RELEASE_BLOBS_STORE || 'gsam-content';
+export const releaseStore = () => getStore({ name: storeName, siteID: process.env.NETLIFY_SITE_ID });
 const readRelease = unstable_cache(async (number) => {
   const value = await releaseStore().get(`releases/${number}.json`, { type: 'text' });
   if (value === null) {
@@ -23,7 +23,7 @@ const reader = createReleaseReader({
   siteId: process.env.GSAM_SITE_ID || baked.siteId,
   orgId: process.env.GSAM_ORG_ID || baked.orgId,
   readCurrent: async () => {
-    if (!process.env.GSAM_SITE_ID || !process.env.GSAM_ORG_ID) {
+    if (!process.env.GSAM_SITE_ID) {
       const error = new Error('ReleaseIdentityNotConfigured');
       error.code = 'NOT_CONFIGURED';
       throw error;

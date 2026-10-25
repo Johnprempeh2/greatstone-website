@@ -1,11 +1,10 @@
 import { validateRelease, supportedReleaseSchemas } from './release-validator.mjs';
+import { readGsamRelease, validateCurrent } from './gsam-release.mjs';
 
-const pointerId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const pointerDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/;
 const refusal = (number, rule, message) => ({ number, rule, message });
 
 export function createReleaseReader({ baked, siteId, orgId, readCurrent, readRelease }) {
-  const bakedProblem = validateRelease(baked, { siteId, orgId });
+  const bakedProblem = baked.gsamSnapshot ? null : validateRelease(baked, { siteId, orgId });
   if (bakedProblem) throw new Error(`Invalid baked release: ${bakedProblem.rule} ${bakedProblem.message}`);
   let lastGood = null;
 
@@ -14,23 +13,16 @@ export function createReleaseReader({ baked, siteId, orgId, readCurrent, readRel
     try {
       const current = await readCurrent();
       if (current === null) refused = refusal(null, 'current', 'Current release pointer is missing');
-      else if (current?.schema !== 1 || !Number.isSafeInteger(current.number) || current.number < 1 || !pointerId.test(current.releaseId || '') || !pointerDate.test(current.switchedAt || '') || !Number.isFinite(Date.parse(current.switchedAt))) refused = refusal(current?.number ?? null, 'current', 'Current release pointer is invalid');
+      else if (validateCurrent(current)) refused = refusal(current?.release ?? null, 'current', 'Current release pointer is invalid');
       else {
-        const raw = await readRelease(current.number);
-        if (raw === null) refused = refusal(current.number, 'missing', 'Release file is missing');
-        else if (Buffer.byteLength(raw) > 10 * 1024 * 1024) refused = refusal(current.number, 'R13', 'Release exceeds 10 MB');
+        const raw = await readRelease(current.release);
+        if (raw === null) refused = refusal(current.release, 'missing', 'Release file is missing');
         else {
-          let release;
-          try { release = JSON.parse(raw); }
-          catch { refused = refusal(current.number, 'R1', 'Release is not valid JSON'); }
-          if (release !== undefined) {
-            const problem = validateRelease(release, { siteId, orgId });
-            if (problem) refused = refusal(current.number, problem.rule, problem.message);
-            else if (release.release.number !== current.number || release.release.id !== current.releaseId) refused = refusal(current.number, 'current', 'Release does not match current pointer');
-            else {
-              lastGood = release;
-              return { release, source: 'blobs', refused: null };
-            }
+          const parsed = readGsamRelease(raw, current, { siteId, orgId }, baked);
+          if (parsed.refused) refused = refusal(current.release, parsed.refused.rule, parsed.refused.message);
+          else {
+            lastGood = parsed.release;
+            return { release: parsed.release, source: 'blobs', refused: null };
           }
         }
       }

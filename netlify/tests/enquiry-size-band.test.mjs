@@ -34,7 +34,8 @@ const rlsState = `SELECT relrowsecurity::text || relforcerowsecurity::text FROM 
   SELECT string_agg(policyname, ',' ORDER BY policyname) FROM pg_policies WHERE tablename = 'service_inquiries';
   SELECT has_table_privilege('anon', 'service_inquiries', 'SELECT')::text;
   SELECT has_column_privilege('anon', 'service_inquiries', 'size_band', 'INSERT')::text;`;
-const RLS_AS_BUILT = 'truetrue\nanon_contact_insert,owner_definer,staff_all\nfalse\ntrue';
+// 048 adds gsam_bridge_read: the GSAM admin bridge reads the org's enquiries (GRE-2323)
+const RLS_AS_BUILT = 'truetrue\nanon_contact_insert,gsam_bridge_read,owner_definer,staff_all\nfalse\ntrue';
 
 before(async () => {
   if (skip) return;

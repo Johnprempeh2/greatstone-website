@@ -40,7 +40,7 @@ test('server metadata supplies canonical and social URLs from the released page'
   assert.equal(meta.description, pages.privacy.seo.description);
   assert.equal(meta.alternates.canonical, 'https://greatstoneint.com/privacy');
   assert.equal(meta.openGraph.url, meta.alternates.canonical);
-  assert.equal(meta.other['gs-release'], '1');
+  assert.equal(meta.other['gsam-release'], '1');
 });
 
 test('unsafe release theme values are refused', () => {
