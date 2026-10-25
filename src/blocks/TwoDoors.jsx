@@ -173,9 +173,9 @@ export function TwoDoorsStory(props) {
   return <div className="td-segment td-story-segment">
     <TideField view="calm" enabled={tide} />
     <section className="td-public-clients" aria-labelledby="td-public-clients-heading">
-      <div className="td-public-clients-heading"><p className="td-kicker">DX Consultancy</p><h2 id="td-public-clients-heading">Logos on our existing public site</h2></div>
+      <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2 id="td-public-clients-heading">Organisations we have worked with</h2></div>
       <ul>{publicClientMarks.map(({ name, image }) => <li key={name}>
-        {image ? <img src={image} alt={name} loading="lazy" width="160" height="80" /> : <span className="td-public-client-pending"><strong>{name}</strong><small>Logo unavailable</small></span>}
+        {image ? <img src={image} alt={name} loading="lazy" width="160" height="80" /> : <span className="td-public-client-pending">{name}</span>}
       </li>)}</ul>
     </section>
     <section className="td-story" id="about"><div>{editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
