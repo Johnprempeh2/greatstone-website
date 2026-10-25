@@ -4,6 +4,7 @@ import { activeRelease } from '../../release-source.js';
 import { allowedHostOrigins } from '../../../next-proof/frame-protocol.mjs';
 import { frameEngine } from '../../../next-proof/frame-engine.mjs';
 import Editor from './Editor.jsx';
+import { EDITOR_CONTRACT } from '../../../next-proof/frame-editor.mjs';
 
 export const metadata = { title: 'Page editor | Greatstone Studio', robots: { index: false, follow: false } };
 export default async function EditorPage({ params }) {
@@ -13,5 +14,10 @@ export default async function EditorPage({ params }) {
   if (!page) notFound();
   // The live page's own data (GSAM GRE-2394): Edit copy offers to import it into an empty GSAM draft.
   const liveData = release.pages.find((item) => item.id === slug || item.slug === slug)?.data ?? null;
-  return <Editor page={page} liveData={liveData} forms={release.collections?.forms} siteId={release.siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />;
+  const siteId = process.env.GSAM_EDITOR_SITE_ID || release.siteId;
+  return <>
+    <meta name="gsam-editor-site-id" content={siteId} />
+    <meta name="gsam-editor-contract" content={String(EDITOR_CONTRACT)} />
+    <Editor page={page} liveData={liveData} forms={release.collections?.forms} siteId={siteId} engine={frameEngine(release.release.engine)} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} mode="editor" />
+  </>;
 }
