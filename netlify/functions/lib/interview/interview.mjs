@@ -176,7 +176,7 @@ export function updatePaceFields(state, startedAt) {
 
 // ─── System prompt assembly ──────────────────────────────────────────────────
 
-function renderContextPack(engagement, pack, orgUnit, roleTitle) {
+function renderContextPack(engagement, pack, orgUnit, roleTitle, employeeEmail = null) {
   const lines = [`Company: ${engagement.client_name}`];
 
   if (pack?.content && typeof pack.content === 'object') {
@@ -216,6 +216,17 @@ function renderContextPack(engagement, pack, orgUnit, roleTitle) {
           `Department section for the interviewee's unit (${orgUnit.name}): ${
             typeof section === 'string' ? section : JSON.stringify(section)
           }`
+        );
+      }
+    }
+    // Port: new on the website (GRE-2612). In a per-person round (small organisations) GSAM writes questions for
+    // each person in content.people, keyed by lower-case email, and they are rendered like a unit section.
+    const people = c.people;
+    if (employeeEmail && people && typeof people === 'object') {
+      const section = people[String(employeeEmail).toLowerCase()];
+      if (section) {
+        lines.push(
+          `Section for this interviewee: ${typeof section === 'string' ? section : JSON.stringify(section)}`
         );
       }
     }
@@ -270,6 +281,7 @@ export function buildSystemPrompt(params) {
     contextPack,
     orgUnit,
     employeeName,
+    employeeEmail,
     roleTitle,
     state,
     budget,
@@ -285,7 +297,7 @@ export function buildSystemPrompt(params) {
   // AFTER the breakpoint, or the cache would miss every turn.
   const stable = INTERVIEW_SYSTEM_PROMPT.replace(
     '{{ENGAGEMENT_CONTEXT_PACK}}',
-    renderContextPack(engagement, contextPack, orgUnit, roleTitle)
+    renderContextPack(engagement, contextPack, orgUnit, roleTitle, employeeEmail)
   ).replace(
     '{{KNOWN_FACTS}}',
     renderKnownFacts({ name: employeeName, roleTitle, orgUnit })

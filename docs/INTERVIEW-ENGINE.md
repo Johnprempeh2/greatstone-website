@@ -112,7 +112,7 @@ Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/
 | `EXTRACTION_MODEL` | `claude-haiku-4-5` | as the source |
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
 | `VOICE_THINK_MODEL` | as the source | Haiku for voice |
-| `VOICE_ENABLED` | off | kill switch: `1` turns voice on |
+| `VOICE_ENABLED` | on when `DEEPGRAM_API_KEY` is set | as the source: `0` takes voice away from everyone at once, typed stays |
 | `INTERVIEW_ENABLED` | off | kill switch for the whole engine on a site |
 | `CHAT_RATE_SESSION_PER_MIN`, `CHAT_RATE_EMPLOYEE_PER_MIN`, `CHAT_HARD_BUDGET_RATIO`, `JOIN_RATE_*` | as the source | |
 
