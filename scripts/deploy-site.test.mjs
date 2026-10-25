@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { spawnSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 
@@ -55,7 +55,8 @@ async function fixture(t) {
     GSAM_API_URL: url, GSAM_API_KEY: 'test-key', GSAM_TASK_ID: 'test-task', DEPLOY_LOG: log,
   };
   function commit(path, content) {
-    return writeFile(join(cwd, path), content).then(() => {
+    return mkdir(dirname(join(cwd, path)), { recursive: true })
+      .then(() => writeFile(join(cwd, path), content)).then(() => {
       git(cwd, 'add', path); git(cwd, 'commit', '-qm', 'change');
       env.FAKE_PR_JSON = JSON.stringify({ number: 12, state: 'OPEN', isDraft: false,
         headRefOid: git(cwd, 'rev-parse', 'HEAD'), baseRefOid: base, labels: [{ name: 'preview' }] });
@@ -103,7 +104,7 @@ test('accepted revised staging card permits its approved SHA', async (t) => {
   assert.equal(result.status, 0, result.stderr);
 });
 
-test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and site code drift', async (t) => {
+test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and protected drift', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
   const cases = [
@@ -120,8 +121,53 @@ test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and sit
     assert.match(result.stderr, /production refused/);
   }
   f.setInteractions([stagingCard(f.base)]);
-  await f.commit('src/app.js', 'changed');
+  await f.commit('netlify/functions/lib/admin-bridge-store.mjs', 'changed');
   const result = await f.run('prod');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
+test('staging card covers a later main with front-end-only drift', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'nav');
+  await f.commit('app/ProofBlocks.jsx', 'blocks');
+  await f.commit('public/_redirects', '/old /new 301');
+  await f.commit('docs/screenshots/GRE-1/home.png', 'png');
+  const result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, new RegExp(`Staging card for ${f.base} covers`));
+  assert.match(await readFile(f.log, 'utf8'), /--prod/);
+});
+
+test('staging card never covers drift into migrations, functions, auth or build config', async (t) => {
+  const protectedPaths = [
+    'netlify/database/migrations/054_x/migration.sql', 'netlify/functions/auth.mjs',
+    'netlify/edge-functions/gate.mjs', 'supabase/migrations/1_x.sql', 'db/seed.sql',
+    'app/media/[file]/route.js', 'app/api/hook.js', 'middleware.js', 'netlify.toml',
+    'package.json', 'package-lock.json', 'next.config.mjs', 'vite.config.js', '.env.production',
+    'public/_headers', 'scripts/list-edge-secrets.mjs', 'src/cms/auth.js', 'src/store/adminAuth.mjs',
+    'src/store/PasswordInput.jsx', 'src/lib/login.js',
+  ];
+  for (const path of protectedPaths) {
+    const f = await fixture(t);
+    git(f.cwd, 'checkout', '-q', 'main');
+    f.setInteractions([stagingCard(f.base)]);
+    await f.commit('src/app.js', 'front-end');
+    await f.commit(path, 'protected');
+    const result = await f.run('prod');
+    assert.equal(result.status, 1, path);
+    assert.match(result.stderr, /production refused/, path);
+  }
+});
+
+test('front-end drift never lets a staging card reach the public site', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
+  const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /production refused/);
 });

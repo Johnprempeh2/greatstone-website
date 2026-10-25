@@ -85,9 +85,17 @@ For `gre1795-website-db-staging` only, an accepted GS Agentic Manager human-only
 `request_confirmation` on the current task also authorises the upload. Its recorded approval
 must name that site and the approved SHA. If a reviewed guard repair changes HEAD after approval,
 the approved commit must be an ancestor and every intervening change must be confined to
-`scripts/deploy-site.mjs`, `scripts/deploy-site.test.mjs`, and `README.md`. Any site code or
-migration change requires a new approval. The public site still requires the exact comment
-for the current HEAD.
+`scripts/deploy-site.mjs`, `scripts/deploy-site.test.mjs`, and `README.md`.
+
+If `main` moves after approval, the card still covers the newer commit when the approved
+commit is an ancestor and no file changed in between is protected. Protected means anything
+under `netlify/`, `supabase/` or `scripts/`; any `.sql` or `.env*` file; Next route handlers
+(`app/**/route.js`, `app/api/`); `middleware.js`, `netlify.toml`, `package.json`,
+`package-lock.json`, `next.config.*`, `vite.config.*` and `public/_headers`; and any path
+containing auth, password, credential, secret, login or sign-in. So front-end, content and
+docs changes ride along, but any migration, function, auth or build-config change needs a new
+card for the exact commit. The public site still requires the exact comment for the current
+HEAD.
 
 Netlify applies a changed environment variable only on a new upload, and the change check
 below skips a commit that is already live. After a staging config change, reload the live
