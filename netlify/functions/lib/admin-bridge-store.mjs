@@ -5,6 +5,7 @@
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 100;
+const ORDER_REFERENCE_SQL = "CASE WHEN x.reference ~ '^(cs|pi|ch)_' THEN NULL ELSE x.reference END AS reference";
 
 export class BridgeRequestError extends Error {
   constructor(code, detail) {
@@ -214,7 +215,8 @@ export function listOptions(searchParams, { customerFilter = true } = {}) {
 }
 
 function selectList(def) {
-  return [...def.columns.map((c) => `x.${c}`), ...Object.entries(def.extra || {}).map(([k, sql]) => `${sql} AS ${k}`)].join(', ');
+  return [...def.columns.map((c) => def.table === 'orders' && c === 'reference' ? ORDER_REFERENCE_SQL : `x.${c}`),
+    ...Object.entries(def.extra || {}).map(([k, sql]) => `${sql} AS ${k}`)].join(', ');
 }
 
 /** List one resource, keyset paged on (time, id), oldest first. */
@@ -331,7 +333,7 @@ export async function bridgePayments(client, searchParams, stripeMode) {
   const rangeParams = [...params];
   const where = [...range];
   if (opts.cursor) where.push(`(x.created_at, x.id) > (${p(opts.cursor.t)}::timestamptz, ${p(opts.cursor.id)}::uuid)`);
-  const { rows } = await client.query(`SELECT x.id, x.reference, x.status, x.currency, x.subtotal_minor, x.total_minor,
+  const { rows } = await client.query(`SELECT x.id, ${ORDER_REFERENCE_SQL}, x.status, x.currency, x.subtotal_minor, x.total_minor,
       x.refunded_minor, x.paid_by_stripe, x.placed_at, x.created_at,
       x.refunded_minor - COALESCE((SELECT sum(r.amount_minor) FROM refund_requests r WHERE r.order_id = x.id AND r.status = 'done'), 0)
         AS unallocated_refund_minor,

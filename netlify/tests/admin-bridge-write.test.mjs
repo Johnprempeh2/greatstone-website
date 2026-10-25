@@ -131,7 +131,8 @@ before(async () => {
     INSERT INTO quote_items (org_id, quote_id, offering_name, qty, captured_price_minor) VALUES ('${ORG}', '${QUOTE}', 'Words', 1, 1000);
     INSERT INTO orders (id, org_id, reference, status, total_minor, refunded_minor, stripe_payment_intent, currency)
       VALUES ('${PAID}', '${ORG}', 'O-PAID', 'confirmed', 5000, 1000, 'pi_secret_123', 'GBP'),
-             ('a6000000-0000-4000-8000-000000000002', '${ORG}', 'O-INVOICE', 'confirmed', 700, 0, NULL, 'GBP');`);
+             ('a6000000-0000-4000-8000-000000000002', '${ORG}', 'O-INVOICE', 'confirmed', 700, 0, NULL, 'GBP'),
+             ('a6000000-0000-4000-8000-000000000003', '${ORG}', 'cs_test_checkout_123', 'confirmed', 800, 0, 'pi_secret_456', 'GBP');`);
   pool = new pg.Pool({ connectionString: db.url, max: 4 });
   handler = makeAdminBridgeHandler({ pool: () => pool, keys: KEYS, allowedIps: new Set(), log: (m) => logs.push(m), stripe: () => 'test' });
 });
@@ -177,9 +178,14 @@ test('the payment report comes from the site database only: a boolean for Stripe
   const res = await call(signed('/api/admin/v1/payments?from=2000-01-01T00:00:00Z'));
   assert.equal(res.status, 200);
   assert.equal(res.body.stripeMode, 'test');
-  assert.deepEqual(res.body.items.map((o) => [o.reference, o.paid_by_stripe, o.unallocated_refund_minor]), [['O-PAID', true, '1000']]);
-  assert.deepEqual(res.body.totals, [{ currency: 'GBP', orders: 1, total_minor: '5000', refunded_minor: '1000' }]);
+  assert.deepEqual(res.body.items.map((o) => [o.reference, o.paid_by_stripe, o.unallocated_refund_minor]),
+    [['O-PAID', true, '1000'], [null, true, '0']]);
+  assert.deepEqual(res.body.totals, [{ currency: 'GBP', orders: 2, total_minor: '5800', refunded_minor: '1000' }]);
   assert.equal(JSON.stringify(res.body).includes('pi_secret'), false);
+  assert.equal(JSON.stringify(res.body).includes('cs_test_checkout_123'), false);
+  const orders = await call(signed('/api/admin/v1/orders'));
+  assert.deepEqual(orders.body.items.map((o) => o.reference), ['O-PAID', 'O-INVOICE', null]);
+  assert.equal((await call(signed('/api/admin/v1/orders/a6000000-0000-4000-8000-000000000003'))).body.item.reference, null);
   assert.equal((await call(signed('/api/admin/v1/payments?from=yesterday'))).status, 400);
   assert.equal((await call(signed('/api/admin/v1/payments?customer=x'))).status, 400);
 });
