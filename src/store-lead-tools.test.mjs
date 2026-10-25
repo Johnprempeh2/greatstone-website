@@ -41,6 +41,35 @@ test('tool placement preserves saved home draft and published projections', asyn
   }
 });
 
+test('missing home story and proof are inserted after the doors in both projections', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
+  globalThis.localStorage = dom.localStorage;
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
+  try {
+    const { seedState, load } = await vite.ssrLoadModule('/src/store.js');
+    const saved = seedState();
+    saved._homeRoutesAndPlaceholders = false;
+    for (const projection of ['data', 'published']) {
+      saved.pages.home[projection] = structuredClone(saved.pages.home[projection]);
+      saved.pages.home[projection].content = saved.pages.home[projection].content.filter((block) => !['TwoDoorsStory', 'TwoDoorsProof'].includes(block.type));
+    }
+    dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
+    const home = load().pages.home;
+    for (const projection of ['data', 'published']) {
+      assert.deepEqual(home[projection].content.slice(0, 4).map((block) => block.type), ['TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools']);
+      assert.equal(home[projection].content.at(-1).type, 'TwoDoorsBottom');
+    }
+  } finally {
+    await vite.close();
+    globalThis.localStorage = previous.localStorage;
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+  }
+});
+
 test('review correction restores the enquiry CTA on already placed pages', async () => {
   const dom = new Window({ url: 'http://localhost/' });
   const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };

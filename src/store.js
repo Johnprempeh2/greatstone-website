@@ -835,7 +835,7 @@ function migrate(state) {
     }
     state._twoDoorsPageLinksFixed = true;
   }
-  // Add the approved lower-page explanation to existing studio homes while leaving
+  // Add the draft lower-page explanation to existing studio homes while leaving
   // the hero, doors and any editor-written lower-page copy alone.
   if (!state._homeRoutesAndPlaceholders) {
     const fresh = twoDoorsHomePage();
@@ -845,7 +845,11 @@ function migrate(state) {
       for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
         const existing = blocks.find((block) => block.type === type);
         const replacement = fresh[projection].content.find((block) => block.type === type);
-        if (!existing) { blocks.push(replacement); continue; }
+        if (!existing) {
+          const heroIndex = blocks.findIndex((block) => block.type === 'TwoDoors');
+          blocks.splice(heroIndex + 1 + (type === 'TwoDoorsProof' && blocks[heroIndex + 1]?.type === 'TwoDoorsStory' ? 1 : 0), 0, replacement);
+          continue;
+        }
         if (type === 'TwoDoorsStory' && existing.props?.storyHeading === 'Making change work.') {
           Object.assign(existing.props, replacement.props);
         }
