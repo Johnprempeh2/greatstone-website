@@ -14,6 +14,7 @@ export { addRedirect, removeRedirect, setRedirect, listRedirects, validateRedire
 export { addSection, removeSection, renameSection, listSections, buildInsertBlock } from './lib/sections-model.mjs';
 export { listStarters, getStarter } from './lib/templates-model.mjs'; // page-starter recipes (cycle 17)
 import { getStarter as starterById, buildStarterContent } from './lib/templates-model.mjs';
+import { moveProofToCaseStudies } from './lib/case-studies-route.mjs';
 
 // Stable key — the schema version lives INSIDE the payload (state.schema), so a version bump
 // migrates the existing row forward instead of orphaning it under a new key (which silently wiped
@@ -85,16 +86,17 @@ export function DEFAULT_NAVIGATION() {
   // moves to the footer and the Home panels. Labels are the page titles (services = "GS Agentic Manager" since GRE-660,
   // method = "How We Work").
   return [
-    navItem({ type: 'page', pageSlug: 'home', label: 'DX Consultancy' }),
+    navItem({ type: 'page', pageSlug: 'dx-consultancy', label: 'DX Consultancy' }),
     navItem({ type: 'page', pageSlug: 'dev-tools', label: 'DX Dev Tools' }),
-    navItem({ type: 'page', pageSlug: 'proof', label: 'Proof' }),
+    navItem({ type: 'group', label: 'Transformation Services', children: [
+      navItem({ type: 'page', pageSlug: 'services', label: 'Transformation Services' }),
+      navItem({ type: 'page', pageSlug: 'method', label: 'How We Work' }),
+      navItem({ type: 'page', pageSlug: 'how-we-help', label: 'How We Help' }),
+    ] }),
+    navItem({ type: 'page', pageSlug: 'case-studies', label: 'Case Studies' }),
     navItem({ type: 'page', pageSlug: 'about', label: 'About' }),
     navItem({ type: 'page', pageSlug: 'insights', label: 'Insights' }),
-    navItem({ type: 'group', label: 'More', children: [
-      navItem({ type: 'page', pageSlug: 'how-we-help' }),
-      navItem({ type: 'page', pageSlug: 'method' }),
-      navItem({ type: 'page', pageSlug: 'services', label: 'Your digital office' }),
-    ] }),
+    navItem({ type: 'link', label: 'Sign in', href: '#portal' }),
   ];
 }
 // backfill the component's defaultProps so no field (esp. a contentEditable one) is ever
@@ -746,9 +748,9 @@ export function seedState() {
   // current, so mark them done. Without this, a visitor's SECOND load ran them and put the time-savings
   // calculator, comparison matrix and catalogue back on the Service page that GRE-652 took them off.
   const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true, _aiLeadToolsPlaced: true };
-  return { schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
+  return moveProofToCaseStudies({ schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
-    team: withOrg(SEED_TEAM), activity: [] };
+    team: withOrg(SEED_TEAM), activity: [] });
 }
 
 // the seeded Products page: a hero + the Storefront block (which renders the catalogue from the store)
@@ -1246,7 +1248,9 @@ function migrate(state) {
     state._svcCatalogV3 = true;
   }
   state.schema = SCHEMA;
-  return state;
+  const oldDefaultNav = (state.navigation || []).map((item) => item.pageSlug || item.label).join('|');
+  if (oldDefaultNav === 'home|dev-tools|proof|about|insights|More') state.navigation = DEFAULT_NAVIGATION();
+  return moveProofToCaseStudies(state);
 }
 
 // Update global site-chrome settings (logo, siteName, footerTagline, headerCtaLabel, background). Shallow

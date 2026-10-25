@@ -454,7 +454,7 @@ export default function App() {
     if (!m) return null;
     const slug = m[1].toLowerCase();
     const pages = stateRef.current && stateRef.current.pages;
-    return pages && pages[slug] ? slug : null;
+    return pages && pages[slug] ? slug : resolveRedirect(stateRef.current, slug);
   }, []);
 
   useEffect(() => {

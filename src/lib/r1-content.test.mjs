@@ -108,13 +108,16 @@ test('launch:check fails until the ICO number is set, then passes', () => {
   assert.equal(legalLaunchGaps({ ico: '[GAP 4]' }).length, 1);
 });
 
-test('Two Doors navigation keeps the R1 pages available in More', () => {
+test('Two Doors navigation follows the approved six-page order and keeps service routes in its dropdown', () => {
   const nav = STORE.slice(STORE.indexOf('export function DEFAULT_NAVIGATION'), STORE.indexOf('const blk ='));
   const slugs = [...nav.matchAll(/pageSlug: '([\w-]+)'/g)].map((m) => m[1]);
-  assert.deepEqual(slugs, ['home', 'dev-tools', 'proof', 'about', 'insights', 'how-we-help', 'method', 'services']);
-  assert.match(nav, /pageSlug: 'home', label: 'DX Consultancy'/);
+  assert.deepEqual(slugs, ['dx-consultancy', 'dev-tools', 'services', 'method', 'how-we-help', 'case-studies', 'about', 'insights']);
+  assert.match(nav, /pageSlug: 'dx-consultancy', label: 'DX Consultancy'/);
   assert.match(nav, /pageSlug: 'dev-tools', label: 'DX Dev Tools'/);
+  assert.match(nav, /label: 'Transformation Services', children:/);
+  assert.match(nav, /pageSlug: 'case-studies', label: 'Case Studies'/);
   assert.match(nav, /pageSlug: 'about', label: 'About'/);
+  assert.match(nav, /label: 'Sign in', href: '#portal'/);
 });
 
 // GRE-970: the contact form carries GRE-652 §4.6, reconciled with GRE-1358 (interest choice kept, size band is
