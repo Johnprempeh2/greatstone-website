@@ -54,3 +54,43 @@ test('desktop door pins independently of hover and focus', async () => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
   }
 });
+
+test('tablet doors use tap to open rather than hover or focus', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { window: globalThis.window, document: globalThis.document, navigator: globalThis.navigator, HTMLElement: globalThis.HTMLElement, ResizeObserver: globalThis.ResizeObserver, act: globalThis.IS_REACT_ACT_ENVIRONMENT };
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  Object.defineProperty(globalThis, 'navigator', { value: dom.navigator, configurable: true });
+  globalThis.HTMLElement = dom.HTMLElement;
+  globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  dom.matchMedia = (query) => ({ matches: query.includes('max-width:1023px'), addEventListener() {}, removeEventListener() {} });
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  try {
+    const { TwoDoors } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
+    const root = createRoot(document.body.appendChild(document.createElement('div')));
+    try {
+      await act(async () => root.render(React.createElement(TwoDoors, { tide: false, moreOpen: 'Less', moreClosed: 'More' })));
+      const door = document.querySelector('#door-dx');
+      const more = door.querySelector('.td-more');
+      await act(async () => door.dispatchEvent(new dom.MouseEvent('mouseover', { bubbles: true })));
+      assert.equal(more.getAttribute('aria-expanded'), 'false', 'hover does not open a tablet door');
+      await act(async () => more.focus());
+      assert.equal(more.getAttribute('aria-expanded'), 'false', 'focus does not open a tablet door');
+      await act(async () => more.dispatchEvent(new dom.MouseEvent('click', { bubbles: true })));
+      assert.equal(more.getAttribute('aria-expanded'), 'true', 'tap opens a tablet door');
+      await act(async () => more.dispatchEvent(new dom.MouseEvent('click', { bubbles: true })));
+      assert.equal(more.getAttribute('aria-expanded'), 'false', 'second tap closes it');
+    } finally {
+      await act(async () => root.unmount());
+    }
+  } finally {
+    await vite.close();
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+    Object.defineProperty(globalThis, 'navigator', { value: previous.navigator, configurable: true });
+    globalThis.HTMLElement = previous.HTMLElement;
+    globalThis.ResizeObserver = previous.ResizeObserver;
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
+  }
+});
