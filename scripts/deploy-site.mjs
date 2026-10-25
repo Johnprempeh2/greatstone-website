@@ -35,6 +35,22 @@ function onlyNonSiteFiles(files) {
     /(?:^|\/)(?:__tests__\/|[^/]+\.test\.[cm]?[jt]sx?$)/.test(file));
 }
 
+// A staging card names one main commit, and main often moves before the deploy runs.
+// A later main still counts as approved when nothing between the two commits touches
+// migrations, functions, server routes, auth, secrets, dependencies, build config or
+// these scripts. Anything that matches here needs a card for the exact commit.
+function protectedFile(file) {
+  return /^(?:netlify|supabase|scripts)\//.test(file) ||
+    /^(?:netlify\.toml|middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?js|vite\.config\.[cm]?js|public\/_headers)$/.test(file) ||
+    /(?:^|\/)\.env/.test(file) || /\.sql$/.test(file) ||
+    /^app\/(?:.+\/)?route\.[cm]?[jt]sx?$/.test(file) || /^app\/api\//.test(file) ||
+    /auth|password|passwd|credential|secret|login|sign-?in/i.test(file);
+}
+
+function frontEndOnly(files) {
+  return files.length > 0 && files.every((file) => !protectedFile(file));
+}
+
 async function comments() {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   return json(`${base}/api/issues/${issueId}/comments`, process.env.GSAM_API_KEY);
@@ -56,6 +72,10 @@ async function stagingCardApproved(sha, exact = false) {
     const files = command('git', ['diff', '--name-only', '--no-renames', approvedSha, sha]).split('\n').filter(Boolean);
     if (files.length && files.every((file) =>
       ['scripts/deploy-site.mjs', 'scripts/deploy-site.test.mjs', 'README.md'].includes(file))) return true;
+    if (frontEndOnly(files)) {
+      console.log(`Staging card for ${approvedSha} covers ${sha}: ${files.length} front-end file(s) since, no protected paths`);
+      return true;
+    }
   }
   return false;
 }
