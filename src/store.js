@@ -163,10 +163,16 @@ function devToolsPage() {
   });
 }
 function dxConsultancyPage() {
-  return { ...seedPage('DX Consultancy', 'none', [blk('AiBaselineSurvey', { headingLevel: 'h1', anchorId: 'ai-readiness' }), blk('AiCostCalculator', { anchorId: 'ai-cost-calculator' })], {
+  return { ...seedPage('DX Consultancy', 'none', [blk('DxConsultancyMethod', {}), blk('AiBaselineSurvey', { headingLevel: 'h2', anchorId: 'ai-readiness' }), blk('AiCostCalculator', { anchorId: 'ai-cost-calculator' })], {
     title: 'DX Consultancy · Greatstone International',
-    description: 'Check your AI readiness and estimate the cost of manual work with two free tools.', ogImage: '',
+    description: 'Explore the four steps of DX Consultancy, then use our free AI tools.', ogImage: '',
   }), orgId: ORG.id };
+}
+function howWeWorkPage() {
+  return seedPage('How We Work', 'none', [blk('DxConsultancyMethod', { eyebrow: 'How we work' })], {
+    title: 'How We Work · Greatstone International',
+    description: 'Executive Discovery, an initial assessment, a Deep Dive and a build where it fits.', ogImage: '',
+  });
 }
 function linkConsultancyFromHome(page) {
   if (!page) return;
@@ -629,34 +635,8 @@ export function seedState() {
         }),
       ], { title: 'Greatstone International · Building Stronger Organisations', description: 'Practical digital transformation and AI-enabled automation. Greatstone finds where your people’s time goes and sets up the work that should run itself, with your people in charge.', ogImage: '' }),
 
-      // How We Work (GRE-652 §4.3). Slug stays 'method': it is the routing key for #go/method and #breakdown.
-      method: seedPage('How We Work', 'stone', [
-        blk('Hero', { kicker: 'How we work', headline: 'We leave no', highlight: 'stone', headlineSuffix: ' unturned.',
-          body: 'Every engagement follows the same path, and you decide at each step whether to go on. The Deep Dive reads your organisation across eight pillars, so the work that follows is the work that actually moves you.',
-          prompt: '', align: 'center', size: 'full',
-          ctaLabel: 'Open the interactive breakdown', ctaHref: '#breakdown', ctaLabel2: PRIMARY_CTA_LABEL, ctaHref2: PRIMARY_CTA_HREF }),
-        blk('Steps', { index: '', eyebrow: '', headline: '', highlight: '', body: '', align: 'left', numberStyle: 'badge',
-          items: [
-            { title: 'Executive Discovery', text: 'Free. We meet your leadership team to understand the organisation, its ambitions and the challenges that matter most. You leave knowing whether there is something worth exploring.' },
-            { title: 'Initial assessment', text: 'Free. We show where technology and AI could strengthen the organisation, with demonstrations where they help, an indicative scope and a commercial perspective. Agreeing in principle carries no commitment.' },
-            { title: 'Agreement', text: 'If you want to go further, we agree the scope of the Deep Dive in writing and you pay a deposit before any paid work starts.' },
-            { title: 'Deep Dive', text: 'Paid, with a scope fixed before it starts. We read your organisation across the eight pillars with the people who do the work, and map where time and value are lost.' },
-            { title: 'Actionable blueprint', text: 'A blueprint of what to change, in what order and why. It is yours to use, with or without us.' },
-            { title: 'Digital office, where it fits', text: 'Only where the blueprint shows it fits, we set up a digital office for your organisation. Setup is charged separately, and your people run the daily work.' },
-          ] }),
-        blk('FeatureGrid', { kicker: 'The Approach', heading: 'One method. Eight pillars. No guesswork.', variant: 'principles',
-          body: 'Most transformation starts with a tool and hunts for a problem. We start the other way round: an honest read of the organisation across eight pillars, so the automation that follows is pointed at the right work.',
-          items: [
-            { n: '01', title: 'We score, not guess', text: 'Every pillar gets a number: a clear, defensible read of where you stand today.' },
-            { n: '02', title: 'We find the repeatable work', text: 'Inside each pillar, we look for the work that comes round every week and could run itself.' },
-            { n: '03', title: 'We climb the lowest first', text: 'The biggest gain is usually hiding in your weakest pillar. That is where we start.' },
-          ]}),
-        blk('PillarCards', {}),
-        blk('MaturityModel', {}),
-        blk('Invite', { eyebrow: 'The first step', headline: 'Find out where you stand.', highlight: '',
-          body: 'It starts with a free Executive Discovery. If a Deep Dive makes sense, we agree what it covers and what it costs in writing before you commit.',
-          ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, variant: 'framed' }),
-      ], { title: 'How We Work · Eight Pillars · Greatstone International', description: 'Executive Discovery, an initial assessment, a Deep Dive and an actionable blueprint, then a digital office only where it fits. The Deep Dive reads your organisation across eight pillars before anything is built.', ogImage: '' }),
+      // Keep the method route and its inbound links. Both pages share the approved four-step block.
+      method: howWeWorkPage(),
 
       contact: seedPage('Begin the Conversation', 'none', [
         // Ben's section 8. The page is the primary route for organisations ready to engage, and his
@@ -754,7 +734,7 @@ export function seedState() {
   // The one-time migrate() inserts below are for stores saved BEFORE they existed. A fresh seed is already
   // current, so mark them done. Without this, a visitor's SECOND load ran them and put the time-savings
   // calculator, comparison matrix and catalogue back on the Service page that GRE-652 took them off.
-  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true, _aiLeadToolsPlaced: true };
+  const migrated = { _intelBandSeeded: true, _faqSeeded: true, _calcSeeded: true, _cmpSeeded: true, _svcCatalogSeeded: true, _svcCatalogKicker: true, _diagnosticRename: true, _svcCatalogV3: true, _twoDoorsV15Blocks: true, _aiLeadToolsPlaced: true, _howWeWorkFourSteps: true };
   return moveProofToCaseStudies({ schema: SCHEMA, seedVersion: SEED_VERSION, ...migrated, settings: { ...DEFAULT_SETTINGS }, navigation: DEFAULT_NAVIGATION(), sections: [], order, pages, assets: {}, org: ORG,
     categories: seedCats, products: seedProducts, publishedCategories: clone(seedCats), publishedProducts: clone(seedProducts),
     team: withOrg(SEED_TEAM), activity: [] });
@@ -829,6 +809,35 @@ function migrate(state) {
     linkConsultancyFromHome(state.pages.home);
     state.order = ['home', 'dx-consultancy', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dx-consultancy')];
     state._aiLeadToolsPlaced = true;
+  }
+  if (!state._dxConsultancyMethodPlaced) {
+    const page = state.pages['dx-consultancy'];
+    if (page) {
+      for (const projection of ['data', 'published']) {
+        const blocks = page[projection]?.content;
+        if (!blocks) continue;
+        if (!blocks.some((block) => block.type === 'DxConsultancyMethod')) blocks.unshift(blk('DxConsultancyMethod', {}));
+        const survey = blocks.find((block) => block.type === 'AiBaselineSurvey');
+        if (survey?.props?.headingLevel === 'h1') survey.props.headingLevel = 'h2';
+      }
+      if (page.seo?.description === 'Check your AI readiness and estimate the cost of manual work with two free tools.') {
+        page.seo.description = 'Explore the four steps of DX Consultancy, then use our free AI tools.';
+      }
+    }
+    state._dxConsultancyMethodPlaced = true;
+  }
+  if (!state._howWeWorkFourSteps) {
+    const page = state.pages.method;
+    if (page) {
+      page.versions = pushVersion(page.versions || [], { label: 'Before four-step method', data: page.data, by: null, status: page.status });
+      const replacement = howWeWorkPage();
+      page.data.content = replacement.data.content;
+      page.published.content = replacement.published.content;
+      page.background = replacement.background;
+      page.publishedBackground = replacement.publishedBackground;
+      page.seo = replacement.seo;
+    }
+    state._howWeWorkFourSteps = true;
   }
   // GRE-1853 review: the home contact CTA must keep its enquiry destination.
   // Repair only the value introduced by the earlier tools placement, in both projections.

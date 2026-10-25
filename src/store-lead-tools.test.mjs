@@ -30,9 +30,72 @@ test('tool placement preserves saved home draft and published projections', asyn
     assert.equal(next.pages.home.data.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref, '/dx-consultancy');
     assert.equal(next.pages.home.published.content.find((b) => b.type === 'TwoDoorsBottom').props.consultancyHref, '/dx-consultancy');
     assert.equal(next.pages['dx-consultancy'].orgId, 'org-greatstone');
-    assert.deepEqual(next.pages['dx-consultancy'].data.content.map((b) => b.type), ['AiBaselineSurvey', 'AiCostCalculator']);
-    assert.deepEqual(next.pages['dx-consultancy'].published.content.map((b) => b.type), ['AiBaselineSurvey', 'AiCostCalculator']);
-    assert.equal(load().pages['dx-consultancy'].data.content.length, 2);
+    assert.deepEqual(next.pages['dx-consultancy'].data.content.map((b) => b.type), ['DxConsultancyMethod', 'AiBaselineSurvey', 'AiCostCalculator']);
+    assert.deepEqual(next.pages['dx-consultancy'].published.content.map((b) => b.type), ['DxConsultancyMethod', 'AiBaselineSurvey', 'AiCostCalculator']);
+    assert.equal(load().pages['dx-consultancy'].data.content.length, 3);
+  } finally {
+    await vite.close();
+    globalThis.localStorage = previous.localStorage;
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+  }
+});
+
+test('method migration preserves both existing tool anchors and editor content', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
+  globalThis.localStorage = dom.localStorage;
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  try {
+    const { seedState, load } = await vite.ssrLoadModule('/src/store.js');
+    const saved = seedState();
+    saved._dxConsultancyMethodPlaced = false;
+    for (const projection of ['data', 'published']) {
+      saved.pages['dx-consultancy'][projection] = structuredClone(saved.pages['dx-consultancy'][projection]);
+      const blocks = saved.pages['dx-consultancy'][projection].content;
+      blocks.shift();
+      blocks[0].props.headingLevel = 'h1';
+      blocks[0].props.heading = 'Saved tool heading';
+    }
+    dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
+    const page = load().pages['dx-consultancy'];
+    for (const projection of ['data', 'published']) {
+      const blocks = page[projection].content;
+      assert.deepEqual(blocks.map((block) => block.type), ['DxConsultancyMethod', 'AiBaselineSurvey', 'AiCostCalculator']);
+      assert.equal(blocks[1].props.anchorId, 'ai-readiness');
+      assert.equal(blocks[1].props.headingLevel, 'h2');
+      assert.equal(blocks[1].props.heading, 'Saved tool heading');
+      assert.equal(blocks[2].props.anchorId, 'ai-cost-calculator');
+    }
+    assert.equal(load().pages['dx-consultancy'].data.content.length, 3);
+  } finally {
+    await vite.close();
+    globalThis.localStorage = previous.localStorage;
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+  }
+});
+
+test('saved How We Work pages adopt the four-step method and keep a recovery version', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { localStorage: globalThis.localStorage, window: globalThis.window, document: globalThis.document };
+  globalThis.localStorage = dom.localStorage;
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  try {
+    const { seedState, load } = await vite.ssrLoadModule('/src/store.js');
+    const saved = seedState();
+    saved._howWeWorkFourSteps = false;
+    for (const projection of ['data', 'published']) saved.pages.method[projection].content = [{ type: 'Steps', props: { items: Array(6).fill({ title: 'Old step' }) } }];
+    dom.localStorage.setItem('gs-studio', JSON.stringify(saved));
+    const page = load().pages.method;
+    assert.deepEqual(page.data.content.map((block) => block.type), ['DxConsultancyMethod']);
+    assert.deepEqual(page.published.content.map((block) => block.type), ['DxConsultancyMethod']);
+    assert.ok(page.versions.some((version) => version.label === 'Before four-step method'));
+    assert.equal(load().pages.method.versions.length, page.versions.length);
   } finally {
     await vite.close();
     globalThis.localStorage = previous.localStorage;
