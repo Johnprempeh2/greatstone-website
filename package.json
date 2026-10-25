@@ -30,6 +30,7 @@
     "dev:next": "node scripts/gen-seo-files.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.2",
     "@measured/puck": "^0.20.2",
     "@netlify/blobs": "^11.1.6",
     "@netlify/database": "2.0.1",
