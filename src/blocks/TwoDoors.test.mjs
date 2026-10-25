@@ -135,3 +135,39 @@ test('tools carousel scrolls to a card and follows trackpad position', async () 
     globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
   }
 });
+
+test('placeholder case studies remain visible and carousel controls move between them', async () => {
+  const dom = new Window({ url: 'http://localhost/' });
+  const previous = { window: globalThis.window, document: globalThis.document, navigator: globalThis.navigator, act: globalThis.IS_REACT_ACT_ENVIRONMENT };
+  globalThis.window = dom;
+  globalThis.document = dom.document;
+  Object.defineProperty(globalThis, 'navigator', { value: dom.navigator, configurable: true });
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  dom.matchMedia = () => ({ matches: false });
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
+  try {
+    const { TwoDoorsProof } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
+    const root = createRoot(document.body.appendChild(document.createElement('div')));
+    try {
+      await act(async () => root.render(React.createElement(TwoDoorsProof, {
+        proofKicker: 'Case studies', proofHeading: 'Work we will show here', draftBadge: 'PLACEHOLDER',
+        draftCaseLine: 'No result is claimed here.', draftItems: [{ headline: 'Case study placeholder 01' }, { headline: 'Case study placeholder 02' }],
+      })));
+      assert.equal(document.querySelectorAll('.td-case-draft').length, 2);
+      assert.equal(document.querySelectorAll('.td-draft-badge')[0].textContent, 'PLACEHOLDER');
+      const slide = document.querySelector('.td-slide');
+      [...slide.children].forEach((card, i) => Object.defineProperty(card, 'offsetLeft', { value: i * 500 }));
+      let requested;
+      slide.scrollTo = ({ left }) => { requested = left; slide.scrollLeft = left; slide.dispatchEvent(new dom.Event('scroll')); };
+      await act(async () => document.querySelector('[aria-label="Next Case studies"]').click());
+      assert.equal(requested, 500);
+      assert.equal(document.querySelector('[aria-label="Show Case studies 2"]').getAttribute('aria-current'), 'true');
+    } finally { await act(async () => root.unmount()); }
+  } finally {
+    await vite.close();
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+    Object.defineProperty(globalThis, 'navigator', { value: previous.navigator, configurable: true });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
+  }
+});
