@@ -1,5 +1,6 @@
 import { ProofBlocks } from './ProofBlocks.jsx';
 import { pageForPath, navigation } from './proof-data.js';
+import { insightBriefings } from './insight-briefings.mjs';
 import { resolveMediaRefs } from '../next-proof/release-media.mjs';
 import { CookieSettings } from './ConsentAnalytics.jsx';
 
@@ -19,5 +20,8 @@ export function SiteFrame({ children, release }) {
 
 export default function ProofPage({ path, release }) {
   const page = pageForPath(path, release);
-  return <SiteFrame release={release}><ProofBlocks data={page.data} pageSlug={page.slug} forms={release.collections?.forms} /></SiteFrame>;
+  const briefings = path === '/insights' ? insightBriefings(release) : [];
+  return <SiteFrame release={release}>
+    <ProofBlocks data={page.data} pageSlug={page.slug} forms={release.collections?.forms} briefings={briefings} />
+  </SiteFrame>;
 }
