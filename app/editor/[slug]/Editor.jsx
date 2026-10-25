@@ -18,7 +18,9 @@ import './frame.css';
 const usePuckSelection = createUsePuck();
 
 function FrameControls({ send, save, commands, copy, pins, onLayout, onImport }) {
-  const selected = usePuckSelection((s) => s.selectedItem);
+  const puckSelected = usePuckSelection((s) => s.selectedItem);
+  const [clicked, setClicked] = useState(null);
+  const selected = puckSelected || clicked;
   const history = usePuckSelection((s) => s.history);
   const ui = usePuckSelection((s) => s.appState.ui);
   const dispatch = usePuckSelection((s) => s.dispatch);
@@ -29,6 +31,20 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
   const [library, setLibrary] = useState(false);
   const selectedId = selected?.props?.id;
   const selector = selectedId ? getSelectorForId(selectedId) : null;
+
+  useEffect(() => {
+    const frame = document.querySelector('.gs-frame-editor iframe');
+    if (!frame) return;
+    let doc;
+    function onClick(event) {
+      if (event.target.closest?.('.gs-comment-pin')) return;
+      const block = event.target.closest?.('[data-gs-block-id]');
+      setClicked(block ? getItemById(block.dataset.gsBlockId) : null);
+    }
+    function bind() { doc?.removeEventListener('click', onClick, true); doc = frame.contentDocument; doc?.addEventListener('click', onClick, true); }
+    frame.addEventListener('load', bind); bind();
+    return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('click', onClick, true); };
+  }, [getItemById]);
 
   useEffect(() => {
     const frame = document.querySelector('.gs-frame-editor iframe');
@@ -66,6 +82,7 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
 
   function close() {
     setLibrary(false);
+    setClicked(null);
     dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
   }
   function add() {
