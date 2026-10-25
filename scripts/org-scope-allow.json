@@ -1,0 +1,8 @@
+{
+  "organisations": "the tenant root table itself — its own id is the organisation id every other table scopes by",
+  "permissions": "global lookup of permission keys shared by every org, not client data (role_permissions/user_permissions that grant them do carry org_id)",
+  "service_popularity": "anonymous, cross-visitor aggregate counter keyed by service slug; no client or tenant data",
+  "service_popularity_hits": "anonymous per-IP rate-limit dedupe rows for the popularity counter; no client or tenant data",
+  "front_door_rate": "anonymous per-IP rate-limit rows (hashed IP only) for the front-door proposal limiter; no client or tenant data",
+  "portal_approvers": "keyed by auth_user_id only, RLS on with zero grants to any API role; who may approve is staff-internal config, not client data"
+}

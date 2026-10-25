@@ -48,6 +48,15 @@ test('answer is restricted to an open request in the signed-in customer tenant',
   assert.equal(await answerForClient(db, B), null);
 });
 
+test('client endpoint refuses an unauthenticated website request before touching the database', async () => {
+  const handler = makeDeepDiveClientHandler({ pool: () => { throw new Error('database should not be opened'); },
+    verify: async () => null, log: () => {} });
+  const response = await handler(new Request('https://site.example.invalid/api/deep-dive-client', {
+    method: 'POST', body: JSON.stringify({ op: 'overview' }),
+  }));
+  assert.equal(response.status, 401);
+});
+
 test('site callback signs the exact answer and leaves failed delivery pending', async () => {
   const pair = generateKeyPairSync('ed25519');
   const keyJson = JSON.stringify({ kid: 'stg-site-1', privateKey: pair.privateKey.export({ format: 'pem', type: 'pkcs8' }) });
@@ -115,7 +124,7 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(await read(USER_B), null);
     let deliver = false;
     const answerHandler = makeDeepDiveClientHandler({ pool: () => pool,
-      verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, email_confirmed_at: '2026-10-25' }),
+      verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, emailVerified: true }),
       send: async (row) => {
         assert.equal(row.request_id, R);
         if (deliver) assert.equal(row.note, 'An edited response');

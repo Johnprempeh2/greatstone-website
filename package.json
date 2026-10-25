@@ -23,13 +23,15 @@
     "seo:report": "node scripts/seo-report.mjs",
     "launch:check": "node scripts/seo-report.mjs --launch && node scripts/legal-check.mjs",
     "rls:check": "node scripts/check-rls.mjs",
+    "org-scope:check": "node scripts/check-org-scoping.mjs",
     "design:detect": "node scripts/design-detect.mjs",
-    "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check",
+    "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check && npm run org-scope:check",
     "build:next": "node scripts/gen-seo-files.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-build-release.mjs && next build",
     "check:legacy:next": "node next-proof/scripts/check-legacy-urls.mjs",
     "dev:next": "node scripts/gen-seo-files.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.2",
     "@measured/puck": "^0.20.2",
     "@netlify/blobs": "^11.1.6",
     "@netlify/database": "2.0.1",

@@ -14,6 +14,8 @@ import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeFx, bridgeGet
   listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
 import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
+import { interviewReadRoute, interviewWriteRoute } from './lib/interview/bridge.mjs';
+import { interviewMailer, startSynthesisRun } from './lib/interview/side-effects.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const PREFIX = '/api/admin/v1/';
@@ -52,6 +54,8 @@ export function makeAdminBridgeHandler({
   now = () => Date.now(),
   log = console.error,
   stripe = () => stripeMode(),
+  mail = interviewMailer(),
+  startSynthesis = startSynthesisRun,
 } = {}) {
   return async (req) => {
     const isSnapshot = req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname);
@@ -84,7 +88,7 @@ export function makeAdminBridgeHandler({
         if (result.rowCount !== 1) throw new BridgeRequestError('not_found', 'tenant belongs to another organisation');
         return { status: 200, body: { ok: true, tenantId: p[2] }, rowCount: 1, resourceId: p[2] };
       } }
-      : isRead ? readRoute(p) : writeRoute(req.method, p);
+      : isRead ? interviewReadRoute(p) || readRoute(p) : interviewWriteRoute(req.method, p) || writeRoute(req.method, p);
     if (!target) return fail('not_found');
     // the key's capability must be the route's: a write key cannot ask for a refund, nor a refund key write
     if (!isRead && target.capability !== call.capability) {
@@ -101,9 +105,14 @@ export function makeAdminBridgeHandler({
         if ([...url.searchParams.keys()].length) return fail('bad_request');
         const out = await asBridgeWriter(db, { ...audit, idempotencyKey: isSnapshot ? call.nonce : call.idempotencyKey,
           current: target.current }, runRoute(target, body));
+        // interview side effects (invite emails, the synthesis start) only after the commit; a replay queues none
+        for (const effect of target.after || []) {
+          try { await effect(mail, (job) => startSynthesis({ ...job, origin: url.origin })); } catch (error) { log(`admin-bridge: after-commit step failed (${error?.code || error?.name || 'error'})`); }
+        }
         return Response.json(out.body, { status: out.status, headers: HEADERS });
       }
       const out = await asBridgeReader(db, audit, async (client) => {
+        if (target.resource === 'interview') return target.run(client, url.searchParams);
         if (target.resource === 'health') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'health takes no parameters');
           return { outcome: 'ok', rowCount: 0, body: { ok: true, kid: call.kid, capability: call.capability,
