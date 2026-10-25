@@ -3,12 +3,11 @@ import { mountGreatstoneLogo } from './lib/greatstone-logo.mjs';
 import { mountSummit } from './lib/summit-bg.mjs';
 import { mountCairn } from './lib/cairn-bg.mjs';
 import { mountTide } from './lib/tideMount.js';
-import { smoothstep, scrollContext, resolveTransitionAt } from './stage-presets.js';
-import { normalizeBackground } from './store.js';
+import { smoothstep, scrollContext, resolveTransitionAt, normalizeBackground } from './stage-presets.js';
 
 // kind → 3D module. Each scene mounts into its own fixed full-screen layer; array order is z-index.
 const MOUNTERS = {
-  stone: (host) => mountGreatstoneLogo(host, { envUrl: import.meta.env.BASE_URL + 'env-emerald.jpg', bloom: 0.9, exposure: 1.4, idle: true, autoTurn: true }),
+  stone: (host) => mountGreatstoneLogo(host, { envUrl: '/env-emerald.jpg', bloom: 0.9, exposure: 1.4, idle: true, autoTurn: true }),
   summit: (host) => mountSummit(host, {}),
   cairn: (host) => mountCairn(host, {}),
   tide: (host) => mountTide(host, {}),
@@ -21,15 +20,17 @@ const MOUNTERS = {
 // the transition above), so the base scene is always opaque and higher scenes dissolve over it.
 // Each scene also gets a LOCAL climb (0..1 across its own band), an upgrade over a single global one.
 // `previewP` (0..1) lets the editor scrub the transition without scrolling the page.
-export default function Stage({ background = 'stone', previewP = null }) {
+export default function Stage({ background = 'stone', previewP = null, motionMode = 'animate' }) {
   const ref = useRef(null);
   const cfgRef = useRef(null);
   const applyRef = useRef(null);
   const previewRef = useRef(previewP);
+  const motionRef = useRef(motionMode);
 
   const cfg = useMemo(() => normalizeBackground(background), [background]);
   cfgRef.current = cfg;            // keep the latest transitions available to apply() without remount
   previewRef.current = previewP;
+  motionRef.current = motionMode;
   const kindsKey = cfg.scenes.map((s) => s.kind).join('>'); // mount signature: only scene kinds force a remount
 
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function Stage({ background = 'stone', previewP = null }) {
         if (l.handle && l.handle.setClimb) l.handle.setClimb(localClimb);
         // pause a fully faded-out scene's WebGL loop — single-scene pages stay opaque (op=1) so unaffected.
         // reduced-motion users never get an active loop (one static frame), whatever the opacity.
-        if (l.handle && l.handle.setActive) l.handle.setActive(!reduce() && op > 0.01);
+        if (l.handle && l.handle.setActive) l.handle.setActive(motionRef.current === 'animate' && !reduce() && op > 0.01);
       });
     };
     applyRef.current = apply;
@@ -120,7 +121,7 @@ export default function Stage({ background = 'stone', previewP = null }) {
   }, [kindsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // re-apply (cross-fade only, no WebGL remount) when transitions or the preview position change
-  useEffect(() => { if (applyRef.current) applyRef.current(); }, [background, previewP]);
+  useEffect(() => { if (applyRef.current) applyRef.current(); }, [background, previewP, motionMode]);
 
   if (!cfg.scenes.length) return null;
   return (

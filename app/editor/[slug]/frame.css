@@ -27,7 +27,7 @@
 .gs-frame-editor [class*="Sidebar-resizeHandle"]{display:none}
 .gs-frame-controls{position:fixed;right:16px;top:16px;z-index:100;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:calc(100vw - 32px);padding:8px;border-radius:14px;background:#101712eF;box-shadow:0 8px 28px #0008;color:#f5f6f4;font:700 12px Montserrat,Arial,sans-serif}
 .gs-frame-controls.is-drawer-open{right:376px}
-.gs-frame-controls button{padding:8px 12px;border-radius:999px;background:#c8ff00;color:#101712;font:inherit;cursor:pointer}
+.gs-frame-controls button{min-height:44px;padding:8px 12px;border-radius:999px;background:#c8ff00;color:#101712;font:inherit;cursor:pointer}
 .gs-frame-controls button:disabled{opacity:.45;cursor:not-allowed}
 .gs-frame-controls button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .gs-frame-block-tools{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.gs-frame-block-tools span,.gs-frame-drawer-label{padding:0 7px;color:#c8ff00}

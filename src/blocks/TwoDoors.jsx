@@ -115,7 +115,7 @@ export function TwoDoors(props) {
           <div className="td-door-copy">{editText(props, 'consultancyTag', copy.consultancyTag, 'p', 'td-door-tag')}<h2>{editText(props, 'consultancyName', copy.consultancyName)}</h2>{editText(props, 'consultancyLine', consultancyLine, 'p')}
             <button type="button" className="td-more" aria-expanded={active === 'consultancy'} onClick={() => open('consultancy')}>{active === 'consultancy' ? copy.moreOpen : copy.moreClosed}</button>
             <div className={'td-door-detail' + (active === 'consultancy' ? ' is-open' : '')} inert={active !== 'consultancy'}><div className="td-door-detail-inner">
-              {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt || ''} loading="lazy" /></li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
+              {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt ? '' : undefined} loading="lazy" />{logo.alt && <span>{logo.alt}</span>}</li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
               <ul><li><b>{copy.consultancyPoint1}</b> {copy.consultancyPoint1Text}</li><li><b>{copy.consultancyPoint2}</b> {copy.consultancyPoint2Text}</li><li><b>{copy.consultancyPoint3}</b> {copy.consultancyPoint3Text}</li></ul>
             </div></div>
             <a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'consultancyCta', copy.consultancyCta)}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{editText(props, 'proofLink', copy.proofLink)}</a>

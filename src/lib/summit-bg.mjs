@@ -202,7 +202,8 @@ export function mountSummit(container, opts = {}) {
     bloom.setSize(w, h);
     camera.aspect = w / h; camera.updateProjectionMatrix();
   }
-  addEventListener('resize', resize, { passive: true });
+  const onResize = () => { resize(); update(0); composer.render(); };
+  addEventListener('resize', onResize, { passive: true });
 
   let T = 0;
   function update(dt) {
@@ -264,10 +265,10 @@ export function mountSummit(container, opts = {}) {
     setClimb(v) { climb.tgt = Math.min(1, Math.max(0, v)); },
     setActive(v) { active = v !== false; },   // Stage pauses this layer when faded out
     renderFrame(dt) { update(typeof dt === 'number' ? dt : 0.016); composer.render(); },  // manual tick (preview/debug)
-    resize,
+    resize: onResize,
     destroy() {
       if (raf) cancelAnimationFrame(raf);
-      removeEventListener('resize', resize);
+      removeEventListener('resize', onResize);
       if (onPointer) removeEventListener('pointermove', onPointer);
       geo.dispose(); wireGeo.dispose(); wireMat.dispose(); fillMat.dispose();
       renderer.forceContextLoss(); renderer.dispose();

@@ -257,7 +257,7 @@
     mouse.x = sm.x = W * 0.6;
     mouse.y = sm.y = H * 0.5;
 
-    const onResize = () => resize();
+    const onResize = () => { resize(); draw(typeof performance !== 'undefined' ? performance.now() : 0); };
     global.addEventListener('resize', onResize, { passive: true });
     if (!coarse && !reduce) {                      // under reduced motion the warp/well are off, so the pointer listener is dead work
       global.addEventListener('pointermove', onMove, { passive: true });

@@ -16,8 +16,9 @@ import { EDITOR_MESSAGES, askAgent, capturePng, captureTarget, renderPins, valid
 import './frame.css';
 
 const usePuckSelection = createUsePuck();
+const EDITOR_UI = { leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } };
 
-function FrameControls({ send, save, commands, copy, pins, onLayout, onImport }) {
+function FrameControls({ send, save, commands, copy, pins, onLayout, onImport, pageSettingsRef }) {
   const puckSelected = usePuckSelection((s) => s.selectedItem);
   const [clicked, setClicked] = useState(null);
   const selected = puckSelected || clicked;
@@ -29,6 +30,8 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
   const contentLength = usePuckSelection((s) => s.appState.data.content.length);
   const [outline, setOutline] = useState(false);
   const [library, setLibrary] = useState(false);
+  const [pageSettings, setPageSettings] = useState(() => pageSettingsRef.current);
+  const pageButton = useRef(null);
   const selectedId = selected?.props?.id;
   const selector = selectedId ? getSelectorForId(selectedId) : null;
 
@@ -65,34 +68,43 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
     frame.addEventListener('load', bind); bind();
     return () => { frame.removeEventListener('load', bind); doc?.removeEventListener('scroll', draw, true); observer?.disconnect(); };
   }, [pins]);
+  useEffect(() => {
+    if (pageSettingsRef.current && !copy) dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: true } });
+  }, []); // Restore the page drawer when Puck remounts header actions after a field edit.
 
   useEffect(() => { send('editor-state', editorState(selected, history, outline)); }, [selectedId, selected?.type, history.hasPast, history.hasFuture, outline]);
   useEffect(() => {
     // Edit copy: clicking words selects the block but never opens its settings.
-    if (selectedId) { setLibrary(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: !copy, leftSideBarVisible: false } }); }
+    if (selectedId) { setLibrary(false); pageSettingsRef.current = false; setPageSettings(false); dispatch({ type: 'setUi', ui: { rightSideBarVisible: !copy, leftSideBarVisible: false } }); }
   }, [selectedId, copy]);
   useEffect(() => {
     if (!copy) return;
-    setLibrary(false); setOutline(false);
+    setLibrary(false); setOutline(false); pageSettingsRef.current = false; setPageSettings(false);
     if (ui.leftSideBarVisible || ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
   }, [copy, ui.leftSideBarVisible, ui.rightSideBarVisible]);
   useEffect(() => {
-    if (!selectedId && ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { rightSideBarVisible: false } });
-  }, [selectedId, ui.rightSideBarVisible]);
+    if (!selectedId && !pageSettings && ui.rightSideBarVisible) dispatch({ type: 'setUi', ui: { rightSideBarVisible: false } });
+  }, [selectedId, pageSettings, ui.rightSideBarVisible]);
 
   function close() {
-    setLibrary(false);
+    if (pageSettings) pageButton.current?.focus();
+    setLibrary(false); pageSettingsRef.current = false; setPageSettings(false);
     setClicked(null);
     dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: false } });
   }
   function add() {
-    setLibrary(true);
+    setLibrary(true); pageSettingsRef.current = false; setPageSettings(false);
     dispatch({ type: 'setUi', ui: { itemSelector: null, rightSideBarVisible: false, leftSideBarVisible: true, plugin: { current: 'blocks' } } });
   }
   function toggleOutline(on) {
-    setOutline(on);
+    setOutline(on); pageSettingsRef.current = false; setPageSettings(false);
     setLibrary(false);
     dispatch({ type: 'setUi', ui: { itemSelector: null, rightSideBarVisible: false, leftSideBarVisible: on, plugin: { current: 'outline' } } });
+  }
+  function openPageSettings() {
+    setLibrary(false); setOutline(false); pageSettingsRef.current = true; setPageSettings(true);
+    setClicked(null);
+    dispatch({ type: 'setUi', ui: { itemSelector: null, leftSideBarVisible: false, rightSideBarVisible: true } });
   }
   function command(payload) {
     if (!validEditorCommand(payload)) return;
@@ -114,7 +126,7 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') { event.preventDefault(); save(); return; }
       if (event.key !== 'Escape') return;
       if (event.target?.isContentEditable) return;
-      if (selectedId || library || outline || ui.leftSideBarVisible || ui.rightSideBarVisible) { close(); setOutline(false); return; }
+      if (selectedId || library || outline || pageSettings || ui.leftSideBarVisible || ui.rightSideBarVisible) { close(); setOutline(false); return; }
       send('editor-key', { key: 'escape' });
     }
     window.addEventListener('keydown', onKey);
@@ -124,7 +136,7 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
     frame?.addEventListener('load', bind);
     bind();
     return () => { window.removeEventListener('keydown', onKey); frame?.removeEventListener('load', bind); doc?.removeEventListener('keydown', onKey); };
-  }, [selectedId, library, outline, ui.leftSideBarVisible, ui.rightSideBarVisible]);
+  }, [selectedId, library, outline, pageSettings, ui.leftSideBarVisible, ui.rightSideBarVisible]);
   useEffect(() => {
     const frame = document.querySelector('.gs-frame-editor iframe');
     if (!frame) return;
@@ -149,7 +161,8 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
     else dispatch({ type, index: selector.index, zone: selector.zone });
   }
   const count = selector?.zone === 'root:default-zone' ? contentLength : 999;
-  return createPortal(<div className={'gs-frame-controls' + (library || outline || selected ? ' is-drawer-open' : '')}>
+  if (copy && !selected) return null;
+  return createPortal(<div className={'gs-frame-controls' + (library || outline || selected || pageSettings ? ' is-drawer-open' : '')}>
     {selected && <div className="gs-frame-block-tools" role="toolbar" aria-label="Selected block">
       <span>{selected.type}</span><button type="button" onClick={() => { const payload = askAgent(selected); if (payload) send('ask-agent', payload); }}>Ask an agent</button>
       {!copy && <><button type="button" disabled={!selector || selector.index === 0} onClick={() => act('reorder', selector.index - 1)}>Move up</button>
@@ -158,7 +171,8 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport })
       </>}<button type="button" onClick={close}>Close</button>
     </div>}
     {!copy && <button type="button" onClick={add}>Add block</button>}
-    {(library || outline || selected) && <button type="button" onClick={() => { close(); setOutline(false); }}>Close drawer</button>}
+    {!copy && <button ref={pageButton} type="button" onClick={openPageSettings}>Page background</button>}
+    {(library || outline || selected || pageSettings) && <button type="button" onClick={() => { close(); setOutline(false); }}>Close drawer</button>}
     {(library || outline) && <span className="gs-frame-drawer-label">{outline ? 'Outline' : 'Block library'}</span>}
   </div>, document.body);
 }
@@ -176,6 +190,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
   const [isDirty, setIsDirty] = useState(false);
   const [editMode, setEditMode] = useState('layout');
   const [pins, setPins] = useState([]);
+  const pageSettingsRef = useRef(false);
   const session = useRef(null), draft = useRef(null), baseRevision = useRef(null), pending = useRef(null), timer = useRef(null);
   const mediaUrls = useRef({});
   const commands = useRef(null);
@@ -342,7 +357,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
     {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && <div className="gs-frame-notice" role="alert"><p>{message}</p>{pending.current && <button type="button" onClick={() => save(undefined, true)}>Retry save</button>}</div>}
-    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><FrameCopyContext.Provider value={copy}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={{ leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } }} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} pins={pins} onLayout={switchEditMode} onImport={importLive} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameCopyContext.Provider></FrameEditingContext.Provider>
+    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><FrameCopyContext.Provider value={copy}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={EDITOR_UI} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} pins={pins} onLayout={switchEditMode} onImport={importLive} pageSettingsRef={pageSettingsRef} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameCopyContext.Provider></FrameEditingContext.Provider>
       : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} pageSlug={page.slug} forms={forms} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }
