@@ -9,6 +9,7 @@ const ROUTE = new RegExp(`^#\\/?portal(?:\\/(doc|receipt)\\/(${UUID}))?\\/?$`, '
 export function parsePortalHash(hash) {
   const h = String(hash || '');
   if (!/^#\/?portal(\/|$)/i.test(h)) return null;
+  if (/^#\/?portal\/deep-dive\/?$/i.test(h)) return { view: 'deep-dive' };
   const m = ROUTE.exec(h);
   if (!m) return { view: 'notfound' };
   if (!m[1]) return { view: 'home' };

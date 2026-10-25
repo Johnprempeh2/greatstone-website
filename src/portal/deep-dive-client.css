@@ -1,0 +1,14 @@
+.dd-row { list-style: none; padding: 15px 0; border-top: 1px solid var(--pt-line); overflow-wrap: anywhere; }
+.dd-row:first-child { border-top: 0; padding-top: 0; }
+.dd-row:last-child { padding-bottom: 0; }
+.dd-row > .pt-muted { margin: 5px 0 0; }
+.dd-row summary { font-weight: 700; cursor: pointer; padding: 4px 0; }
+.dd-row summary:focus-visible { outline: 2px solid var(--pt-accent); outline-offset: 3px; }
+.dd-row form { display: grid; gap: 10px; max-width: 42rem; padding: 10px 0 0; }
+.dd-row form p { margin: 0; }
+.dd-row label { font-weight: 600; }
+.dd-row textarea { box-sizing: border-box; width: 100%; min-height: 7rem; padding: 12px; border: 1px solid var(--pt-line);
+  border-radius: 8px; background: var(--pt-card); color: var(--pt-text); font: inherit; resize: vertical; }
+.dd-row textarea:focus-visible { outline: 2px solid var(--pt-accent); outline-offset: 2px; }
+.dd-row .pt-actions { margin-top: 0; }
+.dd-row .gs-btn { border-radius: 999px; }
