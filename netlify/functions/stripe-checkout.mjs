@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCatalogueAnon } from './lib/catalogue-store.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
@@ -17,18 +17,9 @@ async function stripe(path, key, params, fetchImpl, idempotencyKey) {
   return response.json();
 }
 
-async function verifiedUser(req, env) {
-  const token = /^Bearer ([^\s]+)$/.exec(req.headers.get('authorization') || '')?.[1];
-  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-  const key = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
-  if (!token || token === key || !url || !key) return null;
-  const { data, error } = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-  return error ? null : data.user;
-}
-
 export async function buyerForCheckout(pool, user, env, fetchImpl, log) {
   if (!user?.id || !UUID.test(user.id)) return null;
-  const identity = { id: user.id, email: user.email || null, email_verified: !!user.email_confirmed_at };
+  const identity = authIdentity(user);
   try {
     const buyer = await asCustomer(pool, identity, async (client) => {
       const { rows: staff } = await client.query('SELECT id FROM users WHERE auth_subject=$1 AND deleted_at IS NULL', [identity.id]);
@@ -59,7 +50,7 @@ export async function buyerForCheckout(pool, user, env, fetchImpl, log) {
   }
 }
 
-export function makeStripeCheckoutHandler({ env = process.env, pool = getPool, verify = verifiedUser,
+export function makeStripeCheckoutHandler({ env = process.env, pool = getPool, verify,
   fetchImpl = fetch, log = console.error } = {}) {
   return async (req) => {
     if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -93,7 +84,7 @@ export function makeStripeCheckoutHandler({ env = process.env, pool = getPool, v
       const vatRate = Number(env.VAT_RATE ?? '0.20');
       if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 1) throw new Error('Invalid VAT rate');
       const vat = Math.round(subtotal * vatRate);
-      const user = await verify(req, env).catch(() => null);
+      const user = await userFromRequest(req, verify).catch(() => null);
       const buyer = await buyerForCheckout(db, user, env, fetchImpl, log);
       const params = new URLSearchParams({ mode: 'payment',
         success_url: origin + '/#order-confirmed?session={CHECKOUT_SESSION_ID}', cancel_url: origin + '/#shop',

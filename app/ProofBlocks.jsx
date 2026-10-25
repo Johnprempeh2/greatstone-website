@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, Fragment, lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 import * as TwoDoors from '../src/blocks/TwoDoors.jsx';
@@ -95,10 +95,25 @@ export const proofConfig = {
 };
 
 const publicPuck = { isEditing: false, renderDropZone: () => null, dragRef: null };
-export function ProofBlocks({ data, pageSlug, forms }) {
-  return <><style>{proofBlockCss}</style><PageScene value={data.root?.props?.pageScene} /><div className="gs-proof-content">{data.content.map((item) => {
+function PublishedBriefings({ briefings }) {
+  return <section className="proof-briefings" aria-labelledby="proof-briefings-heading"><div className="wrap">
+    <h2 id="proof-briefings-heading">Published briefings</h2>
+    <div className="proof-briefings-grid">{briefings.map((briefing) => <article className="proof-briefing" key={briefing.id}>
+      <a href={briefing.path}>
+        <h3>{briefing.title}</h3>
+        {briefing.description && <p>{briefing.description}</p>}
+        <span aria-hidden="true">Read briefing →</span>
+      </a>
+    </article>)}</div>
+  </div></section>;
+}
+export function ProofBlocks({ data, pageSlug, forms, briefings = [] }) {
+  const beforeInvite = briefings.length ? data.content.findIndex((item) => item.type === 'Invite') : -1;
+  return <><style>{proofBlockCss}</style><PageScene value={data.root?.props?.pageScene} /><div className="gs-proof-content">{data.content.map((item, index) => {
     const component = proofConfig.components[item.type];
     if (!component) throw new Error(`Unsupported published block: ${item.type}`);
-    return <div key={item.props.id}>{component.render({ ...bindFormBlock(pageSlug, item, forms), puck: publicPuck })}</div>;
-  })}</div></>;
+    return <Fragment key={item.props.id}>{index === beforeInvite && <PublishedBriefings briefings={briefings} />}
+      <div>{component.render({ ...bindFormBlock(pageSlug, item, forms), puck: publicPuck })}</div>
+    </Fragment>;
+  })}{briefings.length > 0 && beforeInvite === -1 && <PublishedBriefings briefings={briefings} />}</div></>;
 }

@@ -3,7 +3,7 @@
 // "Add" buttons across lazy store pages all share one source of truth without a provider.
 // (The legacy prototype CartContext/CartDrawer was retired — this is the only cart now.)
 import { useSyncExternalStore } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { getSession } from '../lib/better-auth-client.mjs';
 
 const KEY = 'gs_store_cart_v1';
 export const MAX_QTY = 100;
@@ -57,13 +57,11 @@ export function onOpenCart(f) { openSubs.add(f); return () => openSubs.delete(f)
 export async function startCheckout({ email } = {}) {
   const payload = getCart().map((x) => ({ variantId: x.variantId, quantity: x.qty }));
   if (!payload.length) throw new Error('Your basket is empty.');
-  // Forward the buyer's JWT when signed in, so the function can link the order to their account and
-  // attach a Stripe Customer for saved cards. A guest sends no bearer token.
-  let token = null;
-  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; token = data?.session?.access_token || null; } catch { /* guest */ }
+  // Better Auth's same-origin session cookie links a signed-in buyer; guests remain eligible.
+  try { await getSession(); } catch { /* guest */ }
   const res = await fetch('/api/stripe-checkout', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       items: payload,
       customerEmail: email || undefined,
@@ -78,17 +76,15 @@ export async function startCheckout({ email } = {}) {
 }
 
 // Submit the basket as a B2B quote request (pay on invoice). Server captures indicative prices + the
-// contact/PO details; staff finalise and invoice. Forwards the JWT so a signed-in buyer's quote links
+// contact/PO details; staff finalise and invoice. The session cookie links a signed-in buyer's quote
 // to their account. Returns the human quote reference (Q-YYYY-NNNNNN).
 // poDocument (optional): { name, type, dataBase64 } — an uploaded PO stored in private Netlify Blobs.
 export async function requestQuote({ contact, poReference, message, poDocument } = {}) {
   const payload = getCart().map((x) => ({ variantId: x.variantId, quantity: x.qty }));
   if (!payload.length) throw new Error('Your basket is empty.');
-  let token = null;
-  try { const { data } = supabase ? await supabase.auth.getSession() : { data: {} }; token = data?.session?.access_token || null; } catch { /* guest */ }
   const res = await fetch('/api/request-quote', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ items: payload, contact, poReference, message, poDocument: poDocument || undefined }),
   });
   let data = {};
