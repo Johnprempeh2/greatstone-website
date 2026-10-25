@@ -27,6 +27,16 @@ export const SCENE_KINDS = [
   { id: 'tideCalm', label: 'Tide, calm', color: '#4ecdc4', ink: '#0e1611' },
 ];
 
+// Expand a preset into the scene-track shape shared by the renderer and editors.
+// Saved granular tracks pass through unchanged.
+export function normalizeBackground(bg, makeId = (type) => `${type}-${Math.random().toString(36).slice(2, 8)}`) {
+  if (bg && typeof bg === 'object' && Array.isArray(bg.scenes)) return bg;
+  const opt = STAGE_OPTIONS.find((option) => option.id === bg) || STAGE_OPTIONS[0];
+  const scenes = opt.scenes.map((kind) => ({ id: makeId('sc'), kind }));
+  const transitions = scenes.slice(1).map(() => ({ id: makeId('tr'), at: 0.55, fade: 0.30, anchor: { type: 'scroll' } }));
+  return { v: 1, scenes, transitions };
+}
+
 export const smoothstep = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a || 1e-4), 0), 1); return t * t * (3 - 2 * t); };
 
 // Which element is actually scrolling? On the live site it's the window. Inside the Puck editor

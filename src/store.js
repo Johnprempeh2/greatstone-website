@@ -6,7 +6,7 @@ import seedPages from './seed-pages.json';
 import { BRAND_TAGLINE, PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from './lib/brand.mjs';
 import { LEGAL_NAME, COMPANY_NUMBER, REGISTERED_IN, REGISTERED_OFFICE, LEGAL_CONTACT_EMAIL, LEGAL_UPDATED, ICO_REGISTRATION_NUMBER } from './lib/legal-facts.mjs';
 import { config } from './puck.config.jsx';
-import { STAGE_OPTIONS } from './stage-presets.js';
+import { normalizeBackground as expandBackground } from './stage-presets.js';
 import { INTEREST_OPTIONS, SIZE_BANDS, CONSENT } from './lib/enquiry.mjs';
 // Link integrity (pure, read-only) lives in its own module; store stays the single import surface.
 export { auditLinks, resolveRedirect, LINK_PROPS } from './lib/link-audit.mjs';
@@ -1259,13 +1259,7 @@ export function listAssets(state) {
 // the string form into the object so Stage + the editor only ever deal with one shape. The
 // string→object expansion of 'stone-summit' reproduces today's smoothstep(0.40,0.70) exactly
 // (at 0.55, fade 0.30). Idempotent: passing an object returns it unchanged.
-export function normalizeBackground(bg) {
-  if (bg && typeof bg === 'object' && Array.isArray(bg.scenes)) return bg;
-  const opt = STAGE_OPTIONS.find((o) => o.id === bg) || STAGE_OPTIONS[0];
-  const scenes = opt.scenes.map((kind) => ({ id: rid('sc'), kind }));
-  const transitions = scenes.slice(1).map(() => ({ id: rid('tr'), at: 0.55, fade: 0.30, anchor: { type: 'scroll' } }));
-  return { v: 1, scenes, transitions };
-}
+export function normalizeBackground(bg) { return expandBackground(bg, rid); }
 
 export function persist(state) {
   try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { /* quota — try to recover */ }
