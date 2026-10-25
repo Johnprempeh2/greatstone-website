@@ -798,6 +798,18 @@ function deEmDash(v) {
   return v;
 }
 
+function placeHomeStoryBlock(blocks, type, replacement) {
+  const doorIndex = blocks.findIndex((block) => block.type === 'TwoDoors');
+  if (doorIndex === -1) return;
+  const currentIndex = blocks.findIndex((block) => block.type === type);
+  const bottomIndex = blocks.findIndex((block) => block.type === 'TwoDoorsBottom');
+  if (currentIndex !== -1 && (bottomIndex === -1 || currentIndex < bottomIndex)) return;
+  const block = currentIndex === -1 ? replacement : blocks.splice(currentIndex, 1)[0];
+  const anchor = type === 'TwoDoorsProof' ? 'TwoDoorsStory' : 'TwoDoors';
+  const anchorIndex = blocks.findIndex((item) => item.type === anchor);
+  blocks.splice((anchorIndex === -1 ? doorIndex : anchorIndex) + 1, 0, block);
+}
+
 function migrate(state) {
   if (!state || !state.pages) return seedState();
   // Apply the accepted front door once to saved studio data, without a seed-version reset
@@ -866,6 +878,18 @@ function migrate(state) {
       }
     }
     state._homeRoutesAndPlaceholders = true;
+  }
+  // Repair saved pages where an earlier migration appended these blocks after the final choice.
+  if (!state._homeRoutesOrderFixed) {
+    const fresh = twoDoorsHomePage();
+    for (const projection of ['data', 'published']) {
+      const blocks = state.pages.home?.[projection]?.content;
+      if (!blocks) continue;
+      for (const type of ['TwoDoorsStory', 'TwoDoorsProof']) {
+        placeHomeStoryBlock(blocks, type, fresh[projection].content.find((block) => block.type === type));
+      }
+    }
+    state._homeRoutesOrderFixed = true;
   }
   Object.values(state.pages).forEach((p) => {
     if (!p.status) p.status = 'published';
