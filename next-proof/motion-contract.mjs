@@ -1,7 +1,7 @@
 // Stable release values. Keep old page props untouched: an absent `motion` means
 // the block follows its legacy rendering path, while new blocks use editor defaults.
 export const INTENSITIES = ['off', 'subtle', 'full'];
-export const BACKGROUND_EFFECTS = ['bg.waves', 'bg.stone', 'bg.grid', 'bg.haze', 'bg.bedrock', 'bg.ascent', 'bg.datum', 'bg.meridian', 'bg.veil', 'bg.orbit'];
+export const BACKGROUND_EFFECTS = ['bg.waves', 'bg.stone', 'bg.haze', 'bg.bedrock', 'bg.ascent', 'bg.datum', 'bg.meridian', 'bg.veil', 'bg.orbit'];
 export const EFFECTS = ['none', 'hero.stone', 'band.tide', ...BACKGROUND_EFFECTS];
 export const SPEEDS = ['still', 'slow', 'normal'];
 export const COLOURS = ['emerald', 'teal'];
@@ -21,8 +21,7 @@ export const MOTION_EFFECTS = [
   { id: 'band.tide', label: 'Tide band', still: '/motion/tide-still.png' },
   { id: 'bg.waves', label: 'Waves', still: '/motion/tide-still.png', description: 'Quiet waves at the edge of a block.' },
   { id: 'bg.stone', label: 'Stone', still: '/motion/stone-still.png', description: 'A still stone beyond the copy.' },
-  { id: 'bg.grid', label: 'Grid backdrop', still: '/motion/datum-dark.webp', description: 'A fine engineered grid.' },
-  { id: 'bg.haze', label: 'Emerald haze', still: '/motion/veil-dark.webp', description: 'A soft emerald atmosphere.' },
+  { id: 'bg.haze', label: 'Emerald haze', still: '/motion/haze-still.png', description: 'A soft emerald atmosphere.' },
   { id: 'bg.bedrock', label: 'Bedrock', still: '/motion/bedrock-dark.webp', study: '015' },
   { id: 'bg.ascent', label: 'Ascent', still: '/motion/ascent-dark.webp', study: '016' },
   { id: 'bg.datum', label: 'Datum', still: '/motion/datum-dark.webp', study: '017' },

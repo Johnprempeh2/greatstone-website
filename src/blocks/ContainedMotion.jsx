@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const isBackground = (effect) => /^bg\.(waves|stone|grid|haze|bedrock|ascent|datum|meridian|veil|orbit)$/.test(effect || '');
+const isBackground = (effect) => /^bg\.(waves|stone|haze|bedrock|ascent|datum|meridian|veil|orbit)$/.test(effect || '');
 const isStudy = (effect) => /^bg\.(bedrock|ascent|datum|meridian|veil|orbit)$/.test(effect || '');
 
 export function ContainedMotion({ effect, intensity, mode, speed = 'slow', colour = 'emerald' }) {
@@ -51,33 +51,31 @@ export function ContainedMotion({ effect, intensity, mode, speed = 'slow', colou
 export const css = `
 .gs-blk[data-motion-effect^="bg."]:not([data-motion-intensity="off"]){position:relative;isolation:isolate;overflow:hidden}
 .gs-contained-motion{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;
-  mask-image:linear-gradient(90deg,transparent 0%,transparent 48%,#000 82%)}
+  mask-image:linear-gradient(90deg,transparent 0%,transparent 72%,#000 96%)}
 .gs-contained-motion--full{opacity:1}.gs-contained-motion--subtle{opacity:.7}
 .gs-contained-motion--teal{filter:hue-rotate(24deg)}
 .gs-contained-motion--waves{background:url('/motion/tide-still.png') center/cover no-repeat}
 .gs-contained-motion--stone{background:url('/motion/stone-still.png') 90% center/auto 85% no-repeat}
-.gs-contained-motion--grid{background-image:linear-gradient(rgba(78,205,196,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(78,205,196,.18) 1px,transparent 1px);background-size:64px 64px}
 .gs-contained-motion--haze{background:radial-gradient(ellipse at 85% 50%,rgba(27,80,57,.65),transparent 70%)}
 .gs-contained-motion--moving.gs-contained-motion--waves{animation:gsWavesDrift var(--gs-motion-duration,28s) linear infinite alternate}
-.gs-contained-motion--moving.gs-contained-motion--grid{animation:gsGridDrift var(--gs-motion-duration,28s) linear infinite}
 .gs-contained-motion--moving.gs-contained-motion--haze,.gs-contained-motion--moving.gs-contained-motion--stone{animation:gsAmbientBreathe var(--gs-motion-duration,28s) ease-in-out infinite alternate}
 .gs-contained-motion--slow{--gs-motion-duration:28s}.gs-contained-motion--normal{--gs-motion-duration:16s}
 @keyframes gsWavesDrift{to{background-position:58% center}}
-@keyframes gsGridDrift{to{background-position:64px 64px}}
 @keyframes gsAmbientBreathe{to{opacity:.45}}
 .gs-contained-motion canvas{display:block;width:100%;height:100%}
 .gs-contained-motion.is-ready{background-image:none}
 ${['bedrock', 'ascent', 'datum', 'meridian', 'veil', 'orbit'].map((name) => `.gs-contained-motion--${name}{background:url('/motion/${name}-dark.webp') center/cover no-repeat}html[data-theme="light"] .gs-contained-motion--${name}{background-image:url('/motion/${name}-light.webp')}`).join('\n')}
+/* Direct children are block roots. Nested card and band artwork keeps its own surface. */
 .gs-blk[data-motion-effect^="bg."]:not([data-motion-intensity="off"])>:not(.gs-contained-motion):not(.gs-preview-pick),
 .gs-blk.gs-sec-surface:not([data-motion-block^="TwoDoors"])>:not(.gs-contained-motion):not(.gs-preview-pick){position:relative;z-index:1;background-color:transparent!important;background-image:none!important}
 .gs-blk[data-motion-effect^="bg."] .b-hero h1{text-shadow:none}
 .gs-blk[data-divider="glow"]{position:relative;isolation:isolate}
 .gs-blk[data-divider="glow"]::after{content:"";position:absolute;z-index:2;pointer-events:none;bottom:0;left:5%;right:5%;height:1px;background:linear-gradient(90deg,transparent,rgba(78,205,196,.55) 22%,rgba(200,255,0,.8) 50%,rgba(78,205,196,.55) 78%,transparent);box-shadow:0 4px 12px rgba(78,205,196,.26)}
-.gs-blk[data-motion-effect^="bg."][data-motion-block="AiBaselineSurvey"] .gs-contained-motion{height:330px;mask-image:linear-gradient(90deg,transparent 0%,transparent 48%,#000 82%),linear-gradient(180deg,#000 0%,#000 55%,transparent 100%);mask-composite:intersect}
+.gs-blk[data-motion-effect^="bg."][data-motion-block="AiBaselineSurvey"] .gs-contained-motion{height:330px;mask-image:linear-gradient(90deg,transparent 0%,transparent 72%,#000 96%),linear-gradient(180deg,#000 0%,#000 55%,transparent 100%);mask-composite:intersect}
 .gs-blk[data-motion-effect^="bg."][data-motion-block="DevTools"] .gs-contained-motion{height:520px}
-.gs-blk[data-motion-effect="bg.meridian"] .gs-contained-motion{mask-image:linear-gradient(90deg,transparent 0%,transparent 48%,#000 82%),linear-gradient(180deg,#000 0%,#000 calc(100% - 140px),transparent 100%);mask-composite:intersect}
+.gs-blk[data-motion-effect="bg.meridian"] .gs-contained-motion{mask-image:linear-gradient(90deg,transparent 0%,transparent 72%,#000 96%),linear-gradient(180deg,#000 0%,#000 calc(100% - 140px),transparent 100%);mask-composite:intersect}
 .gs-blk[data-motion-effect="bg.orbit"] .gs-contained-motion{height:330px}
-@media(max-width:760px){.gs-contained-motion{mask-image:linear-gradient(90deg,transparent 0%,transparent 62%,#000 100%)}.gs-blk[data-motion-effect="bg.meridian"] .gs-contained-motion{mask-image:linear-gradient(180deg,#000 0%,#000 calc(100% - 90px),transparent 100%);opacity:.45}}
+@media(max-width:760px){.gs-blk .gs-contained-motion{mask-image:linear-gradient(180deg,transparent 0%,transparent calc(100% - 80px),#000 100%)!important;opacity:.3}.gs-blk[data-motion-effect="bg.meridian"] .gs-contained-motion{opacity:.3}}
 @media(prefers-reduced-motion:reduce){.gs-contained-motion--moving{animation:none!important}}
 @media print{.gs-contained-motion{display:none}}
 `;

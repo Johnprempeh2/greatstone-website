@@ -11,10 +11,10 @@
       "required": ["effect", "intensity"],
       "properties": { "effect": { "type": "string" }, "intensity": { "$ref": "#/$defs/intensity" }, "quietAnchor": { "$ref": "#/$defs/quietAnchor" }, "speed": { "enum": ["still", "slow", "normal"] }, "colour": { "enum": ["emerald", "teal"] } }
     },
-    "DevTools": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.waves", "bg.stone", "bg.grid", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
-    "AiBaselineSurvey": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.waves", "bg.stone", "bg.grid", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
-    "Hero": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "hero.stone", "bg.waves", "bg.stone", "bg.grid", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "DevTools": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.waves", "bg.stone", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "AiBaselineSurvey": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.waves", "bg.stone", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
+    "Hero": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "hero.stone", "bg.waves", "bg.stone", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] },
     "MotionBand": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "band.tide"] } } }] },
-    "BackgroundBlock": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.waves", "bg.stone", "bg.grid", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] }
+    "BackgroundBlock": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "effect": { "enum": ["none", "bg.waves", "bg.stone", "bg.haze", "bg.bedrock", "bg.ascent", "bg.datum", "bg.meridian", "bg.veil", "bg.orbit"] } } }] }
   }
 }

@@ -50,7 +50,7 @@ test('editor offers rendered effects with plain labels and hides intensity for N
   assert.deepEqual(motionField('Hero').motion.objectFields.effect.options, [
     { label: 'None', value: 'none' }, { label: 'Hero stone', value: 'hero.stone' },
     { label: 'Waves', value: 'bg.waves' }, { label: 'Stone', value: 'bg.stone' },
-    { label: 'Grid backdrop', value: 'bg.grid' }, { label: 'Emerald haze', value: 'bg.haze' },
+    { label: 'Emerald haze', value: 'bg.haze' },
     { label: 'Bedrock', value: 'bg.bedrock' }, { label: 'Ascent', value: 'bg.ascent' },
     { label: 'Datum', value: 'bg.datum' }, { label: 'Meridian', value: 'bg.meridian' },
     { label: 'Veil', value: 'bg.veil' }, { label: 'Orbit', value: 'bg.orbit' },
