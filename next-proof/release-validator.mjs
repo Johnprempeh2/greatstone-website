@@ -8,7 +8,7 @@ import { validPageScene } from './page-scene.mjs';
 
 export const supportedReleaseSchemas = [1];
 export const supportedBlocks = new Set([
-  'TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'DevTools',
+  'TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom', 'DevTools',
   'Hero', 'Prose', 'Panels', 'ServiceCatalog', 'Invite', 'Steps', 'FeatureGrid',
   'Faq', 'PillarCards', 'MaturityModel', 'Chapter', 'Team', 'LogoWall',
   'IntelBand', 'MaturityMap', 'Ladder', 'MethodTieIn', 'IndustryPicker',
