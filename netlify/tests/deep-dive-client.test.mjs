@@ -116,7 +116,11 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     let deliver = false;
     const answerHandler = makeDeepDiveClientHandler({ pool: () => pool,
       verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, email_confirmed_at: '2026-10-25' }),
-      send: async (row) => { assert.equal(row.request_id, R); return deliver; }, log: () => {} });
+      send: async (row) => {
+        assert.equal(row.request_id, R);
+        if (deliver) assert.equal(row.note, 'An edited response');
+        return deliver;
+      }, log: () => {} });
     const answer = (token, op, note) => answerHandler(new Request('https://site.example.invalid/api/deep-dive-client', {
       method: 'POST', headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ op, requestId: R, ...(note ? { note } : {}) }),
     }));
@@ -124,6 +128,22 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const pending = await answer('one', 'answer', 'A test response');
     assert.equal(pending.status, 202);
     assert.equal((await pending.json()).data.status, 'pending');
+    assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'pending');
+    const edited = await answer('one', 'answer', 'An edited response');
+    assert.equal(edited.status, 202);
+    assert.equal(db.psql(`SELECT note FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'An edited response');
+    const customerSql = (sql) => db.psql(`BEGIN; SET LOCAL ROLE authenticated;
+      SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"${USER_A}","email_verified":true}', true);
+      ${sql} COMMIT;`);
+    const changeStatus = customerSql(`UPDATE deep_dive_answers SET status='received'
+      WHERE request_id='${R}';`);
+    assert.notEqual(changeStatus.status, 0, 'customer status update must fail');
+    assert.match(changeStatus.stderr, /permission denied/);
+    const forgedInsert = customerSql(`INSERT INTO deep_dive_answers
+      (tenant_id,request_id,customer_id,customer_user_id,note,status)
+      VALUES ('${A}','${B}','${CUSTOMER_A}','${USER_A}','Forged','received');`);
+    assert.notEqual(forgedInsert.status, 0, 'customer must not set initial status');
+    assert.match(forgedInsert.stderr, /permission denied/);
     assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'pending');
     deliver = true;
     const received = await answer('one', 'retry');
@@ -133,6 +153,8 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const withdrawn = await put({ ...payload(), items: [], documentRequests: [] });
     assert.equal(withdrawn.status, 200);
     assert.deepEqual((await read(USER_A)).items, []);
+    const statusRollback = db.psql(readFileSync(new URL('../database/migrations/051_deep_dive_answer_status/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(statusRollback.status, 0, statusRollback.stderr);
     const rollback = db.psql(readFileSync(new URL('../database/migrations/050_deep_dive_client/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(rollback.status, 0, rollback.stderr);
     assert.equal(db.psql("SELECT to_regclass('public.deep_dive_snapshots') IS NULL").stdout.trim(), 't');

@@ -52,7 +52,8 @@ export function makeDeepDiveClientHandler({ pool = getPool, verify, send = sendD
           (tenant_id,request_id,customer_id,customer_user_id,name,email,note)
           SELECT $1,$2,app_customer_id(),cu.id,cu.full_name,cu.email,$3 FROM customer_users cu
           WHERE cu.auth_subject=$4 AND cu.customer_id=app_customer_id() AND cu.deleted_at IS NULL
-          ON CONFLICT (tenant_id,request_id,customer_id) DO NOTHING
+          ON CONFLICT (tenant_id,request_id,customer_id) DO UPDATE SET note=EXCLUDED.note
+          WHERE deep_dive_answers.status='pending'
           RETURNING *`, [access.tenantId, input.requestId, input.note.trim(), user.id]);
         if (rows[0]) return rows[0];
         const existing = await client.query(`SELECT * FROM deep_dive_answers
@@ -62,8 +63,9 @@ export function makeDeepDiveClientHandler({ pool = getPool, verify, send = sendD
       if (!row) return reply({ error: 'This request is not available.' }, 404);
       if (row.status === 'received') return reply({ data: { status: 'received' } });
       const received = await send(row);
-      if (received) await asCustomer(db, identity, (client) => client.query(`UPDATE deep_dive_answers
-        SET status='received',received_at=now() WHERE answer_id=$1 AND customer_id=app_customer_id()`, [row.answer_id]));
+      if (received) await db.query(`UPDATE deep_dive_answers
+        SET status='received',received_at=now() WHERE answer_id=$1 AND customer_id=$2 AND status='pending'`,
+      [row.answer_id, row.customer_id]);
       return reply({ data: { status: received ? 'received' : 'pending' } }, received ? 200 : 202);
     } catch (error) {
       log('deep-dive-client: request failed (' + (error?.code || error?.name || 'error') + ')');
