@@ -4,8 +4,10 @@ import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import baked from '../next-proof/data/release.json';
 import { createReleaseReader } from '../next-proof/release-reader.mjs';
+import { releaseIdentity } from '../next-proof/release-identity.mjs';
 
 const storeName = process.env.GSAM_RELEASE_BLOBS_STORE || 'gsam-content';
+const identity = releaseIdentity(process.env, baked);
 export const releaseStore = () => getStore({ name: storeName, siteID: process.env.NETLIFY_SITE_ID });
 const readRelease = unstable_cache(async (number) => {
   const value = await releaseStore().get(`releases/${number}.json`, { type: 'text' });
@@ -16,14 +18,14 @@ const readRelease = unstable_cache(async (number) => {
     throw error;
   }
   return value;
-}, ['website-release', storeName, process.env.GSAM_SITE_ID || 'local'], { tags: ['website-release'] });
+}, ['website-release', storeName, identity.siteId], { tags: ['website-release'] });
 
 const reader = createReleaseReader({
   baked,
-  siteId: process.env.GSAM_SITE_ID || baked.siteId,
-  orgId: process.env.GSAM_ORG_ID || baked.orgId,
+  siteId: identity.siteId,
+  orgId: identity.orgId,
   readCurrent: async () => {
-    if (!process.env.GSAM_SITE_ID) {
+    if (!identity.readsCurrent) {
       const error = new Error('ReleaseIdentityNotConfigured');
       error.code = 'NOT_CONFIGURED';
       throw error;
