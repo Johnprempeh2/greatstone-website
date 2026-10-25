@@ -294,9 +294,57 @@ async function functionShape(run, fn) {
 export function interviewDb(identity, { pool = getPool() } = {}) {
   if (!pool) throw new Error('interviewDb: the database is not configured');
   const claims = claimsFor(identity);
+  return makeDb(claims, (text, values) => runStatement(pool, claims, text, values));
+}
+
+/**
+ * The same client inside a transaction someone else holds (the admin bridge, so a round's writes commit with its
+ * audit row). Each statement runs in a savepoint as interview_worker with system claims plus the bridge org, and the
+ * holder's role, claims and search_path are put back after it. A failed statement rolls back to its savepoint only,
+ * as a failed supabase-js call left the others standing.
+ */
+export function interviewDbOnClient(client, extraClaims = {}) {
+  const claims = { ...claimsFor('system'), ...extraClaims };
+  let held;
+  let queue = Promise.resolve();
+  const run = (text, values) => {
+    const step = queue.then(async () => {
+      if (!held) {
+        const { rows: [h] } = await client.query(`SELECT current_user AS role, current_setting('request.jwt.claims', true) AS claims,
+          current_setting('search_path') AS path`);
+        held = h;
+      }
+      await client.query('SAVEPOINT interview_stmt');
+      try {
+        await client.query('SET LOCAL ROLE interview_worker');
+        await client.query('SET LOCAL search_path TO interview, public');
+        await client.query("SELECT set_config('request.jwt.claims', $1, true)", [JSON.stringify(claims)]);
+        const result = await client.query({ text, values, types: await types() });
+        await restore(client, held);
+        await client.query('RELEASE SAVEPOINT interview_stmt');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK TO SAVEPOINT interview_stmt');
+        await client.query('RELEASE SAVEPOINT interview_stmt');
+        throw error;
+      }
+    });
+    queue = step.catch(() => {});
+    return step;
+  };
+  return makeDb(claims, run);
+}
+
+async function restore(client, held) {
+  await client.query(`SET LOCAL ROLE ${quote(held.role)}`);
+  await client.query("SELECT set_config('search_path', $1, true)", [held.path]);
+  await client.query("SELECT set_config('request.jwt.claims', $1, true)", [held.claims ?? '']);
+}
+
+function makeDb(claims, run) {
   const db = {
     claims,
-    run: (text, values) => runStatement(pool, claims, text, values),
+    run,
     from: (table) => new Builder(db, table),
     async rpc(fn, args = {}) {
       try {
@@ -333,3 +381,19 @@ export function interviewDb(identity, { pool = getPool() } = {}) {
   return db;
 }
 
+
+/** One transaction for several engine statements (retention delete): work(db) commits together or not at all. */
+export async function inInterviewTransaction(pool, work, extraClaims = {}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await work(interviewDbOnClient(client, extraClaims));
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch { /* connection gone */ }
+    throw error;
+  } finally {
+    client.release();
+  }
+}

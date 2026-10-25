@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
 import { startPostgres, skip } from './lib/postgres.mjs';
-import { interviewDb, claimsFor } from '../functions/lib/interview/db.mjs';
+import { interviewDb, interviewDbOnClient, claimsFor } from '../functions/lib/interview/db.mjs';
 
 const SCHEMA = `
   DO $$ BEGIN CREATE ROLE interview_worker NOLOGIN NOBYPASSRLS; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -131,6 +131,29 @@ test('supabase-shaped queries over pg, under RLS', { skip }, async (t) => {
     assert.equal(r1.error.code, 'PGRST100');
     const r2 = await a.sql('SELECT count(*)::int AS c FROM thing');
     assert.equal(r2.data[0].c, 1);
+  });
+
+  await t.test('inside a held transaction: savepoint per statement, holder role and claims restored', async () => {
+    assert.equal(pgc.psql(`DO $$ BEGIN CREATE ROLE holder NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+      GRANT holder TO CURRENT_USER;`).status, 0);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SET LOCAL ROLE holder');
+      await client.query(`SELECT set_config('request.jwt.claims', '{"role":"holder"}', true)`);
+      const db = interviewDbOnClient(client, { org: 'o1' });
+      const [ins, bad] = await Promise.all([
+        db.from('thing').insert({ owner: 'carol@c.test', n: 1 }).select('id').single(),
+        db.from('thing').insert({ owner: 'carol@c.test', n: 1 }).select('id').single(),
+      ]);
+      assert.equal(ins.error, null);
+      assert.equal(bad.error.code, '23505');
+      assert.equal((await db.rpc('who')).data, 'interview_worker:system');
+      const { rows: [now] } = await client.query(`SELECT current_user AS u, current_setting('request.jwt.claims', true) AS c`);
+      assert.deepEqual([now.u, JSON.parse(now.c).role], ['holder', 'holder']);
+      await client.query('ROLLBACK');
+    } finally { client.release(); }
+    assert.equal((await sys.from('thing').select('id').eq('owner', 'carol@c.test')).data.length, 0);
   });
 
   await t.test('role and claims do not outlive the statement on a pooled connection', async () => {
