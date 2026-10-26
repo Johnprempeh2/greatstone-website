@@ -29,6 +29,7 @@ export async function checkBuiltLinks(base, paths, fetchPage = fetch) {
       const href = node.getAttribute('href') ?? node.getAttribute('formaction');
       if (!href || /^(mailto:|tel:)/i.test(href)) continue;
       checkedLinks++;
+      if (/^#go\//i.test(href)) failures.push(`${path}: ${href} is a legacy link`);
       let target;
       try { target = new URL(href, new URL(path, base)); }
       catch { failures.push(`${path}: invalid link ${href}`); continue; }

@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { validateSnapshot, clientSnapshot, answerForClient } from '../functions/lib/deep-dive-client.mjs';
 import { sendDeepDiveAnswer } from '../functions/lib/deep-dive-answer.mjs';
 import { generateKeyPairSync, verify, createHash, randomBytes, sign } from 'node:crypto';
-import { canonicalString } from '../functions/lib/admin-bridge-auth.mjs';
+import { canonicalString, canonicalQuery, SCHEME_V2 } from '../functions/lib/admin-bridge-auth.mjs';
 import { parseBridgeKeys } from '../functions/lib/admin-bridge-auth.mjs';
 import { makeAdminBridgeHandler } from '../functions/admin-bridge.mjs';
 import { makeDeepDiveClientHandler } from '../functions/deep-dive-client.mjs';
+import { makeDeepDiveDocumentHandler, allowedDocument, allowedFileType } from '../functions/deep-dive-document.mjs';
 import { asCustomer } from '../functions/lib/customer-store.mjs';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import pg from 'pg';
@@ -85,6 +86,17 @@ test('client endpoint refuses an unauthenticated website request before touching
   assert.equal(response.status, 401);
 });
 
+test('document gate requires the current shared item and matching bytes', () => {
+  const snapshot = { ...payload(), files: [{ id: B, status: 'held' }],
+    deliverables: [{ id: I, status: 'published' }] };
+  assert.equal(allowedDocument(snapshot, { kind: 'collected', source_id: B }), true);
+  assert.equal(allowedDocument(snapshot, { kind: 'deliverable', source_id: I }), true);
+  assert.equal(allowedDocument({ ...snapshot, deliverables: [] }, { kind: 'deliverable', source_id: I }), false);
+  assert.equal(allowedFileType('evidence.pdf', Buffer.from('%PDF-1.7')).mime, 'application/pdf');
+  assert.equal(allowedFileType('evidence.png', Buffer.from('%PDF-1.7')), null);
+  assert.equal(allowedFileType('evidence.html', Buffer.from('<script>alert(1)</script>')), null);
+});
+
 test('site callback signs the exact answer and leaves failed delivery pending', async () => {
   const pair = generateKeyPairSync('ed25519');
   const keyJson = JSON.stringify({ kid: 'stg-site-1', privateKey: pair.privateKey.export({ format: 'pem', type: 'pkcs8' }) });
@@ -138,7 +150,9 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     pool = new pg.Pool({ connectionString: db.url });
     const pair = generateKeyPairSync('ed25519');
     const publicKey = pair.publicKey.export({ format: 'jwk' }).x;
-    const keys = parseBridgeKeys(JSON.stringify([{ kid: 'stg-write-1', capability: 'write', publicKey }]));
+    const readPair = generateKeyPairSync('ed25519');
+    const keys = parseBridgeKeys(JSON.stringify([{ kid: 'stg-write-1', capability: 'write', publicKey },
+      { kid: 'stg-read-1', capability: 'read', publicKey: readPair.publicKey.export({ format: 'jwk' }).x }]));
     const handler = makeAdminBridgeHandler({ pool: () => pool, keys, log: () => {} });
     const put = async (snapshot) => {
       const url = new URL(`https://site.example.invalid/api/admin/v1/deep-dive/tenants/${A}`);
@@ -166,11 +180,60 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal((await read(USER_A)).opportunities[0].findingIds[0], F);
     assert.equal((await read(USER_A)).kpis[0].target, 6);
     assert.equal(await read(USER_B), null);
+    const blobs = new Map();
+    const documentHandler = makeDeepDiveDocumentHandler({ pool: () => pool, keys,
+      verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email_confirmed_at: '2026-10-25' }),
+      store: () => ({ set: async (key, bytes) => blobs.set(key, bytes),
+        get: async (key) => blobs.get(key), delete: async (key) => blobs.delete(key) }), log: () => {} });
+    const documentUrl = `https://site.example.invalid/api/deep-dive-document?requestId=${R}`;
+    const upload = (token, name, bytes) => documentHandler(new Request(documentUrl, { method: 'POST', body: bytes,
+      headers: { authorization: `Bearer ${token}`, 'x-file-name-encoded': Buffer.from(name).toString('base64url') } }));
+    assert.equal((await upload('two', 'evidence.pdf', Buffer.from('%PDF-1.7'))).status, 404);
+    assert.equal((await upload('one', 'evidence.png', Buffer.from('%PDF-1.7'))).status, 400);
+    assert.equal((await upload('one', 'evidence.pdf', Buffer.from('%PDF-1.7'))).status, 201);
+    const list = (token) => documentHandler(new Request('https://site.example.invalid/api/deep-dive-document',
+      { headers: { authorization: `Bearer ${token}` } }));
+    const saved = (await (await list('one')).json()).data;
+    assert.equal(saved.length, 1);
+    assert.equal((await (await list('two')).json()).data.length, 0);
+    assert.equal((await documentHandler(new Request(`https://site.example.invalid/api/deep-dive-document?id=${saved[0].id}`,
+      { headers: { authorization: 'Bearer two' } }))).status, 404);
+    const ownDownload = await documentHandler(new Request(`https://site.example.invalid/api/deep-dive-document?id=${saved[0].id}`,
+      { headers: { authorization: 'Bearer one' } }));
+    assert.equal(ownDownload.status, 200);
+    assert.equal(await ownDownload.text(), '%PDF-1.7');
+    const shared = { ...payload(), files: [{ id: B, itemId: I, title: 'Collected', status: 'held' }],
+      deliverables: [{ id: I, title: 'Report', status: 'published', publishedAt: '2026-10-25T00:00:00Z' }] };
+    assert.equal((await put(shared)).status, 200);
+    const bridgeCall = async (method, href, bytes, keyPair, kid, capability) => {
+      const target = new URL(href);
+      const time = Math.floor(Date.now() / 1000);
+      const nonce = randomBytes(16).toString('base64url');
+      const idempotencyKey = capability === 'write' ? randomBytes(16).toString('base64url') : null;
+      const canonical = canonicalString({ scheme: capability === 'write' ? SCHEME_V2 : undefined,
+        method, host: target.host, path: target.pathname, query: canonicalQuery(target.searchParams), time, nonce,
+        actor: 'system:test', bodySha256: createHash('sha256').update(bytes).digest('hex'), idempotencyKey });
+      return documentHandler(new Request(target, { method, body: method === 'GET' ? undefined : bytes,
+        headers: { 'x-gs-bridge-key': kid, 'x-gs-bridge-time': String(time), 'x-gs-bridge-nonce': nonce,
+          'x-gs-bridge-actor': 'system:test', ...(idempotencyKey ? { 'x-gs-bridge-idempotency-key': idempotencyKey } : {}),
+          'x-gs-bridge-signature': sign(null, Buffer.from(canonical), keyPair.privateKey).toString('base64url'),
+          ...(method === 'PUT' ? { 'x-file-name': 'report.pdf' } : {}) } }));
+    };
+    const releaseUrl = `https://site.example.invalid/api/deep-dive-document?tenantId=${A}&sourceId=${I}&kind=deliverable`;
+    assert.equal((await bridgeCall('PUT', releaseUrl, Buffer.from('%PDF-1.7'), pair, 'stg-write-1', 'write')).status, 200);
+    const released = (await (await list('one')).json()).data.find((row) => row.kind === 'deliverable');
+    assert.equal(released.file_name, 'report.pdf');
+    assert.equal((await (await list('two')).json()).data.length, 0);
+    const collectedUrl = `https://site.example.invalid/api/deep-dive-document?bridge=1&tenantId=${A}&requestId=${R}`;
+    const collected = await bridgeCall('GET', collectedUrl, '', readPair, 'stg-read-1', 'read');
+    assert.equal(collected.status, 200);
+    assert.equal(await collected.text(), '%PDF-1.7');
     let deliver = false;
     const answerHandler = makeDeepDiveClientHandler({ pool: () => pool,
       verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, emailVerified: true }),
       send: async (row) => {
         assert.equal(row.request_id, R);
+        assert.equal(row.file_name, 'evidence.pdf');
         if (deliver) assert.equal(row.note, 'An edited response');
         return deliver;
       }, log: () => {} });
@@ -188,6 +251,11 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const customerSql = (sql) => db.psql(`BEGIN; SET LOCAL ROLE authenticated;
       SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"${USER_A}","email_verified":true}', true);
       ${sql} COMMIT;`);
+    const forgedDocument = customerSql(`INSERT INTO deep_dive_documents
+      (tenant_id,customer_id,source_id,kind,file_name,mime,byte_size,blob_key)
+      VALUES ('${A}','${CUSTOMER_A}','${B}','client','forged.pdf','application/pdf',10,'forged');`);
+    assert.notEqual(forgedDocument.status, 0, 'direct client metadata insert must fail');
+    assert.match(forgedDocument.stderr, /permission denied/);
     const changeStatus = customerSql(`UPDATE deep_dive_answers SET status='received'
       WHERE request_id='${R}';`);
     assert.notEqual(changeStatus.status, 0, 'customer status update must fail');
@@ -203,13 +271,21 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(received.status, 200);
     assert.equal((await received.json()).data.status, 'received');
     assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'received');
+    assert.equal((await upload('one', 'later.pdf', Buffer.from('%PDF-1.7'))).status, 404);
     const withdrawn = await put({ ...payload(), items: [], documentRequests: [],
       findings: [], opportunities: [], kpis: [] });
     assert.equal(withdrawn.status, 200);
     assert.deepEqual((await read(USER_A)).items, []);
     const statusRollback = db.psql(readFileSync(new URL('../database/migrations/051_deep_dive_answer_status/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(statusRollback.status, 0, statusRollback.stderr);
-    // Later interview migrations depend on the customer/org index from 050;
-    // a standalone 050 rollback is no longer valid against the full schema.
+    const agreementRollback = db.psql(readFileSync(new URL('../database/migrations/060_interview_agreement/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(agreementRollback.status, 0, agreementRollback.stderr);
+    const interviewRollback = db.psql(readFileSync(new URL('../database/migrations/059_interview_engine/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(interviewRollback.status, 0, interviewRollback.stderr);
+    const documentRollback = db.psql(readFileSync(new URL('../database/migrations/058_deep_dive_documents/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(documentRollback.status, 0, documentRollback.stderr);
+    const rollback = db.psql(readFileSync(new URL('../database/migrations/050_deep_dive_client/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(rollback.status, 0, rollback.stderr);
+    assert.equal(db.psql("SELECT to_regclass('public.deep_dive_snapshots') IS NULL").stdout.trim(), 't');
   } finally { await pool?.end(); db.stop(); }
 });

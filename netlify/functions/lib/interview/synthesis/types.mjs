@@ -6,7 +6,7 @@
 // Source header, kept:
 // Synthesis pipeline types (Wave 5B). The output shapes mirror docs/taxonomy-synthesis-contract.md
 // section 3.3 (the contract is the source of truth); the row shapes mirror the 0001_init and
-// 0005_synthesis migrations (on the website: schema `interview`, migration 057_interview_engine).
+// 0005_synthesis migrations (on the website: schema `interview`, migration 059_interview_engine).
 //
 // Port: the source rules for this directory (explicit `.ts` specifiers, `import type`, no
 // `server-only`) become: explicit `.mjs` specifiers, no type imports, no `server-only`. Callers are

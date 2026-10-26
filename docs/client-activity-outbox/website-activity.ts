@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-/** Shared with the website outbox. A sequence is scoped to one website site. */
+/** Shared with the website outbox. A sequence is scoped to one website site.
+ * occurredAt records when the source action happened. Linking an older enquiry
+ * can emit it later, so occurredAt is not monotonic with sequence. GSAM
+ * sorts the timeline by occurredAt and pages ingestion by sequence.
+ */
 export const websiteActivityKinds = [
   "account.created", "interview.invited", "interview.started", "interview.completed", "interview.abandoned",
   "document.requested", "document.uploaded", "deliverable.published", "deliverable.accepted",

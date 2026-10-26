@@ -28,20 +28,34 @@ async function fixture(t) {
   git(cwd, 'config', 'user.name', 'Test');
   await writeFile(join(cwd, 'src', 'app.js'), 'original');
   await writeFile(join(cwd, 'contracts', 'check.mjs'), `if (process.argv[2] !== '--site-speaks' || process.argv[3] !== '1' || process.env.CONTRACT_CHECK_FAIL === '1') process.exitCode = 1;\n`);
-  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs'); git(cwd, 'commit', '-qm', 'base');
+  // Stand-ins for the editor alias step (GRE-2804): the prepared copy carries src and scripts
+  // from this checkout, and the alias upload logs its site and the engine commit it must report.
+  await mkdir(join(cwd, 'next-proof', 'scripts'), { recursive: true });
+  await writeFile(join(cwd, 'next-proof', 'scripts', 'prepare-netlify.mjs'), `import { cpSync } from 'node:fs';
+import { resolve } from 'node:path';
+const root = resolve(import.meta.dirname, '../..');
+for (const name of ['src', 'scripts']) cpSync(resolve(root, name), resolve(process.argv[2], name), { recursive: true });
+`);
+  await writeFile(join(cwd, 'scripts', 'deploy-editor-alias.mjs'), `import { appendFileSync } from 'node:fs';
+appendFileSync(process.env.DEPLOY_LOG, \`alias \${process.argv[2]} \${process.env.GSAM_ENGINE_COMMIT}\\n\`);
+if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
+`);
+  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs', 'next-proof/scripts/prepare-netlify.mjs', 'scripts/deploy-editor-alias.mjs');
+  git(cwd, 'commit', '-qm', 'base');
   const base = git(cwd, 'rev-parse', 'HEAD');
   git(cwd, 'checkout', '-qb', 'test-pr');
   const log = join(cwd, 'netlify-args.txt');
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   // TREE_LOG records which source tree npm and the upload ran in (config refresh tests).
-  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
   await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\nprintf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
   let comments = [];
   let interactions = [];
   let deploys = [];
+  const served = [site];
   const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    if (req.url.includes('/api/v1/sites/') && !req.url.includes(`${site}.netlify.app/deploys`)) {
+    if (req.url.includes('/api/v1/sites/') && !served.some((name) => req.url.includes(`${name}.netlify.app/deploys`))) {
       res.statusCode = 404;
       res.end('{}');
       return;
@@ -74,7 +88,7 @@ async function fixture(t) {
   }
   return { cwd, base, env, log, commit, run,
     setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
-    setDeploys: (value) => { deploys = value; } };
+    setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); } };
 }
 
 function stagingCard(sha, changes = {}) {
@@ -259,6 +273,65 @@ test('a weekly release card never covers public-site drift, other sites or agent
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /production refused/);
+});
+
+async function weeklyTrain(t) {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.servePublicSite();
+  f.setInteractions([weeklyCard(f.base)]);
+  f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
+  return f;
+}
+
+test('the weekly train deploys the public site, then the editor alias from the same commit', async (t) => {
+  const f = await weeklyTrain(t);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await readFile(f.log, 'utf8'),
+    `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod\n` +
+    'build --context branch:gsam-editor\n' +
+    `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+  // npm and the editor build run in the prepared copy of this checkout.
+  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'netlify in original\nnpm ci in original\nnetlify in original\n');
+  for (const step of ['prepare', 'install', 'build', 'upload and check'])
+    assert.match(result.stdout, new RegExp(`Editor alias step "${step}" at ${f.base}`));
+});
+
+test('the editor alias still ships when the public upload is skipped', async (t) => {
+  const f = await weeklyTrain(t);
+  f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${f.base}` }]);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Skipped greatstone-home: no changes/);
+  assert.equal(await readFile(f.log, 'utf8'),
+    `build --context branch:gsam-editor\nalias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+});
+
+test('a failed editor alias step fails the train and names the step', async (t) => {
+  let f = await weeklyTrain(t);
+  f.env.ALIAS_FAIL = '1';
+  let result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /train failed at editor alias step "upload and check" \(exit 1\)/);
+  assert.match(await readFile(f.log, 'utf8'), /--prod\n/);
+
+  f = await weeklyTrain(t);
+  f.env.NETLIFY_BUILD_FAIL = '1';
+  result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /train failed at editor alias step "build" \(exit 9\)/);
+  assert.doesNotMatch(await readFile(f.log, 'utf8'), /^alias /m);
+});
+
+test('staging production and previews never touch the editor alias', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([weeklyCard(f.base)]);
+  const result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /Editor alias step/);
+  assert.doesNotMatch(await readFile(f.log, 'utf8'), /branch:gsam-editor|^alias /m);
 });
 
 test('docs-only skips; site changes deploy only with preview gate', async (t) => {

@@ -27,7 +27,7 @@ Source commit ported: `505ba6a` (Voice: Everest is aura-2-draco-en).
 ## Data plane
 
 All tables live in schema `interview` (no clash with the site's `engagements`, `customers` and so on). Migration
-`netlify/database/migrations/057_interview_engine` is the source's 0001 to 0017 folded into one, adapted only where a
+`netlify/database/migrations/059_interview_engine` is the source's 0001 to 0017 folded into one, adapted only where a
 `Port:` note says so.
 
 ### Organisation and user on every row
@@ -192,7 +192,7 @@ Run: `node --test netlify/tests/interview-*.test.mjs`.
 ## Staging and rollback
 
 Staging is the site `gre1795-website-db-staging`. A preview deploy of a ready pull request gets its own database
-branch (a copy of staging data) and Netlify applies `057_interview_engine` to it before the deploy goes live. Only
+branch (a copy of staging data) and Netlify applies `059_interview_engine` to it before the deploy goes live. Only
 synthetic test accounts and test rounds are used; no client data before John's card.
 
 Environment on the staging site (Functions scope):
@@ -207,5 +207,5 @@ Environment on the staging site (Functions scope):
 
 Rollback, in order: set `INTERVIEW_ENABLED` to anything but `1` (every interviewee endpoint answers 404 at once);
 set `VOICE_ENABLED=0` to take voice away alone; remove the GSAM bridge keys to stop round changes. Code rollback is
-a redeploy of the previous commit. `057_interview_engine/rollback.sql` drops schema `interview` and everything in it:
+a redeploy of the previous commit. `059_interview_engine/rollback.sql` drops schema `interview` and everything in it:
 run it only after the round's outputs are exported to GSAM and a database snapshot is taken.

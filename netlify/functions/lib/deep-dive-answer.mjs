@@ -10,7 +10,7 @@ export async function sendDeepDiveAnswer(row, { baseUrl = process.env.GSAM_DEEP_
   const url = new URL(`/api/website-bridge/v1/tenants/${row.tenant_id}/document-requests/${row.request_id}/answer`, baseUrl);
   if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) return false;
   const body = JSON.stringify({ answerId: row.answer_id, answeredBy: {
-    customerId: row.customer_id, name: row.name, email: row.email }, note: row.note, fileName: null });
+    customerId: row.customer_id, name: row.name, email: row.email }, note: row.note, fileName: row.file_name || null });
   const time = Math.floor(now() / 1000);
   const nonce = randomBytes(16).toString('base64url');
   const actor = `client:${row.customer_id}`;
