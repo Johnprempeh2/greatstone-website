@@ -12,7 +12,7 @@ import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { splitTwoDoorsToolsDraft } from '../../../next-proof/two-doors-draft.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
-import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, liveContentOf, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
+import { COPY_PERMISSIONS, copyModeAllows, editModeOf, editorState, helloAckPayload, importLiveData, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
 import { EDITOR_MESSAGES, askAgent, capturePng, captureTarget, renderPins, validPins } from '../../../next-proof/frame-comments.mjs';
 import './frame.css';
 
@@ -244,7 +244,8 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
         }
         session.current ||= { nonce, origin: event.origin };
         if (mode === 'editor') setEditMode(editModeOf(result.payload));
-        window.parent.postMessage(envelope('hello-ack', { protocol: FRAME_PROTOCOL, nonce, siteId, engine, supportedReleaseSchemas: [1], ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, editorMessages: EDITOR_MESSAGES, liveContent: liveContentOf(liveData) } : {}), ...motionHello(proofConfig.components) }), event.origin);
+        window.parent.postMessage(envelope('hello-ack', helloAckPayload({ protocol: FRAME_PROTOCOL, nonce, siteId,
+          engine, mode, liveData, editorMessages: EDITOR_MESSAGES, motion: motionHello(proofConfig.components) })), event.origin);
         setMessage('Waiting for the page draft'); return;
       }
       if (!validMessage(event, session.current, ['load-draft', 'save-result', 'highlight', 'insert-media', 'set-motion', 'editor-command', 'comment-pins', 'capture', 'teardown'])) {

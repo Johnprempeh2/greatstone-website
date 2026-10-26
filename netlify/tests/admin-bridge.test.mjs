@@ -7,12 +7,17 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, createPrivateKey, randomBytes, sign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import pg from 'pg';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import { canonicalQuery, canonicalString, parseAllowedIps, parseBridgeKeys, verifyBridgeRequest } from '../functions/lib/admin-bridge-auth.mjs';
 import { makeAdminBridgeHandler } from '../functions/admin-bridge.mjs';
 
 const CONTRACT = JSON.parse(readFileSync(new URL('../../contracts/gs-bridge-v1/vectors.json', import.meta.url), 'utf8'));
+const ajv = new Ajv({ strict: false });
+addFormats(ajv);
+const healthSchema = ajv.compile(JSON.parse(readFileSync(new URL('../../contracts/site-contract/schemas/bridge-health.schema.json', import.meta.url), 'utf8')));
 const seedKey = (hex) => createPrivateKey({
   key: Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), Buffer.from(hex, 'hex')]), format: 'der', type: 'pkcs8',
 });
@@ -120,7 +125,8 @@ test('health answers a signed request and records who asked', { skip }, async ()
   const nonce = randomBytes(16).toString('base64url');
   const res = await call(signed('/api/admin/v1/health', { nonce }));
   assert.equal(res.status, 200);
-  assert.deepEqual({ ...res.body, serverTime: undefined }, { ok: true, kid: KID, capability: 'read', serverTime: undefined, schema: 'gs-bridge-v1' });
+  assert.deepEqual({ ...res.body, serverTime: undefined }, { ok: true, kid: KID, capability: 'read', serverTime: undefined, schema: 'gs-bridge-v1', siteContract: 1 });
+  assert.equal(healthSchema(res.body), true, JSON.stringify(healthSchema.errors));
   assert.equal(audit(nonce), `agent:d5651a41-e5e0-4512-8fb0-069815ff4278 ${RUN} health ok 0`);
   const sys = randomBytes(16).toString('base64url');
   assert.equal((await call(signed('/api/admin/v1/health', { nonce: sys, actor: 'system:website-enquiry-pull', run: null }))).status, 200);

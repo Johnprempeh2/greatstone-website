@@ -21,12 +21,14 @@ async function fixture(t) {
   await mkdir(join(cwd, 'bin'));
   await mkdir(join(cwd, 'src'));
   await mkdir(join(cwd, 'scripts'));
+  await mkdir(join(cwd, 'contracts'));
   await writeFile(join(cwd, '.gitignore'), 'bin/\nnetlify-args.txt\n');
   git(cwd, 'init', '-q', '-b', 'main');
   git(cwd, 'config', 'user.email', 'test@example.invalid');
   git(cwd, 'config', 'user.name', 'Test');
   await writeFile(join(cwd, 'src', 'app.js'), 'original');
-  git(cwd, 'add', '.gitignore', 'src/app.js'); git(cwd, 'commit', '-qm', 'base');
+  await writeFile(join(cwd, 'contracts', 'check.mjs'), `if (process.argv[2] !== '--site-speaks' || process.argv[3] !== '1' || process.env.CONTRACT_CHECK_FAIL === '1') process.exitCode = 1;\n`);
+  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs'); git(cwd, 'commit', '-qm', 'base');
   const base = git(cwd, 'rev-parse', 'HEAD');
   git(cwd, 'checkout', '-qb', 'test-pr');
   const log = join(cwd, 'netlify-args.txt');
@@ -82,6 +84,20 @@ function stagingCard(sha, changes = {}) {
     idempotencyKey: `confirmation:GRE-2064:staging-deploy:${sha}`,
     payload: { detailsMarkdown: `Approve production deploy: ${site} ${sha}` }, ...changes };
 }
+
+test('contract mismatch stops an otherwise approved upload before Netlify runs', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'new site code');
+  f.env.CONTRACT_CHECK_FAIL = '1';
+  const refused = await f.run();
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /contracts\/check\.mjs failed/);
+  await assert.rejects(readFile(f.log));
+  delete f.env.CONTRACT_CHECK_FAIL;
+  const accepted = await f.run();
+  assert.equal(accepted.status, 0, accepted.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /deploy --site/);
+});
 
 test('accepted human-only staging card permits exact SHA and guard-only drift', async (t) => {
   const f = await fixture(t);

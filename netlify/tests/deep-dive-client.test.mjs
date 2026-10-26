@@ -11,6 +11,16 @@ import { asCustomer } from '../functions/lib/customer-store.mjs';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import pg from 'pg';
 import { readFileSync } from 'node:fs';
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+
+const ajv = new Ajv({ strict: false });
+addFormats(ajv);
+const contractFile = (name) => JSON.parse(readFileSync(new URL(`../../contracts/site-contract/${name}`, import.meta.url), 'utf8'));
+const syncFixture = contractFile('fixtures/deep-dive-sync.json');
+const answerFixture = contractFile('fixtures/document-request-answer.json');
+const ackSchema = ajv.compile(contractFile('schemas/deep-dive-sync-ack.schema.json'));
+const answerSchema = ajv.compile(contractFile('schemas/document-request-answer.schema.json'));
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -23,6 +33,7 @@ const payload = (tenantId = A) => ({ schema: 'gs-deep-dive-sync-v1', tenantId, t
     receivedAt: null, createdAt: '2026-10-25T00:00:00Z' }], deliverables: [] });
 
 test('snapshot accepts the contract and rejects an Internal item and unrelated request', () => {
+  assert.deepEqual(validateSnapshot(syncFixture.tenantId, syncFixture), syncFixture);
   assert.equal(validateSnapshot(A, payload()).items.length, 1);
   assert.throws(() => validateSnapshot(A, { ...payload(), items: [{ ...payload().items[0], visibility: 'internal' }] }));
   assert.throws(() => validateSnapshot(A, { ...payload(), documentRequests: [{ ...payload().documentRequests[0], itemIds: [B] }] }));
@@ -61,9 +72,18 @@ test('site callback signs the exact answer and leaves failed delivery pending', 
     assert.equal(verify(null, Buffer.from(canonical), pair.publicKey, Buffer.from(h['x-gs-bridge-signature'], 'base64url')), true);
     assert.equal(h['x-gs-bridge-actor'], 'client:' + B);
     assert.equal(JSON.parse(options.body).answerId, I);
+    assert.equal(answerSchema(JSON.parse(options.body)), true, JSON.stringify(answerSchema.errors));
     return Response.json({ ok: true, requestId: R });
   };
   assert.equal(await sendDeepDiveAnswer(row, { baseUrl: 'https://gsam.example.invalid', keyJson, fetchImpl }), true);
+  assert.equal(answerSchema(answerFixture), true, JSON.stringify(answerSchema.errors));
+  const fixtureRow = { ...row, answer_id: answerFixture.answerId, customer_id: answerFixture.answeredBy.customerId,
+    name: answerFixture.answeredBy.name, email: answerFixture.answeredBy.email, note: answerFixture.note };
+  assert.equal(await sendDeepDiveAnswer(fixtureRow, { baseUrl: 'https://gsam.example.invalid', keyJson,
+    fetchImpl: async (_url, options) => {
+      assert.deepEqual(JSON.parse(options.body), answerFixture);
+      return Response.json({ ok: true, requestId: R });
+    } }), true);
   assert.equal(await sendDeepDiveAnswer(row, { baseUrl: 'https://gsam.example.invalid', keyJson,
     fetchImpl: async () => new Response('', { status: 503 }) }), false);
   assert.equal(await sendDeepDiveAnswer(row, { baseUrl: 'https://gsam.example.invalid', keyJson: '' }), false);
@@ -108,8 +128,12 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     };
     const denied = await put({ ...payload(), items: [{ ...payload().items[0], visibility: 'internal' }] });
     assert.equal(denied.status, 400);
+    const fixtureAccepted = await put(syncFixture);
+    assert.equal(fixtureAccepted.status, 200);
+    const ack = await fixtureAccepted.json();
+    assert.equal(ackSchema(ack), true, JSON.stringify(ackSchema.errors));
     const accepted = await put(payload());
-    assert.equal(accepted.status, 200, await accepted.text());
+    assert.equal(accepted.status, 200);
     const read = (id) => asCustomer(pool, { id, email: null, email_verified: true }, clientSnapshot);
     assert.equal((await read(USER_A)).items[0].title, 'Stream');
     assert.equal(await read(USER_B), null);
