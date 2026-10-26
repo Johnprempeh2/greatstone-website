@@ -152,11 +152,14 @@ browser client and its tests are ported line for line.
 
 ## Regression suites
 
-Ported to `node --test` under `netlify/tests/interview-*.test.mjs`, against a real local Postgres with the
-migrations applied (`netlify/tests/lib/postgres.mjs`) and a fake Anthropic client by default. Set
-`INTERVIEW_LIVE=1` with `ANTHROPIC_API_KEY` to run the model-dependent ones live. Suites: security probe,
-adversarial chat, concurrency, fuzzy merge, corroboration, interview smoke, plus the RLS suite for schema
-`interview`.
+Ported to `node --test` as `netlify/tests/interview-regress-*.test.mjs` (shared set-up in
+`netlify/tests/lib/interview-harness.mjs`), against a real local Postgres with the migrations applied and fake
+models: security probe, adversarial chat, concurrency, fuzzy merge, corroboration, interview smoke. Each runs twice,
+typed only (`VOICE_ENABLED=0`) and voice on; fuzzy merge is pure and runs once. The smoke checks R11 on every row.
+Plus the schema, RLS, bridge, engine, synthesis and voice unit suites (`netlify/tests/interview-*.test.mjs`).
+Not ported: the source's live-server and live-model runs; a live mode is not built yet.
+
+Run: `node --test netlify/tests/interview-*.test.mjs`.
 
 ## Staging and rollback
 
