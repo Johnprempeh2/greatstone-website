@@ -236,25 +236,18 @@ export async function proveIdentities(pool, data, apply) {
     if (apply && matched !== 8) refuse('proof-mismatch');
     if (matched === 8) {
       const fixture = data.fixture;
-      const inserted = await client.query(`INSERT INTO better_auth."user"
-        ("id","name","email","emailVerified") VALUES ($1,'GRE-2805 staging fixture',$2,true)
-        ON CONFLICT ("id") DO NOTHING RETURNING "id"`, [fixture.id, fixture.email]);
-      if (!inserted.rowCount) {
-        const { rows: existing } = await client.query(`SELECT "email" FROM better_auth."user" WHERE "id"=$1`, [fixture.id]);
-        if (existing.length !== 1 || existing[0].email !== fixture.email) refuse('proof-fixture-conflict');
-      }
-      const { rows: accounts } = await client.query(`SELECT "password" FROM better_auth."account"
-        WHERE "userId"=$1 AND "providerId"='credential'`, [fixture.id]);
-      if (accounts.length) {
-        if (accounts.length !== 1 || accounts[0].password !== fixture.passwordHash) refuse('proof-fixture-conflict');
-      } else {
-        await client.query(`INSERT INTO better_auth."account"
-          ("id","accountId","providerId","userId","password")
-          VALUES ($1,$2,'credential',$2,$3)`, [randomUUID(), fixture.id, fixture.passwordHash]);
-      }
+      const { rows: existing } = await client.query(`SELECT "id" FROM better_auth."user"
+        WHERE "id"=$1 OR "email"=$2`, [fixture.id, fixture.email]);
+      if (existing.length) refuse('proof-fixture-conflict');
+      await client.query(`INSERT INTO better_auth."user"
+        ("id","name","email","emailVerified") VALUES ($1,'GRE-2805 staging fixture',$2,true)`,
+      [fixture.id, fixture.email]);
+      await client.query(`INSERT INTO better_auth."account"
+        ("id","accountId","providerId","userId","password")
+        VALUES ($1,$2,'credential',$2,$3)`, [randomUUID(), fixture.id, fixture.passwordHash]);
     }
     await client.query(apply ? 'COMMIT' : 'ROLLBACK');
-    return { identities: { source: 8, matched }, checks, fixtureId: apply ? data.fixture.id : undefined };
+    return { identities: { source: 8, matched }, checks };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

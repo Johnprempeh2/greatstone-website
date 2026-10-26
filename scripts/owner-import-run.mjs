@@ -19,6 +19,7 @@ import { parseArgs } from 'node:util';
 import { getStore } from '@netlify/blobs';
 import pg from 'pg';
 import { validateImport } from '../netlify/database/migrations/052_better_auth/import-users.mjs';
+import { claimProofHash, clearProofRecords } from './owner-proof-state.mjs';
 import {
   SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, targetColumns, validateProof,
 } from '../netlify/functions/lib/owner-import.mjs';
@@ -98,7 +99,7 @@ async function submit(site, mode, action, input) {
 
   try {
     const hash = payloadHash(mode, data);
-    if (mode === 'proof') await site.store.setJSON('runner/state', { ...state, proofHash: hash });
+    if (mode === 'proof') await claimProofHash(site.store, state, hash);
     const submitted = Date.now();
     await site.store.setJSON('payload', { version: 1, mode, action, notAfter: state.until, data });
     console.log(`Payload ${hash.slice(0, 12)} written for ${action}. Waiting for the scheduled run (until ${state.until}).`);
@@ -134,12 +135,7 @@ async function clear(site) {
   for (const key of KEYS) await netlify('DELETE', `/accounts/${site.account}/env/${key}?site_id=${site.id}`);
   await site.store.delete('payload');
   const latest = await site.store.get('results/latest', { type: 'json' });
-  if (state?.proofHash) {
-    await site.store.delete(`ledger/${state.proofHash}`);
-    await site.store.delete(`results/${state.proofHash}/dry-run`);
-    await site.store.delete(`results/${state.proofHash}/apply`);
-    await site.store.delete('results/latest');
-  }
+  await clearProofRecords(site.store, state);
   await site.store.delete('runner/state');
   console.log('Settings, payload and run state removed. The last deploy keeps the old window value, which has ended or will.');
   if (latest) console.log(`Last result: ${latest.status} ${latest.reason || ''} at ${latest.at}`);

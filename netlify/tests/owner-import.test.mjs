@@ -181,7 +181,7 @@ test('staging proof compares all three digests, then creates one cost-10 legacy 
   await store.setJSON('payload', envelope('proof', 'apply', data));
   const applied = await tick(store);
   assert.equal(applied.result.status, 'applied');
-  assert.equal(applied.result.counts.fixtureId, fixtureId);
+  assert.equal(applied.result.counts.fixtureId, undefined);
   assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '1');
   assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}' AND "providerId"='credential'`), '1');
   await store.setJSON('payload', envelope('proof', 'apply', data));
@@ -191,9 +191,28 @@ test('staging proof compares all three digests, then creates one cost-10 legacy 
   assert.ok(!safe.includes(fixtureEmail));
   assert.ok(!safe.includes(fixturePassword));
   assert.ok(!safe.includes(data.fixture.passwordHash));
+  assert.ok(!safe.includes(fixtureId));
   assert.ok(!safe.includes(USERS[0].email));
   assert.ok(!safe.includes(USERS[0].passwordHash));
   assert.equal((await store.get(`ledger/${hash}`)).counts.identities.matched, 8);
+});
+
+test('proof refuses an existing non-source user without adding a credential', { skip }, async () => {
+  const digest = (value) => createHash('sha256').update(value).digest('hex');
+  const fixtureId = 'f2000000-0000-4000-8000-000000000002';
+  const fixtureEmail = 'existing-person@example.test';
+  owner(`INSERT INTO better_auth."user" ("id", "name", "email", "emailVerified")
+    VALUES ('${fixtureId}', 'Existing person', '${fixtureEmail}', true)`);
+  const data = {
+    source: USERS.map((u) => ({ id: u.id, uuidDigest: digest(u.id),
+      emailDigest: digest(u.email), bcryptDigest: digest(u.passwordHash) })),
+    fixture: { id: fixtureId, email: fixtureEmail, passwordHash: hashSync('test-only-password', 10) },
+  };
+  const store = memoryStore({ payload: envelope('proof', 'dry-run', data) });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'failed');
+  assert.equal(dry.result.reason, 'proof-fixture-conflict');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}'`), '0');
 });
 
 test('a role other than netlifydb_owner is refused before any write', { skip }, async () => {
