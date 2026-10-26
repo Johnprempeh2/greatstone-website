@@ -215,6 +215,15 @@
 .gs-interview .trust-icon svg { width: 17px; height: 17px; stroke: var(--gs-accent); stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .gs-interview .trust-row h3 { font-size: 14px; font-weight: 700; color: var(--gs-text); line-height: 1.4; margin-bottom: 3px; }
 .gs-interview .trust-row p { font-size: 13px; color: var(--gs-text-muted); line-height: 1.7; }
+/* GRE-2687: the short interview privacy notice on the welcome screen */
+.gs-interview .privacy-notice { margin-top: 18px; padding-bottom: 20px; }
+.gs-interview .privacy-intro { font-size: 13px; color: var(--gs-text-muted); line-height: 1.7; margin: 4px 0 10px; }
+.gs-interview .privacy-points { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.gs-interview .privacy-points li { font-size: 13px; color: var(--gs-text-muted); line-height: 1.7; }
+.gs-interview .privacy-points strong { color: var(--gs-text); font-weight: 700; }
+.gs-interview .privacy-date { font-size: 13px; color: var(--gs-text); margin-top: 12px; }
+.gs-interview .privacy-full { font-size: 12.5px; margin-top: 10px; }
+.gs-interview .privacy-full a { color: var(--gs-accent); }
 
 .gs-interview .welcome-cta { margin-top: 34px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .gs-interview .welcome-cta .btn-primary { padding: 15px 38px; font-size: 13px; border-radius: 10px; }
@@ -796,6 +805,16 @@
 .gs-interview .consent-q .agent-avatar { margin-top: 1px; }
 .gs-interview .consent-q p { font-size: 15px; font-weight: 600; color: var(--gs-text); line-height: 1.6; }
 .gs-interview .consent-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* GRE-2687: the three quote options, as native radio buttons styled as tiles */
+.gs-interview .quote-choice { border: 0; margin: 0; padding: 0; min-width: 0; }
+.gs-interview .quote-choice legend.consent-q { padding: 0; }
+.gs-interview .quote-choice legend.consent-q span { font-size: 15px; font-weight: 600; color: var(--gs-text); line-height: 1.6; }
+.gs-interview .consent-options.is-stacked { grid-template-columns: 1fr; }
+.gs-interview label.consent-opt { display: block; position: relative; }
+.gs-interview label.consent-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.gs-interview label.consent-opt:has(input:focus-visible) { outline: 2px solid var(--gs-accent); outline-offset: 2px; }
+.gs-interview label.consent-opt:has(input:disabled) { opacity: 0.6; cursor: default; }
+.gs-interview .quote-choice-note { font-size: 12px; color: var(--gs-text-faint); margin-top: 10px; line-height: 1.7; }
 .gs-interview .consent-opt {
   font-family: inherit; text-align: left; cursor: pointer;
   background: var(--gs-bg-darker); border: 1px solid var(--gs-border);

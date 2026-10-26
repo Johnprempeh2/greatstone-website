@@ -22,6 +22,7 @@ import { InterviewFooter, DotDivider } from './Footer.jsx';
 import { pageFallback } from './PageStatus.jsx';
 import { InterviewSignIn } from './InterviewSignIn.jsx';
 import { usePageOp, useActionForm } from './usePageOp.mjs';
+import { interviewNotice, whoSeesLine, QUOTE_OPTIONS } from '../interview-notice.mjs';
 
 export default function InterviewHome({ route }) {
   const seats = route.query?.seats ?? null;
@@ -31,13 +32,24 @@ export default function InterviewHome({ route }) {
   if (fallback) return fallback;
   const d = page.data ?? {};
   if (d.screen !== 'welcome') return <NoMatchScreen email={d.email ?? null} />;
-  return <WelcomeScreen isAdmin={Boolean(d.isAdmin)} seats={d.seats ?? seats} consent={d.consent ?? consent} />;
+  return (
+    <WelcomeScreen isAdmin={Boolean(d.isAdmin)} seats={d.seats ?? seats} consent={d.consent ?? consent}
+      clientName={d.clientName} retentionDays={d.retentionDays} deletionDate={d.deletionDate ?? null} />
+  );
 }
 
-function WelcomeScreen({ isAdmin, seats, consent }) {
+/**
+ * GRE-2687: the short interview privacy notice (v2, `src/portal/interview-notice.mjs`) and its consent box are
+ * shown before "I agree to take part", with the round's deletion date once the readout is booked. Exported so the
+ * render test reads the same screen.
+ */
+export function WelcomeScreen({ isAdmin, seats, consent, clientName, retentionDays, deletionDate }) {
   const [actionError, setActionError] = useState(null);
   const start = useActionForm('start', setActionError);
   const decline = useActionForm('decline', setActionError);
+  const notice = interviewNotice({ clientName, retentionDays, deletionDate });
+  const [whoSeesHead, ...whoSeesRest] = whoSeesLine(clientName).split('. ');
+  const quoteLabels = QUOTE_OPTIONS.map((o) => o.label.toLowerCase());
 
   return (
     <>
@@ -93,11 +105,8 @@ function WelcomeScreen({ isAdmin, seats, consent }) {
                 </svg>
               </div>
               <div>
-                <h3>Managers see themes and quotes, not transcripts</h3>
-                <p>
-                  They will never see a full transcript with your name on it.
-                  Only the patterns across the whole team, and short quotes.
-                </p>
+                <h3>{whoSeesHead}</h3>
+                <p>{whoSeesRest.join('. ')}</p>
               </div>
             </div>
 
@@ -111,10 +120,10 @@ function WelcomeScreen({ isAdmin, seats, consent }) {
                 </svg>
               </div>
               <div>
-                <h3>Your name comes off any quote you choose</h3>
+                <h3>You choose about quotes at the end</h3>
                 <p>
-                  Before anything is shared, you decide whether your words
-                  carry your name or stay anonymous.
+                  {QUOTE_OPTIONS[0].label}, {quoteLabels[1]} or {quoteLabels[2]}.
+                  If you leave without choosing, no quotes are used.
                 </p>
               </div>
             </div>
@@ -128,10 +137,7 @@ function WelcomeScreen({ isAdmin, seats, consent }) {
               </div>
               <div>
                 <h3>Skip anything, or stop at any time</h3>
-                <p>
-                  No question is required. If you stop the conversation,
-                  nothing you said is kept.
-                </p>
+                <p>No question is required. {notice.stopping}</p>
               </div>
             </div>
 
@@ -152,6 +158,32 @@ function WelcomeScreen({ isAdmin, seats, consent }) {
             </div>
           </GlassCard>
 
+          <GlassCard className="trust-card privacy-notice anim-up d-5" aria-labelledby="interview-notice-title">
+            <div className="trust-title" id="interview-notice-title">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="10" width="16" height="11" rx="2" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+              </svg>
+              {notice.title}
+            </div>
+            <p className="privacy-intro">{notice.intro}</p>
+            <ul className="privacy-points">
+              {notice.points.map((point) => (
+                <li key={point.label}>
+                  <strong>{point.label}</strong> {point.text}
+                </li>
+              ))}
+            </ul>
+            {notice.deletionDate ? (
+              <p className="privacy-date" data-testid="deletion-date">
+                Your answers are deleted by <strong>{notice.deletionDate}</strong>.
+              </p>
+            ) : null}
+            <p className="privacy-full">
+              <a href={notice.fullNoticeHref}>{notice.fullNoticeLabel}</a>
+            </p>
+          </GlassCard>
+
           {seats === 'exhausted' ? (
             <div className="notice-card anim-up" role="status">
               <strong>All seats for this conversation round are taken.</strong>{' '}
@@ -165,7 +197,7 @@ function WelcomeScreen({ isAdmin, seats, consent }) {
             <div className="notice-card anim-up" role="status">
               <strong>Please tick the box to agree first.</strong> The
               conversation can only begin once you have agreed to your answers
-              being recorded and stored for the analysis.
+              being kept as text and analysed as described above.
             </div>
           ) : null}
 
@@ -199,10 +231,8 @@ function WelcomeScreen({ isAdmin, seats, consent }) {
               <label className="consent-ack">
                 <input type="checkbox" name="dataConsent" required />
                 <span>
-                  <strong>I agree to take part.</strong> I understand my
-                  answers will be recorded and stored so that Greatstone can
-                  prepare this analysis, and that I can skip anything and stop
-                  and delete my conversation at any time.
+                  <strong>I agree to take part.</strong>{' '}
+                  {notice.consent.replace(/^I agree to take part\.\s*/, '')}
                 </span>
               </label>
               <Button type="submit" aria-disabled={start.pending || undefined}>

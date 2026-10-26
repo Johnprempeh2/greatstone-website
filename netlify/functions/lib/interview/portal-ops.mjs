@@ -18,6 +18,8 @@ import { recordUsage } from './budget.mjs';
 import { getReleasedSynthesis } from './synthesis/release.mjs';
 import { verifyForRender } from './synthesis/pipeline.mjs';
 import { roundVoiceEnabled } from './caller.mjs';
+import { deletionDate } from './retention.mjs';
+import { parseQuoteChoice, QUOTE_CHOICES } from './quotes.mjs';
 
 const go = (view, query = '') => ({ redirect: `#portal/interview${view ? `/${view}` : ''}${query}` });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -65,6 +67,9 @@ async function interviewPage({ db, sys, ctx, caller, args, env }) {
     seats: args.seats === 'exhausted' ? 'exhausted' : null,
     consent: args.consent === 'required' ? 'required' : null,
     voiceEnabled: env.voice && roundVoiceEnabled(ctx.engagement),
+    // GRE-2687: the short privacy notice names the rule and, once the readout is booked, the date (YYYY-MM-DD)
+    retentionDays: Number.isInteger(ctx.engagement.retention_days) ? ctx.engagement.retention_days : 90,
+    deletionDate: deletionDate(ctx.engagement),
   };
 }
 
@@ -98,13 +103,13 @@ async function signOffPage({ db, ctx }) {
     if (ctx.employee.status === 'started' || ctx.employee.status === 'completed') return go('session');
     return go('');
   }
-  // The latest recorded answer for each consent kind; a kind with none pre-selects the SAFE option.
+  // The latest recorded memory answer pre-selects; none pre-selects the SAFE option (start fresh).
   const { data: rows, error: consentError } = await db.from('consent_event').select('kind, value, ts')
-    .eq('employee_id', ctx.employee.id).in('kind', ['attribution', 'memory_opt_in']).order('ts', { ascending: false });
+    .eq('employee_id', ctx.employee.id).eq('kind', 'memory_opt_in').order('ts', { ascending: false });
   if (consentError) throw new Error(`consent lookup failed: ${consentError.message}`);
-  const latestAttribution = (rows ?? []).find((r) => r.kind === 'attribution');
-  const latestMemory = (rows ?? []).find((r) => r.kind === 'memory_opt_in');
-  return { sessionId: session.id, initialAttribution: latestAttribution?.value === true ? 'named' : 'anonymised',
+  const latestMemory = (rows ?? [])[0];
+  // GRE-2687: the quote choice is never pre-selected. Only a choice this person already confirmed comes back.
+  return { sessionId: session.id, initialQuotes: parseQuoteChoice(ctx.employee.quote_choice),
     initialMemory: latestMemory?.value === true };
 }
 
@@ -283,15 +288,15 @@ async function requireEndedSession(db, ctx, sessionId) {
   return session;
 }
 
-/** "Confirm and finish": the consent pair, attribution applied both ways, memory built or hard-deleted. */
+/** "Confirm and finish": the quote choice (one of three, GRE-2653) and memory, built or hard-deleted. */
 async function confirmSignOff({ db, ctx, args, log }) {
   try {
-    if ((args.attribution !== 'named' && args.attribution !== 'anonymised') || typeof args.memory !== 'boolean') {
-      return { ok: false, error: 'invalid sign-off choices' };
-    }
+    // exactly one of the three: the source's two-way 'anonymised' is not a choice made on this screen
+    if (!QUOTE_CHOICES.includes(args.quotes)) return { ok: false, error: 'Choose how your quotes may be used.' };
+    if (typeof args.memory !== 'boolean') return { ok: false, error: 'invalid sign-off choices' };
     const session = await requireEndedSession(db, ctx, args.sessionId);
     await applySignOffConsent(db, { employee: ctx.employee, unitName: ctx.orgUnit?.name ?? null, sessionId: session.id,
-      choice: { attribution: args.attribution, memory: args.memory } });
+      choice: { quotes: args.quotes, memory: args.memory } });
     return { ok: true };
   } catch (e) {
     log.error('confirmSignOff failed:', e?.message || 'error');

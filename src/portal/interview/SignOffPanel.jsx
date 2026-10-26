@@ -4,9 +4,10 @@
  *   - "Add or correct something": a ghost button revealing a textarea whose
  *     text goes through the real extraction path as one more user turn.
  *   - The two consent moments as conversational cards, asked by Everest with
- *     the stone avatar: attribution (Named / Anonymised) and memory
- *     (remember / start fresh). Pre-selected from what the participant said
- *     in the conversation; safe defaults otherwise.
+ *     the stone avatar: quotes (GRE-2687: the three QUOTE_OPTIONS as radio
+ *     buttons, none pre-selected; only a choice already confirmed comes back)
+ *     and memory (remember / start fresh, safe default: start fresh). Leaving
+ *     without a quote choice means No quotes (effectiveQuoteChoice on the server).
  *   - "Confirm and finish" persists everything via the confirm-signoff op,
  *     then reveals the warm completion card. Choices stay editable
  *     afterwards — changing one brings back a "Save your change" button.
@@ -25,6 +26,7 @@ import { CompletionCard } from './CompletionCard.jsx';
 import { DotDivider } from './Footer.jsx';
 import { portalOp } from './api.mjs';
 import { selectionSummary as summarise } from './model.mjs';
+import { QUOTE_OPTIONS } from '../interview-notice.mjs';
 
 // Port: a server action resolved to its result or threw; a portal op resolves to { data } or { error }.
 // This keeps the source's call sites (`const result = await confirmSignOff(...)`, try/catch) unchanged.
@@ -36,7 +38,7 @@ async function callOp(op, args) {
 const confirmSignOff = (input) => callOp('confirm-signoff', input);
 const submitCorrection = (input) => callOp('submit-correction', input);
 
-export function SignOffPanel({ sessionId, initialAttribution, initialMemory }) {
+export function SignOffPanel({ sessionId, initialQuotes = null, initialMemory }) {
   // ── Correction ──
   const [correctionOpen, setCorrectionOpen] = useState(false);
   const [correctionText, setCorrectionText] = useState('');
@@ -67,7 +69,7 @@ export function SignOffPanel({ sessionId, initialAttribution, initialMemory }) {
   };
 
   // ── Consent ──
-  const [attribution, setAttribution] = useState(initialAttribution);
+  const [quotes, setQuotes] = useState(QUOTE_OPTIONS.some((o) => o.value === initialQuotes) ? initialQuotes : null);
   const [memory, setMemory] = useState(initialMemory);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmError, setConfirmError] = useState(null);
@@ -75,18 +77,18 @@ export function SignOffPanel({ sessionId, initialAttribution, initialMemory }) {
   const completeRef = useRef(null);
 
   const dirty =
-    confirmed !== null && (confirmed.attribution !== attribution || confirmed.memory !== memory);
+    confirmed !== null && (confirmed.quotes !== quotes || confirmed.memory !== memory);
   const showConfirm = confirmed === null || dirty;
 
   const confirm = async () => {
-    if (confirmBusy) return;
+    if (confirmBusy || !quotes) return;
     setConfirmBusy(true);
     setConfirmError(null);
     try {
-      const result = await confirmSignOff({ sessionId, attribution, memory });
+      const result = await confirmSignOff({ sessionId, quotes, memory });
       if (result.ok) {
         const first = confirmed === null;
-        setConfirmed({ attribution, memory });
+        setConfirmed({ quotes, memory });
         if (first) {
           // Let the completion card render, then bring it into view.
           setTimeout(() => {
@@ -106,7 +108,7 @@ export function SignOffPanel({ sessionId, initialAttribution, initialMemory }) {
     }
   };
 
-  const selectionSummary = summarise(attribution, memory);
+  const selectionSummary = summarise(quotes, memory);
 
   return (
     <>
@@ -173,22 +175,34 @@ export function SignOffPanel({ sessionId, initialAttribution, initialMemory }) {
 
       <DotDivider />
 
-      {/* ── Consent moment 1: attribution ── */}
+      {/* ── Consent moment 1: quotes (GRE-2687, claim C5: a quote is shared only if you agree) ── */}
       <GlassCard className="consent-card anim-up d-5">
-        <div className="consent-q">
-          <AgentAvatar />
-          <p>Two last things. Are you happy for your name to appear next to your quotes?</p>
-        </div>
-        <ConsentTiles
-          groupLabel="Attribution choice"
-          selected={attribution}
-          onSelect={(v) => setAttribution(v)}
-          disabled={confirmBusy}
-          options={[
-            { value: 'named', name: 'Named', line: 'Your name appears beside your words.' },
-            { value: 'anonymised', name: 'Anonymised', line: 'Your words are used, your name is not.' },
-          ]}
-        />
+        <fieldset className="quote-choice">
+          <legend className="consent-q">
+            <AgentAvatar />
+            <span>Two last things. May we share short quotes from what you said?</span>
+          </legend>
+          <div className="consent-options is-stacked">
+            {QUOTE_OPTIONS.map((option) => (
+              <label key={option.value} className={quotes === option.value ? 'consent-opt selected' : 'consent-opt'}>
+                <input
+                  type="radio"
+                  name="quotes"
+                  value={option.value}
+                  checked={quotes === option.value}
+                  disabled={confirmBusy}
+                  onChange={() => setQuotes(option.value)}
+                />
+                <span className="opt-name">
+                  <span className="opt-ring" aria-hidden="true"></span>
+                  {option.label}
+                </span>
+                <span className="opt-line">{option.help}</span>
+              </label>
+            ))}
+          </div>
+          <p className="quote-choice-note">If you leave without choosing, no quotes are used.</p>
+        </fieldset>
       </GlassCard>
 
       {/* ── Consent moment 2: memory ── */}
@@ -220,10 +234,16 @@ export function SignOffPanel({ sessionId, initialAttribution, initialMemory }) {
       {/* ── Confirm ── */}
       <div className="signoff-confirm anim-up d-6">
         <p className="signoff-selection" aria-live="polite">
-          Your choice: <strong>{selectionSummary}</strong>
+          {quotes ? (
+            <>
+              Your choice: <strong>{selectionSummary}</strong>
+            </>
+          ) : (
+            'Choose one of the three quote options to finish.'
+          )}
         </p>
         {showConfirm ? (
-          <Button disabled={confirmBusy} onClick={() => void confirm()}>
+          <Button disabled={confirmBusy || !quotes} onClick={() => void confirm()}>
             {confirmBusy ? 'Saving…' : confirmed === null ? 'Confirm and finish' : 'Save your change'}
           </Button>
         ) : (

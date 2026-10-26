@@ -41,10 +41,12 @@ import {
 // Port: Vite emits the worklet as its own file and gives us its URL (audio worklets load from a URL). no-inline
 // keeps it a real same-origin file, as the source served it, rather than a data: URI a CSP could refuse.
 import workletUrl from './voice-capture-worklet.js?url&no-inline';
+// GRE-2687: one place for the Deepgram host (US, John 25 Oct); the server's Settings keep mip_opt_out: true.
+import { DEEPGRAM_AGENT_URL } from '../../../../netlify/functions/lib/interview/voice/regions.mjs';
 
 /** @typedef {'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'ended'} VoiceState */
 
-export const DEEPGRAM_URL = 'wss://agent.deepgram.com/v1/agent/converse';
+export const DEEPGRAM_URL = DEEPGRAM_AGENT_URL;
 export const SAMPLE_RATE = 48_000;
 
 export class VoiceClient {

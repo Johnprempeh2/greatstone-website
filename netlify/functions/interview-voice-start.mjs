@@ -10,6 +10,7 @@ import { getEmployeeContextByUserId } from './lib/interview/employee.mjs';
 import { withinRate } from './lib/interview/ratelimit.mjs';
 import { mintSessionToken } from './lib/interview/voice/session-token.mjs';
 import { buildVoiceSettings } from './lib/interview/voice/settings.mjs';
+import { DEEPGRAM_GRANT_URL } from './lib/interview/voice/regions.mjs';
 
 // Short: Deepgram only needs the credential valid at connect time.
 const TOKEN_TTL_SECONDS = 30;
@@ -29,7 +30,7 @@ export async function grantDeepgramToken(env = process.env, fetchImpl = fetch) {
   const key = env.DEEPGRAM_API_KEY;
   if (!key) return null;
   try {
-    const res = await fetchImpl('https://api.deepgram.com/v1/auth/grant', {
+    const res = await fetchImpl(DEEPGRAM_GRANT_URL, {
       method: 'POST',
       headers: { Authorization: `Token ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ttl_seconds: TOKEN_TTL_SECONDS }),

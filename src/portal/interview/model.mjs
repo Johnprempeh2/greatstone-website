@@ -1,5 +1,6 @@
 // Pure logic shared by the interview pages (GRE-2612). Lifted out of the source components unchanged so
 // `node --test` covers it; the components import from here.
+import { QUOTE_OPTIONS } from '../interview-notice.mjs';
 
 // ─── PhaseDots (source components/PhaseDots.tsx) ─────────────────────────────
 
@@ -63,10 +64,11 @@ export function newClientTurnId() {
 
 // ─── SignOffPanel (source components/SignOffPanel.tsx) ───────────────────────
 
-export function selectionSummary(attribution, memory) {
-  return `${attribution === 'named' ? 'Named quotes' : 'Anonymised quotes'} · ${
-    memory ? 'conversation remembered' : 'no memory kept'
-  }`;
+// GRE-2687: the quote part is one of the three QUOTE_OPTIONS labels; no choice yet reads as "No quotes", which is
+// what leaving without choosing means.
+export function selectionSummary(quotes, memory) {
+  const label = QUOTE_OPTIONS.find((o) => o.value === quotes)?.label ?? 'No quotes';
+  return `${label} · ${memory ? 'conversation remembered' : 'no memory kept'}`;
 }
 
 // ─── JoinForm (source app/join/[token]/JoinForm.tsx and page.tsx) ────────────
