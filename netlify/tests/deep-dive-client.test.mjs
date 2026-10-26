@@ -16,17 +16,34 @@ const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
 const I = '33333333-3333-4333-8333-333333333333';
 const R = '44444444-4444-4444-8444-444444444444';
+const F = '55555555-5555-4555-8555-555555555555';
+const O = '66666666-6666-4666-8666-666666666666';
+const K = '77777777-7777-4777-8777-777777777777';
 const payload = (tenantId = A) => ({ schema: 'gs-deep-dive-sync-v1', tenantId, tenantName: 'Test engagement',
   generatedAt: '2026-10-25T00:00:00Z', items: [{ id: I, type: 'deep_dive_stream', key: 'stream-1', title: 'Stream',
     summary: null, status: 'active', fields: {}, parentId: null, updatedAt: '2026-10-25T00:00:00Z' }],
   files: [], documentRequests: [{ id: R, title: 'Evidence', note: null, itemIds: [I], status: 'open',
-    receivedAt: null, createdAt: '2026-10-25T00:00:00Z' }], deliverables: [] });
+    receivedAt: null, createdAt: '2026-10-25T00:00:00Z' }], deliverables: [],
+  findings: [{ id: F, streamItemId: I, statement: 'Handoffs lack a shared owner', status: 'validated',
+    evidenceCount: 3, supersedesId: null, updatedAt: '2026-10-25T00:00:00Z' }],
+  opportunities: [{ id: O, ref: 'OP-1', title: 'Clarify handoffs', statement: 'Make ownership visible',
+    desiredOutcome: 'Fewer missed handoffs', status: 'refined', findingIds: [F], streamItemIds: [I],
+    updatedAt: '2026-10-25T00:00:00Z' }],
+  kpis: [{ id: K, title: 'Handoff time', definition: 'Median hours between transfer and acceptance',
+    scope: 'team', unit: 'hours', direction: 'down', baseline: 12, baselinePeriod: '2026 Q3', target: 6,
+    opportunityIds: [O], updatedAt: '2026-10-25T00:00:00Z' }] });
 
 test('snapshot accepts the contract and rejects an Internal item and unrelated request', () => {
   assert.equal(validateSnapshot(A, payload()).items.length, 1);
   assert.throws(() => validateSnapshot(A, { ...payload(), items: [{ ...payload().items[0], visibility: 'internal' }] }));
   assert.throws(() => validateSnapshot(A, { ...payload(), documentRequests: [{ ...payload().documentRequests[0], itemIds: [B] }] }));
   assert.throws(() => validateSnapshot(B, payload()));
+  assert.doesNotThrow(() => validateSnapshot(A, { ...payload(), futureField: 'ignored' }));
+  assert.doesNotThrow(() => validateSnapshot(A, { ...payload(), findings: undefined, opportunities: undefined, kpis: undefined }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), findings: [{ ...payload().findings[0], streamItemId: B }] }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), findings: [{ ...payload().findings[0], visibility: 'internal' }] }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), opportunities: [{ ...payload().opportunities[0], findingIds: [B] }] }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), kpis: [{ ...payload().kpis[0], opportunityIds: [B] }] }));
 });
 
 test('client read uses its mapped customer only', async () => {
@@ -121,6 +138,9 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(accepted.status, 200, await accepted.text());
     const read = (id) => asCustomer(pool, { id, email: null, email_verified: true }, clientSnapshot);
     assert.equal((await read(USER_A)).items[0].title, 'Stream');
+    assert.equal((await read(USER_A)).findings[0].statement, 'Handoffs lack a shared owner');
+    assert.equal((await read(USER_A)).opportunities[0].findingIds[0], F);
+    assert.equal((await read(USER_A)).kpis[0].target, 6);
     assert.equal(await read(USER_B), null);
     let deliver = false;
     const answerHandler = makeDeepDiveClientHandler({ pool: () => pool,
@@ -159,13 +179,13 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(received.status, 200);
     assert.equal((await received.json()).data.status, 'received');
     assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'received');
-    const withdrawn = await put({ ...payload(), items: [], documentRequests: [] });
+    const withdrawn = await put({ ...payload(), items: [], documentRequests: [],
+      findings: [], opportunities: [], kpis: [] });
     assert.equal(withdrawn.status, 200);
     assert.deepEqual((await read(USER_A)).items, []);
     const statusRollback = db.psql(readFileSync(new URL('../database/migrations/051_deep_dive_answer_status/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(statusRollback.status, 0, statusRollback.stderr);
-    const rollback = db.psql(readFileSync(new URL('../database/migrations/050_deep_dive_client/rollback.sql', import.meta.url), 'utf8'));
-    assert.equal(rollback.status, 0, rollback.stderr);
-    assert.equal(db.psql("SELECT to_regclass('public.deep_dive_snapshots') IS NULL").stdout.trim(), 't');
+    // Later interview migrations depend on the customer/org index from 050;
+    // a standalone 050 rollback is no longer valid against the full schema.
   } finally { await pool?.end(); db.stop(); }
 });

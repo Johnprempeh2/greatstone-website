@@ -73,13 +73,17 @@ same snapshot, so a PUT twice is the same as once.
   "items": [{ "id", "type", "key", "title", "summary", "status", "fields", "parentId", "updatedAt" }],
   "files": [{ "id", "itemId", "title", "kind", "status": "held" | "missing", "heldAt" }],
   "documentRequests": [{ "id", "title", "note", "itemIds", "status": "open" | "received", "receivedAt", "createdAt" }],
-  "deliverables": [{ "id", "title", "version", "status": "published" | "accepted", "publishedAt", "acceptedAt" }]
+  "deliverables": [{ "id", "title", "version", "status": "published" | "accepted", "publishedAt", "acceptedAt" }],
+  "findings": [{ "id", "streamItemId": "<Shared stream id>" | null, "statement", "status": "proposed" | "validated" | "rejected" | "superseded", "evidenceCount", "supersedesId": "<finding id>" | null, "updatedAt" }],
+  "opportunities": [{ "id", "ref", "title", "statement", "desiredOutcome", "status": "draft" | "refined" | "validated", "findingIds": ["<finding id>"], "streamItemIds": ["<Shared stream id>"], "updatedAt" }],
+  "kpis": [{ "id", "title", "definition", "scope": "company" | "division" | "department" | "team" | "individual", "unit", "direction": "up" | "down" | "steady", "baseline", "baselinePeriod", "target", "opportunityIds": ["<opportunity id>"], "updatedAt" }]
 }
 ```
 
 - Only Shared items are sent. A Shared item whose parent is Internal is sent with `parentId: null`.
 - Only files and document requests linked Shared to a Shared item are sent.
 - Only deliverables that are published or accepted are sent; metadata only, no file content in this step.
+- The three additive arrays contain Shared records only. Links name records in this same payload. KPI readings are not in v1; the site shows baseline and target only. Older snapshots may omit these arrays.
 - The site answers `{ "ok": true, "tenantId": "<uuid>" }`, or an error as below.
 
 ### Call back: the site to GSAM

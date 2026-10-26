@@ -32,6 +32,38 @@ export function validateSnapshot(tenantId, body) {
       !text(deliverable.title, 500) || !['published', 'accepted'].includes(deliverable.status) || !iso(deliverable.publishedAt)) {
     throw new TypeError('Invalid published deliverable');
   }
+  const arrays = ['findings', 'opportunities', 'kpis'];
+  for (const key of arrays) if (body[key] !== undefined && (!Array.isArray(body[key]) || body[key].length > 1000)) {
+    throw new TypeError('Invalid Shared ' + key);
+  }
+  const findings = body.findings || [];
+  const opportunities = body.opportunities || [];
+  const kpis = body.kpis || [];
+  const unique = (rows) => rows.every((row, index) => text(row?.id, 100) && row.id.length > 0 &&
+    rows.findIndex((other) => other?.id === row.id) === index);
+  if (![findings, opportunities, kpis].every(unique)) throw new TypeError('Duplicate Shared id');
+  const findingIds = new Set(findings.map((row) => row.id));
+  const opportunityIds = new Set(opportunities.map((row) => row.id));
+  const streamIds = new Set(body.items.filter((row) => row.type === 'deep_dive_stream').map((row) => row.id));
+  for (const finding of findings) if (!plain(finding) || 'visibility' in finding ||
+      (finding.streamItemId !== null && !streamIds.has(finding.streamItemId)) ||
+      !text(finding.statement) || !['proposed', 'validated', 'rejected', 'superseded'].includes(finding.status) ||
+      !Number.isSafeInteger(finding.evidenceCount) || finding.evidenceCount < 0 ||
+      (finding.supersedesId !== null && !findingIds.has(finding.supersedesId)) || !iso(finding.updatedAt)) {
+    throw new TypeError('Invalid Shared finding');
+  }
+  for (const opportunity of opportunities) if (!plain(opportunity) || 'visibility' in opportunity || !text(opportunity.ref, 100) ||
+      !text(opportunity.title, 500) || !text(opportunity.statement) || !text(opportunity.desiredOutcome) ||
+      !['draft', 'refined', 'validated'].includes(opportunity.status) ||
+      !Array.isArray(opportunity.findingIds) || !opportunity.findingIds.every((id) => findingIds.has(id)) ||
+      !Array.isArray(opportunity.streamItemIds) || !opportunity.streamItemIds.every((id) => streamIds.has(id)) ||
+      !iso(opportunity.updatedAt)) throw new TypeError('Invalid Shared opportunity');
+  for (const kpi of kpis) if (!plain(kpi) || 'visibility' in kpi || !text(kpi.title, 500) || !text(kpi.definition) ||
+      !['company', 'division', 'department', 'team', 'individual'].includes(kpi.scope) ||
+      !text(kpi.unit, 100) || !['up', 'down', 'steady'].includes(kpi.direction) ||
+      !Number.isFinite(kpi.baseline) || !text(kpi.baselinePeriod, 100) || !Number.isFinite(kpi.target) ||
+      !Array.isArray(kpi.opportunityIds) || !kpi.opportunityIds.every((id) => opportunityIds.has(id)) ||
+      !iso(kpi.updatedAt)) throw new TypeError('Invalid Shared KPI');
   return body;
 }
 

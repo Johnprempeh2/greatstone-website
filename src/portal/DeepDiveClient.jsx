@@ -39,6 +39,14 @@ function RequestAnswer({ request, onReceived, api }) {
   </form>;
 }
 
+function SharedList({ id, title, items, empty, render }) {
+  return <section className="pt-card" aria-labelledby={id}><h2 className="pt-h2" id={id}>{title}</h2>
+    {!items.length ? <p className="pt-muted">{empty}</p> : <ul className="pt-list">
+      {items.map((item) => <li className="dd-row" key={item.id}>{render(item)}</li>)}
+    </ul>}
+  </section>;
+}
+
 export default function DeepDiveClient({ company, api = call }) {
   const [snapshot, setSnapshot] = useState(undefined);
   const [error, setError] = useState('');
@@ -69,6 +77,23 @@ export default function DeepDiveClient({ company, api = call }) {
             {item.summary && <p className="pt-muted">{item.summary}</p>}</li>)}
         </ul>}
       </section>
+      <SharedList id="dd-findings" title="Shared findings" items={snapshot.findings || []}
+        empty="No findings have been shared yet." render={(finding) => <>
+          <strong>{finding.statement}</strong>
+          <p className="pt-muted">{finding.status} · {finding.evidenceCount} {finding.evidenceCount === 1 ? 'piece' : 'pieces'} of evidence</p>
+        </>} />
+      <SharedList id="dd-opportunities" title="Shared opportunities" items={snapshot.opportunities || []}
+        empty="No opportunities have been shared yet." render={(opportunity) => <>
+          <strong>{opportunity.ref ? `${opportunity.ref} · ` : ''}{opportunity.title}</strong>
+          <p className="pt-muted">{opportunity.status} · {opportunity.statement}</p>
+          {opportunity.desiredOutcome && <p className="pt-muted">Desired outcome: {opportunity.desiredOutcome}</p>}
+        </>} />
+      <SharedList id="dd-kpis" title="Shared KPIs" items={snapshot.kpis || []}
+        empty="No KPIs have been shared yet." render={(kpi) => <>
+          <strong>{kpi.title}</strong>
+          <p className="pt-muted">{kpi.definition}</p>
+          <p className="pt-muted">Baseline: {kpi.baseline} {kpi.unit} ({kpi.baselinePeriod}) · Target: {kpi.target} {kpi.unit}</p>
+        </>} />
       <section className="pt-card" aria-labelledby="dd-requests"><h2 className="pt-h2" id="dd-requests">Document requests</h2>
         {!snapshot.documentRequests.length ? <p className="pt-muted">No requests need a response.</p> : <ul className="pt-list">
           {snapshot.documentRequests.map((request, index) => <li key={request.id} className="dd-row">
