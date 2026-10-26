@@ -14,6 +14,7 @@ import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
 import { pickAdmin, askAdminMailto } from './ask-admin.mjs';
 import { PRIMARY_CTA_LABEL } from '../lib/brand.mjs';
 import { resetTokenFromLocation } from '../lib/better-auth-client.mjs';
+import InterviewDataCard from '../portal/InterviewDataCard.jsx';
 import './store.css';
 import './admin.css';
 
@@ -48,7 +49,10 @@ export default function AccountDashboard({ recovery = false, authError = null, o
       <h2>No customer account here</h2>
       <p>{session.user?.email} isn't set up as a customer. If you manage the Greatstone catalogue, use the <a className="ca-link" href="#catalogue">catalogue admin</a>. Otherwise <a className="ca-link" href="#go/contact">contact us</a> and we'll get you set up.</p>
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
-    </div></div>
+    </div>
+    {/* GRE-2653: interviewees often have a website account but no customer row */}
+    <InterviewDataCard />
+    </div>
   );
   return <Dashboard session={session} profile={profile} onProfile={setProfile} />;
 }
@@ -538,6 +542,7 @@ function Dashboard({ session, profile, onProfile }) {
 
         <div role="tabpanel" tabIndex={-1} id="acct-panel-profile" aria-labelledby="acct-tab-profile" hidden={tab !== 'profile'}>
           <ProfileCard profile={profile} onProfile={onProfile} flash={flash} />
+          <InterviewDataCard flash={flash} />
         </div>
         <div role="tabpanel" tabIndex={-1} id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={tab !== 'security'}>
           <SecurityCard email={profile?.email} lastSignIn={session.user?.last_sign_in_at} flash={flash} />
