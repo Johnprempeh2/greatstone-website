@@ -8,14 +8,16 @@
 // those are applied the list loads without them.
 import React, { useState, useEffect, useCallback } from 'react';
 import { staffDb } from './staff-store-api.mjs';
+import ClientLink from './ClientLink.jsx';
 
 const STATUSES = ['new', 'contacted', 'closed'];
 const ABSENT = /relation|does not exist|schema cache|could not find|not find the table/i;
-const BASE_COLS = 'id, services, contact_name, contact_email, contact_company, message, status, created_at';
+const BASE_COLS = 'id, services, contact_name, contact_email, contact_company, message, status, created_at, customer_id';
 const EXTRA_COLS = BASE_COLS + ', source, industry, attribution';
 const SIZE_COLS = EXTRA_COLS + ', size_band';
 const EXTRA = /attribution|industry/i; // 0035 not applied yet: "column service_inquiries.attribution does not exist"
 const SIZE = /size_band/i; // 0040 not applied yet
+const LINK = /customer_id/i; // 056 not applied yet
 const touch = (t) => (t ? [t.utm_source, t.utm_medium, t.utm_campaign].filter(Boolean).join(' / ') || 'Direct or organic' : 'Not known');
 const isContact = (r) => r.source === 'contact' || !(r.services || []).length;
 
@@ -23,6 +25,7 @@ export default function InquiriesManager({ staff }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notEnabled, setNotEnabled] = useState(false);
+  const [linkEnabled, setLinkEnabled] = useState(true);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
@@ -30,11 +33,20 @@ export default function InquiriesManager({ staff }) {
 
   const load = useCallback(() => {
     setLoading(true);
+    let hasLink = true;
     const query = (cols) => staffDb.from('service_inquiries').select(cols)
       .is('deleted_at', null).order('created_at', { ascending: false }).limit(300);
     query(SIZE_COLS)
-      .then((res) => (res.error && SIZE.test(res.error.message || '') ? query(EXTRA_COLS) : res))
-      .then((res) => (res.error && EXTRA.test(res.error.message || '') ? query(BASE_COLS) : res))
+      .then((res) => {
+        if (res.error && LINK.test(res.error.message || '')) {
+          hasLink = false; setLinkEnabled(false);
+          return query(SIZE_COLS.replace(', customer_id', ''));
+        }
+        setLinkEnabled(true);
+        return res;
+      })
+      .then((res) => (res.error && SIZE.test(res.error.message || '') ? query(hasLink ? EXTRA_COLS : EXTRA_COLS.replace(', customer_id', '')) : res))
+      .then((res) => (res.error && EXTRA.test(res.error.message || '') ? query(hasLink ? BASE_COLS : BASE_COLS.replace(', customer_id', '')) : res))
       .then(({ data, error }) => {
         if (error) { const absent = ABSENT.test(error.message || ''); setNotEnabled(absent); if (!absent) console.error('inquiries load', error); }
         else setNotEnabled(false);
@@ -114,6 +126,7 @@ export default function InquiriesManager({ staff }) {
                               <p><strong>Latest visit from:</strong> {touch(r.attribution.last)}{r.attribution.page ? ' · sent from ' + r.attribution.page : ''}</p>
                             </> : null}
                             {r.message ? <><p><strong>What they’re solving</strong></p><p>{r.message}</p></> : <p className="ca-muted">No message.</p>}
+                            {linkEnabled ? <ClientLink table="service_inquiries" row={r} onLinked={load} /> : null}
                           </td></tr>
                         ) : null}
                       </React.Fragment>
