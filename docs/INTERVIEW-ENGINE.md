@@ -90,6 +90,10 @@ Interviewee (Better Auth session cookie; 401 without it):
   unitId? }` (signed in, verified email).
 - `POST /api/interview/voice/start` — source `/api/voice/start`; 404 when `VOICE_ENABLED` is not `1`.
 
+- `POST /api/interview/my-data` — `{ op: 'see' }` (the person's own rounds, transcripts, insights, consent choices and
+  quotes used; also the download) and `{ op: 'delete', engagementId, confirm: true }` (GRE-2653). Website account
+  only; RLS keeps it to the person's own rows.
+
 Public, for Deepgram only:
 
 - `POST /api/interview/voice/think` — the OpenAI-wire think endpoint Deepgram calls. Authorised by the per-session
@@ -113,6 +117,7 @@ Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
 | `VOICE_THINK_MODEL` | as the source | Haiku for voice |
 | `VOICE_ENABLED` | off | kill switch: `1` turns voice on |
+| `INTERVIEW_RETENTION_DRY_RUN` | off | `1`: the daily retention job counts and rolls back |
 | `INTERVIEW_ENABLED` | off | kill switch for the whole engine on a site |
 | `CHAT_RATE_SESSION_PER_MIN`, `CHAT_RATE_EMPLOYEE_PER_MIN`, `CHAT_HARD_BUDGET_RATIO`, `JOIN_RATE_*` | as the source | |
 
@@ -129,3 +134,31 @@ migrations applied (`netlify/tests/lib/postgres.mjs`) and a fake Anthropic clien
 `INTERVIEW_LIVE=1` with `ANTHROPIC_API_KEY` to run the model-dependent ones live. Suites: security probe,
 adversarial chat, concurrency, fuzzy merge, corroboration, interview smoke, plus the RLS suite for schema
 `interview`.
+
+## Interview data rights (GRE-2653)
+
+Spec: the `retention-rights-regions` document on GRE-2639. Wording: its `privacy-notice` document. Migration
+`055_interview_data_rights`.
+
+- **Retention per round.** `engagement.retention_days` (default 90), `readout_at`, `closed_at` (set when GSAM closes
+  the round). Deletion date = readout (or close) + `retention_days`, or `retention_delete_after` if earlier
+  (`deletion_due_at()`). `interview-retention` runs daily: anonymised themes copy (`anonymised_themes`: theme labels,
+  counts, confidence, hours, team roll-ups; no statements, quotes, ids or names), then a hard delete of sessions,
+  turns, insights, synthesis, synthesis cache and runs, outbox, per-person memory, invites (employee rows; those a
+  seat request or purchase points at are cleared of name and email), people no other round holds, and the round's
+  activity log. Kept: `consent_event` (it now carries `engagement_id` and `subject_email`, and survives the invite)
+  and `usage_ledger` (session link nulled). Proof: a `deletion_record` row and a `retention_deleted` outbox event.
+- **Self-service.** `lib/interview/self-service.mjs`, served by `/api/interview/my-data` and the "Interview data"
+  card on the account page (`src/portal/InterviewDataCard.jsx`). Participant claims only; the first call links the
+  person's invites to their website user id, after which a restrictive policy also matches on it. Delete removes the
+  person's rows for that round, writes a `withdrawal` consent event, takes them out of every synthesis of the round
+  at once (two-voice rule re-applied) and sets `synthesis_stale_at`: a synthesis generated before it cannot be
+  released again. The deletion record and activity log do not say who.
+- **Quote choice.** Sign-off records one of `none`, `anonymous`, `named` (`employee.quote_choice`, consent kind
+  `quotes`). Nothing is pre-selected and `applySignOffConsent` refuses without a choice. No choice (the person left)
+  is read as `none`. A `none` person's insights still count in themes, but their quotes are stored as
+  `{ quote: null, withheld: true }`, their words are scrubbed from model prose and from the brief, and only `named`
+  people are ever named. Declined or withdrawn people are never follow-up targets.
+- **Notice.** `src/portal/interview-notice.mjs` holds the short notice, the consent box, the quote options and the
+  deletion date line for the welcome and sign-off screens.
+- **Voice region.** `lib/interview/voice/regions.mjs`: Deepgram EU agent and grant hosts. `mip_opt_out: true` stays.
