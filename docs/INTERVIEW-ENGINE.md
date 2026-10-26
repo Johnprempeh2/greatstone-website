@@ -104,6 +104,24 @@ db.sql(text, params)        // escape hatch for the few embedded selects (`engag
   user id. From then on only the user id matches. The site does not make accounts on a person's behalf.
 - The same account is the client portal login (decision 2, GRE-2609).
 
+## The data processing agreement gate (GRE-2794)
+
+John decided on 26 Oct (gate GRE-2656): no paper signature. A company admin of the client organisation
+(`customer_users.role = 'admin'` or the primary contact) reads the agreement at `#portal/agreement`, ticks that they
+have read it and have authority, types their name, role and the organisation's legal name, and accepts. The row in
+`interview.agreement_acceptance` (migration 055) keeps the version, the text's SHA-256, the time (database clock, UTC),
+the user id, name, email, role, legal name, the optional company details and the IP address. It cannot be updated or
+deleted.
+
+- Until the organisation has a row for the current text, the server refuses invite create and `invites/send` (resend
+  and remind) with `409 agreement_required`, the round view's `joinUrl` is `null`, `#join/<token>` says the round is not
+  open, and `start` takes no seat. The check is on the server in each route, not only in the page.
+- The text is `netlify/functions/lib/interview/agreement/dpa-v2.mjs`, copied unchanged from the approved `dpa` document
+  on GRE-2639. Harbor owns it and the click-accept wording (`WORDING` in `lib/interview/agreement.mjs`). A changed
+  text is a new file and a new version: point `CURRENT` at it, and every organisation accepts again before new invites.
+- The admin downloads the accepted copy (HTML: the record, then the text) from the same page; GSAM reads it through
+  the bridge (`GET …/organisations/{id}/agreement` and `…/agreement/acceptances/{id}/copy`).
+
 ## Endpoints
 
 Interviewee (Better Auth session cookie; 401 without it):
@@ -118,6 +136,8 @@ Interviewee (Better Auth session cookie; 401 without it):
 - `POST /api/interview/join` — `{ op: 'info', token }` (public, no personal data) and `{ op: 'enrol', token, name,
   unitId? }` (signed in, verified email).
 - `POST /api/interview/voice/start` — source `/api/voice/start`; 404 when `VOICE_ENABLED=0` or no Deepgram key.
+- `POST /api/interview/agreement` — `{ op: 'status' }` (any member of the organisation) and `{ op: 'accept', … }`
+  (company admin); `GET /api/interview/agreement?copy=<acceptance id>` downloads the accepted copy (company admin).
 
 Public, for Deepgram only:
 
@@ -130,7 +150,7 @@ GSAM bridge (signed, `contracts/gs-interview-v1/`): under `/api/admin/v1/intervi
 
 Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/interview/session`,
 `#portal/interview/complete`, `#portal/interview/goodbye`, `#portal/interview/discarded`,
-`#portal/interview/results`, and the public `#join/<token>`.
+`#portal/interview/results`, the client portal's `#portal/agreement`, and the public `#join/<token>`.
 
 ## Models and switches (environment)
 
