@@ -5,7 +5,7 @@ import { safeMailto } from '../lib/safe-url.js';
 import { PRIMARY_CTA_LABEL, PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import { shortFormat, serviceSlug, serviceReason, featuredServices, newServices, popularServices } from '../store/services.mjs';
 import { usePopularity, loadGlobalPopularity } from '../store/popularity.mjs';
-import { InquiryToggle } from '../store/InquiryUI.jsx';
+import { InquiryToggle } from '../store/BasketServiceControls.jsx';
 import { categories as CATALOG_CATEGORIES, services as CATALOG_SERVICES, umbrella as UMBRELLA } from '../data/service-catalog.mjs';
 
 // ServiceCatalog: the browsable, productized catalogue of everything Greatstone can build and run.

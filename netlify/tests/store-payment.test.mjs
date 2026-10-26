@@ -4,16 +4,21 @@ import { makeRequestQuoteHandler } from '../functions/request-quote.mjs';
 import { makeStripeCheckoutHandler } from '../functions/stripe-checkout.mjs';
 
 const variantId = '11111111-1111-4111-8111-111111111112';
+const serviceVariantId = '11111111-1111-4111-8111-111111111113';
 const offeringId = '22222222-2222-4222-8222-222222222222';
 const basket = [{ variantId, quantity: 2 }];
 
-function database() {
+function database(type = 'product') {
   const calls = [];
   const pool = { connect: async () => ({
     query: async (sql, params = []) => {
       calls.push({ sql, params });
-      if (sql.includes('FROM offering_variants')) return { rows: [{ id: variantId, name: 'Edition', base_price_minor: '10000',
-        offering_id: offeringId, offering_name: 'Offering', type: 'product', status: 'published' }] };
+      if (sql.includes('FROM offering_variants')) return { rows: [
+        { id: variantId, name: 'Edition', base_price_minor: '10000', offering_id: offeringId,
+          offering_name: 'Offering', type: type === 'mixed' ? 'product' : type, status: 'published' },
+        ...(type === 'mixed' ? [{ id: serviceVariantId, name: 'Service', base_price_minor: '10000',
+          offering_id: offeringId, offering_name: 'Consultancy', type: 'service', status: 'published' }] : []),
+      ] };
       if (sql.includes('FROM pricing_rules') || sql.includes('FROM pricing_rule_targets')) return { rows: [] };
       if (sql.includes('FROM org_settings')) return { rows: [{ usd_to_gbp_display_rate: '1.25' }] };
       if (sql.includes('INSERT INTO quotes')) return { rows: [{ id: params[0], reference: 'Q-TEST' }] };
@@ -70,4 +75,17 @@ test('checkout refuses live Stripe configuration before opening the database', a
     pool: () => { throw new Error('database opened'); } });
   const response = await handler(new Request('https://stage.example.test/api/stripe-checkout', { method: 'POST' }));
   assert.equal(response.status, 503);
+});
+
+test('tampered paid request containing a service and tool is refused before Stripe', async () => {
+  const db = database('mixed');
+  let calls = 0;
+  const handler = makeStripeCheckoutHandler({ env: { STRIPE_SECRET_KEY: 'sk_test_fixture',
+    APP_SITE_ORIGIN: 'https://stage.example.test' }, pool: () => db.pool,
+  fetchImpl: async () => { calls++; throw new Error('Stripe must not be called'); } });
+  const response = await handler(new Request('https://stage.example.test/api/stripe-checkout', {
+    method: 'POST', body: JSON.stringify({ items: [...basket, { variantId: serviceVariantId, quantity: 1 }] }),
+  }));
+  assert.equal(response.status, 400);
+  assert.equal(calls, 0);
 });
