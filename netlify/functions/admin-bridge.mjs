@@ -3,6 +3,8 @@
 //   GET /api/admin/v1/<resource>            list: ?customer=&updatedSince=&cursor=&limit= (customer only where a row has one)
 //   GET /api/admin/v1/<resource>/<id>       one row (imports/<id> pages its rows with ?limit=&cursor=)
 //   GET /api/admin/v1/fx | /payments?from=&to=
+//   GET /api/admin/v1/users?ids=<id,...>    client users by Better Auth id (GRE-2631); create is
+//                                           POST /customers/<id>/users (write key)
 //   POST/PATCH/DELETE                       the typed write routes (write key) and refund requests (refund_request
 //                                           key), in lib/admin-bridge-write.mjs
 // Every request is signed (lib/admin-bridge-auth.mjs). With GSAM_BRIDGE_KEYS empty every call is refused, so the
@@ -11,7 +13,7 @@
 import { getPool } from './lib/db.mjs';
 import { BridgeAuthError, SCHEME, parseAllowedIps, parseBridgeKeys, verifyBridgeRequest } from './lib/admin-bridge-auth.mjs';
 import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeActivityEvents, bridgeFx, bridgeGet, bridgeImport, bridgeList, bridgePayments,
-  listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
+  bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
 import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
 
@@ -31,7 +33,7 @@ function parts(pathname) {
 }
 
 function readRoute(p) {
-  if (p.length === 1 && p[0] === 'health') return { resource: 'health' };
+  if (p.length === 1 && (p[0] === 'health' || p[0] === 'users')) return { resource: p[0] };
   if (p.length === 1 && p[0] === 'activity-events') return { resource: 'activity-events' };
   if (!RESOURCE_NAMES.includes(p[0])) return null;
   if (p.length === 1) return { resource: p[0] };
@@ -96,7 +98,7 @@ export function makeAdminBridgeHandler({
     if (!db) return fail('unavailable');
 
     const audit = { ...call, method: req.method, path: (url.pathname + url.search).slice(0, 2048),
-      resource: (isRead ? target.resource : p[0]).slice(0, 40), resourceId: isRead ? target.id?.slice(0, 80) ?? null : p[1]?.slice(0, 80) ?? null };
+      resource: (target.resource || p[0]).slice(0, 40), resourceId: isRead ? target.id?.slice(0, 80) ?? null : p[1]?.slice(0, 80) ?? null };
     try {
       if (!isRead) {
         if ([...url.searchParams.keys()].length) return fail('bad_request');
@@ -117,6 +119,10 @@ export function makeAdminBridgeHandler({
         if (target.resource === 'activity-events') {
           const page = await bridgeActivityEvents(client, url.searchParams);
           return { outcome: 'ok', rowCount: page.items.length, body: page };
+        }
+        if (target.resource === 'users') {
+          const items = await bridgeUsers(client, url.searchParams);
+          return { outcome: 'ok', rowCount: items.length, body: { items } };
         }
         if (target.resource === 'payments') {
           const report = await bridgePayments(client, url.searchParams, stripe());
