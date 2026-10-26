@@ -121,3 +121,27 @@ test('an imported bcrypt password signs in under the original UUID', { skip }, a
   assert.equal(response.status, 200, await response.clone().text());
   assert.equal((await response.json()).user.id, id);
 });
+
+test('preview hosts: an allowed host gets its own links; another host is refused', { skip }, async () => {
+  process.env.BETTER_AUTH_ALLOWED_HOSTS = '*--preview.example.test';
+  try {
+    const host = 'https://abc123--preview.example.test';
+    const send = async (url, body) => {
+      const scoped = createAuthRequest(auditedPool, async (to, subject, link) => { mail.push({ to, subject, url: link }); });
+      try {
+        const u = new URL(url);
+        return await scoped.auth.handler(new Request(url, { method: 'POST',
+          headers: { 'content-type': 'application/json', origin: u.origin, host: u.host }, body: JSON.stringify(body) }));
+      } finally { await scoped.finish(true); }
+    };
+    const email = 'preview-host@example.test';
+    const ok = await send(`${host}/api/auth/sign-up/email`, { name: 'Preview', email, password: 'preview-password-50' });
+    assert.equal(ok.status, 200, await ok.clone().text());
+    assert.equal(new URL(mail.find((m) => m.to === email).url).origin, host);
+    const other = await send('https://evil.example.test/api/auth/sign-up/email',
+      { name: 'Other', email: 'other-host@example.test', password: 'preview-password-51' });
+    assert.notEqual(other.status, 200);
+  } finally {
+    delete process.env.BETTER_AUTH_ALLOWED_HOSTS;
+  }
+});
