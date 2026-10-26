@@ -20,6 +20,13 @@ function releaseLinks(value, pagePaths) {
 // Only persisted public catalogue fields belong in collection fieldsVersion 1.
 // The public read also decorates products with request-time prices and join IDs.
 const pick = (row, keys) => Object.fromEntries(keys.filter((key) => row?.[key] !== undefined).map((key) => [key, row[key]]));
+const textOrEmpty = (value) => value ?? '';
+function minorUnits(value) {
+  if (value == null) return null;
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < 0) throw new Error('Catalogue minor units exceed the release schema range');
+  return number;
+}
 function expectKeys(row, allowed, kind) {
   const unknown = Object.keys(row).filter((key) => !allowed.includes(key));
   if (unknown.length) throw new Error(`Unmapped ${kind} fields: ${unknown.join(', ')}`);
@@ -27,7 +34,7 @@ function expectKeys(row, allowed, kind) {
 const variant = (row) => {
   const fields = ['id', 'sku', 'name', 'currency', 'platform', 'sort_order', 'license_type', 'min_order_qty', 'billing_period', 'base_price_minor'];
   expectKeys(row, [...fields, 'pricing'], 'variant');
-  return pick(row, fields);
+  return { ...pick(row, fields), base_price_minor: minorUnits(row.base_price_minor) };
 };
 const spec = (row) => {
   const fields = ['label', 'value', 'sort_order'];
@@ -39,17 +46,21 @@ export function catalogueFields(key, row) {
   if (key === 'vendors') {
     const fields = ['id', 'slug', 'name', 'logo_url', 'description'];
     expectKeys(row, fields, 'vendor');
-    return { data: pick(row, fields) };
+    return { data: { ...pick(row, fields), logo_url: textOrEmpty(row.logo_url), description: textOrEmpty(row.description) } };
   }
   if (key === 'categories') {
     const fields = ['id', 'slug', 'name', 'description'];
     expectKeys(row, fields, 'category');
-    return { data: pick(row, fields) };
+    return { data: { ...pick(row, fields), description: textOrEmpty(row.description) } };
   }
   if (key !== 'offerings') throw new RangeError(`Unknown catalogue collection: ${key}`);
   const fields = ['id', 'slug', 'name', 'short_description', 'from_price_minor', 'from_price_currency', 'featured', 'platforms', 'type', 'attributes', 'vendor', 'category', 'description', 'seo'];
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
   const data = pick(row, fields);
+  data.short_description = textOrEmpty(row.short_description);
+  data.description = textOrEmpty(row.description);
+  data.from_price_minor = minorUnits(row.from_price_minor);
+  if (data.vendor) data.vendor = { ...data.vendor, logo_url: textOrEmpty(data.vendor.logo_url) };
   const variants = (row.offering_variants || row.variants || []).map(variant);
   const specs = (row.offering_specs || row.specs || []).map(spec);
   return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };

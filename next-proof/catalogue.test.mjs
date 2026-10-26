@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { toProofRelease } from './release-adapter.mjs';
+import { catalogueFields, toProofRelease } from './release-adapter.mjs';
 import { browseOfferings, catalogueFromRelease, offeringBySlug } from './catalogue-data.mjs';
 import { publishedCatalogue } from './catalogue-source.mjs';
 
@@ -46,6 +46,23 @@ test('legacy product URL slugs stay in public data without breaking the release 
   const release = toProofRelease(legacy);
   assert.equal(release.collections.offerings.entries[0].slug, undefined);
   assert.equal(offeringBySlug(catalogueFromRelease(release), 'sample-for--net').slug, 'sample-for--net');
+});
+
+test('database nullable catalogue fields and bigint strings become release field types', () => {
+  const vendor = catalogueFields('vendors', { id: 'v', slug: 'sample', name: 'Sample', logo_url: null, description: null });
+  assert.equal(vendor.data.logo_url, '');
+  assert.equal(vendor.data.description, '');
+  const offering = catalogueFields('offerings', {
+    id: 'o', slug: 'sample', name: 'Sample', short_description: null, description: null,
+    from_price_minor: '0', vendor: { id: 'v', slug: 'sample', name: 'Sample', logo_url: null },
+    offering_variants: [{ id: 'x', base_price_minor: '0' }],
+  });
+  assert.equal(offering.data.short_description, '');
+  assert.equal(offering.data.description, '');
+  assert.equal(offering.data.vendor.logo_url, '');
+  assert.equal(offering.data.from_price_minor, 0);
+  assert.equal(offering.data.variants[0].base_price_minor, 0);
+  assert.throws(() => catalogueFields('offerings', { ...offering.data, from_price_minor: '9007199254740992' }), /exceed the release schema range/);
 });
 
 test('public catalogue fixture is usable locally but rejected by required release builds', async () => {
