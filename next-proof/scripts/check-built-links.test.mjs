@@ -20,3 +20,9 @@ test('built-page checker catches missing routes and anchors', async () => {
   const anchorResult = await checkBuiltLinks('https://test.invalid', ['/', '/proof'], fetchPage);
   assert.match(anchorResult.failures.join('\n'), /no #gone anchor/);
 });
+
+test('built-page checker rejects legacy #go/ links even when they resolve', async () => {
+  pages['/'] = '<a href="#go/proof">Proof</a>';
+  const result = await checkBuiltLinks('https://test.invalid', ['/', '/proof'], fetchPage);
+  assert.match(result.failures.join('\n'), /\/.*#go\/proof.*legacy/i);
+});
