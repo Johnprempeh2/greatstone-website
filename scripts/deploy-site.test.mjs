@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { spawnSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 
@@ -21,12 +21,14 @@ async function fixture(t) {
   await mkdir(join(cwd, 'bin'));
   await mkdir(join(cwd, 'src'));
   await mkdir(join(cwd, 'scripts'));
+  await mkdir(join(cwd, 'contracts'));
   await writeFile(join(cwd, '.gitignore'), 'bin/\nnetlify-args.txt\n');
   git(cwd, 'init', '-q', '-b', 'main');
   git(cwd, 'config', 'user.email', 'test@example.invalid');
   git(cwd, 'config', 'user.name', 'Test');
   await writeFile(join(cwd, 'src', 'app.js'), 'original');
-  git(cwd, 'add', '.gitignore', 'src/app.js'); git(cwd, 'commit', '-qm', 'base');
+  await writeFile(join(cwd, 'contracts', 'check.mjs'), `if (process.argv[2] !== '--site-speaks' || process.argv[3] !== '1' || process.env.CONTRACT_CHECK_FAIL === '1') process.exitCode = 1;\n`);
+  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs'); git(cwd, 'commit', '-qm', 'base');
   const base = git(cwd, 'rev-parse', 'HEAD');
   git(cwd, 'checkout', '-qb', 'test-pr');
   const log = join(cwd, 'netlify-args.txt');
@@ -55,7 +57,8 @@ async function fixture(t) {
     GSAM_API_URL: url, GSAM_API_KEY: 'test-key', GSAM_TASK_ID: 'test-task', DEPLOY_LOG: log,
   };
   function commit(path, content) {
-    return writeFile(join(cwd, path), content).then(() => {
+    return mkdir(dirname(join(cwd, path)), { recursive: true })
+      .then(() => writeFile(join(cwd, path), content)).then(() => {
       git(cwd, 'add', path); git(cwd, 'commit', '-qm', 'change');
       env.FAKE_PR_JSON = JSON.stringify({ number: 12, state: 'OPEN', isDraft: false,
         headRefOid: git(cwd, 'rev-parse', 'HEAD'), baseRefOid: base, labels: [{ name: 'preview' }] });
@@ -82,6 +85,20 @@ function stagingCard(sha, changes = {}) {
     payload: { detailsMarkdown: `Approve production deploy: ${site} ${sha}` }, ...changes };
 }
 
+test('contract mismatch stops an otherwise approved upload before Netlify runs', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'new site code');
+  f.env.CONTRACT_CHECK_FAIL = '1';
+  const refused = await f.run();
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /contracts\/check\.mjs failed/);
+  await assert.rejects(readFile(f.log));
+  delete f.env.CONTRACT_CHECK_FAIL;
+  const accepted = await f.run();
+  assert.equal(accepted.status, 0, accepted.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /deploy --site/);
+});
+
 test('accepted human-only staging card permits exact SHA and guard-only drift', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
@@ -103,7 +120,7 @@ test('accepted revised staging card permits its approved SHA', async (t) => {
   assert.equal(result.status, 0, result.stderr);
 });
 
-test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and site code drift', async (t) => {
+test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and protected drift', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
   const cases = [
@@ -120,8 +137,76 @@ test('staging card rejects unaccepted, wrong site/SHA, agent resolution, and sit
     assert.match(result.stderr, /production refused/);
   }
   f.setInteractions([stagingCard(f.base)]);
-  await f.commit('src/app.js', 'changed');
+  await f.commit('netlify/functions/lib/admin-bridge-store.mjs', 'changed');
   const result = await f.run('prod');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
+test('staging card covers a later main with front-end-only drift', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'nav');
+  await f.commit('app/ProofBlocks.jsx', 'blocks');
+  await f.commit('public/_redirects', '/old /new 301');
+  await f.commit('docs/screenshots/GRE-1/home.png', 'png');
+  const result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, new RegExp(`Staging card for ${f.base} covers`));
+  assert.match(await readFile(f.log, 'utf8'), /--prod/);
+});
+
+test('staging card never covers drift into migrations, functions, auth or build config', async (t) => {
+  const protectedPaths = [
+    'netlify/database/migrations/054_x/migration.sql', 'netlify/functions/auth.mjs',
+    'netlify/edge-functions/gate.mjs', 'supabase/migrations/1_x.sql', 'db/seed.sql',
+    'app/media/[file]/route.js', 'app/api/hook.js', 'middleware.js', 'netlify.toml',
+    'package.json', 'package-lock.json', 'next.config.mjs', 'vite.config.js', '.env.production',
+    'public/_headers', 'scripts/list-edge-secrets.mjs', 'src/cms/auth.js', 'src/store/adminAuth.mjs',
+    'src/store/PasswordInput.jsx', 'src/lib/login.js',
+  ];
+  for (const path of protectedPaths) {
+    const f = await fixture(t);
+    git(f.cwd, 'checkout', '-q', 'main');
+    f.setInteractions([stagingCard(f.base)]);
+    await f.commit('src/app.js', 'front-end');
+    await f.commit(path, 'protected');
+    const result = await f.run('prod');
+    assert.equal(result.status, 1, path);
+    assert.match(result.stderr, /production refused/, path);
+  }
+});
+
+async function assertProtectedDriftRefused(t, path) {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
+  await f.commit(path, 'protected');
+  const result = await f.run('prod');
+  assert.equal(result.status, 1, path);
+  assert.match(result.stderr, /production refused/, path);
+}
+
+test('staging card never covers drift into CI config', async (t) => {
+  await assertProtectedDriftRefused(t, '.github/workflows/ci.yml');
+});
+
+test('staging card never covers drift into a TypeScript Next config', async (t) => {
+  await assertProtectedDriftRefused(t, 'next.config.ts');
+});
+
+test('staging card never covers drift into a nested Netlify config', async (t) => {
+  await assertProtectedDriftRefused(t, 'next-proof/netlify.editor.toml');
+});
+
+test('front-end drift never lets a staging card reach the public site', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([stagingCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
+  const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /production refused/);
 });
@@ -130,6 +215,47 @@ test('a staging card never authorises the public site', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
   f.setInteractions([stagingCard(f.base)]);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
+function weeklyCard(sha, changes = {}) {
+  return stagingCard(sha, { idempotencyKey: `confirmation:GRE-2641:weekly-release:${sha}`,
+    payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${sha}\nApprove production deploy: ${site} ${sha}` },
+    ...changes });
+}
+
+test('a weekly release card authorises both sites for its exact SHA', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([weeklyCard(f.base)]);
+  // The fake Netlify API only serves the staging site, so the public run passes the gate
+  // and then stops at the deploy lookup.
+  let result = await f.run('prod', 'greatstone-home');
+  assert.doesNotMatch(result.stderr, /production refused/);
+  assert.match(result.stderr, /greatstone-home\.netlify\.app\/deploys: 404/);
+  result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('a weekly release card never covers public-site drift, other sites or agent resolution', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const cases = [
+    weeklyCard(f.base, { status: 'pending' }),
+    weeklyCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
+    weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: ${site} ${f.base}` } }),
+    weeklyCard('a'.repeat(40)),
+  ];
+  for (const card of cases) {
+    f.setInteractions([card]);
+    const result = await f.run('prod', 'greatstone-home');
+    assert.equal(result.status, 1, JSON.stringify(card));
+    assert.match(result.stderr, /production refused/);
+  }
+  f.setInteractions([weeklyCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /production refused/);

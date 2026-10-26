@@ -1,6 +1,6 @@
 // The interview data processing agreement gate (GRE-2794; gate GRE-2656). A client organisation's company admin
 // reads the agreement in the app, ticks that they have read it and have authority, and accepts. The acceptance is
-// one kept row in interview.agreement_acceptance (migration 055). Until the organisation has a row for the CURRENT
+// one kept row in interview.agreement_acceptance (migration 058). Until the organisation has a row for the CURRENT
 // text, the site sends no invite, resend or reminder, hands out no join link and opens no seat.
 // The text is Harbor's and is copied unchanged (agreement/dpa-v2.mjs); the summary and labels below are the
 // click-accept wording, also Harbor's.

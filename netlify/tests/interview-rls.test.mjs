@@ -655,7 +655,7 @@ test('an invited person who opens the portal directly claims the one open invita
 });
 
 test('(g) rollback.sql removes the schema and the role', { skip }, () => {
-  sql(readFileSync(join(MIGRATIONS, '054_interview_engine', 'rollback.sql'), 'utf8'));
+  sql(readFileSync(join(MIGRATIONS, '057_interview_engine', 'rollback.sql'), 'utf8'));
   assert.equal(sql(`SELECT count(*) FROM pg_namespace WHERE nspname = 'interview'`), '0');
   assert.equal(sql(`SELECT count(*) FROM pg_roles WHERE rolname = 'interview_worker'`), '0');
   assert.equal(sql(`SELECT count(*) FROM pg_extension WHERE extname = 'ltree'`), '0');

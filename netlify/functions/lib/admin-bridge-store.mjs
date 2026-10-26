@@ -14,6 +14,24 @@ export class BridgeRequestError extends Error {
   }
 }
 
+/** Global per-site cursor. PostgreSQL bigint stays a decimal string in JavaScript. */
+export async function bridgeActivityEvents(client, params) {
+  const keys = [...params.keys()];
+  if (keys.length !== 2 || !keys.includes('cursor') || !keys.includes('limit'))
+    throw new BridgeRequestError('bad_request', 'cursor and limit required');
+  const cursor = params.get('cursor');
+  const limit = params.get('limit');
+  if (!cursor || cursor.length > 19 || !/^(0|[1-9]\d*)$/.test(cursor) ||
+      !/^(?:[1-9]|[1-9]\d|100)$/.test(limit || '') ||
+      BigInt(cursor) > 9223372036854775807n) throw new BridgeRequestError('bad_request', 'invalid cursor or limit');
+  const { rows } = await client.query(`SELECT e.sequence::text AS sequence,e.id,
+      organisation_id AS "organisationId",kind,subject_id AS "subjectId",label,
+      to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "occurredAt"
+    FROM public.client_activity_outbox e WHERE e.org_id=app_bridge_org() AND e.sequence > $1::bigint
+    ORDER BY e.sequence LIMIT $2::integer`, [cursor, Number(limit)]);
+  return { items: rows, nextCursor: rows.at(-1)?.sequence || cursor };
+}
+
 /** Opens the bridge transaction, runs work(client, org) and closes the audit row with what work returned. */
 export async function asBridgeReader(pool, call, work) {
   const client = await pool.connect();
@@ -81,6 +99,12 @@ const RESOURCES = {
       'updated_at', 'row_version'],
     extra: { items: items('order_items', 'order_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
       'qty', 'unit_price_minor', 'line_total_minor', 'currency']) },
+  },
+  'billing-lines': {
+    table: 'billing_lines', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
+    columns: ['id', 'customer_id', 'offering_id', 'variant_id', 'order_id', 'description', 'qty', 'unit_price_minor',
+      'currency', 'billing_period', 'starts_on', 'next_bill_on', 'ends_on', 'status', 'notes', 'created_at',
+      'updated_at', 'row_version'],
   },
   // There is no invoices table: an invoice is an order with an invoice number (014).
   invoices: {
@@ -287,6 +311,20 @@ export async function bridgeFx(client) {
     FROM org_settings s LIMIT 1`);
   if (!rows.length) throw new BridgeRequestError('not_found');
   return rows[0];
+}
+
+/**
+ * Client users by Better Auth id (GRE-2631): ?ids=<id,id,...>, 1 to 100 uuids. id, email, name and memberships
+ * ({ organisationId, membershipId }) from bridge_client_users (054). An id with no client user is left out.
+ */
+export async function bridgeUsers(client, searchParams) {
+  for (const name of searchParams.keys()) if (name !== 'ids') throw new BridgeRequestError('bad_request', `unknown parameter ${name}`);
+  const raw = searchParams.getAll('ids');
+  if (raw.length !== 1) throw new BridgeRequestError('bad_request', 'ids');
+  const ids = raw[0].split(',').map((s) => s.trim().toLowerCase());
+  if (ids.length > MAX_LIMIT || !ids.every((x) => UUID.test(x))) throw new BridgeRequestError('bad_request', 'ids');
+  const { rows: [r] } = await client.query('SELECT bridge_client_users($1::uuid[]) AS items', [[...new Set(ids)]]);
+  return r.items;
 }
 
 const ROWS_CURSOR = /^\d{1,9}$/;

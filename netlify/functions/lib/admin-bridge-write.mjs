@@ -351,6 +351,18 @@ const IMPORT = {
   columnMapping: ['column_mapping', object], sourceChecksum: ['source_checksum', text(128)],
   rows: ['rows', (x, k) => (Array.isArray(x) && x.length >= 1 && x.length <= 2000 ? x : bad(k))],
 };
+const BILLING_LINE = {
+  customerId: ['customer_id', id({ nullable: false })], offeringId: ['offering_id', id()],
+  variantId: ['variant_id', id()], orderId: ['order_id', id()],
+  description: ['description', text(2000, { required: true })], qty: ['qty', int(1, 1e6)],
+  unitPriceMinor: ['unit_price_minor', minor({ nullable: false })], currency: ['currency', currency],
+  billingPeriod: ['billing_period', oneOf(['monthly', 'quarterly', 'annual', 'multi_year'])],
+  startsOn: ['starts_on', date], nextBillOn: ['next_bill_on', date], endsOn: ['ends_on', date],
+  notes: ['notes', text(10000)],
+};
+const BILLING_LINE_EDIT = Object.fromEntries(Object.entries(BILLING_LINE).filter(([key]) =>
+  !['customerId', 'offeringId', 'variantId', 'orderId'].includes(key)));
+BILLING_LINE_EDIT.status = ['status', oneOf(['active', 'paused'])];
 
 /** A dry-run import: the job and its rows as GSAM planned them, validated when no row is an error. */
 async function createImport(client, ctx, body) {
@@ -387,6 +399,32 @@ async function createImport(client, ctx, body) {
 function commerceRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
   if (extra !== undefined) return null;
+  if (res === 'billing-lines') {
+    if (rowId === undefined && action === undefined && method === 'POST') return { run: async (client, ctx, body) => {
+      const values = pick(body, BILLING_LINE,
+        { required: ['customerId', 'description', 'qty', 'unitPriceMinor', 'currency', 'billingPeriod', 'startsOn'] });
+      const lineId = await insert(client, 'billing_lines', { org_id: ctx.org, ...values });
+      return answer(201, await bridgeRow(client, 'billing-lines', lineId));
+    } };
+    if (rowId === undefined || !UUID.test(rowId)) return null;
+    const current = (client) => bridgeRow(client, 'billing-lines', rowId);
+    if (action === undefined && method === 'PATCH') return { current, run: async (client, ctx, body) => {
+      const values = pick(body, BILLING_LINE_EDIT, { allow: ['expectedRowVersion'] });
+      await update(client, 'billing_lines', rowId, expectedRowVersion(body), values);
+      return answer(200, await current(client));
+    } };
+    if (action === 'end' && method === 'POST') return { current, run: async (client, ctx, body) => {
+      pick(body, { endsOn: ['ends_on', date] }, { required: ['endsOn'], allow: ['expectedRowVersion'] });
+      await update(client, 'billing_lines', rowId, expectedRowVersion(body), { status: 'ended', ends_on: body.endsOn, next_bill_on: null });
+      return answer(200, await current(client));
+    } };
+    if (action === undefined && method === 'DELETE') return { current, run: async (client, ctx, body) => {
+      pick(body, {}, { allow: ['expectedRowVersion'] });
+      await update(client, 'billing_lines', rowId, expectedRowVersion(body), { deleted_at: NOW });
+      return answer(200, await current(client));
+    } };
+    return null;
+  }
   if (res === 'fx' && rowId === undefined && method === 'PATCH') {
     return { people: true, current: (client) => bridgeFx(client), run: async (client, ctx, body) => {
       people(ctx.actor);
@@ -438,6 +476,21 @@ function commerceRoute(method, parts) {
   return null;
 }
 
+// A client user (GRE-2631): the Better Auth user and its membership of one client organisation (a customers row),
+// in bridge_create_client_user (054). 201 when it created either, 200 with the same ids when both were there.
+function clientUserRoute(method, parts) {
+  const [res, customerId, sub, extra] = parts;
+  if (res !== 'customers' || sub !== 'users' || extra !== undefined || method !== 'POST') return null;
+  return { resource: 'customer-users', run: async (client, ctx, body) => {
+    const u = pick(body, { email: ['email', text(254, { required: true })], name: ['name', text(200, { required: true })] },
+      { required: ['email', 'name'] });
+    const { rows: [r] } = await client.query('SELECT bridge_create_client_user($1::uuid, $2, $3) AS item',
+      [needId(customerId), u.email, u.name]);
+    const { userId, organisationId, membershipId, created } = r.item;
+    return { status: created ? 201 : 200, body: { userId, organisationId, membershipId }, rowCount: 1, resourceId: membershipId };
+  } };
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -465,7 +518,7 @@ function refundRoute(method, parts) {
 export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
-  const route = catalogueRoute(method, parts) || commerceRoute(method, parts);
+  const route = catalogueRoute(method, parts) || commerceRoute(method, parts) || clientUserRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
 
