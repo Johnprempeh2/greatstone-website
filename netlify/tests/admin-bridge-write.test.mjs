@@ -49,10 +49,10 @@ const write = (path, body, opts = {}) => signed(path, { method: 'POST', kid: 'te
 const patch = (path, body, opts = {}) => signed(path, { method: 'PATCH', kid: 'test-write-1', body, ...opts });
 
 test('the v2 signing vectors verify, and the v1 cases are byte for byte unchanged', () => {
-  // the v1 part of the file, as GRE-2323 merged it (sha256 of the whole 048 file: be6ae25e…1327)
+  // Pin the v1 vectors in the canonical vendored contract (GSAM d405c29e0).
   const v1 = RAW.slice(0, RAW.indexOf('  ],\n  "_commentV2"'));
-  assert.equal(v1.length, 3962);
-  assert.equal(createHash('sha256').update(v1).digest('hex'), '11ea48dac5b5c5937f3452978af20b3d29c9ea8e4d0558fb3fa0ae37d76cb221');
+  assert.equal(v1.length, 3954);
+  assert.equal(createHash('sha256').update(v1).digest('hex'), 'fb1686f0c91e67ba6b19dc831810e130f0d6decf0d1a87e4af7272c464d9c439');
   assert.equal(CONTRACT.vectors.length, 4);
   assert.ok(CONTRACT.vectorsV2.length >= 4);
   for (const v of CONTRACT.vectorsV2) {
