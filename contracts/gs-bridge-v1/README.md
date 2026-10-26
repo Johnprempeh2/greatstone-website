@@ -45,6 +45,12 @@ To build the canonical query, decode the query as `URLSearchParams` does. Sort t
 - A list returns `{ items, nextCursor }`. The cursor is opaque, and `null` ends the read. A get returns `{ item }`.
 - An error returns `{ error: { code } }` only. The codes are `bad_key`, `expired`, `bad_signature` and `replay` (401), `capability_denied` and `ip_denied` (403), `not_found` (404), `bad_request` (400) and `unavailable` (503).
 
+## Client activity outbox (GRE-2635)
+
+The website appends each client event in the same database transaction as its source action. The client `organisationId` is `customers.id`, not the internal tenant `org_id`. GSAM signs `GET /api/admin/v1/activity-events?cursor=<decimal>&limit=100` with its existing read key. The response is `{ "items": [...], "nextCursor": "<decimal>" }`, sorted by the global site sequence. A fresh reader sends `cursor=0`; an empty page returns that cursor unchanged. A nonempty page returns its last sequence. Sequence holes after rollback are valid.
+
+The shared schema is [website-activity.ts](website-activity.ts), copied from GSAM's `packages/shared/src/website-activity.ts`. Events contain IDs and action labels only. Never include interview answers, document contents, enquiry messages, names, emails, amounts or other personal details. GSAM commits the page and cursor together and retries an interrupted page.
+
 ## Deep Dive sync (GRE-2439)
 
 The public site never queries GSAM. GSAM pushes one client's Deep Dive snapshot, and the site calls back when a

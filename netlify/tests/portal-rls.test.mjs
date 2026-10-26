@@ -448,6 +448,18 @@ test('portal-files: private; staff write only under a draft; clients get nothing
   assert.equal(ok('owner', `SELECT count(*) FROM storage.objects WHERE bucket_id = 'portal-files';`), '1');
 });
 
+test('a published and accepted deliverable emits only action labels in the outbox', { skip }, () => {
+  const doc = 'd0000000-0000-4000-8000-000000000321';
+  ok('editor', `INSERT INTO portal_documents (id,customer_id,kind,title,action,confirmation_text)
+    VALUES ('${doc}','${A}','north_star','Private deliverable','accept','${CONFIRM}');`);
+  const fingerprint = submit(doc);
+  ok('approver', publish(doc, fingerprint));
+  ok('a1', accept(doc));
+  assert.equal(ok(null, `SELECT kind || '|' || label || '|' || subject_id FROM client_activity_outbox
+    WHERE organisation_id='${A}' AND subject_id='${doc}' ORDER BY sequence;`),
+    `deliverable.published|Deliverable published|${doc}\ndeliverable.accepted|Deliverable accepted|${doc}`);
+});
+
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
 test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {

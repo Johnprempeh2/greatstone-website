@@ -210,9 +210,10 @@ test('the worker sees every row under FORCE RLS, where anon and an unknown user 
   // the tables the ported migrations keep from the worker, as Supabase 0037 and 0038 revoke them from service_role,
   // and the GSAM admin bridge's audit and nonces, which only its own functions touch (048), and its change log,
   // idempotency keys and refund requests (049: the webhook reaches refund requests only through its trigger),
-  // and the private Deep Dive mapping, snapshots and pending answers (050).
+  // the private Deep Dive mapping, snapshots and pending answers (050), billing lines (055), and the client activity outbox and counter (056).
   assert.deepEqual(noGrant, ['public.admin_bridge_audit', 'public.admin_bridge_change', 'public.admin_bridge_idempotency',
-    'public.admin_bridge_nonce', 'public.billing_lines', 'public.deep_dive_answers', 'public.deep_dive_snapshots', 'public.deep_dive_tenant_links',
+    'public.admin_bridge_nonce', 'public.billing_lines', 'public.client_activity_outbox', 'public.client_activity_sequence',
+    'public.deep_dive_answers', 'public.deep_dive_snapshots', 'public.deep_dive_tenant_links',
     'public.mcp_pdf_chunks', 'public.mcp_pdf_uploads', 'public.mcp_token_clients', 'public.mcp_tokens', 'public.portal_approvers',
     'public.refund_requests']);
   for (const t of ['public.customers', 'public.users', 'public.service_inquiries', 'public.offerings']) {
