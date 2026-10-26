@@ -8,4 +8,10 @@ The `mixed-review-` images show the revised panels, line chips and payment actio
 
 The `cancelled-review-phone.png` and `confirmation-review-phone.png` images show Mikey's second review corrections. The cancelled basket recognises the stored quote, hides the contact form and duplicate quote action, and offers a card retry. The confirmation places the order reference under Paid now and has one discovery call action. These also use synthetic local state. The browser check verified that the duplicate form and action are absent.
 
+## Connected staging preview check, 26 October 2026
+
+The `connected-` images came from the `gre-2608-pr128` staging draft at `fdd98ba`, backed by the test database branch and Stripe sandbox. They use only synthetic catalogue fixtures and test contacts. The tool and mixed Stripe screens each show **£172.80** (£144.00 tool plus £28.80 VAT); the service-only flow has no Stripe step. The tool and mixed confirmation images followed completed 4242 test-card payments. The service-only confirmation followed a submitted quote request. The mixed quote was recorded before the Stripe redirect and included both basket lines and its Checkout Session reference.
+
+The preview database contains the service-only and mixed enquiries. It has **no order row** for the completed test payments, so webhook delivery to this draft remains unverified and is a merge blocker. The catalogue service was also labelled `tool` in the structured enquiry; the source fix is included after these screenshots and needs a fresh preview check. These screenshots prove the browser flows at `fdd98ba`, not webhook completion or the later source fix.
+
 This visual check confirms the three layouts. A separate local browser interaction used mocked API responses: services only called the enquiry endpoint; mixed called Stripe and then enquiry once. The server tests and a real Stripe test mode Checkout Session check cover the payment request path. The webhook links a paid order to the earlier enquiry. A completed card payment and an enquiry in the team inbox still need a connected preview check.
