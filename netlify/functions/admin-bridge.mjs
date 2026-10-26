@@ -1,5 +1,6 @@
 // GSAM admin bridge (GRE-2323; commerce, write and refund requests GRE-2354): the staff admin API GSAM calls outward.
 //   GET /api/admin/v1/health
+//   GET /api/admin/v1/schema            fixed table-existence flags only
 //   GET /api/admin/v1/<resource>            list: ?customer=&updatedSince=&cursor=&limit= (customer only where a row has one)
 //   GET /api/admin/v1/<resource>/<id>       one row (imports/<id> pages its rows with ?limit=&cursor=)
 //   GET /api/admin/v1/fx | /payments?from=&to=
@@ -36,7 +37,7 @@ function parts(pathname) {
 }
 
 function readRoute(p) {
-  if (p.length === 1 && (p[0] === 'health' || p[0] === 'users')) return { resource: p[0] };
+  if (p.length === 1 && (p[0] === 'health' || p[0] === 'schema' || p[0] === 'users')) return { resource: p[0] };
   if (p.length === 1 && p[0] === 'activity-events') return { resource: 'activity-events' };
   if (!RESOURCE_NAMES.includes(p[0])) return null;
   if (p.length === 1) return { resource: p[0] };
@@ -121,6 +122,13 @@ export function makeAdminBridgeHandler({
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'health takes no parameters');
           return { outcome: 'ok', rowCount: 0, body: { ok: true, kid: call.kid, capability: call.capability,
             serverTime: new Date(now()).toISOString(), schema: SCHEME, siteContract: SITE_CONTRACT } };
+        }
+        if (target.resource === 'schema') {
+          if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'schema takes no parameters');
+          const { rows: [tables] } = await client.query(`SELECT
+            to_regclass('public.billing_lines') IS NOT NULL AS billing_lines,
+            to_regclass('public.client_activity_outbox') IS NOT NULL AS client_activity_outbox`);
+          return { outcome: 'ok', rowCount: 0, body: { tables } };
         }
         if (target.resource === 'fx') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'fx takes no parameters');
