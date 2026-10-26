@@ -129,11 +129,11 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const denied = await put({ ...payload(), items: [{ ...payload().items[0], visibility: 'internal' }] });
     assert.equal(denied.status, 400);
     const fixtureAccepted = await put(syncFixture);
-    assert.equal(fixtureAccepted.status, 200, await fixtureAccepted.text());
+    assert.equal(fixtureAccepted.status, 200);
     const ack = await fixtureAccepted.json();
     assert.equal(ackSchema(ack), true, JSON.stringify(ackSchema.errors));
     const accepted = await put(payload());
-    assert.equal(accepted.status, 200, await accepted.text());
+    assert.equal(accepted.status, 200);
     const read = (id) => asCustomer(pool, { id, email: null, email_verified: true }, clientSnapshot);
     assert.equal((await read(USER_A)).items[0].title, 'Stream');
     assert.equal(await read(USER_B), null);
