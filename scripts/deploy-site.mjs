@@ -211,6 +211,32 @@ async function refreshStaging(sha) {
   }
 }
 
+// The weekly train (GRE-2804) also ships the gsam-editor alias on greatstone-home from the same
+// commit. The Vite upload does not contain the Next editor, so the editor is built from this
+// checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,
+// contract, engine commit, links). Any failed step fails the train and names the step.
+async function deployEditorAlias(sha) {
+  const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
+  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha };
+  const steps = [
+    ['prepare', process.execPath, ['next-proof/scripts/prepare-netlify.mjs', join(dir, 'editor'), '--editor'], process.cwd()],
+    ['install', 'npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], join(dir, 'editor')],
+    ['build', 'netlify', ['build', '--context', 'branch:gsam-editor'], join(dir, 'editor')],
+    ['upload and check', process.execPath, ['scripts/deploy-editor-alias.mjs', sites.get(site)], join(dir, 'editor')],
+  ];
+  try {
+    for (const [name, bin, args, cwd] of steps) {
+      console.log(`Editor alias step "${name}" at ${sha}`);
+      const result = spawnSync(bin, args, { stdio: 'inherit', cwd, env });
+      if (result.error || result.status !== 0)
+        throw new Error(`train failed at editor alias step "${name}" (${result.error?.message || `exit ${result.status}`}); ` +
+          `the ${site} production step before it already ran`);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
   if (!['preview', 'prod', 'refresh'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod -- <allowed site> [PR number]');
@@ -220,15 +246,16 @@ async function main() {
   if (mode === 'refresh') return refreshStaging(sha);
   const fallback = await gate(sha);
   const baseline = await lastDeployedCommit() || fallback;
+  let files = null;
   if (baseline) {
     command('git', ['cat-file', '-e', `${baseline}^{commit}`]);
-    const files = command('git', ['diff', '--name-only', baseline, sha]).split('\n').filter(Boolean);
-    if (files.length === 0 || onlyNonSiteFiles(files)) {
-      console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
-      return;
-    }
+    files = command('git', ['diff', '--name-only', baseline, sha]).split('\n').filter(Boolean);
   }
-  await lockAndDeploy(sha);
+  if (files && (files.length === 0 || onlyNonSiteFiles(files)))
+    console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
+  else await lockAndDeploy(sha);
+  // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
+  if (mode === 'prod' && site === 'greatstone-home') await deployEditorAlias(sha);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
