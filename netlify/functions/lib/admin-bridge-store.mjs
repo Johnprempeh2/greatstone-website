@@ -100,6 +100,12 @@ const RESOURCES = {
     extra: { items: items('order_items', 'order_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
       'qty', 'unit_price_minor', 'line_total_minor', 'currency']) },
   },
+  'billing-lines': {
+    table: 'billing_lines', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
+    columns: ['id', 'customer_id', 'offering_id', 'variant_id', 'order_id', 'description', 'qty', 'unit_price_minor',
+      'currency', 'billing_period', 'starts_on', 'next_bill_on', 'ends_on', 'status', 'notes', 'created_at',
+      'updated_at', 'row_version'],
+  },
   // There is no invoices table: an invoice is an order with an invoice number (014).
   invoices: {
     table: 'orders', time: 'created_at', updated: 'updated_at', customer: 'customer_id',
