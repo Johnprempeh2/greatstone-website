@@ -45,9 +45,8 @@ export function validateSnapshot(tenantId, body) {
   if (![findings, opportunities, kpis].every(unique)) throw new TypeError('Duplicate Shared id');
   const findingIds = new Set(findings.map((row) => row.id));
   const opportunityIds = new Set(opportunities.map((row) => row.id));
-  const streamIds = new Set(body.items.filter((row) => row.type === 'deep_dive_stream').map((row) => row.id));
   for (const finding of findings) if (!plain(finding) || 'visibility' in finding ||
-      (finding.streamItemId !== null && !streamIds.has(finding.streamItemId)) ||
+      (finding.streamItemId !== null && !ids.has(finding.streamItemId)) ||
       !text(finding.statement) || !['proposed', 'validated', 'rejected', 'superseded'].includes(finding.status) ||
       !Number.isSafeInteger(finding.evidenceCount) || finding.evidenceCount < 0 ||
       (finding.supersedesId !== null && !findingIds.has(finding.supersedesId)) || !iso(finding.updatedAt)) {
@@ -57,7 +56,7 @@ export function validateSnapshot(tenantId, body) {
       !text(opportunity.title, 500) || !text(opportunity.statement) || !text(opportunity.desiredOutcome) ||
       !['draft', 'refined', 'validated'].includes(opportunity.status) ||
       !Array.isArray(opportunity.findingIds) || !opportunity.findingIds.every((id) => findingIds.has(id)) ||
-      !Array.isArray(opportunity.streamItemIds) || !opportunity.streamItemIds.every((id) => streamIds.has(id)) ||
+      !Array.isArray(opportunity.streamItemIds) || !opportunity.streamItemIds.every((id) => ids.has(id)) ||
       !iso(opportunity.updatedAt)) throw new TypeError('Invalid Shared opportunity');
   for (const kpi of kpis) if (!plain(kpi) || 'visibility' in kpi || !text(kpi.title, 500) || !text(kpi.definition) ||
       !['company', 'division', 'department', 'team', 'individual'].includes(kpi.scope) ||
