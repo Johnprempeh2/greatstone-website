@@ -8,7 +8,7 @@ against `vectors.json`.
 
 - Each capability has its own Ed25519 key pair, and staging and live use different keys. GSAM makes the pair and keeps the private key as a company secret.
 - The site holds only the public keys, in `GSAM_BRIDGE_KEYS`. This is a JSON list of `{ "kid", "capability", "publicKey", "notAfter"? }`, where `publicKey` is the raw 32-byte key in base64url. A `kid` is lower case, 3 to 64 characters, for example `stg-read-2026-10`.
-- `capability` is `read`, `write` or `refund_request`. `read` is accepted only for `GET`. `write` is accepted only for `PUT /api/admin/v1/deep-dive/tenants/:tenantId` (GRE-2439, below).
+- `capability` is `read`, `write` or `refund_request`. `read` is accepted only for `GET`. `write` is accepted on typed write routes, including the Deep Dive sync below and the interview routes in `gs-interview-v1/README.md`; writes use `gs-bridge-v2` and `X-GS-Bridge-Idempotency-Key`.
 - To rotate a key: list both keys, move GSAM to the new one, then remove the old one. To revoke a key: remove it and redeploy.
 - `GSAM_BRIDGE_ALLOWED_IPS` is optional: a comma-separated list of exact client IPs. It is off when empty.
 
