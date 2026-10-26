@@ -1,8 +1,8 @@
 {
   "_comment": "Vendored from gs-agentic-manager by contracts/check.mjs --vendor. Do not edit this folder; vendor again instead.",
   "source": "Johnprempeh2/gs-agentic-manager",
-  "commit": "da63bf5486ef13359a970c63ddea816bbc2a85da",
+  "commit": "8a4e097edc8538ad494e9c9420d024a2a81d5ba0",
   "name": "gs-site-contract",
   "version": 1,
-  "contentHash": "ca43fc2153e3c4913214499958c46e8baf429d7d605ef29616e2d4013dae7225"
+  "contentHash": "95f9e39496e5175b938bc7fba65bd248a87f585830914109d7e024a322330792"
 }
