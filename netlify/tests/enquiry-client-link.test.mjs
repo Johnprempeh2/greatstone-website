@@ -2,6 +2,7 @@ import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
 import { startPostgres, skip } from './lib/postgres.mjs';
+import { asStaff, staffStore } from '../functions/lib/staff-store.mjs';
 
 const ORG = '11111111-1111-4111-8111-111111111111';
 const OTHER = '22222222-2222-4222-8222-222222222222';
@@ -76,8 +77,10 @@ test('foreign client, soft delete, anon write and rollback leave no event', { sk
   await assert.rejects(as('authenticated', 'UPDATE service_inquiries SET customer_id=$1 WHERE id=$2', [CUSTOMER, inquiry], true), /deleted enquiry/);
   const fresh = (await query('INSERT INTO service_inquiries(org_id) VALUES ($1) RETURNING id', [ORG])).rows[0].id;
   await assert.rejects(as('authenticated', 'UPDATE service_inquiries SET customer_id=$1 WHERE id=$2', [FOREIGN, fresh], true), /tenant/);
+  assert.equal((await query('SELECT customer_id FROM service_inquiries WHERE id=$1', [fresh])).rows[0].customer_id, null);
   const lead = (await query("INSERT INTO front_door_leads(org_id,industry,company_name) VALUES ($1,'Test','Test') RETURNING id", [ORG])).rows[0].id;
   await assert.rejects(as('authenticated', 'UPDATE front_door_leads SET customer_id=$1 WHERE id=$2', [FOREIGN, lead], true), /tenant/);
+  assert.equal((await query('SELECT customer_id FROM front_door_leads WHERE id=$1', [lead])).rows[0].customer_id, null);
   await assert.rejects(as('anon', 'UPDATE service_inquiries SET customer_id=$1 WHERE id=$2', [CUSTOMER, fresh]), /permission denied/);
   await assert.rejects(as('anon', 'UPDATE front_door_leads SET customer_id=$1 WHERE id=$2', [CUSTOMER, lead]), /permission denied/);
   await assert.rejects(as('anon', "SELECT submit_service_inquiry('[]'::jsonb,NULL,NULL,NULL,NULL,$1)", [CUSTOMER]), /does not exist/);
@@ -97,5 +100,21 @@ test('foreign client, soft delete, anon write and rollback leave no event', { sk
 
 test('a known client on insert emits in the insert transaction', { skip }, async () => {
   const id = (await query('INSERT INTO service_inquiries(org_id,customer_id) VALUES ($1,$2) RETURNING id', [ORG, CUSTOMER])).rows[0].id;
+  assert.equal((await events(`service_inquiry:${id}`)).length, 1);
+});
+
+test('the staff store link action writes once and rejects a non-staff identity', { skip }, async () => {
+  const id = (await query('INSERT INTO service_inquiries(org_id) VALUES ($1) RETURNING id', [ORG])).rows[0].id;
+  const link = (client) => staffStore(client, {
+    kind: 'update', table: 'service_inquiries', values: { customer_id: CUSTOMER },
+    columns: 'id', filters: [{ column: 'id', op: 'eq', value: id }, { column: 'customer_id', op: 'is', value: null }],
+  });
+  const stranger = await asStaff(pool, { id: SECOND, email: 'stranger@example.test' }, link);
+  assert.deepEqual(stranger, { forbidden: true });
+  assert.deepEqual(await events(`service_inquiry:${id}`), []);
+  const result = await asStaff(pool, { id: STAFF, email: 'staff@example.test' }, link);
+  assert.equal(result.data[0].id, id);
+  assert.equal((await events(`service_inquiry:${id}`)).length, 1);
+  assert.deepEqual((await asStaff(pool, { id: STAFF, email: 'staff@example.test' }, link)).data, []);
   assert.equal((await events(`service_inquiry:${id}`)).length, 1);
 });

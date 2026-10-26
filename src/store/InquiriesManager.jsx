@@ -17,7 +17,7 @@ const EXTRA_COLS = BASE_COLS + ', source, industry, attribution';
 const SIZE_COLS = EXTRA_COLS + ', size_band';
 const EXTRA = /attribution|industry/i; // 0035 not applied yet: "column service_inquiries.attribution does not exist"
 const SIZE = /size_band/i; // 0040 not applied yet
-const LINK = /customer_id/i; // 056 not applied yet
+const LINK = /customer_id/i; // 057 not applied yet
 const touch = (t) => (t ? [t.utm_source, t.utm_medium, t.utm_campaign].filter(Boolean).join(' / ') || 'Direct or organic' : 'Not known');
 const isContact = (r) => r.source === 'contact' || !(r.services || []).length;
 

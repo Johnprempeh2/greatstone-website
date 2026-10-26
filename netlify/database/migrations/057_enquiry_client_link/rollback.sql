@@ -15,7 +15,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.customers WHERE id = p_customer AND org_id = p_org) THEN
     RAISE EXCEPTION 'activity client does not belong to tenant';
   END IF;
-  PERFORM pg_advisory_xact_lock(2652, 1);
   INSERT INTO public.client_activity_outbox(org_id, organisation_id, kind, subject_id, label)
     VALUES (p_org, p_customer, p_kind, p_subject, p_label);
 END $$;
