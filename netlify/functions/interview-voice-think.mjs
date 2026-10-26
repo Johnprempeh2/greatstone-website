@@ -24,6 +24,7 @@ import { getBudgetStatus, recordUsage } from './lib/interview/budget.mjs';
 import { enqueueOutboxEvent, scheduleOutboxDrain } from './lib/interview/outbox.mjs';
 import { ClauseBuffer } from './lib/interview/voice/clause-buffer.mjs';
 import { withinRate } from './lib/interview/ratelimit.mjs';
+import { closeSessionAfterSignOff, recordConsentUpdates } from './lib/interview/turn-effects.mjs';
 import { bearerFrom, hashSessionToken, tokenHashMatches } from './lib/interview/voice/session-token.mjs';
 import { chunkClose, chunkDone, chunkOpener, chunkText, latestUserMessage, SSE_HEADERS } from './lib/interview/voice/openai-wire.mjs';
 import { VOICE_PROMPT_ADDENDUM } from './lib/interview/voice/prompt-addendum.mjs';
@@ -86,7 +87,8 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
 
     let body;
     try { body = await req.json(); } catch { return Response.json({ error: 'bad request' }, { status: 400 }); }
-    const content = latestUserMessage(body);
+    // one spoken turn; far longer than any utterance, so nothing real is cut
+    const content = (latestUserMessage(body) ?? '').slice(0, 8000);
 
     // ── Load our transcript (the source of truth, not Deepgram's history) ──
     const { data: turnRows, error: turnsError } = await db.from('turn').select('*')
@@ -137,6 +139,8 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
           if (insightError) log.warn(`insight insert failed: ${insightError.message}`);
           state.insights_extracted = (state.insights_extracted ?? 0) + toPersist.length;
         }
+        // spoken consent answers are recorded as typed ones are
+        await recordConsentUpdates(db, { employeeId: ctx.employee.id, sessionId, extraction, log });
         await recordUsage(db, {
           sessionId, engagementId: ctx.engagement.id, model: EXTRACTION_MODEL,
           inputTokens: extraction.usage.inputTokens, outputTokens: extraction.usage.outputTokens,
@@ -148,6 +152,11 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
       state.next_action = deriveNextAction(state);
     }
     const closing = signOffComplete(state);
+    if (closing && state.phase !== 'sign_off') {
+      // as on the typed path: both consents recorded ahead of the pointer means the interview IS in sign-off
+      state.phase = 'sign_off';
+      phaseChanged = true;
+    }
 
     // ── The voice addendum goes in the VOLATILE half: the stable prefix is the cache breakpoint. ──
     const { stable, volatile } = buildSystemPrompt({
@@ -222,6 +231,12 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
                 phase: TAXONOMY_TO_DB_PHASE[previousPhase],
               });
               scheduleOutboxDrain();
+            }
+            // Port: a wholly spoken interview closes itself on sign-off, as a typed one does (turn-effects.mjs)
+            if (closing) {
+              await closeSessionAfterSignOff(db, db, { ctx, session, state, dbPhase: TAXONOMY_TO_DB_PHASE[state.phase],
+                employeePayload: { id: ctx.employee.id, name: ctx.employee.name, role_title: ctx.employee.role_title,
+                  unit_name: ctx.orgUnit?.name ?? null } });
             }
           }
         } catch (e) {

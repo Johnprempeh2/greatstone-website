@@ -278,6 +278,14 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'claim_seat: employee % not found', p_employee_id;
   END IF;
+  -- Port: the caller may take only their own seat (a participant: their user id; the bridge: its organisation).
+  -- The source called this only with the service role, so it never checked.
+  IF NOT is_system() AND v_emp.user_id IS DISTINCT FROM claim_user_id() THEN
+    RAISE EXCEPTION 'claim_seat: employee % is not the caller', p_employee_id USING ERRCODE = '42501';
+  END IF;
+  IF claim_customer_id() IS NOT NULL AND v_emp.customer_id IS DISTINCT FROM claim_customer_id() THEN
+    RAISE EXCEPTION 'claim_seat: employee % is in another organisation', p_employee_id USING ERRCODE = '42501';
+  END IF;
   IF v_emp.status IN ('started', 'completed') THEN
     RETURN;
   END IF;
