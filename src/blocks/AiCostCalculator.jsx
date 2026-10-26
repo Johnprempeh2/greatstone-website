@@ -37,7 +37,7 @@ function Field({ id, label, value, set, suffix, min, max, disabled }) {
 }
 
 export function AiCostCalculator({
-  anchorId = '', kicker, heading, intro, teamLabel, hoursLabel, costLabel,
+  puck, anchorId = '', kicker, heading, intro, teamLabel, hoursLabel, costLabel,
   defaultTeam = 12, defaultHours = 6, defaultCost = 32, weeksPerYear = 46, currency = '£',
   recoveryPct = 55, onTheTableLead, savingsLead, gateHeading, gateBody, nameLabel, companyLabel, emailLabel,
   dataNotice, submitLabel, sentNote, failNote, csvFooter, ctaLabel, ctaHref, footnote, formFields,
@@ -155,7 +155,7 @@ export function AiCostCalculator({
                 <div className="gs-sr-only" aria-hidden="true"><label htmlFor={uid + 'w'}>{LEAD_TOOL_COPY.honeypot}</label><input id={uid + 'w'} tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
                 <Turnstile onToken={setToken} />
                 {err ? <div className="b-acc-err" role="alert">{err}</div> : null}
-                <p className="b-acc-notice">{dataNotice} <a href="#go/privacy">{LEAD_TOOL_COPY.privacyPolicy}</a>.</p>
+                <p className="b-acc-notice">{dataNotice} <a href={puck?.publicSite ? '/privacy' : '#go/privacy'}>{LEAD_TOOL_COPY.privacyPolicy}</a>.</p>
                 <button type="submit" className="b-cta b-acc-unlock" disabled={sendState === 'sending'}>{sendState === 'sending' ? LEAD_TOOL_COPY.sending : submitLabel}<Arrow /></button>
               </form>
             )}

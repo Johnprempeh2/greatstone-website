@@ -213,13 +213,13 @@
                 {
                   "title": "DX Consultancy",
                   "line": "For leaders changing how work gets done. Start with a conversation, examine the work, then decide what to build.",
-                  "href": "#go/dx-consultancy",
+                  "href": "/dx-consultancy",
                   "linkLabel": "Explore DX Consultancy →"
                 },
                 {
                   "title": "DX Dev Tools",
                   "line": "For developers building and maintaining software. Browse components and SDKs from established suppliers.",
-                  "href": "#go/dev-tools",
+                  "href": "/dev-tools",
                   "linkLabel": "Explore DX Dev Tools →"
                 }
               ],
@@ -2951,7 +2951,7 @@
               "ctaLabel": "Ask about GS Agentic Manager",
               "ctaHref": "#enquire/gs-agentic-manager",
               "ctaLabel2": "Check your AI readiness",
-              "ctaHref2": "#go/dx-consultancy/ai-readiness",
+              "ctaHref2": "/dx-consultancy#ai-readiness",
               "meta": [],
               "lines": [],
               "pillEyebrow": false,
@@ -3200,7 +3200,7 @@
                   "title": "AI readiness check",
                   "text": "Find out where AI can help your business first, and what has to be in place before it does.",
                   "ctaLabel": "AI readiness check",
-                  "ctaHref": "#go/dx-consultancy/ai-readiness",
+                  "ctaHref": "/dx-consultancy#ai-readiness",
                   "icon": ""
                 },
                 {
@@ -3208,7 +3208,7 @@
                   "title": "AI cost calculator",
                   "text": "See what your manual work costs you today. This is an estimate of your own time and spend, not a price for our services.",
                   "ctaLabel": "AI cost calculator",
-                  "ctaHref": "#go/dx-consultancy/ai-cost-calculator",
+                  "ctaHref": "/dx-consultancy#ai-cost-calculator",
                   "icon": ""
                 }
               ],
@@ -3647,7 +3647,7 @@
                 }
               ],
               "ctaLabel": "See the full climb",
-              "ctaHref": "#go/climb",
+              "ctaHref": "/climb",
               "_section": {
                 "surface": "none",
                 "accent": "default",
@@ -4626,7 +4626,7 @@
               "highlight": "lowest first.",
               "body": "Your altitude isn’t one number, it’s eight. We assess you across all eight pillars of the method, find the one holding the whole climb back, and start there. We leave no stone unturned.",
               "ctaLabel": "See the 8 pillars",
-              "ctaHref": "#go/method",
+              "ctaHref": "/method",
               "ctaStyle": {
                 "size": "default",
                 "fillMobile": "no"
@@ -4697,7 +4697,7 @@
                 "fillMobile": "no"
               },
               "ctaLabel2": "Explore the Method",
-              "ctaHref2": "#go/method",
+              "ctaHref2": "/method",
               "email": "",
               "variant": "band",
               "pill": true,
@@ -5014,7 +5014,7 @@
                 "fillMobile": "no"
               },
               "ctaLabel2": "See the method",
-              "ctaHref2": "#go/method",
+              "ctaHref2": "/method",
               "email": "",
               "variant": "band",
               "pill": false,
@@ -5194,11 +5194,11 @@
               "sectorRequired": false,
               "messageLabel": "Which work would you most like to get time back from?",
               "messagePlaceholder": "For example: weekly reporting, proposals, social content, research",
-              "consent": "I agree that Greatstone can use these details to reply to my enquiry. See our <a href=\"#go/privacy\">Privacy Policy</a>.",
+              "consent": "I agree that Greatstone can use these details to reply to my enquiry. See our <a href=\"/privacy\">Privacy Policy</a>.",
               "sentHeading": "Thank you. Your enquiry has reached us.",
               "sentBody": "A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at",
               "sentLinkLabel": "Read how we work",
-              "sentLinkHref": "#go/method",
+              "sentLinkHref": "/method",
               "failedHeading": "Your message did not reach us.",
               "failedBody": "Please email us at",
               "subjectPrefix": "Enquiry",
@@ -5764,7 +5764,7 @@
               "id": "prose-2gnchk",
               "kicker": "Questions",
               "kickerLevel": "h2",
-              "body": "Email <a href=\"mailto:dx@greatstonesoftware.co.uk\">dx@greatstonesoftware.co.uk</a>. More on how we use personal data is in our <a href=\"#go/privacy\">Privacy policy</a>.",
+              "body": "Email <a href=\"mailto:dx@greatstonesoftware.co.uk\">dx@greatstonesoftware.co.uk</a>. More on how we use personal data is in our <a href=\"/privacy\">Privacy policy</a>.",
               "align": "left",
               "width": "reading",
               "appearance": {
@@ -6050,7 +6050,7 @@
               "id": "prose-2rc9sj",
               "kicker": "Privacy and cookies",
               "kickerLevel": "h2",
-              "body": "How we use personal data is in our <a href=\"#go/privacy\">Privacy policy</a>, and our use of cookies is in our <a href=\"#go/cookies\">Cookie policy</a>.",
+              "body": "How we use personal data is in our <a href=\"/privacy\">Privacy policy</a>, and our use of cookies is in our <a href=\"/cookies\">Cookie policy</a>.",
               "align": "left",
               "width": "reading",
               "appearance": {
