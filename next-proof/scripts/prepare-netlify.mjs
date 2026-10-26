@@ -7,7 +7,7 @@ const editor = process.argv[3] === '--editor';
 if (!target) throw new Error('Pass a new scratch directory for the proof deploy.');
 if (process.argv[3] && !editor) throw new Error('Only --editor is supported as a preparation mode.');
 await mkdir(target, { recursive: true });
-const files = ['src', 'app', 'next-proof', 'public', 'scripts', 'package.json', 'package-lock.json', 'next.config.mjs', 'middleware.js'];
+const files = ['src', 'app', 'contracts', 'next-proof', 'public', 'scripts', 'package.json', 'package-lock.json', 'next.config.mjs', 'middleware.js'];
 if (!editor) files.push('netlify/functions', 'supabase/functions/_shared');
 for (const name of files) {
   await cp(resolve(root, name), resolve(target, name), {
