@@ -39,6 +39,8 @@ const bob = { id: '22222222-2222-4222-8222-222222222222', email: 'bob@b.test' };
 test('claims: participant needs id and email; system is scoped', () => {
   assert.deepEqual(claimsFor('system'), { role: 'interview_worker', scope: 'system' });
   assert.equal(claimsFor(alice).email, 'alice@a.test');
+  // the Better Auth user id is the identity the interview policies match on
+  assert.deepEqual([claimsFor(alice).scope, claimsFor(alice).sub], ['participant', alice.id]);
   assert.throws(() => claimsFor({ id: 'x' }));
   assert.throws(() => claimsFor(null));
 });
