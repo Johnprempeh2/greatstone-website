@@ -28,6 +28,8 @@ under that id. One round per client engagement (the Deep Dive's first step).
   "costEnvelopePence": 50000,
   "endDate": "2026-11-13 or null",
   "retentionDeleteAfter": "2027-02-13 or null",
+  "retentionDays": 90,
+  "readoutAt": "ISO or null",
   "enrol": { "enabled": true, "expiresAt": "ISO or null", "allowedEmailDomains": ["example.com"],
              "defaultUnitId": "uuid or null", "rotateToken": false },
   "units": [ { "id": "uuid", "parentId": "uuid or null", "name": "Finance", "kind": "team", "seatAllocation": 8 } ],
@@ -118,5 +120,10 @@ who withdraws is hard-deleted and their events are removed.
 
 - The join page, account sign-up (Better Auth, email verified), enrolment checks (token, domain, seats), the
   interview, consent, sign-off read-back, memory opt-in and hard-delete opt-out.
-- Abandonment close-out (scheduled), retention delete after `retentionDeleteAfter` (scheduled).
+- Abandonment close-out (scheduled, hourly). Retention delete (scheduled, daily, GRE-2653): on the deletion date,
+  `readoutAt` (or the close, with no readout) plus `retentionDays` (optional, 0 to 3650, default 90), or
+  `retentionDeleteAfter` if that comes first. The site first writes an anonymised themes copy, then hard-deletes the
+  round's sessions, transcripts, insights, synthesis, invites and per-person memory; consent records and content-free
+  usage stay. The round view returns `retentionDays`, `readoutAt`, `closedAt` and `deletionDate`. The outbox gets a
+  `retention_deleted` event with counts for the engagement owner.
 - The client sees only a released synthesis.
