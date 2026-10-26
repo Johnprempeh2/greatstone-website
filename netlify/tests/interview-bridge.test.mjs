@@ -11,6 +11,7 @@ import { startPostgres, skip } from './lib/postgres.mjs';
 import { SCHEME, SCHEME_V2, canonicalQuery, canonicalString, parseBridgeKeys } from '../functions/lib/admin-bridge-auth.mjs';
 import { makeAdminBridgeHandler } from '../functions/admin-bridge.mjs';
 import { checkRound, inviteEmail } from '../functions/lib/interview/bridge.mjs';
+import { CURRENT as AGREEMENT } from '../functions/lib/interview/agreement.mjs';
 
 const CONTRACT = JSON.parse(readFileSync(new URL('../../contracts/gs-bridge-v1/vectors.json', import.meta.url), 'utf8'));
 const PRIVATE = createPrivateKey({
@@ -105,7 +106,11 @@ test('GSAM creates, updates and reads a round', { skip }, async () => {
   assert.equal(created.status, 200, JSON.stringify(created.body));
   const r1 = created.body.round;
   assert.deepEqual([r1.status, r1.mode, r1.seatTotal, r1.contextPackVersion], ['open', 'team', 3, 1]);
-  assert.match(r1.joinUrl, /^https:\/\/.+\/#join\/[A-Za-z0-9_-]{32}$/);
+  // no join link until the organisation accepts the agreement (next test); the token is there
+  assert.equal(r1.joinUrl, null);
+  const token = () => sql(`SELECT enrol_token FROM interview.engagement WHERE id = '${ROUND}'`);
+  const t1 = token();
+  assert.match(t1, /^[A-Za-z0-9_-]{32}$/);
   assert.equal(r1.enrol.defaultUnitId, OPS);
   assert.equal(sql(`SELECT org_id || ' ' || customer_id FROM interview.engagement WHERE id = '${ROUND}'`), `${ORG} ${CUST}`);
   assert.equal(r1.organisationId, CUST);
@@ -125,11 +130,11 @@ test('GSAM creates, updates and reads a round', { skip }, async () => {
   // the same pack makes no new version; a changed one does; rotating the token changes the link
   const same = await call(post(`${AT}/${ROUND}`, round()));
   assert.equal(same.body.round.contextPackVersion, 1);
-  assert.equal(same.body.round.joinUrl, r1.joinUrl);
+  assert.equal(token(), t1);
   const changed = await call(post(`${AT}/${ROUND}`, round({
     contextPack: { ...round().contextPack, scope: 'Full revenue scope.' }, enrol: { ...round().enrol, rotateToken: true } })));
   assert.equal(changed.body.round.contextPackVersion, 2);
-  assert.notEqual(changed.body.round.joinUrl, r1.joinUrl);
+  assert.notEqual(token(), t1);
 
   // an over-allocated carve-up is a 400, and nothing of it stays
   const over = await call(post(`${AT}/${ROUND}`, round({ units: [
@@ -157,6 +162,48 @@ test('GSAM creates, updates and reads a round', { skip }, async () => {
   assert.equal((await call(post(nowhere, round()))).status, 400);
   // the old unkeyed path is gone
   assert.equal((await call(signed(`/api/admin/v1/interview/rounds/${ROUND}`))).status, 404);
+});
+
+// gate GRE-2656 (GRE-2794): no invite, resend, reminder or join link until the organisation accepts the agreement
+const accept = (customerId, { version = AGREEMENT.version, sha = AGREEMENT.sha256 } = {}) => sql(`INSERT INTO interview.agreement_acceptance
+    (customer_id, agreement_key, agreement_version, content_sha256, user_id, customer_user_id, name, email, role_title, legal_name,
+     read_confirmed, authority_confirmed, ip_address)
+  VALUES ('${customerId}', 'interview-dpa', '${version}', '${sha}', 'a7000000-0000-4000-8000-0000000000aa',
+    'a8000000-0000-4000-8000-0000000000aa', 'Ada Admin', 'ada@example.test', 'Director', 'Example Ltd', true, true, '192.0.2.1')`);
+
+test('without an accepted agreement GSAM can create, send, resend or remind no invite, and gets no join link', { skip }, async () => {
+  const refused = (r) => { assert.equal(r.status, 409, JSON.stringify(r.body)); assert.deepEqual(r.body, { error: { code: 'agreement_required' } }); };
+  const people = { send: true, people: [{ email: 'ann@example.test', name: 'Ann Analyst' }] };
+  refused(await call(post(`${AT}/${ROUND}/invites`, people)));
+  refused(await call(post(`${AT}/${ROUND}/invites`, { send: false, people: people.people })));
+  // resend and remind name someone on the round; GSAM put them there before the gate (or by hand)
+  sql(`INSERT INTO interview.employee (engagement_id, email, name, status) VALUES ('${ROUND}', 'pre@example.test', 'Pre Gate', 'invited')`);
+  const pre = sql(`SELECT id FROM interview.employee WHERE email = 'pre@example.test'`);
+  refused(await call(post(`${AT}/${ROUND}/invites/send`, { kind: 'resend', employeeIds: [pre] })));
+  refused(await call(post(`${AT}/${ROUND}/invites/send`, { kind: 'remind', employeeIds: [pre] })));
+  assert.equal(mails.length, 0);
+  assert.equal(sql(`SELECT count(*) FROM interview.employee WHERE engagement_id = '${ROUND}'`), '1');
+  // the refusal is audited as a conflict and leaves no invite audit
+  assert.equal(sql(`SELECT count(*) FROM interview.audit_log WHERE engagement_id = '${ROUND}' AND action LIKE 'round.%' AND action <> 'round.created' AND action <> 'round.updated'`), '0');
+  const view = (await call(signed(`${AT}/${ROUND}`))).body.item;
+  assert.equal(view.joinUrl, null);
+  assert.deepEqual(view.agreement, { version: AGREEMENT.version, contentSha256: AGREEMENT.sha256, accepted: false, acceptedAt: null });
+
+  // an acceptance of an older text, or of another organisation, does not open it
+  accept(CUST, { version: 'v1', sha: 'a'.repeat(64) });
+  accept(OTHER);
+  refused(await call(post(`${AT}/${ROUND}/invites`, people)));
+  refused(await call(post(`${AT}/${ROUND}/invites/send`, { kind: 'remind', employeeIds: [pre] })));
+
+  // the current text accepted: the link shows and the invites go out
+  accept(CUST);
+  const opened = (await call(signed(`${AT}/${ROUND}`))).body.item;
+  assert.match(opened.joinUrl, /#join\//);
+  assert.equal(opened.agreement.accepted, true);
+  assert.match(opened.agreement.acceptedAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal((await call(post(`${AT}/${ROUND}/invites/send`, { kind: 'remind', employeeIds: [pre] }))).status, 200);
+  mails.length = 0;
+  sql(`DELETE FROM interview.employee WHERE email = 'pre@example.test'`);
 });
 
 test('GSAM invites people; the site emails them once, after commit', { skip }, async () => {

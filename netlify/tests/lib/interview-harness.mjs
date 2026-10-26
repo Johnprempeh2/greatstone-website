@@ -16,6 +16,7 @@ import { makeJoinHandler } from '../../functions/interview-join.mjs';
 import { makeVoiceStartHandler } from '../../functions/interview-voice-start.mjs';
 import { makeVoiceThinkHandler } from '../../functions/interview-voice-think.mjs';
 import { setExtractionClient } from '../../functions/lib/interview/extraction.mjs';
+import { CURRENT as AGREEMENT } from '../../functions/lib/interview/agreement.mjs';
 
 export { skip };
 
@@ -55,12 +56,23 @@ export function newCustomer(sql, name = 'Client') {
   return id;
 }
 
+/** The organisation's acceptance of the current data processing agreement (GRE-2794), as a company admin leaves it. */
+export function acceptAgreement(sql, customerId) {
+  sql(`INSERT INTO interview.agreement_acceptance (customer_id, agreement_key, agreement_version, content_sha256, user_id,
+      customer_user_id, name, email, role_title, legal_name, read_confirmed, authority_confirmed, ip_address)
+    VALUES ('${customerId}', '${AGREEMENT.key}', '${AGREEMENT.version}', '${AGREEMENT.sha256}', 'ba-admin', '${randomUUID()}',
+      'Ada Admin', 'ada@example.test', 'Director', 'Client Ltd', true, true, '192.0.2.1')
+    ON CONFLICT DO NOTHING;`);
+}
+
 /**
  * An open round as GSAM leaves it (bridge POST rounds/{id}): engagement, root + default team unit, an approved context
- * pack, enrolment on. branding_config.voice=false is the per-round typed-only switch.
+ * pack, enrolment on. branding_config.voice=false is the per-round typed-only switch. agreement=false leaves the
+ * organisation without an accepted data processing agreement, so no one can join or take a seat.
  */
 export function seedRound(sql, { customerId, clientName = 'Example Ltd', seatTotal = 10, domains = ['example.test'], voice = true,
-  status = 'active', token = `tok${randomUUID().replace(/-/g, '')}` } = {}) {
+  status = 'active', token = `tok${randomUUID().replace(/-/g, '')}`, agreement = true } = {}) {
+  if (agreement) acceptAgreement(sql, customerId);
   const id = randomUUID();
   const root = randomUUID();
   const team = randomUUID();

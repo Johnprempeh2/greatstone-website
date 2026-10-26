@@ -215,7 +215,8 @@ for (const mode of MODES) {
       for (const t of tables) {
         assert.equal(db.sql(`SELECT count(*) FROM interview.${t} WHERE customer_id IS NULL`), '0', `${t}: null customer_id`);
         written[t] = Number(db.sql(`SELECT count(*) FROM interview.${t} WHERE customer_id = '${customerId}'`));
-        if (withUser.has(t)) {
+        // the agreement acceptance is the company admin's record, not the interviewee's (GRE-2794)
+        if (withUser.has(t) && t !== 'agreement_acceptance') {
           // every row of this organisation is the account's (it is the only person in it), and none of the account's is elsewhere
           assert.equal(db.sql(`SELECT count(*) FROM interview.${t} WHERE customer_id = '${customerId}' AND user_id IS DISTINCT FROM '${dan.id}'`),
             '0', `${t}: a row of this organisation with another user id`);

@@ -13,6 +13,8 @@ import { closeOutOpenSessions } from './lifecycle.mjs';
 import { getLatestSynthesis, getReleasedSynthesis, releaseSynthesis, withdrawRelease } from './synthesis/release.mjs';
 import { getInterview, listInterviews, pushReleasedSynthesis } from './bridge-interviews.mjs';
 import { ensurePersonForUser } from './provision.mjs';
+import { acceptanceCopyHtml, acceptanceHistory, acceptanceView, agreementState, copyFilename,
+  requireAgreement } from './agreement.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -156,6 +158,8 @@ async function ownedRound(db, ctx, roundId) {
 }
 
 export async function roundView(db, eng) {
+  // no join link until the organisation has accepted the current data processing agreement (GRE-2794)
+  const agreement = await agreementState(db, eng.customer_id);
   const counts = must(await db.sql(`SELECT e.status::text AS status, count(*)::int AS n FROM employee e
     WHERE e.engagement_id = $1 GROUP BY 1`, [eng.id]));
   const abandoned = must(await db.sql(`SELECT count(*)::int AS n FROM session s JOIN employee e ON e.id = s.employee_id
@@ -169,7 +173,9 @@ export async function roundView(db, eng) {
     seatTotal: eng.seat_total, costEnvelopePence: Number(eng.cost_envelope_pence),
     spendPence: Number(spendRow?.spent_pence ?? spendRow?.spend_pence ?? spendRow?.cost_pence ?? 0),
     endDate: eng.end_date, retentionDeleteAfter: eng.retention_delete_after,
-    joinUrl: joinUrl(eng.enrol_token),
+    joinUrl: agreement.accepted ? joinUrl(eng.enrol_token) : null,
+    agreement: { version: agreement.version, contentSha256: agreement.contentSha256, accepted: agreement.accepted,
+      acceptedAt: agreement.acceptance?.acceptedAt ?? null },
     enrol: { enabled: eng.enrol_enabled, expiresAt: eng.enrol_expires_at, allowedEmailDomains: eng.allowed_email_domains,
       defaultUnitId: eng.default_unit_id },
     contextPackVersion: eng.context_pack_version,
@@ -293,6 +299,7 @@ export function inviteEmail({ name, clientName, url, targetMinutes }) {
 export async function invitePeople(db, ctx, roundId, body, after) {
   const { people, send } = checkInvites(body);
   const eng = await ownedRound(db, ctx, roundId);
+  await requireAgreement(db, eng.customer_id);
   const units = new Set(must(await db.from('org_unit').select('id').eq('engagement_id', eng.id)).map((u) => u.id));
   const invited = [];
   for (const [i, p] of people.entries()) {
@@ -371,6 +378,7 @@ export function checkSend(body) {
 export async function sendInvites(db, ctx, roundId, body, after) {
   const { kind, userIds, employeeIds } = checkSend(body);
   const eng = await ownedRound(db, ctx, roundId);
+  await requireAgreement(db, eng.customer_id);
   if (eng.status !== 'active' || !eng.enrol_token) bad('the round is not open');
   const rows = must(await db.sql(`SELECT id, user_id, email, name, status::text AS status FROM employee
     WHERE engagement_id = $1 AND portal_role <> 'gs_admin' AND (user_id::text = ANY($2::text[]) OR id::text = ANY($3::text[]))`,
@@ -479,8 +487,41 @@ function roundPath(p) {
   return { customerId: p[2].toLowerCase(), roundId: p[4], tail: p.slice(5) };
 }
 
+// interview/organisations/{organisationId}/agreement[/acceptances/{id}/copy]: the organisation's acceptance of the
+// data processing agreement, and a copy of an accepted agreement with its record (GRE-2794)
+function agreementRoute(p) {
+  if (p[0] !== 'interview' || p[1] !== 'organisations' || !UUID.test(p[2] || '') || p[3] !== 'agreement') return null;
+  const tail = p.slice(4);
+  const copyId = tail.length === 3 && tail[0] === 'acceptances' && tail[2] === 'copy' ? tail[1] : null;
+  if (tail.length && !copyId) return null;
+  const customerId = p[2].toLowerCase();
+  return {
+    resource: 'interview', id: customerId,
+    async run(client, params) {
+      if ([...params.keys()].length) bad('no parameters');
+      const { rows: [{ org }] } = await client.query(`SELECT current_setting('request.jwt.claims', true)::jsonb->>'org' AS org`);
+      // the organisation must be this tenant's
+      const { rows: mine } = await client.query('SELECT 1 FROM customers WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL', [customerId, org]);
+      if (!mine.length) throw new BridgeRequestError('not_found', 'no such organisation');
+      const db = interviewDbOnClient(client, { org, customer_id: customerId });
+      if (copyId) {
+        if (!UUID.test(copyId)) throw new BridgeRequestError('not_found', 'no such acceptance');
+        const row = (await acceptanceHistory(db, customerId)).find((r) => r.id === copyId.toLowerCase());
+        const html = row && acceptanceCopyHtml(row);
+        if (!html) throw new BridgeRequestError('not_found', 'no such acceptance');
+        return { outcome: 'ok', rowCount: 1, body: { item: { filename: copyFilename(row), contentType: 'text/html; charset=utf-8', html } } };
+      }
+      const state = await agreementState(db, customerId);
+      const history = (await acceptanceHistory(db, customerId)).map(acceptanceView);
+      return { outcome: 'ok', rowCount: history.length, body: { item: { ...state, history } } };
+    },
+  };
+}
+
 /** The read route for path parts after /api/admin/v1/, or null when it is not an interview path. */
 export function interviewReadRoute(p) {
+  const agreement = agreementRoute(p);
+  if (agreement) return agreement;
   const at = roundPath(p);
   if (!at) return null;
   const tail = at.tail.join('/');

@@ -19,6 +19,7 @@ import { json, participantFromRequest, interviewEnabled } from './lib/interview/
 import { withinRate } from './lib/interview/ratelimit.mjs';
 import { provisionInvitee, escapeIlike } from './lib/interview/provision.mjs';
 import { logAudit } from './lib/interview/audit.mjs';
+import { acceptanceFor } from './lib/interview/agreement.mjs';
 
 const welcome = () => ({ ok: true, redirect: '#portal/interview', message: 'Welcome aboard — taking you to your conversation…' });
 const SPOKEN_FOR = new Set(['invited', 'started', 'completed']);
@@ -45,7 +46,8 @@ export async function joinInfo(sys, token, team) {
   const eng = TOKEN.test(token || '') ? await roundForToken(sys, token) : null;
   const expired = eng?.enrol_expires_at ? new Date(eng.enrol_expires_at).getTime() < Date.now() : false;
   // Port: a round GSAM has not opened (draft) or has closed is not active either
-  const valid = Boolean(eng && eng.enrol_enabled && !expired && eng.status === 'active');
+  // and no join link works until the organisation has accepted the data processing agreement (GRE-2794)
+  const valid = Boolean(eng && eng.enrol_enabled && !expired && eng.status === 'active' && await acceptanceFor(sys, eng.customer_id));
   if (!valid) return { valid: false, expired };
   const teams = await teamsFor(sys, eng);
   const teamUnit = team ? teams.find((t) => t.id === team) ?? null : null;
@@ -76,6 +78,9 @@ export async function enrol({ db, sys, caller, token, name: nameRaw, unitId: uni
     return { ok: false, message: 'This invitation link has expired. Please ask your organiser for a fresh one.' };
   }
   if (!eng.default_unit_id) return { ok: false, message: 'This engagement is not fully set up yet. Please contact your organiser.' };
+  if (!(await acceptanceFor(sys, eng.customer_id))) {
+    return { ok: false, message: 'This interview round is not open yet. Your organisation is still completing the set-up with Greatstone.' };
+  }
 
   // Already on the round under this account: nothing to do. Someone GSAM already invited (any role) claims their
   // row by verified email; the domain gate is for self-enrolment.
