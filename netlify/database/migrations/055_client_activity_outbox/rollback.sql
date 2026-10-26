@@ -15,4 +15,6 @@ DROP FUNCTION IF EXISTS public.client_activity_from_quote();
 DROP FUNCTION IF EXISTS public.client_activity_from_customer();
 DROP FUNCTION IF EXISTS public.client_activity_emit(uuid,uuid,text,text,text);
 DROP TABLE IF EXISTS public.client_activity_outbox;
+DROP TABLE IF EXISTS public.client_activity_sequence;
+DROP FUNCTION IF EXISTS public.client_activity_next_sequence();
 DROP FUNCTION IF EXISTS public.client_activity_no_change();

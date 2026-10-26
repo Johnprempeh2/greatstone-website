@@ -1,7 +1,7 @@
 -- GRE-2652. Client activity is written by row triggers in the action's transaction.
 -- The client organisation id is customers.id; org_id is the site's internal tenant.
 CREATE TABLE public.client_activity_outbox (
-  sequence bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sequence bigint PRIMARY KEY,
   id uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
   org_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
   organisation_id uuid NOT NULL, -- durable source id even if the client row is later removed
@@ -26,6 +26,32 @@ CREATE POLICY client_activity_owner ON public.client_activity_outbox FOR ALL TO 
 CREATE POLICY client_activity_bridge ON public.client_activity_outbox FOR SELECT TO gsam_bridge_read
   USING (org_id = app_bridge_org());
 
+-- A single locked row allocates the global site sequence inside the action transaction.
+-- Its update rolls back with the event, and later emitters wait until commit.
+CREATE TABLE public.client_activity_sequence (
+  id smallint PRIMARY KEY CHECK (id = 1),
+  last_sequence bigint NOT NULL CHECK (last_sequence >= 0)
+);
+INSERT INTO public.client_activity_sequence(id, last_sequence) VALUES (1, 0);
+ALTER TABLE public.client_activity_sequence ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_activity_sequence FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON public.client_activity_sequence FROM PUBLIC, anon, authenticated, service_role,
+  gsam_bridge_read, gsam_bridge_write, gsam_bridge_refund;
+CREATE POLICY client_activity_sequence_owner ON public.client_activity_sequence FOR ALL TO CURRENT_USER
+  USING (true) WITH CHECK (true);
+
+CREATE FUNCTION public.client_activity_next_sequence() RETURNS bigint
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_sequence bigint;
+BEGIN
+  UPDATE public.client_activity_sequence SET last_sequence = last_sequence + 1 WHERE id = 1
+    RETURNING last_sequence INTO STRICT v_sequence;
+  RETURN v_sequence;
+END $$;
+REVOKE ALL ON FUNCTION public.client_activity_next_sequence() FROM PUBLIC, anon, authenticated,
+  service_role, gsam_bridge_read, gsam_bridge_write, gsam_bridge_refund;
+ALTER TABLE public.client_activity_outbox ALTER COLUMN sequence SET DEFAULT public.client_activity_next_sequence();
+
 CREATE FUNCTION public.client_activity_no_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION 'client activity is append-only';
@@ -33,8 +59,6 @@ END $$;
 CREATE TRIGGER client_activity_no_change BEFORE UPDATE OR DELETE ON public.client_activity_outbox
   FOR EACH ROW EXECUTE FUNCTION public.client_activity_no_change();
 
--- Serialise emitters until commit: a later transaction cannot publish a higher sequence first.
--- A rolled-back nextval can leave a harmless numeric hole.
 CREATE FUNCTION public.client_activity_emit(p_org uuid, p_customer uuid, p_kind text,
     p_subject text, p_label text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
@@ -42,7 +66,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.customers WHERE id = p_customer AND org_id = p_org) THEN
     RAISE EXCEPTION 'activity client does not belong to tenant';
   END IF;
-  PERFORM pg_advisory_xact_lock(2652, 1);
   INSERT INTO public.client_activity_outbox(org_id, organisation_id, kind, subject_id, label)
     VALUES (p_org, p_customer, p_kind, p_subject, p_label);
 END $$;

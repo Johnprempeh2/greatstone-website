@@ -100,6 +100,7 @@ test('signed pull orders, replays and holds the cursor on an empty page', { skip
 
 test('event emission rolls back with its action and the outbox is append-only', { skip }, async () => {
   const beforeCount = (await query('SELECT count(*)::int AS n FROM client_activity_outbox')).rows[0].n;
+  const beforeSequence = (await query('SELECT last_sequence FROM client_activity_sequence WHERE id=1')).rows[0].last_sequence;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -107,6 +108,7 @@ test('event emission rolls back with its action and the outbox is append-only', 
     await client.query('ROLLBACK');
   } finally { client.release(); }
   assert.equal((await query('SELECT count(*)::int AS n FROM client_activity_outbox')).rows[0].n, beforeCount);
+  assert.equal((await query('SELECT last_sequence FROM client_activity_sequence WHERE id=1')).rows[0].last_sequence, beforeSequence);
   assert.equal((await query("SELECT count(*)::int AS n FROM quotes WHERE reference='Q-ROLLBACK'")).rows[0].n, 0);
   await assert.rejects(query('DELETE FROM client_activity_outbox WHERE organisation_id=$1', [CUSTOMER]), /append-only/);
 });
