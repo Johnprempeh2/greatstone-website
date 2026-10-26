@@ -42,6 +42,8 @@ under that id. One round per client engagement (the Deep Dive's first step).
   "costEnvelopePence": 50000,
   "endDate": "2026-11-13 or null",
   "retentionDeleteAfter": "2027-02-13 or null",
+  "retentionDays": 90,
+  "readoutAt": "ISO or null",
   "enrol": { "enabled": true, "expiresAt": "ISO or null", "allowedEmailDomains": ["example.com"],
              "defaultUnitId": "uuid or null", "rotateToken": false },
   "units": [ { "id": "uuid", "parentId": "uuid or null", "name": "Finance", "kind": "team", "seatAllocation": 8 } ],
@@ -63,6 +65,8 @@ under that id. One round per client engagement (the Deep Dive's first step).
   it started with only for its current turn; the next turn reads the new one.
 - `voice: false` takes voice away from this round at once (typed only, the Indago fallback); `true` or absent offers
   it when the site has voice on. The site-wide `VOICE_ENABLED=0` still wins.
+- `retentionDays` (0 to 3650, default 90) and `readoutAt` set the retention delete date (see "What the website owns").
+  They come with GRE-2653 (website PR #134).
 - Units are upserted by id. A unit that GSAM leaves out is kept if anyone is placed in it, otherwise removed.
 - `status: open` needs an approved context pack, `seatTotal > 0` and at least one allowed domain. `draft` and
   `closed` refuse new interviews; `closed` also closes enrolment.
@@ -158,6 +162,7 @@ after the idle limit). Answer `200 { round, closedSessions }`.
   "targetMinutes": 20, "seatTotal": 40, "joinUrl": "https://…/#join/<token>", "enrol": { … },
   "counts": { "invited": 0, "started": 0, "completed": 0, "declined": 0, "abandoned": 0 },
   "spendPence": 0, "costEnvelopePence": 50000, "contextPackVersion": 3,
+  "retentionDays": 90, "readoutAt": "ISO or null", "closedAt": "ISO or null", "deletionDate": "ISO or null",
   "released": { "synthesisId": "uuid or null", "releasedAt": "ISO or null" } } }
 ```
 
@@ -213,5 +218,10 @@ person with it. An interview that is not eligible answers `404`.
 - Voice can be turned off (`VOICE_ENABLED=0`): the typed interview is complete on its own (the Indago fallback).
 - The join page, account sign-up (Better Auth, email verified), enrolment checks (token, domain, seats), the
   interview, consent, sign-off read-back, memory opt-in and hard-delete opt-out.
-- Abandonment close-out (scheduled), retention delete after `retentionDeleteAfter` (scheduled).
+- Abandonment close-out (scheduled, hourly). Retention delete (scheduled, daily, GRE-2653): on the deletion date,
+  `readoutAt` (or the close, with no readout) plus `retentionDays` (optional, 0 to 3650, default 90), or
+  `retentionDeleteAfter` if that comes first. The site first writes an anonymised themes copy, then hard-deletes the
+  round's sessions, transcripts, insights, synthesis, invites and per-person memory; consent records and content-free
+  usage stay. The round view returns `retentionDays`, `readoutAt`, `closedAt` and `deletionDate`. The outbox gets a
+  `retention_deleted` event with counts for the engagement owner.
 - The client sees only a released synthesis.
