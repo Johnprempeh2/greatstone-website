@@ -16,6 +16,7 @@ import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeFx, bridgeGet
   bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
 import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
+import { SITE_CONTRACT } from '../../next-proof/site-contract.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const PREFIX = '/api/admin/v1/';
@@ -109,7 +110,7 @@ export function makeAdminBridgeHandler({
         if (target.resource === 'health') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'health takes no parameters');
           return { outcome: 'ok', rowCount: 0, body: { ok: true, kid: call.kid, capability: call.capability,
-            serverTime: new Date(now()).toISOString(), schema: SCHEME } };
+            serverTime: new Date(now()).toISOString(), schema: SCHEME, siteContract: SITE_CONTRACT } };
         }
         if (target.resource === 'fx') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'fx takes no parameters');

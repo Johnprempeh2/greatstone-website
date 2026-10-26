@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import release from '../next-proof/data/release.json' with { type: 'json' };
 import { checkBuiltLinks } from '../next-proof/scripts/check-built-links.mjs';
+import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 
 export const EDITOR_SITE_ID = 'b546812d-8d25-49dc-94c2-e04a5b31bde4';
 export const EDITOR_CONTRACT = '2';
@@ -35,6 +36,9 @@ async function main() {
   const [site, option] = process.argv.slice(2);
   if (!site || (option && option !== '--check-only')) throw new Error('Usage: node scripts/deploy-editor-alias.mjs <Netlify site UUID> [--check-only]');
   if (!option) {
+    const contract = spawnSync('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)], { stdio: 'inherit' });
+    if (contract.error) throw contract.error;
+    if (contract.status !== 0) throw new Error(`Site contract check failed (${contract.status})`);
     if (!process.env.NETLIFY_AUTH_TOKEN) throw new Error('NETLIFY_AUTH_TOKEN is required');
     const config = await readFile('netlify.toml', 'utf8');
     if (!config.includes(`GSAM_EDITOR_SITE_ID = "${EDITOR_SITE_ID}"`)) throw new Error('Editor build config has the wrong GSAM site ID');
