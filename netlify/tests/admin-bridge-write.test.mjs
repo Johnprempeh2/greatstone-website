@@ -47,6 +47,7 @@ function signed(path, { method = 'GET', kid = 'test-read-1', body = '', actor = 
 }
 const write = (path, body, opts = {}) => signed(path, { method: 'POST', kid: 'test-write-1', body, ...opts });
 const patch = (path, body, opts = {}) => signed(path, { method: 'PATCH', kid: 'test-write-1', body, ...opts });
+const remove = (path, body, opts = {}) => signed(path, { method: 'DELETE', kid: 'test-write-1', body, ...opts });
 
 test('the v2 signing vectors verify, and the v1 cases are byte for byte unchanged', () => {
   // the v1 part of the file, as GRE-2323 merged it (sha256 of the whole 048 file: be6ae25e…1327)
@@ -99,6 +100,8 @@ const TIER = 'a3000000-0000-4000-8000-000000000001';
 const JOB = 'a4000000-0000-4000-8000-000000000001';
 const QUOTE = 'a5000000-0000-4000-8000-000000000001';
 const PAID = 'a6000000-0000-4000-8000-000000000001';
+const CUSTOMER = 'a7000000-0000-4000-8000-000000000001';
+const OTHER_CUSTOMER = 'a7000000-0000-4000-8000-000000000002';
 let db;
 let pool;
 let handler;
@@ -133,6 +136,9 @@ before(async () => {
       VALUES ('${PAID}', '${ORG}', 'O-PAID', 'confirmed', 5000, 1000, 'pi_secret_123', 'GBP'),
              ('a6000000-0000-4000-8000-000000000002', '${ORG}', 'O-INVOICE', 'confirmed', 700, 0, NULL, 'GBP'),
              ('a6000000-0000-4000-8000-000000000003', '${ORG}', 'cs_test_checkout_123', 'confirmed', 800, 0, 'pi_secret_456', 'GBP');`);
+  run(`INSERT INTO customers (id, org_id, slug, name) VALUES
+    ('${CUSTOMER}', '${ORG}', 'billing-a', 'Billing A'),
+    ('${OTHER_CUSTOMER}', '${OTHER}', 'billing-b', 'Billing B');`);
   pool = new pg.Pool({ connectionString: db.url, max: 4 });
   handler = makeAdminBridgeHandler({ pool: () => pool, keys: KEYS, allowedIps: new Set(), log: (m) => logs.push(m), stripe: () => 'test' });
 });
@@ -188,6 +194,55 @@ test('the payment report comes from the site database only: a boolean for Stripe
   assert.equal((await call(signed('/api/admin/v1/orders/a6000000-0000-4000-8000-000000000003'))).body.item.reference, null);
   assert.equal((await call(signed('/api/admin/v1/payments?from=yesterday'))).status, 400);
   assert.equal((await call(signed('/api/admin/v1/payments?customer=x'))).status, 400);
+});
+
+test('billing lines list by customer, page, get, create, update, end and soft delete with audit', { skip }, async () => {
+  const path = '/api/admin/v1/billing-lines';
+  const create = async (description) => call(write(path, { customerId: CUSTOMER, description, qty: 2,
+    unitPriceMinor: 1250, currency: 'GBP', billingPeriod: 'monthly', startsOn: '2026-11-01', nextBillOn: '2026-12-01' }));
+  const first = await create('Monthly record');
+  assert.equal(first.status, 201);
+  assert.deepEqual([first.body.item.customer_id, first.body.item.unit_price_minor, first.body.item.row_version],
+    [CUSTOMER, '1250', 1]);
+  const second = await create('Second record');
+  assert.equal(second.status, 201);
+  const list = await call(signed(`${path}?customer=${CUSTOMER}&limit=1`));
+  assert.equal(list.status, 200);
+  assert.equal(list.body.items.length, 1);
+  assert.ok(list.body.nextCursor);
+  const next = await call(signed(`${path}?customer=${CUSTOMER}&limit=1&cursor=${encodeURIComponent(list.body.nextCursor)}`));
+  assert.equal(next.status, 200);
+  assert.deepEqual(new Set([list.body.items[0].id, next.body.items[0].id]), new Set([first.body.item.id, second.body.item.id]));
+  assert.deepEqual((await call(signed(`${path}?customer=${OTHER_CUSTOMER}`))).body.items, []);
+  const id = first.body.item.id;
+  assert.equal((await call(signed(`${path}/${id}`))).body.item.description, 'Monthly record');
+  const edited = await call(patch(`${path}/${id}`, { expectedRowVersion: 1, description: 'Updated record' }));
+  assert.deepEqual([edited.status, edited.body.item.description, edited.body.item.row_version], [200, 'Updated record', 2]);
+  const stale = await call(patch(`${path}/${id}`, { expectedRowVersion: 1, qty: 3 }));
+  assert.equal(stale.status, 409);
+  assert.equal(stale.body.current.row_version, 2);
+  const ended = await call(write(`${path}/${id}/end`, { expectedRowVersion: 2, endsOn: '2026-12-31' }));
+  assert.deepEqual([ended.status, ended.body.item.status, ended.body.item.next_bill_on], [200, 'ended', null]);
+  const deleted = await call(remove(`${path}/${id}`, { expectedRowVersion: 3 }));
+  assert.equal(deleted.status, 200);
+  assert.equal((await call(signed(`${path}/${id}`))).status, 404);
+  assert.equal(sql(`SELECT count(*) FROM admin_bridge_change WHERE table_name = 'billing_lines' AND row_id = '${id}';`), '4');
+  assert.equal((await call(write(path, { customerId: OTHER_CUSTOMER, description: 'Wrong org', qty: 1,
+    unitPriceMinor: 1, currency: 'GBP', billingPeriod: 'monthly', startsOn: '2026-11-01' }))).status, 400);
+  assert.equal((await call(write(path, { customerId: CUSTOMER, description: 'Wrong period', qty: 1,
+    unitPriceMinor: 1, currency: 'GBP', billingPeriod: 'one_time', startsOn: '2026-11-01' }))).status, 400);
+});
+
+test('billing line RLS keeps another organisation invisible to bridge readers', { skip }, () => {
+  const line = sql(`INSERT INTO billing_lines (org_id, customer_id, description, qty, unit_price_minor, currency,
+    billing_period, starts_on) VALUES ('${OTHER}', '${OTHER_CUSTOMER}', 'Other org record', 1, 100, 'GBP', 'monthly', '2026-11-01') RETURNING id;`);
+  const r = db.psql(`BEGIN;
+    SET LOCAL ROLE gsam_bridge_read;
+    SELECT set_config('request.jwt.claims', '{"role":"gsam_bridge","cap":"read","org":"${ORG}"}', true);
+    SELECT count(*) FROM billing_lines WHERE id = '${line}';
+    ROLLBACK;`);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout.trim().split('\n').at(-1), '0');
 });
 
 test('capability comes from the key: read cannot write, write cannot read or ask for a refund, refund cannot write', { skip }, async () => {

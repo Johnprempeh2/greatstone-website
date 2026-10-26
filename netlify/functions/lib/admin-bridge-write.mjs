@@ -350,6 +350,18 @@ const IMPORT = {
   columnMapping: ['column_mapping', object], sourceChecksum: ['source_checksum', text(128)],
   rows: ['rows', (x, k) => (Array.isArray(x) && x.length >= 1 && x.length <= 2000 ? x : bad(k))],
 };
+const BILLING_LINE = {
+  customerId: ['customer_id', id({ nullable: false })], offeringId: ['offering_id', id()],
+  variantId: ['variant_id', id()], orderId: ['order_id', id()],
+  description: ['description', text(2000, { required: true })], qty: ['qty', int(1, 1e6)],
+  unitPriceMinor: ['unit_price_minor', minor({ nullable: false })], currency: ['currency', currency],
+  billingPeriod: ['billing_period', oneOf(['monthly', 'quarterly', 'annual', 'multi_year'])],
+  startsOn: ['starts_on', date], nextBillOn: ['next_bill_on', date], endsOn: ['ends_on', date],
+  notes: ['notes', text(10000)],
+};
+const BILLING_LINE_EDIT = Object.fromEntries(Object.entries(BILLING_LINE).filter(([key]) =>
+  !['customerId', 'offeringId', 'variantId', 'orderId'].includes(key)));
+BILLING_LINE_EDIT.status = ['status', oneOf(['active', 'paused'])];
 
 /** A dry-run import: the job and its rows as GSAM planned them, validated when no row is an error. */
 async function createImport(client, ctx, body) {
@@ -386,6 +398,32 @@ async function createImport(client, ctx, body) {
 function commerceRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
   if (extra !== undefined) return null;
+  if (res === 'billing-lines') {
+    if (rowId === undefined && action === undefined && method === 'POST') return { run: async (client, ctx, body) => {
+      const values = pick(body, BILLING_LINE,
+        { required: ['customerId', 'description', 'qty', 'unitPriceMinor', 'currency', 'billingPeriod', 'startsOn'] });
+      const lineId = await insert(client, 'billing_lines', { org_id: ctx.org, ...values });
+      return answer(201, await bridgeRow(client, 'billing-lines', lineId));
+    } };
+    if (rowId === undefined || !UUID.test(rowId)) return null;
+    const current = (client) => bridgeRow(client, 'billing-lines', rowId);
+    if (action === undefined && method === 'PATCH') return { current, run: async (client, ctx, body) => {
+      const values = pick(body, BILLING_LINE_EDIT, { allow: ['expectedRowVersion'] });
+      await update(client, 'billing_lines', rowId, expectedRowVersion(body), values);
+      return answer(200, await current(client));
+    } };
+    if (action === 'end' && method === 'POST') return { current, run: async (client, ctx, body) => {
+      pick(body, { endsOn: ['ends_on', date] }, { required: ['endsOn'], allow: ['expectedRowVersion'] });
+      await update(client, 'billing_lines', rowId, expectedRowVersion(body), { status: 'ended', ends_on: body.endsOn, next_bill_on: null });
+      return answer(200, await current(client));
+    } };
+    if (action === undefined && method === 'DELETE') return { current, run: async (client, ctx, body) => {
+      pick(body, {}, { allow: ['expectedRowVersion'] });
+      await update(client, 'billing_lines', rowId, expectedRowVersion(body), { deleted_at: NOW });
+      return answer(200, await current(client));
+    } };
+    return null;
+  }
   if (res === 'fx' && rowId === undefined && method === 'PATCH') {
     return { people: true, current: (client) => bridgeFx(client), run: async (client, ctx, body) => {
       people(ctx.actor);
