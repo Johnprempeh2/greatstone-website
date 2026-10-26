@@ -1,6 +1,6 @@
 // GRE-2653: interview data rights in the engine port. The six "Done when" checks of the `retention-rights-regions`
 // document on GRE-2639, against a real Postgres with every migration applied and a fake synthesis model:
-//   1. region facts in code: Deepgram EU hosts (Netlify and database regions are deploy facts, reported on GRE-2639)
+//   1. region facts in code: Deepgram US hosts (John, 25 Oct) (Netlify and database regions are deploy facts, reported on GRE-2639)
 //   2. a round with retention_days = 0 deletes everything listed, keeps only consent_event and content-free
 //      usage_ledger, and leaves the anonymised themes copy
 //   3. a participant sees and downloads only their own data; a client admin cannot see it
@@ -27,6 +27,7 @@ import { interviewNotice, QUOTE_OPTIONS } from '../../src/portal/interview-notic
 
 const id = (prefix, n) => `${prefix}000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ORG = id('0a', 1);
+const CUST = id('91', 1); // the website client organisation of every round here
 const S = id('e2', 1); // self-service and synthesis round
 const R = id('e2', 2); // retention round
 const OTHER = id('e2', 3); // untouched round (bounds)
@@ -58,7 +59,8 @@ function seedRound(eng, people, extra = '') {
   });
   sql(`SET search_path TO interview, public;
     ${rows.map((p) => `
-    INSERT INTO person (person_id, verified_email) VALUES ('${p.e.replace(/^c/, 'a')}', '${p.u.email}') ON CONFLICT DO NOTHING;
+    INSERT INTO person (person_id, verified_email, auth_user_id) VALUES ('${p.e.replace(/^c/, 'a')}', '${p.u.email}', '${p.u.id}')
+      ON CONFLICT DO NOTHING;
     INSERT INTO employee (id, engagement_id, person_id, name, email, role_title, portal_role, status, quote_choice)
       VALUES ('${p.e}', '${eng}', (SELECT person_id FROM person WHERE verified_email = '${p.u.email}'), '${p.name}', '${p.u.email}',
         'Clerk', '${p.role ?? 'employee'}', 'completed', ${p.choice ? `'${p.choice}'` : 'NULL'});
@@ -70,8 +72,8 @@ function seedRound(eng, people, extra = '') {
       VALUES ('${p.ins}', '${p.s}', 'pain', '${p.label}', '${p.q}', 0.9, ${p.choice !== 'named'}, 4);
     INSERT INTO consent_event (employee_id, kind, value) VALUES ('${p.e}', 'participation', true);
     INSERT INTO usage_ledger (session_id, engagement_id, model, input_tokens, output_tokens, cost_pence) VALUES ('${p.s}', '${eng}', 'm', 10, 5, 1);
-    INSERT INTO memory_blob (person_id, blob, opted_in, expires_at) SELECT person_id, '{"top_pains":[]}', true, now() + interval '1 year'
-      FROM person WHERE verified_email = '${p.u.email}' ON CONFLICT DO NOTHING;
+    INSERT INTO memory_blob (person_id, customer_id, blob, opted_in, expires_at)
+      SELECT person_id, '${CUST}', '{"top_pains":[]}', true, now() + interval '1 year' FROM person WHERE verified_email = '${p.u.email}' ON CONFLICT DO NOTHING;
     INSERT INTO outbox (idempotency_key, engagement_id, payload) VALUES ('${p.s}:session_end', '${eng}', '{"transcript":"${p.q}"}');
     `).join('')}
     ${extra}`);
@@ -83,13 +85,16 @@ let rPeople;
 before(async () => {
   if (skip) return;
   db = startPostgres('interview-rights');
+  await db.migrate('003');
+  sql(`INSERT INTO organisations (id, slug, name) VALUES ('${ORG}', 'greatstone', 'Greatstone');`);
   await db.migrate();
   pool = new pg.Pool({ connectionString: db.url, max: 4 });
-  sql(`SET search_path TO interview, public;
-    INSERT INTO engagement (id, client_name, org_id, seat_total, readout_at, retention_days) VALUES
-      ('${S}', 'Round S', '${ORG}', 10, now() + interval '7 days', 90),
-      ('${R}', 'Round R', '${ORG}', 10, now() - interval '1 hour', 0),
-      ('${OTHER}', 'Round O', '${ORG}', 10, now() - interval '1 hour', 90);`);
+  sql(`INSERT INTO customers (id, org_id, slug, name) VALUES ('${CUST}', '${ORG}', 'client', 'Client Ltd');
+    SET search_path TO interview, public;
+    INSERT INTO engagement (id, customer_id, client_name, org_id, seat_total, readout_at, retention_days) VALUES
+      ('${S}', '${CUST}', 'Round S', '${ORG}', 10, now() + interval '7 days', 90),
+      ('${R}', '${CUST}', 'Round R', '${ORG}', 10, now() - interval '1 hour', 0),
+      ('${OTHER}', '${CUST}', 'Round O', '${ORG}', 10, now() - interval '1 hour', 90);`);
   sPeople = seedRound(S, [
     { name: 'Alice Archer', u: ALICE, choice: 'named', q: QA, label: 'Invoices keyed by hand' },
     { name: 'Bob Baker', u: BOB, choice: 'anonymous', q: QB, label: 'Approvals stall' },
@@ -208,7 +213,7 @@ test('5: "No quotes" (or no choice) leaves no verbatim text from that person in 
   assert.doesNotMatch(JSON.stringify(row.themes.find((t) => t.theme_id === 'th-approvals')), /Bob Baker/);
   // sign-off: Carol now makes no choice -> refused; with a choice it is logged
   const carolDb = interviewDb(CAROL, { pool });
-  await assert.rejects(applySignOffConsent(carolDb, { employee: { id: sPeople[2].e, person_id: null, email: CAROL.email, name: 'Carol Cole', role_title: 'Clerk' },
+  await assert.rejects(applySignOffConsent(carolDb, { employee: { id: sPeople[2].e, person_id: null, user_id: CAROL.id, customer_id: CUST, email: CAROL.email, name: 'Carol Cole', role_title: 'Clerk' },
     unitName: null, sessionId: sPeople[2].s, choice: { memory: false } }), (e) => e.code === 'QUOTE_CHOICE_REQUIRED');
   assert.equal(scrubVerbatim(`x ${QC.toUpperCase()} y`, [QC]), `x ${WITHHELD} y`);
 });
@@ -370,7 +375,7 @@ test('2: a round with retention_days = 0 deletes everything listed, keeps consen
 
   // kept on purpose: consent (no content, still says who agreed to what and when) and content-free usage
   assert.equal(left('consent_event'), consent);
-  assert.equal(left('consent_event', `engagement_id = '${R}' AND employee_id IS NULL AND subject_email IS NOT NULL`), 1);
+  assert.equal(left('consent_event', `engagement_id = '${R}' AND employee_id IS NULL AND user_id IS NOT NULL`), 1);
   assert.equal(left('usage_ledger'), usage);
   assert.equal(left('usage_ledger', `engagement_id = '${R}' AND session_id IS NOT NULL`), 0);
 

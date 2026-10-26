@@ -35,6 +35,7 @@ const LazyStoreCart = lazy(() => import('./store/StoreCart.jsx'));
 const LazyAccount = lazy(() => import('./store/AccountDashboard.jsx')); // #account — customer self-serve portal
 const LazyOrg = lazy(() => import('./store/OrgDashboard.jsx'));         // #org — customer organization dashboard
 const LazyPortal = lazy(() => import('./portal/Portal.jsx'));           // #portal[/doc|receipt/<id>] — client portal (GRE-1256)
+const LazyInterview = lazy(() => import('./portal/interview/InterviewApp.jsx')); // #portal/interview… and #join/<token> — interview engine (GRE-2612)
 const LazyInvoice = lazy(() => import('./store/InvoiceView.jsx'));      // #invoice/<orderId> — printable VAT invoice
 const LazyMethodExplorer = lazy(() => import('./blocks/MethodExplorer.jsx')); // #breakdown — full-screen methodology explorer
 const LazyIntelHub = lazy(() => import('./intel/IntelHub.jsx')); // the AI Intelligence section — renders inline as the body of the "Intelligence" page (the renamed Insights)
@@ -156,6 +157,7 @@ import { LinkContext } from './cms/LinkField.jsx';
 import { CatalogContext } from './cms/CatalogContext.js';
 import { ServicesContext, servicesFromPage } from './store/services.mjs';
 import { parsePortalHash } from './portal/portal-model.mjs';
+import { parseInterviewHash } from './portal/interview/route.mjs';
 
 const STATUSES = [
   { id: 'draft', label: 'Draft' },
@@ -238,9 +240,15 @@ const AUTH_ERROR_MSG = _authQuery.has('error') ? 'That link is invalid or has ex
 function readOrgHash() {
   return /^#\/?org\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
-// #portal, #portal/doc/<id>, #portal/receipt/<id> → client portal (route parsing is unit-tested in portal-model)
+// #portal, #portal/doc/<id>, #portal/receipt/<id> → client portal (route parsing is unit-tested in portal-model).
+// #portal/interview… belongs to the interview engine, so it is checked first and never reaches the portal.
 function readPortalHash() {
-  return parsePortalHash(typeof location !== 'undefined' ? location.hash : '');
+  const h = typeof location !== 'undefined' ? location.hash : '';
+  return parseInterviewHash(h) ? null : parsePortalHash(h);
+}
+// #portal/interview[/session|complete|goodbye|discarded|results] and #join/<token> → interview engine (GRE-2612)
+function readInterviewHash() {
+  return parseInterviewHash(typeof location !== 'undefined' ? location.hash : '');
 }
 // #invoice/<orderId> → printable VAT invoice
 function readInvoiceHash() {
@@ -382,10 +390,15 @@ export default function App() {
   const [authError, setAuthError] = useState(AUTH_ERROR_MSG);  // …or if the link was bad, the reason to show on the sign-in screen
   const [orgRoute, setOrgRoute] = useState(readOrgHash); // #org → organization dashboard
   const [portalRoute, setPortalRoute] = useState(readPortalHash); // #portal… → client portal
+  const [interviewRoute, setInterviewRoute] = useState(readInterviewHash); // #portal/interview…, #join/<token> → interview engine
   const [invoiceRoute, setInvoiceRoute] = useState(readInvoiceHash); // #invoice/<orderId> → printable invoice
   const [breakdownRoute, setBreakdownRoute] = useState(readBreakdownHash); // #breakdown → full-screen method explorer
   const [intelRoute, setIntelRoute] = useState(readIntelHash); // legacy bare #intel → redirect to the Intelligence page
   const [intelArticle, setIntelArticle] = useState(readIntelArticle); // #intel/<id> → a briefing's own article page
+  // #join/<token> is shared with the studio's team invitation: a token the studio issued wins; any other token is
+  // an interview round's link. `interview` is the interview route actually shown (GRE-2612).
+  const cmsJoin = !!joinToken && inviteStatus(state, joinToken).kind !== 'notfound';
+  const interview = interviewRoute && (interviewRoute.view !== 'join' || !cmsJoin) ? interviewRoute : null;
   const [storageError, setStorageError] = useState(false); // sticky: persist() failed (quota), edits at risk
   const [modal, setModal] = useState(null); // on-brand prompt/confirm (replaces window.prompt/confirm)
   const toastTimer = useRef(null);
@@ -450,7 +463,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
+    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInterviewRoute(readInterviewHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
       // Back, Forward, a pasted link and a reload all land on the right page.
       const page = readPageHash();
       if (page) setCurrent(page);
@@ -567,6 +580,7 @@ export default function App() {
     if (invoiceRoute) { utility('Invoice', 'home', 'View and print the details of your Greatstone order.'); return; }
     if (accountRoute || authLanding) { utility('Your account', 'home', 'Manage your Greatstone account, orders and details.'); return; }
     if (orgRoute) { utility('Your organisation', 'home', 'Manage your organisation, team and orders with Greatstone.'); return; }
+    if (interview) { utility(interview.view === 'join' ? 'Join the conversation' : interview.view === 'results' ? 'Discovery read-out' : 'Your conversation', 'home', 'A confidential conversation about how your work really gets done, run independently by Greatstone.'); return; }
     if (portalRoute) { utility(portalRoute.view === 'receipt' ? 'Receipt' : portalRoute.view === 'doc' ? 'Document' : 'Client portal', 'home', 'Your Greatstone client portal.'); return; }
     if (confirmRoute) { utility('Order confirmed', 'home', 'Your Greatstone order is confirmed. Review the details.'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home', 'Manage the Greatstone product catalogue.'); return; }
@@ -579,14 +593,14 @@ export default function App() {
     }
     const p = state.pages[current] || state.pages[state.order[0]];
     if (p) applyHead(p.seo, p.title, current);
-  }, [current, state.pages, productSlug, svcSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, portalRoute, confirmRoute, catalogueAdmin, shopRoute, authLanding]);
+  }, [current, state.pages, productSlug, svcSlug, state.publishedProducts, breakdownRoute, intelArticle, adminNav, invoiceRoute, accountRoute, orgRoute, portalRoute, interview, confirmRoute, catalogueAdmin, shopRoute, authLanding]);
   // analytics: init once (dormant unless VITE_GTM_ID is set), then a page_view per route. This effect is
   // defined AFTER applyHead so document.title is already the new route's title when we report the view.
   useEffect(() => { initAnalytics(); injectStructuredData(); }, []);
   useEffect(() => {
     if (typeof location === 'undefined') return;
     pageview(location.pathname + location.hash, document.title);
-  }, [current, productSlug, shopRoute, accountRoute, orgRoute, portalRoute, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelArticle, adminNav]);
+  }, [current, productSlug, shopRoute, accountRoute, orgRoute, portalRoute, interview, confirmRoute, catalogueAdmin, invoiceRoute, breakdownRoute, intelArticle, adminNav]);
   // a product route opens at the top, like a fresh page
   useEffect(() => { if (productSlug) try { scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { scrollTo(0, 0); } }, [productSlug]);
   // on a public page change, move keyboard/screen-reader focus to the main content (skip the first
@@ -596,7 +610,7 @@ export default function App() {
     if (mode !== 'view') return;
     const m = document.getElementById('gs-main');
     if (m && typeof m.focus === 'function') m.focus({ preventScroll: true });
-  }, [current, shopRoute, productSlug, accountRoute, orgRoute, portalRoute, catalogueAdmin, confirmRoute, invoiceRoute]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [current, shopRoute, productSlug, accountRoute, orgRoute, portalRoute, interview, catalogueAdmin, confirmRoute, invoiceRoute]); // eslint-disable-line react-hooks/exhaustive-deps
   // in-app CTA links: "#book" → contact page; "#go/<slug>" → that page (so cross-page ghost CTAs
   // navigate within the SPA instead of hitting a dead .html href). preventDefault keeps the hash clean.
   useEffect(() => {
@@ -1364,7 +1378,7 @@ export default function App() {
 
   // the separate admin entry (#admin): sign in before any editing is possible
   // #join/<token>: the public invite-accept screen — renders regardless of sign-in or mode
-  if (joinToken) {
+  if (joinToken && !(interview && interview.view === 'join')) {
     const exitJoin = () => { if (location.hash) location.hash = ''; setJoinToken(null); };
     return (
       <div className="is-view">
@@ -1585,23 +1599,25 @@ export default function App() {
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) and the Intelligence section render on their
           own solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || orgRoute || portalRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence') && !saveData && <Stage background={bg} />}
+      {!(accountRoute || orgRoute || portalRoute || interview || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence') && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} navigation={state.navigation} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
-        onAccount={() => { if (typeof location !== 'undefined') location.hash = 'portal'; }} accountActive={!!(portalRoute || accountRoute)}
+        onAccount={() => { if (typeof location !== 'undefined') location.hash = 'portal'; }} accountActive={!!(portalRoute || interview || accountRoute)}
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
         user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
         logo={state.settings.logo} ctaLabel={state.settings.headerCtaLabel} siteName={state.settings.siteName}
       />
-      <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : portalRoute ? 'portal' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : svcSlug ? 'service:' + svcSlug : current}>
-        <EditorBoundary key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : portalRoute ? 'portal' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : svcSlug ? 'sd:' + svcSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !svcSlug && !accountRoute && !orgRoute && !portalRoute && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
+      <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : interview ? 'interview' : portalRoute ? 'portal' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : svcSlug ? 'service:' + svcSlug : current}>
+        <EditorBoundary key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : (accountRoute || authLanding) ? 'account' : orgRoute ? 'org' : interview ? 'interview' : portalRoute ? 'portal' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'pd:' + productSlug : svcSlug ? 'sd:' + svcSlug : 'vb:' + current} label="page" onHome={current === state.order[0] && !shopRoute && !productSlug && !svcSlug && !accountRoute && !orgRoute && !portalRoute && !interview && !invoiceRoute && !confirmRoute && !catalogueAdmin ? undefined : () => navigate(state.order[0])}>
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : (accountRoute || authLanding)
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount recovery={recovery} authError={authError} onRecoveryDone={() => setRecovery(false)} onLanded={() => { if (!/^#\/?account\b/i.test(location.hash)) location.hash = 'account'; }} /></Suspense>
             : orgRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyOrg /></Suspense>
+            : interview
+            ? <Suspense fallback={<div style={{ minHeight: '100vh' }} />}><LazyInterview route={interview} /></Suspense>
             : portalRoute
             ? <Suspense fallback={<div style={{ minHeight: '100vh' }} />}><LazyPortal route={portalRoute} /></Suspense>
             : confirmRoute

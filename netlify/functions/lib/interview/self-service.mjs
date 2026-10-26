@@ -2,7 +2,7 @@
 // the interview privacy notice; spec `retention-rights-regions` on GRE-2639, section 4).
 //
 // The website account (Better Auth) is the only identity. The person's own rows are read under participant claims,
-// so RLS limits them to the verified email and, once linked, the website user id (migration 055). A client admin
+// so RLS limits them to the website user id (054; an invite is claimed by user id at join). A client admin
 // is a participant like anyone else here: these calls never reach another person's rows.
 //
 // Delete hard-deletes the person's sessions, turns (cascade), insights, synthesis cache entries that hold them,
@@ -25,12 +25,6 @@ const must = ({ data, error }) => {
   if (error) throw Object.assign(new Error(error.message), { code: error.code });
   return data;
 };
-
-/** Link the person's invites and person row to their website account, so RLS also matches on the user id. */
-async function linkAccount(db, identity) {
-  must(await db.from('employee').update({ auth_user_id: identity.id }).is('auth_user_id', null));
-  must(await db.from('person').update({ auth_user_id: identity.id }).is('auth_user_id', null));
-}
 
 /** The latest consent choice of each kind, from the append-only log. */
 function latestChoices(events, employee) {
@@ -71,7 +65,6 @@ function quotesUsed(synthesis, insightIds) {
  */
 export async function seeMyInterviewData(pool, identity) {
   const db = interviewDb(identity, { pool });
-  await linkAccount(db, identity);
   const employees = must(await db.from('employee')
     .select('id, engagement_id, name, email, role_title, status, quote_choice').order('id'));
   const rounds = [];
@@ -186,14 +179,12 @@ export function withdrawFromSynthesis(row, { insightIds, employeeId, texts = [] 
 export async function deleteMyInterviewData(pool, identity, engagementId) {
   if (!UUID.test(engagementId || '')) throw new SelfServiceError('NOT_FOUND', 'No interview found.');
   const db = interviewDb(identity, { pool });
-  await linkAccount(db, identity);
   // participant claims: RLS decides that this is the person's own invite
   const employee = must(await db.from('employee').select('id, engagement_id, person_id')
     .eq('engagement_id', engagementId).maybeSingle());
   if (!employee) throw new SelfServiceError('NOT_FOUND', 'No interview found.');
 
   return inInterviewTransaction(pool, async (sys) => {
-    const eng = must(await sys.from('engagement').select('id, org_id').eq('id', engagementId).maybeSingle());
     const bound = [engagementId, employee.id];
     const exec = async (text, params) => {
       const { count, error } = await sys.sql(text, params);
@@ -216,7 +207,9 @@ export async function deleteMyInterviewData(pool, identity, engagementId) {
       AND ((kind = 'session' AND key = ANY($2::uuid[])) OR kind = 'unit')`, [engagementId, sessions]);
     counts.outbox = await exec(`DELETE FROM outbox WHERE engagement_id = $1
       AND split_part(idempotency_key, ':', 1) = ANY($2::text[])`, [engagementId, sessions]);
-    counts.memoryBlobs = employee.person_id ? await exec('DELETE FROM memory_blob WHERE person_id = $1', [employee.person_id]) : 0;
+    // memory is per (person, organisation): only this round's organisation's blob goes
+    counts.memoryBlobs = employee.person_id ? await exec(`DELETE FROM memory_blob WHERE person_id = $1
+      AND customer_id = (SELECT g.customer_id FROM engagement g WHERE g.id = $2)`, [employee.person_id, engagementId]) : 0;
     must(await sys.sql(`UPDATE employee SET status = 'declined', quote_choice = 'none' WHERE engagement_id = $1 AND id = $2`, bound));
     must(await sys.from('consent_event').insert({ employee_id: employee.id, kind: 'withdrawal', value: true }));
 
@@ -236,8 +229,8 @@ export async function deleteMyInterviewData(pool, identity, engagementId) {
         JSON.stringify(fields.validation_log)]));
     }
     must(await sys.sql('UPDATE engagement SET synthesis_stale_at = now() WHERE id = $1', [engagementId]));
-    must(await sys.sql(`INSERT INTO deletion_record (engagement_id, org_id, kind, counts) VALUES ($1, $2, 'self_service', $3::jsonb)`,
-      [engagementId, eng?.org_id ?? null, JSON.stringify(counts)]));
+    must(await sys.sql(`INSERT INTO deletion_record (engagement_id, kind, counts) VALUES ($1, 'self_service', $2::jsonb)`,
+      [engagementId, JSON.stringify(counts)]));
     // no name, no email, no id: the client is not told who deleted
     must(await sys.from('audit_log').insert({ engagement_id: engagementId, actor_name: 'system:self-service',
       action: 'participant.withdrawn', summary: 'A participant deleted their interview data; the synthesis must be run again' }));

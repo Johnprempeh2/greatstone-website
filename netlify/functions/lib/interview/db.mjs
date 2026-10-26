@@ -10,7 +10,12 @@ import { getPool } from '../db.mjs';
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const OPS = { eq: '=', neq: '<>', gt: '>', gte: '>=', lt: '<', lte: '<=', like: 'LIKE', ilike: 'ILIKE' };
 
-/** Claims for one request: a signed-in participant ({ id, email }) or 'system' (bridge, jobs, voice after its token). */
+/**
+ * Claims for one request: a signed-in participant ({ id, email }) or 'system' (bridge, jobs, voice after its token).
+ * sub is the Better Auth user id: the participant policies match rows on it (claim_user_id()); the email is read only
+ * to claim an unclaimed invitation (claim_email()). A system call may add customer_id (interviewDbOnClient's
+ * extraClaims) to be confined to that organisation's rows (claim_customer_id()).
+ */
 export function claimsFor(identity) {
   if (identity === 'system') return { role: 'interview_worker', scope: 'system' };
   const email = typeof identity?.email === 'string' ? identity.email.trim().toLowerCase() : '';

@@ -45,6 +45,8 @@ jobs:
         run: npm run rls:check
       - name: Org scoping and no duplicate client credentials (supabase/migrations)
         run: npm run org-scope:check
+      - name: Org scoping and no duplicate client credentials (netlify/database/migrations — the live website DB)
+        run: npm run org-scope:check:netlify
 
   netlify-db-rls:
     # The Netlify Database migrations and their RLS suites (GRE-1795) on Postgres 18, the version Netlify Database

@@ -95,8 +95,10 @@ export async function retentionDelete(pool, engagementId, { before = null, confi
       const scope = `SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE e.engagement_id = $1
         ${before ? 'AND s.started_at < $2' : ''}`;
       const params = before ? [engagementId, before] : [engagementId];
-      const memoryScope = `SELECT mb.person_id FROM memory_blob mb WHERE mb.person_id IN (SELECT DISTINCT e.person_id
-        FROM employee e WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`;
+      // Port: memory is per (person, organisation): only this round's organisation's blobs of its people go.
+      const memoryScope = `SELECT mb.person_id FROM memory_blob mb
+        WHERE mb.customer_id = (SELECT g.customer_id FROM engagement g WHERE g.id = $1)
+          AND mb.person_id IN (SELECT DISTINCT e.person_id FROM employee e WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`;
       const full = !before;
       report = {
         engagementId, released: !!eng.data.released_synthesis_id, confirmed: confirm,
@@ -124,12 +126,12 @@ export async function retentionDelete(pool, engagementId, { before = null, confi
           const names = (await rows(db, 'SELECT name FROM employee WHERE engagement_id = $1', [engagementId])).map((r) => r.name);
           const copy = anonymisedCopy(source, { names });
           const sessionsIncluded = report.sessions;
-          await run(db, `INSERT INTO anonymised_themes (engagement_id, org_id, source_version, themes, recommendations, teams, counts)
-            VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb)
-            ON CONFLICT (engagement_id) DO UPDATE SET org_id = EXCLUDED.org_id, source_version = EXCLUDED.source_version,
+          await run(db, `INSERT INTO anonymised_themes (engagement_id, source_version, themes, recommendations, teams, counts)
+            VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb)
+            ON CONFLICT (engagement_id) DO UPDATE SET source_version = EXCLUDED.source_version,
               themes = EXCLUDED.themes, recommendations = EXCLUDED.recommendations, teams = EXCLUDED.teams,
               counts = EXCLUDED.counts, created_at = now()`,
-          [engagementId, eng.data.org_id ?? null, source.version, JSON.stringify(copy.themes),
+          [engagementId, source.version, JSON.stringify(copy.themes),
             JSON.stringify(copy.recommendations), JSON.stringify(copy.teams),
             JSON.stringify({ interviews: sessionsIncluded, themes: copy.themes.length, recommendations: copy.recommendations.length })]);
         }
@@ -143,8 +145,10 @@ export async function retentionDelete(pool, engagementId, { before = null, confi
       await run(db, 'UPDATE engagement SET released_synthesis_id = NULL, released_at = NULL, released_by = NULL WHERE id = $1', [engagementId]);
       report.synthesisCache = await run(db, 'DELETE FROM synthesis_cache WHERE engagement_id = $1', [engagementId]);
       report.synthesis = await run(db, 'DELETE FROM synthesis WHERE engagement_id = $1', [engagementId]);
-      report.memoryBlobs = await run(db, `DELETE FROM memory_blob WHERE person_id IN (SELECT DISTINCT e.person_id FROM employee e
-        WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`, [engagementId]);
+      report.memoryBlobs = await run(db, `DELETE FROM memory_blob
+        WHERE customer_id = (SELECT g.customer_id FROM engagement g WHERE g.id = $1)
+          AND person_id IN (SELECT DISTINCT e.person_id FROM employee e WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`,
+        [engagementId]);
       report.outbox = await run(db, 'DELETE FROM outbox WHERE engagement_id = $1', [engagementId]);
 
       if (full) {
@@ -157,18 +161,19 @@ export async function retentionDelete(pool, engagementId, { before = null, confi
           WHERE engagement_id = $1 AND decided_by IS NOT NULL UNION SELECT purchased_by FROM seat_purchase WHERE engagement_id = $1)`;
         await run(db, `UPDATE employee SET invited_by = NULL WHERE engagement_id = $1`, [engagementId]);
         const cleared = await run(db, `UPDATE employee SET name = 'Removed', email = 'removed-' || id || '@invalid', role_title = NULL,
-          person_id = NULL, auth_user_id = NULL, login_token_hash = NULL, login_token_expires_at = NULL
+          person_id = NULL, user_id = NULL, login_token_hash = NULL, login_token_expires_at = NULL
           WHERE engagement_id = $1 AND ${kept}`, [engagementId]);
         report.invites = cleared + await run(db, `DELETE FROM employee WHERE engagement_id = $1 AND NOT (${kept})`, [engagementId]);
-        // a person no other round still holds goes too
+        // a person no other round, and no other organisation's memory, still holds goes too
         report.people = people.length ? await run(db, `DELETE FROM person p WHERE p.person_id = ANY($1::uuid[])
-          AND NOT EXISTS (SELECT 1 FROM employee e WHERE e.person_id = p.person_id)`, [people]) : 0;
+          AND NOT EXISTS (SELECT 1 FROM employee e WHERE e.person_id = p.person_id)
+          AND NOT EXISTS (SELECT 1 FROM memory_blob mb WHERE mb.person_id = p.person_id)`, [people]) : 0;
         report.activity = await run(db, "DELETE FROM audit_log WHERE engagement_id = $1 AND action NOT LIKE 'retention.%'", [engagementId]);
       }
 
       const counts = Object.fromEntries(Object.entries(report).filter(([, v]) => typeof v === 'number'));
-      await run(db, `INSERT INTO deletion_record (engagement_id, org_id, kind, counts) VALUES ($1, $2, 'retention', $3::jsonb)`,
-        [engagementId, eng.data.org_id ?? null, JSON.stringify(counts)]);
+      await run(db, `INSERT INTO deletion_record (engagement_id, kind, counts) VALUES ($1, 'retention', $2::jsonb)`,
+        [engagementId, JSON.stringify(counts)]);
       await db.from('audit_log').insert({ engagement_id: engagementId, actor_name: 'system:retention', action: 'retention.deleted',
         summary: `Retention delete: ${report.sessions} sessions, ${report.turns} turns, ${report.synthesis} syntheses removed` });
       // the engagement owner confirms the deletion to the client in writing (DPA 7.5); GSAM reads this through the bridge

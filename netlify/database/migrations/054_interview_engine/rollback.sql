@@ -1,5 +1,6 @@
 -- Rollback for 054_interview_engine. Turn the interview functions off first; this deletes every interview row
 -- (rounds, people, transcripts, synthesis). Export what must be kept before running it.
+-- engagement's FK to public.customers and memory_blob's go with the schema; public.customers is untouched.
 DROP SCHEMA IF EXISTS interview CASCADE;
 -- ltree was added for org_unit.path only; RESTRICT keeps it if anything else has come to use it.
 DROP EXTENSION IF EXISTS ltree;

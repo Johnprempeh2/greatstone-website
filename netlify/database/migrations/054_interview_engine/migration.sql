@@ -4,7 +4,15 @@
 --
 --   * interview_worker: NOLOGIN, NOBYPASSRLS, the only role with any grant in this schema. A request opens a
 --     transaction, runs SET LOCAL ROLE interview_worker and sets request.jwt.claims (local), so both end with it.
---   * Claims: participant { scope: 'participant', email: <verified email> } or system { scope: 'system' }.
+--   * Claims: participant { scope: 'participant', sub: <Better Auth user id>, email: <verified email> } or system
+--     { scope: 'system' [, org, customer_id] }. A system call that carries customer_id reaches that organisation's
+--     rows only; a scheduled job (no customer_id) reaches all.
+--   * Identity is the Better Auth user id (better_auth."user".id, text). Participant rows are matched on user_id,
+--     never on email. The one use of email: a signed-in person claims an invited employee row (user_id still NULL)
+--     whose email is their verified email, at join; from then on the row is theirs by user_id only.
+--   * Every table holding client data carries customer_id (public.customers.id, the website client organisation).
+--     The *_scope triggers fill it (and user_id) from the parent row when it is not given, refuse a value that
+--     disagrees with the parent, and keep both immutable. engagement's (customer_id, org_id) is a FK to customers.
 --   * Every table has RLS enabled and forced. The owner keeps owner_all so SECURITY DEFINER functions work.
 --
 -- Port: the source's 0002 policies and their helpers (auth_employee_unit_path, employee_in_my_subtree,
@@ -52,18 +60,20 @@ CREATE TYPE consent_kind AS ENUM ('participation', 'attribution', 'memory_opt_in
 CREATE TYPE seat_request_status AS ENUM ('pending', 'approved', 'declined', 'escalated');
 CREATE TYPE seat_purchase_payment_status AS ENUM ('pending_wiring', 'paid');
 
--- ── person: identity above the per-engagement employee row, matched on verified email ─────────────
+-- ── person: identity above the per-engagement employee row, one per Better Auth user ──────────────
+-- Port: the source keyed person on verified email. Here a person row exists only for a signed-in website user and
+-- is keyed on auth_user_id; verified_email is the address it had when the row was made (display, not identity).
+-- Not client data (one person may be interviewed for several organisations): allow-listed in
+-- scripts/org-scope-allow.netlify.json. What is per-organisation about a person lives in memory_blob.
 CREATE TABLE person (
   person_id      uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  verified_email text NOT NULL UNIQUE,
+  verified_email text NOT NULL,
   display_name   text,
   merged_into    uuid REFERENCES person(person_id),
   created_at     timestamptz NOT NULL DEFAULT now(),
-  -- Port: the Better Auth user id, when the person has a website account.
-  auth_user_id   uuid UNIQUE
+  -- Port: the Better Auth user id (better_auth."user".id). No FK, so the two schemas stay apart.
+  auth_user_id   text NOT NULL UNIQUE
 );
--- Port: the participant policies match on lower(email).
-CREATE INDEX idx_person_lower_verified_email ON person (lower(verified_email));
 
 -- ── engagement: one round. FKs to context_pack, org_unit and synthesis are added once those exist ──
 CREATE TABLE engagement (
@@ -92,15 +102,20 @@ CREATE TABLE engagement (
   released_synthesis_id  uuid,
   released_at            timestamptz,
   released_by            text,
-  -- Port: the website customer (public.customers.id). No FK, so the two schemas stay apart.
-  customer_id            uuid,
-  -- Port: the website organisation of the GSAM bridge key that created the round. No FK. The GSAM round id is id.
-  org_id                 uuid,
+  -- Port: the website client organisation (public.customers.id) the round is for. Every client row below carries it.
+  customer_id            uuid NOT NULL,
+  -- Port: the Greatstone tenant (public.organisations.id) of the GSAM bridge key that created the round. The GSAM
+  -- round id is id.
+  org_id                 uuid NOT NULL,
   -- Port: team round or one-person interview, and the target length of one interview.
   mode                   text NOT NULL DEFAULT 'person' CHECK (mode IN ('team', 'person')),
-  target_minutes         int NOT NULL DEFAULT 20
+  target_minutes         int NOT NULL DEFAULT 20,
+  -- the customer must exist and belong to this tenant (customers_id_org_for_deep_dive, migration 050)
+  CONSTRAINT engagement_customer_org_fkey FOREIGN KEY (customer_id, org_id)
+    REFERENCES public.customers (id, org_id) ON DELETE RESTRICT
 );
 CREATE UNIQUE INDEX uq_engagement_enrol_token ON engagement (enrol_token) WHERE enrol_token IS NOT NULL;
+CREATE INDEX idx_engagement_customer_id ON engagement (customer_id);
 
 -- ── org_unit: the hierarchy. path is an ltree of underscored ids, kept by the triggers below ───────
 CREATE TABLE org_unit (
@@ -111,7 +126,8 @@ CREATE TABLE org_unit (
   kind            text NOT NULL DEFAULT 'department',
   path            ltree NOT NULL,
   seat_allocation int CHECK (seat_allocation IS NULL OR seat_allocation >= 0),
-  created_at      timestamptz NOT NULL DEFAULT now()
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  customer_id     uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 CREATE UNIQUE INDEX uq_org_unit_sibling_name ON org_unit (engagement_id, parent_id, name);
 CREATE UNIQUE INDEX uq_org_unit_root_name ON org_unit (engagement_id, name) WHERE parent_id IS NULL;
@@ -230,14 +246,23 @@ CREATE TABLE employee (
   can_delegate           boolean NOT NULL DEFAULT false,
   invited_by             uuid REFERENCES employee(id),
   login_token_expires_at timestamptz,
+  -- Port: from the engagement (scope trigger).
+  customer_id            uuid NOT NULL,
+  -- Port: the Better Auth user id of the person this row is. NULL while it is an invitation nobody has claimed;
+  -- set once, at join, and never changed after.
+  user_id                text,
   UNIQUE (engagement_id, email)
 );
 CREATE INDEX idx_employee_engagement_id ON employee (engagement_id);
 CREATE INDEX idx_employee_unit_id ON employee (unit_id);
 CREATE INDEX idx_employee_person_id ON employee (person_id);
 CREATE INDEX idx_employee_login_token_hash ON employee (login_token_hash) WHERE login_token_hash IS NOT NULL;
--- Port: the participant policies match on lower(email).
-CREATE INDEX idx_employee_lower_email ON employee (lower(email));
+CREATE INDEX idx_employee_customer_id ON employee (customer_id);
+CREATE INDEX idx_employee_user_id ON employee (user_id) WHERE user_id IS NOT NULL;
+-- one row per person per round
+CREATE UNIQUE INDEX uq_employee_engagement_user ON employee (engagement_id, user_id) WHERE user_id IS NOT NULL;
+-- Port: claiming an invitation matches on lower(email) (user_id IS NULL rows only).
+CREATE INDEX idx_employee_lower_email ON employee (lower(email)) WHERE user_id IS NULL;
 
 -- claim_seat(): the concurrency-safe seat gate. Flips the employee to 'started' or raises and changes nothing.
 -- Idempotent for an employee who already holds a seat. All claims in one engagement serialise on an advisory lock.
@@ -302,9 +327,13 @@ CREATE TABLE session (
   resumable        boolean NOT NULL DEFAULT true,
   is_test          boolean NOT NULL DEFAULT false,  -- 0016
   voice_token_hash text,                            -- 0017: sha256 of the per-session voice token
-  is_voice         boolean NOT NULL DEFAULT false   -- 0017
+  is_voice         boolean NOT NULL DEFAULT false,  -- 0017
+  customer_id      uuid NOT NULL,                   -- Port: from the employee (scope trigger)
+  user_id          text NOT NULL                    -- Port: from the employee (scope trigger)
 );
 CREATE INDEX idx_session_employee_id ON session (employee_id);
+CREATE INDEX idx_session_customer_id ON session (customer_id);
+CREATE INDEX idx_session_user_id ON session (user_id);
 -- 0009: at most one active session per employee
 CREATE UNIQUE INDEX uq_one_active_session_per_employee ON session (employee_id) WHERE ended_at IS NULL AND resumable;
 CREATE INDEX idx_session_voice_token_hash ON session (voice_token_hash) WHERE voice_token_hash IS NOT NULL;
@@ -320,10 +349,13 @@ CREATE TABLE turn (
   extracted_fields jsonb,
   seq              bigint NOT NULL DEFAULT nextval('turn_seq_seq'),
   client_turn_id   text,
-  input_mode       text  -- 0017: 'voice' | 'text'
+  input_mode       text,          -- 0017: 'voice' | 'text'
+  customer_id      uuid NOT NULL, -- Port: from the session (scope trigger)
+  user_id          text NOT NULL  -- Port: from the session (scope trigger)
 );
 ALTER SEQUENCE turn_seq_seq OWNED BY turn.seq;
 CREATE INDEX idx_turn_session_id ON turn (session_id);
+CREATE INDEX idx_turn_customer_id ON turn (customer_id);
 CREATE INDEX idx_turn_session_seq ON turn (session_id, seq);
 CREATE UNIQUE INDEX uq_turn_session_client_id ON turn (session_id, client_turn_id) WHERE client_turn_id IS NOT NULL;
 
@@ -336,9 +368,12 @@ CREATE TABLE insight (
   time_per_week_hours  numeric,
   confidence           numeric CHECK (confidence >= 0 AND confidence <= 1),
   attribution_redacted boolean NOT NULL DEFAULT false,
-  second_hand          boolean NOT NULL DEFAULT false
+  second_hand          boolean NOT NULL DEFAULT false,
+  customer_id          uuid NOT NULL, -- Port: from the session (scope trigger)
+  user_id              text NOT NULL  -- Port: from the session (scope trigger)
 );
 CREATE INDEX idx_insight_session_id ON insight (session_id);
+CREATE INDEX idx_insight_customer_id ON insight (customer_id);
 
 -- ── synthesis and its cache (0001, 0005) ───────────────────────────────────────────────────────────
 CREATE TABLE synthesis (
@@ -355,9 +390,11 @@ CREATE TABLE synthesis (
   validation_log    jsonb NOT NULL DEFAULT '[]'::jsonb,
   model_version     text,
   rules_version     text,
-  input_insight_ids uuid[] NOT NULL DEFAULT '{}'
+  input_insight_ids uuid[] NOT NULL DEFAULT '{}',
+  customer_id       uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 CREATE INDEX idx_synthesis_engagement_id ON synthesis (engagement_id);
+CREATE INDEX idx_synthesis_customer_id ON synthesis (customer_id);
 -- 0007 + 0008: the released version; deleting it nulls the pointer
 ALTER TABLE engagement ADD CONSTRAINT engagement_released_synthesis_id_fkey
   FOREIGN KEY (released_synthesis_id) REFERENCES synthesis(id) ON DELETE SET NULL;
@@ -371,6 +408,7 @@ CREATE TABLE synthesis_cache (
   payload       jsonb NOT NULL,
   model         text NOT NULL,
   created_at    timestamptz NOT NULL DEFAULT now(),
+  customer_id   uuid NOT NULL,  -- Port: from the engagement (scope trigger)
   UNIQUE (engagement_id, kind, key)
 );
 CREATE INDEX idx_synthesis_cache_engagement_id ON synthesis_cache (engagement_id);
@@ -384,19 +422,27 @@ CREATE TABLE synthesis_run (
   started_at    timestamptz NOT NULL DEFAULT now(),
   finished_at   timestamptz,
   error         text,
-  synthesis_id  uuid REFERENCES synthesis(id) ON DELETE SET NULL
+  synthesis_id  uuid REFERENCES synthesis(id) ON DELETE SET NULL,
+  customer_id   uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 CREATE UNIQUE INDEX uq_synthesis_run_running ON synthesis_run (engagement_id) WHERE status = 'running';
 
--- ── memory_blob: opt-in cross-engagement memory, keyed by person ───────────────────────────────────
+-- ── memory_blob: opt-in cross-engagement memory, keyed by person AND organisation ─────────────────
+-- Port: the source keyed memory by person alone, so what someone said for one client could open their interview
+-- for another. Here it is one row per (person, customer): memory never crosses organisations.
 CREATE TABLE memory_blob (
-  person_id   uuid PRIMARY KEY REFERENCES person(person_id) ON DELETE CASCADE,
+  person_id   uuid NOT NULL REFERENCES person(person_id) ON DELETE CASCADE,
+  customer_id uuid NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+  user_id     text NOT NULL,  -- Port: from the person (scope trigger)
   blob        jsonb NOT NULL DEFAULT '{}'::jsonb,
   opted_in    boolean NOT NULL DEFAULT false,
   opted_in_at timestamptz,
   expires_at  timestamptz,
-  updated_at  timestamptz NOT NULL DEFAULT now()
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (person_id, customer_id)
 );
+CREATE INDEX idx_memory_blob_customer_id ON memory_blob (customer_id);
+CREATE INDEX idx_memory_blob_user_id ON memory_blob (user_id);
 
 -- ── context_pack: versioned engagement context ────────────────────────────────────────────────────
 CREATE TABLE context_pack (
@@ -407,6 +453,7 @@ CREATE TABLE context_pack (
   status        context_pack_status NOT NULL DEFAULT 'draft',
   approved_by   text,
   created_at    timestamptz NOT NULL DEFAULT now(),
+  customer_id   uuid NOT NULL,  -- Port: from the engagement (scope trigger)
   UNIQUE (engagement_id, version)
 );
 CREATE INDEX idx_context_pack_engagement_id ON context_pack (engagement_id);
@@ -422,9 +469,11 @@ CREATE TABLE usage_ledger (
   input_tokens  bigint NOT NULL DEFAULT 0,
   output_tokens bigint NOT NULL DEFAULT 0,
   cost_pence    bigint NOT NULL DEFAULT 0,
-  ts            timestamptz NOT NULL DEFAULT now()
+  ts            timestamptz NOT NULL DEFAULT now(),
+  customer_id   uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 CREATE INDEX idx_usage_ledger_engagement_id ON usage_ledger (engagement_id);
+CREATE INDEX idx_usage_ledger_customer_id ON usage_ledger (customer_id);
 CREATE INDEX idx_usage_ledger_session_id ON usage_ledger (session_id);
 
 -- ── outbox ────────────────────────────────────────────────────────────────────────────────────────
@@ -438,8 +487,10 @@ CREATE TABLE outbox (
   attempts        int NOT NULL DEFAULT 0,
   last_error      text,
   created_at      timestamptz NOT NULL DEFAULT now(),
-  sent_at         timestamptz
+  sent_at         timestamptz,
+  customer_id     uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
+CREATE INDEX idx_outbox_customer_id ON outbox (customer_id);
 -- Port: index names follow the table (were idx_notion_outbox_*).
 CREATE INDEX idx_outbox_engagement_id ON outbox (engagement_id);
 CREATE INDEX idx_outbox_status ON outbox (status) WHERE status = 'pending';
@@ -450,9 +501,12 @@ CREATE TABLE consent_event (
   employee_id uuid NOT NULL REFERENCES employee(id) ON DELETE CASCADE,
   kind        consent_kind NOT NULL,
   value       boolean NOT NULL,
-  ts          timestamptz NOT NULL DEFAULT now()
+  ts          timestamptz NOT NULL DEFAULT now(),
+  customer_id uuid NOT NULL,  -- Port: from the employee (scope trigger)
+  user_id     text NOT NULL   -- Port: from the employee (scope trigger); consent is given by a signed-in person
 );
 CREATE INDEX idx_consent_event_employee_id ON consent_event (employee_id);
+CREATE INDEX idx_consent_event_customer_id ON consent_event (customer_id);
 
 -- ── seat_request (0004, 0006) and seat_purchase (0006) ────────────────────────────────────────────
 CREATE TABLE seat_request (
@@ -465,7 +519,8 @@ CREATE TABLE seat_request (
   status        seat_request_status NOT NULL DEFAULT 'pending',
   decided_by    uuid REFERENCES employee(id),
   decided_at    timestamptz,
-  created_at    timestamptz NOT NULL DEFAULT now()
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  customer_id   uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 COMMENT ON TABLE seat_request IS
   'Seat/invite capacity requests. Escalation chain: requester -> nearest delegating leader above the unit -> client_admin -> gs_admin. Approval grants nothing by itself; the approver (or worker plane) applies the allocation change, which stays subject to the 0001 hygiene trigger and claim_seat.';
@@ -481,13 +536,15 @@ CREATE TABLE seat_purchase (
   purchased_by   uuid NOT NULL REFERENCES employee(id),
   amount_pence   int,
   payment_status seat_purchase_payment_status NOT NULL DEFAULT 'pending_wiring',
-  created_at     timestamptz NOT NULL DEFAULT now()
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  customer_id    uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 COMMENT ON TABLE seat_purchase IS
   'Seat purchases made by gs_admin for an engagement. engagement.seat_total is raised at purchase time, so this table is the audit trail, not the capacity gate (claim_seat stays the gate). Stripe wiring lands later: amount_pence is null and payment_status ''pending_wiring'' until a real payment flow fills them in.';
 CREATE INDEX idx_seat_purchase_engagement ON seat_purchase (engagement_id);
 
 -- ── rate_event and bump_rate() (0007): fixed-window counter, increment-and-check in one upsert ─────
+-- No client data (a bucket key and a count): allow-listed in scripts/org-scope-allow.netlify.json.
 CREATE TABLE rate_event (
   bucket_key   text NOT NULL,
   window_start timestamptz NOT NULL,
@@ -519,21 +576,234 @@ CREATE TABLE audit_log (
   action        text NOT NULL,
   summary       text NOT NULL,
   target_id     uuid,
-  created_at    timestamptz NOT NULL DEFAULT now()
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  customer_id   uuid NOT NULL  -- Port: from the engagement (scope trigger)
 );
 CREATE INDEX idx_audit_log_engagement_created ON audit_log (engagement_id, created_at DESC);
+CREATE INDEX idx_audit_log_customer_id ON audit_log (customer_id);
+
+-- ── Scope triggers (Port: new). customer_id and user_id follow the parent row ──────────────────────
+-- BEFORE INSERT OR UPDATE on every client table: a NULL customer_id / user_id is filled from the parent, a given
+-- value that disagrees with the parent raises 23514, and changing either on UPDATE raises 42501 (except
+-- employee.user_id, which may go from NULL to a value once: the join claiming an invitation). So engine code that
+-- never names these columns keeps working, and no row can carry another organisation's id. SECURITY DEFINER: the
+-- parent is read whatever the caller may see; RLS on the row itself still decides whether the write is allowed.
+CREATE FUNCTION scope_immutable(p_table text, p_column text, p_old text, p_new text) RETURNS void
+  LANGUAGE plpgsql SET search_path = interview, public, pg_temp AS $$
+BEGIN
+  IF p_old IS DISTINCT FROM p_new THEN
+    RAISE EXCEPTION '%: % is immutable', p_table, p_column USING ERRCODE = '42501';
+  END IF;
+END;
+$$;
+
+CREATE FUNCTION scope_match(p_table text, p_column text, p_given text, p_parent text) RETURNS void
+  LANGUAGE plpgsql SET search_path = interview, public, pg_temp AS $$
+BEGIN
+  IF p_given IS NOT NULL AND p_given IS DISTINCT FROM p_parent THEN
+    RAISE EXCEPTION '%: % does not match its parent row', p_table, p_column USING ERRCODE = '23514';
+  END IF;
+END;
+$$;
+
+-- engagement: customer_id and org_id are fixed once the round exists (its children carry the customer_id).
+CREATE FUNCTION engagement_scope() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+BEGIN
+  PERFORM scope_immutable('engagement', 'customer_id', old.customer_id::text, new.customer_id::text);
+  PERFORM scope_immutable('engagement', 'org_id', old.org_id::text, new.org_id::text);
+  RETURN new;
+END;
+$$;
+CREATE TRIGGER trg_engagement_scope BEFORE UPDATE ON engagement
+  FOR EACH ROW EXECUTE FUNCTION engagement_scope();
+
+-- Children of engagement: org_unit, synthesis, synthesis_cache, synthesis_run, context_pack, usage_ledger, outbox,
+-- seat_request, seat_purchase, audit_log.
+CREATE FUNCTION scope_from_engagement() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+DECLARE
+  v_customer uuid;
+BEGIN
+  IF tg_op = 'UPDATE' THEN
+    PERFORM scope_immutable(tg_table_name, 'customer_id', old.customer_id::text, new.customer_id::text);
+  END IF;
+  SELECT customer_id INTO v_customer FROM engagement WHERE id = new.engagement_id;
+  IF v_customer IS NULL THEN
+    RAISE EXCEPTION '%: engagement % does not exist', tg_table_name, new.engagement_id USING ERRCODE = '23503';
+  END IF;
+  PERFORM scope_match(tg_table_name, 'customer_id', new.customer_id::text, v_customer::text);
+  new.customer_id := v_customer;
+  RETURN new;
+END;
+$$;
+DO $$ DECLARE tab text; BEGIN
+  FOREACH tab IN ARRAY ARRAY['org_unit', 'synthesis', 'synthesis_cache', 'synthesis_run', 'context_pack', 'usage_ledger',
+    'outbox', 'seat_request', 'seat_purchase', 'audit_log'] LOOP
+    EXECUTE format('CREATE TRIGGER trg_%s_scope BEFORE INSERT OR UPDATE ON interview.%I
+      FOR EACH ROW EXECUTE FUNCTION interview.scope_from_engagement()', tab, tab);
+  END LOOP;
+END $$;
+
+-- usage_ledger: its session (when there is one) must be of the same organisation.
+CREATE FUNCTION usage_ledger_session_scope() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+BEGIN
+  IF new.session_id IS NOT NULL THEN
+    PERFORM scope_match('usage_ledger', 'customer_id', new.customer_id::text,
+      (SELECT s.customer_id::text FROM session s WHERE s.id = new.session_id));
+  END IF;
+  RETURN new;
+END;
+$$;
+-- after trg_usage_ledger_scope (triggers fire in name order), so customer_id is filled
+CREATE TRIGGER trg_usage_ledger_session_scope BEFORE INSERT OR UPDATE OF session_id ON usage_ledger
+  FOR EACH ROW EXECUTE FUNCTION usage_ledger_session_scope();
+
+-- employee: customer_id from the engagement; user_id from the linked person, set once.
+CREATE FUNCTION employee_scope() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+DECLARE
+  v_customer uuid;
+  v_user     text;
+BEGIN
+  IF tg_op = 'UPDATE' THEN
+    PERFORM scope_immutable('employee', 'customer_id', old.customer_id::text, new.customer_id::text);
+    IF old.user_id IS NOT NULL THEN
+      PERFORM scope_immutable('employee', 'user_id', old.user_id, new.user_id);
+    END IF;
+  END IF;
+  SELECT customer_id INTO v_customer FROM engagement WHERE id = new.engagement_id;
+  IF v_customer IS NULL THEN
+    RAISE EXCEPTION 'employee: engagement % does not exist', new.engagement_id USING ERRCODE = '23503';
+  END IF;
+  PERFORM scope_match('employee', 'customer_id', new.customer_id::text, v_customer::text);
+  new.customer_id := v_customer;
+  IF new.person_id IS NOT NULL THEN
+    SELECT auth_user_id INTO v_user FROM person WHERE person_id = new.person_id;
+    IF v_user IS NOT NULL THEN
+      PERFORM scope_match('employee', 'user_id', new.user_id, v_user);
+      new.user_id := v_user;
+    END IF;
+  END IF;
+  RETURN new;
+END;
+$$;
+CREATE TRIGGER trg_employee_scope BEFORE INSERT OR UPDATE ON employee
+  FOR EACH ROW EXECUTE FUNCTION employee_scope();
+
+-- Children of employee: session, consent_event. Both need a claimed employee row (user_id set).
+CREATE FUNCTION scope_from_employee() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+DECLARE
+  v_customer uuid;
+  v_user     text;
+BEGIN
+  IF tg_op = 'UPDATE' THEN
+    PERFORM scope_immutable(tg_table_name, 'customer_id', old.customer_id::text, new.customer_id::text);
+    PERFORM scope_immutable(tg_table_name, 'user_id', old.user_id, new.user_id);
+  END IF;
+  SELECT customer_id, user_id INTO v_customer, v_user FROM employee WHERE id = new.employee_id;
+  IF v_customer IS NULL THEN
+    RAISE EXCEPTION '%: employee % does not exist', tg_table_name, new.employee_id USING ERRCODE = '23503';
+  END IF;
+  PERFORM scope_match(tg_table_name, 'customer_id', new.customer_id::text, v_customer::text);
+  PERFORM scope_match(tg_table_name, 'user_id', new.user_id, v_user);
+  new.customer_id := v_customer;
+  new.user_id := v_user;
+  IF new.user_id IS NULL THEN
+    RAISE EXCEPTION '%: employee % has not been claimed by a signed-in user', tg_table_name, new.employee_id
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN new;
+END;
+$$;
+CREATE TRIGGER trg_session_scope BEFORE INSERT OR UPDATE ON session
+  FOR EACH ROW EXECUTE FUNCTION scope_from_employee();
+CREATE TRIGGER trg_consent_event_scope BEFORE INSERT OR UPDATE ON consent_event
+  FOR EACH ROW EXECUTE FUNCTION scope_from_employee();
+
+-- Children of session: turn, insight.
+CREATE FUNCTION scope_from_session() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+DECLARE
+  v_customer uuid;
+  v_user     text;
+BEGIN
+  IF tg_op = 'UPDATE' THEN
+    PERFORM scope_immutable(tg_table_name, 'customer_id', old.customer_id::text, new.customer_id::text);
+    PERFORM scope_immutable(tg_table_name, 'user_id', old.user_id, new.user_id);
+  END IF;
+  SELECT customer_id, user_id INTO v_customer, v_user FROM session WHERE id = new.session_id;
+  IF v_customer IS NULL THEN
+    RAISE EXCEPTION '%: session % does not exist', tg_table_name, new.session_id USING ERRCODE = '23503';
+  END IF;
+  PERFORM scope_match(tg_table_name, 'customer_id', new.customer_id::text, v_customer::text);
+  PERFORM scope_match(tg_table_name, 'user_id', new.user_id, v_user);
+  new.customer_id := v_customer;
+  new.user_id := v_user;
+  RETURN new;
+END;
+$$;
+CREATE TRIGGER trg_turn_scope BEFORE INSERT OR UPDATE ON turn
+  FOR EACH ROW EXECUTE FUNCTION scope_from_session();
+CREATE TRIGGER trg_insight_scope BEFORE INSERT OR UPDATE ON insight
+  FOR EACH ROW EXECUTE FUNCTION scope_from_session();
+
+-- memory_blob: customer_id is given (there is no parent round); user_id from the person.
+CREATE FUNCTION memory_blob_scope() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+DECLARE
+  v_user text;
+BEGIN
+  IF tg_op = 'UPDATE' THEN
+    PERFORM scope_immutable('memory_blob', 'person_id', old.person_id::text, new.person_id::text);
+    PERFORM scope_immutable('memory_blob', 'customer_id', old.customer_id::text, new.customer_id::text);
+    PERFORM scope_immutable('memory_blob', 'user_id', old.user_id, new.user_id);
+  END IF;
+  SELECT auth_user_id INTO v_user FROM person WHERE person_id = new.person_id;
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'memory_blob: person % does not exist', new.person_id USING ERRCODE = '23503';
+  END IF;
+  PERFORM scope_match('memory_blob', 'user_id', new.user_id, v_user);
+  new.user_id := v_user;
+  RETURN new;
+END;
+$$;
+CREATE TRIGGER trg_memory_blob_scope BEFORE INSERT OR UPDATE ON memory_blob
+  FOR EACH ROW EXECUTE FUNCTION memory_blob_scope();
+
+-- ── Claims helpers ────────────────────────────────────────────────────────────────────────────────
+CREATE FUNCTION is_system() RETURNS boolean LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
+  SELECT coalesce((auth.jwt() ->> 'scope') = 'system', false) $$;
+-- The verified email: used only to claim an invitation (employee.user_id still NULL) and at self-enrolment.
+CREATE FUNCTION claim_email() RETURNS text LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
+  SELECT lower(nullif(auth.jwt() ->> 'email', '')) $$;
+-- Port: the participant's Better Auth user id (sub). NULL for any other scope, so a system call never acts as a person.
+CREATE FUNCTION claim_user_id() RETURNS text LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
+  SELECT CASE WHEN auth.jwt() ->> 'scope' = 'participant' THEN nullif(auth.jwt() ->> 'sub', '') END $$;
+-- Port: the website organisation a system call is keyed to (the bridge sets it); NULL for scheduled jobs.
+CREATE FUNCTION claim_customer_id() RETURNS uuid LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
+  SELECT nullif(auth.jwt() ->> 'customer_id', '')::uuid $$;
 
 -- ── engagement_spend (0011), create_engagement (0012), claim_first_admin (0015) ───────────────────
+-- Port: as the caller could see the rounds: a system call within its customer_id claim (all without one), a
+-- participant only for rounds they are in.
 CREATE FUNCTION engagement_spend(p_ids uuid[]) RETURNS TABLE (engagement_id uuid, total_pence bigint)
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
   SELECT ul.engagement_id, coalesce(sum(ul.cost_pence), 0)::bigint
   FROM usage_ledger ul
   WHERE ul.engagement_id = any(p_ids)
+    AND ((is_system() AND (claim_customer_id() IS NULL OR ul.customer_id = claim_customer_id()))
+      OR ul.engagement_id IN (SELECT e.engagement_id FROM employee e WHERE e.user_id = claim_user_id()))
   GROUP BY ul.engagement_id;
 $$;
 
 -- One transaction: engagement (enrolment closed), root unit + "Unassigned", draft context pack, the admin row.
+-- Port: p_customer_id (the website client organisation) is new; org_id is that customer's tenant. A call with system
+-- claims keyed to another organisation is refused (as RLS would refuse the insert). System calls only.
 CREATE FUNCTION create_engagement(
+  p_customer_id     uuid,
   p_client_name     text,
   p_seat_total      int,
   p_allowed_domains text[],
@@ -548,9 +818,23 @@ DECLARE
   v_root       uuid;
   v_unassigned uuid;
   v_pack       uuid;
+  v_org        uuid;
 BEGIN
-  INSERT INTO engagement (client_name, status, seat_total, allowed_email_domains, enrol_token, enrol_enabled, enrol_expires_at)
-    VALUES (p_client_name, 'active', p_seat_total, p_allowed_domains, p_enrol_token, false, p_enrol_expires)
+  IF NOT is_system() THEN
+    RAISE EXCEPTION 'create_engagement: system calls only' USING ERRCODE = '42501';
+  END IF;
+  IF claim_customer_id() IS NOT NULL AND claim_customer_id() IS DISTINCT FROM p_customer_id THEN
+    RAISE EXCEPTION 'create_engagement: customer % is outside this call''s organisation', p_customer_id
+      USING ERRCODE = '42501';
+  END IF;
+  SELECT org_id INTO v_org FROM public.customers WHERE id = p_customer_id;
+  IF v_org IS NULL THEN
+    RAISE EXCEPTION 'create_engagement: customer % does not exist', p_customer_id USING ERRCODE = '23503';
+  END IF;
+  INSERT INTO engagement (customer_id, org_id, client_name, status, seat_total, allowed_email_domains, enrol_token,
+      enrol_enabled, enrol_expires_at)
+    VALUES (p_customer_id, v_org, p_client_name, 'active', p_seat_total, p_allowed_domains, p_enrol_token, false,
+      p_enrol_expires)
     RETURNING id INTO v_eng;
   INSERT INTO org_unit (engagement_id, parent_id, name, kind)
     VALUES (v_eng, NULL, p_client_name, 'organisation') RETURNING id INTO v_root;
@@ -570,6 +854,10 @@ $$;
 CREATE FUNCTION claim_first_admin(p_engagement uuid, p_employee uuid) RETURNS boolean
   LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
 BEGIN
+  -- Port: system calls only (a participant could otherwise promote itself on a round with no client admin).
+  IF NOT is_system() THEN
+    RAISE EXCEPTION 'claim_first_admin: system calls only' USING ERRCODE = '42501';
+  END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended(p_engagement::text, 42));
   IF EXISTS (SELECT 1 FROM employee WHERE engagement_id = p_engagement AND portal_role = 'client_admin') THEN
     RETURN false;
@@ -579,15 +867,10 @@ BEGIN
 END;
 $$;
 
--- ── Claims helpers ────────────────────────────────────────────────────────────────────────────────
-CREATE FUNCTION is_system() RETURNS boolean LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
-  SELECT coalesce((auth.jwt() ->> 'scope') = 'system', false) $$;
-CREATE FUNCTION claim_email() RETURNS text LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
-  SELECT lower(nullif(auth.jwt() ->> 'email', '')) $$;
-
 -- Port: in the source only the service role wrote employee rows. Here an interviewee's request may update its own
--- row (decline, rejoin, complete, person link), so a participant may not change who the row is, its role or
--- delegation, and may not take a seat except through claim_seat() (which runs as the owner).
+-- row (decline, rejoin, complete, person link, claiming the invitation), so a participant may not change who the
+-- row is, its organisation, its role or delegation, may not re-point a claimed row at another user, and may not take
+-- a seat except through claim_seat() (which runs as the owner).
 CREATE FUNCTION employee_participant_guard() RETURNS trigger
   LANGUAGE plpgsql SET search_path = interview, public, pg_temp AS $$
 BEGIN
@@ -595,6 +878,8 @@ BEGIN
     RETURN new;
   END IF;
   IF new.engagement_id IS DISTINCT FROM old.engagement_id OR new.email IS DISTINCT FROM old.email
+     OR new.customer_id IS DISTINCT FROM old.customer_id
+     OR (old.user_id IS NOT NULL AND new.user_id IS DISTINCT FROM old.user_id)
      OR new.portal_role IS DISTINCT FROM old.portal_role OR new.can_delegate IS DISTINCT FROM old.can_delegate
      OR new.invited_by IS DISTINCT FROM old.invited_by OR new.login_token_hash IS DISTINCT FROM old.login_token_hash
      OR (new.status = 'started' AND old.status IS DISTINCT FROM 'started') THEN
@@ -613,20 +898,24 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA interview FROM PUBLIC, anon, authenticated
 -- RLS decides the rows. No TRUNCATE, REFERENCES or TRIGGER (RLS does not govern them).
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA interview TO interview_worker;
 GRANT USAGE, SELECT ON SEQUENCE turn_seq_seq TO interview_worker;
--- Trigger functions get no grant: a trigger does not need one.
+-- Trigger functions (and scope_immutable/scope_match, called only from SECURITY DEFINER triggers) get no grant.
 GRANT EXECUTE ON FUNCTION
   claim_seat(uuid),
   bump_rate(text, int, int),
   engagement_spend(uuid[]),
-  create_engagement(text, int, text[], text, timestamptz, text, jsonb),
+  create_engagement(uuid, text, int, text[], text, timestamptz, text, jsonb),
   claim_first_admin(uuid, uuid),
   is_system(),
-  claim_email()
+  claim_email(),
+  claim_user_id(),
+  claim_customer_id()
 TO interview_worker;
 
 -- ── Row level security ────────────────────────────────────────────────────────────────────────────
 -- Every table: enabled and forced, owner_all for the owner (SECURITY DEFINER functions), system_all for the worker
--- with system claims. Participant policies follow.
+-- with system claims. Port: on a table with customer_id, system_all also requires the row's customer_id to be the
+-- call's customer_id claim when there is one, so a bridge call keyed to one organisation can never read or write
+-- another's rows; a scheduled job (no customer_id claim) reaches every row. Participant policies follow.
 DO $$ DECLARE tab text; BEGIN
   FOREACH tab IN ARRAY ARRAY['person', 'engagement', 'org_unit', 'employee', 'session', 'turn', 'insight', 'synthesis',
     'synthesis_cache', 'synthesis_run', 'memory_blob', 'context_pack', 'usage_ledger', 'outbox', 'consent_event', 'seat_request',
@@ -634,79 +923,82 @@ DO $$ DECLARE tab text; BEGIN
     EXECUTE format('ALTER TABLE interview.%I ENABLE ROW LEVEL SECURITY', tab);
     EXECUTE format('ALTER TABLE interview.%I FORCE ROW LEVEL SECURITY', tab);
     EXECUTE format('CREATE POLICY owner_all ON interview.%I FOR ALL TO CURRENT_USER USING (true) WITH CHECK (true)', tab);
-    EXECUTE format('CREATE POLICY system_all ON interview.%I FOR ALL TO interview_worker
-      USING (interview.is_system()) WITH CHECK (interview.is_system())', tab);
+    IF tab IN ('person', 'rate_event') THEN
+      EXECUTE format('CREATE POLICY system_all ON interview.%I FOR ALL TO interview_worker
+        USING (interview.is_system()) WITH CHECK (interview.is_system())', tab);
+    ELSE
+      EXECUTE format('CREATE POLICY system_all ON interview.%I FOR ALL TO interview_worker
+        USING (interview.is_system() AND (interview.claim_customer_id() IS NULL OR customer_id = interview.claim_customer_id()))
+        WITH CHECK (interview.is_system() AND (interview.claim_customer_id() IS NULL OR customer_id = interview.claim_customer_id()))',
+        tab);
+    END IF;
   END LOOP;
 END $$;
 
--- Round metadata needed for enrolment and the prompt: read only.
-CREATE POLICY participant_select ON engagement FOR SELECT TO interview_worker USING (claim_email() IS NOT NULL);
-CREATE POLICY participant_select ON org_unit FOR SELECT TO interview_worker USING (claim_email() IS NOT NULL);
-CREATE POLICY participant_select ON context_pack FOR SELECT TO interview_worker USING (claim_email() IS NOT NULL);
+-- Round metadata needed for the prompt: read only, and only for a round the participant is in.
+CREATE POLICY participant_select ON engagement FOR SELECT TO interview_worker
+  USING (id IN (SELECT e.engagement_id FROM employee e WHERE e.user_id = claim_user_id()));
+CREATE POLICY participant_select ON org_unit FOR SELECT TO interview_worker
+  USING (engagement_id IN (SELECT e.engagement_id FROM employee e WHERE e.user_id = claim_user_id()));
+CREATE POLICY participant_select ON context_pack FOR SELECT TO interview_worker
+  USING (engagement_id IN (SELECT e.engagement_id FROM employee e WHERE e.user_id = claim_user_id()));
 
--- person: own row by verified email.
+-- person: own row by Better Auth user id.
 CREATE POLICY participant_select ON person FOR SELECT TO interview_worker
-  USING (lower(verified_email) = claim_email());
+  USING (auth_user_id = claim_user_id());
 CREATE POLICY participant_insert ON person FOR INSERT TO interview_worker
-  WITH CHECK (lower(verified_email) = claim_email());
+  WITH CHECK (auth_user_id = claim_user_id());
 CREATE POLICY participant_update ON person FOR UPDATE TO interview_worker
-  USING (lower(verified_email) = claim_email()) WITH CHECK (lower(verified_email) = claim_email());
+  USING (auth_user_id = claim_user_id()) WITH CHECK (auth_user_id = claim_user_id());
 
--- employee: own rows by email. Enrolment inserts a plain invited employee; the guard trigger limits updates.
+-- employee: own rows by user id. The one email match: an unclaimed invitation (user_id NULL) addressed to the
+-- verified email may be read and claimed, and the claim must set user_id to the caller. Enrolment inserts a plain
+-- invited employee for the caller; the guard trigger limits updates.
 CREATE POLICY participant_select ON employee FOR SELECT TO interview_worker
-  USING (lower(email) = claim_email());
+  USING (user_id = claim_user_id()
+    OR (user_id IS NULL AND claim_user_id() IS NOT NULL AND lower(email) = claim_email()));
 CREATE POLICY participant_insert ON employee FOR INSERT TO interview_worker
-  WITH CHECK (lower(email) = claim_email() AND portal_role = 'employee' AND status = 'invited'
-    AND NOT can_delegate AND invited_by IS NULL);
+  WITH CHECK (user_id = claim_user_id() AND lower(email) = claim_email() AND portal_role = 'employee'
+    AND status = 'invited' AND NOT can_delegate AND invited_by IS NULL);
 CREATE POLICY participant_update ON employee FOR UPDATE TO interview_worker
-  USING (lower(email) = claim_email()) WITH CHECK (lower(email) = claim_email());
+  USING (user_id = claim_user_id()
+    OR (user_id IS NULL AND claim_user_id() IS NOT NULL AND lower(email) = claim_email()))
+  WITH CHECK (user_id = claim_user_id());
 
--- session: through the employee.
-CREATE POLICY participant_select ON session FOR SELECT TO interview_worker
-  USING (employee_id IN (SELECT e.id FROM employee e WHERE lower(e.email) = claim_email()));
-CREATE POLICY participant_insert ON session FOR INSERT TO interview_worker
-  WITH CHECK (employee_id IN (SELECT e.id FROM employee e WHERE lower(e.email) = claim_email()));
+-- session, turn, insight: own rows by user id (the scope triggers copy it from the employee).
+CREATE POLICY participant_select ON session FOR SELECT TO interview_worker USING (user_id = claim_user_id());
+CREATE POLICY participant_insert ON session FOR INSERT TO interview_worker WITH CHECK (user_id = claim_user_id());
 CREATE POLICY participant_update ON session FOR UPDATE TO interview_worker
-  USING (employee_id IN (SELECT e.id FROM employee e WHERE lower(e.email) = claim_email()))
-  WITH CHECK (employee_id IN (SELECT e.id FROM employee e WHERE lower(e.email) = claim_email()));
-
--- turn and insight: through session and employee.
-CREATE POLICY participant_select ON turn FOR SELECT TO interview_worker
-  USING (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
-CREATE POLICY participant_insert ON turn FOR INSERT TO interview_worker
-  WITH CHECK (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
+  USING (user_id = claim_user_id()) WITH CHECK (user_id = claim_user_id());
+CREATE POLICY participant_select ON turn FOR SELECT TO interview_worker USING (user_id = claim_user_id());
+CREATE POLICY participant_insert ON turn FOR INSERT TO interview_worker WITH CHECK (user_id = claim_user_id());
 CREATE POLICY participant_update ON turn FOR UPDATE TO interview_worker
-  USING (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()))
-  WITH CHECK (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
-CREATE POLICY participant_select ON insight FOR SELECT TO interview_worker
-  USING (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
-CREATE POLICY participant_insert ON insight FOR INSERT TO interview_worker
-  WITH CHECK (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
+  USING (user_id = claim_user_id()) WITH CHECK (user_id = claim_user_id());
+CREATE POLICY participant_select ON insight FOR SELECT TO interview_worker USING (user_id = claim_user_id());
+CREATE POLICY participant_insert ON insight FOR INSERT TO interview_worker WITH CHECK (user_id = claim_user_id());
 CREATE POLICY participant_update ON insight FOR UPDATE TO interview_worker
-  USING (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()))
-  WITH CHECK (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
+  USING (user_id = claim_user_id()) WITH CHECK (user_id = claim_user_id());
 
--- consent_event: append-only, own employee rows.
-CREATE POLICY participant_select ON consent_event FOR SELECT TO interview_worker
-  USING (employee_id IN (SELECT e.id FROM employee e WHERE lower(e.email) = claim_email()));
-CREATE POLICY participant_insert ON consent_event FOR INSERT TO interview_worker
-  WITH CHECK (employee_id IN (SELECT e.id FROM employee e WHERE lower(e.email) = claim_email()));
+-- consent_event: append-only, own rows.
+CREATE POLICY participant_select ON consent_event FOR SELECT TO interview_worker USING (user_id = claim_user_id());
+CREATE POLICY participant_insert ON consent_event FOR INSERT TO interview_worker WITH CHECK (user_id = claim_user_id());
 
 -- usage_ledger: own session rows (the budget check reads them); insert only against own session and its
 -- engagement. Engagement-wide spend goes through engagement_spend().
 CREATE POLICY participant_select ON usage_ledger FOR SELECT TO interview_worker
-  USING (session_id IN (SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE lower(e.email) = claim_email()));
+  USING (session_id IN (SELECT s.id FROM session s WHERE s.user_id = claim_user_id()));
 CREATE POLICY participant_insert ON usage_ledger FOR INSERT TO interview_worker
   WITH CHECK (EXISTS (SELECT 1 FROM session s JOIN employee e ON e.id = s.employee_id
-    WHERE s.id = usage_ledger.session_id AND e.engagement_id = usage_ledger.engagement_id AND lower(e.email) = claim_email()));
+    WHERE s.id = usage_ledger.session_id AND e.engagement_id = usage_ledger.engagement_id AND s.user_id = claim_user_id()));
 
--- memory_blob: own person; delete is the hard-delete opt-out.
+-- memory_blob: own rows by user id (one per organisation); delete is the hard-delete opt-out.
 CREATE POLICY participant_all ON memory_blob FOR ALL TO interview_worker
-  USING (person_id IN (SELECT p.person_id FROM person p WHERE lower(p.verified_email) = claim_email()))
-  WITH CHECK (person_id IN (SELECT p.person_id FROM person p WHERE lower(p.verified_email) = claim_email()));
+  USING (user_id = claim_user_id()) WITH CHECK (user_id = claim_user_id());
 
--- rate_event: any worker request (bump_rate runs as the caller). audit_log: any worker request appends.
+-- rate_event: any worker request (bump_rate runs as the caller). audit_log: a participant appends to a round they
+-- are in (system calls append through system_all).
 CREATE POLICY worker_all ON rate_event FOR ALL TO interview_worker USING (true) WITH CHECK (true);
-CREATE POLICY worker_insert ON audit_log FOR INSERT TO interview_worker WITH CHECK (true);
+CREATE POLICY participant_insert ON audit_log FOR INSERT TO interview_worker
+  WITH CHECK (engagement_id IN (SELECT e.engagement_id FROM employee e WHERE e.user_id = claim_user_id()));
 
 -- synthesis, synthesis_cache, synthesis_run, seat_request, seat_purchase, outbox: system_all only.

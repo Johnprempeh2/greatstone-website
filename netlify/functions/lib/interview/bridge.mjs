@@ -1,7 +1,9 @@
 // GSAM's side door into the interview engine (GRE-2612, contract contracts/gs-interview-v1). The admin-bridge function
 // checks the signature, opens its audited transaction and calls a route here; every statement then runs as
-// interview_worker with system claims plus the key's org (interviewDbOnClient), so a round's writes commit with the
-// bridge audit row. A round belongs to the org whose key created it; another org's key gets not_found.
+// interview_worker with system claims plus the key's org and the round's organisation (interviewDbOnClient), so a
+// round's writes commit with the bridge audit row. Every path is keyed by the website organisation id (customers.id,
+// John's rule 2, 25 Oct): …/interview/organisations/{organisationId}/rounds/{roundId}. RLS limits each call to that
+// organisation's rows, so a round under another organisation, or another tenant's key, gets not_found.
 // Emails and the synthesis start are side effects: a route queues them on `after`, and admin-bridge runs them only
 // once the transaction has committed (never on a replay).
 import { randomBytes } from 'node:crypto';
@@ -10,6 +12,7 @@ import { interviewDbOnClient } from './db.mjs';
 import { closeOutOpenSessions } from './lifecycle.mjs';
 import { deletionDate } from './retention.mjs';
 import { getLatestSynthesis, getReleasedSynthesis, releaseSynthesis, withdrawRelease } from './synthesis/release.mjs';
+import { getInterview, listInterviews, pushReleasedSynthesis } from './bridge-interviews.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,7 +49,7 @@ export const joinUrl = (token, env) => (token ? `${siteOrigin(env)}/#join/${toke
 // ── checks ───────────────────────────────────────────────────────────────────────────────────────
 
 export function checkRound(body) {
-  only(body, ['schema', 'clientName', 'customerId', 'sponsor', 'mode', 'targetMinutes', 'status', 'seatTotal',
+  only(body, ['schema', 'clientName', 'sponsor', 'mode', 'targetMinutes', 'status', 'voice', 'seatTotal',
     'costEnvelopePence', 'endDate', 'retentionDeleteAfter', 'retentionDays', 'readoutAt', 'enrol', 'units', 'contextPack'], 'body');
   if (body.schema !== 'gs-interview-round-v1') bad('schema');
   const enrol = only(body.enrol ?? {}, ['enabled', 'expiresAt', 'allowedEmailDomains', 'defaultUnitId', 'rotateToken'], 'enrol');
@@ -57,11 +60,12 @@ export function checkRound(body) {
   const unitIds = new Set();
   const round = {
     clientName: str(body.clientName, 200, 'clientName'),
-    customerId: body.customerId == null ? null : UUID.test(body.customerId) ? body.customerId : bad('customerId'),
     sponsor: str(body.sponsor, 200, 'sponsor', { nullable: true }),
     mode: ['team', 'person'].includes(body.mode) ? body.mode : bad('mode'),
     targetMinutes: int(body.targetMinutes ?? 20, 5, 90, 'targetMinutes'),
     status: STATUS_IN[body.status] || bad('status'),
+    // the request-time voice switch: false takes voice away from this round at once (VOICE_ENABLED=0 needs a redeploy)
+    voice: body.voice == null ? true : typeof body.voice === 'boolean' ? body.voice : bad('voice'),
     seatTotal: int(body.seatTotal, 0, 10000, 'seatTotal'),
     costEnvelopePence: int(body.costEnvelopePence ?? 0, 0, 100_000_000, 'costEnvelopePence'),
     endDate: body.endDate == null ? null : DATE.test(body.endDate) ? body.endDate : bad('endDate'),
@@ -100,7 +104,8 @@ export function checkRound(body) {
       const map = {};
       for (const [k, v] of Object.entries(pack[key])) {
         if (key === 'units' && !UUID.test(k)) bad('contextPack.units');
-        if (key === 'people' && !EMAIL.test(k)) bad('contextPack.people');
+        // people: the employee id from invites (preferred), or a lower-case email before the person is invited
+        if (key === 'people' && !EMAIL.test(k) && !UUID.test(k)) bad('contextPack.people');
         map[key === 'people' ? k.toLowerCase() : k] = str(v, 20000, `contextPack.${key}`);
       }
       if (Object.keys(map).length > 1000) bad(`contextPack.${key}`);
@@ -132,10 +137,11 @@ export function checkInvites(body) {
 
 // ── round view ───────────────────────────────────────────────────────────────────────────────────
 
-async function ownedRound(db, org, roundId) {
+// RLS already hides another organisation's round; the check here is the second lock.
+async function ownedRound(db, ctx, roundId) {
   if (!UUID.test(roundId || '')) notFound();
   const row = must(await db.from('engagement').select('*').eq('id', roundId).maybeSingle());
-  if (!row || row.org_id !== org) notFound();
+  if (!row || row.org_id !== ctx.org || row.customer_id !== ctx.customerId) notFound();
   return row;
 }
 
@@ -148,8 +154,8 @@ export async function roundView(db, eng) {
   const spendRow = Array.isArray(spend.data) ? spend.data[0] : null;
   const c = Object.fromEntries(counts.map((r) => [r.status, r.n]));
   return {
-    id: eng.id, clientName: eng.client_name, customerId: eng.customer_id ?? null, sponsor: eng.sponsor ?? null,
-    mode: eng.mode, status: STATUS_OUT[eng.status] || eng.status, targetMinutes: eng.target_minutes,
+    id: eng.id, clientName: eng.client_name, organisationId: eng.customer_id, sponsor: eng.sponsor ?? null,
+    mode: eng.mode, status: STATUS_OUT[eng.status] || eng.status, voice: eng.branding_config?.voice !== false, targetMinutes: eng.target_minutes,
     seatTotal: eng.seat_total, costEnvelopePence: Number(eng.cost_envelope_pence),
     spendPence: Number(spendRow?.spent_pence ?? spendRow?.spend_pence ?? spendRow?.cost_pence ?? 0),
     endDate: eng.end_date, retentionDeleteAfter: eng.retention_delete_after,
@@ -231,18 +237,22 @@ export async function saveRound(db, ctx, roundId, body) {
   if (!UUID.test(roundId || '')) notFound();
   const r = checkRound(body);
   let eng = must(await db.from('engagement').select('*').eq('id', roundId).maybeSingle());
-  if (eng && eng.org_id !== ctx.org) notFound();
+  if (eng && (eng.org_id !== ctx.org || eng.customer_id !== ctx.customerId)) notFound();
   const fields = {
-    client_name: r.clientName, customer_id: r.customerId, sponsor: r.sponsor, mode: r.mode, target_minutes: r.targetMinutes,
-    status: r.status, seat_total: r.seatTotal, cost_envelope_pence: r.costEnvelopePence, end_date: r.endDate,
+    client_name: r.clientName, sponsor: r.sponsor, mode: r.mode, target_minutes: r.targetMinutes,
+    status: r.status, branding_config: { ...(eng?.branding_config ?? {}), voice: r.voice }, seat_total: r.seatTotal, cost_envelope_pence: r.costEnvelopePence, end_date: r.endDate,
     retention_delete_after: r.retentionDeleteAfter, retention_days: r.retentionDays, readout_at: r.readoutAt,
     allowed_email_domains: r.enrol.domains,
     enrol_enabled: r.status === 'closed' ? false : r.enrol.enabled, enrol_expires_at: r.enrol.expiresAt,
   };
   const created = !eng;
   if (created) {
-    eng = must(await db.from('engagement').insert({ id: roundId, org_id: ctx.org, ...fields,
-      enrol_token: randomBytes(24).toString('base64url') }).select('*').single());
+    const made = await db.from('engagement').insert({ id: roundId, org_id: ctx.org, customer_id: ctx.customerId, ...fields,
+      enrol_token: randomBytes(24).toString('base64url') }).select('*').single();
+    // 23505: the id is a round under another organisation (hidden by RLS); 23503: no such organisation for this tenant
+    if (made.error?.code === '23505') notFound();
+    if (made.error?.code === '23503') bad('organisationId');
+    eng = must(made);
   } else {
     eng = must(await db.from('engagement').update({ ...fields,
       ...(r.enrol.rotateToken || !eng.enrol_token ? { enrol_token: randomBytes(24).toString('base64url') } : {}) })
@@ -273,15 +283,13 @@ export function inviteEmail({ name, clientName, url, targetMinutes }) {
 
 export async function invitePeople(db, ctx, roundId, body, after) {
   const { people, send } = checkInvites(body);
-  const eng = await ownedRound(db, ctx.org, roundId);
+  const eng = await ownedRound(db, ctx, roundId);
   const units = new Set(must(await db.from('org_unit').select('id').eq('engagement_id', eng.id)).map((u) => u.id));
   const invited = [];
   for (const p of people) {
     if (p.unitId && !units.has(p.unitId)) bad('people.unitId');
     const domain = p.email.split('@')[1];
     if (p.portalRole !== 'client_admin' && !eng.allowed_email_domains.includes(domain)) bad('people.email: domain not allowed');
-    must(await db.from('person').upsert({ verified_email: p.email, display_name: p.name }, { onConflict: 'verified_email', ignoreDuplicates: true }));
-    const person = must(await db.from('person').select('person_id').eq('verified_email', p.email).single());
     const existing = must(await db.from('employee').select('id, status').eq('engagement_id', eng.id).eq('email', p.email).maybeSingle());
     const row = { name: p.name, role_title: p.roleTitle, unit_id: p.unitId ?? eng.default_unit_id, portal_role: p.portalRole };
     let employeeId;
@@ -289,7 +297,8 @@ export async function invitePeople(db, ctx, roundId, body, after) {
       must(await db.from('employee').update(row).eq('id', existing.id));
       employeeId = existing.id;
     } else {
-      employeeId = must(await db.from('employee').insert({ engagement_id: eng.id, person_id: person.person_id, email: p.email,
+      // person_id and user_id are set when the person joins with a verified website account of this email
+      employeeId = must(await db.from('employee').insert({ engagement_id: eng.id, email: p.email,
         status: 'invited', ...row }).select('id').single()).id;
     }
     invited.push({ email: p.email, employeeId, outcome: existing ? 'updated' : 'created', name: p.name });
@@ -308,7 +317,7 @@ export async function invitePeople(db, ctx, roundId, body, after) {
 
 export async function startSynthesis(db, ctx, roundId, body, after) {
   if (Object.keys(body).length) bad('body');
-  const eng = await ownedRound(db, ctx.org, roundId);
+  const eng = await ownedRound(db, ctx, roundId);
   // a background function lives 15 minutes at most: a run still "running" after 20 never finished
   must(await db.sql(`UPDATE synthesis_run SET status = 'failed', finished_at = now(), error = 'did not finish'
     WHERE engagement_id = $1 AND status = 'running' AND started_at < now() - interval '20 minutes'`, [eng.id]));
@@ -323,28 +332,28 @@ export async function startSynthesis(db, ctx, roundId, body, after) {
 export async function release(db, ctx, roundId, synthesisId, body) {
   if (Object.keys(body).length) bad('body');
   if (!UUID.test(synthesisId || '')) notFound();
-  await ownedRound(db, ctx.org, roundId);
+  await ownedRound(db, ctx, roundId);
   const done = await releaseSynthesis(db, roundId, synthesisId, ctx.actor);
   if (!done.ok) bad(done.message);
-  return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx.org, roundId)) }, rowCount: 1, resourceId: roundId };
+  return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx, roundId)) }, rowCount: 1, resourceId: roundId };
 }
 
 export async function withdraw(db, ctx, roundId, body) {
   if (Object.keys(body).length) bad('body');
-  await ownedRound(db, ctx.org, roundId);
+  await ownedRound(db, ctx, roundId);
   const done = await withdrawRelease(db, roundId, ctx.actor);
   if (!done.ok) bad(done.message);
-  return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx.org, roundId)) }, rowCount: 1, resourceId: roundId };
+  return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx, roundId)) }, rowCount: 1, resourceId: roundId };
 }
 
 export async function closeRound(db, ctx, roundId, body) {
   if (Object.keys(body).length) bad('body');
-  await ownedRound(db, ctx.org, roundId);
+  await ownedRound(db, ctx, roundId);
   must(await db.sql(`UPDATE engagement SET status = 'closed', enrol_enabled = false, closed_at = coalesce(closed_at, now())
     WHERE id = $1`, [roundId]));
   const closedSessions = await closeOutOpenSessions(db, roundId, ctx.actor);
   await audit(db, roundId, ctx.actor, 'round.closed', `Closed the round through GSAM (${closedSessions} open sessions closed out)`);
-  return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx.org, roundId)), closedSessions }, rowCount: 1,
+  return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx, roundId)), closedSessions }, rowCount: 1,
     resourceId: roundId };
 }
 
@@ -379,42 +388,65 @@ export async function listEvents(db, eng, params) {
     nextCursor: rows.length > limit ? encode(page[page.length - 1]) : null };
 }
 
+/** { customerId, roundId, tail } for interview/organisations/{organisationId}/rounds/{roundId}/…, or null. */
+function roundPath(p) {
+  if (p[0] !== 'interview' || p[1] !== 'organisations' || !UUID.test(p[2] || '') || p[3] !== 'rounds' || !p[4]) return null;
+  return { customerId: p[2].toLowerCase(), roundId: p[4], tail: p.slice(5) };
+}
+
 /** The read route for path parts after /api/admin/v1/, or null when it is not an interview path. */
 export function interviewReadRoute(p) {
-  if (p[0] !== 'interview' || p[1] !== 'rounds' || !p[2]) return null;
-  const tail = p.slice(3).join('/');
-  const known = ['', 'people', 'events', 'synthesis/latest', 'synthesis/released'];
-  if (!known.includes(tail)) return null;
+  const at = roundPath(p);
+  if (!at) return null;
+  const tail = at.tail.join('/');
+  const known = ['', 'people', 'events', 'interviews', 'synthesis/latest', 'synthesis/released'];
+  const interviewId = at.tail.length === 2 && at.tail[0] === 'interviews' ? at.tail[1] : null;
+  if (!known.includes(tail) && !interviewId) return null;
   return {
-    resource: 'interview', id: p[2],
+    resource: 'interview', id: at.roundId,
     async run(client, params) {
       const { rows: [{ org }] } = await client.query(`SELECT current_setting('request.jwt.claims', true)::jsonb->>'org' AS org`);
-      const db = interviewDbOnClient(client, { org });
-      const eng = await ownedRound(db, org, p[2]);
+      const ctx = { org, customerId: at.customerId };
+      const db = interviewDbOnClient(client, { org, customer_id: at.customerId });
+      const eng = await ownedRound(db, ctx, at.roundId);
       if (tail !== 'events' && [...params.keys()].length) bad('no parameters');
       if (tail === '') return { outcome: 'ok', rowCount: 1, body: { item: await roundView(db, eng) } };
       if (tail === 'people') { const items = await listPeople(db, eng); return { outcome: 'ok', rowCount: items.length, body: { items } }; }
       if (tail === 'events') { const page = await listEvents(db, eng, params); return { outcome: 'ok', rowCount: page.items.length, body: page }; }
+      if (tail === 'interviews') { const list = await listInterviews(db, eng); return { outcome: 'ok', rowCount: list.items.length, body: list }; }
+      if (interviewId) { const item = await getInterview(db, eng, interviewId); return { outcome: 'ok', rowCount: 1, body: { item } }; }
       const item = tail === 'synthesis/latest' ? await getLatestSynthesis(db, eng.id) : await getReleasedSynthesis(db, eng.id);
       return { outcome: 'ok', rowCount: item ? 1 : 0, body: { item: item ?? null } };
     },
   };
 }
 
+/** The released synthesis made in GSAM: stored, re-verified here and released, or refused with nothing written. */
+export async function pushSynthesis(db, ctx, roundId, body) {
+  const eng = await ownedRound(db, ctx, roundId);
+  const pushed = await pushReleasedSynthesis(db, ctx, eng, body);
+  return { status: 200, body: { ...pushed, round: await roundView(db, await ownedRound(db, ctx, roundId)) }, rowCount: 1,
+    resourceId: roundId };
+}
+
 /** The write route (write capability) for a POST under /api/admin/v1/interview/, or null. */
 export function interviewWriteRoute(method, p) {
-  if (method !== 'POST' || p[0] !== 'interview' || p[1] !== 'rounds' || !p[2]) return null;
+  const at = method === 'POST' ? roundPath(p) : null;
+  if (!at) return null;
   const after = [];
-  const tail = p.slice(3);
+  const { roundId, tail } = at;
   const route = (fn) => ({
     capability: 'write', after,
-    run: (client, ctx, body) => fn(interviewDbOnClient(client, { org: ctx.org }), ctx, body),
+    run: (client, ctx, body) => fn(interviewDbOnClient(client, { org: ctx.org, customer_id: at.customerId }),
+      { ...ctx, customerId: at.customerId }, body),
   });
-  if (!tail.length) return route((db, ctx, body) => saveRound(db, ctx, p[2], body));
-  if (tail.length === 1 && tail[0] === 'invites') return route((db, ctx, body) => invitePeople(db, ctx, p[2], body, after));
-  if (tail.length === 1 && tail[0] === 'synthesis') return route((db, ctx, body) => startSynthesis(db, ctx, p[2], body, after));
-  if (tail.length === 2 && tail[0] === 'synthesis' && tail[1] === 'withdraw') return route((db, ctx, body) => withdraw(db, ctx, p[2], body));
-  if (tail.length === 3 && tail[0] === 'synthesis' && tail[2] === 'release') return route((db, ctx, body) => release(db, ctx, p[2], tail[1], body));
-  if (tail.length === 1 && tail[0] === 'close') return route((db, ctx, body) => closeRound(db, ctx, p[2], body));
+  if (!tail.length) return route((db, ctx, body) => saveRound(db, ctx, roundId, body));
+  if (tail.length === 1 && tail[0] === 'invites') return route((db, ctx, body) => invitePeople(db, ctx, roundId, body, after));
+  if (tail.length === 1 && tail[0] === 'close') return route((db, ctx, body) => closeRound(db, ctx, roundId, body));
+  // synthesis is made in GSAM; the site's own run is the fallback
+  if (tail.length === 2 && tail[0] === 'synthesis' && tail[1] === 'released') return route((db, ctx, body) => pushSynthesis(db, ctx, roundId, body));
+  if (tail.length === 1 && tail[0] === 'synthesis') return route((db, ctx, body) => startSynthesis(db, ctx, roundId, body, after));
+  if (tail.length === 2 && tail[0] === 'synthesis' && tail[1] === 'withdraw') return route((db, ctx, body) => withdraw(db, ctx, roundId, body));
+  if (tail.length === 3 && tail[0] === 'synthesis' && tail[2] === 'release') return route((db, ctx, body) => release(db, ctx, roundId, tail[1], body));
   return null;
 }
