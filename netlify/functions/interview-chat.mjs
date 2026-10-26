@@ -10,6 +10,7 @@
 // caller's claims (participant scope), and the outbox, which participants cannot reach, through a system client.
 // The development-only x-test-employee-email bypass is dropped; tests inject verify and the model client.
 import Anthropic from '@anthropic-ai/sdk';
+import { anthropicKey } from './lib/interview/keys.mjs';
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
 import { json, participantFromRequest, interviewEnabled } from './lib/interview/caller.mjs';
@@ -44,7 +45,7 @@ const HARD_BUDGET_RATIO = Number(process.env.CHAT_HARD_BUDGET_RATIO) || 1.5;
 const INFLIGHT_RECOVERY_MS = 30_000;
 
 let anthropic = null;
-const defaultClient = () => (anthropic ??= new Anthropic());
+const defaultClient = () => (anthropic ??= new Anthropic({ apiKey: anthropicKey() }));
 
 // A model error worth one more attempt: 429, 529, any 5xx, or a dropped connection, checked BEFORE the generic
 // APIError branch because APIConnectionError extends APIError with an undefined status.

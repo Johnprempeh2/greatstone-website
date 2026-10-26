@@ -19,6 +19,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { anthropicKey } from './keys.mjs';
 import {
   EXTRACTION_PROMPT,
   EXTRACTION_SLOT_ADDENDUM,
@@ -202,7 +203,7 @@ export function parseAndValidate(raw, employeeMessage) {
 
 let anthropic = null;
 function client() {
-  if (!anthropic) anthropic = new Anthropic();
+  if (!anthropic) anthropic = new Anthropic({ apiKey: anthropicKey() });
   return anthropic;
 }
 

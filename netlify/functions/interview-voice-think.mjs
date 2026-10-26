@@ -10,6 +10,7 @@
 // Port: data runs with system claims, after the token check (the token, not a person, is the authority here).
 // VOICE_ENABLED is the kill switch. Clause buffering is unchanged: whole clauses only, so the voice can shape them.
 import Anthropic from '@anthropic-ai/sdk';
+import { anthropicKey } from './lib/interview/keys.mjs';
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
 import { interviewEnabled, voiceEnabled, roundVoiceEnabled } from './lib/interview/caller.mjs';
@@ -36,7 +37,7 @@ const TURNS_PER_MIN_SESSION = Number(process.env.VOICE_TURNS_PER_MIN) || 40;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 let anthropic = null;
-const defaultClient = () => (anthropic ??= new Anthropic());
+const defaultClient = () => (anthropic ??= new Anthropic({ apiKey: anthropicKey() }));
 const unauthorised = () => Response.json({ error: 'unauthorised' }, { status: 401, headers: { 'cache-control': 'no-store' } });
 
 /** A refusal Deepgram can still speak, so a failure is never dead air. */

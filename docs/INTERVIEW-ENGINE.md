@@ -136,8 +136,8 @@ Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/
 
 | Variable | Default | Note |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | none | secret, John sets it |
-| `DEEPGRAM_API_KEY` | none | secret, John sets it |
+| `ANTHROPIC_API_KEY` (or `PIA_Key`) | none | secret, John sets it; on staging it is `PIA_Key` |
+| `DEEPGRAM_API_KEY` (or `PAI_Voice_Key`) | none | secret, John sets it; on staging it is `PAI_Voice_Key` |
 | `INTERVIEW_MODEL` | `claude-sonnet-4-6` | as the source |
 | `EXTRACTION_MODEL` | `claude-haiku-4-5` | as the source |
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
@@ -179,7 +179,8 @@ Environment on the staging site (Functions scope):
 
 - Set by Bedrock: `INTERVIEW_ENABLED=1`, `INTERVIEW_INTERNAL_SECRET` (random, secret; the bridge uses it to start
   the synthesis background function).
-- Set by John (step card on GRE-2612): `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`. Without the Deepgram key voice is
+- Set by John (GRE-2612, 26 Oct): `PIA_Key` (Anthropic) and `PAI_Voice_Key` (Deepgram). The engine also reads
+  `ANTHROPIC_API_KEY` and `DEEPGRAM_API_KEY`, which win when set. Without the Deepgram key voice is
   simply not offered; without the Anthropic key a chat turn fails with the calm error.
 - Existing: `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `GSAM_BRIDGE_KEYS`,
   `APP_SITE_ORIGIN` (the join link's origin).

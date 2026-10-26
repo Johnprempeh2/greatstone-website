@@ -4,6 +4,7 @@
 // The browser gets a Deepgram token that expires in well under a minute and Settings whose bearer is scoped to this
 // one session. Port: as the source, voice needs a Deepgram key and VOICE_ENABLED=0 switches it off (404); the think URL is /api/interview/voice/think.
 import { getPool } from './lib/db.mjs';
+import { deepgramKey } from './lib/interview/keys.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
 import { json, participantFromRequest, interviewEnabled, voiceEnabled, roundVoiceEnabled } from './lib/interview/caller.mjs';
 import { getEmployeeContextByUserId } from './lib/interview/employee.mjs';
@@ -26,7 +27,7 @@ function thinkBaseUrl(req, env) {
 
 /** Deepgram's short-lived credential, minted from the key we never expose. */
 export async function grantDeepgramToken(env = process.env, fetchImpl = fetch) {
-  const key = env.DEEPGRAM_API_KEY;
+  const key = deepgramKey(env);
   if (!key) return null;
   try {
     const res = await fetchImpl('https://api.deepgram.com/v1/auth/grant', {
