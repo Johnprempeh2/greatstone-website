@@ -17,8 +17,9 @@ production site or reset a staff password.
    one fixture hash. The credentials file has the fixture email and generated
    password. Neither file belongs in the repository, an issue comment or a log.
 2. After review and staging deploy approval, run
-   `scripts/owner-import-run.mjs prepare --site gre1795-website-db-staging`.
-   It confirms a staging snapshot and opens a bounded window. Deploy the reviewed
+   `scripts/owner-import-run.mjs prepare --site gre1795-website-db-staging --mode proof --input <payload>`.
+   This pins the one allowed payload hash before either submit can start, confirms
+   a staging snapshot and opens a bounded window. Deploy the reviewed
    code to that site through the guarded staging deploy path.
 3. Submit the same payload twice with `--mode proof`, first
    `--action dry-run`, then `--action apply`. Proceed to apply only if all

@@ -1,8 +1,8 @@
-// Keep one proof payload per owner-import window so clear can remove every proof record.
-export async function claimProofHash(store, state, hash) {
-  if (state.proofHash && state.proofHash !== hash)
-    throw new Error('A different proof payload was already submitted; clear this window before preparing another');
-  if (!state.proofHash) await store.setJSON('runner/state', { ...state, proofHash: hash });
+// The proof hash is fixed at prepare time. Submits never rewrite the shared state.
+export function claimProofHash(state, hash) {
+  if (!state.proofHash) throw new Error('Proof window must be prepared with its payload');
+  if (state.proofHash !== hash)
+    throw new Error('A different proof payload was prepared; clear this window before preparing another');
 }
 
 export async function clearProofRecords(store, state) {

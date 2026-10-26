@@ -1,10 +1,11 @@
 // The runner for the one-time owner importer (GRE-2578, netlify/functions/owner-import.mjs). It prints statuses and
 // counts only, never row values. Needs NETLIFY_AUTH_TOKEN. Keep the export in run scratch and remove it after.
 //
-//   prepare --site <name> [--minutes 45]   snapshot the database, set OWNER_IMPORT_SITE and OWNER_IMPORT_UNTIL
+//   prepare --site <name> [--minutes 45] [--mode proof --input <payload.json>]
+//                                          snapshot the database, set OWNER_IMPORT_SITE and OWNER_IMPORT_UNTIL
 //                                          (at most 60 minutes). Netlify bakes env values into a deploy, so deploy
 //                                          and publish the site next.
-//   submit --site <name> --mode identities|tables --action dry-run|apply --input <export.json>
+//   submit --site <name> --mode identities|tables|proof --action dry-run|apply --input <export.json>
 //                                          write the payload, then wait for the scheduled tick's result (every
 //                                          five minutes; Netlify picks the minute) until the window ends. If no tick
 //                                          ran, it removes the payload: nothing was applied. A table apply is
@@ -53,8 +54,13 @@ async function setEnv(site, key, value) {
     [{ key, scopes: ['functions'], values: [{ context: 'production', value }] }]);
 }
 
-async function prepare(site, minutes) {
+async function prepare(site, minutes, mode, input) {
   if (!(minutes > 0 && minutes * 60_000 <= MAX_WINDOW_MS)) throw new Error('--minutes must be 1 to 60');
+  if (mode && mode !== 'proof') throw new Error('Only proof mode can be pinned at prepare time');
+  if (!!mode !== !!input) throw new Error('Proof prepare requires both --mode proof and --input');
+  if (mode === 'proof' && site.name !== 'gre1795-website-db-staging') throw new Error('Proof is staging only');
+  const proofHash = mode === 'proof' ? payloadHash('proof', validateProof(JSON.parse(readFileSync(input, 'utf8')))) : undefined;
+  if (await site.store.get('runner/state', { type: 'json' })) throw new Error('A window already exists; run clear first');
   if (await site.store.get('payload', { type: 'json' })) throw new Error('A payload is already waiting; run clear first');
   const snapshot = await netlify('POST', `/sites/${site.id}/database/snapshot`,
     { name: `owner-import-${new Date().toISOString().replace(/[:.]/g, '-')}`, metadata: { source: 'owner-import GRE-2578' } });
@@ -63,7 +69,7 @@ async function prepare(site, minutes) {
   const until = new Date(Date.now() + minutes * 60_000).toISOString();
   await setEnv(site, 'OWNER_IMPORT_SITE', site.name);
   await setEnv(site, 'OWNER_IMPORT_UNTIL', until);
-  await site.store.setJSON('runner/state', { snapshotId: snapshot.id, until });
+  await site.store.setJSON('runner/state', { snapshotId: snapshot.id, until, ...(proofHash ? { proofHash } : {}) });
   console.log(`Snapshot ${snapshot.id} confirmed. Window set until ${until}.`);
   console.log('Next: deploy and publish this site (env values reach functions only through a new deploy), then submit.');
 }
@@ -79,6 +85,7 @@ async function readonlyColumns(site) {
 async function submit(site, mode, action, input) {
   const state = await site.store.get('runner/state', { type: 'json' });
   if (!state?.until || Date.parse(state.until) <= Date.now()) throw new Error('No open window; run prepare and deploy first');
+  if (state.proofHash && mode !== 'proof') throw new Error('This window is reserved for its prepared proof payload');
   if (await site.store.get('payload', { type: 'json' })) throw new Error('A payload is already waiting; run clear first');
   const source = JSON.parse(readFileSync(input, 'utf8'));
   let data;
@@ -94,12 +101,12 @@ async function submit(site, mode, action, input) {
     const built = buildTablesData(source, readonly.columns);
     for (const [table, cols] of Object.entries(built.dropped)) console.log(`Not imported (not insertable on the target): ${table}: ${cols.join(', ')}`);
     data = built.data;
-  } else throw new Error('--mode must be identities or tables');
+  } else throw new Error('--mode must be identities, tables or proof');
   if (action !== 'dry-run' && action !== 'apply') throw new Error('--action must be dry-run or apply');
 
   try {
     const hash = payloadHash(mode, data);
-    if (mode === 'proof') await claimProofHash(site.store, state, hash);
+    if (mode === 'proof') claimProofHash(state, hash);
     const submitted = Date.now();
     await site.store.setJSON('payload', { version: 1, mode, action, notAfter: state.until, data });
     console.log(`Payload ${hash.slice(0, 12)} written for ${action}. Waiting for the scheduled run (until ${state.until}).`);
@@ -148,7 +155,7 @@ const { positionals: [command], values } = parseArgs({
 });
 if (!process.env.NETLIFY_AUTH_TOKEN) throw new Error('NETLIFY_AUTH_TOKEN is required');
 const site = await target(values.site);
-if (command === 'prepare') await prepare(site, Number(values.minutes));
+if (command === 'prepare') await prepare(site, Number(values.minutes), values.mode, values.input);
 else if (command === 'submit') await submit(site, values.mode, values.action, values.input);
 else if (command === 'clear') await clear(site);
 else throw new Error('Usage: prepare | submit | clear (see the header of this file)');
