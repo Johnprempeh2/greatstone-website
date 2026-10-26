@@ -13,6 +13,7 @@ import { loadActiveMemoryBlob } from '../functions/lib/interview/memory.mjs';
 import { getEmployeeContextByUserId } from '../functions/lib/interview/employee.mjs';
 import { retentionDelete } from '../functions/lib/interview/retention.mjs';
 import { enrol } from '../functions/interview-join.mjs';
+import { runPortalOp } from '../functions/lib/interview/portal-ops.mjs';
 
 const id = (prefix, n) => `${prefix}000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ORG = id('90', 1), ORG2 = id('90', 2);
@@ -609,6 +610,23 @@ test('join over the real database: an invitation is claimed by user id, a newcom
   const report = await retentionDelete(pool, EJ, { confirm: true });
   assert.equal(report.memoryBlobs, 1);
   assert.equal(sql(`SELECT string_agg(customer_id::text, ',') FROM interview.memory_blob WHERE person_id = '${fayPerson}'`), CA);
+});
+
+test('an invited person who opens the portal directly claims the one open invitation; two rounds wait for the link', { skip }, async () => {
+  const E1 = id('e1', 8), E2 = id('e1', 9), E3 = id('e1', 10);
+  sql(`SET search_path TO interview, public;
+    INSERT INTO engagement (id, customer_id, org_id, client_name, seat_total) VALUES
+      ('${E1}', '${CB}', '${ORG}', 'Arrive round', 5), ('${E2}', '${CB}', '${ORG}', 'Two A', 5), ('${E3}', '${CB}', '${ORG}', 'Two B', 5);
+    INSERT INTO employee (engagement_id, name, email) VALUES ('${E1}', 'Ivy', 'ivy@a.test'),
+      ('${E2}', 'Jo', 'jo@a.test'), ('${E3}', 'Jo', 'jo@a.test');`);
+  const page = (caller) => runPortalOp('interview-page', { db: interviewDb(caller, { pool }), sys: interviewDb('system', { pool }), caller,
+    env: { voice: false } });
+  const ivy = { id: 'ba-user-ivy', email: 'ivy@a.test', name: 'Ivy' };
+  assert.equal((await page(ivy)).screen, 'welcome');
+  assert.equal(sql(`SELECT user_id FROM interview.employee WHERE engagement_id = '${E1}'`), ivy.id);
+  const jo = { id: 'ba-user-jo', email: 'jo@a.test', name: 'Jo' };
+  assert.equal((await page(jo)).screen, 'no-match');
+  assert.equal(sql(`SELECT count(*) FROM interview.employee WHERE email = 'jo@a.test' AND user_id IS NOT NULL`), '0');
 });
 
 test('(g) rollback.sql removes the schema and the role', { skip }, () => {

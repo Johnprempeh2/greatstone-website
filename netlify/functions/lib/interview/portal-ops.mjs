@@ -8,6 +8,7 @@
 // Port: Next's redirect('/interview/x') is returned as { redirect: '#portal/interview/x' }; a thrown action error is
 // an Error the function answers with 500 and a calm message; revalidatePath has no equivalent.
 import { getEmployeeContextByUserId, getEmployeeContextForEngagement } from './employee.mjs';
+import { escapeIlike, provisionInvitee } from './provision.mjs';
 import { createInitialTaxonomyState } from './types.mjs';
 import { enqueueOutboxEvent, scheduleOutboxDrain } from './outbox.mjs';
 import { applySignOffConsent } from './memory.mjs';
@@ -27,8 +28,24 @@ const isAdmin = (ctx) => ctx.employee.portal_role === 'gs_admin' || ctx.employee
 
 // ─── page loaders ────────────────────────────────────────────────────────────
 
+async function claimInviteOnArrival(db, sys, caller) {
+  if (!caller?.email || !caller.id) return null;
+  const { data: open } = await db.from('employee').select('id, engagement_id, name').is('user_id', null)
+    .ilike('email', escapeIlike(caller.email)).limit(2);
+  if (!open || open.length !== 1) return null; // none, or more than one round: the round's own link decides
+  // the round is not visible to the person until the invitation is theirs
+  const { data: eng } = await sys.from('engagement').select('status').eq('id', open[0].engagement_id).maybeSingle();
+  if (eng?.status !== 'active') return null;
+  const done = await provisionInvitee(db, { engagementId: open[0].engagement_id, email: caller.email, name: caller.name ?? open[0].name,
+    userId: caller.id });
+  return done.ok ? getEmployeeContextByUserId(db, caller.id) : null;
+}
+
 /** interview/page.tsx: the welcome and consent screen, or where this person belongs instead. */
-async function interviewPage({ db, ctx, caller, args, env }) {
+async function interviewPage({ db, sys, ctx, caller, args, env }) {
+  // Port: an invited person who comes straight here, not through the round's link, claims the invitation sent to
+  // their verified email (only an unclaimed one, on an open round), as the join does.
+  if (!ctx && sys) ctx = await claimInviteOnArrival(db, sys, caller);
   if (!ctx) return { screen: 'no-match', email: caller.email };
   if (ctx.employee.status === 'declined') return go('goodbye');
   if (ctx.employee.status === 'completed') return go('complete');
