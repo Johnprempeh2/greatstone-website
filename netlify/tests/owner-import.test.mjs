@@ -8,6 +8,8 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
+import { hashSync } from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import {
   runOwnerImport, checkWindow, buildTablesData, targetColumns, payloadHash, columnsHash, TABLES, SITES,
@@ -22,8 +24,11 @@ const ENV = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'gre1795-website-db-
 const TENV = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'owner-import-test' };
 
 const hex = (n, i) => n.toString(16).padStart(8, '0') + `-0000-4000-8000-${String(i).padStart(12, '0')}`;
+const APPROVED_PREFIXES = ['079636cf', 'd814b01d', 'c3f9c60f', '2d47ada5',
+  '7a0c5d8e', '681507c1', 'e81bc42a', '5a85a5ba'];
 const USERS = Array.from({ length: 8 }, (_, i) => ({
-  id: hex(0xa0000000 + i, i), email: `person${i}@example.test`, name: `Person ${i}`, emailVerified: i % 2 === 0,
+  id: `${APPROVED_PREFIXES[i]}-0000-4000-8000-${String(i).padStart(12, '0')}`,
+  email: `person${i}@example.test`, name: `Person ${i}`, emailVerified: i % 2 === 0,
   passwordHash: `$2b$10$${String.fromCharCode(65 + i).repeat(53)}`,
 }));
 const SECRETS = USERS.flatMap((u) => [u.email, u.passwordHash, u.name]);
@@ -142,11 +147,79 @@ test('identities: dry run rolls back, apply commits once, the same hash is a no-
   assertNoValues(dry.lines, applied.lines, again.lines, [...store.map.values()]);
 });
 
+test('staging proof compares all three digests, then creates one cost-10 legacy fixture', { skip }, async () => {
+  const digest = (value) => createHash('sha256').update(value).digest('hex');
+  const fixtureId = 'f1000000-0000-4000-8000-000000000001';
+  const fixtureEmail = 'gre2805-fixture@example.test';
+  const fixturePassword = 'fixture-password-for-test';
+  const data = {
+    source: USERS.map((u) => ({
+      id: u.id, uuidDigest: digest(u.id), emailDigest: digest(u.email), bcryptDigest: digest(u.passwordHash),
+    })),
+    fixture: { id: fixtureId, email: fixtureEmail, passwordHash: hashSync(fixturePassword, 10) },
+  };
+  const failing = structuredClone(data);
+  failing.source[0].bcryptDigest = digest('incorrect');
+  const failure = await tick(memoryStore({ payload: envelope('proof', 'dry-run', failing) }));
+  assert.equal(failure.result.counts.identities.matched, 7, 'a changed bcrypt digest must fail the check');
+  assert.deepEqual(failure.result.counts.checks[0], {
+    prefix: USERS[0].id.slice(0, 8), uuid: true, email: true, bcrypt: false,
+  });
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '0');
+  const failingStore = memoryStore({ payload: envelope('proof', 'dry-run', failing) });
+  await tick(failingStore);
+  await failingStore.setJSON('payload', envelope('proof', 'apply', failing));
+  assert.equal((await tick(failingStore)).result.reason, 'proof-mismatch');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '0');
+
+  const hash = payloadHash('proof', data);
+  const store = memoryStore({ payload: envelope('proof', 'dry-run', data) });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'dry-run-ok');
+  assert.equal(dry.result.counts.identities.matched, 8);
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '0');
+  await store.setJSON('payload', envelope('proof', 'apply', data));
+  const applied = await tick(store);
+  assert.equal(applied.result.status, 'applied');
+  assert.equal(applied.result.counts.fixtureId, undefined);
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '1');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}' AND "providerId"='credential'`), '1');
+  await store.setJSON('payload', envelope('proof', 'apply', data));
+  assert.equal((await tick(store)).result.status, 'noop');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}'`), '1');
+  const safe = JSON.stringify([...store.map.values(), dry.lines, applied.lines]);
+  assert.ok(!safe.includes(fixtureEmail));
+  assert.ok(!safe.includes(fixturePassword));
+  assert.ok(!safe.includes(data.fixture.passwordHash));
+  assert.ok(!safe.includes(fixtureId));
+  assert.ok(!safe.includes(USERS[0].email));
+  assert.ok(!safe.includes(USERS[0].passwordHash));
+  assert.equal((await store.get(`ledger/${hash}`)).counts.identities.matched, 8);
+});
+
+test('proof refuses an existing non-source user without adding a credential', { skip }, async () => {
+  const digest = (value) => createHash('sha256').update(value).digest('hex');
+  const fixtureId = 'f2000000-0000-4000-8000-000000000002';
+  const fixtureEmail = 'existing-person@example.test';
+  owner(`INSERT INTO better_auth."user" ("id", "name", "email", "emailVerified")
+    VALUES ('${fixtureId}', 'Existing person', '${fixtureEmail}', true)`);
+  const data = {
+    source: USERS.map((u) => ({ id: u.id, uuidDigest: digest(u.id),
+      emailDigest: digest(u.email), bcryptDigest: digest(u.passwordHash) })),
+    fixture: { id: fixtureId, email: fixtureEmail, passwordHash: hashSync('test-only-password', 10) },
+  };
+  const store = memoryStore({ payload: envelope('proof', 'dry-run', data) });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'failed');
+  assert.equal(dry.result.reason, 'proof-fixture-conflict');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}'`), '0');
+});
+
 test('a role other than netlifydb_owner is refused before any write', { skip }, async () => {
   owner('CREATE ROLE owner_import_other LOGIN; GRANT USAGE ON SCHEMA better_auth TO owner_import_other;');
   const other = new pg.Pool({ connectionString: db.url.replace('netlifydb_owner@', 'owner_import_other@'), max: 1 });
   try {
-    const users = USERS.map((u) => ({ ...u, id: u.id.replace(/^a/, 'b'), email: `x${u.email}` }));
+    const users = USERS.map((u, i) => ({ ...u, id: hex(0xb0000000 + i, i), email: `x${u.email}` }));
     const store = memoryStore({ payload: envelope('identities', 'dry-run', users) });
     const { result } = await tick(store, { open: () => other });
     assert.equal(result.status, 'failed');
@@ -256,9 +329,9 @@ test('the runner helper refuses rows for a table outside TABLES or missing a col
   } finally { client.release(); }
 });
 
-test('the window check is pure: production allows only the table move', () => {
+test('the window check is pure: only staging allows proof', () => {
   assert.deepEqual(SITES['greatstone-home'].modes, ['tables']);
-  assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities']);
+  assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
   const ok = checkWindow({ env: ENV, context: STAGING, now: NOW });
   assert.equal(ok.site, SITES['gre1795-website-db-staging']);
 });
