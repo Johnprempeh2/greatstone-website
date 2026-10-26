@@ -1620,7 +1620,7 @@ export default function App() {
             : <PublicRender config={config} data={(!canEdit && page.status !== 'published' && !page.published) ? { content: [], root: {} } : (page.published || page.data)} />}
         </EditorBoundary>
       </main>
-      {(shopRoute || productSlug || svcSlug || current === 'services') && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
+      {!confirmRoute && (shopRoute || productSlug || svcSlug || current === 'services') && <Suspense fallback={null}><LazyStoreCart /></Suspense>}
       <Footer order={state.order} pages={state.pages} onNavigate={navigate} canEdit={canEdit} logo={state.settings.logo} tagline={state.settings.footerTagline} siteName={state.settings.siteName} footerEmail={state.settings.footerEmail} legalName={state.settings.legalName} />
     </div>
     </ServicesContext.Provider>

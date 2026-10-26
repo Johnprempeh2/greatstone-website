@@ -6,7 +6,7 @@ import { useModal } from './useModal.mjs';
 import { useCart, setQty, removeItem, removeService, clearCart, clearQuoteLines, markQuoteLines, cartCount, cartSubtotalMinor, paidLines, quoteLines, startCheckout, requestBasketQuote, onOpenCart, MAX_QTY } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { track } from '../lib/analytics.js';
-import { basketSignature, sentQuoteReference } from './basketCheckout.mjs';
+import { basketSignature, sentBasketQuote, sentQuoteReference } from './basketCheckout.mjs';
 import './store.css';
 
 const VAT_RATE = Number((typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_VAT_RATE) || 0.20);
@@ -16,7 +16,12 @@ export default function StoreCart({ confirmed = false }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('cart'); // cart | sent
   const [email, setEmail] = useState('');
-  const [q, setQ] = useState({ name: '', email: '', company: '', message: '' });
+  const [q, setQ] = useState(() => {
+    try {
+      const pending = JSON.parse(sessionStorage.getItem('gs-basket-checkout') || 'null');
+      return { name: '', email: JSON.parse(pending?.signature || '{}').email || '', company: '', message: '', ...pending?.contact };
+    } catch { return { name: '', email: '', company: '', message: '' }; }
+  });
   const [quoteRef, setQuoteRef] = useState('');
   const [submittedQuote, setSubmittedQuote] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -28,6 +33,9 @@ export default function StoreCart({ confirmed = false }) {
   const count = cartCount();
   const paid = paidLines();
   const quoted = quoteLines();
+  let pendingCheckout = null;
+  try { pendingCheckout = JSON.parse(sessionStorage.getItem('gs-basket-checkout') || 'null'); } catch { /* unavailable storage */ }
+  const sentQuote = sentBasketQuote(pendingCheckout, items);
 
   const drawerRef = useRef(null);
   // reset the drawer to the basket view + clear any stale error on every close, so reopening the FAB
@@ -42,9 +50,10 @@ export default function StoreCart({ confirmed = false }) {
     setBusy(true); setErr(null);
     track('begin_checkout', { value_minor: cartSubtotalMinor(), items: paid.length });
     try {
-      if (quoted.length && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q.email.trim()))
+      const contactEmail = (sentQuote?.email || q.email || email).trim();
+      if (quoted.length && !sentQuote && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contactEmail))
         throw new Error('Enter your email to request a quote.');
-      const signature = basketSignature(items, q.email || email);
+      const signature = basketSignature(items, contactEmail);
       let previous = null;
       try { previous = JSON.parse(sessionStorage.getItem('gs-basket-checkout') || 'null'); } catch { /* unavailable storage */ }
       const reusable = previous?.signature === signature && Date.now() - previous.createdAt < 15 * 60 * 1000;
@@ -55,13 +64,13 @@ export default function StoreCart({ confirmed = false }) {
         markQuoteLines(dropped.map((line) => line.variantId));
         throw new Error('A price changed. The affected item is now in Request a quote. Review the basket before paying.');
       }
-      let sentQuoteRef = reusable ? previous.quoteReference : '';
+      let sentQuoteRef = sentQuoteReference(previous, items, contactEmail);
       if (quoted.length && !sentQuoteRef) {
         sentQuoteRef = await requestBasketQuote({ contact: q, message: q.message.trim(), paidOrderReference: id });
         setQuoteRef(sentQuoteRef);
       }
       try { sessionStorage.setItem('gs-basket-checkout', JSON.stringify({ signature, createdAt: Date.now(), url, id,
-        quoteReference: sentQuoteRef })); } catch { /* unavailable storage */ }
+        quoteReference: sentQuoteRef, contact: q })); } catch { /* unavailable storage */ }
       // stash the indicative order value so the confirmation page (a fresh page load after the Stripe
       // redirect, where the basket is already cleared) can fire the funnel-completing purchase event.
       try { sessionStorage.setItem('gs-pending-purchase', JSON.stringify({ value_minor: cartSubtotalMinor(), currency: 'GBP', items: paid.length,
@@ -69,7 +78,7 @@ export default function StoreCart({ confirmed = false }) {
       window.location.href = url;
     }
     catch (e) { setErr(e.message || 'Could not start checkout.'); setBusy(false); }
-  }, [email, q, items, paid, quoted]);
+  }, [email, q, items, paid, quoted, sentQuote]);
 
   const submitQuote = useCallback(async (e) => {
     e.preventDefault(); setBusy(true); setErr(null);
@@ -156,7 +165,10 @@ export default function StoreCart({ confirmed = false }) {
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
                 </label>}
 
-                {quoted.length > 0 && <form id="sc-quote-form" className="sc-quote sc-panel" onSubmit={submitQuote}>
+                {quoted.length > 0 && sentQuote ? <section className="sc-quote sc-panel" aria-labelledby="sc-quote-sent-title">
+                  <h3 id="sc-quote-sent-title">Quote request sent · ref {sentQuote.reference}</h3>
+                  <p className="sc-note">The team will be in touch. <a href="#book">Book a discovery call</a>.</p>
+                </section> : quoted.length > 0 && <form id="sc-quote-form" className="sc-quote sc-panel" onSubmit={submitQuote}>
                   <h3>Request a quote · {quoted.length} item{quoted.length === 1 ? '' : 's'}</h3>
                   <p className="sc-note">The team will quote these items. <a href="#book">Book a discovery call</a>.</p>
                   <label>Your name<input value={q.name} onChange={(e) => setQf('name', e.target.value)} autoComplete="name" /></label>
@@ -167,20 +179,20 @@ export default function StoreCart({ confirmed = false }) {
                 </form>}
 
                 {err && <div className="sc-err" role="alert">{err}</div>}
-                {!err && returnedFromCheckout && paid.length > 0 && quoted.length > 0 && <div className="sc-err" role="status">Card payment was not completed. You can retry below or send the quote request alone.</div>}
+                {!err && returnedFromCheckout && paid.length > 0 && sentQuote && <div className="sc-err" role="status">Card payment was not completed. Your quote request is already with the team. You can retry the card payment below.</div>}
 
                 {paid.length > 0 && <div className="sc-methods" role="group" aria-label="Pay now">
                   <button type="button" className="sc-method sc-method-card" onClick={checkout} disabled={busy}>
                     <span className="sc-method-ic" aria-hidden="true"><svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg></span>
                     <span className="sc-method-tx">
-                      <span className="sc-method-t">{busy ? 'Opening secure checkout…' : quoted.length ? `Pay ${fmtMoney(sub + vat, cur)} and send quote request` : `Pay ${fmtMoney(sub + vat, cur)} by card`}</span>
+                      <span className="sc-method-t">{busy ? 'Opening secure checkout…' : sentQuote ? `Retry card payment · ${fmtMoney(sub + vat, cur)}` : quoted.length ? `Pay ${fmtMoney(sub + vat, cur)} and send quote request` : `Pay ${fmtMoney(sub + vat, cur)} by card`}</span>
                       <span className="sc-method-d">Card via Stripe. {quoted.length ? 'Services are not charged.' : 'Secure test payment.'}</span>
                     </span>
                     <span className="sc-method-go" aria-hidden="true">→</span>
                   </button>
                 </div>}
 
-                {paid.length > 0 && quoted.length > 0 && <button className={err ? 'sc-quote-alone sc-quote-alone-fallback' : 'sc-quote-alone'} type="submit" form="sc-quote-form" disabled={busy}>Send quote request alone</button>}
+                {paid.length > 0 && quoted.length > 0 && !sentQuote && <button className={err ? 'sc-quote-alone sc-quote-alone-fallback' : 'sc-quote-alone'} type="submit" form="sc-quote-form" disabled={busy}>Send quote request alone</button>}
 
                 {paid.length > 0 && <p className="sc-note">Card payments are handled securely by Stripe. The server confirms tool prices before payment. Services are quoted separately.</p>}
                 <button className="sc-clear" onClick={() => { if (window.confirm('Empty your basket?')) clearCart(); }} disabled={busy}>Empty basket</button>
@@ -245,15 +257,14 @@ function Confirmed() {
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
         </div>
         <span className="st-kicker">Payment received</span>
-        <h1>Thank you. Your order is confirmed.</h1>
+        <h1>{pending?.quoted?.length > 0 ? 'Your tools are paid for and your quote request is with the team.' : 'Thank you. Your order is confirmed.'}</h1>
         <p>Our licensing team will be in touch shortly with your receipt, keys and onboarding details. Most licences are issued within one business day. Your order is now in your account.</p>
-        {pending?.paid?.length > 0 && <section><h2>Paid now</h2><ul>{pending.paid.map((line, index) => <li key={index}>{line.name} × {line.qty}</li>)}</ul></section>}
-        {pending?.quoted?.length > 0 && <section><h2>Sent for a quote</h2><ul>{pending.quoted.map((line, index) => <li key={index}>{line.name} × {line.qty}</li>)}</ul>{pending.quoteReference && <p>Quote reference: <code>{pending.quoteReference}</code></p>}<a href="#book">Book a discovery call</a></section>}
-        {ref && <p className="sc-ref">Reference: <code>{ref}</code></p>}
+        <section><h2>Paid now</h2>{pending?.paid?.length > 0 && <ul>{pending.paid.map((line, index) => <li key={index}>{line.name} × {line.qty}</li>)}</ul>}{ref && <p className="sc-ref">Order reference: <code>{ref}</code></p>}</section>
+        {pending?.quoted?.length > 0 && <section><h2>Sent for a quote</h2><ul>{pending.quoted.map((line, index) => <li key={index}>{line.name} × {line.qty}</li>)}</ul>{pending.quoteReference && <p>Quote reference: <code>{pending.quoteReference}</code></p>}<a className="gs-btn ghost" href="#book">Book a discovery call</a></section>}
         <div className="sc-confirm-cta">
           <a className="gs-btn primary" href="#account">Go to your account</a>
           <a className="gs-btn ghost" href="#shop">Continue browsing</a>
-          <a className="gs-btn ghost" href="#book">Talk to the team</a>
+          {!pending?.quoted?.length && <a className="gs-btn ghost" href="#book">Talk to the team</a>}
         </div>
       </div>
     </>
