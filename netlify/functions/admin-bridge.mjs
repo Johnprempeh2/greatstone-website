@@ -12,10 +12,11 @@
 // the current row); the detail goes to the site log, never to the caller.
 import { getPool } from './lib/db.mjs';
 import { BridgeAuthError, SCHEME, parseAllowedIps, parseBridgeKeys, verifyBridgeRequest } from './lib/admin-bridge-auth.mjs';
-import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeFx, bridgeGet, bridgeImport, bridgeList, bridgePayments,
+import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeActivityEvents, bridgeFx, bridgeGet, bridgeImport, bridgeList, bridgePayments,
   bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
 import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
+import { SITE_CONTRACT } from '../../next-proof/site-contract.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const PREFIX = '/api/admin/v1/';
@@ -34,6 +35,7 @@ function parts(pathname) {
 
 function readRoute(p) {
   if (p.length === 1 && (p[0] === 'health' || p[0] === 'users')) return { resource: p[0] };
+  if (p.length === 1 && p[0] === 'activity-events') return { resource: 'activity-events' };
   if (!RESOURCE_NAMES.includes(p[0])) return null;
   if (p.length === 1) return { resource: p[0] };
   if (p.length === 2 && p[1] && p[0] !== 'fx' && p[0] !== 'payments') return { resource: p[0], id: p[1] };
@@ -109,11 +111,15 @@ export function makeAdminBridgeHandler({
         if (target.resource === 'health') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'health takes no parameters');
           return { outcome: 'ok', rowCount: 0, body: { ok: true, kid: call.kid, capability: call.capability,
-            serverTime: new Date(now()).toISOString(), schema: SCHEME } };
+            serverTime: new Date(now()).toISOString(), schema: SCHEME, siteContract: SITE_CONTRACT } };
         }
         if (target.resource === 'fx') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'fx takes no parameters');
           return { outcome: 'ok', rowCount: 1, body: { item: await bridgeFx(client) } };
+        }
+        if (target.resource === 'activity-events') {
+          const page = await bridgeActivityEvents(client, url.searchParams);
+          return { outcome: 'ok', rowCount: page.items.length, body: page };
         }
         if (target.resource === 'users') {
           const items = await bridgeUsers(client, url.searchParams);
