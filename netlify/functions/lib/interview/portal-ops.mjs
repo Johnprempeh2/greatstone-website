@@ -1,13 +1,13 @@
 // The interviewee's server actions and page loaders (GRE-2612), one op each, ported from @505ba6a:
 //   src/app/(portal)/interview/page.tsx, actions.ts, session/page.tsx, complete/page.tsx, complete/lib.ts,
 //   complete/actions.ts, and the client branch of deliverable/[engagementId]/page.tsx.
-// Worker-plane pattern, as the source: every op re-derives the employee from the verified caller email, never from
-// client input, before it reads or writes. `db` carries the caller's claims (participant scope); `sys` is the system
+// Worker-plane pattern, as the source: every op re-derives the employee from the signed-in caller (Port: by Better
+// Auth user id, was the verified email), never from client input, before it reads or writes. `db` carries the caller's claims (participant scope); `sys` is the system
 // client, used only where the source wrote what a participant may not reach (the outbox, deleting a discarded
 // session) or counted the whole engagement for the client admin's holding screen, always after the code check.
 // Port: Next's redirect('/interview/x') is returned as { redirect: '#portal/interview/x' }; a thrown action error is
 // an Error the function answers with 500 and a calm message; revalidatePath has no equivalent.
-import { getEmployeeContextByEmail, getEmployeeContextForEngagement } from './employee.mjs';
+import { getEmployeeContextByUserId, getEmployeeContextForEngagement } from './employee.mjs';
 import { createInitialTaxonomyState } from './types.mjs';
 import { enqueueOutboxEvent, scheduleOutboxDrain } from './outbox.mjs';
 import { applySignOffConsent } from './memory.mjs';
@@ -16,6 +16,7 @@ import { runExtraction, persistableInsights, EXTRACTION_MODEL } from './extracti
 import { recordUsage } from './budget.mjs';
 import { getReleasedSynthesis } from './synthesis/release.mjs';
 import { verifyForRender } from './synthesis/pipeline.mjs';
+import { roundVoiceEnabled } from './caller.mjs';
 
 const go = (view, query = '') => ({ redirect: `#portal/interview${view ? `/${view}` : ''}${query}` });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,7 +47,7 @@ async function interviewPage({ db, ctx, caller, args, env }) {
     isAdmin: isAdmin(ctx),
     seats: args.seats === 'exhausted' ? 'exhausted' : null,
     consent: args.consent === 'required' ? 'required' : null,
-    voiceEnabled: env.voice,
+    voiceEnabled: env.voice && roundVoiceEnabled(ctx.engagement),
   };
 }
 
@@ -65,7 +66,7 @@ async function sessionPage({ db, ctx, env }) {
     .eq('session_id', session.id).order('ts', { ascending: true });
   if (turnsError) throw new Error(`could not load turns: ${turnsError.message}`);
   return { sessionId: session.id, phase: session.phase, initialTurns: turns ?? [], employeeName: ctx.employee.name,
-    voiceEnabled: env.voice };
+    voiceEnabled: env.voice && roundVoiceEnabled(ctx.engagement) };
 }
 
 /** complete/lib.ts getSignOffContext + loadConsentState, and complete/page.tsx's routing. */
@@ -97,8 +98,8 @@ async function signOffPage({ db, ctx }) {
  */
 async function results({ db, sys, caller, args }) {
   const engagementId = typeof args.engagementId === 'string' && UUID.test(args.engagementId) ? args.engagementId : null;
-  const ctx = engagementId ? await getEmployeeContextForEngagement(db, caller.email, engagementId)
-    : await getEmployeeContextByEmail(db, caller.email);
+  const ctx = engagementId ? await getEmployeeContextForEngagement(db, caller.id, engagementId)
+    : await getEmployeeContextByUserId(db, caller.id);
   const role = ctx?.employee.portal_role;
   if (!ctx || (role !== 'client_admin' && role !== 'gs_admin')) return { screen: 'denied' };
   const id = ctx.engagement.id;
@@ -362,10 +363,10 @@ export const OPS = {
   'submit-correction': submitCorrection,
 };
 
-/** Runs one op for a verified caller. ctx is resolved here, once, from the caller's email. */
+/** Runs one op for a verified caller. ctx is resolved here, once, from the caller's user id. */
 export async function runPortalOp(op, { db, sys, caller, args = {}, env = {}, log = console }) {
   const fn = OPS[op];
   if (!fn) return null;
-  const ctx = op === 'results' ? null : await getEmployeeContextByEmail(db, caller.email);
+  const ctx = op === 'results' ? null : await getEmployeeContextByUserId(db, caller.id);
   return fn({ db, sys, ctx, caller, args, env, log });
 }

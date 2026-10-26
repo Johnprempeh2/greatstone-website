@@ -1,6 +1,6 @@
 // Port of src/app/api/chat/route.ts @505ba6a: the per-turn interview endpoint (GRE-2612). One short streaming
 // request per turn; session state lives in the database, which is what makes resume work. The flow, as the source:
-//   1. Authorise: verified caller email -> employee row in an active engagement; the session must be theirs.
+//   1. Authorise: signed-in caller (Better Auth user id) -> employee row in an active engagement; the session must be theirs.
 //   2. Persist the user turn (idempotent on clientTurnId). A body without content is a kickoff or recovery.
 //   3. Extraction (EXTRACTION_MODEL) on the latest exchange BEFORE the reply streams: phase advance is gated on slot
 //      fill, so the reply and the phase event the UI moves its dots on reflect this turn.
@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
 import { json, participantFromRequest, interviewEnabled } from './lib/interview/caller.mjs';
-import { getEmployeeContextByEmail } from './lib/interview/employee.mjs';
+import { getEmployeeContextByUserId } from './lib/interview/employee.mjs';
 import {
   advancePhase, applySlotUpdates, buildSystemPrompt, computeCompletionScore, deriveNextAction, KICKOFF_NUDGE,
   normaliseTaxonomyState, RECOVERY_NUDGE, signOffComplete, TAXONOMY_TO_DB_PHASE, turnsToMessages, updatePaceFields,
@@ -97,7 +97,7 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
     const db = interviewDb(caller, { pool: p });
     const sys = interviewDb('system', { pool: p });
 
-    const ctx = await getEmployeeContextByEmail(db, caller.email).catch(() => null);
+    const ctx = await getEmployeeContextByUserId(db, caller.id).catch(() => null);
     if (!ctx) return json({ error: 'No matching employee' }, 403);
 
     let body;
@@ -210,7 +210,7 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
     // Memory blob: an opted-in, unexpired blob from a previous engagement drives the memory-hydrated opening.
     let memoryBlock = null;
     if (ctx.employee.person_id) {
-      const blob = await loadActiveMemoryBlob(db, ctx.employee.person_id);
+      const blob = await loadActiveMemoryBlob(db, ctx.employee.person_id, ctx.engagement.customer_id);
       if (blob) memoryBlock = renderMemoryBlob(blob, { participantName: ctx.employee.name });
     }
 

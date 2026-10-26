@@ -3,25 +3,23 @@
 // Port: `supabaseService()` replaced by an injected `db` (interviewDb) as the FIRST parameter of every
 // export. The embedded selects `*, engagement:engagement_id!inner(*), org_unit:unit_id(*)` are rewritten
 // as db.sql JOINs (see contextRows) that rebuild the same row shape, so the source's destructuring code
-// below is unchanged. `import 'server-only'` removed. "Clerk-verified email" now means the verified
-// Better Auth email.
+// below is unchanged. `import 'server-only'` removed.
+// Port: the source keyed every lookup on the verified email. Here the key is the Better Auth user id
+// (employee.user_id, set when the person claims their invitation at join), so getEmployeeContextByEmail
+// became getEmployeeContextByUserId and the other lookups take the user id. Email is used only to claim
+// an invitation (interview-join.mjs) and as the address of a lazily provisioned gs_admin row.
 
 /**
  * Employee lookup: the explicit authorisation step of the worker-plane
- * pattern (see src/lib/supabase.ts). Every protected server path resolves
- * the Clerk-verified email to an employee row inside an ACTIVE engagement
- * before doing anything else. No employee row, no access.
+ * pattern. Every protected server path resolves the signed-in user id to an
+ * employee row inside an ACTIVE engagement before doing anything else. No
+ * employee row, no access.
  */
 
 /**
  * @typedef {{ employee: import('./types.mjs').Employee, engagement: import('./types.mjs').Engagement,
  *   orgUnit: import('./types.mjs').OrgUnit | null }} EmployeeContext
  */
-
-/** Escape PostgREST `ilike` pattern metacharacters in a literal value. */
-function escapeIlike(value) {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
 
 // Port: replaces the PostgREST embed `*, engagement:engagement_id!inner(*), org_unit:unit_id(*)` with
 // `.eq('engagement.status', 'active')`. to_jsonb keeps the supabase-js value shapes (timestamps as ISO
@@ -46,16 +44,17 @@ async function contextRows(db, where, params, limit) {
 }
 
 /**
- * Find the employee record for an authenticated email, restricted to active
- * engagements. The email match is case-insensitive (emails are caseless in
- * practice; Clerk may report different casing than the seed data). Returns
- * the employee plus their engagement and org unit, or null when the email is
- * on no active engagement's invitation list.
+ * Find the employee record for a signed-in Better Auth user, restricted to
+ * active engagements. Returns the employee plus their engagement and org
+ * unit, or null when the user holds no (claimed) row on an active engagement.
  *
+ * @param {any} db interviewDb client
+ * @param {string} userId Better Auth user id (the caller's participant.id)
  * @returns {Promise<EmployeeContext | null>}
  */
-export async function getEmployeeContextByEmail(db, email) {
-  const { data, error } = await contextRows(db, 'e.email ILIKE $1', [escapeIlike(email)]);
+export async function getEmployeeContextByUserId(db, userId) {
+  if (!userId) return null;
+  const { data, error } = await contextRows(db, 'e.user_id = $1', [String(userId)]);
 
   if (error) {
     throw new Error(`employee lookup failed: ${error.message}`);
@@ -91,9 +90,9 @@ export async function getEmployeeContextByEmail(db, email) {
 }
 
 /**
- * Resolve context from an employee ROW ID rather than an email.
+ * Resolve context from an employee ROW ID rather than a user id.
  *
- * The voice path has no email to key on: Deepgram calls our think endpoint
+ * The voice path has no signed-in user to key on: Deepgram calls our think endpoint
  * server to server, and identity comes from a per-session bearer token which
  * resolves to a session and therefore to an employee_id. Everything downstream
  * (the interview engine, the prompt, extraction) then works on exactly the
@@ -121,20 +120,24 @@ export async function getEmployeeContextById(db, employeeId) {
 
 /**
  * Resolve the caller's context FOR A SPECIFIC ENGAGEMENT. Unlike
- * getEmployeeContextByEmail (which picks the newest active engagement), this
+ * getEmployeeContextByUserId (which picks the newest active engagement), this
  * reads the employee row — and therefore the portal_role — from the TARGET
  * engagement itself. Anything that authorises an action against a named
  * engagement (the deliverable gate, release, etc.) must use this so a role
  * held on one engagement can never be borrowed to act on another. Returns
- * null when the email is not a member of that active engagement.
+ * null when the user is not a member of that active engagement.
  *
+ * @param {any} db interviewDb client
+ * @param {string} userId Better Auth user id
+ * @param {string} engagementId
  * @returns {Promise<EmployeeContext | null>}
  */
-export async function getEmployeeContextForEngagement(db, email, engagementId) {
+export async function getEmployeeContextForEngagement(db, userId, engagementId) {
+  if (!userId) return null;
   const { data, error } = await contextRows(
     db,
-    'e.email ILIKE $1 AND e.engagement_id = $2',
-    [escapeIlike(email), engagementId],
+    'e.user_id = $1 AND e.engagement_id = $2',
+    [String(userId), engagementId],
     1
   );
 
@@ -154,24 +157,24 @@ export async function getEmployeeContextForEngagement(db, email, engagementId) {
 }
 
 /**
- * Is this email a Greatstone staff admin ANYWHERE? True when the email holds a
+ * Is this user a Greatstone staff admin ANYWHERE? True when the user holds a
  * gs_admin row on any ACTIVE engagement. This is the all-see-all authority key
  * for the cross-engagement overview: Greatstone staff are global, so a gs_admin
  * on one engagement may view and administer every active engagement.
+ * Port: keyed on the Better Auth user id + role (was the plain email + role).
+ * A hard staff allowlist (env) can be OR-ed in here later without touching callers.
  *
- * Deliberately keyed on the plain email + role only (no auth-provider coupling),
- * so a future move of Greatstone logins onto another identity provider is a
- * change to the email-resolving wrappers, never to this authority check. A hard
- * staff allowlist (env) can be OR-ed in here later without touching callers.
- *
+ * @param {any} db interviewDb client
+ * @param {string} userId Better Auth user id
  * @returns {Promise<boolean>}
  */
-export async function isGreatstoneAdmin(db, email) {
+export async function isGreatstoneAdmin(db, userId) {
+  if (!userId) return false;
   // Port: embedded `id, engagement:engagement_id!inner(status)` rewritten as a JOIN.
   const { data, error } = await db.sql(
     `SELECT e.id FROM employee e JOIN engagement g ON g.id = e.engagement_id
-      WHERE e.email ILIKE $1 AND e.portal_role = 'gs_admin' AND g.status = 'active' LIMIT 1`,
-    [escapeIlike(email)]
+      WHERE e.user_id = $1 AND e.portal_role = 'gs_admin' AND g.status = 'active' LIMIT 1`,
+    [String(userId)]
   );
   if (error) throw new Error(`admin lookup failed: ${error.message}`);
   return (data?.length ?? 0) > 0;
@@ -204,14 +207,22 @@ export async function getActiveEngagement(db, id) {
  *      (invite -> invited_by, purchase -> purchased_by) never persist a
  *      placeholder.
  *
- * Returns null when the email is neither a member nor a Greatstone admin, or
+ * Returns null when the user is neither a member nor a Greatstone admin, or
  * when the engagement does not exist / is closed.
+ * Port: takes the caller ({ id, email }, a verified Better Auth user) instead of
+ * an email; the lazily provisioned row carries the caller's user id.
  *
+ * @param {any} db interviewDb client
+ * @param {{ id: string, email: string }} caller
+ * @param {string} engagementId
  * @returns {Promise<EmployeeContext | null>}
  */
-export async function getAdminContextForEngagement(db, email, engagementId) {
+export async function getAdminContextForEngagement(db, caller, engagementId) {
+  const userId = caller?.id ? String(caller.id) : null;
+  const email = typeof caller?.email === 'string' ? caller.email : '';
+  if (!userId || !email) return null;
   // Tier 1: a genuine role on this exact engagement.
-  const existing = await getEmployeeContextForEngagement(db, email, engagementId);
+  const existing = await getEmployeeContextForEngagement(db, userId, engagementId);
   if (
     existing &&
     (existing.employee.portal_role === 'gs_admin' ||
@@ -224,7 +235,7 @@ export async function getAdminContextForEngagement(db, email, engagementId) {
 
   // Tier 2: a global Greatstone admin acting on an engagement they have no row
   // on yet. Lazily provision a real gs_admin row, then resolve normally.
-  if (!(await isGreatstoneAdmin(db, email))) return null;
+  if (!(await isGreatstoneAdmin(db, userId))) return null;
   const engagement = await getActiveEngagement(db, engagementId);
   if (!engagement) return null;
 
@@ -237,14 +248,16 @@ export async function getAdminContextForEngagement(db, email, engagementId) {
   // double-open of a never-opened engagement.
   // Port: supabase-js `.upsert(row, { onConflict: 'engagement_id,email' }).select(<embed>)` becomes one
   // INSERT … ON CONFLICT DO UPDATE (merging every provided column, as PostgREST does) in a CTE, joined
-  // back to engagement and org_unit to rebuild the same row shape.
+  // back to engagement and org_unit to rebuild the same row shape. user_id is the caller (customer_id
+  // comes from the engagement, by trigger); a conflicting row already claimed by someone else keeps its
+  // user_id (the scope trigger refuses the change), so the upsert fails rather than takes it over.
   const { data: rows, error: upsertError } = await db.sql(
     `WITH up AS (
-       INSERT INTO employee (engagement_id, unit_id, name, email, role_title, portal_role, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       INSERT INTO employee (engagement_id, unit_id, name, email, role_title, portal_role, status, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (engagement_id, email) DO UPDATE SET
          unit_id = EXCLUDED.unit_id, name = EXCLUDED.name, role_title = EXCLUDED.role_title,
-         portal_role = EXCLUDED.portal_role, status = EXCLUDED.status
+         portal_role = EXCLUDED.portal_role, status = EXCLUDED.status, user_id = EXCLUDED.user_id
        RETURNING *)
      SELECT to_jsonb(up) AS employee, to_jsonb(g) AS engagement,
        CASE WHEN u.id IS NULL THEN NULL ELSE to_jsonb(u) END AS org_unit
@@ -258,6 +271,7 @@ export async function getAdminContextForEngagement(db, email, engagementId) {
       'Greatstone Consultant',
       'gs_admin',
       'invited',
+      userId,
     ]
   );
   if (upsertError) {
@@ -266,7 +280,7 @@ export async function getAdminContextForEngagement(db, email, engagementId) {
 
   const r = (rows ?? [])[0];
   const row = r ? { ...r.employee, engagement: r.engagement, org_unit: r.org_unit ?? null } : undefined;
-  if (!row) return getEmployeeContextForEngagement(db, email, engagementId);
+  if (!row) return getEmployeeContextForEngagement(db, userId, engagementId);
   const { engagement: eng, org_unit, ...employee } = row;
   return {
     employee,

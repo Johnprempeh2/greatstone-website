@@ -6,7 +6,10 @@
 // real team of this round (re-checked, never trusted), a seat is free (claim_seat stays the hard gate at session
 // start), and rate limits per token and per IP.
 // Port: identity is the website account (Better Auth, email verified), so the source's typed-email identity gap is
-// closed: nobody enrols as an address they cannot read. The account is made by the person on the sign-up form, so
+// closed: nobody enrols as an address they cannot read. Enrolment is the ONE place the email is matched: an
+// invitation GSAM sent to the verified email (employee.user_id still NULL) is claimed here, which sets its user_id
+// and person link; every later request finds the row by the Better Auth user id alone. A new row carries the
+// caller's user id and the round's customer_id from the start. The account is made by the person on the sign-up form, so
 // the source's password handling, "already registered" routing and session minting are gone. Port: the source made
 // the first person to sign up the client's administrator; GSAM names client admins through the bridge instead, so
 // self-enrolment always makes an interviewee.
@@ -17,6 +20,7 @@ import { withinRate } from './lib/interview/ratelimit.mjs';
 import { provisionInvitee, escapeIlike } from './lib/interview/provision.mjs';
 import { logAudit } from './lib/interview/audit.mjs';
 
+const welcome = () => ({ ok: true, redirect: '#portal/interview', message: 'Welcome aboard — taking you to your conversation…' });
 const SPOKEN_FOR = new Set(['invited', 'started', 'completed']);
 const TOKEN = /^[A-Za-z0-9_-]{16,128}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,7 +28,7 @@ const clientIp = (req) => req.headers.get('x-nf-client-connection-ip') || (req.h
 
 async function roundForToken(sys, token) {
   const { data: engs, error } = await sys.from('engagement')
-    .select('id, client_name, seat_total, enrol_enabled, enrol_expires_at, allowed_email_domains, default_unit_id, status, target_minutes')
+    .select('id, client_name, customer_id, seat_total, enrol_enabled, enrol_expires_at, allowed_email_domains, default_unit_id, status, target_minutes')
     .eq('enrol_token', token).limit(1);
   if (error) throw new Error('engagement lookup failed');
   return engs?.[0] ?? null;
@@ -73,9 +77,15 @@ export async function enrol({ db, sys, caller, token, name: nameRaw, unitId: uni
   }
   if (!eng.default_unit_id) return { ok: false, message: 'This engagement is not fully set up yet. Please contact your organiser.' };
 
-  // Someone GSAM already invited (any role) matches their row; the domain gate is for self-enrolment.
-  const { data: existing } = await sys.from('employee').select('id, person_id').eq('engagement_id', eng.id)
+  // Already on the round under this account: nothing to do. Someone GSAM already invited (any role) claims their
+  // row by verified email; the domain gate is for self-enrolment.
+  const { data: mine } = await sys.from('employee').select('id').eq('engagement_id', eng.id).eq('user_id', caller.id).limit(1);
+  if (mine && mine.length > 0) return welcome();
+  const { data: existing } = await sys.from('employee').select('id, user_id').eq('engagement_id', eng.id)
     .ilike('email', escapeIlike(email)).limit(1);
+  if (existing?.[0]?.user_id && existing[0].user_id !== caller.id) {
+    return { ok: false, message: 'This invitation is linked to another account. Please sign in with the account it was sent to.' };
+  }
   const isNew = !(existing && existing.length > 0);
   const domain = email.split('@')[1] ?? '';
   const allowed = (eng.allowed_email_domains ?? []).map((d) => d.toLowerCase());
@@ -83,8 +93,11 @@ export async function enrol({ db, sys, caller, token, name: nameRaw, unitId: uni
     return { ok: false, message: `Please use your work email${allowed.length ? ` (a ${allowed.join(' or ')} address)` : ''}.` };
   }
 
-  let employeeId = existing?.[0]?.id ?? null;
-  if (isNew) {
+  if (!isNew) {
+    const claimed = await provisionInvitee(db, { engagementId: eng.id, customerId: eng.customer_id, unitId: eng.default_unit_id,
+      name, email, userId: caller.id });
+    if (!claimed.ok) return { ok: false, message: claimed.message };
+  } else {
     // Seat headroom for a genuinely new interviewee; admins hold no seat.
     const { data: people } = await sys.from('employee').select('status, portal_role').eq('engagement_id', eng.id);
     const spokenFor = (people ?? []).filter((p) => SPOKEN_FOR.has(p.status) && p.portal_role !== 'gs_admin' && p.portal_role !== 'client_admin').length;
@@ -97,15 +110,13 @@ export async function enrol({ db, sys, caller, token, name: nameRaw, unitId: uni
       const { data: units } = await sys.from('org_unit').select('id, kind').eq('id', unitId).eq('engagement_id', eng.id).limit(1);
       if (units?.[0] && units[0].kind !== 'organisation') targetUnitId = units[0].id;
     }
-    const provisioned = await provisionInvitee(db, { engagementId: eng.id, unitId: targetUnitId, name, email, portalRole: 'employee' });
+    const provisioned = await provisionInvitee(db, { engagementId: eng.id, customerId: eng.customer_id, unitId: targetUnitId,
+      name, email, userId: caller.id, portalRole: 'employee' });
     if (!provisioned.ok) return { ok: false, message: provisioned.message };
-    employeeId = provisioned.employeeId;
     await logAudit(sys, { engagementId: eng.id, actorEmail: email, actorName: name, action: 'person.enrolled',
-      summary: `${name} signed up via the join link`, targetId: employeeId });
+      summary: `${name} signed up via the join link`, targetId: provisioned.employeeId });
   }
-  // Port: the website account id, so the person is known by their account as well as their verified email.
-  await db.from('person').update({ auth_user_id: caller.id }).eq('verified_email', email).is('auth_user_id', null);
-  return { ok: true, redirect: '#portal/interview', message: 'Welcome aboard — taking you to your conversation…' };
+  return welcome();
 }
 
 export function makeJoinHandler({ pool = getPool, verify, env = process.env, log = console } = {}) {

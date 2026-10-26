@@ -25,11 +25,11 @@
 /** @typedef {'warm_up' | 'day_in_the_life' | 'pain_mapping' | 'automation_surfacing' | 'sign_off'} TaxonomyPhase */
 /** @typedef {'ask_open' | 'probe_deeper' | 'quantify_time' | 'request_example' | 'propose_candidate' | 'advance_phase' | 'read_back' | 'ask_memory_opt_in' | 'close'} NextAction */
 /** @typedef {'on_pace' | 'running_long' | 'running_short'} PaceFlag */
-/** @typedef {{ id: string, client_name: string, status: string, created_at: string, [k: string]: any }} Engagement */
-/** @typedef {{ id: string, engagement_id: string, parent_id: string | null, name: string, kind: string, path: string, seat_allocation: number | null, created_at: string }} OrgUnit */
-/** @typedef {{ id: string, engagement_id: string, person_id: string | null, unit_id: string | null, name: string, email: string, role_title: string | null, portal_role: PortalRole, status: EmployeeStatus, [k: string]: any }} Employee */
-/** @typedef {{ id: string, session_id: string, role: TurnRole, content: string, ts: string, seq: number, client_turn_id: string | null, extracted_fields: object | null }} Turn */
-/** @typedef {{ id: string, session_id: string, type: InsightType, label: string, evidence_quote: string | null, time_per_week_hours: number | null, confidence: number | null, attribution_redacted: boolean, second_hand: boolean }} Insight */
+/** @typedef {{ id: string, client_name: string, status: string, created_at: string, customer_id: string, org_id: string, [k: string]: any }} Engagement */
+/** @typedef {{ id: string, engagement_id: string, parent_id: string | null, name: string, kind: string, path: string, seat_allocation: number | null, created_at: string, customer_id: string }} OrgUnit */
+/** @typedef {{ id: string, engagement_id: string, customer_id: string, user_id: string | null, person_id: string | null, unit_id: string | null, name: string, email: string, role_title: string | null, portal_role: PortalRole, status: EmployeeStatus, [k: string]: any }} Employee */
+/** @typedef {{ id: string, session_id: string, role: TurnRole, content: string, ts: string, seq: number, client_turn_id: string | null, extracted_fields: object | null, customer_id: string, user_id: string }} Turn */
+/** @typedef {{ id: string, session_id: string, type: InsightType, label: string, evidence_quote: string | null, time_per_week_hours: number | null, confidence: number | null, attribution_redacted: boolean, second_hand: boolean, customer_id: string, user_id: string }} Insight */
 /** @typedef {Record<TaxonomyPhase, Record<string, SlotStatus>>} TaxonomySlots */
 /**
  * The interview agent's live state object, persisted to session.taxonomy_state.

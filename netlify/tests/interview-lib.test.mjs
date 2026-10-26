@@ -21,10 +21,10 @@ import {
 } from '../functions/lib/interview/memory.mjs';
 import { getLeaderCoverage } from '../functions/lib/interview/coverage.mjs';
 import {
-  getEmployeeContextByEmail, getEmployeeContextById, getEmployeeContextForEngagement, isGreatstoneAdmin,
+  getEmployeeContextByUserId, getEmployeeContextById, getEmployeeContextForEngagement, isGreatstoneAdmin,
   getActiveEngagement, getAdminContextForEngagement,
 } from '../functions/lib/interview/employee.mjs';
-import { EMAIL_SHAPE, escapeIlike, ensureSignInAccount, provisionInvitee } from '../functions/lib/interview/provision.mjs';
+import { EMAIL_SHAPE, escapeIlike, ensureSignInAccount, ensurePersonForUser, provisionInvitee } from '../functions/lib/interview/provision.mjs';
 import { logAudit, getEngagementActivity } from '../functions/lib/interview/audit.mjs';
 import { outboxIdempotencyKey, enqueueOutboxEvent, scheduleOutboxDrain } from '../functions/lib/interview/outbox.mjs';
 import { DEFAULT_LINK_DAYS, hashLoginToken } from '../functions/lib/interview/login-link.mjs';
@@ -435,28 +435,47 @@ test('renderMemoryBlob renders a present blob and returns null for an empty one'
   assert.ok(renderMemoryBlob({ unit_name: 'Ops', automation_candidates: ['OCR'] }).includes('Unit then: Ops.'));
 });
 
-test('loadActiveMemoryBlob reads only opted-in unexpired rows and degrades to null', async (t) => {
+test('loadActiveMemoryBlob reads only opted-in unexpired rows of this organisation and degrades to null', async (t) => {
   quiet(t);
   const db = fakeDb(() => ({ data: [{ blob: { role_title: 'Clerk' } }] }));
-  assert.deepEqual(await loadActiveMemoryBlob(db, 'p1'), { role_title: 'Clerk' });
-  assert.deepEqual(db.calls[0].filters.map(([op, c]) => `${op}:${c}`), ['eq:person_id', 'eq:opted_in', 'gt:expires_at']);
-  assert.equal(await loadActiveMemoryBlob(fakeDb(() => ({ data: [] })), 'p1'), null);
-  assert.equal(await loadActiveMemoryBlob(fakeDb(() => ({ data: [{ blob: 'str' }] })), 'p1'), null);
-  assert.equal(await loadActiveMemoryBlob(fakeDb(() => ({ error: { message: 'x' } })), 'p1'), null);
+  assert.deepEqual(await loadActiveMemoryBlob(db, 'p1', 'c1'), { role_title: 'Clerk' });
+  assert.deepEqual(db.calls[0].filters.map(([op, c, v]) => `${op}:${c}${op === 'eq' ? `=${v}` : ''}`),
+    ['eq:person_id=p1', 'eq:customer_id=c1', 'eq:opted_in=true', 'gt:expires_at']);
+  // no organisation, no memory (and no query)
+  const none = fakeDb(() => ({ data: [{ blob: { role_title: 'Clerk' } }] }));
+  assert.equal(await loadActiveMemoryBlob(none, 'p1'), null);
+  assert.equal(none.calls.length, 0);
+  assert.equal(await loadActiveMemoryBlob(fakeDb(() => ({ data: [] })), 'p1', 'c1'), null);
+  assert.equal(await loadActiveMemoryBlob(fakeDb(() => ({ data: [{ blob: 'str' }] })), 'p1', 'c1'), null);
+  assert.equal(await loadActiveMemoryBlob(fakeDb(() => ({ error: { message: 'x' } })), 'p1', 'c1'), null);
 });
 
-test('ensurePersonForEmployee reuses or creates the person by lower-cased email and links the employee', async () => {
-  assert.equal(await ensurePersonForEmployee(fakeDb(), { id: 'e', person_id: 'p0', email: 'x', name: 'n' }), 'p0');
+test('ensurePersonForEmployee reuses or creates the person by Better Auth user id and links the employee', async () => {
+  assert.equal(await ensurePersonForEmployee(fakeDb(), { id: 'e', person_id: 'p0', user_id: 'u0', email: 'x', name: 'n' }), 'p0');
   const db = fakeDb((q) => (q.table === 'person' && q.op === 'select' ? { data: [] } : q.op === 'insert' ? { data: { person_id: 'p9' } } : {}));
-  assert.equal(await ensurePersonForEmployee(db, { id: 'e1', person_id: null, email: ' Sam@Example.TEST ', name: 'Sam' }), 'p9');
-  assert.deepEqual(db.calls[0].filters, [['eq', 'verified_email', 'sam@example.test']]);
-  assert.deepEqual(db.calls[1].payload, { verified_email: 'sam@example.test', display_name: 'Sam' });
+  assert.equal(await ensurePersonForEmployee(db, { id: 'e1', person_id: null, user_id: 'u1', email: ' Sam@Example.TEST ', name: 'Sam' }), 'p9');
+  assert.deepEqual(db.calls[0].filters, [['eq', 'auth_user_id', 'u1']]);
+  assert.deepEqual(db.calls[1].payload, { auth_user_id: 'u1', verified_email: 'sam@example.test', display_name: 'Sam' });
   assert.equal(db.calls[1].mode, 'single');
   assert.deepEqual([db.calls[2].table, db.calls[2].op, db.calls[2].payload, db.calls[2].filters], ['employee', 'update', { person_id: 'p9' }, [['eq', 'id', 'e1']]]);
-  await assert.rejects(ensurePersonForEmployee(fakeDb(() => ({ error: { message: 'down' } })), { id: 'e', person_id: null, email: 'a@b.c', name: 'n' }), /person lookup failed: down/);
+  await assert.rejects(ensurePersonForEmployee(fakeDb(() => ({ error: { message: 'down' } })), { id: 'e', person_id: null, user_id: 'u', email: 'a@b.c', name: 'n' }), /person lookup failed: down/);
+  // an unclaimed invitation has no person to make
+  await assert.rejects(ensurePersonForEmployee(fakeDb(), { id: 'e', person_id: null, user_id: null, email: 'a@b.c', name: 'n' }), /not been claimed/);
 });
 
-const EMP = { id: 'emp1', person_id: null, email: 'Sam@Example.test', name: 'Sam', role_title: 'Clerk' };
+test('ensurePersonForUser: found, created, and a lost create race', async () => {
+  assert.equal(await ensurePersonForUser(fakeDb(() => ({ data: [{ person_id: 'p1' }] })), { userId: 'u', email: 'a@b.c' }), 'p1');
+  let selects = 0;
+  const race = fakeDb((q) => {
+    if (q.op === 'select') return { data: selects++ ? [{ person_id: 'p2' }] : [] };
+    return { error: { code: '23505', message: 'dup' } };
+  });
+  assert.equal(await ensurePersonForUser(race, { userId: 'u', email: 'a@b.c' }), 'p2');
+  await assert.rejects(ensurePersonForUser(fakeDb((q) => (q.op === 'select' ? { data: [] } : { error: { code: 'XX', message: 'no' } })),
+    { userId: 'u', email: 'a@b.c' }), /person create failed: no/);
+});
+
+const EMP = { id: 'emp1', person_id: null, user_id: 'u-sam', customer_id: 'c1', email: 'Sam@Example.test', name: 'Sam', role_title: 'Clerk' };
 function signOffDb({ person = [], insights = [], state = createInitialTaxonomyState(), existingBlob = [] } = {}) {
   return fakeDb((q) => {
     if (q.table === 'person' && q.op === 'select') return { data: person };
@@ -477,9 +496,12 @@ test('applySignOffConsent opt-in: consent pair, attribution on every insight, me
   const [consent, redact] = db.calls;
   assert.deepEqual(consent.payload, [{ employee_id: 'emp1', kind: 'attribution', value: false }, { employee_id: 'emp1', kind: 'memory_opt_in', value: true }]);
   assert.deepEqual([redact.table, redact.op, redact.payload, redact.filters], ['insight', 'update', { attribution_redacted: true }, [['eq', 'session_id', 's1']]]);
+  assert.deepEqual(db.calls.find((q) => q.table === 'memory_blob' && q.op === 'select').filters,
+    [['eq', 'person_id', 'p1'], ['eq', 'customer_id', 'c1']]);
   const upsert = db.calls.find((q) => q.table === 'memory_blob' && q.op === 'upsert');
-  assert.deepEqual(upsert.opts, { onConflict: 'person_id' });
+  assert.deepEqual(upsert.opts, { onConflict: 'person_id,customer_id' });
   assert.equal(upsert.payload.person_id, 'p1');
+  assert.equal(upsert.payload.customer_id, 'c1');
   assert.equal(upsert.payload.opted_in, true);
   assert.deepEqual(upsert.payload.blob.top_pains.map((p) => p.label), ['Keying', 'Old']);
   assert.deepEqual(upsert.payload.blob.working_style_notes, ['handover']);
@@ -496,29 +518,36 @@ test('applySignOffConsent opt-in: consent pair, attribution on every insight, me
   assert.equal(final.payload.completion_score, 0.08);
 });
 
-test('applySignOffConsent opt-out hard-deletes the blob for a linked person', async () => {
+test('applySignOffConsent opt-out hard-deletes this organisation\'s blob for a linked person', async () => {
   const db = signOffDb();
   const r = await applySignOffConsent(db, { employee: { ...EMP, person_id: 'p7' }, unitName: null, sessionId: 's1', choice: { attribution: 'named', memory: false } });
   assert.deepEqual(r, { attributionRedacted: false, memoryOptedIn: false, personId: 'p7' });
   assert.deepEqual(db.calls[1].payload, { attribution_redacted: false });
   const del = db.calls.find((q) => q.op === 'delete');
-  assert.deepEqual([del.table, del.filters], ['memory_blob', [['eq', 'person_id', 'p7']]]);
+  assert.deepEqual([del.table, del.filters], ['memory_blob', [['eq', 'person_id', 'p7'], ['eq', 'customer_id', 'c1']]]);
   assert.equal(db.calls.some((q) => q.table === 'memory_blob' && q.op === 'upsert'), false);
   assert.equal(db.calls.some((q) => q.table === 'person'), false);
 });
 
-test('applySignOffConsent opt-out resolves an unlinked person by email, and never creates one', async () => {
+test('applySignOffConsent opt-out resolves an unlinked person by user id, and never creates one', async () => {
   const found = signOffDb({ person: [{ person_id: 'p3' }] });
   const r = await applySignOffConsent(found, { employee: EMP, unitName: null, sessionId: 's1', choice: { attribution: 'named', memory: false } });
   assert.equal(r.personId, 'p3');
-  assert.deepEqual(found.calls.find((q) => q.table === 'person').filters, [['eq', 'verified_email', 'sam@example.test']]);
-  assert.deepEqual(found.calls.find((q) => q.op === 'delete').filters, [['eq', 'person_id', 'p3']]);
+  assert.deepEqual(found.calls.find((q) => q.table === 'person').filters, [['eq', 'auth_user_id', 'u-sam']]);
+  assert.deepEqual(found.calls.find((q) => q.op === 'delete').filters, [['eq', 'person_id', 'p3'], ['eq', 'customer_id', 'c1']]);
 
   const none = signOffDb({ person: [] });
   const r2 = await applySignOffConsent(none, { employee: EMP, unitName: null, sessionId: 's1', choice: { attribution: 'named', memory: false } });
   assert.equal(r2.personId, null);
   assert.equal(none.calls.some((q) => q.op === 'delete'), false);
   assert.equal(none.calls.some((q) => q.table === 'person' && q.op === 'insert'), false);
+});
+
+test('applySignOffConsent refuses an employee row without an organisation', async () => {
+  const db = signOffDb();
+  await assert.rejects(applySignOffConsent(db, { employee: { ...EMP, customer_id: undefined }, unitName: null, sessionId: 's',
+    choice: { attribution: 'named', memory: true } }), /no organisation/);
+  assert.equal(db.calls.length, 0);
 });
 
 test('applySignOffConsent stops on a failed consent write', async () => {
@@ -559,21 +588,25 @@ const ctxRow = (empId, engId, created, role = 'employee', unit = { id: 'u1', nam
   org_unit: unit,
 });
 
-test('getEmployeeContextByEmail joins engagement and unit, escapes the pattern and picks the newest engagement', async () => {
+test('getEmployeeContextByUserId joins engagement and unit, keys on the user id and picks the newest engagement', async () => {
   const db = fakeDb(() => ({ data: [ctxRow('e-old', 'g1', '2026-01-01T00:00:00+00:00'), ctxRow('e-new', 'g2', '2026-03-01T00:00:00+00:00', 'employee', null)] }));
-  const ctx = await getEmployeeContextByEmail(db, 'sam_1%@example.test');
+  const ctx = await getEmployeeContextByUserId(db, 'user-1');
   assert.deepEqual(ctx, { employee: { id: 'e-new', engagement_id: 'g2', email: 'sam@example.test', portal_role: 'employee' }, engagement: { id: 'g2', status: 'active', created_at: '2026-03-01T00:00:00+00:00', default_unit_id: 'u1' }, orgUnit: null });
   const q = db.calls[0];
   assert.match(q.sql, /JOIN engagement g ON g\.id = e\.engagement_id/);
   assert.match(q.sql, /LEFT JOIN org_unit u ON u\.id = e\.unit_id/);
   assert.match(q.sql, /g\.status = 'active'/);
-  assert.match(q.sql, /e\.email ILIKE \$1/);
-  assert.deepEqual(q.params, ['sam\\_1\\%@example.test']);
+  assert.match(q.sql, /e\.user_id = \$1/);
+  assert.doesNotMatch(q.sql, /email/);
+  assert.deepEqual(q.params, ['user-1']);
   // Same instant: tiebreak on engagement id, descending.
   const tie = fakeDb(() => ({ data: [ctxRow('x', 'aaa', 't'), ctxRow('y', 'bbb', 't')] }));
-  assert.equal((await getEmployeeContextByEmail(tie, 'a')).employee.id, 'y');
-  assert.equal(await getEmployeeContextByEmail(fakeDb(() => ({ data: [] })), 'a'), null);
-  await assert.rejects(getEmployeeContextByEmail(fakeDb(() => ({ error: { message: 'x' } })), 'a'), /employee lookup failed: x/);
+  assert.equal((await getEmployeeContextByUserId(tie, 'a')).employee.id, 'y');
+  assert.equal(await getEmployeeContextByUserId(fakeDb(() => ({ data: [] })), 'a'), null);
+  const noUser = fakeDb();
+  assert.equal(await getEmployeeContextByUserId(noUser, ''), null);
+  assert.equal(noUser.calls.length, 0);
+  await assert.rejects(getEmployeeContextByUserId(fakeDb(() => ({ error: { message: 'x' } })), 'a'), /employee lookup failed: x/);
 });
 
 test('getEmployeeContextById and ForEngagement filter and limit to one row', async () => {
@@ -582,17 +615,19 @@ test('getEmployeeContextById and ForEngagement filter and limit to one row', asy
   assert.equal(byId.orgUnit.name, 'Ops');
   assert.match(db.calls[0].sql, /AND e\.id = \$1 LIMIT 1$/);
   assert.deepEqual(db.calls[0].params, ['e1']);
-  await getEmployeeContextForEngagement(db, 'Sam@x', 'g1');
-  assert.match(db.calls[1].sql, /e\.email ILIKE \$1 AND e\.engagement_id = \$2 LIMIT 1$/);
-  assert.deepEqual(db.calls[1].params, ['Sam@x', 'g1']);
+  await getEmployeeContextForEngagement(db, 'user-1', 'g1');
+  assert.match(db.calls[1].sql, /e\.user_id = \$1 AND e\.engagement_id = \$2 LIMIT 1$/);
+  assert.deepEqual(db.calls[1].params, ['user-1', 'g1']);
   assert.equal(await getEmployeeContextById(fakeDb(() => ({ data: [] })), 'e1'), null);
 });
 
 test('isGreatstoneAdmin and getActiveEngagement', async () => {
   const db = fakeDb((q) => ({ data: q.sql ? [{ id: 'x' }] : [{ id: 'g1' }] }));
-  assert.equal(await isGreatstoneAdmin(db, 'a@b'), true);
-  assert.match(db.calls[0].sql, /portal_role = 'gs_admin' AND g\.status = 'active'/);
-  assert.equal(await isGreatstoneAdmin(fakeDb(() => ({ data: [] })), 'a@b'), false);
+  assert.equal(await isGreatstoneAdmin(db, 'user-1'), true);
+  assert.match(db.calls[0].sql, /e\.user_id = \$1 AND e\.portal_role = 'gs_admin' AND g\.status = 'active'/);
+  assert.deepEqual(db.calls[0].params, ['user-1']);
+  assert.equal(await isGreatstoneAdmin(fakeDb(() => ({ data: [] })), 'user-1'), false);
+  assert.equal(await isGreatstoneAdmin(fakeDb(() => ({ data: [{ id: 'x' }] })), null), false);
   assert.deepEqual(await getActiveEngagement(db, 'g1'), { id: 'g1' });
   assert.deepEqual(db.calls[1].filters, [['eq', 'id', 'g1'], ['eq', 'status', 'active']]);
   assert.equal(await getActiveEngagement(fakeDb(() => ({ data: [] })), 'g1'), null);
@@ -601,10 +636,12 @@ test('isGreatstoneAdmin and getActiveEngagement', async () => {
 test('getAdminContextForEngagement: member admin, lesser member, global admin provisioning, outsider', async () => {
   // Tier 1: client_admin on the engagement.
   const admin = fakeDb(() => ({ data: [ctxRow('e1', 'g1', 't', 'client_admin')] }));
-  assert.equal((await getAdminContextForEngagement(admin, 'a@b', 'g1')).employee.portal_role, 'client_admin');
+  const A = { id: 'user-a', email: 'a@b' };
+  assert.equal((await getAdminContextForEngagement(admin, A, 'g1')).employee.portal_role, 'client_admin');
+  assert.deepEqual(admin.calls[0].params, ['user-a', 'g1']);
   // A lesser member is not an admin, and no global check runs.
   const member = fakeDb(() => ({ data: [ctxRow('e1', 'g1', 't', 'team_leader')] }));
-  assert.equal(await getAdminContextForEngagement(member, 'a@b', 'g1'), null);
+  assert.equal(await getAdminContextForEngagement(member, A, 'g1'), null);
   assert.equal(member.calls.length, 1);
   // Tier 2: global gs_admin with no row: one upsert CTE returns the joined context.
   const calls = [];
@@ -615,14 +652,15 @@ test('getAdminContextForEngagement: member admin, lesser member, global admin pr
     if (q.sql?.includes("portal_role = 'gs_admin'")) return { data: [{ id: 'x' }] };
     return { data: [] };
   });
-  const ctx = await getAdminContextForEngagement(global, 'Staff@Example.test', 'g2');
+  const ctx = await getAdminContextForEngagement(global, { id: 'user-staff', email: 'Staff@Example.test' }, 'g2');
   assert.equal(ctx.employee.id, 'new');
   assert.equal(ctx.engagement.id, 'g2');
   const up = calls.find((q) => q.sql?.startsWith('WITH up AS'));
   assert.match(up.sql, /ON CONFLICT \(engagement_id, email\) DO UPDATE SET/);
-  assert.deepEqual(up.params, ['g2', 'u9', 'Greatstone', 'staff@example.test', 'Greatstone Consultant', 'gs_admin', 'invited']);
-  // Outsider.
-  assert.equal(await getAdminContextForEngagement(fakeDb(() => ({ data: [] })), 'a@b', 'g1'), null);
+  assert.deepEqual(up.params, ['g2', 'u9', 'Greatstone', 'staff@example.test', 'Greatstone Consultant', 'gs_admin', 'invited', 'user-staff']);
+  // Outsider, and a caller without a user id.
+  assert.equal(await getAdminContextForEngagement(fakeDb(() => ({ data: [] })), A, 'g1'), null);
+  assert.equal(await getAdminContextForEngagement(admin, { email: 'a@b' }, 'g1'), null);
 });
 
 // ─── provision ───────────────────────────────────────────────────────────────
@@ -635,34 +673,77 @@ test('provision helpers', async () => {
 });
 
 test('provisionInvitee is idempotent for existing members', async () => {
-  const db = fakeDb(() => ({ data: [{ id: 'e1', person_id: 'p1' }] }));
-  assert.deepEqual(await provisionInvitee(db, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam_x@y.z' }), { ok: true, employeeId: 'e1', personId: 'p1', alreadyMember: true });
-  assert.deepEqual(db.calls[0].filters, [['eq', 'engagement_id', 'g'], ['ilike', 'email', 'sam\\_x@y.z']]);
-  assert.equal(db.calls.length, 1);
+  // by account
+  const mine = fakeDb(() => ({ data: [{ id: 'e1', person_id: 'p1' }] }));
+  assert.deepEqual(await provisionInvitee(mine, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam_x@y.z', userId: 'u1' }),
+    { ok: true, employeeId: 'e1', personId: 'p1', alreadyMember: true });
+  assert.deepEqual(mine.calls[0].filters, [['eq', 'engagement_id', 'g'], ['eq', 'user_id', 'u1']]);
+  assert.equal(mine.calls.length, 1);
+  // an invitation made on someone's behalf (no account yet): matched by email, nothing claimed
+  const invite = fakeDb(() => ({ data: [{ id: 'e1', person_id: null, user_id: null }] }));
+  assert.deepEqual(await provisionInvitee(invite, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam_x@y.z' }),
+    { ok: true, employeeId: 'e1', personId: null, alreadyMember: true });
+  assert.deepEqual(invite.calls[0].filters, [['eq', 'engagement_id', 'g'], ['ilike', 'email', 'sam\\_x@y.z']]);
+  assert.equal(invite.calls.length, 1);
+});
+
+test('provisionInvitee claims an unclaimed invitation for the signed-in user, and refuses one claimed by another', async () => {
+  const db = fakeDb((q) => {
+    if (q.table === 'employee' && q.op === 'select') {
+      return { data: q.filters.some(([, c]) => c === 'user_id') ? [] : [{ id: 'e5', person_id: null, user_id: null }] };
+    }
+    if (q.table === 'person' && q.op === 'select') return { data: [] };
+    if (q.table === 'person' && q.op === 'insert') return { data: { person_id: 'p5' } };
+    if (q.table === 'employee' && q.op === 'update') return { data: [{ id: 'e5' }] };
+    return {};
+  });
+  const r = await provisionInvitee(db, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam@y.z', userId: 'u5' });
+  assert.deepEqual(r, { ok: true, employeeId: 'e5', personId: 'p5', alreadyMember: true, claimed: true });
+  assert.deepEqual(db.calls.find((q) => q.table === 'person' && q.op === 'insert').payload,
+    { auth_user_id: 'u5', verified_email: 'sam@y.z', display_name: 'Sam' });
+  const upd = db.calls.find((q) => q.op === 'update');
+  assert.deepEqual([upd.payload, upd.filters], [{ user_id: 'u5', person_id: 'p5' }, [['eq', 'id', 'e5'], ['is', 'user_id', null]]]);
+
+  const taken = fakeDb((q) => (q.table === 'employee' && q.op === 'select'
+    ? { data: q.filters.some(([, c]) => c === 'user_id') ? [] : [{ id: 'e6', person_id: 'px', user_id: 'someone-else' }] } : {}));
+  const t2 = await provisionInvitee(taken, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam@y.z', userId: 'u5' });
+  assert.equal(t2.ok, false);
+  assert.match(t2.message, /another account/);
+  assert.equal(taken.calls.some((q) => q.op === 'update' || q.op === 'insert'), false);
 });
 
 test('provisionInvitee creates the person and employee, and treats a lost race as membership', async () => {
   const db = fakeDb((q) => {
     if (q.table === 'employee' && q.op === 'select') return { data: [] };
-    if (q.table === 'person' && q.op === 'select') return { data: null };
+    if (q.table === 'person' && q.op === 'select') return { data: [] };
     if (q.table === 'person' && q.op === 'insert') return { data: { person_id: 'p2' } };
     if (q.table === 'employee' && q.op === 'insert') return { data: { id: 'e2' } };
     return {};
   });
-  const r = await provisionInvitee(db, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam@y.z', roleTitle: '  ', portalRole: 'team_leader', canDelegate: true, invitedBy: 'e0' });
+  const r = await provisionInvitee(db, { engagementId: 'g', customerId: 'c1', unitId: 'u', name: 'Sam', email: 'sam@y.z', userId: 'u2',
+    roleTitle: '  ', portalRole: 'team_leader', canDelegate: true, invitedBy: 'e0' });
   assert.deepEqual(r, { ok: true, employeeId: 'e2', personId: 'p2', alreadyMember: false });
   const ins = db.calls.find((q) => q.table === 'employee' && q.op === 'insert');
-  assert.deepEqual(ins.payload, { engagement_id: 'g', person_id: 'p2', unit_id: 'u', name: 'Sam', email: 'sam@y.z', role_title: null, portal_role: 'team_leader', status: 'invited', can_delegate: true, invited_by: 'e0' });
+  assert.deepEqual(ins.payload, { engagement_id: 'g', customer_id: 'c1', person_id: 'p2', user_id: 'u2', unit_id: 'u', name: 'Sam',
+    email: 'sam@y.z', role_title: null, portal_role: 'team_leader', status: 'invited', can_delegate: true, invited_by: 'e0' });
   assert.equal(ins.mode, 'single');
+
+  // no account: an invitation row with no person and no user (person rows are for signed-in users only)
+  const plain = fakeDb((q) => (q.table === 'employee' && q.op === 'insert' ? { data: { id: 'e4' } } : { data: [] }));
+  assert.deepEqual(await provisionInvitee(plain, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 'sam@y.z' }),
+    { ok: true, employeeId: 'e4', personId: null, alreadyMember: false });
+  assert.equal(plain.calls.some((q) => q.table === 'person'), false);
+  assert.deepEqual([plain.calls.at(-1).payload.person_id, plain.calls.at(-1).payload.user_id], [null, null]);
 
   let empSelects = 0;
   const race = fakeDb((q) => {
-    if (q.table === 'employee' && q.op === 'select') return { data: empSelects++ ? [{ id: 'e3', person_id: 'p1' }] : [] };
-    if (q.table === 'person') return { data: { person_id: 'p1' } };
+    if (q.table === 'employee' && q.op === 'select') return { data: empSelects++ >= 2 ? [{ id: 'e3', person_id: 'p1' }] : [] };
+    if (q.table === 'person') return { data: [{ person_id: 'p1' }] };
     if (q.table === 'employee' && q.op === 'insert') return { error: { code: '23505', message: 'dup' } };
     return {};
   });
-  assert.deepEqual(await provisionInvitee(race, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 's@y.z', portalRole: 'gs_admin', canDelegate: true }), { ok: true, employeeId: 'e3', personId: 'p1', alreadyMember: true });
+  assert.deepEqual(await provisionInvitee(race, { engagementId: 'g', unitId: 'u', name: 'Sam', email: 's@y.z', userId: 'u3', portalRole: 'gs_admin', canDelegate: true }),
+    { ok: true, employeeId: 'e3', personId: 'p1', alreadyMember: true });
   assert.equal(race.calls.find((q) => q.op === 'insert').payload.portal_role, 'employee');
   assert.equal(race.calls.find((q) => q.op === 'insert').payload.can_delegate, false);
 

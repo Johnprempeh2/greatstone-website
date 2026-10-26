@@ -1,6 +1,8 @@
-// Port of SOURCE src/lib/memory.ts @505ba6a. Logic and signatures unchanged: the source already took
-// the data client as its first argument, so callers pass an interviewDb client where the source passed
-// the Supabase service client. Port: TypeScript types stripped, imports point at sibling .mjs files.
+// Port of SOURCE src/lib/memory.ts @505ba6a. The source already took the data client as its first
+// argument, so callers pass an interviewDb client. Port: TypeScript types stripped, imports point at
+// sibling .mjs files. Port: memory is per person AND per website organisation (customer_id), so what
+// someone said for one client never opens their interview for another: loadActiveMemoryBlob takes the
+// customer id, and the person is resolved by Better Auth user id (employee.user_id), not by email.
 
 /**
  * Sign-off consent persistence and per-person memory (Wave 5A).
@@ -22,12 +24,14 @@
  *     merges the person's memory_blob with a 24-month expiry; opt-out
  *     HARD-DELETES the row — the honest reading of "no, start fresh".
  *
- * Memory is keyed by person_id (the identity above the per-engagement
- * employee record). Employees created by delegated invites may not carry a
- * person link yet, so opt-in resolves-or-creates the person row by verified
- * email and backfills employee.person_id.
+ * Memory is keyed by (person_id, customer_id): the identity above the
+ * per-engagement employee record, within one website organisation. An
+ * employee row claimed at join may not carry a person link yet, so opt-in
+ * resolves-or-creates the person row by the Better Auth user id
+ * (employee.user_id) and backfills employee.person_id.
  */
 
+import { ensurePersonForUser } from './provision.mjs';
 import {
   applySlotUpdates,
   computeCompletionScore,
@@ -182,16 +186,22 @@ const MONTH_NAMES = [
 
 /**
  * Load the person's memory blob for interview hydration: only an opted-in,
- * unexpired row counts. Returns null when there is no valid blob, in which
- * case the interviewer uses the cold opening.
+ * unexpired row for THIS organisation counts. Returns null when there is no
+ * valid blob (or no organisation), in which case the interviewer uses the
+ * cold opening.
  *
+ * @param {any} db interviewDb client
+ * @param {string} personId
+ * @param {string} customerId the round's website organisation (engagement.customer_id)
  * @returns {Promise<Partial<MemoryBlobContent> | null>}
  */
-export async function loadActiveMemoryBlob(db, personId) {
+export async function loadActiveMemoryBlob(db, personId, customerId) {
+  if (!personId || !customerId) return null;
   const { data, error } = await db
     .from('memory_blob')
     .select('blob')
     .eq('person_id', personId)
+    .eq('customer_id', customerId)
     .eq('opted_in', true)
     .gt('expires_at', new Date().toISOString())
     .limit(1);
@@ -275,35 +285,22 @@ export function renderMemoryBlob(blob, opts) {
 /**
  * Resolve the person_id for an employee, creating the person row (and
  * backfilling employee.person_id) when the link is missing. Matching is by
- * verified email, lowercased — the identity rule from the schema.
+ * the Better Auth user id (employee.user_id) — the identity rule from the
+ * schema. An unclaimed invitation (no user_id) has no person.
  *
  * @param {any} db interviewDb client
- * @param {{ id: string, person_id: string | null, email: string, name: string }} employee
+ * @param {{ id: string, person_id: string | null, user_id: string | null, email: string, name: string }} employee
  * @returns {Promise<string>}
  */
 export async function ensurePersonForEmployee(db, employee) {
   if (employee.person_id) return employee.person_id;
+  if (!employee.user_id) throw new Error('person lookup failed: the employee row has not been claimed by a signed-in user');
 
-  const email = employee.email.trim().toLowerCase();
-
-  const { data: existing, error: lookupError } = await db
-    .from('person')
-    .select('person_id')
-    .eq('verified_email', email)
-    .limit(1);
-  if (lookupError) throw new Error(`person lookup failed: ${lookupError.message}`);
-
-  let personId = existing?.[0]?.person_id;
-
-  if (!personId) {
-    const { data: created, error: createError } = await db
-      .from('person')
-      .insert({ verified_email: email, display_name: employee.name })
-      .select('person_id')
-      .single();
-    if (createError) throw new Error(`person create failed: ${createError.message}`);
-    personId = created.person_id;
-  }
+  const personId = await ensurePersonForUser(db, {
+    userId: employee.user_id,
+    email: employee.email,
+    name: employee.name,
+  });
 
   const { error: linkError } = await db
     .from('employee')
@@ -330,13 +327,16 @@ export async function ensurePersonForEmployee(db, employee) {
  * consent trail, which is the point of a trail).
  *
  * @param {any} db interviewDb client
- * @param {{ employee: { id: string, person_id: string | null, email: string, name: string, role_title: string | null },
+ * @param {{ employee: { id: string, person_id: string | null, user_id: string | null, customer_id: string,
+ *     email: string, name: string, role_title: string | null },
  *   unitName: string | null, sessionId: string, choice: SignOffChoice }} params
  * @returns {Promise<SignOffApplication>}
  */
 export async function applySignOffConsent(db, params) {
   const { employee, unitName, sessionId, choice } = params;
   const anonymised = choice.attribution === 'anonymised';
+  const customerId = employee.customer_id;
+  if (!customerId) throw new Error('sign-off failed: the employee row carries no organisation');
 
   // 1. Append-only consent trail: one event per question, every confirm.
   const { error: consentError } = await db.from('consent_event').insert([
@@ -392,6 +392,7 @@ export async function applySignOffConsent(db, params) {
       .from('memory_blob')
       .select('blob')
       .eq('person_id', personId)
+      .eq('customer_id', customerId)
       .limit(1);
     if (blobLookupError) {
       throw new Error(`memory lookup failed: ${blobLookupError.message}`);
@@ -405,24 +406,25 @@ export async function applySignOffConsent(db, params) {
     const { error: upsertError } = await db.from('memory_blob').upsert(
       {
         person_id: personId,
+        customer_id: customerId,
         blob: mergeMemoryBlob(existing, fresh),
         opted_in: true,
         opted_in_at: now.toISOString(),
         expires_at: expires.toISOString(),
         updated_at: now.toISOString(),
       },
-      { onConflict: 'person_id' }
+      { onConflict: 'person_id,customer_id' }
     );
     if (upsertError) throw new Error(`memory write failed: ${upsertError.message}`);
   } else {
-    // Opt-out: delete the row entirely. Resolve the person WITHOUT creating
-    // one — a person who never opted in has nothing to delete.
+    // Opt-out: delete this organisation's row entirely. Resolve the person
+    // WITHOUT creating one — a person who never opted in has nothing to delete.
     personId = employee.person_id;
-    if (!personId) {
+    if (!personId && employee.user_id) {
       const { data: people } = await db
         .from('person')
         .select('person_id')
-        .eq('verified_email', employee.email.trim().toLowerCase())
+        .eq('auth_user_id', employee.user_id)
         .limit(1);
       personId = people?.[0]?.person_id ?? null;
     }
@@ -430,7 +432,8 @@ export async function applySignOffConsent(db, params) {
       const { error: deleteError } = await db
         .from('memory_blob')
         .delete()
-        .eq('person_id', personId);
+        .eq('person_id', personId)
+        .eq('customer_id', customerId);
       if (deleteError) throw new Error(`memory delete failed: ${deleteError.message}`);
     }
   }

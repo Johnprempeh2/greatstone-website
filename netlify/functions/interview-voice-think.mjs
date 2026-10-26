@@ -12,7 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
-import { interviewEnabled, voiceEnabled } from './lib/interview/caller.mjs';
+import { interviewEnabled, voiceEnabled, roundVoiceEnabled } from './lib/interview/caller.mjs';
 import { getEmployeeContextById } from './lib/interview/employee.mjs';
 import {
   advancePhase, applySlotUpdates, buildSystemPrompt, computeCompletionScore, deriveNextAction, KICKOFF_NUDGE,
@@ -76,6 +76,7 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
 
     const ctx = await getEmployeeContextById(db, session.employee_id).catch(() => null);
     if (!ctx) return spokenError('This conversation is no longer active.');
+    if (!roundVoiceEnabled(ctx.engagement)) return spokenError('Voice is switched off for now. Please carry on by typing; everything you said is saved.');
     if (!(await withinRate(db, `voice:s:${sessionId}`, 60, TURNS_PER_MIN_SESSION))) return spokenError('Just a moment.');
 
     const budget = await getBudgetStatus(db, ctx.employee.id, ctx.engagement.id);
@@ -112,7 +113,7 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
     }
     let memoryBlock = null;
     if (ctx.employee.person_id) {
-      const blob = await loadActiveMemoryBlob(db, ctx.employee.person_id);
+      const blob = await loadActiveMemoryBlob(db, ctx.employee.person_id, ctx.engagement.customer_id);
       if (blob) memoryBlock = renderMemoryBlob(blob, { participantName: ctx.employee.name });
     }
 

@@ -4,7 +4,7 @@
 
 export const MIN_PASSWORD = 8;
 
-/** A Better Auth session whose email is verified. The verified email is the interview's join key. */
+/** A Better Auth session whose email is verified. The user id is the key; the verified email only claims an invite at join. */
 export const isVerified = (session) => Boolean(session?.user?.emailVerified);
 
 /** Better Auth refuses a sign-in for an unverified email with this code (requireEmailVerification). */

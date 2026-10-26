@@ -5,8 +5,8 @@
 // one session. Port: as the source, voice needs a Deepgram key and VOICE_ENABLED=0 switches it off (404); the think URL is /api/interview/voice/think.
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
-import { json, participantFromRequest, interviewEnabled, voiceEnabled } from './lib/interview/caller.mjs';
-import { getEmployeeContextByEmail } from './lib/interview/employee.mjs';
+import { json, participantFromRequest, interviewEnabled, voiceEnabled, roundVoiceEnabled } from './lib/interview/caller.mjs';
+import { getEmployeeContextByUserId } from './lib/interview/employee.mjs';
 import { withinRate } from './lib/interview/ratelimit.mjs';
 import { mintSessionToken } from './lib/interview/voice/session-token.mjs';
 import { buildVoiceSettings } from './lib/interview/voice/settings.mjs';
@@ -61,8 +61,9 @@ export function makeVoiceStartHandler({ pool = getPool, verify, grant = grantDee
     const p = pool();
     if (!p) return json({ error: 'Voice is not available right now' }, 503);
     const db = interviewDb(caller, { pool: p });
-    const ctx = await getEmployeeContextByEmail(db, caller.email).catch(() => null);
+    const ctx = await getEmployeeContextByUserId(db, caller.id).catch(() => null);
     if (!ctx) return json({ error: 'No matching employee' }, 403);
+    if (!roundVoiceEnabled(ctx.engagement)) return json({ error: 'Not found' }, 404);
 
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }

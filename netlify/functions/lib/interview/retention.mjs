@@ -29,8 +29,10 @@ export async function retentionDelete(pool, engagementId, { before = null, confi
       const scope = `SELECT s.id FROM session s JOIN employee e ON e.id = s.employee_id WHERE e.engagement_id = $1
         ${before ? 'AND s.started_at < $2' : ''}`;
       const params = before ? [engagementId, before] : [engagementId];
-      const memoryScope = `SELECT mb.person_id FROM memory_blob mb WHERE mb.person_id IN (SELECT DISTINCT e.person_id
-        FROM employee e WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`;
+      // Port: memory is per (person, organisation): only this round's organisation's blobs of its people go.
+      const memoryScope = `SELECT mb.person_id FROM memory_blob mb
+        WHERE mb.customer_id = (SELECT g.customer_id FROM engagement g WHERE g.id = $1)
+          AND mb.person_id IN (SELECT DISTINCT e.person_id FROM employee e WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`;
       report = {
         engagementId, released: !!eng.data.released_synthesis_id, confirmed: confirm,
         sessions: await count(db, scope, params),
@@ -50,8 +52,10 @@ export async function retentionDelete(pool, engagementId, { before = null, confi
       await run(db, 'UPDATE engagement SET released_synthesis_id = NULL, released_at = NULL, released_by = NULL WHERE id = $1', [engagementId]);
       report.synthesisCache = await run(db, 'DELETE FROM synthesis_cache WHERE engagement_id = $1', [engagementId]);
       report.synthesis = await run(db, 'DELETE FROM synthesis WHERE engagement_id = $1', [engagementId]);
-      report.memoryBlobs = await run(db, `DELETE FROM memory_blob WHERE person_id IN (SELECT DISTINCT e.person_id FROM employee e
-        WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`, [engagementId]);
+      report.memoryBlobs = await run(db, `DELETE FROM memory_blob
+        WHERE customer_id = (SELECT g.customer_id FROM engagement g WHERE g.id = $1)
+          AND person_id IN (SELECT DISTINCT e.person_id FROM employee e WHERE e.engagement_id = $1 AND e.person_id IS NOT NULL)`,
+        [engagementId]);
       report.outbox = await run(db, 'DELETE FROM outbox WHERE engagement_id = $1', [engagementId]);
       await db.from('audit_log').insert({ engagement_id: engagementId, actor_name: 'system:retention', action: 'retention.deleted',
         summary: `Retention delete: ${report.sessions} sessions, ${report.turns} turns, ${report.synthesis} syntheses removed` });
