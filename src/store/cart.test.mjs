@@ -107,6 +107,25 @@ test('services-only basket sends one quote request and makes no Stripe call', as
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('catalogue service variants stay in quote lines and retain service kind in the enquiry', async () => {
+  addItem(item('service-variant', 1200, { kind: 'service' }));
+  assert.equal(paidLines().length, 0);
+  assert.equal(quoteLines().length, 1);
+  assert.equal(cartSubtotalMinor(), 0);
+  const originalFetch = globalThis.fetch;
+  let request;
+  globalThis.fetch = async (url, options) => {
+    request = { url, body: JSON.parse(options.body) };
+    return Response.json({ ok: true, id: 'inquiry-service' });
+  };
+  try {
+    await requestBasketQuote({ contact: { email: 'buyer@example.test' } });
+    assert.equal(request.url, '/api/service-inquiry');
+    assert.equal(request.body.services[0].kind, 'service');
+    assert.match(request.body.message, /"kind":"service"/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('mixed basket sends only priced tool to Stripe and one quote with the full basket and order reference', async () => {
   addItem(item('tool-id', 1200), 2);
   addService({ slug: 'website-build', name: 'Website build' });

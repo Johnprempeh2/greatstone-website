@@ -98,7 +98,7 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
           <div className="sp-cta">
             {fromP && fromP.final != null
               ? <button className="gs-btn primary" onClick={() => { const el = document.getElementById('sp-editions'); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }}>See editions &amp; pricing</button>
-              : <button className="gs-btn primary" onClick={() => { const v = o.variants?.[0]; addItem({ variantId: v?.id || o.id, offeringSlug: o.slug, name: o.name, edition: v?.name, vendor: o.vendor?.name, unitMinor: null }); openCart(); }}>Add to basket for a quote</button>}
+              : <button className="gs-btn primary" onClick={() => { const v = o.variants?.[0]; addItem({ variantId: v?.id || o.id, offeringSlug: o.slug, name: o.name, edition: v?.name, vendor: o.vendor?.name, unitMinor: null, kind: o.type === 'service' ? 'service' : 'tool' }); openCart(); }}>Add to basket for a quote</button>}
           </div>
           <p className="sp-note">Browse-and-enquire: we license and support every product directly. No account or card needed to ask.</p>
         </div>
@@ -143,7 +143,7 @@ function BasketBar() {
 function AddToBasket({ offering, variant }) {
   const [done, setDone] = useState(false);
   const add = () => {
-    addItem({ variantId: variant.id, offeringSlug: offering.slug, name: offering.name, edition: variant.name, vendor: offering.vendor && offering.vendor.name, unitMinor: variant.pricing?.final ?? null, currency: variant.pricing?.currency || 'GBP' });
+    addItem({ variantId: variant.id, offeringSlug: offering.slug, name: offering.name, edition: variant.name, vendor: offering.vendor && offering.vendor.name, unitMinor: variant.pricing?.final ?? null, currency: variant.pricing?.currency || 'GBP', kind: offering.type === 'service' ? 'service' : 'tool' });
     setDone(true); setTimeout(() => setDone(false), 1600);
   };
   return <button className={'sp-add' + (done ? ' done' : '')} onClick={add} aria-label={'Add ' + offering.name + ' ' + variant.name + ' to basket'}>{done ? 'Added ✓' : 'Add to basket'}</button>;

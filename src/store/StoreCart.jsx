@@ -146,7 +146,7 @@ export default function StoreCart({ confirmed = false }) {
                           <span>{it.qty}</span>
                           <button onClick={() => setQty(it.variantId, it.qty + 1)} aria-label={'Increase quantity of ' + it.name} disabled={it.qty >= MAX_QTY} title={it.qty >= MAX_QTY ? 'Maximum ' + MAX_QTY + ' per line. Request a quote for larger volumes.' : undefined}>+</button>
                         </div>}
-                        <button className="sc-rm" onClick={() => it.kind === 'service' ? removeService(it.serviceSlug) : removeItem(it.variantId)} aria-label={'Remove ' + it.name + ' from basket'}>Remove</button>
+                        <button className="sc-rm" onClick={() => it.serviceSlug ? removeService(it.serviceSlug) : removeItem(it.variantId)} aria-label={'Remove ' + it.name + ' from basket'}>Remove</button>
                       </div>
                     </li>
                   ))}
