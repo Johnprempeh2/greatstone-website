@@ -63,7 +63,7 @@ export async function loadSynthesisData(db, engagementId, relaxEligibility) {
   const [engagementRes, unitsRes, employeesRes] = await Promise.all([
     db.from('engagement').select('id, client_name, status, seat_total').eq('id', engagementId).maybeSingle(),
     db.from('org_unit').select('id, engagement_id, parent_id, name, kind, path').eq('engagement_id', engagementId).order('path'),
-    db.from('employee').select('id, engagement_id, person_id, unit_id, name, role_title, portal_role, status, leader_track').eq('engagement_id', engagementId),
+    db.from('employee').select('id, engagement_id, person_id, user_id, unit_id, name, role_title, portal_role, status, leader_track').eq('engagement_id', engagementId),
   ]);
   if (engagementRes.error) fail('engagement', engagementRes.error.message);
   if (!engagementRes.data) fail('engagement', `engagement ${engagementId} not found`);

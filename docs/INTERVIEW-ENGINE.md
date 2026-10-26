@@ -13,20 +13,39 @@ Source commit ported: `505ba6a` (Voice: Everest is aura-2-draco-en).
 | ------------------------------------------------- | ----------------------------------------------------------------------- |
 | Supabase Postgres, `public` schema                | Netlify Database, schema **`interview`**, same table and column names   |
 | `supabaseService()` (service role, bypasses RLS)  | `interviewDb(identity)`: a supabase-js-shaped client over `pg`, every statement in its own transaction as role `interview_worker` with claims set (the claims bridge) |
-| Clerk / Supabase Auth, email is the join key      | Better Auth website account; the **verified** email is the join key     |
+| Clerk / Supabase Auth, email is the join key      | Better Auth only. People are keyed by the **Better Auth user id**; the verified email is used once, to claim an invite at join |
+| No client id on rows                              | Every client-scoped row carries **`customer_id`**: the website organisation id (`customers.id`, John's rule 2) |
 | `/join/<token>` enrol with a typed email          | `#join/<token>`: sign up or sign in with a website account first (email verified), then enrol |
 | Next.js server components and server actions     | React pages under `#portal/interview…` that call `/api/interview/portal` ops |
 | `/api/chat`, `/api/voice/start`, `/api/voice/think` | `/api/interview/chat`, `/api/interview/voice/start`, `/api/interview/voice/think` |
 | Admin UI in the app (`/admin`, `/team`, `/requests`) | Not ported. GSAM runs the round through the bridge (GRE-2611)        |
 | `notion_outbox` drained to Notion                 | `outbox` table, read by GSAM through the bridge. The site never calls GSAM |
 | Vercel cron (retention, outbox sweep)             | Netlify scheduled functions (retention delete, abandonment close-out)   |
-| Synthesis in a server action                      | Background function `interview-synthesis-background` (15 min limit)     |
+| Synthesis in a server action                      | **Made in GSAM** (GRE-2611): GSAM reads completed interviews and pushes the released synthesis through the bridge. The ported pipeline (background function `interview-synthesis-background`) is only a fallback |
+| Old Everest dry-run data                          | Left behind, not imported (internal dry runs only; keyed by email, no organisation id) |
 
 ## Data plane
 
 All tables live in schema `interview` (no clash with the site's `engagements`, `customers` and so on). Migration
 `netlify/database/migrations/054_interview_engine` is the source's 0001 to 0017 folded into one, adapted only where a
 `Port:` note says so.
+
+### Organisation and user on every row
+
+The website organisation id is `customers.id`. The column is named `customer_id`, as the GRE-2623 gate
+(`scripts/check-org-scoping.mjs`) requires; the bridge calls it `organisationId`. `org_id` on `engagement` is the
+Greatstone tenant, not the client.
+
+- `engagement.customer_id` is NOT NULL with a foreign key to `customers (id, org_id)`: a round cannot point at an
+  organisation that does not exist, or at another tenant's.
+- Every other client-scoped table (`org_unit`, `employee`, `session`, `turn`, `insight`, `synthesis*`,
+  `context_pack`, `usage_ledger`, `outbox`, `consent_event`, `seat_*`, `audit_log`, `memory_blob`) has
+  `customer_id NOT NULL`. A trigger fills it from the parent row and refuses a value that disagrees with the parent;
+  it cannot change after insert. Rehearsal row R11 (null or wrong organisation id) is 0 by construction.
+- `user_id` (Better Auth user id) is on `employee` (empty until the invited person joins), and NOT NULL on `session`,
+  `turn`, `insight`, `consent_event`, `memory_blob`. `person.auth_user_id` is NOT NULL.
+- Memory never crosses organisations: `memory_blob` is keyed by person and organisation.
+- `person` (the identity) and `rate_event` (counters) hold no client data and are allow-listed in the gate.
 
 Roles:
 
@@ -37,16 +56,18 @@ Roles:
 Claims (set with `set_config('request.jwt.claims', …, true)`, so they end with the transaction):
 
 - Interviewee request: `{ "role": "interview_worker", "scope": "participant", "sub": <better-auth user id>, "email": <verified email, lower case>, "email_verified": true }`.
-- System request (bridge, synthesis, retention, abandonment, voice think after token check): `{ "role": "interview_worker", "scope": "system" }`.
+- Bridge request: `{ "role": "interview_worker", "scope": "system", "org": <tenant>, "customer_id": <organisation id from the path> }`.
+- Other system work (retention, abandonment, voice think after token check, fallback synthesis): `{ "role": "interview_worker", "scope": "system" }`.
 
-Policies (`interview.is_system()`, `interview.claim_email()` helpers):
+Policies (`interview.is_system()`, `interview.claim_user_id()`, `interview.claim_customer_id()`, `interview.claim_email()` helpers):
 
 - `engagement`, `org_unit`, `context_pack`: participant may SELECT (metadata needed for enrolment and the prompt);
   only system writes.
-- `person`, `employee`: participant sees and updates only rows whose email is the claim email; may INSERT only
-  rows for the claim email (enrolment).
-- `session`, `turn`, `insight`, `consent_event`, `usage_ledger`, `memory_blob`: participant reaches only rows that
-  belong to an employee or person with the claim email.
+- `person`, `employee`: participant sees and updates only rows with its own user id. The one exception: an invited
+  employee row with no user id yet and the claim email may be read and claimed once (it then takes the user id).
+- `session`, `turn`, `insight`, `consent_event`, `usage_ledger`, `memory_blob`: participant reaches only rows with
+  its own user id.
+- System scope with a `customer_id` claim (every bridge call) reaches only that organisation's rows.
 - `synthesis`, `synthesis_cache`, `seat_request`, `seat_purchase`, `outbox`, `audit_log` (read): system only.
   `rate_event` and `audit_log` (insert): any worker request.
 - `claim_seat()` and the other source functions stay SECURITY DEFINER with EXECUTE for `interview_worker` only.
@@ -71,8 +92,8 @@ db.sql(text, params)        // escape hatch for the few embedded selects (`engag
   `enrol` checks, on the server: the token is active and not expired, the verified email's domain is in
   `allowed_email_domains`, the optional team target is a real unit of this round, a seat is free (`claim_seat` stays
   the hard gate at session start), and the rate limits per token and per IP.
-- People GSAM invites are created ahead (bridge `invites`). When they join with the invited email, they match their
-  row; the site emails them the round's link.
+- People GSAM invites are created ahead (bridge `invites`), with no user id. When they join with a verified account
+  of the invited email, the row takes their Better Auth user id; from then on only the user id matches.
 - The same account is the client portal login (decision 2, GRE-2609).
 
 ## Endpoints
@@ -95,7 +116,8 @@ Public, for Deepgram only:
 - `POST /api/interview/voice/think` — the OpenAI-wire think endpoint Deepgram calls. Authorised by the per-session
   voice token (hash on the session), never by a cookie.
 
-GSAM bridge (signed, `contracts/gs-interview-v1/`): under `/api/admin/v1/interview/…`, served by the existing
+GSAM bridge (signed, `contracts/gs-interview-v1/`): under `/api/admin/v1/interview/organisations/{organisationId}/…`
+(every call keyed by the organisation id), served by the existing
 `admin-bridge` function. GSAM calls outward; the site never calls GSAM.
 
 Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/interview/session`,
@@ -112,9 +134,15 @@ Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/
 | `EXTRACTION_MODEL` | `claude-haiku-4-5` | as the source |
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
 | `VOICE_INTERVIEW_MODEL` | `claude-haiku-4-5` | as the source: Haiku for voice |
-| `VOICE_ENABLED` | on when `DEEPGRAM_API_KEY` is set | as the source: `0` takes voice away from everyone at once, typed stays |
+| `VOICE_ENABLED` | on when `DEEPGRAM_API_KEY` is set | as the source: `0` takes voice away from everyone, typed stays. An env change needs a redeploy (minutes). For a change in seconds, GSAM sends the round with `voice: false` |
 | `INTERVIEW_ENABLED` | off | kill switch for the whole engine on a site |
 | `CHAT_RATE_SESSION_PER_MIN`, `CHAT_RATE_EMPLOYEE_PER_MIN`, `CHAT_HARD_BUDGET_RATIO`, `JOIN_RATE_*` | as the source | |
+
+## Typed only (the Indago fallback)
+
+The fallback is this engine with voice off, never the standalone app. With `VOICE_ENABLED=0` (or a round sent with
+`voice: false`) voice is not offered, `voice/start` answers 404, and the typed interview runs every phase, sign-off
+read-back, consent and close-out on its own. The regression suites run in both modes.
 
 ## Voice: do not regress
 
