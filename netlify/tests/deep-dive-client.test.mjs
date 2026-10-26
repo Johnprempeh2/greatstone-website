@@ -248,7 +248,7 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.deepEqual((await read(USER_A)).items, []);
     const statusRollback = db.psql(readFileSync(new URL('../database/migrations/051_deep_dive_answer_status/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(statusRollback.status, 0, statusRollback.stderr);
-    const documentRollback = db.psql(readFileSync(new URL('../database/migrations/057_deep_dive_documents/rollback.sql', import.meta.url), 'utf8'));
+    const documentRollback = db.psql(readFileSync(new URL('../database/migrations/058_deep_dive_documents/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(documentRollback.status, 0, documentRollback.stderr);
     const rollback = db.psql(readFileSync(new URL('../database/migrations/050_deep_dive_client/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(rollback.status, 0, rollback.stderr);
