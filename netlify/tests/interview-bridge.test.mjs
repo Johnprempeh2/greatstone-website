@@ -218,6 +218,40 @@ test('GSAM invites people; the site emails them once, after commit', { skip }, a
   assert.equal(read.body.item.counts.invited, 4);
 });
 
+test('GSAM resends the link or sends a reminder; each new key emails again, a replay does not', { skip }, async () => {
+  const DEE = 'a7000000-0000-4000-8000-00000000000d';
+  const CEE = 'a7000000-0000-4000-8000-00000000000c';
+  const ann = sql(`SELECT id FROM interview.employee WHERE engagement_id = '${ROUND}' AND email = 'ann@example.test'`);
+  const send = (body, opts) => call(post(`${AT}/${ROUND}/invites/send`, body, opts));
+  const before = mails.length;
+  // by user id, and by employee id for an invitation not yet taken up
+  const idem = key16();
+  const first = await send({ kind: 'resend', userIds: [DEE], employeeIds: [ann] }, { idem });
+  assert.equal(first.status, 200, JSON.stringify(first.body));
+  assert.deepEqual(first.body, { emailed: 2, skipped: 0 });
+  assert.deepEqual(mails.slice(before).map((m) => m.to).sort(), ['ann@example.test', 'dee@example.test']);
+  assert.match(mails[before].text, /#join\//);
+  assert.deepEqual((await send({ kind: 'resend', userIds: [DEE], employeeIds: [ann] }, { idem })).body, first.body);
+  assert.equal(mails.length, before + 2);
+  // a second reminder with a new key is sent
+  for (let i = 1; i <= 2; i += 1) {
+    assert.deepEqual((await send({ kind: 'remind', userIds: [DEE] })).body, { emailed: 1, skipped: 0 });
+    assert.equal(mails.length, before + 2 + i);
+  }
+  assert.match(mails.at(-1).subject, /reminder/);
+  // resend skips someone who has started; remind still reaches them; neither reaches someone who finished
+  sql(`UPDATE interview.employee SET status = 'started' WHERE user_id = '${DEE}'; UPDATE interview.employee SET status = 'completed' WHERE user_id = '${CEE}'`);
+  assert.deepEqual((await send({ kind: 'resend', userIds: [DEE, CEE] })).body, { emailed: 0, skipped: 2 });
+  assert.deepEqual((await send({ kind: 'remind', userIds: [DEE, CEE] })).body, { emailed: 1, skipped: 1 });
+  sql(`UPDATE interview.employee SET status = 'invited' WHERE user_id IN ('${DEE}', '${CEE}')`);
+  // someone not on the round, a bad kind, or an empty list is refused
+  assert.equal((await send({ kind: 'remind', userIds: ['a7000000-0000-4000-8000-00000000000e'] })).status, 400);
+  assert.equal((await send({ kind: 'nag', userIds: [DEE] })).status, 400);
+  assert.equal((await send({ kind: 'remind', userIds: [] })).status, 400);
+  // another organisation's path cannot send for this round
+  assert.equal((await call(post(`/api/admin/v1/interview/organisations/${OTHER}/rounds/${ROUND}/invites/send`, { kind: 'remind', userIds: [DEE] }))).status, 404);
+});
+
 test('events page oldest first with a cursor; synthesis start is single-flight', { skip }, async () => {
   sql(`INSERT INTO interview.outbox (idempotency_key, engagement_id, payload, created_at) SELECT 'k' || g, '${ROUND}',
     jsonb_build_object('event', 'phase_complete', 'n', g), now() - make_interval(secs => 10 - g) FROM generate_series(1, 3) g;`);

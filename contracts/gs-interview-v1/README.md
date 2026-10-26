@@ -94,6 +94,21 @@ under that id. One round per client engagement (the Deep Dive's first step).
   order sent. No name or email comes back: GSAM stores only the ids.
 - At most 200 people per call.
 
+### `POST rounds/{roundId}/invites/send` — resend the link or send a reminder
+
+```json
+{ "kind": "resend | remind", "userIds": ["website user id"], "employeeIds": ["employee id from the invite answer"] }
+```
+
+- Names people already on the round. `userIds` for those with an account; `employeeIds` for an invitation held by
+  email (its `userId` is still `null`). Give either list or both, at most 200 ids in all. An id not on the round is
+  `400` and nothing is sent.
+- `resend` emails the join link to those who have not started (status `invited`). `remind` emails a reminder to those
+  who have not finished (`invited` or `started`). Others are skipped: nobody who completed or declined gets an email.
+- The round must be open (`400` otherwise).
+- Answer `200 { emailed, skipped }`. Each call with a **new** idempotency key emails again, so a second reminder is
+  sent; a replay of the same key and body emails nothing.
+
 ### `POST rounds/{roundId}/synthesis/released` — push the synthesis GSAM released
 
 ```json

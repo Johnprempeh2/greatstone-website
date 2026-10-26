@@ -340,6 +340,53 @@ export async function invitePeople(db, ctx, roundId, body, after) {
     resourceId: roundId };
 }
 
+export function reminderEmail({ name, clientName, url }) {
+  return {
+    subject: `A reminder: your discovery interview for ${clientName}`,
+    text: [`Hello ${name},`, '',
+      `This is a reminder of your conversation with our interviewer for ${clientName}. If you have started, you continue where you stopped.`,
+      '', `Continue here: ${url}`, '', 'Greatstone International'].join('\n'),
+  };
+}
+
+// who each kind reaches: resend the link to those who have not started; remind everyone who has not finished
+const SEND_TO = { resend: ['invited'], remind: ['invited', 'started'] };
+
+export function checkSend(body) {
+  only(body, ['kind', 'userIds', 'employeeIds'], 'body');
+  if (!SEND_TO[body.kind]) bad('kind');
+  const ids = (k) => {
+    const list = body[k] ?? [];
+    if (!Array.isArray(list) || list.some((x) => typeof x !== 'string' || !UUID.test(x))) bad(k);
+    return [...new Set(list.map((x) => x.toLowerCase()))];
+  };
+  const userIds = ids('userIds');
+  const employeeIds = ids('employeeIds');
+  if (!userIds.length && !employeeIds.length) bad('userIds');
+  if (userIds.length + employeeIds.length > 200) bad('userIds');
+  return { kind: body.kind, userIds, employeeIds };
+}
+
+/** Email the join link again (resend) or a reminder (remind) to people already on the round. */
+export async function sendInvites(db, ctx, roundId, body, after) {
+  const { kind, userIds, employeeIds } = checkSend(body);
+  const eng = await ownedRound(db, ctx, roundId);
+  if (eng.status !== 'active' || !eng.enrol_token) bad('the round is not open');
+  const rows = must(await db.sql(`SELECT id, user_id, email, name, status::text AS status FROM employee
+    WHERE engagement_id = $1 AND portal_role <> 'gs_admin' AND (user_id::text = ANY($2::text[]) OR id::text = ANY($3::text[]))`,
+  [eng.id, userIds, employeeIds]));
+  const found = new Set(rows.flatMap((r) => [r.id, r.user_id]));
+  for (const id of [...userIds, ...employeeIds]) if (!found.has(id)) bad(`${id}: not on this round`);
+  const toSend = rows.filter((r) => SEND_TO[kind].includes(r.status));
+  const url = joinUrl(eng.enrol_token);
+  const make = kind === 'resend' ? inviteEmail : reminderEmail;
+  for (const r of toSend) after.push((mail) => mail({ to: r.email,
+    ...make({ name: r.name, clientName: eng.client_name, url, targetMinutes: eng.target_minutes }) }));
+  await audit(db, eng.id, ctx.actor, `round.${kind}`, `Queued ${toSend.length} ${kind} emails through GSAM`);
+  return { status: 200, body: { emailed: toSend.length, skipped: rows.length - toSend.length }, rowCount: toSend.length,
+    resourceId: roundId };
+}
+
 export async function startSynthesis(db, ctx, roundId, body, after) {
   if (Object.keys(body).length) bad('body');
   const eng = await ownedRound(db, ctx, roundId);
@@ -481,6 +528,7 @@ export function interviewWriteRoute(method, p) {
   });
   if (!tail.length) return route((db, ctx, body) => saveRound(db, ctx, roundId, body));
   if (tail.length === 1 && tail[0] === 'invites') return route((db, ctx, body) => invitePeople(db, ctx, roundId, body, after));
+  if (tail.length === 2 && tail[0] === 'invites' && tail[1] === 'send') return route((db, ctx, body) => sendInvites(db, ctx, roundId, body, after));
   if (tail.length === 1 && tail[0] === 'close') return route((db, ctx, body) => closeRound(db, ctx, roundId, body));
   // synthesis is made in GSAM; the site's own run is the fallback
   if (tail.length === 2 && tail[0] === 'synthesis' && tail[1] === 'released') return route((db, ctx, body) => pushSynthesis(db, ctx, roundId, body));
