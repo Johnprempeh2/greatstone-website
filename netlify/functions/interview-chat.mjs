@@ -286,7 +286,7 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
     // ── Build the model request ──
     const { stable, volatile } = buildSystemPrompt({
       engagement: ctx.engagement, contextPack, orgUnit: ctx.orgUnit, employeeName: ctx.employee.name,
-      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
+      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, employeeUserId: ctx.employee.user_id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
     });
     // Prompt caching: the stable prefix is one ephemeral cache breakpoint (byte-identical every turn); the volatile
     // runtime state sits after it, uncached.

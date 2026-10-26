@@ -73,7 +73,8 @@ for (const mode of MODES) {
         INSERT INTO seat_request (engagement_id, requested_by, seats) SELECT '${A.id}', id, 1 FROM employee WHERE user_id = '${alice.id}';
         INSERT INTO seat_purchase (engagement_id, seats, purchased_by) SELECT '${A.id}', 1, id FROM employee WHERE user_id = '${alice.id}';
         INSERT INTO memory_blob (person_id, customer_id, blob, opted_in, expires_at)
-          SELECT person_id, '${CA}', '{"role_title":"Clerk"}', true, now() + interval '1 year' FROM person WHERE auth_user_id = '${alice.id}';`);
+          SELECT person_id, '${CA}', '{"role_title":"Clerk"}', true, now() + interval '1 year' FROM person WHERE auth_user_id = '${alice.id}';
+        INSERT INTO withdrawal (engagement_id, user_id) VALUES ('${A.id}', '${alice.id}');`);
       for (const t of TABLES.filter((x) => x !== 'person' && x !== COUNTERS)) {
         assert.ok(Number(db.sql(`SELECT count(*) FROM interview.${t} WHERE customer_id = '${CA}'`)) > 0, `seed: ${t} has round A rows`);
       }
@@ -111,7 +112,7 @@ for (const mode of MODES) {
       const workerCan = FUNCTIONS.filter((fn) => db.sql(`SELECT has_function_privilege('interview_worker', '${fn}', 'EXECUTE')`) === 't')
         .map((fn) => fn.replace(/^interview\./, '').replace(/\(.*$/, '')).sort();
       assert.deepEqual(workerCan, ['bump_rate', 'claim_customer_id', 'claim_email', 'claim_first_admin', 'claim_seat', 'claim_user_id',
-        'create_engagement', 'engagement_spend', 'is_system'].sort());
+        'create_engagement', 'engagement_spend', 'is_system', 'organisation_member', 'organisation_name'].sort());
     });
 
     test('interview_worker with no claims: 0 rows from every table (counters aside)', async () => {

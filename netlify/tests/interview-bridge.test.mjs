@@ -48,14 +48,14 @@ function signed(path, { method = 'GET', kid = method === 'GET' ? 'test-read-1' :
 const post = (path, body, opts) => signed(path, { method: 'POST', body, ...opts });
 
 const round = (over = {}) => ({
-  schema: 'gs-interview-round-v1', clientName: 'Example Ltd', sponsor: 'Sponsor Person', mode: 'team',
+  schema: 'gs-interview-round-v1', sponsor: 'Sponsor Person', mode: 'team',
   targetMinutes: 20, status: 'open', seatTotal: 3, costEnvelopePence: 5000, endDate: '2026-11-13', retentionDeleteAfter: null,
   enrol: { enabled: true, expiresAt: null, allowedEmailDomains: ['Example.test'], defaultUnitId: OPS },
   units: [{ id: ROOT, parentId: null, name: 'Example Ltd', kind: 'organisation', seatAllocation: null },
     { id: FIN, parentId: ROOT, name: 'Finance', kind: 'team', seatAllocation: 2 },
     { id: OPS, parentId: ROOT, name: 'Operations', kind: 'team', seatAllocation: null }],
   contextPack: { company_background: 'A test company.', scope: 'Revenue scope.', units: { [FIN]: 'Ask about month end.' },
-    people: { 'Ann@example.test': 'Ask about the board pack.' } },
+    people: { 'Ann@example.test': 'Ask about the board pack.', 'a7000000-0000-4000-8000-00000000000d': 'Ask about the forecast.' } },
   ...over,
 });
 
@@ -88,6 +88,9 @@ test('round body checks', () => {
   assert.equal(checkRound(round()).status, 'active');
   assert.deepEqual(checkRound(round()).enrol.domains, ['example.test']);
   assert.throws(() => checkRound(round({ extra: 1 })), { code: 'bad_request' });
+  // the client's name is the organisation's: GSAM no longer sends it
+  assert.throws(() => checkRound(round({ clientName: 'Example Ltd' })), { code: 'bad_request' });
+  assert.throws(() => checkRound(round({ contextPack: { people: { 'not an id': 'x' } } })), { code: 'bad_request' });
   assert.throws(() => checkRound(round({ schema: 'v0' })), { code: 'bad_request' });
   assert.throws(() => checkRound(round({ seatTotal: 0 })), { code: 'bad_request' });
   assert.throws(() => checkRound(round({ enrol: { allowedEmailDomains: [] } })), { code: 'bad_request' });
@@ -106,6 +109,8 @@ test('GSAM creates, updates and reads a round', { skip }, async () => {
   assert.equal(r1.enrol.defaultUnitId, OPS);
   assert.equal(sql(`SELECT org_id || ' ' || customer_id FROM interview.engagement WHERE id = '${ROUND}'`), `${ORG} ${CUST}`);
   assert.equal(r1.organisationId, CUST);
+  assert.equal(r1.clientName, undefined);
+  assert.equal(sql(`SELECT client_name FROM interview.engagement WHERE id = '${ROUND}'`), 'Example Ltd');
   assert.equal(r1.voice, true);
   const typed = await call(post(`${AT}/${ROUND}`, round({ voice: false })));
   assert.equal(typed.body.round.voice, false);
@@ -114,6 +119,8 @@ test('GSAM creates, updates and reads a round', { skip }, async () => {
   assert.equal(sql(`SELECT count(*) FROM interview.org_unit WHERE engagement_id = '${ROUND}'`), '3');
   assert.equal(sql(`SELECT content->'people'->>'ann@example.test' FROM interview.context_pack WHERE engagement_id = '${ROUND}'`),
     'Ask about the board pack.');
+  assert.equal(sql(`SELECT content->'people'->>'a7000000-0000-4000-8000-00000000000d' FROM interview.context_pack WHERE engagement_id = '${ROUND}'`),
+    'Ask about the forecast.');
 
   // the same pack makes no new version; a changed one does; rotating the token changes the link
   const same = await call(post(`${AT}/${ROUND}`, round()));
@@ -160,8 +167,9 @@ test('GSAM invites people; the site emails them once, after commit', { skip }, a
   const idem = key16();
   const first = await call(post(`${AT}/${ROUND}/invites`, body, { idem }));
   assert.equal(first.status, 200, JSON.stringify(first.body));
-  assert.deepEqual(first.body.invited.map((i) => [i.email, i.outcome]),
-    [['ann@example.test', 'created'], ['bo@example.test', 'created'], ['cee@client-board.test', 'created']]);
+  // GSAM gets ids only: no account yet, so no user id until the person joins
+  assert.deepEqual(first.body.invited.map((i) => [i.userId, i.organisationId, i.outcome, i.email]),
+    [[null, CUST, 'created', undefined], [null, CUST, 'created', undefined], [null, CUST, 'created', undefined]]);
   assert.equal(mails.length, 3);
   assert.match(mails[0].text, /#join\//);
   // a retry with the same idempotency key writes and emails nothing again
@@ -176,12 +184,38 @@ test('GSAM invites people; the site emails them once, after commit', { skip }, a
   const off = await call(post(`${AT}/${ROUND}/invites`, { people: [{ email: 'x@elsewhere.test', name: 'X' }] }));
   assert.equal(off.status, 400);
 
+  // an existing website account of the organisation is invited by user id; the site reads its name and email
+  sql(`INSERT INTO better_auth."user" (id, name, email, "emailVerified") VALUES ('a7000000-0000-4000-8000-00000000000d', 'Dee Account', 'Dee@example.test', true),
+      ('a7000000-0000-4000-8000-00000000000e', 'Eve Outsider', 'eve@example.test', true);
+    INSERT INTO customer_users (org_id, customer_id, email, full_name, auth_subject)
+      VALUES ('${ORG}', '${CUST}', 'dee@example.test', 'Dee Director', 'a7000000-0000-4000-8000-00000000000d'),
+             ('${ORG}', '${OTHER}', 'eve@example.test', 'Eve Outsider', 'a7000000-0000-4000-8000-00000000000e');`);
+  const dee = await call(post(`${AT}/${ROUND}/invites`, { send: true, people: [{ userId: 'a7000000-0000-4000-8000-00000000000d', roleTitle: 'Director', unitId: FIN }] }));
+  assert.equal(dee.status, 200, JSON.stringify(dee.body));
+  assert.deepEqual(dee.body.invited.map((i) => [i.userId, i.organisationId, i.outcome]), [['a7000000-0000-4000-8000-00000000000d', CUST, 'created']]);
+  assert.equal(mails.length, 4);
+  assert.equal(mails[3].to, 'dee@example.test');
+  assert.equal(sql(`SELECT e.name || ' ' || e.email || ' ' || p.auth_user_id FROM interview.employee e JOIN interview.person p
+    ON p.person_id = e.person_id WHERE e.user_id = 'a7000000-0000-4000-8000-00000000000d'`), 'Dee Director dee@example.test a7000000-0000-4000-8000-00000000000d');
+  // a member of another organisation, an unknown id, and a mixed body are refused, and nothing is written
+  for (const people of [[{ userId: 'a7000000-0000-4000-8000-00000000000e' }], [{ userId: 'a7000000-0000-4000-8000-0000000000ff' }], [{ userId: 'a7000000-0000-4000-8000-00000000000d', email: 'dee@example.test' }]]) {
+    assert.equal((await call(post(`${AT}/${ROUND}/invites`, { people }))).status, 400, JSON.stringify(people));
+  }
+  assert.equal(sql(`SELECT count(*) FROM interview.employee WHERE engagement_id = '${ROUND}'`), '4');
+  // an invitation held by email is linked when GSAM later names the account
+  sql(`INSERT INTO better_auth."user" (id, name, email, "emailVerified") VALUES ('a7000000-0000-4000-8000-00000000000c', 'Cee', 'cee@client-board.test', true);
+    INSERT INTO customer_users (org_id, customer_id, email, full_name, auth_subject)
+      VALUES ('${ORG}', '${CUST}', 'cee@client-board.test', 'Cee Client', 'a7000000-0000-4000-8000-00000000000c');`);
+  const cee = await call(post(`${AT}/${ROUND}/invites`, { people: [{ userId: 'a7000000-0000-4000-8000-00000000000c', portalRole: 'client_admin' }] }));
+  assert.deepEqual(cee.body.invited.map((i) => [i.userId, i.outcome]), [['a7000000-0000-4000-8000-00000000000c', 'updated']]);
+
   const people = await call(signed(`${AT}/${ROUND}/people`));
-  assert.deepEqual(people.body.items.map((p) => [p.email, p.status, p.portalRole]),
-    [['ann@example.test', 'invited', 'employee'], ['bo@example.test', 'invited', 'team_leader'], ['cee@client-board.test', 'invited', 'client_admin']]);
+  assert.deepEqual(people.body.items.map((p) => [p.userId, p.email, p.status, p.portalRole]),
+    [[null, 'ann@example.test', 'invited', 'employee'], [null, 'bo@example.test', 'invited', 'team_leader'],
+      ['a7000000-0000-4000-8000-00000000000c', 'cee@client-board.test', 'invited', 'client_admin'], ['a7000000-0000-4000-8000-00000000000d', 'dee@example.test', 'invited', 'employee']]);
   assert.equal(people.body.items[0].phase, null);
   const read = await call(signed(`${AT}/${ROUND}`));
-  assert.equal(read.body.item.counts.invited, 3);
+  assert.equal(read.body.item.counts.invited, 4);
 });
 
 test('events page oldest first with a cursor; synthesis start is single-flight', { skip }, async () => {
@@ -278,4 +312,25 @@ test('GSAM reads completed interviews and pushes its released synthesis; the sit
   assert.equal(sql(`SELECT customer_id FROM interview.synthesis WHERE id = 'b5000000-0000-4000-8000-000000000001'`), CUST);
   // the same synthesis id again is a conflict
   assert.equal((await call(post(`${AT}/${ROUND}/synthesis/released`, push()))).status, 409);
+});
+
+test('withdrawals: a hard-deleted interview or person is listed for GSAM; a deleted round lists nothing', { skip }, async () => {
+  const empty = await call(signed(`${AT}/${ROUND}/withdrawals`));
+  assert.deepEqual([empty.status, empty.body.items, empty.body.nextCursor], [200, [], null]);
+  const annSession = sql(`SELECT s.id FROM interview.session s JOIN interview.employee e ON e.id = s.employee_id
+    WHERE e.user_id = 'ba-ann' LIMIT 1`);
+  sql(`DELETE FROM interview.session WHERE id = '${annSession}';`);
+  // a person removed with their sessions is one row for the person
+  sql(`DELETE FROM interview.employee WHERE user_id = 'ba-bo';`);
+  const p1 = await call(signed(`${AT}/${ROUND}/withdrawals?limit=1`));
+  assert.equal(p1.status, 200, JSON.stringify(p1.body));
+  assert.deepEqual(p1.body.items.map((w) => [w.userId, w.interviewId]), [['ba-ann', annSession]]);
+  const p2 = await call(signed(`${AT}/${ROUND}/withdrawals?after=${p1.body.nextCursor}`));
+  assert.deepEqual([p2.body.items.map((w) => [w.userId, w.interviewId]), p2.body.nextCursor], [[['ba-bo', null]], null]);
+  assert.equal(sql(`SELECT count(*) FROM interview.withdrawal WHERE customer_id = '${CUST}'`), '2');
+  assert.equal((await call(signed(`/api/admin/v1/interview/organisations/${OTHER}/rounds/${ROUND}/withdrawals`))).status, 404);
+  assert.equal((await call(signed(`${AT}/${ROUND}/withdrawals?bogus=1`))).status, 400);
+  // retention deletes the round: its cascade writes no withdrawals (and the round's rows go with it)
+  sql(`DELETE FROM interview.engagement WHERE id = '${ROUND}';`);
+  assert.equal(sql(`SELECT count(*) FROM interview.withdrawal`), '0');
 });

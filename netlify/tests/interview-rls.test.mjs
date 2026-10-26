@@ -28,7 +28,7 @@ const UA = 'ba-user-alice', UB = 'ba-user-bob', UC = 'ba-user-carol', UD = 'ba-u
 
 const TABLES = ['person', 'engagement', 'org_unit', 'employee', 'session', 'turn', 'insight', 'synthesis',
   'synthesis_cache', 'synthesis_run', 'memory_blob', 'context_pack', 'usage_ledger', 'outbox', 'consent_event', 'seat_request',
-  'seat_purchase', 'rate_event', 'audit_log'];
+  'seat_purchase', 'rate_event', 'audit_log', 'withdrawal'];
 // not client data: allow-listed in scripts/org-scope-allow.netlify.json
 const UNSCOPED = ['person', 'rate_event'];
 const SCOPED = TABLES.filter((t) => !UNSCOPED.includes(t));
@@ -524,6 +524,7 @@ test('(5) R11: after a full fake round no interview row has a null or wrong cust
     await c.query(`INSERT INTO interview.synthesis_run (engagement_id, actor, status, synthesis_id) VALUES ($1, 'gsam', 'done', $2)`, [eng, syn]);
     await c.query(`INSERT INTO interview.seat_request (engagement_id, requested_by, seats) VALUES ($1, $2, 1)`, [eng, emp.e]);
     await c.query(`INSERT INTO interview.seat_purchase (engagement_id, seats, purchased_by) VALUES ($1, 1, $2)`, [eng, emp.e]);
+    await c.query(`INSERT INTO interview.withdrawal (engagement_id, user_id) VALUES ($1, $2)`, [eng, U]);
   });
   const withCustomer = sql(`SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.columns
     WHERE table_schema = 'interview' AND column_name = 'customer_id'`).split(',');
@@ -548,6 +549,19 @@ test('(5) R11: after a full fake round no interview row has a null or wrong cust
   }
   assert.equal(sql(`SELECT count(*) FROM interview.memory_blob m JOIN interview.person p ON p.person_id = m.person_id
     WHERE m.user_id <> p.auth_user_id`), '0');
+});
+
+test('organisation_name and organisation_member answer only a system call keyed to that organisation', { skip }, async () => {
+  const name = (claims, customer) => as(claims, async (c) =>
+    (await c.query('SELECT interview.organisation_name($1) AS n', [customer])).rows[0].n);
+  assert.ok(await name(SYSTEM_B, CB));
+  assert.equal(await name(SYSTEM_B, CA), null);
+  assert.equal(await name(SYSTEM, CB), null);
+  assert.equal(await name(participant('ba-user-eve', 'eve@a.test'), CB), null);
+  const member = (claims, customer) => as(claims, async (c) =>
+    (await c.query('SELECT count(*)::int AS n FROM interview.organisation_member($1, $2)', [customer, 'ba-user-eve'])).rows[0].n);
+  assert.equal(await member(SYSTEM_A, CB), 0);
+  assert.equal(await member(participant('ba-user-eve', 'eve@a.test'), CB), 0);
 });
 
 test('the bridge can switch to interview_worker and back inside one transaction', { skip }, async () => {

@@ -516,6 +516,20 @@ CREATE TABLE consent_event (
 CREATE INDEX idx_consent_event_employee_id ON consent_event (employee_id);
 CREATE INDEX idx_consent_event_customer_id ON consent_event (customer_id);
 
+-- ── withdrawal (Port: new): a hard delete leaves no rows behind, so GSAM learns of it here ─────────
+-- One row per interview (session_id) or whole person (session_id NULL) hard-deleted from a live round, written by
+-- the delete triggers below whatever path deleted it. GSAM reads it (GET …/withdrawals) and removes those quotes.
+CREATE TABLE withdrawal (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  engagement_id uuid NOT NULL REFERENCES engagement(id) ON DELETE CASCADE,
+  user_id       text NOT NULL,
+  session_id    uuid,          -- no FK: the session is gone
+  at            timestamptz NOT NULL DEFAULT clock_timestamp(),
+  customer_id   uuid NOT NULL  -- Port: from the engagement (scope trigger)
+);
+CREATE INDEX idx_withdrawal_engagement_at ON withdrawal (engagement_id, at, id);
+CREATE INDEX idx_withdrawal_customer_id ON withdrawal (customer_id);
+
 -- ── seat_request (0004, 0006) and seat_purchase (0006) ────────────────────────────────────────────
 CREATE TABLE seat_request (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -647,7 +661,7 @@ END;
 $$;
 DO $$ DECLARE tab text; BEGIN
   FOREACH tab IN ARRAY ARRAY['org_unit', 'synthesis', 'synthesis_cache', 'synthesis_run', 'context_pack', 'usage_ledger',
-    'outbox', 'seat_request', 'seat_purchase', 'audit_log'] LOOP
+    'outbox', 'seat_request', 'seat_purchase', 'audit_log', 'withdrawal'] LOOP
     EXECUTE format('CREATE TRIGGER trg_%s_scope BEFORE INSERT OR UPDATE ON interview.%I
       FOR EACH ROW EXECUTE FUNCTION interview.scope_from_engagement()', tab, tab);
   END LOOP;
@@ -794,6 +808,48 @@ CREATE FUNCTION claim_user_id() RETURNS text LANGUAGE sql STABLE SET search_path
 CREATE FUNCTION claim_customer_id() RETURNS uuid LANGUAGE sql STABLE SET search_path = interview, public, pg_temp AS $$
   SELECT nullif(auth.jwt() ->> 'customer_id', '')::uuid $$;
 
+-- ── withdrawal triggers (Port: new) ───────────────────────────────────────────────────────────────
+-- A session or a claimed employee hard-deleted from a round that still exists leaves a withdrawal row. A round being
+-- deleted (retention) takes everything with it, and its cascade no longer sees the engagement, so it writes none; a
+-- session deleted in its employee's cascade no longer sees the employee, so the person's one row covers it.
+CREATE FUNCTION record_withdrawal() RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+DECLARE
+  v_engagement uuid;
+BEGIN
+  IF tg_table_name = 'session' THEN
+    SELECT engagement_id INTO v_engagement FROM employee WHERE id = old.employee_id;
+  ELSE
+    v_engagement := old.engagement_id;
+  END IF;
+  IF v_engagement IS NULL OR old.user_id IS NULL OR NOT EXISTS (SELECT 1 FROM engagement WHERE id = v_engagement) THEN
+    RETURN old;
+  END IF;
+  INSERT INTO withdrawal (engagement_id, user_id, session_id)
+    VALUES (v_engagement, old.user_id, CASE WHEN tg_table_name = 'session' THEN old.id END);
+  RETURN old;
+END;
+$$;
+CREATE TRIGGER trg_session_withdrawal AFTER DELETE ON session FOR EACH ROW EXECUTE FUNCTION record_withdrawal();
+CREATE TRIGGER trg_employee_withdrawal AFTER DELETE ON employee FOR EACH ROW EXECUTE FUNCTION record_withdrawal();
+
+-- ── The website side of the organisation a bridge call is keyed to (Port: new) ────────────────────
+-- SECURITY DEFINER: they read public.customers, public.customer_users and better_auth."user", which the worker
+-- cannot. Each answers only a system call keyed to that same organisation, and nothing else.
+-- The organisation's name (the round's client_name), or NULL when it does not exist.
+CREATE FUNCTION organisation_name(p_customer uuid) RETURNS text
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+  SELECT c.name FROM public.customers c
+   WHERE c.id = p_customer AND c.deleted_at IS NULL AND is_system() AND claim_customer_id() = p_customer $$;
+-- A website account that is a member of the organisation (customer_users.auth_subject is the Better Auth user id).
+CREATE FUNCTION organisation_member(p_customer uuid, p_user text) RETURNS TABLE (user_id text, name text, email text)
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = interview, public, pg_temp AS $$
+  SELECT u.id, coalesce(nullif(btrim(cu.full_name), ''), u.name), lower(u.email)
+    FROM public.customer_users cu JOIN better_auth."user" u ON u.id = cu.auth_subject
+   WHERE cu.customer_id = p_customer AND cu.auth_subject = p_user AND cu.deleted_at IS NULL
+     AND is_system() AND claim_customer_id() = p_customer
+   LIMIT 1 $$;
+
 -- ── engagement_spend (0011), create_engagement (0012), claim_first_admin (0015) ───────────────────
 -- Port: as the caller could see the rounds: a system call within its customer_id claim (all without one), a
 -- participant only for rounds they are in.
@@ -916,7 +972,9 @@ GRANT EXECUTE ON FUNCTION
   is_system(),
   claim_email(),
   claim_user_id(),
-  claim_customer_id()
+  claim_customer_id(),
+  organisation_name(uuid),
+  organisation_member(uuid, text)
 TO interview_worker;
 
 -- ── Row level security ────────────────────────────────────────────────────────────────────────────
@@ -927,7 +985,7 @@ TO interview_worker;
 DO $$ DECLARE tab text; BEGIN
   FOREACH tab IN ARRAY ARRAY['person', 'engagement', 'org_unit', 'employee', 'session', 'turn', 'insight', 'synthesis',
     'synthesis_cache', 'synthesis_run', 'memory_blob', 'context_pack', 'usage_ledger', 'outbox', 'consent_event', 'seat_request',
-    'seat_purchase', 'rate_event', 'audit_log'] LOOP
+    'seat_purchase', 'rate_event', 'audit_log', 'withdrawal'] LOOP
     EXECUTE format('ALTER TABLE interview.%I ENABLE ROW LEVEL SECURITY', tab);
     EXECUTE format('ALTER TABLE interview.%I FORCE ROW LEVEL SECURITY', tab);
     EXECUTE format('CREATE POLICY owner_all ON interview.%I FOR ALL TO CURRENT_USER USING (true) WITH CHECK (true)', tab);
