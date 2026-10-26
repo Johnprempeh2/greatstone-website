@@ -10,6 +10,8 @@ export function parsePortalHash(hash) {
   const h = String(hash || '');
   if (!/^#\/?portal(\/|$)/i.test(h)) return null;
   if (/^#\/?portal\/deep-dive\/?$/i.test(h)) return { view: 'deep-dive' };
+  // the interview data processing agreement (GRE-2794); not #portal/interview…, which is the interview engine's
+  if (/^#\/?portal\/agreement\/?$/i.test(h)) return { view: 'agreement' };
   const m = ROUTE.exec(h);
   if (!m) return { view: 'notfound' };
   if (!m[1]) return { view: 'home' };

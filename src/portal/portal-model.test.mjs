@@ -15,6 +15,7 @@ const acc = (o = {}) => ({ id: 'a1', document_id: ID, action: 'accept', accepted
 test('routes: home, reader, receipt; anything else under #portal is not found; other hashes are not ours', () => {
   assert.deepEqual(parsePortalHash('#portal'), { view: 'home' });
   assert.deepEqual(parsePortalHash('#portal/deep-dive'), { view: 'deep-dive' });
+  assert.deepEqual(parsePortalHash('#portal/agreement'), { view: 'agreement' });
   assert.deepEqual(parsePortalHash('#/portal/'), { view: 'home' });
   assert.deepEqual(parsePortalHash('#portal/doc/' + ID.toUpperCase()), { view: 'doc', id: ID });
   assert.deepEqual(parsePortalHash('#portal/receipt/' + ID), { view: 'receipt', id: ID });
