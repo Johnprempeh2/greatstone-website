@@ -20,7 +20,7 @@ import { getStore } from '@netlify/blobs';
 import pg from 'pg';
 import { validateImport } from '../netlify/database/migrations/052_better_auth/import-users.mjs';
 import {
-  SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, targetColumns,
+  SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, targetColumns, validateProof,
 } from '../netlify/functions/lib/owner-import.mjs';
 
 const API = 'https://api.netlify.com/api/v1';
@@ -85,6 +85,9 @@ async function submit(site, mode, action, input) {
   if (mode === 'identities') {
     validateImport(source); // fail here, before anything is written
     data = source;
+  } else if (mode === 'proof') {
+    if (site.name !== 'gre1795-website-db-staging') throw new Error('Proof is staging only');
+    data = validateProof(source);
   } else if (mode === 'tables') {
     readonly = await readonlyColumns(site);
     const built = buildTablesData(source, readonly.columns);
@@ -95,6 +98,7 @@ async function submit(site, mode, action, input) {
 
   try {
     const hash = payloadHash(mode, data);
+    if (mode === 'proof') await site.store.setJSON('runner/state', { ...state, proofHash: hash });
     const submitted = Date.now();
     await site.store.setJSON('payload', { version: 1, mode, action, notAfter: state.until, data });
     console.log(`Payload ${hash.slice(0, 12)} written for ${action}. Waiting for the scheduled run (until ${state.until}).`);
@@ -112,6 +116,7 @@ async function submit(site, mode, action, input) {
       process.exitCode = 1;
       return;
     }
+    if (mode === 'proof') await site.store.delete(`results/${hash}/${action}`);
     console.log(JSON.stringify({ status: result.status, reason: result.reason, code: result.code, counts: result.counts }, null, 1));
     if (result.status === 'failed') process.exitCode = 1;
     if (mode === 'tables' && result.status === 'applied') {
@@ -125,10 +130,17 @@ async function submit(site, mode, action, input) {
 }
 
 async function clear(site) {
+  const state = await site.store.get('runner/state', { type: 'json' });
   for (const key of KEYS) await netlify('DELETE', `/accounts/${site.account}/env/${key}?site_id=${site.id}`);
   await site.store.delete('payload');
-  await site.store.delete('runner/state');
   const latest = await site.store.get('results/latest', { type: 'json' });
+  if (state?.proofHash) {
+    await site.store.delete(`ledger/${state.proofHash}`);
+    await site.store.delete(`results/${state.proofHash}/dry-run`);
+    await site.store.delete(`results/${state.proofHash}/apply`);
+    await site.store.delete('results/latest');
+  }
+  await site.store.delete('runner/state');
   console.log('Settings, payload and run state removed. The last deploy keeps the old window value, which has ended or will.');
   if (latest) console.log(`Last result: ${latest.status} ${latest.reason || ''} at ${latest.at}`);
 }

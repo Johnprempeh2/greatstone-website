@@ -14,7 +14,7 @@
 //   5. apply needs a passed dry run of the same payload hash; an applied hash never applies again
 // Each run is one transaction as `netlifydb_owner` on a pool opened for that run and ended after it. The result blob
 // and the log carry counts, status and a hash prefix only, never row values.
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { importUsers, validateImport } from '../../database/migrations/052_better_auth/import-users.mjs';
 
 export const STORE = 'owner-import';
@@ -24,7 +24,7 @@ export const OWNER = 'netlifydb_owner';
 // Reviewed targets. Production identities need a fresh export of ten and a reviewed change to the fixed count
 // (IMPORT.md), so production takes only the table move for now. A rehearsal site is added here in its own PR.
 export const SITES = Object.freeze({
-  'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities'] },
+  'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'] },
   'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables'] },
 });
 
@@ -181,6 +181,86 @@ async function moveIdentities(pool, data, apply) {
   catch (error) { throw fixed(error); }
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const DIGEST = /^[0-9a-f]{64}$/;
+const BCRYPT_10 = /^\$2[aby]\$10\$[./A-Za-z0-9]{53}$/;
+const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+const APPROVED_PREFIXES = new Set([
+  '079636cf', 'd814b01d', 'c3f9c60f', '2d47ada5',
+  '7a0c5d8e', '681507c1', 'e81bc42a', '5a85a5ba',
+]);
+
+// This mode is deliberately limited to the eight approved staging identities and one new fixture.
+// The payload travels through the private owner-import store; results contain prefixes and booleans only.
+export function validateProof(data) {
+  if (!data || !Array.isArray(data.source) || data.source.length !== 8) refuse('proof-source-count');
+  const ids = new Set();
+  for (const row of data.source) {
+    if (!UUID.test(row?.id) || !APPROVED_PREFIXES.has(row.id.slice(0, 8))
+      || !DIGEST.test(row.uuidDigest) || !DIGEST.test(row.emailDigest)
+      || !DIGEST.test(row.bcryptDigest) || ids.has(row.id)) refuse('proof-source-shape');
+    ids.add(row.id);
+  }
+  if (new Set([...ids].map((id) => id.slice(0, 8))).size !== 8) refuse('proof-source-shape');
+  const fixture = data.fixture;
+  if (!UUID.test(fixture?.id) || ids.has(fixture.id)
+    || typeof fixture.email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fixture.email)
+    || fixture.email !== fixture.email.trim().toLowerCase()
+    || !BCRYPT_10.test(fixture.passwordHash)) refuse('proof-fixture-shape');
+  return data;
+}
+
+export async function proveIdentities(pool, data, apply) {
+  validateProof(data);
+  const client = await pool.connect();
+  await client.query('BEGIN');
+  try {
+    const { rows: [who] } = await client.query('SELECT current_user AS role');
+    if (who?.role !== OWNER) refuse('owner-role-required');
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('owner-import'))");
+    const checks = [];
+    for (const source of data.source) {
+      const { rows } = await client.query(`SELECT u."id", u."email", a."password"
+        FROM better_auth."user" u
+        LEFT JOIN better_auth."account" a ON a."userId"=u."id" AND a."providerId"='credential'
+        WHERE u."id"=$1`, [source.id]);
+      const row = rows.length === 1 ? rows[0] : null;
+      checks.push({
+        prefix: source.id.slice(0, 8),
+        uuid: !!row && sha256(row.id.toLowerCase()) === source.uuidDigest,
+        email: !!row && sha256(row.email.trim().toLowerCase()) === source.emailDigest,
+        bcrypt: !!row?.password && sha256(row.password) === source.bcryptDigest,
+      });
+    }
+    const matched = checks.filter((row) => row.uuid && row.email && row.bcrypt).length;
+    if (apply && matched !== 8) refuse('proof-mismatch');
+    if (matched === 8) {
+      const fixture = data.fixture;
+      const inserted = await client.query(`INSERT INTO better_auth."user"
+        ("id","name","email","emailVerified") VALUES ($1,'GRE-2805 staging fixture',$2,true)
+        ON CONFLICT ("id") DO NOTHING RETURNING "id"`, [fixture.id, fixture.email]);
+      if (!inserted.rowCount) {
+        const { rows: existing } = await client.query(`SELECT "email" FROM better_auth."user" WHERE "id"=$1`, [fixture.id]);
+        if (existing.length !== 1 || existing[0].email !== fixture.email) refuse('proof-fixture-conflict');
+      }
+      const { rows: accounts } = await client.query(`SELECT "password" FROM better_auth."account"
+        WHERE "userId"=$1 AND "providerId"='credential'`, [fixture.id]);
+      if (accounts.length) {
+        if (accounts.length !== 1 || accounts[0].password !== fixture.passwordHash) refuse('proof-fixture-conflict');
+      } else {
+        await client.query(`INSERT INTO better_auth."account"
+          ("id","accountId","providerId","userId","password")
+          VALUES ($1,$2,'credential',$2,$3)`, [randomUUID(), fixture.id, fixture.passwordHash]);
+      }
+    }
+    await client.query(apply ? 'COMMIT' : 'ROLLBACK');
+    return { identities: { source: 8, matched }, checks, fixtureId: apply ? data.fixture.id : undefined };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
+
 // Counts and fixed reasons only: a pg error's message and detail can carry row values.
 function safeError(error) {
   if (error instanceof Refusal) return { reason: error.message };
@@ -220,7 +300,8 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
       let counts;
       try {
         counts = mode === 'identities' ? await moveIdentities(pool, data, action === 'apply')
-          : await moveTables(pool, data, action === 'apply');
+          : mode === 'proof' ? await proveIdentities(pool, data, action === 'apply')
+            : await moveTables(pool, data, action === 'apply');
       } finally { await pool.end(); }
       const at = new Date(now).toISOString();
       if (action === 'apply') Object.assign(ledger, { appliedAt: at, counts });
