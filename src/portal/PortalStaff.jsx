@@ -18,8 +18,7 @@ import { confirmationTemplate, fillWording } from './wording.mjs';
 import { MAX_ATTEMPTS } from '../../supabase/functions/_shared/portal-receipt.mjs';
 import './portal.css';
 
-// phase 1 uses the first four kinds (spec section 4); the rest come with later phases
-const PHASE1_KINDS = ['engagement_pack', 'nda', 'gita', 'terms'];
+const EDITOR_KINDS = ['engagement_pack', 'nda', 'gita', 'terms', 'deep_dive'];
 const ACTIONS = [['none', 'Nothing (read only)'], ['accept', 'Accept'], ['agree_in_principle', 'Agree in principle']];
 const STATUS_CLS = { draft: 'ca-draft', pending_approval: 'ca-ord-pending', published: 'ca-published', withdrawn: 'ca-archived', superseded: 'ca-archived' };
 const errText = (e) => (e && e.message) || 'Something went wrong.';
@@ -367,7 +366,7 @@ function DraftEditor({ draft, customer, members, onClose, onSaved }) {
       <div className="pr-row">
         <label>Kind
           <select value={kind} onChange={(e) => setKind(e.target.value)} disabled={!!draft.series}>
-            {PHASE1_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+            {EDITOR_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
           </select>
         </label>
         <label>What the client is asked to do

@@ -3,6 +3,8 @@ import { MAX_FILE_BYTES } from '../data/deepdive-sniff.mjs';
 import './portal.css';
 import './deep-dive-client.css';
 import { sharedStreams } from './deep-dive-progress.mjs';
+import { deepDiveDocuments, docState } from './portal-model.mjs';
+import { portalStore } from './portal-store-api.mjs';
 
 async function call(op, args = {}) {
   const response = await fetch('/api/deep-dive-client', { method: 'POST',
@@ -76,10 +78,13 @@ function SharedList({ id, title, items, empty, render }) {
   </section>;
 }
 
-export default function DeepDiveClient({ company, api = call, documentApi = documents }) {
+export default function DeepDiveClient({ company, api = call, documentApi = documents, portalApi = portalStore }) {
   const [snapshot, setSnapshot] = useState(undefined);
   const [stored, setStored] = useState(undefined);
   const [documentError, setDocumentError] = useState('');
+  const [portalDocs, setPortalDocs] = useState(undefined);
+  const [portalAcceptances, setPortalAcceptances] = useState([]);
+  const [portalError, setPortalError] = useState('');
   const [downloadError, setDownloadError] = useState('');
   const [error, setError] = useState('');
   const load = async () => {
@@ -88,6 +93,9 @@ export default function DeepDiveClient({ company, api = call, documentApi = docu
     catch (cause) { setError(cause.message); }
     try { setStored(await documentApi('list')); setDocumentError(''); }
     catch (cause) { setDocumentError(cause.message); }
+    const { data, error: portalFailure } = await portalApi('overview');
+    if (portalFailure) { setPortalDocs(undefined); setPortalError(portalFailure.message); }
+    else { setPortalDocs(deepDiveDocuments(data.documents)); setPortalAcceptances(data.acceptances); setPortalError(''); }
   };
   const download = async (record) => {
     setDownloadError('');
@@ -150,15 +158,15 @@ export default function DeepDiveClient({ company, api = call, documentApi = docu
           </li>)}
         </ul>}
       </section>
-      <section className="pt-card" aria-labelledby="dd-deliverables"><h2 className="pt-h2" id="dd-deliverables">Published deliverables</h2>
-        {!snapshot.deliverables.length ? <p className="pt-muted">No deliverables have been published yet.</p> : <ul className="pt-list">
-          {snapshot.deliverables.map((item) => { const file = stored?.find((record) => record.kind === 'deliverable' && record.source_id === item.id);
-            return <li key={item.id} className="dd-row"><strong>{item.title}</strong>
-              {item.version != null && <p className="pt-muted">Version {item.version}</p>}
-              {file ? <button className="gs-btn ghost sm" onClick={() => download(file)}>Download</button>
-                : stored !== undefined && !documentError && <p className="pt-muted">Download available when the file is released.</p>}</li>; })}
-        </ul>}
-      </section>
     </>}
+    <section className="pt-card" aria-labelledby="dd-deliverables"><h2 className="pt-h2" id="dd-deliverables">Published deliverables</h2>
+      {portalError ? <p role="alert">Deliverables could not load: {portalError} <button className="ca-link" onClick={load}>Try again</button></p>
+        : portalDocs === undefined ? <p className="pt-muted" aria-busy="true">Loading deliverables…</p>
+          : portalDocs.length === 0 ? <p className="pt-muted">No deliverables have been published yet.</p>
+            : <ul className="pt-list">{portalDocs.map((doc) => <li key={doc.id} className="dd-row">
+            <a href={'#portal/doc/' + doc.id}><strong>{doc.title}</strong></a>
+            <p className="pt-muted">Version {doc.version} · {docState(doc, portalAcceptances).label}</p>
+          </li>)}</ul>}
+    </section>
   </div>;
 }

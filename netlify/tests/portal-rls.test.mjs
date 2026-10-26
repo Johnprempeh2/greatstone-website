@@ -460,6 +460,30 @@ test('a published and accepted deliverable emits only action labels in the outbo
     `deliverable.published|Deliverable published|${doc}\ndeliverable.accepted|Deliverable accepted|${doc}`);
 });
 
+test('Deep Dive release uses registered approval, named signer and the receipt queue', { skip }, () => {
+  const doc = 'd0000000-0000-4000-8000-000000000322';
+  ok('editor', `INSERT INTO portal_documents (id,customer_id,kind,title,body,action,confirmation_text,signatory_email)
+    VALUES ('${doc}','${A}','deep_dive','Synthetic Deep Dive report',
+      '{"sections":[{"id":"report","title":"Findings","html":"<p>Synthetic finding.</p>"}]}'::jsonb,
+      'accept','${CONFIRM}','${U.a2.email}');`);
+  assert.equal(ok('a1', `SELECT count(*) FROM portal_documents WHERE id='${doc}';`), '0');
+  const fingerprint = submit(doc);
+  refused('owner', publish(doc, fingerprint), /only the registered approver/);
+  refused('approver', publish(doc, ZERO_SHA), /fingerprint does not match/);
+  ok('approver', publish(doc, fingerprint));
+  assert.equal(ok('a1', `SELECT title FROM portal_documents WHERE id='${doc}';`), 'Synthetic Deep Dive report');
+  assert.equal(ok('b1', `SELECT count(*) FROM portal_documents WHERE id='${doc}';`), '0');
+  refused('a1', accept(doc), /named signatory/);
+  refused('b1', accept(doc), /document not found/);
+  const receipt = ok('a2', accept(doc));
+  assert.equal(ok('a2', `SELECT content_sha256 FROM portal_acceptances WHERE id='${receipt}';`), fingerprint);
+  assert.equal(ok('a2', `SELECT status FROM portal_receipt_jobs WHERE acceptance_id='${receipt}';`), 'queued');
+  assert.equal(ok('b1', `SELECT count(*) FROM portal_receipt_jobs WHERE acceptance_id='${receipt}';`), '0');
+  assert.equal(ok('owner', `SELECT event FROM portal_audit WHERE detail->>'acceptance_id'='${receipt}' ORDER BY at;`),
+    'accepted\nreceipt_queued');
+  refused(null, `\\i '${join(MIGRATIONS, '061_deep_dive_portal_documents/rollback.sql')}'`, /retain Deep Dive/);
+});
+
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
 test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {

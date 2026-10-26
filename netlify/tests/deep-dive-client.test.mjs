@@ -222,7 +222,11 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const releaseUrl = `https://site.example.invalid/api/deep-dive-document?tenantId=${A}&sourceId=${I}&kind=deliverable`;
     assert.equal((await bridgeCall('PUT', releaseUrl, Buffer.from('%PDF-1.7'), pair, 'stg-write-1', 'write')).status, 200);
     const released = (await (await list('one')).json()).data.find((row) => row.kind === 'deliverable');
-    assert.equal(released.file_name, 'report.pdf');
+    assert.equal(released, undefined);
+    const storedRelease = db.psql(`SELECT id FROM deep_dive_documents WHERE tenant_id='${A}' AND source_id='${I}' AND kind='deliverable'`);
+    assert.equal(storedRelease.status, 0);
+    assert.equal((await documentHandler(new Request(`https://site.example.invalid/api/deep-dive-document?id=${storedRelease.stdout.trim()}`,
+      { headers: { authorization: 'Bearer one' } }))).status, 404);
     assert.equal((await (await list('two')).json()).data.length, 0);
     const collectedUrl = `https://site.example.invalid/api/deep-dive-document?bridge=1&tenantId=${A}&requestId=${R}`;
     const collected = await bridgeCall('GET', collectedUrl, '', readPair, 'stg-read-1', 'read');
