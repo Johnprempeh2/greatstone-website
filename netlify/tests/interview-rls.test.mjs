@@ -17,7 +17,9 @@ const SA = id('d1', 1), SB = id('d1', 2), SC = id('d1', 3);
 
 const TABLES = ['person', 'engagement', 'org_unit', 'employee', 'session', 'turn', 'insight', 'synthesis',
   'synthesis_cache', 'synthesis_run', 'memory_blob', 'context_pack', 'usage_ledger', 'outbox', 'consent_event', 'seat_request',
-  'seat_purchase', 'rate_event', 'audit_log'];
+  'seat_purchase', 'rate_event', 'audit_log',
+  // 055 (GRE-2653)
+  'deletion_record', 'anonymised_themes'];
 const ALICE = { role: 'interview_worker', scope: 'participant', sub: id('f1', 1), email: 'alice@a.test', email_verified: true };
 const SYSTEM = { role: 'interview_worker', scope: 'system' };
 
