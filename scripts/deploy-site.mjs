@@ -56,11 +56,15 @@ async function comments() {
   return json(`${base}/api/issues/${issueId}/comments`, process.env.GSAM_API_KEY);
 }
 
+// The weekly release card (GRE-2641) uses the `weekly-release` key. It covers staging like a
+// staging card does, and it is the only card that can authorise the public site, for its exact SHA.
 async function stagingCardApproved(sha, exact = false) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
+  const kinds = site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
+  const key = new RegExp(`^confirmation:GRE-\\d+:(?:${kinds}):([0-9a-f]{40})(?::v[1-9]\\d*)?$`);
   for (const card of cards) {
-    const approvedSha = /^confirmation:GRE-\d+:staging-deploy:([0-9a-f]{40})(?::v[1-9]\d*)?$/.exec(card.idempotencyKey || '')?.[1];
+    const approvedSha = key.exec(card.idempotencyKey || '')?.[1];
     if (card.kind !== 'request_confirmation' || card.status !== 'accepted' ||
         card.requestedResolverPolicy !== 'human_only' || card.effectiveResolverPolicy !== 'human_only' ||
         !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||
@@ -94,11 +98,11 @@ async function gate(sha) {
     if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
     const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
-    const stagingCard = !exactComment && site === 'gre1795-website-db-staging' && await stagingCardApproved(sha);
+    const stagingCard = !exactComment && await stagingCardApproved(sha, site === 'greatstone-home');
     if (!exactComment && !stagingCard)
       throw new Error(site === 'gre1795-website-db-staging'
         ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
-        : `production refused: a person must comment exactly "${approval}" on this task`);
+        : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}, or a person must comment exactly "${approval}" on this task`);
     return null;
   }
   if (!/^\d+$/.test(prNumber || '')) throw new Error('preview requires a PR number');

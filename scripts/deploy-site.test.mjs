@@ -204,6 +204,47 @@ test('a staging card never authorises the public site', async (t) => {
   assert.match(result.stderr, /production refused/);
 });
 
+function weeklyCard(sha, changes = {}) {
+  return stagingCard(sha, { idempotencyKey: `confirmation:GRE-2641:weekly-release:${sha}`,
+    payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${sha}\nApprove production deploy: ${site} ${sha}` },
+    ...changes });
+}
+
+test('a weekly release card authorises both sites for its exact SHA', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.setInteractions([weeklyCard(f.base)]);
+  // The fake Netlify API only serves the staging site, so the public run passes the gate
+  // and then stops at the deploy lookup.
+  let result = await f.run('prod', 'greatstone-home');
+  assert.doesNotMatch(result.stderr, /production refused/);
+  assert.match(result.stderr, /greatstone-home\.netlify\.app\/deploys: 404/);
+  result = await f.run('prod');
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('a weekly release card never covers public-site drift, other sites or agent resolution', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const cases = [
+    weeklyCard(f.base, { status: 'pending' }),
+    weeklyCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
+    weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: ${site} ${f.base}` } }),
+    weeklyCard('a'.repeat(40)),
+  ];
+  for (const card of cases) {
+    f.setInteractions([card]);
+    const result = await f.run('prod', 'greatstone-home');
+    assert.equal(result.status, 1, JSON.stringify(card));
+    assert.match(result.stderr, /production refused/);
+  }
+  f.setInteractions([weeklyCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
 test('docs-only skips; site changes deploy only with preview gate', async (t) => {
   const f = await fixture(t);
   await f.commit('README.md', 'docs');
