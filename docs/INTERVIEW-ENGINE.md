@@ -39,7 +39,7 @@ Greatstone tenant, not the client.
 - `engagement.customer_id` is NOT NULL with a foreign key to `customers (id, org_id)`: a round cannot point at an
   organisation that does not exist, or at another tenant's.
 - Every other client-scoped table (`org_unit`, `employee`, `session`, `turn`, `insight`, `synthesis*`,
-  `context_pack`, `usage_ledger`, `outbox`, `consent_event`, `seat_*`, `audit_log`, `memory_blob`) has
+  `context_pack`, `usage_ledger`, `outbox`, `consent_event`, `seat_*`, `audit_log`, `memory_blob`, `withdrawal`) has
   `customer_id NOT NULL`. A trigger fills it from the parent row and refuses a value that disagrees with the parent;
   it cannot change after insert. Rehearsal row R11 (null or wrong organisation id) is 0 by construction.
 - `user_id` (Better Auth user id) is on `employee` (empty until the invited person joins), and NOT NULL on `session`,
@@ -68,7 +68,13 @@ Policies (`interview.is_system()`, `interview.claim_user_id()`, `interview.claim
 - `session`, `turn`, `insight`, `consent_event`, `usage_ledger`, `memory_blob`: participant reaches only rows with
   its own user id.
 - System scope with a `customer_id` claim (every bridge call) reaches only that organisation's rows.
-- `synthesis`, `synthesis_cache`, `seat_request`, `seat_purchase`, `outbox`, `audit_log` (read): system only.
+- `synthesis`, `synthesis_cache`, `seat_request`, `seat_purchase`, `outbox`, `withdrawal`, `audit_log` (read): system
+  only.
+- `withdrawal` is written by delete triggers on `session` and `employee`: each hard delete from a live round leaves
+  `(user_id, session_id or NULL, at)` for GSAM (`GET …/withdrawals`). Deleting a whole round writes none.
+- `organisation_name(customer)` and `organisation_member(customer, user)` are the only reads of `public.customers`,
+  `public.customer_users` and `better_auth."user"`. SECURITY DEFINER, and they answer only a system call whose
+  `customer_id` claim is that organisation.
   `rate_event` and `audit_log` (insert): any worker request.
 - `claim_seat()` and the other source functions stay SECURITY DEFINER with EXECUTE for `interview_worker` only.
 
@@ -92,8 +98,10 @@ db.sql(text, params)        // escape hatch for the few embedded selects (`engag
   `enrol` checks, on the server: the token is active and not expired, the verified email's domain is in
   `allowed_email_domains`, the optional team target is a real unit of this round, a seat is free (`claim_seat` stays
   the hard gate at session start), and the rate limits per token and per IP.
-- People GSAM invites are created ahead (bridge `invites`), with no user id. When they join with a verified account
-  of the invited email, the row takes their Better Auth user id; from then on only the user id matches.
+- GSAM invites a person by `userId` when they already have a website account that is a member of the organisation
+  (`customer_users.auth_subject`): the row has the user id from the start. Otherwise GSAM sends an email and name;
+  the row has no user id until the person joins with a verified account of that email, then takes their Better Auth
+  user id. From then on only the user id matches. The site does not make accounts on a person's behalf.
 - The same account is the client portal login (decision 2, GRE-2609).
 
 ## Endpoints
