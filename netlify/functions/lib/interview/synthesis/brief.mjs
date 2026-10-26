@@ -28,6 +28,7 @@ import {
   normalise,
 } from './invariants.mjs';
 import { RULES_VERSION } from './types.mjs';
+import { attributionRedacted, effectiveQuoteChoice, quotesAllowed, scrubVerbatim } from '../quotes.mjs';
 
 // ─── Aggregation shapes ──────────────────────────────────────────────────────
 
@@ -98,6 +99,8 @@ function quotesFor(insights, ctx, max) {
   for (const i of insights) {
     if (out.length >= max) break;
     if (!i.quoteEligible || !i.row.evidence_quote) continue;
+    // GRE-2653: no verbatim words from a person who chose 'No quotes' (or never chose)
+    if (i.quotesAllowed === false) continue;
     const key = normalise(i.row.evidence_quote);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -211,8 +214,15 @@ function unitOf(employee, unitNameById) {
   return employee.unit_id ? unitNameById.get(employee.unit_id) ?? 'Unassigned' : 'Unassigned';
 }
 
-function renderSummary(summary, employee, unitNameById) {
+function renderSummary(rawSummary, employee, unitNameById) {
   const lines = [];
+  // GRE-2653: a person who chose 'No quotes' keeps their pains and opportunities, without their words.
+  const summary = quotesAllowed(employee) ? rawSummary : {
+    ...rawSummary,
+    top_pains: rawSummary.top_pains.map((p) => ({ ...p, quote: '' })),
+    automation_candidates: rawSummary.automation_candidates.map((a) => ({ ...a, quote: '' })),
+    notable_quotes: [],
+  };
   const unit = unitOf(employee, unitNameById);
   lines.push(`#### ${employee.name}, ${summary.role || 'team member'} (${unit})`);
   if (summary.second_hand) {
@@ -376,12 +386,15 @@ export async function buildSynthesisBrief(db, engagementId, opts = {}) {
   );
   const { engagement, units, employees, eligible, insights } = data;
   const unitNameById = new Map(units.map((u) => [u.id, u.name]));
-  const redactedEmployeeIds = new Set(
-    insights.filter((i) => i.row.attribution_redacted).map((i) => i.employee.id)
-  );
+  // GRE-2653: anyone who did not choose 'Quotes with my name' is never named, whatever the insight rows say.
+  const redactedEmployeeIds = new Set([
+    ...insights.filter((i) => i.row.attribution_redacted).map((i) => i.employee.id),
+    ...employees.filter((e) => attributionRedacted(effectiveQuoteChoice(e))).map((e) => e.id),
+  ]);
   const ctx = {
     insightById: new Map(insights.map((i) => [i.row.id, i])),
-    employeesById: new Map(employees.map((e) => [e.id, e])),
+    // GRE-2653: a person who declined or deleted their data is never offered as a follow-up
+    employeesById: new Map(employees.filter((e) => e.status !== 'declined').map((e) => [e.id, e])),
     unitNameById,
     redactedEmployeeIds,
   };
@@ -544,7 +557,8 @@ export async function buildSynthesisBrief(db, engagementId, opts = {}) {
   doc.push(PARTNER_PROMPT_BLOCK);
   doc.push('');
 
-  const markdown = md(doc);
+  // GRE-2653: and no model prose that repeats them
+  const markdown = scrubVerbatim(md(doc), insights.filter((i) => i.quotesAllowed === false).map((i) => i.row.evidence_quote));
 
   // Optionally write to Notion.
   // Port: not available on the site (refused at the top of buildSynthesisBrief); always null.

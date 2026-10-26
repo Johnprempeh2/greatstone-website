@@ -1,5 +1,5 @@
-// Port of SOURCE src/lib/prompts/extraction-prompt.ts @505ba6a. Prompt text is byte-identical to the source;
-// only this header was added. The source header comment follows unchanged.
+// Port of SOURCE src/lib/prompts/extraction-prompt.ts @505ba6a. Prompt text is byte-identical to the source
+// except the consent_updates.attribution values (GRE-2653: three quote choices). The source header comment follows unchanged.
 /**
  * Per-turn extraction prompt — runtime copy.
  *
@@ -65,7 +65,7 @@ OUTPUT SCHEMA
   ],
   "special_category_detected": boolean,
   "consent_updates": {
-    "attribution": "named" | "anonymised" | null,
+    "attribution": "named" | "anonymous" | "none" | null,
     "memory_opt_in": true | false | null
   }
 }`;

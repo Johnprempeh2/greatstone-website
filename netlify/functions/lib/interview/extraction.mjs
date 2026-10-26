@@ -170,7 +170,7 @@ export function parseAndValidate(raw, employeeMessage) {
   const cu = parsed.consent_updates ?? {};
   const consent_updates = {
     attribution:
-      cu.attribution === 'named' || cu.attribution === 'anonymised' ? cu.attribution : null,
+      ['named', 'anonymised', 'anonymous', 'none'].includes(cu.attribution) ? cu.attribution : null,
     memory_opt_in: typeof cu.memory_opt_in === 'boolean' ? cu.memory_opt_in : null,
   };
 

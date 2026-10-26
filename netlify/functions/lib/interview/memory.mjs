@@ -33,9 +33,14 @@ import {
   computeCompletionScore,
   normaliseTaxonomyState,
 } from './interview.mjs';
+import { attributionRedacted, parseQuoteChoice } from './quotes.mjs';
 
 /** @typedef {'named' | 'anonymised'} AttributionChoice */
-/** @typedef {{ attribution: AttributionChoice, memory: boolean }} SignOffChoice */
+/**
+ * GRE-2653: quotes is the three-way choice ('none' | 'anonymous' | 'named'); nothing is pre-selected, so it is
+ * required. The source's two-way `attribution` is still read ('anonymised' = 'anonymous') when quotes is absent.
+ * @typedef {{ quotes?: 'none' | 'anonymous' | 'named', attribution?: AttributionChoice, memory: boolean }} SignOffChoice
+ */
 
 /** Retention window for an opted-in memory blob. */
 export const MEMORY_RETENTION_MONTHS = 24;
@@ -336,16 +341,22 @@ export async function ensurePersonForEmployee(db, employee) {
  */
 export async function applySignOffConsent(db, params) {
   const { employee, unitName, sessionId, choice } = params;
-  const anonymised = choice.attribution === 'anonymised';
+  // GRE-2653: one of three quote choices must be made; there is no default at confirm time.
+  const quotes = parseQuoteChoice(choice?.quotes ?? choice?.attribution);
+  if (!quotes) throw Object.assign(new Error('Choose how your quotes may be used.'), { code: 'QUOTE_CHOICE_REQUIRED' });
+  const anonymised = attributionRedacted(quotes);
 
   // 1. Append-only consent trail: one event per question, every confirm.
   const { error: consentError } = await db.from('consent_event').insert([
+    { employee_id: employee.id, kind: 'quotes', value: quotes !== 'none', choice: quotes },
     { employee_id: employee.id, kind: 'attribution', value: !anonymised },
     { employee_id: employee.id, kind: 'memory_opt_in', value: choice.memory },
   ]);
   if (consentError) {
     throw new Error(`consent events failed: ${consentError.message}`);
   }
+  const { error: choiceError } = await db.from('employee').update({ quote_choice: quotes }).eq('id', employee.id);
+  if (choiceError) throw new Error(`quote choice failed: ${choiceError.message}`);
 
   // 2. Attribution applied to ALL the session's insights, both directions.
   const { error: redactError } = await db
@@ -460,5 +471,5 @@ export async function applySignOffConsent(db, params) {
     if (stateError) console.warn(`sign-off state persist failed: ${stateError.message}`);
   }
 
-  return { attributionRedacted: anonymised, memoryOptedIn: choice.memory, personId };
+  return { attributionRedacted: anonymised, quoteChoice: quotes, memoryOptedIn: choice.memory, personId };
 }

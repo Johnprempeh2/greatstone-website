@@ -473,9 +473,12 @@ test('applySignOffConsent opt-in: consent pair, attribution on every insight, me
   state.open_threads = ['handover'];
   const db = signOffDb({ person: [{ person_id: 'p1' }], insights: [{ type: 'pain', label: 'Keying', time_per_week_hours: 3, confidence: 0.9 }], state, existingBlob: [{ blob: { top_pains: [{ label: 'Old', hours_per_week: 1 }] } }] });
   const r = await applySignOffConsent(db, { employee: EMP, unitName: 'Finance', sessionId: 's1', choice: { attribution: 'anonymised', memory: true } });
-  assert.deepEqual(r, { attributionRedacted: true, memoryOptedIn: true, personId: 'p1' });
-  const [consent, redact] = db.calls;
-  assert.deepEqual(consent.payload, [{ employee_id: 'emp1', kind: 'attribution', value: false }, { employee_id: 'emp1', kind: 'memory_opt_in', value: true }]);
+  assert.deepEqual(r, { attributionRedacted: true, quoteChoice: 'anonymous', memoryOptedIn: true, personId: 'p1' });
+  const [consent, choice, redact] = db.calls;
+  // GRE-2653: the three-way quote choice is logged and kept on the invite
+  assert.deepEqual(consent.payload, [{ employee_id: 'emp1', kind: 'quotes', value: true, choice: 'anonymous' },
+    { employee_id: 'emp1', kind: 'attribution', value: false }, { employee_id: 'emp1', kind: 'memory_opt_in', value: true }]);
+  assert.deepEqual([choice.table, choice.op, choice.payload], ['employee', 'update', { quote_choice: 'anonymous' }]);
   assert.deepEqual([redact.table, redact.op, redact.payload, redact.filters], ['insight', 'update', { attribution_redacted: true }, [['eq', 'session_id', 's1']]]);
   const upsert = db.calls.find((q) => q.table === 'memory_blob' && q.op === 'upsert');
   assert.deepEqual(upsert.opts, { onConflict: 'person_id' });
@@ -499,8 +502,8 @@ test('applySignOffConsent opt-in: consent pair, attribution on every insight, me
 test('applySignOffConsent opt-out hard-deletes the blob for a linked person', async () => {
   const db = signOffDb();
   const r = await applySignOffConsent(db, { employee: { ...EMP, person_id: 'p7' }, unitName: null, sessionId: 's1', choice: { attribution: 'named', memory: false } });
-  assert.deepEqual(r, { attributionRedacted: false, memoryOptedIn: false, personId: 'p7' });
-  assert.deepEqual(db.calls[1].payload, { attribution_redacted: false });
+  assert.deepEqual(r, { attributionRedacted: false, quoteChoice: 'named', memoryOptedIn: false, personId: 'p7' });
+  assert.deepEqual(db.calls[2].payload, { attribution_redacted: false });
   const del = db.calls.find((q) => q.op === 'delete');
   assert.deepEqual([del.table, del.filters], ['memory_blob', [['eq', 'person_id', 'p7']]]);
   assert.equal(db.calls.some((q) => q.table === 'memory_blob' && q.op === 'upsert'), false);
@@ -519,6 +522,17 @@ test('applySignOffConsent opt-out resolves an unlinked person by email, and neve
   assert.equal(r2.personId, null);
   assert.equal(none.calls.some((q) => q.op === 'delete'), false);
   assert.equal(none.calls.some((q) => q.table === 'person' && q.op === 'insert'), false);
+});
+
+test('applySignOffConsent (GRE-2653): no quote choice, no sign-off; "No quotes" redacts and logs the choice', async () => {
+  const db = signOffDb();
+  await assert.rejects(applySignOffConsent(db, { employee: EMP, unitName: null, sessionId: 's1', choice: { memory: false } }),
+    (e) => e.code === 'QUOTE_CHOICE_REQUIRED');
+  assert.equal(db.calls.length, 0);
+  const r = await applySignOffConsent(db, { employee: EMP, unitName: null, sessionId: 's1', choice: { quotes: 'none', memory: false } });
+  assert.equal(r.quoteChoice, 'none');
+  assert.equal(r.attributionRedacted, true);
+  assert.deepEqual(db.calls[0].payload[0], { employee_id: 'emp1', kind: 'quotes', value: false, choice: 'none' });
 });
 
 test('applySignOffConsent stops on a failed consent write', async () => {

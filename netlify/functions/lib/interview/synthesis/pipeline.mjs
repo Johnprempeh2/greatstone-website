@@ -37,6 +37,7 @@ import {
 import { computeHotSpots } from './hotspots.mjs';
 import { SYNTHESIS_MODEL } from './model.mjs';
 import { RULES_VERSION } from './types.mjs';
+import { attributionRedacted, effectiveQuoteChoice, scrubVerbatim } from '../quotes.mjs';
 
 function freshUsage() {
   return { calls: 0, inputTokens: 0, outputTokens: 0, costPence: 0 };
@@ -78,9 +79,11 @@ export async function runSynthesisStep(db, engagementId, opts = {}) {
     list.push(i);
     insightsBySession.set(i.session.id, list);
   }
-  const redactedEmployeeIds = new Set(
-    insights.filter((i) => i.row.attribution_redacted).map((i) => i.employee.id)
-  );
+  // GRE-2653: anyone who did not choose 'Quotes with my name' is never named, whatever the insight rows say.
+  const redactedEmployeeIds = new Set([
+    ...insights.filter((i) => i.row.attribution_redacted).map((i) => i.employee.id),
+    ...employees.filter((e) => attributionRedacted(effectiveQuoteChoice(e))).map((e) => e.id),
+  ]);
   const voices = buildVoiceDirectory(eligible, unitNameById, redactedEmployeeIds);
 
   // ── Stage 1: per-interview summaries (cached, resumable) ───────────────────
@@ -197,7 +200,8 @@ export async function runSynthesisStep(db, engagementId, opts = {}) {
 
   const ctx = {
     insightById,
-    employeesById: new Map(employees.map((e) => [e.id, e])),
+    // GRE-2653: a person who declined or deleted their data is never offered as a follow-up
+    employeesById: new Map(employees.filter((e) => e.status !== 'declined').map((e) => [e.id, e])),
     unitNameById,
     redactedEmployeeIds,
   };
@@ -265,18 +269,23 @@ export async function runSynthesisStep(db, engagementId, opts = {}) {
   if (versionError) throw new Error(`synthesis version lookup failed: ${versionError.message}`);
   const version = (versionRow?.version ?? 0) + 1;
 
+  // GRE-2653: the words of people who chose 'No quotes' (or never chose) must not reach the synthesis, not even
+  // through model prose; their quotes are already withheld by the quote gate.
+  const withheldSources = insights.filter((i) => i.quotesAllowed === false).map((i) => i.row.evidence_quote);
+  const scrubbed = scrubVerbatim({ themes, hotSpots, recommendations, followUps, headline, log }, withheldSources);
+
   const { data: inserted, error: insertError } = await db
     .from('synthesis')
     .insert({
       engagement_id: engagementId,
       version,
-      themes,
-      hot_spots: hotSpots,
-      recommendations,
-      follow_ups: followUps,
-      headline_read: headline,
+      themes: scrubbed.themes,
+      hot_spots: scrubbed.hotSpots,
+      recommendations: scrubbed.recommendations,
+      follow_ups: scrubbed.followUps,
+      headline_read: scrubbed.headline,
       methodology,
-      validation_log: log,
+      validation_log: scrubbed.log,
       model_version: SYNTHESIS_MODEL,
       rules_version: RULES_VERSION,
       input_insight_ids: insights.map((i) => i.row.id),
@@ -341,6 +350,8 @@ export async function verifyForRender(db, engagementId, row) {
   const verifyQuotes = (quotes) =>
     quotes.filter((q) => {
       const insight = insightById.get(q.insight_id);
+      // GRE-2653: a withheld quote has no text to re-check; the insight must still be quote-eligible
+      if (q.withheld) return insight !== undefined && insight.quoteEligible;
       return (
         insight !== undefined &&
         insight.quoteEligible &&
