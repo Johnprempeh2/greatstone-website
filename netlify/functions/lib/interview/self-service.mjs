@@ -9,7 +9,9 @@
 // pending outbox events and per-person memory for that round, writes a 'withdrawal' consent_event (no content),
 // and takes them out of every synthesis of the round at once: their quotes and insight ids go, a theme left with
 // fewer than two voices or two quotes drops (two-voice rule), and the round's synthesis is marked stale so a new
-// run must be made and checked before the next release. The client is not told who deleted.
+// run must be made and checked before the next release. A 'participant_withdrawn' outbox event (round only) tells
+// the GSAM owner to re-run and send an updated version (claim C8). The client is not told who deleted.
+import { randomUUID } from 'node:crypto';
 import { interviewDb, inInterviewTransaction } from './db.mjs';
 import { deletionDate } from './retention.mjs';
 import { effectiveQuoteChoice, scrubVerbatim } from './quotes.mjs';
@@ -239,6 +241,12 @@ export async function deleteMyInterviewData(pool, identity, engagementId) {
     // no name, no email, no id: the client is not told who deleted
     must(await sys.from('audit_log').insert({ engagement_id: engagementId, actor_name: 'system:self-service',
       action: 'participant.withdrawn', summary: 'A participant deleted their interview data; the synthesis must be run again' }));
+    // claim C8 "we send [Client name] an updated version": GSAM reads this through the bridge and prompts the owner to
+    // re-run and re-release. The key and payload carry the round only (a fresh uuid keeps each delete its own row).
+    must(await sys.sql(`INSERT INTO outbox (idempotency_key, engagement_id, payload) VALUES ($1, $2, $3::jsonb)`,
+      [`${engagementId}:participant_withdrawn:${randomUUID()}`, engagementId, JSON.stringify({ type: 'participant_withdrawn',
+        engagement_id: engagementId, synthesis_stale: true, released_affected: counts.synthesesUpdated > 0,
+        withdrawn_at: new Date().toISOString() })]));
     return counts;
   });
 }

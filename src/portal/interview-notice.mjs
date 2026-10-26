@@ -1,6 +1,7 @@
 // GRE-2653: the short interview privacy notice and the consent box, shown on the interview welcome screen before
-// "I agree to take part". Text: the `privacy-notice` document (v1) on GRE-2639; Mikey reviews the tone, the facts do
-// not change. Claims C1 to C8 of its register depend on the GRE-2653 build (retention, self-service, quote choice).
+// "I agree to take part". Text: the short version in the `privacy-notice` document (v2) on GRE-2639, with Mikey's
+// review in. Claims C1 to C8 of its register depend on the GRE-2653 build (retention, self-service, quote choice).
+// The line "[Client name] is not told who took part or who said no" is left out until claim C9 is confirmed.
 // Pure data, so the page and its tests read the same words.
 
 export const FULL_NOTICE_HREF = '#privacy/interviews';
@@ -24,7 +25,8 @@ export function interviewNotice({ clientName, retentionDays = 90, deletionDate =
   return {
     title: 'Your answers, your data',
     intro: `${client} has asked Greatstone International to learn how work really gets done here. Greatstone runs `
-      + `these conversations independently and processes your answers for ${client} under a data processing agreement.`,
+      + `these conversations separately from ${client}'s managers and handles your answers on ${client}'s behalf, `
+      + 'under a data processing agreement.',
     points: [
       { label: 'What we collect.', text: 'Your answers, typed or spoken. If you use voice, your speech is turned into text as '
         + 'you talk; we keep the text, not the recording. We also use your name, work email, role and team from your account.' },
@@ -32,16 +34,18 @@ export function interviewNotice({ clientName, retentionDays = 90, deletionDate =
         + 'answers to train AI models.' },
       { label: 'Who sees what.', text: `${client} sees themes across the whole team, never your transcript or your individual `
         + 'answers. A short quote from you is shared only if you agree at the end, and carries your name only if you choose that.' },
+      { label: 'Where.', text: 'Our service providers process your data in the United States, under the legal safeguards UK '
+        + 'law requires.' },
       { label: 'How long.', text: `We delete your answers and transcripts ${days} days after we present the findings`
         + `${by ? ` (by ${by})` : ''}. After that only anonymous themes remain.` },
       { label: 'Your rights.', text: 'At any time, in your account, you can see your interview data or delete it. Deleting it '
-        + 'takes you out of the findings. You can also ask us to correct it, or complain to the ICO.' },
+        + 'takes you out of the findings. You can also ask us to correct it, or complain to the Information Commissioner\'s Office (ICO).' },
     ],
     fullNoticeLabel: 'Read the full interview privacy notice',
     fullNoticeHref: FULL_NOTICE_HREF,
     deletionDate: by,
-    consent: 'I agree to take part. I understand my answers will be recorded and analysed as described above, and that I '
-      + 'can skip anything, stop at any time, and delete my data from my account.',
+    consent: 'I agree to take part. I understand my answers will be kept as text and analysed as described above, and '
+      + 'that I can skip anything, stop at any time, and delete my data from my account.',
     // GRE-2653 fact (b): "Stop and discard" hard-deletes the session, but a person who just leaves after the pain
     // questions is closed out and included as a partial interview. So the old "If you stop, nothing is kept" is reworded.
     stopping: 'If you stop, you can delete what you said from your account.',

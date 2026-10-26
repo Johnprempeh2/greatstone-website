@@ -166,9 +166,9 @@ async function synthesise(engagementId) {
 const latestRow = () => JSON.parse(sql(`SELECT row_to_json(y) FROM interview.synthesis y WHERE engagement_id = '${S}' ORDER BY version DESC LIMIT 1`));
 
 // ── 1 and 6: regions and voice settings ──────────────────────────────────────────────────────────────
-test('1/6: Deepgram runs on the EU hosts and mip_opt_out stays true', () => {
-  assert.equal(DEEPGRAM_AGENT_URL, 'wss://api.eu.deepgram.com/v1/agent/converse');
-  assert.equal(new URL(DEEPGRAM_GRANT_URL).host, 'api.eu.deepgram.com');
+test('1/6: Deepgram stays on the US hosts (John, 25 Oct) and mip_opt_out stays true', () => {
+  assert.equal(DEEPGRAM_AGENT_URL, 'wss://agent.deepgram.com/v1/agent/converse');
+  assert.equal(new URL(DEEPGRAM_GRANT_URL).host, 'api.deepgram.com');
   const s = buildVoiceSettings({ thinkEndpointUrl: 'https://example.test/api/interview/voice/think', sessionToken: 't', greeting: 'Hi.' });
   assert.equal(s.mip_opt_out, true);
 });
@@ -177,6 +177,13 @@ test('notice: the short notice shows the deletion date; the quote options have n
   const notice = interviewNotice({ clientName: 'Acme', retentionDays: 90, deletionDate: '2027-02-04' });
   assert.match(notice.points.find((p) => p.label === 'How long.').text, /90 days after we present the findings \(by 4 February 2027\)/);
   assert.match(notice.consent, /delete my data from my account/);
+  // claim C1: we keep the text, not the recording
+  assert.match(notice.consent, /kept as text and analysed/);
+  assert.doesNotMatch(JSON.stringify(notice), /\brecorded\b/);
+  assert.match(notice.intro, /separately from Acme's managers and handles your answers on Acme's behalf/);
+  assert.match(notice.points.find((p) => p.label === 'Where.').text, /United States, under the legal safeguards UK law requires/);
+  // claim C9 is not confirmed yet, so the line stays out
+  assert.doesNotMatch(JSON.stringify(notice), /not told who took part/);
   assert.doesNotMatch(JSON.stringify(notice), /nothing (you said )?is kept/i);
   assert.deepEqual(QUOTE_OPTIONS.map((o) => o.value), ['none', 'anonymous', 'named']);
   assert.ok(QUOTE_OPTIONS.every((o) => !('default' in o) && !('selected' in o)));
@@ -275,6 +282,11 @@ test('4: delete removes the person at once, and a re-run synthesis has none of t
   const record = sql(`SELECT counts::text FROM interview.deletion_record WHERE engagement_id = '${S}' AND kind = 'self_service'`);
   assert.ok(!record.includes(bob.e) && !record.includes('Bob') && !record.includes(BOB.email));
   assert.ok(!sql(`SELECT string_agg(summary || coalesce(actor_email, ''), ' ') FROM interview.audit_log WHERE engagement_id = '${S}'`).includes('Bob'));
+  // claim C8: the owner gets a prompt to re-run and send an updated version; the event says nothing about who
+  const prompt = sql(`SELECT idempotency_key || ' ' || payload::text FROM interview.outbox
+    WHERE engagement_id = '${S}' AND payload ->> 'type' = 'participant_withdrawn'`);
+  assert.match(prompt, /"synthesis_stale": true/);
+  for (const who of [bob.e, bob.s, 'Bob', BOB.email, BOB.id]) assert.ok(!prompt.includes(who), `outbox event names ${who}`);
 
   // the released v1 lost Bob at once: the approvals theme (Bob + Dana) falls below two voices and drops
   const scrubbed = latestRow();

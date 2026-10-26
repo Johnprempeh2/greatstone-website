@@ -161,4 +161,4 @@ Spec: the `retention-rights-regions` document on GRE-2639. Wording: its `privacy
   people are ever named. Declined or withdrawn people are never follow-up targets.
 - **Notice.** `src/portal/interview-notice.mjs` holds the short notice, the consent box, the quote options and the
   deletion date line for the welcome and sign-off screens.
-- **Voice region.** `lib/interview/voice/regions.mjs`: Deepgram EU agent and grant hosts. `mip_opt_out: true` stays.
+- **Voice region.** `lib/interview/voice/regions.mjs`: Deepgram US agent and grant hosts (`agent.deepgram.com`, `api.deepgram.com`; John, 25 Oct: keep US). `mip_opt_out: true` stays.
