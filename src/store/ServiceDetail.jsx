@@ -5,11 +5,10 @@
 // about several at once, or just this one. Reuses store.css's sp-* product-detail classes for parity.
 import { useEffect } from 'react';
 import { useServices, findService, serviceSlug, shortFormat } from './services.mjs';
-import { InquiryToggle, InquiryBar } from './InquiryUI.jsx';
-import { openInquiryDrawer } from './inquiry.mjs';
+import { InquiryToggle, InquiryBar } from './BasketServiceControls.jsx';
+import { openCart, addService } from './cart.mjs';
 import { bumpService } from './popularity.mjs';
 import { track } from '../lib/analytics.js';
-import { safeMailto } from '../lib/safe-url.js';
 import ServiceDemo from './service-demos/index.jsx';
 import './store.css';
 import './service-detail.css';
@@ -40,18 +39,7 @@ export default function ServiceDetail({ slug, onBack, applyHead }) {
   const related = services.filter((s) => s.category === svc.category && serviceSlug(s) !== slugOf).slice(0, 4);
   const bullets = Array.isArray(svc.bullets) ? svc.bullets : [];
 
-  const inquireOne = () => {
-    const subject = 'Service inquiry · ' + svc.name;
-    const body = [
-      'I would like to inquire about: ' + svc.name,
-      svc.oneLiner ? '(' + svc.oneLiner + ')' : '',
-      '', '— About us —', 'Company:', 'Work email:', '',
-      'What we are trying to solve:', '',
-    ].filter((l) => l !== undefined).join('\n');
-    track('generate_lead', { form: 'service_inquiry', count: 1, services: slugOf });
-    const to = safeMailto(email);
-    if (to !== '#') { try { if (typeof window !== 'undefined') window.location.href = to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body); } catch (e) { /* ignore */ } }
-  };
+  const inquireOne = () => { addService({ slug: slugOf, name: svc.name, category: svc.category }); openCart(); };
 
   return (
     <>
@@ -73,7 +61,7 @@ export default function ServiceDetail({ slug, onBack, applyHead }) {
           </div>
           {svc.oneLiner ? <p className="sp-lead">{svc.oneLiner}</p> : null}
           <div className="sd-cta">
-            <InquiryToggle service={svc} size="lg" onAdded={openInquiryDrawer} />
+            <InquiryToggle service={svc} size="lg" onAdded={openCart} />
             <button type="button" className="gs-btn ghost" onClick={inquireOne}>Inquire about just this</button>
           </div>
           <p className="sp-note">No obligation. Tell us what you’re solving and we’ll scope it to your numbers. Add more services to inquire about several at once.</p>
