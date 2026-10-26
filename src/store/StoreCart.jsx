@@ -6,6 +6,8 @@ import { useModal } from './useModal.mjs';
 import { useCart, setQty, removeItem, removeService, clearCart, clearQuoteLines, markQuoteLines, cartCount, cartSubtotalMinor, paidLines, quoteLines, startCheckout, requestBasketQuote, onOpenCart, MAX_QTY } from './cart.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import { track } from '../lib/analytics.js';
+import { basketSignature, sentQuoteReference } from './basketCheckout.mjs';
+import './store.css';
 
 const VAT_RATE = Number((typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_VAT_RATE) || 0.20);
 
@@ -19,6 +21,10 @@ export default function StoreCart({ confirmed = false }) {
   const [submittedQuote, setSubmittedQuote] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [returnedFromCheckout] = useState(() => {
+    try { return Boolean(JSON.parse(sessionStorage.getItem('gs-basket-checkout') || 'null')?.quoteReference); }
+    catch { return false; }
+  });
   const count = cartCount();
   const paid = paidLines();
   const quoted = quoteLines();
@@ -38,8 +44,7 @@ export default function StoreCart({ confirmed = false }) {
     try {
       if (quoted.length && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q.email.trim()))
         throw new Error('Enter your email to request a quote.');
-      const signature = JSON.stringify({ lines: items.map((line) => [line.variantId || line.serviceSlug, line.qty]),
-        email: q.email.trim() || email.trim() });
+      const signature = basketSignature(items, q.email || email);
       let previous = null;
       try { previous = JSON.parse(sessionStorage.getItem('gs-basket-checkout') || 'null'); } catch { /* unavailable storage */ }
       const reusable = previous?.signature === signature && Date.now() - previous.createdAt < 15 * 60 * 1000;
@@ -69,13 +74,16 @@ export default function StoreCart({ confirmed = false }) {
   const submitQuote = useCallback(async (e) => {
     e.preventDefault(); setBusy(true); setErr(null);
     try {
-      const ref = quoteRef || await requestBasketQuote({ contact: q, message: q.message.trim() });
+      let pending = null;
+      try { pending = JSON.parse(sessionStorage.getItem('gs-basket-checkout') || 'null'); } catch { /* unavailable storage */ }
+      const alreadySent = sentQuoteReference(pending, items, q.email);
+      const ref = quoteRef || alreadySent || await requestBasketQuote({ contact: q, message: q.message.trim() });
       track('generate_lead', { form: 'basket_quote' });
       setSubmittedQuote(quoteLines().map((line) => ({ name: line.name, qty: line.qty })));
       setQuoteRef(ref); setView('sent'); clearQuoteLines();
     } catch (e2) { setErr(e2.message || 'Could not submit the quote.'); }
     setBusy(false);
-  }, [q, quoteRef]);
+  }, [q, quoteRef, items]);
   const setQf = (k, v) => setQ(s => ({ ...s, [k]: v }));
 
   if (confirmed) return <Confirmed />;
@@ -119,11 +127,11 @@ export default function StoreCart({ confirmed = false }) {
                   {items.map((it) => (
                     <li key={it.variantId || it.serviceSlug} className="sc-item">
                       <div className="sc-it-main">
-                        <div className="sc-it-name">{it.name}</div>
-                        <div className="sc-it-meta">{it.kind === 'service' || !it.unitMinor ? 'Quote' : 'Buy now'} · {[it.vendor, it.edition, it.category].filter(Boolean).join(' · ')}</div>
+                        <div className="sc-it-name">{it.name} <span className="sc-it-chip">{it.kind === 'service' || !it.unitMinor ? 'Quote' : 'Buy now'}</span></div>
+                        <div className="sc-it-meta">{[it.vendor, it.edition, it.category].filter(Boolean).join(' · ')}</div>
                       </div>
                       <div className="sc-it-side">
-                        <div className="sc-it-price">{it.kind === 'service' || !it.unitMinor ? 'Quote' : fmtMoney(it.unitMinor * it.qty, it.currency)}</div>
+                        <div className="sc-it-price">{it.kind === 'service' || !it.unitMinor ? '' : fmtMoney(it.unitMinor * it.qty, it.currency)}</div>
                         {it.kind !== 'service' && <div className="sc-qty">
                           <button onClick={() => setQty(it.variantId, it.qty - 1)} aria-label={'Decrease quantity of ' + it.name} disabled={it.qty <= 1}>−</button>
                           <span>{it.qty}</span>
@@ -135,42 +143,47 @@ export default function StoreCart({ confirmed = false }) {
                   ))}
                 </ul>
 
-                {paid.length > 0 && <div className="sc-totals">
-                  <strong>Pay now</strong>
+                {paid.length > 0 && <section className="sc-panel sc-pay" aria-labelledby="sc-pay-title">
+                  <h3 id="sc-pay-title">Pay now · {paid.length} item{paid.length === 1 ? '' : 's'} · {fmtMoney(sub + vat, cur)}</h3>
+                  <div className="sc-totals">
                   <div className="row"><span>Subtotal</span><span>{fmtMoney(sub, cur)}</span></div>
                   <div className="row"><span>VAT ({Math.round(VAT_RATE * 100)}%)</span><span>{fmtMoney(vat, cur)}</span></div>
                   <div className="row total"><span>Total</span><span>{fmtMoney(sub + vat, cur)}</span></div>
-                </div>}
+                  </div>
+                </section>}
 
                 {paid.length > 0 && quoted.length === 0 && <label className="sc-email">Email for your card receipt (optional)
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
                 </label>}
 
-                {quoted.length > 0 && <form className="sc-quote" onSubmit={submitQuote}>
-                  <h3>Request a quote</h3>
-                  <p className="sc-note">{quoted.length} item{quoted.length === 1 ? '' : 's'} for the team to quote. <a href="#book">Book a discovery call</a>.</p>
+                {quoted.length > 0 && <form id="sc-quote-form" className="sc-quote sc-panel" onSubmit={submitQuote}>
+                  <h3>Request a quote · {quoted.length} item{quoted.length === 1 ? '' : 's'}</h3>
+                  <p className="sc-note">The team will quote these items. <a href="#book">Book a discovery call</a>.</p>
                   <label>Your name<input value={q.name} onChange={(e) => setQf('name', e.target.value)} autoComplete="name" /></label>
                   <label>Company<input value={q.company} onChange={(e) => setQf('company', e.target.value)} autoComplete="organization" /></label>
                   <label>Email<input type="email" required value={q.email} onChange={(e) => setQf('email', e.target.value)} autoComplete="email" /></label>
                   <label>Notes (optional)<textarea rows="2" value={q.message} onChange={(e) => setQf('message', e.target.value)} /></label>
-                  <button className={'gs-btn ' + (paid.length ? 'ghost' : 'primary')} type="submit" disabled={busy}>{busy ? 'Sending…' : paid.length ? 'Send quote request alone' : 'Send quote request'}</button>
+                  {paid.length === 0 && <button className="gs-btn primary" type="submit" disabled={busy}>{busy ? 'Sending…' : 'Send quote request'}</button>}
                 </form>}
 
                 {err && <div className="sc-err" role="alert">{err}</div>}
+                {!err && returnedFromCheckout && paid.length > 0 && quoted.length > 0 && <div className="sc-err" role="status">Card payment was not completed. You can retry below or send the quote request alone.</div>}
 
                 {paid.length > 0 && <div className="sc-methods" role="group" aria-label="Pay now">
                   <button type="button" className="sc-method sc-method-card" onClick={checkout} disabled={busy}>
                     <span className="sc-method-ic" aria-hidden="true"><svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg></span>
                     <span className="sc-method-tx">
-                      <span className="sc-method-t">{busy ? 'Opening secure checkout…' : quoted.length ? 'Confirm quote and pay by card' : 'Pay by card'}</span>
-                      <span className="sc-method-d">Instant and secure, via Stripe.</span>
+                      <span className="sc-method-t">{busy ? 'Opening secure checkout…' : quoted.length ? `Pay ${fmtMoney(sub + vat, cur)} and send quote request` : `Pay ${fmtMoney(sub + vat, cur)} by card`}</span>
+                      <span className="sc-method-d">Card via Stripe. {quoted.length ? 'Services are not charged.' : 'Secure test payment.'}</span>
                     </span>
                     <span className="sc-method-go" aria-hidden="true">→</span>
                   </button>
                 </div>}
 
-                <button className="sc-clear" onClick={() => clearCart()} disabled={busy}>Empty basket</button>
+                {paid.length > 0 && quoted.length > 0 && <button className={err ? 'sc-quote-alone sc-quote-alone-fallback' : 'sc-quote-alone'} type="submit" form="sc-quote-form" disabled={busy}>Send quote request alone</button>}
+
                 {paid.length > 0 && <p className="sc-note">Card payments are handled securely by Stripe. The server confirms tool prices before payment. Services are quoted separately.</p>}
+                <button className="sc-clear" onClick={() => { if (window.confirm('Empty your basket?')) clearCart(); }} disabled={busy}>Empty basket</button>
               </>
             )}
           </aside>
