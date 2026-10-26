@@ -8,6 +8,7 @@ import { initAnalytics, pageview, track, analyticsConfigured } from './lib/analy
 import { arrivalAction, parseEnquireHref, setPendingInterest } from './lib/enquiry.mjs';
 import { openBooking } from './lib/booking.js';
 import { siteOrigin } from './lib/site-origin.mjs';
+import { readAuthLanding, consumeVerifiedLanding } from './lib/auth-landing.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
@@ -229,12 +230,8 @@ function readConfirmHash() {
 function readAccountHash() {
   return /^#\/?account\b/i.test(typeof location !== 'undefined' ? location.hash : '');
 }
-// Better Auth returns reset tokens and invalid-link errors in the URL query.
-// Capture them before routing so a bare email landing opens the account screen.
-const _authQuery = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-const AUTH_LANDING = _authQuery.has('token') || _authQuery.has('error');
-const RECOVERY_LANDING = _authQuery.has('token');
-const AUTH_ERROR_MSG = _authQuery.has('error') ? 'That link is invalid or has expired.' : null;
+// Capture auth email results before routing so a bare landing opens the account screen.
+const AUTH_LANDING = readAuthLanding(typeof location !== 'undefined' ? location.search : '');
 // #org → customer organization dashboard (company hub, members, DX engagement timeline)
 function readOrgHash() {
   return /^#\/?org\b/i.test(typeof location !== 'undefined' ? location.hash : '');
@@ -383,10 +380,11 @@ export default function App() {
   const [shopRoute, setShopRoute] = useState(readShopHash);        // #shop[/<vendor>] → live storefront
   const [catalogueAdmin, setCatalogueAdmin] = useState(readCatalogueHash); // #catalogue → live catalogue admin (Supabase auth)
   const [confirmRoute, setConfirmRoute] = useState(readConfirmHash); // #order-confirmed → Stripe success page
-  const [accountRoute, setAccountRoute] = useState(readAccountHash); // #account → customer self-serve portal
-  const [authLanding, setAuthLanding] = useState(AUTH_LANDING); // arrived via a Supabase auth email link → mount the account portal
-  const [recovery, setRecovery] = useState(RECOVERY_LANDING);  // …and if it was a password-reset link, show the reset form
-  const [authError, setAuthError] = useState(AUTH_ERROR_MSG);  // …or if the link was bad, the reason to show on the sign-in screen
+  const [accountRoute, setAccountRoute] = useState(() => readAccountHash() || AUTH_LANDING.verified); // #account → customer self-serve portal
+  const [authLanding, setAuthLanding] = useState(AUTH_LANDING.openAccount); // arrived via an auth email link → mount the account portal
+  const [verifiedLanding, setVerifiedLanding] = useState(AUTH_LANDING.verified);
+  const [recovery, setRecovery] = useState(AUTH_LANDING.recovery);  // password-reset link → show the reset form
+  const [authError, setAuthError] = useState(AUTH_LANDING.error);  // bad link → show the reason on the sign-in screen
   const [orgRoute, setOrgRoute] = useState(readOrgHash); // #org → organization dashboard
   const [portalRoute, setPortalRoute] = useState(readPortalHash); // #portal… → client portal
   const [interviewRoute, setInterviewRoute] = useState(readInterviewHash); // #portal/interview…, #join/<token> → interview engine
@@ -462,7 +460,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInterviewRoute(readInterviewHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) setAuthError(null);
+    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInterviewRoute(readInterviewHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) { setAuthError(null); setVerifiedLanding(false); }
       // Back, Forward, a pasted link and a reload all land on the right page.
       const page = readPageHash();
       if (page) setCurrent(page);
@@ -1612,7 +1610,7 @@ export default function App() {
           {invoiceRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyInvoice orderId={invoiceRoute} /></Suspense>
             : (accountRoute || authLanding)
-            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount recovery={recovery} authError={authError} onRecoveryDone={() => setRecovery(false)} onLanded={() => { if (!/^#\/?account\b/i.test(location.hash)) location.hash = 'account'; }} /></Suspense>
+            ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyAccount recovery={recovery} authError={authError} verified={verifiedLanding} onRecoveryDone={() => setRecovery(false)} onLanded={() => { if (!consumeVerifiedLanding(location, history) && !readAccountHash()) location.hash = 'account'; }} /></Suspense>
             : orgRoute
             ? <Suspense fallback={<div style={{ minHeight: '60vh' }} />}><LazyOrg /></Suspense>
             : interview
