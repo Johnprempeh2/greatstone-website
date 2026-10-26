@@ -49,7 +49,7 @@ under that id. One round per client engagement (the Deep Dive's first step).
     "company_background": "", "org_summary": "", "systems": "", "scope": "", "glossary": "",
     "do_not_discuss": "", "working_pattern": "", "priority_questions": "",
     "units":  { "<unit id>": "questions and notes for this team" },
-    "people": { "<email, lower case>": "questions and notes for this person" }
+    "people": { "<employeeId from invites, or email before the invite>": "questions and notes for this person" }
   }
 }
 ```

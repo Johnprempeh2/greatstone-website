@@ -100,7 +100,8 @@ export function checkRound(body) {
       const map = {};
       for (const [k, v] of Object.entries(pack[key])) {
         if (key === 'units' && !UUID.test(k)) bad('contextPack.units');
-        if (key === 'people' && !EMAIL.test(k)) bad('contextPack.people');
+        // people: the employee id from invites (preferred), or a lower-case email before the person is invited
+        if (key === 'people' && !EMAIL.test(k) && !UUID.test(k)) bad('contextPack.people');
         map[key === 'people' ? k.toLowerCase() : k] = str(v, 20000, `contextPack.${key}`);
       }
       if (Object.keys(map).length > 1000) bad(`contextPack.${key}`);

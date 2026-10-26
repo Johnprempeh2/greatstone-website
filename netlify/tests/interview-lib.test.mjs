@@ -229,6 +229,17 @@ test('buildSystemPrompt fills the stable prefix and keeps runtime state in the v
   assert.ok(buildSystemPrompt({ ...base, memoryBlock: 'MEMORY HERE' }).stable.includes('MEMORY HERE'));
 });
 
+test('buildSystemPrompt finds a person section by employee id first, then by email', () => {
+  const content = { people: { 'e-123': 'Ask Sam about the board pack.', 'sam@example.test': 'Old note by email.' } };
+  const base = { engagement: { id: 'e1', client_name: 'Example Co' }, contextPack: { version: 1, content }, orgUnit: null,
+    employeeName: 'Sam', state: createInitialTaxonomyState(), budget: { ratio: 0 } };
+  assert.ok(buildSystemPrompt({ ...base, employeeId: 'e-123', employeeEmail: 'Sam@example.test' }).stable
+    .includes('Section for this interviewee: Ask Sam about the board pack.'));
+  assert.ok(buildSystemPrompt({ ...base, employeeId: 'e-999', employeeEmail: 'Sam@example.test' }).stable
+    .includes('Section for this interviewee: Old note by email.'));
+  assert.ok(!buildSystemPrompt({ ...base, employeeId: 'e-999', employeeEmail: 'x@example.test' }).stable.includes('Section for this interviewee'));
+});
+
 test('turnsToMessages merges same-role turns, leads with a user turn and keeps the most recent history', () => {
   const t = (role, content) => ({ role, content });
   assert.deepEqual(turnsToMessages([]), []);

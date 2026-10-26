@@ -176,7 +176,7 @@ export function updatePaceFields(state, startedAt) {
 
 // ─── System prompt assembly ──────────────────────────────────────────────────
 
-function renderContextPack(engagement, pack, orgUnit, roleTitle, employeeEmail = null) {
+function renderContextPack(engagement, pack, orgUnit, roleTitle, employeeEmail = null, employeeId = null) {
   const lines = [`Company: ${engagement.client_name}`];
 
   if (pack?.content && typeof pack.content === 'object') {
@@ -220,10 +220,11 @@ function renderContextPack(engagement, pack, orgUnit, roleTitle, employeeEmail =
       }
     }
     // Port: new on the website (GRE-2612). In a per-person round (small organisations) GSAM writes questions for
-    // each person in content.people, keyed by lower-case email, and they are rendered like a unit section.
+    // each person in content.people, keyed by the employee id the invite returned (or, before the invite, the
+    // lower-case email), and they are rendered like a unit section. The id wins.
     const people = c.people;
-    if (employeeEmail && people && typeof people === 'object') {
-      const section = people[String(employeeEmail).toLowerCase()];
+    if ((employeeId || employeeEmail) && people && typeof people === 'object') {
+      const section = (employeeId && people[employeeId]) ?? (employeeEmail ? people[String(employeeEmail).toLowerCase()] : undefined);
       if (section) {
         lines.push(
           `Section for this interviewee: ${typeof section === 'string' ? section : JSON.stringify(section)}`
@@ -282,6 +283,7 @@ export function buildSystemPrompt(params) {
     orgUnit,
     employeeName,
     employeeEmail,
+    employeeId,
     roleTitle,
     state,
     budget,
@@ -297,7 +299,7 @@ export function buildSystemPrompt(params) {
   // AFTER the breakpoint, or the cache would miss every turn.
   const stable = INTERVIEW_SYSTEM_PROMPT.replace(
     '{{ENGAGEMENT_CONTEXT_PACK}}',
-    renderContextPack(engagement, contextPack, orgUnit, roleTitle, employeeEmail)
+    renderContextPack(engagement, contextPack, orgUnit, roleTitle, employeeEmail, employeeId)
   ).replace(
     '{{KNOWN_FACTS}}',
     renderKnownFacts({ name: employeeName, roleTitle, orgUnit })

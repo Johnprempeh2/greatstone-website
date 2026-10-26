@@ -152,7 +152,7 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
     // ── The voice addendum goes in the VOLATILE half: the stable prefix is the cache breakpoint. ──
     const { stable, volatile } = buildSystemPrompt({
       engagement: ctx.engagement, contextPack, orgUnit: ctx.orgUnit, employeeName: ctx.employee.name,
-      employeeEmail: ctx.employee.email, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
+      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
     });
     const system = [
       { type: 'text', text: stable, cache_control: { type: 'ephemeral' } },
