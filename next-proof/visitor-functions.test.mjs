@@ -20,9 +20,10 @@ test('isolated Next deploy retains the visitor functions and their server import
       assert.ok((await stat(entry)).isFile());
       await build({ entryPoints: [entry], bundle: true, platform: 'node', packages: 'external', write: false });
     }
-    for (const script of ['gen-seo-files.mjs', 'prepare-puck-css.mjs']) {
+    for (const script of ['gen-seo-files.mjs', 'gen-contract-file.mjs', 'prepare-puck-css.mjs']) {
       assert.ok((await stat(join(target, 'scripts', script))).isFile());
     }
+    assert.ok((await stat(join(target, 'contracts/site-contract/schemas/contract-file.schema.json'))).isFile());
     assert.equal(await readFile(join(target, 'middleware.js'), 'utf8'), await readFile('middleware.js', 'utf8'));
   } finally {
     await rm(target, { recursive: true, force: true });
@@ -42,6 +43,8 @@ test('editor package carries the host guard and builds without database provisio
     const pkg = JSON.parse(await readFile(join(target, 'package.json'), 'utf8'));
     const lock = JSON.parse(await readFile(join(target, 'package-lock.json'), 'utf8'));
     assert.doesNotMatch(pkg.scripts['build:next:editor'], /export-pages/);
+    assert.match(pkg.scripts['build:next:editor'], /gen-contract-file/);
+    assert.ok((await stat(join(target, 'contracts/VENDORED.json'))).isFile());
     for (const name of ['@netlify/database', '@netlify/database-dev']) {
       assert.equal(pkg.dependencies?.[name], undefined);
       assert.equal(pkg.devDependencies?.[name], undefined);
