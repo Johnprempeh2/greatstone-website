@@ -72,7 +72,7 @@ export function validateRelease(release, { siteId, orgId } = {}) {
   const paths = new Set(release.pages.map((page) => page.path));
   if (!['id', 'slug', 'path'].every((key) => unique(release.pages, key)) || release.pages.filter((page) => page.path === '/').length !== 1 || release.pages.some((page) => page.seo.canonicalPath && !paths.has(page.seo.canonicalPath))) return fail('R5', 'Page ids, slugs, paths or canonical paths are invalid');
   for (const page of release.pages) {
-    if (page.data.root.props.pageScene !== undefined && !validPageScene(page.data.root.props.pageScene)) return fail('R6', 'Invalid page 3D background');
+    if (page.data.root.props.pageScene !== undefined && !validPageScene(page.data.root.props.pageScene, page.data.content.map((block) => block.props.id))) return fail('R6', 'Invalid page 3D background');
     const bad = checkBlocks(page.data.content, new Set());
     if (bad) return bad;
   }

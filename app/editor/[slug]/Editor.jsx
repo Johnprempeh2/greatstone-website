@@ -9,6 +9,7 @@ import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert
 import { motionHello, setMotion, setMotionResult } from '../../../next-proof/frame-set-motion.mjs';
 import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
+import { validPageScene } from '../../../next-proof/page-scene.mjs';
 import { splitTwoDoorsToolsDraft } from '../../../next-proof/two-doors-draft.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
@@ -222,6 +223,11 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
   function dirty(value) { setIsDirty(value); send('dirty', { dirty: value }); }
   function save(nextData = draft.current, retry = false) {
     if (!session.current || !nextData || (status === 'saving' && !retry) || conflict) return;
+    const scene = nextData.root?.props?.pageScene;
+    if (scene !== undefined && !validPageScene(scene, nextData.content.map((block) => block.props.id))) {
+      setStatus('failed'); setMessage('Scene transitions need the same pin mode and must follow page section order. Adjust them before saving.');
+      return;
+    }
     let request;
     try {
       request = saveRequest({ pending: pending.current, retry, pageId: page.id, baseRevisionId: baseRevision.current, data: nextData, createId: () => crypto.randomUUID() });

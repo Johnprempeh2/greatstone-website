@@ -20,9 +20,22 @@ export function validSceneTrack(track, blockIds = null) {
     if (anchor.type === 'scroll') return keys(anchor, ['type']);
     return anchor.type === 'block' && keys(anchor, ['type', 'blockId', 'edge', 'fallbackAt']) && id(anchor.blockId) &&
       ['top', 'center', 'bottom'].includes(anchor.edge) && fraction(anchor.fallbackAt, 0.05, 0.95) &&
-      (!blockIds || blockIds.has(anchor.blockId));
+      (!blockIds || (Array.isArray(blockIds) ? blockIds.includes(anchor.blockId) : blockIds.has(anchor.blockId)));
   })) return false;
-  return track.transitions.every((tr, index) => index === 0 || tr.at > track.transitions[index - 1].at);
+  if (!track.transitions.every((tr, index) => index === 0 || tr.at > track.transitions[index - 1].at)) return false;
+  if (track.transitions.length === 2 && track.transitions[0].anchor.type !== track.transitions[1].anchor.type) return false;
+  if (Array.isArray(blockIds)) {
+    const edgeOrder = { top: 0, center: 1, bottom: 2 };
+    if (!track.transitions.every((tr, index) => {
+      if (index === 0 || tr.anchor.type !== 'block') return true;
+      const prior = track.transitions[index - 1].anchor;
+      if (prior.type !== 'block') return true;
+      const position = blockIds.indexOf(tr.anchor.blockId) * 3 + edgeOrder[tr.anchor.edge];
+      const priorPosition = blockIds.indexOf(prior.blockId) * 3 + edgeOrder[prior.edge];
+      return position > priorPosition;
+    })) return false;
+  }
+  return true;
 }
 
 export function validPageScene(value, blockIds = null) {

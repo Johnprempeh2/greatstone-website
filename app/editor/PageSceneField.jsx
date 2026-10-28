@@ -2,7 +2,7 @@
 
 import { createUsePuck } from '@puckeditor/core';
 import { SCENE_KINDS } from '../../src/stage-presets.js';
-import { editablePageScene } from '../../next-proof/page-scene.mjs';
+import { editablePageScene, validSceneTrack } from '../../next-proof/page-scene.mjs';
 
 const usePageBlocks = createUsePuck();
 const names = { stone: 'Stone', summit: 'Summit', cairn: 'Cairn', tide: 'Tide waves', tideRadial: 'Tide radial', tideCalm: 'Tide calm' };
@@ -14,6 +14,7 @@ export default function PageSceneField({ value, onChange }) {
   const blocks = usePageBlocks((state) => state.appState.data.content);
   const model = editablePageScene(value, uid);
   const { scenes, transitions } = model.track;
+  const trackValid = validSceneTrack(model.track, blocks.map((block) => block.props.id));
   const update = (track) => onChange({ ...model, track });
   const changeScene = (index, patch) => update({ ...model.track, scenes: scenes.map((scene, i) => i === index ? { ...scene, ...patch } : scene) });
   const changeTransition = (index, patch) => update({ ...model.track, transitions: transitions.map((tr, i) => i === index ? { ...tr, ...patch } : tr) });
@@ -43,6 +44,7 @@ export default function PageSceneField({ value, onChange }) {
         <label><input type="radio" name="page-motion" checked={model.motion === 'still'} onChange={() => onChange({ ...model, motion: 'still' })} /> Still</label>
       </fieldset>
       <p className="gs-page-scene-count">Scenes ({scenes.length}/3)</p>
+      {!trackValid && <p className="gs-page-scene-error" role="alert">Use section pins for both transitions, or transition points for both. Pinned transitions must follow page section order. Adjust these settings before saving.</p>}
       {scenes.map((scene, index) => <div className="gs-page-scene-card" key={scene.id}>
         <div className="gs-page-scene-card-title"><strong>Scene {index + 1}</strong><div>
           <button type="button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={`Move scene ${index + 1} up`}>↑</button>
@@ -61,7 +63,7 @@ export default function PageSceneField({ value, onChange }) {
             <label><input type="checkbox" checked={pinned} disabled={!blocks.length} onChange={(event) => changeTransition(index, { anchor: event.target.checked ? { type: 'block', blockId: blocks[0].props.id, edge: 'center', fallbackAt: tr.at } : { type: 'scroll' } })} /> Pin to section</label>
             {pinned ? <>
               <label>Section<select value={tr.anchor.blockId} onChange={(event) => changeTransition(index, { anchor: { ...tr.anchor, blockId: event.target.value } })}>{blocks.map((block, i) => <option key={block.props.id} value={block.props.id}>{label(block, i)}</option>)}</select></label>
-              <label>Trigger<select value={tr.anchor.edge} onChange={(event) => changeTransition(index, { anchor: { ...tr.anchor, edge: event.target.value } })}><option value="top">When it enters</option><option value="center">When centred</option><option value="bottom">When it leaves</option></select></label>
+              <label>Trigger<select value={tr.anchor.edge} onChange={(event) => changeTransition(index, { anchor: { ...tr.anchor, edge: event.target.value } })}><option value="top">Top reaches screen centre</option><option value="center">Centre reaches screen centre</option><option value="bottom">Bottom reaches screen centre</option></select></label>
             </> : <label>Transition point <output>{percent(tr.at)}</output><input type="range" min={min} max={max} step="0.01" value={tr.at} onChange={(event) => changeTransition(index, { at: Number(event.target.value) })} aria-label={`Scene ${index + 1} transition point`} /></label>}
             <label>Fade <output>{percent(tr.fade)}</output><input type="range" min="0.04" max="0.4" step="0.01" value={tr.fade} onChange={(event) => changeTransition(index, { fade: Number(event.target.value) })} aria-label={`Scene ${index + 1} fade`} /></label>
           </div>;
