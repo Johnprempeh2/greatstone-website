@@ -59,6 +59,11 @@ export function catalogueFields(key, row) {
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
   const data = pick(row, fields);
   if ('from_price_minor' in data) data.from_price_minor = priceMinor(data.from_price_minor, 'from_price_minor');
+  // Import provenance stays in the database, but is not a public release field.
+  if (data.attributes && 'catalogue_rebuild_source' in data.attributes) {
+    const { catalogue_rebuild_source, ...publicAttributes } = data.attributes;
+    data.attributes = publicAttributes;
+  }
   const variants = (row.offering_variants || row.variants || []).map(variant);
   const specs = (row.offering_specs || row.specs || []).map(spec);
   return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };
