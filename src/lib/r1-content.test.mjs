@@ -127,7 +127,7 @@ test('store-only customers can reach orders from the portal and the account butt
   const noClient = portal.slice(portal.indexOf("if (!isCustomer(profile))"), portal.indexOf("if (route.view === 'deep-dive')"));
   assert.match(noClient, /<a href="#account">Your account and orders/);
   const app = read('../App.jsx');
-  assert.match(app, /accountActive=\{!!\(portalRoute \|\| accountRoute\)\}/);
+  assert.match(app, /accountActive=\{!!\(portalRoute \|\| interview \|\| accountRoute\)\}/);
 });
 
 // GRE-970: the contact form carries GRE-652 §4.6, reconciled with GRE-1358 (interest choice kept, size band is

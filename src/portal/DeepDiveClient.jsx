@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { MAX_FILE_BYTES } from '../data/deepdive-sniff.mjs';
 import './portal.css';
 import './deep-dive-client.css';
+import { sharedStreams } from './deep-dive-progress.mjs';
+import { deepDiveDocuments, docState } from './portal-model.mjs';
+import { portalStore } from './portal-store-api.mjs';
 
 async function call(op, args = {}) {
-  if (!supabase) throw new Error('Deep Dive unavailable. Please try again later.');
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Your session has ended. Sign in again.');
   const response = await fetch('/api/deep-dive-client', { method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + session.access_token },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ op, ...args }) });
   const body = await response.json();
   if (!response.ok && response.status !== 202) throw new Error(body.error || 'The request could not be saved.');
@@ -17,14 +16,12 @@ async function call(op, args = {}) {
 }
 
 async function documents(op, args = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Your session has ended. Sign in again.');
   const url = new URL('/api/deep-dive-document', location.origin);
   if (args.requestId) url.searchParams.set('requestId', args.requestId);
   if (args.id) url.searchParams.set('id', args.id);
   const response = await fetch(url, { method: op === 'upload' ? 'POST' : 'GET',
-    headers: { authorization: 'Bearer ' + session.access_token,
-      ...(args.file ? { 'x-file-name-encoded': btoa(String.fromCharCode(...new TextEncoder().encode(args.file.name))) } : {}) }, body: args.file });
+    headers: args.file ? { 'x-file-name-encoded': btoa(String.fromCharCode(...new TextEncoder().encode(args.file.name))) } : {},
+    body: args.file });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error || 'Document unavailable. Try again.');
@@ -73,10 +70,21 @@ function RequestAnswer({ request, onReceived, api, documentApi }) {
   </form>;
 }
 
-export default function DeepDiveClient({ company, api = call, documentApi = documents }) {
+function SharedList({ id, title, items, empty, render }) {
+  return <section className="pt-card" aria-labelledby={id}><h2 className="pt-h2" id={id}>{title}</h2>
+    {!items.length ? <p className="pt-muted">{empty}</p> : <ul className="pt-list">
+      {items.map((item) => <li className="dd-row" key={item.id}>{render(item)}</li>)}
+    </ul>}
+  </section>;
+}
+
+export default function DeepDiveClient({ company, api = call, documentApi = documents, portalApi = portalStore }) {
   const [snapshot, setSnapshot] = useState(undefined);
   const [stored, setStored] = useState(undefined);
   const [documentError, setDocumentError] = useState('');
+  const [portalDocs, setPortalDocs] = useState(undefined);
+  const [portalAcceptances, setPortalAcceptances] = useState([]);
+  const [portalError, setPortalError] = useState('');
   const [downloadError, setDownloadError] = useState('');
   const [error, setError] = useState('');
   const load = async () => {
@@ -85,6 +93,9 @@ export default function DeepDiveClient({ company, api = call, documentApi = docu
     catch (cause) { setError(cause.message); }
     try { setStored(await documentApi('list')); setDocumentError(''); }
     catch (cause) { setDocumentError(cause.message); }
+    const { data, error: portalFailure } = await portalApi('overview');
+    if (portalFailure) { setPortalDocs(undefined); setPortalError(portalFailure.message); }
+    else { setPortalDocs(deepDiveDocuments(data.documents)); setPortalAcceptances(data.acceptances); setPortalError(''); }
   };
   const download = async (record) => {
     setDownloadError('');
@@ -99,14 +110,39 @@ export default function DeepDiveClient({ company, api = call, documentApi = docu
     {snapshot === undefined && !error && <div className="pt-hold" aria-busy="true">Loading…</div>}
     {snapshot === null && <p className="pt-muted">No Deep Dive has been shared with this account yet.</p>}
     {snapshot && <>
+      <section className="pt-card" aria-labelledby="dd-progress"><h2 className="pt-h2" id="dd-progress">Progress by stream</h2>
+        {!sharedStreams(snapshot.items).length ? <p className="pt-muted">No streams have been shared yet.</p> : <ul className="pt-list">
+          {sharedStreams(snapshot.items).map((stream) => <li key={stream.id} className="dd-row dd-progress-row">
+            <strong>{stream.title}</strong><span className="dd-progress-status">{stream.status}</span>
+            {stream.summary && <p className="pt-muted">{stream.summary}</p>}
+          </li>)}
+        </ul>}
+      </section>
       {documentError && <p role="alert">Documents could not load: {documentError} <button className="ca-link" onClick={load}>Try again</button></p>}
       {downloadError && <p role="alert">{downloadError}</p>}
       <section className="pt-card" aria-labelledby="dd-items"><h2 className="pt-h2" id="dd-items">Shared work</h2>
-        {!snapshot.items.length ? <p className="pt-muted">Nothing has been shared yet.</p> : <ul className="pt-list">
-          {snapshot.items.map((item) => <li key={item.id} className="dd-row"><strong>{item.title}</strong>
+        {!snapshot.items.some((item) => item.type !== 'deep_dive_stream') ? <p className="pt-muted">Nothing else has been shared yet.</p> : <ul className="pt-list">
+          {snapshot.items.filter((item) => item.type !== 'deep_dive_stream').map((item) => <li key={item.id} className="dd-row"><strong>{item.title}</strong>
             {item.summary && <p className="pt-muted">{item.summary}</p>}</li>)}
         </ul>}
       </section>
+      <SharedList id="dd-findings" title="Shared findings" items={snapshot.findings || []}
+        empty="No findings have been shared yet." render={(finding) => <>
+          <strong>{finding.statement}</strong>
+          <p className="pt-muted">{finding.status} · {finding.evidenceCount} {finding.evidenceCount === 1 ? 'piece' : 'pieces'} of evidence</p>
+        </>} />
+      <SharedList id="dd-opportunities" title="Shared opportunities" items={snapshot.opportunities || []}
+        empty="No opportunities have been shared yet." render={(opportunity) => <>
+          <strong>{opportunity.ref ? `${opportunity.ref} · ` : ''}{opportunity.title}</strong>
+          <p className="pt-muted">{opportunity.status} · {opportunity.statement}</p>
+          {opportunity.desiredOutcome && <p className="pt-muted">Desired outcome: {opportunity.desiredOutcome}</p>}
+        </>} />
+      <SharedList id="dd-kpis" title="Shared KPIs" items={snapshot.kpis || []}
+        empty="No KPIs have been shared yet." render={(kpi) => <>
+          <strong>{kpi.title}</strong>
+          <p className="pt-muted">{kpi.definition}</p>
+          <p className="pt-muted">Baseline: {kpi.baseline} {kpi.unit} ({kpi.baselinePeriod}) · Target: {kpi.target} {kpi.unit}</p>
+        </>} />
       <section className="pt-card" aria-labelledby="dd-requests"><h2 className="pt-h2" id="dd-requests">Document requests</h2>
         {!snapshot.documentRequests.length ? <p className="pt-muted">No requests need a response.</p> : <ul className="pt-list">
           {snapshot.documentRequests.map((request, index) => <li key={request.id} className="dd-row">
@@ -122,15 +158,15 @@ export default function DeepDiveClient({ company, api = call, documentApi = docu
           </li>)}
         </ul>}
       </section>
-      <section className="pt-card" aria-labelledby="dd-deliverables"><h2 className="pt-h2" id="dd-deliverables">Published deliverables</h2>
-        {!snapshot.deliverables.length ? <p className="pt-muted">No deliverables have been published yet.</p> : <ul className="pt-list">
-          {snapshot.deliverables.map((item) => { const file = stored?.find((record) => record.kind === 'deliverable' && record.source_id === item.id);
-            return <li key={item.id} className="dd-row"><strong>{item.title}</strong>
-              {item.version != null && <p className="pt-muted">Version {item.version}</p>}
-              {file ? <button className="gs-btn ghost sm" onClick={() => download(file)}>Download</button>
-                : stored !== undefined && !documentError && <p className="pt-muted">Download available when the file is released.</p>}</li>; })}
-        </ul>}
-      </section>
     </>}
+    <section className="pt-card" aria-labelledby="dd-deliverables"><h2 className="pt-h2" id="dd-deliverables">Published deliverables</h2>
+      {portalError ? <p role="alert">Deliverables could not load: {portalError} <button className="ca-link" onClick={load}>Try again</button></p>
+        : portalDocs === undefined ? <p className="pt-muted" aria-busy="true">Loading deliverables…</p>
+          : portalDocs.length === 0 ? <p className="pt-muted">No deliverables have been published yet.</p>
+            : <ul className="pt-list">{portalDocs.map((doc) => <li key={doc.id} className="dd-row">
+            <a href={'#portal/doc/' + doc.id}><strong>{doc.title}</strong></a>
+            <p className="pt-muted">Version {doc.version} · {docState(doc, portalAcceptances).label}</p>
+          </li>)}</ul>}
+    </section>
   </div>;
 }

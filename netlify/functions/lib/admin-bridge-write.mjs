@@ -16,7 +16,7 @@ const FINISH = { write: 'admin_bridge_finish_write', refund_request: 'admin_brid
 // ── refusals ────────────────────────────────────────────────────────────────────────────────────────
 // A refused write answers with a code; the audit outcome is the code, except over_refundable, which is a conflict.
 export const WRITE_STATUS = { bad_request: 400, denied: 403, not_found: 404, conflict: 409, over_refundable: 409,
-  idempotency_mismatch: 409 };
+  idempotency_mismatch: 409, agreement_required: 409 };
 const PG_REFUSAL = {
   GB400: 'bad_request', GB403: 'denied', GB404: 'not_found', GB409: 'conflict', GBR01: 'over_refundable',
   23502: 'bad_request', 23503: 'bad_request', 23514: 'bad_request', '22P02': 'bad_request', 22003: 'bad_request',
@@ -61,7 +61,8 @@ export async function asBridgeWriter(pool, call, work) {
         const code = refusal(error);
         if (!code) throw error;
         await client.query('ROLLBACK TO SAVEPOINT bridge_write');
-        result = { outcome: code === 'over_refundable' ? 'conflict' : code, status: WRITE_STATUS[code],
+        // the audit row knows the five outcomes; the answer keeps the precise code
+        result = { outcome: code === 'over_refundable' || code === 'agreement_required' ? 'conflict' : code, status: WRITE_STATUS[code],
           body: { error: { code } }, rowCount: 0 };
         if (code === 'conflict' && call.current) {
           const current = await call.current(client);

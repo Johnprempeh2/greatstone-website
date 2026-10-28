@@ -27,11 +27,22 @@ const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
 const I = '33333333-3333-4333-8333-333333333333';
 const R = '44444444-4444-4444-8444-444444444444';
+const F = '55555555-5555-4555-8555-555555555555';
+const O = '66666666-6666-4666-8666-666666666666';
+const K = '77777777-7777-4777-8777-777777777777';
 const payload = (tenantId = A) => ({ schema: 'gs-deep-dive-sync-v1', tenantId, tenantName: 'Test engagement',
   generatedAt: '2026-10-25T00:00:00Z', items: [{ id: I, type: 'deep_dive_stream', key: 'stream-1', title: 'Stream',
     summary: null, status: 'active', fields: {}, parentId: null, updatedAt: '2026-10-25T00:00:00Z' }],
   files: [], documentRequests: [{ id: R, title: 'Evidence', note: null, itemIds: [I], status: 'open',
-    receivedAt: null, createdAt: '2026-10-25T00:00:00Z' }], deliverables: [] });
+    receivedAt: null, createdAt: '2026-10-25T00:00:00Z' }], deliverables: [],
+  findings: [{ id: F, streamItemId: I, statement: 'Handoffs lack a shared owner', status: 'validated',
+    evidenceCount: 3, supersedesId: null, updatedAt: '2026-10-25T00:00:00Z' }],
+  opportunities: [{ id: O, ref: 'OP-1', title: 'Clarify handoffs', statement: 'Make ownership visible',
+    desiredOutcome: 'Fewer missed handoffs', status: 'refined', findingIds: [F], streamItemIds: [I],
+    updatedAt: '2026-10-25T00:00:00Z' }],
+  kpis: [{ id: K, title: 'Handoff time', definition: 'Median hours between transfer and acceptance',
+    scope: 'team', unit: 'hours', direction: 'down', baseline: 12, baselinePeriod: '2026 Q3', target: 6,
+    opportunityIds: [O], updatedAt: '2026-10-25T00:00:00Z' }] });
 
 test('snapshot accepts the contract and rejects an Internal item and unrelated request', () => {
   assert.deepEqual(validateSnapshot(syncFixture.tenantId, syncFixture), syncFixture);
@@ -39,6 +50,12 @@ test('snapshot accepts the contract and rejects an Internal item and unrelated r
   assert.throws(() => validateSnapshot(A, { ...payload(), items: [{ ...payload().items[0], visibility: 'internal' }] }));
   assert.throws(() => validateSnapshot(A, { ...payload(), documentRequests: [{ ...payload().documentRequests[0], itemIds: [B] }] }));
   assert.throws(() => validateSnapshot(B, payload()));
+  assert.doesNotThrow(() => validateSnapshot(A, { ...payload(), futureField: 'ignored' }));
+  assert.doesNotThrow(() => validateSnapshot(A, { ...payload(), findings: undefined, opportunities: undefined, kpis: undefined }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), findings: [{ ...payload().findings[0], streamItemId: B }] }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), findings: [{ ...payload().findings[0], visibility: 'internal' }] }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), opportunities: [{ ...payload().opportunities[0], findingIds: [B] }] }));
+  assert.throws(() => validateSnapshot(A, { ...payload(), kpis: [{ ...payload().kpis[0], opportunityIds: [B] }] }));
 });
 
 test('client read uses its mapped customer only', async () => {
@@ -58,6 +75,15 @@ test('answer is restricted to an open request in the signed-in customer tenant',
   assert.equal(await answerForClient(db, R), null);
   db.customer = A;
   assert.equal(await answerForClient(db, B), null);
+});
+
+test('client endpoint refuses an unauthenticated website request before touching the database', async () => {
+  const handler = makeDeepDiveClientHandler({ pool: () => { throw new Error('database should not be opened'); },
+    verify: async () => null, log: () => {} });
+  const response = await handler(new Request('https://site.example.invalid/api/deep-dive-client', {
+    method: 'POST', body: JSON.stringify({ op: 'overview' }),
+  }));
+  assert.equal(response.status, 401);
 });
 
 test('document gate requires the current shared item and matching bytes', () => {
@@ -150,6 +176,9 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(accepted.status, 200);
     const read = (id) => asCustomer(pool, { id, email: null, email_verified: true }, clientSnapshot);
     assert.equal((await read(USER_A)).items[0].title, 'Stream');
+    assert.equal((await read(USER_A)).findings[0].statement, 'Handoffs lack a shared owner');
+    assert.equal((await read(USER_A)).opportunities[0].findingIds[0], F);
+    assert.equal((await read(USER_A)).kpis[0].target, 6);
     assert.equal(await read(USER_B), null);
     const blobs = new Map();
     const documentHandler = makeDeepDiveDocumentHandler({ pool: () => pool, keys,
@@ -193,7 +222,11 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const releaseUrl = `https://site.example.invalid/api/deep-dive-document?tenantId=${A}&sourceId=${I}&kind=deliverable`;
     assert.equal((await bridgeCall('PUT', releaseUrl, Buffer.from('%PDF-1.7'), pair, 'stg-write-1', 'write')).status, 200);
     const released = (await (await list('one')).json()).data.find((row) => row.kind === 'deliverable');
-    assert.equal(released.file_name, 'report.pdf');
+    assert.equal(released, undefined);
+    const storedRelease = db.psql(`SELECT id FROM deep_dive_documents WHERE tenant_id='${A}' AND source_id='${I}' AND kind='deliverable'`);
+    assert.equal(storedRelease.status, 0);
+    assert.equal((await documentHandler(new Request(`https://site.example.invalid/api/deep-dive-document?id=${storedRelease.stdout.trim()}`,
+      { headers: { authorization: 'Bearer one' } }))).status, 404);
     assert.equal((await (await list('two')).json()).data.length, 0);
     const collectedUrl = `https://site.example.invalid/api/deep-dive-document?bridge=1&tenantId=${A}&requestId=${R}`;
     const collected = await bridgeCall('GET', collectedUrl, '', readPair, 'stg-read-1', 'read');
@@ -201,7 +234,7 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(await collected.text(), '%PDF-1.7');
     let deliver = false;
     const answerHandler = makeDeepDiveClientHandler({ pool: () => pool,
-      verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, email_confirmed_at: '2026-10-25' }),
+      verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, emailVerified: true }),
       send: async (row) => {
         assert.equal(row.request_id, R);
         assert.equal(row.file_name, 'evidence.pdf');
@@ -243,11 +276,16 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal((await received.json()).data.status, 'received');
     assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'received');
     assert.equal((await upload('one', 'later.pdf', Buffer.from('%PDF-1.7'))).status, 404);
-    const withdrawn = await put({ ...payload(), items: [], documentRequests: [] });
+    const withdrawn = await put({ ...payload(), items: [], documentRequests: [],
+      findings: [], opportunities: [], kpis: [] });
     assert.equal(withdrawn.status, 200);
     assert.deepEqual((await read(USER_A)).items, []);
     const statusRollback = db.psql(readFileSync(new URL('../database/migrations/051_deep_dive_answer_status/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(statusRollback.status, 0, statusRollback.stderr);
+    const agreementRollback = db.psql(readFileSync(new URL('../database/migrations/060_interview_agreement/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(agreementRollback.status, 0, agreementRollback.stderr);
+    const interviewRollback = db.psql(readFileSync(new URL('../database/migrations/059_interview_engine/rollback.sql', import.meta.url), 'utf8'));
+    assert.equal(interviewRollback.status, 0, interviewRollback.stderr);
     const documentRollback = db.psql(readFileSync(new URL('../database/migrations/058_deep_dive_documents/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(documentRollback.status, 0, documentRollback.stderr);
     const rollback = db.psql(readFileSync(new URL('../database/migrations/050_deep_dive_client/rollback.sql', import.meta.url), 'utf8'));
