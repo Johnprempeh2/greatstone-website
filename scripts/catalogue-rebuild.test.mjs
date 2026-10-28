@@ -14,6 +14,21 @@ test('same ID is a no-op; another ID cannot take its slug or SKU', () => {
   assert.match(inspectConflicts(rows, existing).errors.join(' '), /slug belongs to another ID.*sku belongs to another ID/);
 });
 
+test('Postgres bigint price strings compare equal to safe source integers', () => {
+  const rows = {
+    offerings: [{ id: 'offer-1', org_id: 'org', slug: 'offer', type: 'product', vendor_id: null, category_id: null, from_price_minor: 1200 }],
+    offering_variants: [{ id: 'variant-1', org_id: 'org', offering_id: 'offer-1', sku: 'SKU-1', base_price_minor: 1200 }],
+  };
+  const existing = {
+    offerings: [{ ...rows.offerings[0], from_price_minor: '1200' }],
+    offering_variants: [{ ...rows.offering_variants[0], base_price_minor: '1200' }],
+  };
+  const result = inspectConflicts(rows, existing);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.counts.offerings.noop, 1);
+  assert.equal(result.counts.offering_variants.noop, 1);
+});
+
 test('source duplicates and changed identity are refused', () => {
   const rows = { offerings: [{ id: '1', org_id: 'org', slug: 'one' }, { id: '2', org_id: 'org', slug: 'one' }] };
   assert.match(inspectConflicts(rows, {}).errors.join(' '), /duplicate source slug/);
