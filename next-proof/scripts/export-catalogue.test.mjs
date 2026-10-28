@@ -55,6 +55,16 @@ test('converts database bigint prices to release integers without losing precisi
   assert.throws(() => buildCatalogueImport(source), /Unsafe from_price_minor/);
 });
 
+test('keeps internal import provenance out of public release attributes', () => {
+  const source = structuredClone(fixture);
+  source.offerings[0].attributes.catalogue_rebuild_source = { sourceDigest: 'private-digest' };
+  const fields = buildCatalogueImport(source).collections.offerings.entries[0].fields.data;
+  assert.deepEqual(fields.attributes, fixture.offerings[0].attributes);
+  assert.equal(JSON.stringify(fields).includes('private-digest'), false);
+  source.offerings[0].attributes.unmapped_public_field = 'unexpected';
+  assert.throws(() => buildCatalogueImport(source), /additional properties/);
+});
+
 test('fails on omitted, duplicate or invalid source rows', () => {
   const draft = structuredClone(fixture);
   draft.offerings[0].status = 'draft';
