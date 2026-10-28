@@ -36,6 +36,8 @@ export default function Stage({ background = 'stone', previewP = null, motionMod
   useEffect(() => {
     const root = ref.current;
     if (!root || !cfg.scenes.length) { applyRef.current = null; return undefined; }
+    const doc = root.ownerDocument;
+    const view = doc.defaultView;
     const layers = cfg.scenes.map((s) => {
       const host = document.createElement('div'); host.className = 'gs-layer'; root.appendChild(host);
       // mounting constructs a WebGL renderer, which THROWS when WebGL is unavailable (blocklisted GPU,
@@ -49,11 +51,11 @@ export default function Stage({ background = 'stone', previewP = null, motionMod
     // Honour prefers-reduced-motion continuously, not just at mount: apply() re-activates layers by
     // opacity on every scroll/resize/visibility change, so the freeze has to be re-checked each time
     // or a single scroll un-freezes it.
-    const mql = (typeof matchMedia !== 'undefined') ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    const mql = view?.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
     const reduce = () => !!(mql && mql.matches);
     const apply = () => {
       const c = cfgRef.current; const n = layers.length;
-      const sc = scrollContext();
+      const sc = scrollContext(doc);
       const inj = previewRef.current;
       const p = inj != null ? inj : (sc.max > 0 ? Math.min(Math.max(sc.top / sc.max, 0), 1) : 0);
       // Optional lead-in. Scene 0 otherwise paints from the very first pixel of scroll, which is why a
@@ -83,7 +85,8 @@ export default function Stage({ background = 'stone', previewP = null, motionMod
         // allowed to get. Without this the stone reached full strength directly behind body copy and
         // took it well under the 7:1 the brand's background contract asks for. Defaults to 1, so every
         // existing page renders exactly as before; only a track that opts in is dimmed.
-        const ceil = typeof c.ceil === 'number' ? Math.min(Math.max(c.ceil, 0), 1) : 1;
+        const selectedCeil = c.strengthCeil?.[c.scenes[k]?.strength] ?? c.ceil;
+        const ceil = typeof selectedCeil === 'number' ? Math.min(Math.max(selectedCeil, 0), 1) : 1;
         const op = incoming * outgoing * ceil;
         l.host.style.opacity = String(op);
         l.host.style.zIndex = String(k);
@@ -99,22 +102,22 @@ export default function Stage({ background = 'stone', previewP = null, motionMod
     applyRef.current = apply;
     // rAF-batch so layout reads/opacity writes run at most once per frame, not per scroll event
     let ticking = false;
-    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; apply(); }); } };
-    // capture:true so this window-level listener also receives scroll from the Puck canvas (scroll
-    // events don't bubble, but capturing listeners on ancestors still fire for descendant scrollers)
-    addEventListener('scroll', onScroll, { passive: true, capture: true });
-    addEventListener('resize', onScroll, { passive: true });
+    const onScroll = () => { if (!ticking) { ticking = true; view.requestAnimationFrame(() => { ticking = false; apply(); }); } };
+    // Listen on the stage's own document window. In Puck that is the canvas iframe; on the
+    // published page it is the page window. Capture also catches inner scrolling containers.
+    view.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    view.addEventListener('resize', onScroll, { passive: true });
     // Pause every layer's WebGL loop when the tab is hidden (battery/CPU); re-apply on return.
-    const onVis = () => { if (document.hidden) layers.forEach((l) => { if (l.handle && l.handle.setActive) l.handle.setActive(false); }); else apply(); };
-    document.addEventListener('visibilitychange', onVis);
+    const onVis = () => { if (doc.hidden) layers.forEach((l) => { if (l.handle && l.handle.setActive) l.handle.setActive(false); }); else apply(); };
+    doc.addEventListener('visibilitychange', onVis);
     apply(); // apply() now freezes the loops when reduced motion is on (the scrim makes a static frame indistinguishable)
     // re-apply if the user toggles reduced motion mid-session
     const onReduceChange = () => apply();
     if (mql && mql.addEventListener) mql.addEventListener('change', onReduceChange);
     return () => {
       if (mql && mql.removeEventListener) mql.removeEventListener('change', onReduceChange);
-      document.removeEventListener('visibilitychange', onVis);
-      removeEventListener('scroll', onScroll, { capture: true }); removeEventListener('resize', onScroll);
+      doc.removeEventListener('visibilitychange', onVis);
+      view.removeEventListener('scroll', onScroll, { capture: true }); view.removeEventListener('resize', onScroll);
       applyRef.current = null;
       layers.forEach((l) => { if (l.handle && l.handle.destroy) l.handle.destroy(); if (l.host.parentNode) l.host.parentNode.removeChild(l.host); });
     };

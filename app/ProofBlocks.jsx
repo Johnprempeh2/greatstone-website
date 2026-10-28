@@ -41,8 +41,8 @@ import { bindFormBlock } from '../next-proof/form-bindings.mjs';
 import { publicLinkProps } from '../next-proof/public-links.mjs';
 import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from '../next-proof/motion-contract.mjs';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
-import { PAGE_SCENE_PRESETS, PAGE_SCENE_MODES, pageSceneBackground, resolvePageSceneFields } from '../next-proof/page-scene.mjs';
-import { STAGE_OPTIONS } from '../src/stage-presets.js';
+import { pageSceneBackground } from '../next-proof/page-scene.mjs';
+import PageSceneField from './editor/PageSceneField.jsx';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, TransformationServices, DxConsultancyMethod, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
 export const proofBlockCss = Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss;
@@ -82,13 +82,8 @@ export const proofConfig = {
     label: 'Page settings',
     fields: {
       title: { type: 'text', label: 'Page title' },
-      pageScene: { type: 'object', label: '3D background', objectFields: {
-        surface: { type: 'radio', label: 'Background', options: [{ value: 'plain', label: 'Plain surface' }, { value: '3d', label: '3D on' }] },
-        preset: { type: 'select', label: 'Scene', options: PAGE_SCENE_PRESETS.map((value) => ({ value, label: STAGE_OPTIONS.find((option) => option.id === value).label })) },
-        motion: { type: 'radio', label: 'Motion', options: PAGE_SCENE_MODES.map((value) => ({ value, label: value === 'animate' ? 'Animate' : 'Still' })) },
-      } },
+      pageScene: { type: 'custom', label: '3D background', render: (props) => <PageSceneField {...props} /> },
     },
-    resolveFields: (data, { fields }) => resolvePageSceneFields(data, fields),
     defaultProps: { pageScene: { surface: 'plain', preset: 'stone', motion: 'animate' } },
     render: ({ children, pageScene }) => <><PageScene value={pageScene} /><div className="gs-proof-content">{children}</div></>,
   },
