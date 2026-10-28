@@ -20,7 +20,7 @@ const EMAIL_RE = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']{2,}$/;
 export const isUuid = (s) => typeof s === 'string' && UUID_RE.test(s);
 
 // The document kinds and actions of 0037 (portal_documents.kind / action).
-export const KINDS = ['engagement_pack', 'nda', 'gita', 'terms', 'pre_read', 'north_star', 'investigation_plan', 'gdxp'];
+export const KINDS = ['engagement_pack', 'nda', 'gita', 'terms', 'pre_read', 'north_star', 'investigation_plan', 'deep_dive', 'gdxp'];
 export const ACTIONS = ['none', 'accept', 'agree_in_principle'];
 export const LIMITS = { title: 200, summary: 2000, sections: 60, sectionTitle: 200, html: 100_000, demos: 20, label: 120, note: 500, confirmation: 1000 };
 

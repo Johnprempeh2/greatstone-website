@@ -193,8 +193,14 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   const billing = join(MIGRATIONS, '055_billing_lines');
   const activity = join(MIGRATIONS, '056_client_activity_outbox');
   const clientUsers = join(MIGRATIONS, '054_gsam_bridge_client_users');
-  // Roll back dependent tables and policies before the bridge roles and tenant links.
+  const enquiryLink = join(MIGRATIONS, '057_enquiry_client_link');
+  const interview = join(MIGRATIONS, '059_interview_engine');
+  const agreement = join(MIGRATIONS, '060_interview_agreement');
+  // Roll back dependent migrations before the bridge roles and tenant links.
+  owner(readFileSync(join(agreement, 'rollback.sql'), 'utf8'));
+  owner(readFileSync(join(interview, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(documents, 'rollback.sql'), 'utf8'));
+  owner(readFileSync(join(enquiryLink, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(activity, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(billing, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(clientUsers, 'rollback.sql'), 'utf8'));
@@ -212,7 +218,10 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   owner(readFileSync(join(clientUsers, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(billing, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(activity, 'migration.sql'), 'utf8'));
+  owner(readFileSync(join(enquiryLink, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(documents, 'migration.sql'), 'utf8'));
+  owner(`BEGIN;\n${readFileSync(join(interview, 'migration.sql'), 'utf8')}\nCOMMIT;`);
+  owner(readFileSync(join(agreement, 'migration.sql'), 'utf8'));
   assert.equal(ok(GOOD, 'SELECT count(*) FROM customers;'), '1');
   assert.equal(ok(GOOD, 'SELECT licence_key_last4 FROM licence_keys;'), 'AB12');
 });

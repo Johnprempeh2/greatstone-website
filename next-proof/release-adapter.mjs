@@ -20,6 +20,12 @@ function releaseLinks(value, pagePaths) {
 // Only persisted public catalogue fields belong in collection fieldsVersion 1.
 // The public read also decorates products with request-time prices and join IDs.
 const pick = (row, keys) => Object.fromEntries(keys.filter((key) => row?.[key] !== undefined).map((key) => [key, row[key]]));
+function priceMinor(value, field) {
+  if (value === null || value === undefined) return value;
+  const number = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+  if (!Number.isSafeInteger(number) || number < 0) throw new Error(`Unsafe ${field}`);
+  return number;
+}
 function expectKeys(row, allowed, kind) {
   const unknown = Object.keys(row).filter((key) => !allowed.includes(key));
   if (unknown.length) throw new Error(`Unmapped ${kind} fields: ${unknown.join(', ')}`);
@@ -27,7 +33,9 @@ function expectKeys(row, allowed, kind) {
 const variant = (row) => {
   const fields = ['id', 'sku', 'name', 'currency', 'platform', 'sort_order', 'license_type', 'min_order_qty', 'billing_period', 'base_price_minor'];
   expectKeys(row, [...fields, 'pricing'], 'variant');
-  return pick(row, fields);
+  const data = pick(row, fields);
+  if ('base_price_minor' in data) data.base_price_minor = priceMinor(data.base_price_minor, 'base_price_minor');
+  return data;
 };
 const spec = (row) => {
   const fields = ['label', 'value', 'sort_order'];
@@ -50,6 +58,12 @@ export function catalogueFields(key, row) {
   const fields = ['id', 'slug', 'name', 'short_description', 'from_price_minor', 'from_price_currency', 'featured', 'platforms', 'type', 'attributes', 'vendor', 'category', 'description', 'seo'];
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
   const data = pick(row, fields);
+  if ('from_price_minor' in data) data.from_price_minor = priceMinor(data.from_price_minor, 'from_price_minor');
+  // Import provenance stays in the database, but is not a public release field.
+  if (data.attributes && 'catalogue_rebuild_source' in data.attributes) {
+    const { catalogue_rebuild_source, ...publicAttributes } = data.attributes;
+    data.attributes = publicAttributes;
+  }
   const variants = (row.offering_variants || row.variants || []).map(variant);
   const specs = (row.offering_specs || row.specs || []).map(spec);
   return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };
