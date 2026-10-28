@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import baked from './data/release.json' with { type: 'json' };
-import { PAGE_SCENE_PRESETS, pageSceneBackground, resolvePageSceneFields, validPageScene } from './page-scene.mjs';
+import { PAGE_SCENE_PRESETS, PAGE_SCENE_STRENGTHS, editablePageScene, pageSceneBackground, validPageScene } from './page-scene.mjs';
 import { validateRelease } from './release-validator.mjs';
 
 test('the page field offers every mounted scene preset and no arbitrary style', () => {
@@ -30,8 +30,32 @@ test('draft root background survives release validation only with approved field
   assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId })?.rule, 'R6');
 });
 
-test('scene and motion choices are offered only when 3D is on', () => {
-  const fields = { pageScene: { objectFields: { surface: {}, preset: {}, motion: {} } } };
-  assert.equal(resolvePageSceneFields({ props: { pageScene: { surface: 'plain' } } }, fields).pageScene.objectFields.preset, undefined);
-  assert.ok(resolvePageSceneFields({ props: { pageScene: { surface: '3d' } } }, fields).pageScene.objectFields.motion);
+test('a three-scene track validates its order, anchors and named strengths', () => {
+  let n = 0;
+  const pageScene = editablePageScene({ surface: '3d', preset: 'stone', motion: 'animate' }, () => `sc-${++n}`);
+  const track = pageScene.track;
+  track.scenes.push({ id: 'sc-2', kind: 'summit', strength: 'quiet' }, { id: 'sc-3', kind: 'tideRadial', strength: 'bold' });
+  track.transitions.push({ id: 'tr-1', at: 0.35, fade: 0.2, anchor: { type: 'scroll' } },
+    { id: 'tr-2', at: 0.75, fade: 0.2, anchor: { type: 'block', blockId: 'hero-1', edge: 'center', fallbackAt: 0.75 } });
+  assert.equal(validPageScene(pageScene, new Set(['hero-1'])), true);
+  assert.deepEqual(pageSceneBackground(pageScene).strengthCeil, PAGE_SCENE_STRENGTHS);
+  assert.equal(PAGE_SCENE_STRENGTHS.standard, 0.38);
+  for (const change of [
+    (v) => v.track.scenes.push({ id: 'sc-4', kind: 'stone', strength: 'standard' }),
+    (v) => { v.track.transitions[1].at = 0.2; },
+    (v) => { v.track.scenes[1].strength = '0.7'; },
+    (v) => { v.track.transitions[0].fade = 1; },
+    (v) => { v.track.transitions[1].anchor.blockId = ''; },
+    (v) => { v.color = '#f00'; },
+  ]) {
+    const invalid = structuredClone(pageScene);
+    change(invalid);
+    assert.equal(validPageScene(invalid), false);
+  }
+  assert.equal(validPageScene(pageScene, new Set(['other'])), false);
+  const release = structuredClone(baked);
+  release.pages[0].data.root.props.pageScene = pageScene;
+  assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId }), null);
+  release.pages[0].data.root.props.pageScene.track.transitions[0].fade = 1;
+  assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId })?.rule, 'R6');
 });

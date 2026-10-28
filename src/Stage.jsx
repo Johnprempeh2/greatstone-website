@@ -83,7 +83,8 @@ export default function Stage({ background = 'stone', previewP = null, motionMod
         // allowed to get. Without this the stone reached full strength directly behind body copy and
         // took it well under the 7:1 the brand's background contract asks for. Defaults to 1, so every
         // existing page renders exactly as before; only a track that opts in is dimmed.
-        const ceil = typeof c.ceil === 'number' ? Math.min(Math.max(c.ceil, 0), 1) : 1;
+        const selectedCeil = c.strengthCeil?.[c.scenes[k]?.strength] ?? c.ceil;
+        const ceil = typeof selectedCeil === 'number' ? Math.min(Math.max(selectedCeil, 0), 1) : 1;
         const op = incoming * outgoing * ceil;
         l.host.style.opacity = String(op);
         l.host.style.zIndex = String(k);
