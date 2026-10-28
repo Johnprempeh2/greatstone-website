@@ -125,6 +125,7 @@ export function inspectConflicts(rows, existing) {
       const normalize = (field, value) => {
         if (value == null) return null;
         if (field === 'published_at') return new Date(value).toISOString();
+        if (field === 'from_price_minor' || field === 'base_price_minor') return String(value);
         if (field === 'list_discount_pct') return Number(value);
         return value;
       };
