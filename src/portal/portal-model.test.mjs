@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parsePortalHash, journeyStage, docState, panelState, waitingForYou, validatePanel, canSubmit, acceptErrorMessage,
-  emailOutcome, placeDemos, receiptJobLabel, cleanSections, cleanDemos, signatoryLabel, JOURNEY, FIELD_MAX,
+  emailOutcome, placeDemos, receiptJobLabel, cleanSections, cleanDemos, signatoryLabel, deepDiveDocuments, JOURNEY, FIELD_MAX,
 } from './portal-model.mjs';
 import { fillWording, confirmationTemplate, ACCEPT_CONFIRMATION, AGREE_CONFIRMATION } from './wording.mjs';
 
@@ -15,6 +15,7 @@ const acc = (o = {}) => ({ id: 'a1', document_id: ID, action: 'accept', accepted
 test('routes: home, reader, receipt; anything else under #portal is not found; other hashes are not ours', () => {
   assert.deepEqual(parsePortalHash('#portal'), { view: 'home' });
   assert.deepEqual(parsePortalHash('#portal/deep-dive'), { view: 'deep-dive' });
+  assert.deepEqual(parsePortalHash('#portal/agreement'), { view: 'agreement' });
   assert.deepEqual(parsePortalHash('#/portal/'), { view: 'home' });
   assert.deepEqual(parsePortalHash('#portal/doc/' + ID.toUpperCase()), { view: 'doc', id: ID });
   assert.deepEqual(parsePortalHash('#portal/receipt/' + ID), { view: 'receipt', id: ID });
@@ -34,6 +35,15 @@ test('journey: six stages, no GITA-to-GDXP shortcut in the list, stage read from
   assert.equal(journeyStage([doc(), gita], []), 2);
   assert.equal(journeyStage([doc(), gita], [acc({ document_id: 'g' })]), 3);
   assert.equal(journeyStage([doc({ kind: 'gdxp' })], []), 5);
+  assert.equal(journeyStage([doc({ kind: 'deep_dive' })], []), 4);
+});
+
+test('Deep Dive shows only published portal document versions', () => {
+  assert.deepEqual(deepDiveDocuments([
+    doc({ id: 'released', kind: 'deep_dive', status: 'published' }),
+    doc({ id: 'pending', kind: 'deep_dive', status: 'pending_approval' }),
+    doc({ id: 'other', kind: 'gita', status: 'published' }),
+  ]).map((d) => d.id), ['released']);
 });
 
 test('document state: to read, accepted on a date, agreed in principle on a date', () => {

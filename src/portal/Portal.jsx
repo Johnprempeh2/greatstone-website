@@ -11,8 +11,10 @@ import DocumentView, { PrivacyNote } from './DocumentView.jsx';
 import ActionPanel from './ActionPanel.jsx';
 import { downloadPortalPdf } from './portal-file.mjs';
 import DeepDiveClient from './DeepDiveClient.jsx';
+import InterviewAgreement from './InterviewAgreement.jsx';
+import { currentClientActions } from './home-model.mjs';
 import {
-  JOURNEY, KIND_LABEL, journeyStage, docState, panelState, waitingForYou, acceptanceFor, signatoryLabel,
+  KIND_LABEL, docState, panelState, acceptanceFor, signatoryLabel,
 } from './portal-model.mjs';
 import { receiptRecord, emailStateLabel } from '../../supabase/functions/_shared/portal-receipt.mjs';
 import '../store/store.css';
@@ -45,6 +47,7 @@ export default function Portal({ route }) {
     </div></div>
   );
   if (route.view === 'deep-dive') return <DeepDiveClient company={profile.customer} />;
+  if (route.view === 'agreement') return <InterviewAgreement company={profile.customer} />;
   return <PortalData route={route} profile={profile} email={session.user?.email || profile.email} />;
 }
 
@@ -55,6 +58,8 @@ function PortalData({ route, profile, email }) {
   const [jobs, setJobs] = useState([]);
   const [members, setMembers] = useState([]);
   const [err, setErr] = useState(null);
+  const [deepDive, setDeepDive] = useState(undefined);
+  const [deepDiveError, setDeepDiveError] = useState(false);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -63,6 +68,21 @@ function PortalData({ route, profile, email }) {
     setDocs(data.documents); setAcceptances(data.acceptances); setJobs(data.jobs); setMembers(data.members);
   }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (route.view !== 'home') return;
+    let active = true;
+    const loadDeepDive = async () => {
+      try {
+        const response = await fetch('/api/deep-dive-client', { method: 'POST',
+          headers: { 'content-type': 'application/json' }, body: JSON.stringify({ op: 'overview' }) });
+        if (!response.ok) throw new Error('Deep Dive unavailable');
+        const body = await response.json();
+        if (active) { setDeepDive(body.data ?? null); setDeepDiveError(false); }
+      } catch { if (active) { setDeepDive(null); setDeepDiveError(true); } }
+    };
+    loadDeepDive();
+    return () => { active = false; };
+  }, [route.view]);
 
   const loading = docs === null || acceptances === null;
   if (err && loading) return <Shell company={company}><LoadFailed onRetry={load} /></Shell>;
@@ -76,7 +96,8 @@ function PortalData({ route, profile, email }) {
     );
   }
   if (route.view === 'notfound') return <Shell company={company} crumb><NotFound /></Shell>;
-  return <Shell company={company}>{loading ? <Hold /> : <Home docs={docs} acceptances={acceptances} email={email} err={err} onRetry={load} />}</Shell>;
+  return <Shell company={company}>{loading ? <Hold /> : <Home docs={docs} acceptances={acceptances}
+    email={email} err={err} onRetry={load} deepDive={deepDive} deepDiveError={deepDiveError} />}</Shell>;
 }
 
 function Shell({ company, crumb = false, children }) {
@@ -87,6 +108,7 @@ function Shell({ company, crumb = false, children }) {
         <span className="pt-bar-co">{company.name}</span>
         <nav className="pt-bar-links" aria-label="Your accounts">
           <a href="#portal/deep-dive">Deep Dive</a>
+          <a href="#portal/agreement">Interview agreement</a>
           <a href="#org">Your organisation</a>
           <a href="#account">Your account</a>
         </nav>
@@ -117,34 +139,28 @@ function NotFound() {
   );
 }
 
-function Home({ docs, acceptances, email, err, onRetry }) {
-  const stage = journeyStage(docs, acceptances);
-  const waiting = waitingForYou(docs, { email, acceptances });
+function Home({ docs, acceptances, email, err, onRetry, deepDive, deepDiveError }) {
+  const actions = currentClientActions(docs, acceptances, email, deepDive);
   return (
     <>
       <h1 className="pt-h1 pt-home-h" tabIndex={-1}>Your portal</h1>
       {err && <p className="pt-fail" role="alert">Some of your portal did not load. <button className="ca-link" onClick={onRetry}>Try again</button></p>}
       <section className="pt-card" aria-labelledby="pt-where">
-        <h2 id="pt-where" className="pt-h2">Where you are</h2>
-        <ol className="pt-journey">
-          {JOURNEY.map((s, i) => (
-            <li key={s} className={i < stage ? 'is-past' : i === stage ? 'is-now' : ''} aria-current={i === stage ? 'step' : undefined}>
-              <span className="pt-step-n" aria-hidden="true">{i}</span>
-              <span className="pt-step-l">{s}{i === stage && <span className="gs-sr-only"> (you are here)</span>}</span>
-            </li>
-          ))}
-        </ol>
+        <h2 id="pt-where" className="pt-h2">Engagement stage</h2>
+        <p className="pt-muted">Your project team has not published a stage here yet.</p>
       </section>
 
       <section className="pt-card" aria-labelledby="pt-waiting">
-        <h2 id="pt-waiting" className="pt-h2">Waiting for you</h2>
-        {waiting.length === 0 ? <p className="pt-muted">Nothing needs your action right now.</p> : (
+        <h2 id="pt-waiting" className="pt-h2">Your actions</h2>
+        {deepDive === undefined && <p className="pt-muted" aria-busy="true">Checking current actions…</p>}
+        {deepDiveError && <p role="alert">Deep Dive actions could not load. Open <a href="#portal/deep-dive">Deep Dive</a> to check requests.</p>}
+        {actions.length === 0 && deepDive !== undefined && !deepDiveError ? <p className="pt-muted">Nothing needs your action right now.</p> : actions.length > 0 && (
           <ul className="pt-list">
-            {waiting.map((d) => (
-              <li key={d.id}>
-                <a href={'#portal/doc/' + d.id} className="pt-item">
-                  <span className="pt-item-t">{d.title}</span>
-                  <span className="pt-item-m">{KIND_LABEL[d.kind]} · version {d.version} · {d.action === 'agree_in_principle' ? 'waiting for your agreement in principle' : 'waiting for your acceptance'}</span>
+            {actions.map((action) => (
+              <li key={action.id}>
+                <a href={action.href} className="pt-item">
+                  <span className="pt-item-t">{action.title}</span>
+                  <span className="pt-item-m">{action.detail}</span>
                 </a>
               </li>
             ))}
