@@ -36,7 +36,7 @@ node scripts/catalogue-rebuild.mjs \
 
 The apply command uses the same arguments, a different `--receipt`, plus `--apply --dry-run-receipt /private/catalogue-dry-run.json`. Receipts contain counts and digests, not price rows or credentials. Keep them off the repository and attach a redacted receipt to the task after the staging run.
 
-The script locks the affected tables and checks source digests, source relationships, destination IDs, slugs and non-null SKUs before upserting by source ID. The `import_jobs` row stores the combined package digest and provenance. Repeating a successful import does not create another job. If a previously applied source has drifted, apply aborts instead of overwriting it.
+The script locks the affected tables and checks source digests, source relationships, destination IDs across all organisations, and target-organisation slugs and non-null SKUs before upserting by source ID. Each upsert also requires the stored organisation to match. A cross-organisation ID collision aborts the transaction. The `import_jobs` row stores the combined package digest and provenance. Repeating a successful import does not create another job. If a previously applied source has drifted, apply aborts instead of overwriting it.
 
 ## Recovery and limits
 

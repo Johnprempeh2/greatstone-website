@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { inspectConflicts, rowsFromSource } from './catalogue-rebuild.mjs';
+import { inspectConflicts, loadExistingRows, rowsFromSource, upsertRow } from './catalogue-rebuild.mjs';
 
 test('same ID is a no-op; another ID cannot take its slug or SKU', () => {
   const org_id = 'org';
@@ -22,6 +22,36 @@ test('source duplicates and changed identity are refused', () => {
   const specs = { offering_specs: [{ id: 'spec-2', org_id: 'org', offering_id: 'offer', label: 'Label', value: 'Value', sort_order: 0 }] };
   const stored = { offering_specs: [{ ...specs.offering_specs[0], id: 'spec-1' }] };
   assert.match(inspectConflicts(specs, stored).errors.join(' '), /slot belongs to another ID/);
+});
+
+test('every imported table loads and refuses an ID owned by another organisation', async () => {
+  for (const table of ['vendors', 'categories', 'offerings', 'offering_variants', 'offering_specs']) {
+    const incoming = { id: 'shared-id', org_id: 'target-org' };
+    const stored = { ...incoming, org_id: 'other-org' };
+    const rows = { [table]: [incoming] };
+    const client = { query: async (sql, params) => {
+      assert.match(sql, /org_id = \$1 OR id = ANY\(\$2::uuid\[\]\)/);
+      assert.deepEqual(params, ['target-org', ['shared-id']]);
+      return { rows: [stored] };
+    } };
+    const { errors } = inspectConflicts(rows, await loadExistingRows(client, rows, 'target-org'));
+    assert.match(errors.join(' '), new RegExp(`${table} ID conflict: shared-id`));
+  }
+});
+
+test('every upsert guards the destination organisation', async () => {
+  for (const table of ['vendors', 'categories', 'offerings', 'offering_variants', 'offering_specs']) {
+    const client = { query: async (sql) => {
+      assert.match(sql, new RegExp(`ON CONFLICT \\(id\\) DO UPDATE.*WHERE ${table}\\.org_id = EXCLUDED\\.org_id AND`));
+    } };
+    await upsertRow(client, table, { id: 'shared-id', org_id: 'target-org' });
+  }
+});
+
+test('another organisation may use the same slug or SKU under a different ID', () => {
+  const rows = { vendors: [{ id: 'target-vendor', org_id: 'target-org', slug: 'shared' }], offering_variants: [{ id: 'target-variant', org_id: 'target-org', sku: 'shared' }] };
+  const existing = { vendors: [{ id: 'other-vendor', org_id: 'other-org', slug: 'shared' }], offering_variants: [{ id: 'other-variant', org_id: 'other-org', sku: 'shared' }] };
+  assert.deepEqual(inspectConflicts(rows, existing).errors, []);
 });
 
 test('service rows are draft, enquiry-only and price-free', () => {

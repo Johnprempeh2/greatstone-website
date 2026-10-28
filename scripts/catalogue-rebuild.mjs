@@ -101,9 +101,9 @@ export function inspectConflicts(rows, existing) {
     const current = existing[table] || [];
     const byId = new Map(current.map((r) => [r.id, r]));
     const key = keyed[table];
-    const byKey = new Map(current.filter((r) => r[key] != null && r.deleted_at == null).map((r) => [String(r[key]).toLowerCase(), r]));
+    const byKey = new Map(current.filter((r) => r.org_id === incoming[0]?.org_id && r[key] != null && r.deleted_at == null).map((r) => [String(r[key]).toLowerCase(), r]));
     const sourceKeys = new Map();
-    const specSlot = table === 'offering_specs' ? new Map(current.map((r) => [`${r.offering_id}:${r.sort_order}`, r])) : null;
+    const specSlot = table === 'offering_specs' ? new Map(current.filter((r) => r.org_id === incoming[0]?.org_id).map((r) => [`${r.offering_id}:${r.sort_order}`, r])) : null;
     const sourceSpecSlots = new Map();
     counts[table] = { source: incoming.length, insert: 0, update: 0, noop: 0 };
     for (const row of incoming) {
@@ -134,6 +134,23 @@ export function inspectConflicts(rows, existing) {
     }
   }
   return { counts, errors };
+}
+
+export async function loadExistingRows(client, rows, org) {
+  const existing = {};
+  for (const [table, incoming] of Object.entries(rows)) {
+    existing[table] = (await client.query(`SELECT * FROM ${table} WHERE org_id = $1 OR id = ANY($2::uuid[])`, [org, incoming.map((row) => row.id)])).rows;
+  }
+  return existing;
+}
+
+export async function upsertRow(client, table, row) {
+  const cols = fields[table];
+  const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+  const assignments = cols.filter((c) => c !== 'id' && c !== 'org_id').map((c) => `${c} = EXCLUDED.${c}`).join(', ');
+  const distinct = cols.filter((c) => c !== 'id' && c !== 'org_id').map((c) => `${table}.${c} IS DISTINCT FROM EXCLUDED.${c}`).join(' OR ');
+  const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${assignments} WHERE ${table}.org_id = EXCLUDED.org_id AND (${distinct})`;
+  await client.query(sql, cols.map((c) => row[c] ?? null));
 }
 
 const usage = 'Usage: node scripts/catalogue-rebuild.mjs --bundle PATH --identity-map PATH --db-url-env ENV --expect-host HOST --expect-db DB --expect-org UUID --receipt PATH [--apply --dry-run-receipt PATH]';
@@ -168,8 +185,7 @@ async function main() {
     const existingOrg = await client.query('SELECT id, slug FROM organisations WHERE id = $1 OR slug = $2', [org, 'greatstone']);
     if (existingOrg.rows.some((r) => r.id !== org || r.slug !== 'greatstone')) throw new Error('Organisation identity conflict');
     if (!existingOrg.rows.length) await client.query('INSERT INTO organisations(id, slug, name) VALUES ($1, $2, $3)', [org, 'greatstone', 'Greatstone International']);
-    const existing = {};
-    for (const table of Object.keys(fields)) existing[table] = (await client.query(`SELECT * FROM ${table} WHERE org_id = $1`, [org])).rows;
+    const existing = await loadExistingRows(client, rows, org);
     const { counts, errors } = inspectConflicts(rows, existing);
     if (errors.length) throw new Error(`Import conflicts:\n${errors.join('\n')}`);
     const fx = source.catalogue.display_settings;
@@ -183,12 +199,7 @@ async function main() {
       const previous = await client.query("SELECT id FROM import_jobs WHERE org_id = $1 AND source_checksum = $2 AND status = 'applied' AND deleted_at IS NULL", [org, source.packageDigest]);
       if (previous.rows.length && (Object.values(counts).some((c) => c.insert || c.update) || fxAction !== 'noop')) throw new Error('Previously applied source has drifted');
       for (const [table, list] of Object.entries(rows)) {
-        const cols = fields[table];
-        const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-        const assignments = cols.filter((c) => c !== 'id' && c !== 'org_id').map((c) => `${c} = EXCLUDED.${c}`).join(', ');
-        const distinct = cols.filter((c) => c !== 'id' && c !== 'org_id').map((c) => `${table}.${c} IS DISTINCT FROM EXCLUDED.${c}`).join(' OR ');
-        const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${assignments} WHERE ${distinct}`;
-        for (const row of list) await client.query(sql, cols.map((c) => row[c] ?? null));
+        for (const row of list) await upsertRow(client, table, row);
       }
       await client.query('INSERT INTO org_settings(org_id, usd_to_gbp_display_rate) VALUES ($1, $2) ON CONFLICT (org_id) DO UPDATE SET usd_to_gbp_display_rate = EXCLUDED.usd_to_gbp_display_rate WHERE org_settings.usd_to_gbp_display_rate IS DISTINCT FROM EXCLUDED.usd_to_gbp_display_rate', [org, fx[0].usd_to_gbp_display_rate]);
       if (!previous.rows.length) await client.query("INSERT INTO import_jobs(org_id, filename, type, status, dry_run, source_checksum, column_mapping, diff_summary, total_rows, applied_at) VALUES ($1, $2, 'mixed', 'applied', false, $3, $4, $5, $6, now())", [org, 'catalogue-rebuild-source-bundle', source.packageDigest, JSON.stringify({ identityDigest: source.identityDigest, manifestFiles: source.manifest.files }), JSON.stringify(counts), Object.values(rows).reduce((n, list) => n + list.length, 0)]);
