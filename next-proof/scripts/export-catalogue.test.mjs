@@ -41,6 +41,20 @@ test('maps persisted product detail fields and drops computed prices and join ID
   assert.equal('pricing' in data.variants[0], false);
 });
 
+test('converts database bigint prices to release integers without losing precision', () => {
+  const source = structuredClone(fixture);
+  source.offerings[0].from_price_minor = '120000';
+  source.offerings[0].variants[0].base_price_minor = '120000';
+  source.offerings[0].offering_variants[0].base_price_minor = '120000';
+  const fields = buildCatalogueImport(source).collections.offerings.entries[0].fields.data;
+  assert.equal(fields.from_price_minor, 120000);
+  assert.equal(fields.variants[0].base_price_minor, 120000);
+  assert.equal(fields.offering_variants[0].base_price_minor, 120000);
+
+  source.offerings[0].from_price_minor = '9007199254740993';
+  assert.throws(() => buildCatalogueImport(source), /Unsafe from_price_minor/);
+});
+
 test('fails on omitted, duplicate or invalid source rows', () => {
   const draft = structuredClone(fixture);
   draft.offerings[0].status = 'draft';
