@@ -1,11 +1,13 @@
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { EDITOR_PREVIEW_HOST, EDITOR_PREVIEW_ORIGIN, EDITOR_PREVIEW_SITE_ID } from '../editor-preview-target.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const target = process.argv[2];
-const editor = process.argv[3] === '--editor';
+const preview = process.argv[3] === '--editor-preview';
+const editor = process.argv[3] === '--editor' || preview;
 if (!target) throw new Error('Pass a new scratch directory for the proof deploy.');
-if (process.argv[3] && !editor) throw new Error('Only --editor is supported as a preparation mode.');
+if (process.argv[3] && !editor) throw new Error('Only --editor and --editor-preview are supported as preparation modes.');
 await mkdir(target, { recursive: true });
 const files = ['src', 'app', 'next-proof', 'public', 'scripts', 'contracts', 'package.json', 'package-lock.json', 'next.config.mjs', 'middleware.js'];
 if (!editor) files.push('netlify/functions', 'supabase/functions/_shared');
@@ -16,6 +18,10 @@ for (const name of files) {
   });
 }
 await cp(resolve(root, editor ? 'next-proof/netlify.editor.toml' : 'next-proof/netlify.toml'), resolve(target, 'netlify.toml'));
+if (preview) {
+  const config = { host: EDITOR_PREVIEW_HOST, origin: EDITOR_PREVIEW_ORIGIN, siteId: EDITOR_PREVIEW_SITE_ID };
+  await writeFile(resolve(target, 'next-proof/editor-preview-config.mjs'), `export const editorPreviewConfig = ${JSON.stringify(config)};\n`);
+}
 if (editor) {
   const packagePath = resolve(target, 'package.json');
   const lockPath = resolve(target, 'package-lock.json');

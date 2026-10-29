@@ -1,7 +1,9 @@
+import { editorPreviewConfig } from './editor-preview-config.mjs';
+
 export function releaseIdentity(env, baked) {
   // The editor alias uses the checked-in proof release even when the Netlify
   // site supplies production release IDs to every deploy context.
-  if (env.GSAM_EDITOR_HOST) {
+  if (editorPreviewConfig || env.GSAM_EDITOR_HOST) {
     return { siteId: baked.siteId, orgId: baked.orgId, readsCurrent: false };
   }
   return {
