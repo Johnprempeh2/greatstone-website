@@ -62,7 +62,7 @@ test('block reference carries stable identity and treats source as a hint', () =
   assert.deepEqual(ref.source, { file: 'src/blocks/Hero.jsx', line: 310 });
   assert.match(readFileSync(new URL('../src/blocks/Hero.jsx', import.meta.url), 'utf8').split('\n')[ref.source.line - 1], /export const puck/);
   const alias = blockRef({ type: 'TwoDoorsStory', props: { id: 'story' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', ref.engine);
-  assert.deepEqual(alias.source, { file: 'src/blocks/TwoDoors.jsx', line: 246 });
+  assert.deepEqual(alias.source, { file: 'src/blocks/TwoDoors.jsx', line: 264 });
   assert.equal(blockRef({ type: 'Unknown', props: { id: 'other' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', ref.engine).source, null);
 });
 
