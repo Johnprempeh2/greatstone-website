@@ -10,17 +10,16 @@ import { motionHello, setMotion, setMotionResult } from '../../../next-proof/fra
 import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
 import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { validPageScene } from '../../../next-proof/page-scene.mjs';
-import { splitTwoDoorsToolsDraft } from '../../../next-proof/two-doors-draft.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
-import { COPY_PERMISSIONS, copyModeAllows, editModeOf, editorState, helloAckPayload, importLiveData, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
+import { COPY_PERMISSIONS, editorViewportUi, prepareEditorDraft, copyModeAllows, editModeOf, editorState, helloAckPayload, importLiveData, mediaRequest, validEditorCommand } from '../../../next-proof/frame-editor.mjs';
 import { EDITOR_MESSAGES, askAgent, capturePng, captureTarget, renderPins, validPins } from '../../../next-proof/frame-comments.mjs';
 import './frame.css';
 
 const usePuckSelection = createUsePuck();
 const EDITOR_UI = { leftSideBarVisible: false, rightSideBarVisible: false, itemSelector: null, viewports: { current: { width: '100%', height: 'auto' }, controlsVisible: false, options: [] } };
 
-function FrameControls({ send, save, commands, copy, pins, onLayout, onImport, pageSettingsRef }) {
+function FrameControls({ send, save, commands, copy, pins, onLayout, onImport, pageSettingsRef, viewportRef }) {
   const puckSelected = usePuckSelection((s) => s.selectedItem);
   const [clicked, setClicked] = useState(null);
   const selected = puckSelected || clicked;
@@ -120,8 +119,10 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport, p
       case 'outline': toggleOutline(payload.on); break;
       case 'layout': onLayout(payload.on); break;
       case 'import-live': onImport(); break;
+      case 'viewport': viewportRef.current = payload.width; dispatch({ type: 'setUi', ui: editorViewportUi(payload.width) }); break;
     }
   }
+  useEffect(() => { dispatch({ type: 'setUi', ui: editorViewportUi(viewportRef.current) }); }, []);
   useEffect(() => { commands.current = command; return () => { commands.current = null; }; });
   useEffect(() => {
     function onKey(event) {
@@ -164,13 +165,13 @@ function FrameControls({ send, save, commands, copy, pins, onLayout, onImport, p
   }
   const count = selector?.zone === 'root:default-zone' ? contentLength : 999;
   if (copy && !selected) return null;
-  return createPortal(<div className={'gs-frame-controls' + (library || outline || selected || pageSettings ? ' is-drawer-open' : '')}>
+  return createPortal(<div className={'gs-frame gs-frame-controls' + (library || outline || selected || pageSettings ? ' is-drawer-open' : '')}>
     {selected && <div className="gs-frame-block-tools" role="toolbar" aria-label="Selected block">
-      <span>{selected.type}</span><button type="button" onClick={() => { const payload = askAgent(selected); if (payload) send('ask-agent', payload); }}>Ask an agent</button>
+      <span title={selected.type}>{proofConfig.components[selected.type]?.label || selected.type.replace(/([a-z])([A-Z])/g, '$1 $2')}</span><button className="gs-frame-primary" type="button" onClick={() => { const payload = askAgent(selected); if (payload) send('ask-agent', payload); }}>Ask an agent</button>
       {!copy && <><button type="button" disabled={!selector || selector.index === 0} onClick={() => act('reorder', selector.index - 1)}>Move up</button>
       <button type="button" disabled={!selector || selector.index >= count - 1} onClick={() => act('reorder', selector.index + 1)}>Move down</button>
-      <button type="button" onClick={() => act('duplicate')}>Duplicate</button><button type="button" onClick={() => act('remove')}>Delete</button>
-      </>}<button type="button" onClick={close}>Close</button>
+      <button type="button" onClick={() => act('duplicate')}>Duplicate</button><button className="gs-frame-delete" type="button" onClick={() => act('remove')}>Delete</button>
+      </>}
     </div>}
     {!copy && <button type="button" onClick={add}>Add block</button>}
     {!copy && <button ref={pageButton} type="button" onClick={openPageSettings}>Page background</button>}
@@ -193,6 +194,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
   const [editMode, setEditMode] = useState('layout');
   const [pins, setPins] = useState([]);
   const pageSettingsRef = useRef(false);
+  const viewportRef = useRef(null);
   const session = useRef(null), draft = useRef(null), baseRevision = useRef(null), pending = useRef(null), timer = useRef(null);
   const mediaUrls = useRef({});
   const commands = useRef(null);
@@ -249,7 +251,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
           window.parent.postMessage(envelope('hello-refused', { nonce, reason: result.refused, supported: [FRAME_PROTOCOL] }), event.origin); return;
         }
         session.current ||= { nonce, origin: event.origin };
-        if (mode === 'editor') setEditMode(editModeOf(result.payload));
+        if (mode === 'editor') { const requested = editModeOf(result.payload); copyRef.current = requested === 'copy'; setEditMode(requested); }
         window.parent.postMessage(envelope('hello-ack', helloAckPayload({ protocol: FRAME_PROTOCOL, nonce, siteId,
           engine, mode, liveData, editorMessages: EDITOR_MESSAGES, motion: motionHello(proofConfig.components) })), event.origin);
         setMessage('Waiting for the page draft'); return;
@@ -260,7 +262,11 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
       }
       const p = event.data.payload;
       if (event.data.type === 'editor-command') {
-        if (mode === 'editor' && validEditorCommand(p)) commands.current?.(p);
+        if (mode === 'editor' && validEditorCommand(p)) {
+          // Retain sizing even when the draft has not mounted its controls yet.
+          if (p.command === 'viewport') viewportRef.current = p.width;
+          commands.current?.(p);
+        }
       } else if (event.data.type === 'comment-pins' && mode === 'editor') {
         const next = validPins(p, draft.current);
         if (next) setPins(next);
@@ -276,7 +282,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
         clearTimeout(timer.current); releaseMedia(); setPins([]); setData(null); setStatus('closed'); setMessage('Editor closed');
       } else if (event.data.type === 'load-draft' && !draft.current && p.pageId === page.id && typeof p.revisionId === 'string' && Array.isArray(p.data?.content)) {
         addMedia(p.media); baseRevision.current = p.revisionId;
-        const next = splitTwoDoorsToolsDraft(p.data);
+        const next = prepareEditorDraft(p.data, copyRef.current);
         draft.current = next; setData(displayData(next)); setStatus('ready'); setMessage('Draft ready');
         if (next !== p.data) { dirty(true); save(next); }
       } else if (event.data.type === 'highlight' && mode === 'preview') {
@@ -368,7 +374,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
     {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && <div className="gs-frame-notice" role="alert"><p>{message}</p>{pending.current && <button type="button" onClick={() => save(undefined, true)}>Retry save</button>}</div>}
-    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><FrameCopyContext.Provider value={copy}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={EDITOR_UI} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} pins={pins} onLayout={switchEditMode} onImport={importLive} pageSettingsRef={pageSettingsRef} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameCopyContext.Provider></FrameEditingContext.Provider>
+    {mode === 'editor' ? <FrameEditingContext.Provider value={true}><FrameCopyContext.Provider value={copy}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={EDITOR_UI} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} pins={pins} onLayout={switchEditMode} onImport={importLive} pageSettingsRef={pageSettingsRef} viewportRef={viewportRef} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameCopyContext.Provider></FrameEditingContext.Provider>
       : <div className="gs-frame-preview" onClick={pick}><PreviewContext.Provider value={true}><ProofBlocks data={data} pageSlug={page.slug} forms={forms} /></PreviewContext.Provider>{highlight && <style>{`[data-gs-block-id="${CSS.escape(highlight)}"]{outline:3px solid #c8ff00;outline-offset:4px}`}</style>}</div>}
   </main>;
 }
