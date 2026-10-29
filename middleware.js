@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
-import { allowedHostOrigins, frameCsp, publicFrameAncestors } from './next-proof/frame-protocol.mjs';
+import { frameCsp, publicFrameAncestors } from './next-proof/frame-protocol.mjs';
+import { editorHostPolicy } from './next-proof/editor-host-policy.mjs';
 import { frameRouteDecision } from './next-proof/frame-routing.mjs';
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
   const hostname = (request.headers.get('host') || request.nextUrl.hostname).replace(/:\d+$/, '');
-  const decision = frameRouteDecision({ pathname, hostname, editorHost: process.env.GSAM_EDITOR_HOST, method: request.method,
+  const policy = editorHostPolicy();
+  const decision = frameRouteDecision({ pathname, hostname, editorHost: policy.host, method: request.method,
     origin: request.headers.get('origin'), fetchSite: request.headers.get('sec-fetch-site'), publicOrigin: `${request.nextUrl.protocol}//${request.headers.get('host')}` });
   if (decision.status !== 200) return new NextResponse(null, { status: decision.status });
   const isFrame = decision.frame;
   const requestHeaders = new Headers(request.headers);
   const nonce = btoa(crypto.randomUUID());
-  const csp = isFrame ? frameCsp(allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development'), nonce, process.env.NODE_ENV === 'development') : null;
+  const csp = isFrame ? frameCsp(policy.origins, nonce, process.env.NODE_ENV === 'development') : null;
   if (isFrame) {
     requestHeaders.set('x-nonce', nonce);
     requestHeaders.set('Content-Security-Policy', csp);

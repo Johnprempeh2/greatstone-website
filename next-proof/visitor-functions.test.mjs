@@ -56,3 +56,20 @@ test('editor package carries the host guard and builds without database provisio
     await rm(target, { recursive: true, force: true });
   }
 });
+
+test('preview editor package alone receives the exact localhost host policy', async () => {
+  const target = await mkdtemp(join(tmpdir(), 'greatstone-next-editor-preview-'));
+  try {
+    await exec(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target, '--editor-preview']);
+    const previewConfig = await readFile(join(target, 'next-proof/editor-preview-config.mjs'), 'utf8');
+    assert.match(previewConfig, /gsam-editor-gre3201--greatstone-home\.netlify\.app/);
+    assert.match(previewConfig, /http:\/\/localhost:3200/);
+    assert.match(previewConfig, /b546812d-8d25-49dc-94c2-e04a5b31bde4/);
+    assert.equal(await readFile('next-proof/editor-preview-config.mjs', 'utf8'),
+      '// Replaced only in the isolated editor preview package by prepare-netlify.mjs.\nexport const editorPreviewConfig = null;\n');
+    assert.doesNotMatch(await readFile(join(target, 'netlify.toml'), 'utf8'), /localhost/);
+    await assert.rejects(stat(join(target, 'netlify/functions')));
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
