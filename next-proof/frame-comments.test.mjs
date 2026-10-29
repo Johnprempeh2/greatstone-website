@@ -51,7 +51,7 @@ test('Ask an agent sends a bounded selected-block reference in both editing mode
   const payload = askAgent(item);
   assert.deepEqual(payload, { blockId: 'hero-1', blockType: 'Hero', label: 'A'.repeat(200) });
   assert.equal(envelope('ask-agent', payload, bound).session, bound.nonce);
-  assert.match(source, /<button type="button" onClick=\{\(\) => \{ const payload = askAgent\(selected\)/);
+  assert.match(source, /<button className="gs-frame-primary" type="button" onClick=\{\(\) => \{ const payload = askAgent\(selected\)/);
   assert.match(source, /\{!copy && <>/);
 });
 
