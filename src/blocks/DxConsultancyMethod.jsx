@@ -10,7 +10,7 @@ export const STEPS = [
   { name: 'Build', tag: 'Where it fits', text: 'We build what the blueprint sets out, in the order we agree with you: the systems, the automation and the AI. Where it fits, this can include your digital office.' },
 ];
 
-export function DxConsultancyMethod({ id, puck, eyebrow, heading, headingLevel = 'h1', body, secondStepNote, closeHeading, closeBody }) {
+export function DxConsultancyMethod({ id, puck, eyebrow, heading, headingLevel = 'h1', body, secondStepNote, closeHeading, closeBody, introOnly = false }) {
   const editing = !!puck?.isEditing;
   const introHeading = headingLevel === 'h2' ? 'h2' : 'h1';
   const StepHeading = headingLevel === 'h2' ? 'h3' : 'h2';
@@ -21,7 +21,7 @@ export function DxConsultancyMethod({ id, puck, eyebrow, heading, headingLevel =
         <EditableText editing={editing} id={id} field="heading" value={heading} as={introHeading} className="h1" singleLine />
         <EditableText editing={editing} id={id} field="body" value={body} as="p" className="muted" />
       </header>
-      <nav className="b-dx-method-overview" aria-label="Method steps">
+      {!introOnly && <><nav className="b-dx-method-overview" aria-label="Method steps">
         {STEPS.map((step, index) => <a key={step.name} href={`#dx-step-${index + 1}`}>
           <strong>{step.name}</strong><span>{step.tag}</span>
         </a>)}
@@ -31,7 +31,7 @@ export function DxConsultancyMethod({ id, puck, eyebrow, heading, headingLevel =
           <span className="b-dx-method-number" aria-hidden="true">0{index + 1}</span>
           <div><div className="b-dx-method-title"><StepHeading>{step.name}</StepHeading><span>{step.tag}</span></div><p>{step.text}</p>{index === 1 && secondStepNote ? <EditableText editing={editing} id={id} field="secondStepNote" value={secondStepNote} as="p" className="b-dx-method-note" /> : null}</div>
         </li>)}
-      </ol>
+      </ol></>}
       {(closeHeading || closeBody) && <div className="b-dx-method-close">
         <EditableText editing={editing} id={id} field="closeHeading" value={closeHeading} as="h2" singleLine />
         <EditableText editing={editing} id={id} field="closeBody" value={closeBody} as="p" />
@@ -75,6 +75,7 @@ export const puck = {
     eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     headingLevel: { type: 'radio', label: 'Heading role', options: [{ label: 'Page title (H1)', value: 'h1' }, { label: 'Section title (H2)', value: 'h2' }] },
+    introOnly: { type: 'radio', label: 'Display', options: [{ label: 'Introduction and steps', value: false }, { label: 'Introduction only', value: true }] },
     body: { type: 'custom', label: 'Introduction', render: (props) => <RichTextField {...props} /> },
     secondStepNote: { type: 'custom', label: 'Note under initial assessment', render: (props) => <RichTextField {...props} /> },
     closeHeading: { type: 'custom', label: 'Closing heading', render: (props) => <RichTextField {...props} variant="heading" /> },
