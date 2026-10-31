@@ -11,3 +11,5 @@ Second pass after Mikey's review: the answer now sits right under the problems, 
 - `*-build-your-own`: "Or build your own" opens the catalogue; two services toggled with the keyboard only (Enter, then Space).
 
 Checked in the same run: no sideways scroll at 1440, 390 or 320; every visible button and link at least 44px tall; no console errors; under reduced motion the chip animation is off and every transition is 0s.
+
+Third pass after Keystone's review (`*-lit` retaken): the answer heading names the problem it answers ("For too much manual admin: 6 services across 3 areas."), and below 900px "Or build your own" sits after the answer panel, so the answer follows the tapped card directly. Problems now come from the site database (`/api/compose-problems`); in this local run there is no database, so the block shows the bundled copy, which is the same six problems.
