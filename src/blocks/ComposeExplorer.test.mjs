@@ -34,28 +34,50 @@ test('picking a problem lights its services, building your own toggles them, and
       assert.equal(tiles.length, 78, 'every catalogue service is a tile');
       assert.equal(document.querySelectorAll('.b-compose-group').length, 9, 'grouped by the 9 categories');
       assert.equal(status(), 'No services selected.');
-      const basket = document.querySelector('.b-compose-cta.is-fill');
-      assert.equal(basket.disabled, true, 'nothing to add yet');
+      const board = document.querySelector('.b-compose-board');
+      assert.equal(board.hidden, true, 'the full catalogue is folded until asked for');
+      assert.equal(document.querySelector('.b-compose-cta.is-fill'), null, 'nothing to add yet');
+      assert.equal(document.querySelectorAll('.b-compose-problem').length, 6, 'build your own is not a problem card');
 
       const all = [...document.querySelectorAll('.b-compose-problem')];
       const problem = all.find((b) => b.textContent.includes('Chasing payments'));
       assert.ok(problem, 'problems: ' + all.map((b) => JSON.stringify(b.textContent)).join(' | '));
       await click(problem);
       assert.equal(problem.getAttribute('aria-pressed'), 'true');
-      assert.deepEqual(pressed().sort(), ['Automated Invoicing & Chasing', 'Automated Membership Renewals', 'Online Deposits & Patient Payments', 'Stripe Checkout Setup'],
-        'names come from the catalogue, not the block');
+      const expected = ['Automated Invoicing & Chasing', 'Automated Membership Renewals', 'Online Deposits & Patient Payments', 'Stripe Checkout Setup'];
+      assert.deepEqual([...document.querySelectorAll('.b-compose-picked li')].map((li) => li.textContent).sort(), expected,
+        'the answer lists the lit services right under the problems');
+      assert.deepEqual(pressed().sort(), expected, 'names come from the catalogue, not the block');
       assert.equal(status(), '4 services selected, across 2 areas.');
       assert.ok(document.querySelector('.b-compose-layout').classList.contains('is-lit'), 'the rest dim');
+      assert.equal(board.hidden, true, 'picking a problem does not unfold the catalogue');
+
+      const edit = document.querySelector('.b-compose-toggle');
+      assert.equal(edit.textContent, 'Edit this list');
+      assert.equal(edit.getAttribute('aria-expanded'), 'false');
+      await click(edit);
+      assert.equal(board.hidden, false);
+      assert.equal(edit.getAttribute('aria-expanded'), 'true');
+      assert.ok(document.querySelector('.b-compose-bar'), 'the one-line bar rides along the open board');
 
       // toggling a tile directly becomes the visitor's own build
       const lit = document.querySelector('.b-compose-tile[aria-pressed="true"]');
       await click(lit);
       assert.equal(problem.getAttribute('aria-pressed'), 'false');
-      assert.equal(document.querySelector('.b-compose-problem.is-own').getAttribute('aria-pressed'), 'true');
+      assert.equal(document.querySelector('.b-compose-own').getAttribute('aria-pressed'), 'true');
       assert.equal(status(), '3 services selected, across 2 areas.');
 
-      await click(basket);
+      await click(document.querySelector('.b-compose-answer .b-compose-cta.is-fill'));
       assert.equal(cart.getCart().filter((l) => l.kind === 'service').length, 3, 'selection sent to the shared basket');
+
+      // building your own from scratch clears the answer and keeps the catalogue open; again folds it
+      const own = document.querySelector('.b-compose-own');
+      await click(own); // already custom: clears and folds
+      assert.equal(board.hidden, true);
+      await click(own);
+      assert.equal(own.getAttribute('aria-pressed'), 'true');
+      assert.equal(board.hidden, false, 'build your own unfolds the catalogue');
+      assert.equal(status(), 'No services selected.');
 
       // picking the same problem twice clears it
       await click(problem);
