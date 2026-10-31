@@ -51,6 +51,7 @@ import * as TwoDoorsBottom from './blocks/TwoDoorsBottom.jsx';
 import * as DevTools from './blocks/DevTools.jsx';
 import * as TransformationServices from './blocks/TransformationServices.jsx';
 import * as DxConsultancyMethod from './blocks/DxConsultancyMethod.jsx';
+import * as ComposeExplorer from './blocks/ComposeExplorer.jsx';
 import * as LayerStack from './blocks/LayerStack.jsx';
 import * as BridgeMap from './blocks/BridgeMap.jsx';
 import * as ProofBars from './blocks/ProofBars.jsx';
@@ -61,7 +62,7 @@ import { SECTION_FIELD, SECTION_DEFAULT } from './cms/style-field.jsx';
 // One block library, assembled from self-contained block files. Each block file owns its
 // component, its CSS, and its Puck fragment (fields/defaults/permissions/render). Marketing
 // configures fields; the components and their motion are code-owned — "edit, don't restyle".
-const MODULES = { Hero, Prose, Chapter, Statement, Panels, Columns, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, ServiceCatalog, TransformationServices, DxConsultancyMethod, LayerStack, BridgeMap, ProofBars, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator, AiBaselineSurvey, AiCostCalculator, LogoWall, ComparisonMatrix, FrontDoor, TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools };
+const MODULES = { Hero, Prose, Chapter, Statement, Panels, Columns, Pillars, PillarCards, PillarExplorer, IndustryPicker, MaturityMap, MaturityModel, Steps, ServiceCards, ServiceCatalog, TransformationServices, DxConsultancyMethod, ComposeExplorer, LayerStack, BridgeMap, ProofBars, Terrace, Spectrum, Timeline, Ladder, MethodTieIn, StatStrip, CaseStudy, RoiBar, Quote, Team, Values, FeaturedArticle, InsightsGrid, IntelBand, Figure, Storefront, TimeCounter, BookDeepDive, ContactBand, Invite, FeatureGrid, NewsletterBand, Faq, TimeSavingsCalculator, AiBaselineSurvey, AiCostCalculator, LogoWall, ComparisonMatrix, FrontDoor, TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools };
 
 // wrap every block's render in a measurable anchor (id = gs-blk-<blockId>) so the 3D background
 // editor can pin a scene transition to "when you reach this block" — resolved live from the
@@ -91,7 +92,7 @@ export const config = {
   // group the block drawer so the section types read as a deliberate kit, not a junk drawer
   categories: {
     page: { title: 'Page', components: ['Hero', 'TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom', 'DevTools', 'Invite', 'NewsletterBand'] },
-    story: { title: 'Story', components: ['Prose', 'Chapter', 'Statement', 'Columns', 'Pillars', 'PillarCards', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'ServiceCatalog', 'TransformationServices', 'DxConsultancyMethod', 'LayerStack', 'BridgeMap', 'Terrace', 'Spectrum', 'Timeline', 'Ladder', 'MethodTieIn'] },
+    story: { title: 'Story', components: ['Prose', 'Chapter', 'Statement', 'Columns', 'Pillars', 'PillarCards', 'PillarExplorer', 'IndustryPicker', 'MaturityMap', 'MaturityModel', 'Steps', 'ServiceCards', 'ServiceCatalog', 'TransformationServices', 'DxConsultancyMethod', 'ComposeExplorer', 'LayerStack', 'BridgeMap', 'Terrace', 'Spectrum', 'Timeline', 'Ladder', 'MethodTieIn'] },
     proof: { title: 'Proof', components: ['StatStrip', 'ProofBars', 'LogoWall', 'ComparisonMatrix', 'CaseStudy', 'RoiBar', 'Quote', 'Team', 'Values', 'FeatureGrid', 'Faq', 'TimeSavingsCalculator', 'AiBaselineSurvey', 'AiCostCalculator'] },
     editorial: { title: 'Editorial', components: ['IntelBand', 'FeaturedArticle', 'InsightsGrid', 'Figure'] },
     commerce: { title: 'Commerce', components: ['Storefront'] },
