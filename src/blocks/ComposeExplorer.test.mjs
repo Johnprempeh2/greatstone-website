@@ -24,12 +24,21 @@ test('picking a problem lights its services, building your own toggles them, and
   try {
     const { ComposeExplorer, puck } = await vite.ssrLoadModule('/src/blocks/ComposeExplorer.jsx');
     const cart = await vite.ssrLoadModule('/src/store/cart.mjs');
+    const store = await vite.ssrLoadModule('/src/store/compose-problems.mjs');
+    const { problems: bundled } = await vite.ssrLoadModule('/src/data/compose-problems.mjs');
+    // the site database answers with its own copy: one extra problem the bundled source does not have
+    const dbRows = [...bundled, { id: 'db-only', title: 'Only in the database', subline: 'Proves the block reads the site data.', source: '', placeholder: false, services: ['live-operations-dashboard'] }];
+    const prevFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => (String(url) === '/api/compose-problems' ? { ok: true, json: async () => dbRows } : { ok: false });
     const root = createRoot(document.body.appendChild(document.createElement('div')));
     const click = (node) => act(async () => node.dispatchEvent(new dom.MouseEvent('click', { bubbles: true })));
     const pressed = () => [...document.querySelectorAll('.b-compose-tile[aria-pressed="true"]')].map((b) => b.textContent);
     const status = () => document.querySelector('.b-compose-count').textContent;
     try {
+      assert.equal('problems' in puck.defaultProps, false, 'problems are site data, never copied into the page');
       await act(async () => root.render(React.createElement(ComposeExplorer, puck.defaultProps)));
+      await act(async () => { await store.loadComposeProblems(); });
+      assert.ok([...document.querySelectorAll('.b-compose-ptitle')].some((t) => t.textContent === 'Only in the database'), 'problems come from the database');
       const tiles = document.querySelectorAll('.b-compose-tile');
       assert.equal(tiles.length, 78, 'every catalogue service is a tile');
       assert.equal(document.querySelectorAll('.b-compose-group').length, 9, 'grouped by the 9 categories');
@@ -37,7 +46,7 @@ test('picking a problem lights its services, building your own toggles them, and
       const board = document.querySelector('.b-compose-board');
       assert.equal(board.hidden, true, 'the full catalogue is folded until asked for');
       assert.equal(document.querySelector('.b-compose-cta.is-fill'), null, 'nothing to add yet');
-      assert.equal(document.querySelectorAll('.b-compose-problem').length, 6, 'build your own is not a problem card');
+      assert.equal(document.querySelectorAll('.b-compose-problem').length, 7, 'build your own is not a problem card');
 
       const all = [...document.querySelectorAll('.b-compose-problem')];
       const problem = all.find((b) => b.textContent.includes('Chasing payments'));
@@ -48,7 +57,7 @@ test('picking a problem lights its services, building your own toggles them, and
       assert.deepEqual([...document.querySelectorAll('.b-compose-picked li')].map((li) => li.textContent).sort(), expected,
         'the answer lists the lit services right under the problems');
       assert.deepEqual(pressed().sort(), expected, 'names come from the catalogue, not the block');
-      assert.equal(status(), '4 services selected, across 2 areas.');
+      assert.equal(status(), 'For chasing payments and renewals: 4 services across 2 areas.', 'the answer names its problem');
       assert.ok(document.querySelector('.b-compose-layout').classList.contains('is-lit'), 'the rest dim');
       assert.equal(board.hidden, true, 'picking a problem does not unfold the catalogue');
 
@@ -85,6 +94,8 @@ test('picking a problem lights its services, building your own toggles them, and
       assert.equal(status(), 'No services selected.');
     } finally {
       await act(async () => root.unmount());
+      globalThis.fetch = prevFetch;
+      store.resetComposeProblems();
     }
   } finally {
     await vite.close();

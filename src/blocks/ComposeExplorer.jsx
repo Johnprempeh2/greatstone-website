@@ -8,21 +8,23 @@ import { addService, openCart } from '../store/cart.mjs';
 import { track } from '../lib/analytics.js';
 import { PRIMARY_CTA_HREF } from '../lib/brand.mjs';
 import { resolveProblems, groupServices, toggleSlug, summarise, countMessage } from '../lib/compose-explorer.mjs';
-import { problems as DEFAULT_PROBLEMS } from '../data/compose-problems.mjs';
-import { services as CATALOG_SERVICES } from '../data/service-catalog.mjs';
+import { useComposeProblems, loadComposeProblems } from '../store/compose-problems.mjs';
 
 // ComposeExplorer (GRE-3407): pick a business problem and the catalogue services that compose the answer light up
 // (emerald with a lime edge, the rest dim); or build your own by toggling services directly. A summary counts the
 // services and the areas they touch, and sends the selection to the shared basket. Services, names and categories
-// come from the live catalogue (ServicesContext); problems come from this block's `problems` field, seeded from
-// src/data/compose-problems.mjs. Nothing about a service is typed here.
+// come from the live catalogue (ServicesContext); problems and their services come from the site database
+// (compose_problems, via /api/compose-problems), with src/data/compose-problems.mjs as first paint and offline fallback.
+// Nothing about a problem or a service is typed here or copied into the page.
 
-export function ComposeExplorer({ id, puck, eyebrow, heading, body, customLabel, basketLabel, quoteLabel, quoteHref, problems }) {
+export function ComposeExplorer({ id, puck, eyebrow, heading, body, customLabel, basketLabel, quoteLabel, quoteHref }) {
   const editing = !!puck?.isEditing;
   const ref = useReveal();
   const boardRef = useRef(null);
   const answerRef = useRef(null);
   const { services, categories } = useServices();
+  const problems = useComposeProblems();
+  useEffect(() => { loadComposeProblems(); }, []);
   const list = useMemo(() => resolveProblems(problems, services), [problems, services]);
   const groups = useMemo(() => groupServices(services, categories), [services, categories]);
   const [active, setActive] = useState(null); // a problem id, 'custom', or null
@@ -31,6 +33,7 @@ export function ComposeExplorer({ id, puck, eyebrow, heading, body, customLabel,
   const [barOpen, setBarOpen] = useState(false);
   const [jump, setJump] = useState(0); // bumped when a new answer should be brought into view
   const sum = useMemo(() => summarise(selected, services), [selected, services]);
+  const answering = list.find((p) => p.id === active);
   const litOrder = useMemo(() => new Map(sum.chosen.map((s, i) => [serviceSlug(s), i])), [sum.chosen]);
 
   // a new answer comes into view: the answer panel (on a phone it sits below the stacked problems), or with the
@@ -81,11 +84,11 @@ export function ComposeExplorer({ id, puck, eyebrow, heading, body, customLabel,
 
         <div className={'b-compose-layout' + (selected.size ? ' is-lit' : '') + (boardOpen ? ' is-open' : '')}>
           <div className="b-compose-problems" role="group" aria-label="Business problems" data-reveal>
-            {list.map((p, i) => (
+            {list.map((p) => (
               <button key={p.id} type="button" className={'b-compose-problem' + (active === p.id ? ' is-on' : '')}
                 aria-pressed={active === p.id} onClick={() => pickProblem(p)}>
-                <EditableText editing={editing} id={id} arrayField="problems" index={i} field="title" value={p.title} as="span" className="b-compose-ptitle" singleLine />
-                {p.subline ? <EditableText editing={editing} id={id} arrayField="problems" index={i} field="subline" value={p.subline} as="span" className="b-compose-psub" singleLine /> : null}
+                <span className="b-compose-ptitle">{p.title}</span>
+                {p.subline ? <span className="b-compose-psub">{p.subline}</span> : null}
                 {editing && p.placeholder ? <span className="b-compose-flag">Placeholder: John to confirm</span> : null}
               </button>
             ))}
@@ -98,7 +101,7 @@ export function ComposeExplorer({ id, puck, eyebrow, heading, body, customLabel,
           {/* the answer sits right under the problems, so the services light up where the visitor just clicked */}
           <section ref={answerRef} className="b-compose-answer" aria-label="Your selection">
             <div className="b-compose-answer-main">
-              <p className="b-compose-count" role="status" aria-live="polite">{countMessage(sum)}</p>
+              <p className="b-compose-count" role="status" aria-live="polite">{countMessage(sum, answering?.title)}</p>
               {sum.count ? (
                 <>
                   <ul className="b-compose-picked" aria-label="Selected services">
@@ -241,6 +244,9 @@ export const css = `
 .b-compose-bar-more{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:0 10px 6px 0}
 html:has(.b-compose-bar){scroll-padding-bottom:96px}
 @media(max-width:900px){
+  /* on a phone the answer follows the problem cards directly; "build your own" comes after it */
+  .b-compose-own{order:1}
+  .b-compose-board,.b-compose-bar{order:2}
   .b-compose-answer{grid-template-columns:minmax(0,1fr);padding:20px}
   .b-compose-ctas{flex-direction:row;flex-wrap:wrap;align-items:center}
   .b-compose-ctas .b-compose-cta{flex:1 1 180px}
@@ -258,7 +264,16 @@ html:has(.b-compose-bar){scroll-padding-bottom:96px}
 @media print{.b-compose-bar{display:none}.b-compose-tile,.b-compose-picked li{box-shadow:none}}
 `;
 
-const SERVICE_OPTIONS = CATALOG_SERVICES.map((s) => ({ label: `${s.category}: ${s.name}`, value: s.slug }));
+// The problems are site data, not page data, so the studio points to where they are edited instead of copying them.
+function ProblemsNote() {
+  return (
+    <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0 }}>
+      Problems and their services come from the site database (tables compose_problems and compose_problem_services).
+      To change them, edit src/data/compose-problems.mjs, run node scripts/gen-compose-seed.mjs and apply
+      netlify/database/seed/compose-problems.sql. Problems marked placeholder show a flag here until John confirms them.
+    </p>
+  );
+}
 
 export const puck = {
   label: 'Compose explorer',
@@ -270,24 +285,7 @@ export const puck = {
     basketLabel: { type: 'text', label: 'Basket button label' },
     quoteLabel: { type: 'text', label: 'Quote link label' },
     quoteHref: { type: 'text', label: 'Quote link' },
-    problems: {
-      type: 'array', label: 'Business problems',
-      arrayFields: {
-        id: { type: 'text', label: 'Id (lowercase, for analytics)' },
-        title: { type: 'text', label: 'Problem' },
-        subline: { type: 'text', label: 'Subline' },
-        source: { type: 'text', label: 'Source (where a client said this)' },
-        placeholder: { type: 'radio', label: 'Placeholder', options: [{ label: 'Yes, John to confirm', value: true }, { label: 'No, confirmed', value: false }] },
-        services: {
-          type: 'array', label: 'Services that compose the answer',
-          arrayFields: { slug: { type: 'select', label: 'Service', options: SERVICE_OPTIONS } },
-          defaultItemProps: { slug: SERVICE_OPTIONS[0]?.value || '' },
-          getItemSummary: (i) => i.slug || 'Service',
-        },
-      },
-      defaultItemProps: { id: 'new-problem', title: 'A problem clients describe', subline: '', source: '', placeholder: true, services: [] },
-      getItemSummary: (i) => i.title || 'Problem',
-    },
+    problemsNote: { type: 'custom', label: 'Business problems', render: ProblemsNote },
   },
   defaultProps: {
     eyebrow: 'Compose the answer',
@@ -297,7 +295,6 @@ export const puck = {
     basketLabel: 'Add to basket',
     quoteLabel: 'Request a quote',
     quoteHref: PRIMARY_CTA_HREF,
-    problems: DEFAULT_PROBLEMS.map((p) => ({ ...p, services: p.services.map((slug) => ({ slug })) })),
   },
   render: (props) => <ComposeExplorer {...props} />,
 };

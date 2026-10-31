@@ -5,7 +5,9 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import pg from 'pg';
 import { startPostgres, skip } from './lib/postgres.mjs';
+import { makeComposeProblemsHandler } from '../functions/compose-problems.mjs';
 import { problems } from '../../src/data/compose-problems.mjs';
 import { SEED_PATH } from '../../scripts/gen-compose-seed.mjs';
 
@@ -26,6 +28,20 @@ test('a guest reads the mapping the migration seeded', { skip }, () => {
   assert.deepEqual(r.stdout.trim().split('\n'), problems.map((p) => p.id));
   const links = anon("SELECT problem_id || ':' || service_slug FROM public.compose_problem_services;");
   assert.deepEqual(links.stdout.trim().split('\n').sort(), pairs(problems));
+});
+
+test('/api/compose-problems serves the mapping to a guest, in order, with the services of each problem', { skip }, async () => {
+  const pool = new pg.Pool({ connectionString: db.url, max: 1 });
+  try {
+    const res = await makeComposeProblemsHandler({ pool: () => pool })(new Request('https://example.test/api/compose-problems'));
+    assert.equal(res.status, 200);
+    const rows = await res.json();
+    assert.deepEqual(rows.map((r) => r.id), problems.map((p) => p.id));
+    assert.deepEqual(rows.map((r) => r.services), problems.map((p) => p.services), 'services keep the source order');
+    assert.deepEqual(rows.map((r) => r.placeholder), problems.map((p) => p.placeholder));
+  } finally {
+    await pool.end();
+  }
 });
 
 test('a guest cannot change the mapping', { skip }, () => {
@@ -49,4 +65,10 @@ test('the generated seed re-applies and matches the source', { skip }, () => {
   assert.deepEqual(placeholders.stdout.trim().split('\n'), problems.filter((p) => p.placeholder).map((p) => p.id));
   const links = db.psql("SELECT problem_id || ':' || service_slug FROM public.compose_problem_services;");
   assert.deepEqual(links.stdout.trim().split('\n').sort(), pairs(problems));
+});
+
+test('/api/compose-problems only answers GET, and says so when the database is away', async () => {
+  const handler = makeComposeProblemsHandler({ pool: () => null, log: () => {} });
+  assert.equal((await handler(new Request('https://example.test/api/compose-problems', { method: 'POST' }))).status, 405);
+  assert.equal((await handler(new Request('https://example.test/api/compose-problems'))).status, 503);
 });

@@ -1,8 +1,9 @@
 // ComposeExplorer source (GRE-3407): the business problems a visitor can pick, and the catalogue services that
 // compose the answer to each. Lives next to service-catalog.mjs and refers to its services by slug only, so names,
-// categories and copy always come from the catalogue. Edit here or in the studio (the ComposeExplorer block's
-// `problems` array). The database copy (netlify/database/migrations/059_compose_problems) is seeded from this file
-// by `node scripts/gen-compose-seed.mjs`; a test fails if the two drift.
+// categories and copy always come from the catalogue. The block reads the database copy at runtime
+// (compose_problems via /api/compose-problems) and uses this file only for first paint and offline. To change a
+// problem: edit here, run `node scripts/gen-compose-seed.mjs`, and apply netlify/database/seed/compose-problems.sql to
+// the site database; a test fails if the seed and this file drift.
 //
 // `source` says where a problem came from. `placeholder: true` marks wording we have not yet matched to a client
 // transcript: John to confirm or replace before the page is published.
