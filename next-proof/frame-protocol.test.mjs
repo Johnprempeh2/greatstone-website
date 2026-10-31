@@ -59,7 +59,7 @@ test('static public headers permit GSAM framing without conflicting X-Frame-Opti
 test('block reference carries stable identity and treats source as a hint', () => {
   const ref = blockRef({ type: 'Hero', props: { id: 'block-1' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', { version: '1', commit: 'a'.repeat(40) });
   assert.deepEqual([ref.siteId, ref.pageId, ref.pageRevisionId, ref.blockId, ref.blockType], ['site-1', 'page-1', 'revision-1', 'block-1', 'Hero']);
-  assert.deepEqual(ref.source, { file: 'src/blocks/Hero.jsx', line: 310 });
+  assert.deepEqual(ref.source, { file: 'src/blocks/Hero.jsx', line: 311 });
   assert.match(readFileSync(new URL('../src/blocks/Hero.jsx', import.meta.url), 'utf8').split('\n')[ref.source.line - 1], /export const puck/);
   const alias = blockRef({ type: 'TwoDoorsStory', props: { id: 'story' } }, { id: 'page-1', revisionId: 'revision-1' }, 'site-1', ref.engine);
   assert.deepEqual(alias.source, { file: 'src/blocks/TwoDoors.jsx', line: 264 });

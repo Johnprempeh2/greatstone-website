@@ -137,7 +137,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
     </>
   );
   return (
-    <section ref={ref} className={`b-hero size-${size} align-${align}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}${stoneOn ? ' has-stone' : ''}`}>
+    <section ref={ref} className={`b-hero size-${size} align-${align}${size !== 'full' ? ' gs-rhythm' : ''}${variant === 'statement' ? ' v-statement' : ''}${gridBackdrop ? ' has-grid' : ''}${stoneOn ? ' has-stone' : ''}`}>
       {stoneOn
         ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><StoneSymbol enabled={!motion || motionRuntime === 'animate'} /></div>
         : <div className="wrap b-hero-inner">{inner}</div>}
@@ -153,6 +153,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
 
 export const css = `
 .b-hero{position:relative;display:flex;align-items:center}
+.b-hero.gs-rhythm:not(.v-statement) h1{font-size:clamp(2.7rem,6vw,4.5rem);font-weight:800;line-height:1.04;letter-spacing:-.035em}
 .b-hero.size-full{min-height:100vh}
 .b-hero.size-standard{min-height:72vh;padding:clamp(80px,14vh,160px) 0}
 /* compact: a short sub-page hero (the live .ind-hero / .ins-hero) so the section below sits near the fold */
