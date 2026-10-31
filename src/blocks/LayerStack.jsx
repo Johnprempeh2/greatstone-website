@@ -3,9 +3,8 @@ import EditableText from './EditableText.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import { STEPS } from './DxConsultancyMethod.jsx';
 
-// Keep the language aligned with the method block. Initial assessment belongs
-// within Discovery here, so the visual has the three layers in the brief.
-const layers = [STEPS[0], STEPS[2], STEPS[3]];
+// The visual and method list use the same four approved steps.
+const layers = STEPS;
 
 export function LayerStack({ id, puck, eyebrow, heading, body }) {
   const [active, setActive] = useState(-1);
