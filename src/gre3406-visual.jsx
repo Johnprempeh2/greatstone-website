@@ -4,13 +4,20 @@ import { config, blockCss } from './puck.config.jsx';
 import './site.css';
 import './index.css';
 import './studio.css';
+import { categories } from './data/service-catalog.mjs';
 
 const names = ['Hero', 'LogoWall', 'PillarCards', 'StatStrip', 'ComparisonMatrix', 'TimeSavingsCalculator', 'AiCostCalculator', 'DxConsultancyMethod', 'Invite'];
 const overrides = {
   Hero: { size: 'standard' },
   LogoWall: { mode: 'marquee', logos: [] },
-  PillarCards: { pillars: config.components.PillarCards.defaultProps.pillars.slice(0, 5) },
-  StatStrip: { body: '' },
+  PillarCards: {
+    mode: 'capabilities',
+    kicker: 'Service catalogue',
+    heading: 'Five service areas.',
+    body: 'A layout sample using entries from the current service catalogue.',
+    pillars: categories.slice(0, 5).map(({ name, blurb }) => ({ name, def: blurb, tag: '', chips: [], href: '' })),
+  },
+  StatStrip: { body: '', variant: 'plain' },
   Invite: { variant: 'framed' },
 };
 createRoot(document.getElementById('root')).render(<>
