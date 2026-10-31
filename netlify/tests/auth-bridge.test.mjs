@@ -35,6 +35,8 @@ const PUBLIC_ROWS = {
   org_settings: 'true',
   permissions: 'true',
   service_popularity: 'true',
+  compose_problems: 'true', // 059: the ComposeExplorer mapping, public marketing copy
+  compose_problem_services: 'true',
 };
 
 let db;
