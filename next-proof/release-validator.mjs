@@ -6,11 +6,12 @@ import collectionSchema from './release-schema/collections.v1.schema.json' with 
 import motionSchema from './release-schema/blocks-motion.v1.schema.json' with { type: 'json' };
 import motionManifest from './release-schema/manifest.v1.json' with { type: 'json' };
 import { validPageScene } from './page-scene.mjs';
+import { proofBarsProblem } from '../src/lib/proof-bars.mjs';
 
 export const supportedReleaseSchemas = [1];
 export const supportedBlocks = new Set([
   'TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom', 'DevTools',
-  'Hero', 'Prose', 'Panels', 'ServiceCatalog', 'TransformationServices', 'DxConsultancyMethod', 'Invite', 'Steps', 'FeatureGrid',
+  'Hero', 'Prose', 'Panels', 'ServiceCatalog', 'TransformationServices', 'DxConsultancyMethod', 'LayerStack', 'BridgeMap', 'ProofBars', 'Invite', 'Steps', 'FeatureGrid',
   'Faq', 'PillarCards', 'MaturityModel', 'Chapter', 'Team', 'LogoWall',
   'IntelBand', 'MaturityMap', 'Ladder', 'MethodTieIn', 'IndustryPicker',
   'BookDeepDive', 'AiBaselineSurvey', 'AiCostCalculator',
@@ -75,6 +76,8 @@ export function validateRelease(release, { siteId, orgId } = {}) {
     if (page.data.root.props.pageScene !== undefined && !validPageScene(page.data.root.props.pageScene, page.data.content.map((block) => block.props.id))) return fail('R6', 'Invalid page 3D background');
     const bad = checkBlocks(page.data.content, new Set());
     if (bad) return bad;
+    const proofProblem = proofBarsProblem(page.data.content);
+    if (proofProblem) return fail('R6', proofProblem);
   }
 
   let missingMedia;
