@@ -6,6 +6,8 @@ The home and DX Consultancy page captures are at 1440px and 390px. The after cap
 
 The motion-on marquee frames are [1440px](after-LogoWall-motion-1440.png) and [390px](after-LogoWall-motion-390.png). Browser checks confirmed `running` normally and `paused` on hover and keyboard focus at both sizes. The plain stat count-up reached its target on first view at both sizes.
 
+The Invite 390px after capture was retaken after Keystone's phone review. Chromium computed its heading at 19.5px, within the 26px phone cap.
+
 | Block | Surface | 1440px | 390px |
 | --- | --- | --- | --- |
 | Hero | Dark | [Before](before-Hero-1440.png) · [After](after-Hero-1440.png) | [Before](before-Hero-390.png) · [After](after-Hero-390.png) |
