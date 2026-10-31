@@ -26,7 +26,7 @@ export function ProofBars({ id, puck, eyebrow, heading, body, unit, method, sour
     </li>)}</ul> : null}
     <div className="b-proofbars-evidence">
       <EditableText editing={editing} id={id} field="method" value={method} as="p" placeholder="Method note required" />
-      <p>Source: <EditableText editing={editing} id={id} field="source" value={source} as="span" singleLine placeholder="Source required" />{!source && 'Placeholder: source required'}</p>
+      <p>Source: {editing ? <EditableText editing id={id} field="source" value={source} as="span" singleLine placeholder="Placeholder: source required" /> : source || 'Placeholder: source required'}</p>
       <p>Date: {date || 'Placeholder: date required'}</p>
     </div>
   </div></section>;
