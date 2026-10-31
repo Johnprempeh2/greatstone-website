@@ -38,9 +38,13 @@ export function summarise(selected, services) {
   return { chosen, count: chosen.length, areas };
 }
 
-export function countMessage({ count, areas }) {
+// With a problem picked, the message names it ("For too much manual admin: 6 services across 3 areas."), so the answer
+// still says what it answers once the tapped card has scrolled away on a phone.
+export function countMessage({ count, areas }, problemTitle) {
   if (!count) return 'No services selected.';
   const s = count === 1 ? 'service' : 'services';
   const a = areas.length === 1 ? 'area' : 'areas';
-  return `${count} ${s} selected, across ${areas.length} ${a}.`;
+  if (!problemTitle) return `${count} ${s} selected, across ${areas.length} ${a}.`;
+  const t = /^[A-Z][a-z]/.test(problemTitle) ? problemTitle[0].toLowerCase() + problemTitle.slice(1) : problemTitle;
+  return `For ${t}: ${count} ${s} across ${areas.length} ${a}.`;
 }
