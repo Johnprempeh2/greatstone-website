@@ -12,7 +12,7 @@ const STEPS = [
 
 export function DxConsultancyMethod({ id, puck, eyebrow, heading, body, closeHeading, closeBody }) {
   const editing = !!puck?.isEditing;
-  return <section id="consultancy-method" className="b-dx-method">
+  return <section id="consultancy-method" className="b-dx-method gs-rhythm">
     <div className="wrap">
       <header className="b-dx-method-intro">
         <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="kicker" singleLine />
@@ -42,11 +42,11 @@ export function DxConsultancyMethod({ id, puck, eyebrow, heading, body, closeHea
 export const css = `
 .b-dx-method{padding:clamp(80px,10vw,144px) 0 72px;color:var(--gs-text);scroll-margin-top:90px}
 .b-dx-method-intro{max-width:860px;margin-bottom:clamp(48px,7vw,88px)}
-.b-dx-method-intro h1{margin:16px 0 22px;font-size:clamp(2.7rem,6vw,5.5rem);line-height:1.04;letter-spacing:-.035em}
+.b-dx-method-intro h1{margin:16px 0 22px;font-size:clamp(2.7rem,6vw,4.5rem);line-height:1.04;letter-spacing:-.035em}
 .b-dx-method-intro p:last-child{max-width:66ch;font-size:clamp(1rem,1.6vw,1.2rem);line-height:1.7}
 .b-dx-method-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--gs-border);border:1px solid var(--gs-border);margin-bottom:clamp(64px,8vw,110px)}
-.b-dx-method-overview a{display:flex;flex-direction:column;gap:12px;justify-content:space-between;padding:20px;min-height:100px;background:#121713;color:var(--gs-text);text-decoration:none}
-.b-dx-method-overview a:hover{background:#1b251e}
+.b-dx-method-overview a{display:flex;flex-direction:column;gap:12px;justify-content:space-between;padding:20px;min-height:100px;background:var(--gs-card);color:var(--gs-text);text-decoration:none;border-radius:24px;transition:transform var(--gs-dur-standard) var(--gs-ease),border-color var(--gs-dur-standard)}
+.b-dx-method-overview a:hover{transform:translateY(-4px);background:var(--gs-card-hover)}
 .b-dx-method-overview strong{font-size:clamp(.9rem,1.2vw,1.1rem);line-height:1.3}
 .b-dx-method-overview span{color:var(--gs-accent);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
 .b-dx-method-steps{list-style:none;margin:0;padding:0;border-top:1px solid var(--gs-border)}
@@ -55,12 +55,13 @@ export const css = `
 .b-dx-method-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:12px 20px;margin-bottom:18px}
 .b-dx-method-title h2{font-size:clamp(1.5rem,2.6vw,2.5rem);line-height:1.15;margin:0;letter-spacing:-.025em}
 .b-dx-method-title span{font-size:.78rem;font-weight:700;color:var(--gs-accent);text-transform:uppercase;letter-spacing:.08em}
-.b-dx-method-steps p{max-width:70ch;color:var(--gs-muted);line-height:1.7;margin:0}
+.b-dx-method-steps p{max-width:70ch;color:var(--gs-text-muted);line-height:1.7;margin:0}
 .b-dx-method-close{max-width:760px;margin:clamp(72px,9vw,120px) auto 0;text-align:center}
 .b-dx-method-close h2{font-size:clamp(2rem,4vw,3.5rem);line-height:1.1;margin:0 0 20px}
-.b-dx-method-close p{color:var(--gs-muted);line-height:1.7;font-size:1.1rem;margin:0 0 32px}
+.b-dx-method-close p{color:var(--gs-text-muted);line-height:1.7;font-size:1.1rem;margin:0 0 32px}
 .b-dx-method-close .b-cta{display:inline-block;background:var(--gs-accent);color:#111;padding:14px 22px;border-radius:100px;font-weight:800;text-decoration:none}
 .b-dx-method a:focus-visible{outline:2px solid var(--gs-accent);outline-offset:5px}
+@media(prefers-reduced-motion:reduce){.b-dx-method-overview a:hover{transform:none}}
 @media(max-width:700px){.b-dx-method{padding:72px 0 48px}.b-dx-method-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.b-dx-method-overview a{min-height:88px;padding:16px}.b-dx-method-steps li{grid-template-columns:42px minmax(0,1fr);gap:14px}.b-dx-method-title{display:block}.b-dx-method-title span{display:inline-block;margin-top:10px}}
 `;
 

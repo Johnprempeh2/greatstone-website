@@ -13,7 +13,7 @@ export function ComparisonMatrix({ id, puck, eyebrow, heading, highlight, colA =
   const editing = puck && puck.isEditing;
   const qa = rows.filter((r) => r && r.dimension);
   return (
-    <section ref={ref} className="b-cmp">
+    <section ref={ref} className="b-cmp band-light gs-rhythm">
       <div className="wrap">
         {(eyebrow || heading || highlight || editing) ? (
           <div className="b-cmp-head" data-reveal>
@@ -67,6 +67,11 @@ export const css = `
 .b-cmp-dot.good{background:var(--gs-accent);box-shadow:0 0 12px var(--gs-accent-glow)}
 .b-cmp-dot.bad{background:var(--gs-text-faint)}
 .b-cmp-table tbody tr:last-child th,.b-cmp-table tbody tr:last-child td{border-bottom:0}
+.b-cmp.band-light .b-cmp-h,.b-cmp.band-light .b-cmp-table tbody th[scope="row"]{color:var(--gs-text)}
+.b-cmp.band-light .b-cmp-cell,.b-cmp.band-light .b-cmp-table thead th{color:var(--gs-text-muted)}
+.b-cmp.band-light .b-cmp-table thead th.b-cmp-us{color:var(--gs-emerald)}
+.b-cmp.band-light .b-cmp-us{background:var(--gs-emerald-wash)}
+.b-cmp.band-light .b-cmp-dot.good{background:var(--gs-emerald);box-shadow:none}
 @media(max-width:620px){
   .b-cmp-table,.b-cmp-table tbody,.b-cmp-table tr,.b-cmp-table th,.b-cmp-table td{display:block;width:auto}
   .b-cmp-table{min-width:0}

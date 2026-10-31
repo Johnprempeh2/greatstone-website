@@ -12,7 +12,7 @@ export function PillarCards({ id, puck, kicker, heading, body, pillars = [] }) {
   const ref = useReveal([pillars.length]);
   const editing = puck && puck.isEditing;
   return (
-    <section ref={ref} className="b-pc-section section">
+    <section ref={ref} className={'b-pc-section section gs-rhythm' + (pillars.length === 5 ? ' b-pc-capabilities' : '')}>
       <div className="wrap">
         <div className="b-pc-head center" data-reveal>
           <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
@@ -29,7 +29,7 @@ export function PillarCards({ id, puck, kicker, heading, body, pillars = [] }) {
             return (
               <Tag key={i} className="b-pc-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} {...extra}>
                 <div className="b-pc-top">
-                  {p.n ? <span className="b-pc-n">{p.n}</span> : null}
+                  {p.n && pillars.length !== 5 ? <span className="b-pc-n">{p.n}</span> : null}
                   {linked ? <span className="b-pc-go">Inspect →</span> : null}
                 </div>
                 <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="name" value={p.name} as="div" className="b-pc-name" singleLine placeholder="Name…" />
@@ -69,7 +69,15 @@ export const css = `
 .b-pc-assess li{font-size:.68rem;letter-spacing:.04em;color:var(--gs-text-faint);border:1px solid var(--gs-border-soft);border-radius:100px;padding:3px 9px}
 .b-pc-go{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent);opacity:0;transition:opacity .3s}
 .b-pc-card:hover .b-pc-go{opacity:1}
+.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.b-pc-capabilities .b-pc-card{border-radius:var(--gs-card-radius);border-color:var(--gs-border-soft)}
+.b-pc-capabilities .b-pc-card:hover,.b-pc-capabilities .b-pc-card:focus-visible{border-color:var(--gs-border-strong)}
+.b-pc-capabilities .b-pc-card::after{display:none}
+.b-pc-capabilities .b-pc-top:empty{display:none}
+@media(max-width:1000px){.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.b-pc-capabilities .b-pc-grid{grid-template-columns:1fr}}
 @media(hover:none){.b-pc-go{opacity:1}}
+@media(prefers-reduced-motion:reduce){.b-pc-card:hover{transform:none}}
 `;
 
 const CHIPS = (arr) => arr.map((text) => ({ text }));
