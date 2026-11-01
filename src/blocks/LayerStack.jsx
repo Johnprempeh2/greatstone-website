@@ -28,7 +28,7 @@ export const css = `
 .b-layer-stack{padding:clamp(72px,9vw,128px) 0;background:var(--gs-bg-deep);color:var(--gs-text)}
 .b-layer-head{font-size:clamp(2.1rem,4.8vw,4.5rem);line-height:1.06;letter-spacing:-.03em;margin:14px 0 18px}
 .b-layer-lead{color:var(--gs-text-muted);max-width:68ch;line-height:1.7}
-.b-layer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:clamp(32px,7vw,100px);align-items:center;margin-top:48px}
+.b-layer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:clamp(32px,7vw,100px);align-items:start;margin-top:48px}
 .b-layer-list{list-style:none;padding:0;margin:0;border-top:1px solid var(--gs-border-strong)}
 .b-layer-list li{border-bottom:1px solid var(--gs-border-strong)}
 .b-layer-list button{display:grid;grid-template-columns:56px 1fr;gap:16px;width:100%;min-height:76px;padding:20px 10px;border:0;background:transparent;color:var(--gs-text);text-align:left;font:inherit;cursor:pointer}
@@ -37,7 +37,7 @@ export const css = `
 .b-layer-num{color:var(--gs-accent);font-weight:800}.b-layer-list strong{display:block;font-size:clamp(1.12rem,1.8vw,1.5rem);margin-bottom:9px}
 .b-layer-list button span span{display:block;color:var(--gs-text-muted);line-height:1.6}
 .b-layer-list button span .b-layer-note{margin-top:12px;color:var(--gs-text)}
-.b-layer-visual{display:flex;flex-direction:column;align-items:center;perspective:600px;padding:58px 0}
+.b-layer-visual{display:flex;flex-direction:column;align-items:center;perspective:600px;padding:0;width:100%}
 .b-layer-slab{display:flex;align-items:center;gap:18px;box-sizing:border-box;width:min(calc(78% + var(--i) * 11%),100%);min-height:86px;padding:18px 24px;border:1px solid var(--gs-border-strong);border-radius:14px;background:var(--gs-accent-soft);box-shadow:0 18px 32px rgba(0,0,0,.18);transform:rotateX(16deg);transition:transform .55s var(--gs-ease),background .55s var(--gs-ease)}
 .b-layer-slab+.b-layer-slab{margin-top:-18px}
 .b-layer-slab.is-before{transform:rotateX(16deg) translateY(-18px)}.b-layer-slab.is-after{transform:rotateX(16deg) translateY(18px)}

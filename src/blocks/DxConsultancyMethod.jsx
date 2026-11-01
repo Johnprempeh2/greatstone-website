@@ -4,9 +4,9 @@ import EditableText from './EditableText.jsx';
 // The four approved steps are shared method language. Editors can change the
 // introduction and invitation, while the order and claims stay consistent.
 export const STEPS = [
-  { name: 'Executive Discovery', tag: 'Free', text: 'A conversation with our team about your business, what is in the way and what you may not have looked at yet. Led by people, not software.' },
+  { name: 'Executive discovery', tag: 'Free', text: 'A conversation with our team about your business, what is in the way and what you may not have looked at yet. Led by people, not software.' },
   { name: 'Initial assessment', tag: 'Free', text: 'Where technology and AI could help, with an indicative scope. No commitment.' },
-  { name: 'Deep Dive', tag: 'Paid', text: 'It starts with AI interviews: everyone on your team answers questions set for their role, at the same time, so the picture comes from the people doing the work, not only from leaders. We bring the answers together into one view of who does what and where the work gets stuck. This step begins after a written scope is agreed. You get an actionable blueprint, yours to use with or without us.' },
+  { name: 'Deep dive', tag: 'Paid', text: 'It starts with AI interviews: everyone on your team answers questions set for their role, at the same time, so the picture comes from the people doing the work, not only from leaders. We bring the answers together into one view of who does what and where the work gets stuck. This step begins after a written scope is agreed. You get an actionable blueprint, yours to use with or without us.' },
   { name: 'Build', tag: 'Where it fits', text: 'We build what the blueprint sets out, in the order we agree with you: the systems, the automation and the AI. Where it fits, this can include your digital office.' },
 ];
 
