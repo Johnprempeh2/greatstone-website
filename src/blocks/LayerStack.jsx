@@ -28,7 +28,7 @@ export const css = `
 .b-layer-stack{padding:clamp(72px,9vw,128px) 0;background:var(--gs-bg-deep);color:var(--gs-text)}
 .b-layer-head{font-size:clamp(2.1rem,4.8vw,4.5rem);line-height:1.06;letter-spacing:-.03em;margin:14px 0 18px}
 .b-layer-lead{color:var(--gs-text-muted);max-width:68ch;line-height:1.7}
-.b-layer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:clamp(32px,7vw,100px);align-items:start;margin-top:48px}
+.b-layer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:clamp(32px,7vw,100px);align-items:center;margin-top:48px}
 .b-layer-list{list-style:none;padding:0;margin:0;border-top:1px solid var(--gs-border-strong)}
 .b-layer-list li{border-bottom:1px solid var(--gs-border-strong)}
 .b-layer-list button{display:grid;grid-template-columns:56px 1fr;gap:16px;width:100%;min-height:76px;padding:20px 10px;border:0;background:transparent;color:var(--gs-text);text-align:left;font:inherit;cursor:pointer}

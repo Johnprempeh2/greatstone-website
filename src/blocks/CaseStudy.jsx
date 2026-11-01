@@ -59,7 +59,6 @@ export const css = `
 .case-out{margin-top:6px;padding-top:18px;border-top:1px solid var(--gs-border-soft);display:flex;align-items:baseline;gap:.4em;flex-wrap:wrap}
 .case-out .o-num{font-weight:900;font-size:1.9rem;line-height:1;color:var(--gs-accent);letter-spacing:-.03em}
 .case-out .o-cap{font-size:.78rem;font-weight:600;color:var(--gs-muted)}
-#gs-blk-consultancy-cases .b-cases{padding-block:clamp(48px,5vw,72px)}
 #gs-blk-consultancy-cases .b-cases-grid{margin-top:28px}
 #gs-blk-consultancy-cases .b-cases-grid:has(> :only-child){grid-template-columns:minmax(0,640px)}
 `;

@@ -163,12 +163,12 @@ export const css = `
 .b-hero-inner{max-width:660px;position:relative;z-index:2}
 .b-hero.align-center .b-hero-inner{max-width:1040px;margin-inline:auto}
 /* The consultancy introduction hands the first screen to the client logos. */
-.b-hero.v-consultancy{min-height:0;padding:clamp(112px,14vh,142px) 0 56px}
+.b-hero.v-consultancy{min-height:0;padding:clamp(64px,7vh,72px) 0 28px}
 .b-hero.v-consultancy .b-hero-inner{max-width:900px}
 .b-hero.v-consultancy h1{font-size:clamp(34px,4vw,56px);line-height:1.06;letter-spacing:-.035em;max-width:900px;margin-top:16px}
 .b-hero.v-consultancy .lede{margin-top:18px;max-width:700px;line-height:1.55}
 .b-hero.v-consultancy .b-cta-row{margin-top:24px}
-@media(max-width:640px){.b-hero.v-consultancy{padding:96px 0 40px}.b-hero.v-consultancy h1{font-size:34px;max-width:100%}.b-hero.v-consultancy .lede{font-size:15px;line-height:1.5;margin-top:14px}.b-hero.v-consultancy .b-cta-row{margin-top:18px}}
+@media(max-width:640px){.b-hero.v-consultancy{padding:64px 0 20px}.b-hero.v-consultancy h1{font-size:34px;max-width:100%}.b-hero.v-consultancy .lede{font-size:15px;line-height:1.5;margin-top:14px}.b-hero.v-consultancy .b-cta-row{margin-top:18px}}
 /* matches the live homepage .hero-title scale exactly */
 .b-hero h1{font-weight:900;line-height:1.02;letter-spacing:-2.5px;font-size:clamp(40px,6.2vw,84px);
   text-shadow:0 2px 60px rgba(0,0,0,.6);margin-top:20px}
