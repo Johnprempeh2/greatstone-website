@@ -11,6 +11,9 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [[headers]]
   for = "/api/*"
   [headers.values]
