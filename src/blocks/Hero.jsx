@@ -6,6 +6,7 @@ import { resolveLink } from '../lib/link-resolver.mjs';
 import { LinkField } from '../cms/LinkField.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
+import { TideField } from './TideField.jsx';
 
 // THE BLOCK CONTRACT (every block file follows this):
 //   export function X(props)      — the React component; renders public + editor canvas.
@@ -78,7 +79,7 @@ export function StoneSymbol({ kind = 'hero', enabled = true }) {
   return <span className={kind === 'hero' ? 'b-hero-stone' : 'b-hero-gem'} ref={host} aria-hidden="true"><img className="b-hero-stone-still" src={kind === 'hero' ? '/motion/stone-shared-still.png' : '/motion/stone-accent.svg'} alt="" width="490" height="519" /></span>;
 }
 
-export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', cueLabel = 'Scroll down to start the climb', stone = 'none', motion, motionRuntime = 'still' }) {
+export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '', body, prompt, cueStyle = 'text', align = 'left', size = 'full', ctaLabel, ctaHref = '#', ctaLabel2, ctaHref2 = '#', meta = [], lines = [], pillEyebrow = false, gridBackdrop = false, scrollCue = false, variant = 'default', tide = false, cueLabel = 'Scroll down to start the climb', stone = 'none', motion, motionRuntime = 'still' }) {
   const ref = useReveal();
   // home-hero only (opt-in): hide the scroll indicator once the visitor scrolls past the fold so it
   // doesn't linger over the content below. Passive listener, removed on unmount; inert unless scrollCue.
@@ -138,6 +139,7 @@ export function Hero({ id, puck, kicker, headline, highlight, headlineSuffix = '
   );
   return (
     <section ref={ref} className={`b-hero size-${size} align-${align}${size !== 'full' ? ' gs-rhythm' : ''}${variant === 'statement' ? ' v-statement' : ''}${variant === 'consultancy' ? ' v-consultancy' : ''}${gridBackdrop ? ' has-grid' : ''}${stoneOn ? ' has-stone' : ''}`}>
+      {variant === 'consultancy' && tide ? <TideField /> : null}
       {stoneOn
         ? <div className="wrap b-hero-grid"><div className="b-hero-inner">{inner}</div><StoneSymbol enabled={!motion || motionRuntime === 'animate'} /></div>
         : <div className="wrap b-hero-inner">{inner}</div>}
@@ -163,12 +165,14 @@ export const css = `
 .b-hero-inner{max-width:660px;position:relative;z-index:2}
 .b-hero.align-center .b-hero-inner{max-width:1040px;margin-inline:auto}
 /* The consultancy introduction hands the first screen to the client logos. */
-.b-hero.v-consultancy{min-height:0;padding:clamp(64px,7vh,72px) 0 28px}
+.b-hero.v-consultancy{min-height:0;padding:114px 0 28px}
 .b-hero.v-consultancy .b-hero-inner{max-width:900px}
 .b-hero.v-consultancy h1{font-size:clamp(34px,4vw,56px);line-height:1.06;letter-spacing:-.035em;max-width:900px;margin-top:16px}
 .b-hero.v-consultancy .lede{margin-top:18px;max-width:700px;line-height:1.55}
 .b-hero.v-consultancy .b-cta-row{margin-top:24px}
-@media(max-width:640px){.b-hero.v-consultancy{padding:64px 0 20px}.b-hero.v-consultancy h1{font-size:34px;max-width:100%}.b-hero.v-consultancy .lede{font-size:15px;line-height:1.5;margin-top:14px}.b-hero.v-consultancy .b-cta-row{margin-top:18px}}
+.b-hero.v-consultancy{isolation:isolate}
+.b-hero.v-consultancy>.td-tide{--td-size-34:34px;--td-size-35:35px;--td-size-140:140px;--td-size-440:440px;--td-palette-04:rgba(58,140,100,.16);--td-palette-05:#000;--td-palette-06:rgba(18,18,18,.74);left:calc(50% - 50vw);right:auto;width:100vw;-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 62%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,#000 62%,transparent 100%)}
+@media(max-width:640px){.b-hero.v-consultancy{padding:98px 0 20px}.b-hero.v-consultancy h1{font-size:34px;max-width:100%}.b-hero.v-consultancy .lede{font-size:15px;line-height:1.5;margin-top:14px}.b-hero.v-consultancy .b-cta-row{margin-top:18px}}
 /* matches the live homepage .hero-title scale exactly */
 .b-hero h1{font-weight:900;line-height:1.02;letter-spacing:-2.5px;font-size:clamp(40px,6.2vw,84px);
   text-shadow:0 2px 60px rgba(0,0,0,.6);margin-top:20px}
@@ -330,6 +334,9 @@ export const puck = {
     ]},
     variant: { type: 'radio', label: 'Hero style', options: [
       { label: 'Default hero', value: 'default' }, { label: 'Opening statement', value: 'statement' }, { label: 'Consultancy introduction', value: 'consultancy' }] },
+    tide: { type: 'radio', label: 'Consultancy wave', options: [
+      { label: 'Off', value: false }, { label: 'On', value: true },
+    ]},
     scrollCue: { type: 'radio', label: 'Scroll indicator (home hero)', options: [
       { label: 'Off', value: false }, { label: 'On (bouncing chevron)', value: true },
     ]},
@@ -377,7 +384,7 @@ export const puck = {
     prompt: 'Move your cursor. The stone responds',
     cueStyle: 'text',
     headlineSuffix: '',
-    align: 'left', size: 'full', ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, stone: 'none', variant: 'default', cueLabel: 'Scroll down to start the climb',
+    align: 'left', size: 'full', ctaLabel: PRIMARY_CTA_LABEL, ctaHref: PRIMARY_CTA_HREF, ctaLabel2: '', ctaHref2: '#', meta: [], lines: [], pillEyebrow: false, gridBackdrop: false, scrollCue: false, stone: 'none', variant: 'default', tide: false, cueLabel: 'Scroll down to start the climb',
   },
   render: (props) => <Hero {...props} />,
 };
