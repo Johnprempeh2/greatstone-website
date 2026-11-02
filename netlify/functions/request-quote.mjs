@@ -3,13 +3,16 @@ import { getStore } from '@netlify/blobs';
 import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { basketItems, priceBasket } from './lib/store-pricing.mjs';
+import { publicIp } from './lib/public-actions.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => Response.json(body, { status, headers: HEADERS });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// A failed ROLLBACK means the connection is broken, so it goes back to the pool with the error and is not reused.
 async function saveQuote(pool, identity, quoteId, rows, details, document) {
   const client = await pool.connect();
+  let broken;
   try {
     await client.query('BEGIN');
     await client.query(`SET LOCAL ROLE ${identity ? 'authenticated' : 'anon'}`);
@@ -46,16 +49,16 @@ async function saveQuote(pool, identity, quoteId, rows, details, document) {
     await client.query('COMMIT');
     return result.rows[0];
   } catch (error) {
-    try { await client.query('ROLLBACK'); } catch { /* disconnected */ }
+    try { await client.query('ROLLBACK'); } catch (rollback) { broken = rollback; }
     throw error;
-  } finally { client.release(); }
+  } finally { client.release(broken); }
 }
 
 export function makeRequestQuoteHandler({ env = process.env, pool = getPool, verify,
   store = () => getStore('po-documents'), log = console.error } = {}) {
-  return async (req) => {
+  return async (req, context) => {
     if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
-    let body, basket;
+    let body, basket, upload = null;
     try {
       if (Number(req.headers.get('content-length')) > 14_500_000) return json({ error: 'Request too large.' }, 413);
       const raw = await req.text();
@@ -66,16 +69,7 @@ export function makeRequestQuoteHandler({ env = process.env, pool = getPool, ver
       if (typeof contact.email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim()) || contact.email.length > 320 ||
         [contact.name, contact.company, contact.phone, body.message, body.poReference].some((value) => value != null && (typeof value !== 'string' || value.length > 2000)))
         return json({ error: 'A valid email is required for a quote.' }, 400);
-    } catch { return json({ error: 'Invalid quote request.' }, 400); }
-    let blobPath, db;
-    try {
-      db = pool();
-      if (!db) return json({ error: 'Quote service unavailable. Please try again.' }, 503);
-      const user = await userFromRequest(req, verify).catch(() => null);
-      const identity = user?.id && UUID.test(user.id) ? authIdentity(user) : null;
-      const quoteId = randomUUID();
       const doc = body.poDocument;
-      let document = null;
       if (doc?.dataBase64) {
         const b64 = doc.dataBase64;
         if (typeof b64 !== 'string' || b64.length > 13_981_016 || !/^[A-Za-z0-9+/]*={0,2}$/.test(b64))
@@ -84,26 +78,39 @@ export function makeRequestQuoteHandler({ env = process.env, pool = getPool, ver
         if (!bytes.length || bytes.length > 10_485_760) return json({ error: 'PO document is too large or invalid.' }, 400);
         const name = String(doc.name || 'purchase-order').slice(0, 200);
         const safe = name.replace(/[^\w.\-]+/g, '_').replace(/^\.+/, '').slice(-80) || 'purchase-order';
-        blobPath = `${quoteId}/${safe}`;
-        await store().set(blobPath, bytes);
-        document = { path: blobPath, name };
+        upload = { bytes, name, safe };
       }
-      const rows = await (async () => {
+    } catch { return json({ error: 'Invalid quote request.' }, 400); }
+    let blobPath, db;
+    try {
+      db = pool();
+      if (!db) return json({ error: 'Quote service unavailable. Please try again.' }, 503);
+      const user = await userFromRequest(req, verify).catch(() => null);
+      const identity = user?.id && UUID.test(user.id) ? authIdentity(user) : null;
+      const quoteId = randomUUID();
+      // Price as anon. A PO takes one of the IP's ten daily uploads (063) before its bytes are stored.
+      const { quotable, limited } = await (async () => {
         const client = await db.connect();
+        let broken;
         try {
           await client.query('BEGIN');
           await client.query('SET LOCAL ROLE anon');
           await client.query("SELECT set_config('request.jwt.claims', $1, true)", [JSON.stringify({ role: 'anon', sub: null, email: null, email_verified: false })]);
-          const priced = await priceBasket(client, basket);
+          const priced = (await priceBasket(client, basket)).filter((row) => !row.unavailable);
+          let slot = { ok: true };
+          if (priced.length && upload) slot = (await client.query('SELECT po_upload_take_slot($1) AS ok', [publicIp(req, context)])).rows[0];
           await client.query('COMMIT');
-          return priced;
-        } catch (error) { try { await client.query('ROLLBACK'); } catch {} throw error; }
-        finally { client.release(); }
+          return { quotable: priced, limited: !slot?.ok };
+        } catch (error) { try { await client.query('ROLLBACK'); } catch (rollback) { broken = rollback; } throw error; }
+        finally { client.release(broken); }
       })();
-      const quotable = rows.filter((row) => !row.unavailable);
-      if (!quotable.length) {
-        if (blobPath) await store().delete(blobPath).catch(() => { /* best effort */ });
-        return json({ error: 'No quotable items.' }, 400);
+      if (!quotable.length) return json({ error: 'No quotable items.' }, 400);
+      if (limited) return json({ error: 'Too many PO uploads today. Please send the quote without the file and email it to us.' }, 429);
+      let document = null;
+      if (upload) {
+        blobPath = `${quoteId}/${upload.safe}`;
+        await store().set(blobPath, upload.bytes);
+        document = { path: blobPath, name: upload.name };
       }
       const quote = await saveQuote(db, identity, quoteId, quotable, { ...body.contact, email: body.contact.email.trim(),
         message: body.message, poReference: body.poReference }, document);
