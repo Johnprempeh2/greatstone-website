@@ -21,3 +21,13 @@ Two differences remain, and neither is in the shell. The Vite footer also lists 
 `<page>-next-editor-<width>.jpg` shows the page as loaded. `<page>-next-editor-edited-<width>.jpg` shows it after typing ` PARITY` into the first visible text field. The Next editor ran on a local `editor.localhost` host, framed by a mock GSAM host at `localhost:5182`. The host used the protocol 1 handshake. It loaded each page's GSAM draft revision, which is now the live content after the release 1 apply. At both widths, for all four pages, the edit marked the page dirty and the typed text reached the `save` request. The mock host answered the save, so nothing was written to GSAM. The red "1 Issue" badge is the Next dev overlay for a hydration attribute warning. It appears only in development.
 
 The current Vite editor was not captured. Its sign-in now uses Better Auth, which needs its server and database. The "Demo staff" hint on the sign-in screen is stale: those details are refused locally.
+
+## Netlify deploy preview
+
+Draft alias https://gre-1936-release-1--gre1795-website-db-staging.netlify.app, on the GRE-1795 staging site, not `greatstone-home`. No `--prod`, no DNS change. Built with `next-proof/scripts/prepare-netlify.mjs`, `netlify build --context deploy-preview`, then `netlify deploy --no-build --alias gre-1936-release-1 --dir .netlify/static`. The build's database was a local branch with the repo's seed, so the shop uses `next-proof/fixtures/public-catalogue-2026-10-22.json` (24 offerings) through `NEXT_CATALOGUE_FIXTURE`, set only in the scratch copy. The release is the live published content (16 pages); the GSAM release path waits for the collections import (GRE-3711 point 4).
+
+- `<page>-preview-<width>.jpg`: home, `/dx-consultancy`, `/services` and `/contact` at 1440 and 390. All 8 load with status 200, the same h1 as Vite, and no page errors.
+- `PROOF_BASE=<draft> npm run check:legacy:next`: 108 legacy URLs and landing routes, 0 failures.
+- `node scripts/check-dist-secrets.mjs .next/static`: clean.
+
+Building against real catalogue rows found three gaps in the release adapter, fixed on this branch: null vendor logo and description text, an offering whose category was deleted (`ON DELETE SET NULL`), and BIGINT prices that Postgres returns as strings.
