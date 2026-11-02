@@ -17,7 +17,7 @@ export function LogoWall({ id, puck, eyebrow, logos = [], mode = 'static' }) {
   // configured logos take precedence; marquee mode can reuse that approved set.
   const shown = logos.filter((l) => l && l.image);
   const marks = mode === 'marquee' && !shown.length
-    ? publicClientMarks.map(({ name, image }) => ({ alt: name, image })) : shown;
+    ? publicClientMarks.map(({ name, colour }) => ({ alt: name, image: colour })) : shown;
   const marquee = mode === 'marquee' && marks.length > 1;
   const ref = useReveal([marks.length]);
   const editing = puck && puck.isEditing;

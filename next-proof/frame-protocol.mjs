@@ -4,7 +4,7 @@ export const NONCE_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 
 // Navigation hints for the block library at this engine commit. Identity comes from the block id and type.
 const blockSourceLines = {
-  TwoDoors: 245, TwoDoorsStory: 264, TwoDoorsProof: 277, TwoDoorsTools: 289, TwoDoorsClose: 290, TwoDoorsBottom: 291, DevTools: 293,
+  TwoDoors: 228, TwoDoorsStory: 247, TwoDoorsProof: 260, TwoDoorsTools: 272, TwoDoorsClose: 273, TwoDoorsBottom: 274, DevTools: 276,
   Hero: 311, Prose: 41, Panels: 208, ServiceCatalog: 292, TransformationServices: 54, DxConsultancyMethod: 68, Invite: 102,
   Steps: 74, FeatureGrid: 54, Faq: 96, PillarCards: 87, MaturityModel: 78,
   Chapter: 80, Team: 103, LogoWall: 74, IntelBand: 86, MaturityMap: 189,
