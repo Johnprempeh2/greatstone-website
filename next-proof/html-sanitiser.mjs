@@ -57,9 +57,13 @@ const ENUMS = {
 const NUMBER = /^\d{1,5}$/;
 const NUMERIC = new Set(['width', 'height', 'colspan', 'rowspan', 'span', 'start']);
 // Ids and classes stay inside a page namespace: no clobbering of the engine's own ids or Next's globals.
+// An element id also becomes a window property, so the globals the site sets lazily (`window.x ||= …`)
+// are reserved too: `<div id="dataLayer">` would otherwise replace the analytics queue.
 const ID = /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/;
-const RESERVED_ID = /^(gs-|__next|next-|_)/i;
-const DATA_ATTRIBUTE = /^data-[a-z][a-z0-9-]{0,47}$/;
+const RESERVED_ID = /^(gs-|__next|next-|_|(dataLayer|gtag|google_tag_manager|google_tag_data|turnstile|Calendly|mountGreatstoneTide)$)/i;
+// `data-gs-*` belongs to the engine (`data-gs-scope` picks which region's CSS applies), so pages and
+// chrome cannot set it.
+const DATA_ATTRIBUTE = /^data-(?!gs-)[a-z][a-z0-9-]{0,47}$/;
 const ARIA_ATTRIBUTE = /^aria-[a-z]{2,24}$/;
 const ATTRIBUTE_VALUE_LIMIT = 2000;
 
