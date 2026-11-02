@@ -13,18 +13,20 @@ export function CaseStudy({ id, puck, index, eyebrow, headline, highlight, body,
   return (
     <section ref={ref} className="b-cases">
       <div className="wrap">
-        {(index || eyebrow || editing) ? (
-          index
-            ? (
-              <div className="b-chapter-eyebrow" data-reveal>
-                <span className="b-chapter-num">{index}</span>
-                <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
-              </div>
-            )
-            : <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="kicker" singleLine placeholder="Eyebrow…" data-reveal />
-        ) : null}
-        {(headline || highlight || editing) ? <h2 className="b-cases-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
-        <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-cases-body" placeholder="Body…" data-reveal />
+        <div className="b-cases-intro">
+          {(index || eyebrow || editing) ? (
+            index
+              ? (
+                <div className="b-chapter-eyebrow" data-reveal>
+                  <span className="b-chapter-num">{index}</span>
+                  <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="b-chapter-name" singleLine placeholder="Eyebrow…" />
+                </div>
+              )
+              : <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="span" className="kicker" singleLine placeholder="Eyebrow…" data-reveal />
+          ) : null}
+          {(headline || highlight || editing) ? <h2 className="b-cases-head" data-reveal><EditableText editing={editing} id={id} field="headline" value={headline} as="span" singleLine placeholder="Headline…" /> {highlight ? <span className="accent">{highlight}</span> : null}</h2> : null}
+          <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-cases-body" placeholder="Body…" data-reveal />
+        </div>
         <div className="b-cases-grid">
           {items.map((c, i) => (
             <article className="card case" data-reveal style={{ transitionDelay: `${i * 70}ms` }} key={i}>
@@ -45,6 +47,7 @@ export function CaseStudy({ id, puck, index, eyebrow, headline, highlight, body,
 
 export const css = `
 .b-cases{padding:clamp(64px,11vw,140px) 0;position:relative}
+.b-cases-intro{display:contents}
 .b-cases-head{font-size:clamp(2rem,4.5vw,3.6rem);font-weight:900;line-height:1.05;letter-spacing:-.025em;max-width:20ch}
 .b-cases-body{margin-top:20px;color:var(--gs-muted);font-size:clamp(1.02rem,1.5vw,1.18rem);max-width:62ch;line-height:1.7}
 .b-cases-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2vw,24px);margin-top:clamp(28px,4vw,44px)}

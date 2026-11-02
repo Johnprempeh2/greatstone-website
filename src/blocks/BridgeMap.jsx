@@ -19,9 +19,11 @@ export function BridgeMap({ id, puck, eyebrow, heading, body, places = defaultPl
   const services = [...new Set(confirmed.flatMap(servicesFor))].filter((value) => confirmed.some((p) => !servicesFor(p).includes(value)));
   const matches = (p) => (!region || p.region === region) && (!service || servicesFor(p).includes(service));
   return <section className="b-bridge"><div className="wrap">
-    <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="kicker" singleLine />
-    <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-bridge-head" singleLine />
-    <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-bridge-lead" />
+    <div className="b-bridge-intro">
+      <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="kicker" singleLine />
+      <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-bridge-head" singleLine />
+      <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-bridge-lead" />
+    </div>
     <div className="b-bridge-filters">
       <div role="group" aria-label="Region"><span className="b-bridge-filter-label">Region</span>{regions.map((item) => <button key={item} type="button" aria-pressed={region === item} onClick={() => setRegion(region === item ? '' : item)}>{item}</button>)}</div>
       <div role="group" aria-label="Service"><span className="b-bridge-filter-label">Service</span>{services.length ? services.map((item) => <button key={item} type="button" aria-pressed={service === item} onClick={() => setService(service === item ? '' : item)}>{item}</button>) : <span className="b-bridge-common-services">{[...new Set(confirmed.flatMap(servicesFor))].join(' · ')}</span>}</div>
@@ -41,6 +43,7 @@ export function BridgeMap({ id, puck, eyebrow, heading, body, places = defaultPl
 
 export const css = `
 .b-bridge{padding:clamp(72px,9vw,128px) 0;background:var(--gs-bg);color:var(--gs-text)}
+.b-bridge-intro{display:contents}
 .b-bridge-head{font-size:clamp(2.1rem,4.8vw,4.5rem);line-height:1.06;letter-spacing:-.03em;margin:14px 0 18px}.b-bridge-lead{max-width:66ch;color:var(--gs-text-muted);line-height:1.7}
 .b-bridge-filters{display:flex;flex-wrap:wrap;gap:16px 36px;margin:36px 0 24px}.b-bridge-filters>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.b-bridge-filter-label{min-width:64px;color:var(--gs-text-muted);font-size:.85rem;font-weight:700}.b-bridge-common-services{color:var(--gs-text-muted);font-size:.85rem;line-height:1.5}.b-bridge-filters button{min-height:44px;padding:9px 18px;border-radius:100px;border:1px solid var(--gs-border-strong);background:transparent;color:var(--gs-text);font:inherit;cursor:pointer}
 .b-bridge-filters button[aria-pressed=true]{background:var(--gs-accent);color:var(--gs-bg-deep);font-weight:700}.b-bridge-filters button:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
