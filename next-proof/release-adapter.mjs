@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { themeTokens } from './theme.mjs';
+import { publicPathText } from './public-links.mjs';
 
 const proofSiteId = process.env.GSAM_SITE_ID || '00000000-0000-4000-8000-000000001833';
 const orgId = process.env.GSAM_ORG_ID || 'org-greatstone';
@@ -9,10 +10,10 @@ function fixtureId(value) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`;
 }
 
-function releaseLinks(value) {
-  if (typeof value === 'string') return value.replace(/^#shop(?=\/|$)/, '/shop').replace(/^#product(?=\/|$)/, '/product');
-  if (Array.isArray(value)) return value.map(releaseLinks);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, releaseLinks(child)]));
+function releaseLinks(value, pagePaths) {
+  if (typeof value === 'string') return publicPathText(value.replace(/^#shop(?=\/|$)/, '/shop').replace(/^#product(?=\/|$)/, '/product'), pagePaths);
+  if (Array.isArray(value)) return value.map((item) => releaseLinks(item, pagePaths));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, releaseLinks(child, pagePaths)]));
   return value;
 }
 
@@ -72,6 +73,7 @@ export function toCatalogueCollections(catalogue, targetOrgId = orgId) {
 export function toProofRelease(snapshot) {
   const slugs = Object.keys(snapshot.pages).filter((slug) => snapshot.pages[slug]?.data?.content?.length);
   if (!slugs.includes('home') || !slugs.includes('dev-tools')) throw new Error('Missing published proof page');
+  const pagePaths = slugs.map((slug) => slug === 'home' ? '/' : `/${slug}`);
   const pages = slugs.map((slug, navOrder) => {
     const source = snapshot.pages[slug];
     if (!source?.data?.content?.length) throw new Error(`Missing published proof page: ${slug}`);
@@ -83,7 +85,7 @@ export function toProofRelease(snapshot) {
       title: source.title,
       navOrder,
       seo: source.seo,
-      data: releaseLinks(source.data),
+      data: releaseLinks(source.data, pagePaths),
     };
   });
   const bySlug = Object.fromEntries(pages.map((page) => [page.slug, page]));

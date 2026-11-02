@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, helloAckPayload, importLiveData, keepTextDeleteInField, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
+import { COPY_PERMISSIONS, editorViewportUi, prepareEditorDraft, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, helloAckPayload, importLiveData, keepTextDeleteInField, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
 import { envelope, validMessage } from './frame-protocol.mjs';
 import { Window } from 'happy-dom';
 
@@ -23,7 +23,7 @@ test('editor hello-ack advertises editor contract 2 and live content only in edi
 });
 
 test('Edit copy (GSAM GRE-2394): mode from hello, refused commands and Puck permissions', () => {
-  assert.deepEqual(EDITOR_COMMANDS, ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live']);
+  assert.deepEqual(EDITOR_COMMANDS, ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live', 'viewport']);
   assert.equal(editModeOf({ editMode: 'copy' }), 'copy');
   assert.equal(editModeOf({ editMode: 'layout' }), 'layout');
   // An older GSAM sends no edit mode: today's editor.
@@ -75,7 +75,7 @@ test('live content: counted for hello-ack, imported only into an empty draft wit
 
 test('editor commands accept every advertised command and reject bad payloads or sessions', () => {
   for (const command of EDITOR_COMMANDS) {
-    const payload = { command, ...(command === 'outline' || command === 'layout' ? { on: true } : {}) };
+    const payload = { command, ...(command === 'outline' || command === 'layout' ? { on: true } : command === 'viewport' ? { width: 768 } : {}) };
     assert.equal(validMessage(event('editor-command', payload), bound, ['editor-command']) && validEditorCommand(payload), true);
   }
   for (const payload of [null, [], {}, { command: 'publish' }, { command: 'outline' }, { command: 'save', on: true }]) assert.equal(validEditorCommand(payload), false);
@@ -109,4 +109,27 @@ test('image request resolves a real block field; unknown media and bad sources a
   assert.equal(mediaRequest(null, { tagName: 'IMG' }, components), null);
   assert.deepEqual(mediaRequest({ type: 'Gallery', props: { id: 'gallery', items: [{ photo: '/nested.png' }] } }, { tagName: 'IMG', src: '/nested.png' }, { Gallery: { fields: { items: { type: 'array', arrayFields: { photo: { type: 'image' } } } } } }), { blockId: 'gallery', field: 'items.0.photo', label: 'photo', kind: 'image' });
   assert.equal(validMessage(event('media-requested', request), bound, []), false); // older host ignores it
+});
+
+test('viewport changes page UI only, with bounded widths in copy and layout modes', () => {
+  for (const width of [null, 390, 768, 1440]) {
+    assert.equal(validEditorCommand({ command: 'viewport', width }), true);
+    assert.equal(copyModeAllows('viewport'), true);
+    assert.equal(editorViewportUi(width).viewports.current.width, width ?? '100%');
+  }
+  for (const width of [undefined, -1, 0, 200, 99999, '768', {}, []]) {
+    assert.equal(editorViewportUi(width), null);
+    assert.equal(validEditorCommand({ command: 'viewport', width }), false);
+  }
+  assert.equal(validEditorCommand({ command: 'viewport', width: 768, on: true }), false);
+  assert.equal(validEditorCommand({ command: 'viewport', width: 768, data: {} }), false);
+  assert.equal(validEditorCommand({ command: 'save', width: 768 }), false);
+});
+
+test('opening an old Two Doors tools draft in copy mode cannot migrate or autosave its structure', () => {
+  const data = { root: { props: {} }, content: [{ type: 'TwoDoorsTools', props: { id: 'tools', closeHeading: 'Contact', bottomHeading: 'Choose', tools: [] } }] };
+  const before = structuredClone(data);
+  assert.equal(prepareEditorDraft(data, true), data);
+  assert.deepEqual(data, before);
+  assert.equal(prepareEditorDraft(data, false).content.length, 3);
 });

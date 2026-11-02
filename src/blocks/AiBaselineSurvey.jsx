@@ -182,7 +182,7 @@ export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, hea
               <div className="gs-sr-only" aria-hidden="true"><label htmlFor={uid + 'w'}>{LEAD_TOOL_COPY.honeypot}</label><input id={uid + 'w'} tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
               {editing ? null : <Turnstile onToken={setToken} />}
               {err ? <div className="b-abs-err" role="alert">{err}</div> : null}
-              <p className="b-abs-notice">{dataNotice} <a href="#go/privacy">{LEAD_TOOL_COPY.privacyPolicy}</a>.</p>
+              <p className="b-abs-notice">{dataNotice} <a href={puck?.publicSite ? '/privacy' : '#go/privacy'}>{LEAD_TOOL_COPY.privacyPolicy}</a>.</p>
               <button type="submit" className="b-cta b-abs-reveal" disabled={sendState === 'sending'}>{sendState === 'sending' ? LEAD_TOOL_COPY.sending : submitLabel}<Arrow /></button>
               <button type="button" className="b-abs-back b-abs-gate-back" onClick={() => { setStep('quiz'); setQi(total - 1); }}>{backLabel}</button>
             </form>

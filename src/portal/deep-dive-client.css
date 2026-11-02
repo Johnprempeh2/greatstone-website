@@ -10,5 +10,7 @@
 .dd-row textarea { box-sizing: border-box; width: 100%; min-height: 7rem; padding: 12px; border: 1px solid var(--pt-line);
   border-radius: 8px; background: var(--pt-card); color: var(--pt-text); font: inherit; resize: vertical; }
 .dd-row textarea:focus-visible { outline: 2px solid var(--pt-accent); outline-offset: 2px; }
+.dd-row input[type="file"] { max-width: 100%; color: var(--pt-text); }
+.dd-row input[type="file"]:focus-visible { outline: 2px solid var(--pt-accent); outline-offset: 2px; }
 .dd-row .pt-actions { margin-top: 0; }
 .dd-row .gs-btn { border-radius: 999px; }

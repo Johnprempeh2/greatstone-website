@@ -8,11 +8,12 @@ import EditableText from './EditableText.jsx'; // inline-on-canvas edit while ed
 // pillar cards (P·01…P·08), each with a number + "Inspect" affordance, a name, a one-line tag, a short
 // definition, and a row of assessment chips, with a lime top-border sweep on hover. Faithful port of
 // .pillars / .pillar-card. Cards link only when a target is set, so defaults never dead-link.
-export function PillarCards({ id, puck, kicker, heading, body, pillars = [] }) {
+export function PillarCards({ id, puck, kicker, heading, body, mode = 'pillars', pillars = [] }) {
   const ref = useReveal([pillars.length]);
   const editing = puck && puck.isEditing;
+  const capabilities = mode === 'capabilities';
   return (
-    <section ref={ref} className="b-pc-section section">
+    <section ref={ref} className={'b-pc-section section gs-rhythm' + (capabilities ? ' b-pc-capabilities' : '')}>
       <div className="wrap">
         <div className="b-pc-head center" data-reveal>
           <EditableText editing={editing} id={id} field="kicker" value={kicker} as="span" className="kicker" singleLine placeholder="Kicker…" />
@@ -29,7 +30,7 @@ export function PillarCards({ id, puck, kicker, heading, body, pillars = [] }) {
             return (
               <Tag key={i} className="b-pc-card" data-reveal style={{ transitionDelay: `${i * 60}ms` }} {...extra}>
                 <div className="b-pc-top">
-                  {p.n ? <span className="b-pc-n">{p.n}</span> : null}
+                  {p.n && !capabilities ? <span className="b-pc-n">{p.n}</span> : null}
                   {linked ? <span className="b-pc-go">Inspect →</span> : null}
                 </div>
                 <EditableText editing={editing} id={id} arrayField="pillars" index={i} field="name" value={p.name} as="div" className="b-pc-name" singleLine placeholder="Name…" />
@@ -69,7 +70,16 @@ export const css = `
 .b-pc-assess li{font-size:.68rem;letter-spacing:.04em;color:var(--gs-text-faint);border:1px solid var(--gs-border-soft);border-radius:100px;padding:3px 9px}
 .b-pc-go{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent);opacity:0;transition:opacity .3s}
 .b-pc-card:hover .b-pc-go{opacity:1}
+.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.b-pc-capabilities .b-pc-card{border-radius:var(--gs-card-radius);border-color:var(--gs-border-soft)}
+.b-pc-capabilities .b-pc-name,.b-pc-capabilities .b-pc-tag,.b-pc-capabilities .b-pc-def{overflow-wrap:normal;hyphens:none}
+.b-pc-capabilities .b-pc-card:hover,.b-pc-capabilities .b-pc-card:focus-visible{border-color:var(--gs-border-strong)}
+.b-pc-capabilities .b-pc-card::after{display:none}
+.b-pc-capabilities .b-pc-top:empty{display:none}
+@media(max-width:760px){.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.b-pc-capabilities .b-pc-grid{grid-template-columns:1fr}}
 @media(hover:none){.b-pc-go{opacity:1}}
+@media(prefers-reduced-motion:reduce){.b-pc-card:hover{transform:none}}
 `;
 
 const CHIPS = (arr) => arr.map((text) => ({ text }));
@@ -80,6 +90,7 @@ export const puck = {
     kicker: { type: 'custom', label: 'Kicker', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
     heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
     body: { type: 'custom', label: 'Intro', render: (props) => <RichTextField {...props} /> },
+    mode: { type: 'radio', label: 'Content', options: [{ label: 'Pillars', value: 'pillars' }, { label: 'Capabilities (equal weight)', value: 'capabilities' }] },
     // array field stays LAST (see memory "puck-slot-misdetection-inline-editing")
     pillars: {
       type: 'array', label: 'Pillars',
@@ -103,6 +114,7 @@ export const puck = {
     },
   },
   defaultProps: {
+    mode: 'pillars',
     kicker: 'The Eight Pillars',
     heading: 'Every facet, examined.',
     body: 'Here’s what we look at, and what we measure, across every pillar of the method.',

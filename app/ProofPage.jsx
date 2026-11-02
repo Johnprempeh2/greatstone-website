@@ -22,6 +22,6 @@ export default function ProofPage({ path, release }) {
   const page = pageForPath(path, release);
   const briefings = path === '/insights' ? insightBriefings(release) : [];
   return <SiteFrame release={release}>
-    <ProofBlocks data={page.data} pageSlug={page.slug} forms={release.collections?.forms} briefings={briefings} />
+    <ProofBlocks data={page.data} pageSlug={page.slug} pagePaths={release.pages.map((item) => item.path)} forms={release.collections?.forms} briefings={briefings} />
   </SiteFrame>;
 }

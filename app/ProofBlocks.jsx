@@ -38,10 +38,11 @@ import { ContainedMotion, css as containedMotionCss } from '../src/blocks/Contai
 import { sectionClass } from '../src/lib/block-style.mjs';
 import { SECTION_FIELD, SECTION_DEFAULT } from '../src/cms/style-field.jsx';
 import { bindFormBlock } from '../next-proof/form-bindings.mjs';
+import { publicLinkProps } from '../next-proof/public-links.mjs';
 import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from '../next-proof/motion-contract.mjs';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
-import { PAGE_SCENE_PRESETS, PAGE_SCENE_MODES, pageSceneBackground, resolvePageSceneFields } from '../next-proof/page-scene.mjs';
-import { STAGE_OPTIONS } from '../src/stage-presets.js';
+import { pageSceneBackground } from '../next-proof/page-scene.mjs';
+import PageSceneField from './editor/PageSceneField.jsx';
 
 const modules = { TwoDoors, TwoDoorsStory, TwoDoorsProof, TwoDoorsTools, TwoDoorsClose, TwoDoorsBottom, DevTools, Hero, MotionBand, Prose, Panels, ServiceCatalog, TransformationServices, DxConsultancyMethod, Invite, Steps, FeatureGrid, Faq, PillarCards, MaturityModel, Chapter, Team, LogoWall, IntelBand, MaturityMap, Ladder, MethodTieIn, IndustryPicker, BookDeepDive, AiBaselineSurvey, AiCostCalculator };
 export const proofBlockCss = Object.values(modules).map((module) => module.css || '').join('\n') + containedMotionCss;
@@ -81,13 +82,8 @@ export const proofConfig = {
     label: 'Page settings',
     fields: {
       title: { type: 'text', label: 'Page title' },
-      pageScene: { type: 'object', label: '3D background', objectFields: {
-        surface: { type: 'radio', label: 'Background', options: [{ value: 'plain', label: 'Plain surface' }, { value: '3d', label: '3D on' }] },
-        preset: { type: 'select', label: 'Scene', options: PAGE_SCENE_PRESETS.map((value) => ({ value, label: STAGE_OPTIONS.find((option) => option.id === value).label })) },
-        motion: { type: 'radio', label: 'Motion', options: PAGE_SCENE_MODES.map((value) => ({ value, label: value === 'animate' ? 'Animate' : 'Still' })) },
-      } },
+      pageScene: { type: 'custom', label: '3D background', render: (props) => <PageSceneField {...props} /> },
     },
-    resolveFields: (data, { fields }) => resolvePageSceneFields(data, fields),
     defaultProps: { pageScene: { surface: 'plain', preset: 'stone', motion: 'animate' } },
     render: ({ children, pageScene }) => <><PageScene value={pageScene} /><div className="gs-proof-content">{children}</div></>,
   },
@@ -95,7 +91,7 @@ export const proofConfig = {
   categories: { page: { title: 'Page', components: Object.keys(modules) } },
 };
 
-const publicPuck = { isEditing: false, renderDropZone: () => null, dragRef: null };
+const publicPuck = { isEditing: false, publicSite: true, renderDropZone: () => null, dragRef: null };
 function PublishedBriefings({ briefings }) {
   return <section className="proof-briefings" aria-labelledby="proof-briefings-heading"><div className="wrap">
     <h2 id="proof-briefings-heading">Published briefings</h2>
@@ -108,13 +104,13 @@ function PublishedBriefings({ briefings }) {
     </article>)}</div>
   </div></section>;
 }
-export function ProofBlocks({ data, pageSlug, forms, briefings = [] }) {
+export function ProofBlocks({ data, pageSlug, pagePaths, forms, briefings = [] }) {
   const beforeInvite = briefings.length ? data.content.findIndex((item) => item.type === 'Invite') : -1;
   return <><style>{proofBlockCss}</style><PageScene value={data.root?.props?.pageScene} /><div className="gs-proof-content">{data.content.map((item, index) => {
     const component = proofConfig.components[item.type];
     if (!component) throw new Error(`Unsupported published block: ${item.type}`);
     return <Fragment key={item.props.id}>{index === beforeInvite && <PublishedBriefings briefings={briefings} />}
-      <div>{component.render({ ...bindFormBlock(pageSlug, item, forms), puck: publicPuck })}</div>
+      <div>{component.render({ ...(pagePaths ? publicLinkProps(bindFormBlock(pageSlug, item, forms), pagePaths) : bindFormBlock(pageSlug, item, forms)), puck: publicPuck })}</div>
     </Fragment>;
   })}{briefings.length > 0 && beforeInvite === -1 && <PublishedBriefings briefings={briefings} />}</div></>;
 }

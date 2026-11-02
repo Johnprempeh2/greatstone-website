@@ -134,6 +134,46 @@ test('health answers a signed request and records who asked', { skip }, async ()
   assert.equal((await call(signed('/api/admin/v1/health', { actor: 'robot:x' }))).body.error.code, 'bad_signature');
 });
 
+test('schema reports only fixed table existence, including empty and missing tables, without changing rows', { skip }, async () => {
+  const path = '/api/admin/v1/schema';
+  const count = () => db.psql(`SELECT (SELECT count(*) FROM public.billing_lines),
+    (SELECT count(*) FROM public.client_activity_outbox);`).stdout.trim();
+  const before = count();
+  assert.equal(before.split('|')[0], '0'); // an empty table still exists
+  const nonce = randomBytes(16).toString('base64url');
+  const present = await call(signed(path, { nonce }));
+  assert.equal(present.status, 200);
+  assert.deepEqual(present.body, { tables: { billing_lines: true, client_activity_outbox: true } });
+  assert.match(audit(nonce), / schema ok 0$/);
+  assert.equal(count(), before);
+  assert.equal((await call(signed(`${path}?table=customers`))).status, 400);
+  assert.equal((await call(signed(path, { kid: 'test-unknown-1' }))).status, 401);
+  assert.equal((await call(signed(path, { kid: 'test-write-1' }))).status, 403);
+  assert.equal(count(), before);
+
+  const renamed = db.psql('ALTER TABLE public.billing_lines RENAME TO billing_lines_probe_hidden;');
+  assert.equal(renamed.status, 0, renamed.stderr);
+  try {
+    const missing = await call(signed(path));
+    assert.equal(missing.status, 200);
+    assert.deepEqual(missing.body, { tables: { billing_lines: false, client_activity_outbox: true } });
+    const second = db.psql('ALTER TABLE public.client_activity_outbox RENAME TO client_activity_outbox_probe_hidden;');
+    assert.equal(second.status, 0, second.stderr);
+    try {
+      const bothMissing = await call(signed(path));
+      assert.equal(bothMissing.status, 200);
+      assert.deepEqual(bothMissing.body, { tables: { billing_lines: false, client_activity_outbox: false } });
+    } finally {
+      const restored = db.psql('ALTER TABLE public.client_activity_outbox_probe_hidden RENAME TO client_activity_outbox;');
+      assert.equal(restored.status, 0, restored.stderr);
+    }
+  } finally {
+    const restored = db.psql('ALTER TABLE public.billing_lines_probe_hidden RENAME TO billing_lines;');
+    assert.equal(restored.status, 0, restored.stderr);
+  }
+  assert.equal(count(), before);
+});
+
 test('lists page on a cursor, read only the first organisation and never the Stripe ids', { skip }, async () => {
   const seen = [];
   let cursor = null;

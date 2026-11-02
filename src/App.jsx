@@ -9,6 +9,7 @@ import { arrivalAction, parseEnquireHref, setPendingInterest } from './lib/enqui
 import { openBooking } from './lib/booking.js';
 import { siteOrigin } from './lib/site-origin.mjs';
 import { readAuthLanding, consumeVerifiedLanding } from './lib/auth-landing.mjs';
+import { proofBarsProblem } from './lib/proof-bars.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
@@ -746,6 +747,8 @@ export default function App() {
   // the Releases change-review queue (Approve) share one path. Returns true once published, false on cancel.
   async function publishPage(slug, data) {
     if (!canPublish) { flash('Editors can’t publish directly. Request review, then an admin publishes.'); return false; }
+    const proofProblem = proofBarsProblem(data?.content);
+    if (proofProblem) { flash(proofProblem); return false; }
     // accessibility/SEO preflight: warn (don't hard-block) if any image is missing alt text
     const missing = findMissingAlt(data && data.content, state.products);
     if (missing.length) {

@@ -19,6 +19,15 @@ test('editor alias guard checks the deployed HTTP response', async () => {
   assert.deepEqual(await verifyEditorAlias(async () => ({ ok: true, text: async () => page(EDITOR_SITE_ID, '2') })), { siteId: EDITOR_SITE_ID, contract: '2' });
 });
 
+test('a train deploy needs the alias to report the tag commit, not the placeholder', async () => {
+  const tag = 'b'.repeat(40);
+  const withCommit = (commit) => page(EDITOR_SITE_ID, '2').replace('</head>', `<meta name="gsam-editor-engine-commit" content="${commit}"/></head>`);
+  assert.throws(() => checkEditorHtml(page(EDITOR_SITE_ID, '2'), tag), /engine commit mismatch: missing; expected b{40}/);
+  assert.throws(() => checkEditorHtml(withCommit('0'.repeat(40)), tag), /engine commit mismatch: 0{40}/);
+  assert.deepEqual(checkEditorHtml(withCommit(tag), tag), { siteId: EDITOR_SITE_ID, contract: '2', commit: tag });
+  await assert.rejects(verifyEditorAlias(async () => ({ ok: true, text: async () => withCommit('c'.repeat(40)) }), tag), /engine commit mismatch/);
+});
+
 test('editor alias refuses a contract failure before starting Netlify', () => {
   const dir = mkdtempSync(join(tmpdir(), 'editor-guard-'));
   try {

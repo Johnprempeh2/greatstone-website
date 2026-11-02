@@ -17,19 +17,24 @@ function metaContent(html, name) {
   return undefined;
 }
 
-export function checkEditorHtml(html) {
+// expectedCommit is set when the weekly train deploys the alias (GRE-2804): the page must
+// report the engine commit of the release tag, not the release file's 000…0 placeholder.
+export function checkEditorHtml(html, expectedCommit) {
   const siteId = metaContent(html, 'gsam-editor-site-id');
   const contract = metaContent(html, 'gsam-editor-contract');
   if (siteId !== EDITOR_SITE_ID || contract !== EDITOR_CONTRACT) {
     throw new Error(`Editor alias mismatch: siteId=${siteId || 'missing'}, contract=${contract || 'missing'}; expected ${EDITOR_SITE_ID}, ${EDITOR_CONTRACT}`);
   }
-  return { siteId, contract };
+  if (!expectedCommit) return { siteId, contract };
+  const commit = metaContent(html, 'gsam-editor-engine-commit');
+  if (commit !== expectedCommit) throw new Error(`Editor alias engine commit mismatch: ${commit || 'missing'}; expected ${expectedCommit}`);
+  return { siteId, contract, commit };
 }
 
-export async function verifyEditorAlias(fetchPage = fetch) {
+export async function verifyEditorAlias(fetchPage = fetch, expectedCommit) {
   const response = await fetchPage(EDITOR_URL, { cache: 'no-store' });
   if (!response.ok) throw new Error(`Editor alias returned HTTP ${response.status}`);
-  return checkEditorHtml(await response.text());
+  return checkEditorHtml(await response.text(), expectedCommit);
 }
 
 async function main() {
@@ -46,10 +51,10 @@ async function main() {
     if (result.error) throw result.error;
     if (result.status !== 0) throw new Error(`Netlify alias deploy failed (${result.status})`);
   }
-  const result = await verifyEditorAlias();
+  const result = await verifyEditorAlias(fetch, process.env.GSAM_ENGINE_COMMIT);
   const links = await checkBuiltLinks('https://gsam-editor--greatstone-home.netlify.app', release.pages.map((page) => page.path));
   if (links.failures.length) throw new Error(`Editor alias link check failed:\n${links.failures.join('\n')}`);
-  console.log(`Editor alias verified: siteId=${result.siteId}, contract=${result.contract}`);
+  console.log(`Editor alias verified: siteId=${result.siteId}, contract=${result.contract}${result.commit ? `, engine.commit=${result.commit}` : ''}`);
   console.log(`Editor alias links verified: ${links.pages} pages, ${links.checkedLinks} links`);
 }
 

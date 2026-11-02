@@ -24,7 +24,7 @@ export function StatStrip({ id, index, eyebrow, headline, highlight, body, clien
       const stat = node.closest('.b-stat'); if (stat) stat.classList.add('is-lit'); // live: .stat.lit num turns lime
       const target = parseFloat(node.dataset.target || '0'), dec = parseInt(node.dataset.dec || '0', 10);
       const pre = node.dataset.prefix || '';
-      if (reduce || plain) { node.textContent = pre + fmt(target, dec); return; } // live services outcomes are static figures, no count-up
+      if (reduce) { node.textContent = pre + fmt(target, dec); return; }
       const dur = 1500; let start = null;
       const step = (ts) => { if (start === null) start = ts; const pr = Math.min((ts - start) / dur, 1); const e = 1 - Math.pow(1 - pr, 3);
         node.textContent = pre + fmt(target * e, dec); if (pr < 1) requestAnimationFrame(step); else node.textContent = pre + fmt(target, dec); };
@@ -37,7 +37,7 @@ export function StatStrip({ id, index, eyebrow, headline, highlight, body, clien
 
   const hasHeader = index || eyebrow || headline || highlight || body || clients || editing;
   return (
-    <section ref={reveal} className={'b-proof' + (band ? ' b-proof-band' : '') + (cards ? ' b-proof-cards' : '') + (plain ? ' b-proof-plain' : '')}>
+    <section ref={reveal} className={'b-proof gs-rhythm' + (band ? ' b-proof-band' : '') + (cards ? ' b-proof-cards' : '') + (plain ? ' b-proof-plain' : '')}>
       {(band || cards || plain) ? null : <div className="b-proof-aurora" aria-hidden="true" />}
       <div className="wrap">
         {hasHeader ? (
@@ -64,7 +64,7 @@ export function StatStrip({ id, index, eyebrow, headline, highlight, body, clien
                 <div className="b-stat-fig">
                   {/* the count-up animates the visible figure from 0; hide that from assistive tech and expose the
                       final value as static text, so a screen reader always reads the real number (not the in-flight "0"). */}
-                  <span className="b-stat-num" aria-hidden="true" data-target={s.value} data-prefix={s.prefix || ''} data-dec={s.dec || 0}>{(s.prefix || '') + (plain ? fmt(s.value, s.dec || 0) : '0')}</span>
+                  <span className="b-stat-num" aria-hidden="true" data-target={s.value} data-prefix={s.prefix || ''} data-dec={s.dec || 0}>{(s.prefix || '') + '0'}</span>
                   {s.suffix ? <span className="b-stat-suffix" aria-hidden="true">{s.suffix}</span> : null}
                   <span className="gs-sr-only">{(s.prefix || '') + fmt(s.value, s.dec || 0) + (s.suffix ? ' ' + s.suffix : '')}</span>
                 </div>
@@ -96,10 +96,9 @@ export const css = `
 @media(max-width:760px){.b-proof-stats{grid-template-columns:repeat(2,1fr) !important;gap:28px}}
 @media(max-width:480px){.b-proof-stats{grid-template-columns:1fr !important}}
 .b-stat-fig{display:flex;align-items:baseline;gap:.06em}
-.b-stat-num{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;
-  background:linear-gradient(180deg,#fff,#c8ff00);-webkit-background-clip:text;background-clip:text;color:transparent}
+.b-stat-num{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--gs-accent)}
 .b-stat-suffix{font-size:clamp(1.4rem,3vw,2.2rem);font-weight:800;letter-spacing:-.02em;line-height:1;
-  background:linear-gradient(180deg,#fff,#c8ff00);-webkit-background-clip:text;background-clip:text;color:transparent}
+  color:var(--gs-accent)}
 .b-stat-l{margin-top:12px;font-size:.9rem;color:var(--gs-text);font-weight:700;line-height:1.35;max-width:26ch}
 .b-stat-n{margin-top:6px;font-size:.82rem;color:var(--gs-text-muted);font-weight:500;line-height:1.45;max-width:30ch}
 /* band variant — the live proof .stat-band: border-block + accent-soft gradient, no header, per-stat left accent
@@ -140,11 +139,13 @@ export const css = `
 .b-proof-plain .b-stat:not(:last-child)::after{content:'';position:absolute;right:calc(-1 * clamp(9px,1.2vw,16px));top:18%;bottom:18%;
   width:1px;background:linear-gradient(180deg,transparent,var(--gs-border),transparent)}
 @media(max-width:900px){.b-proof-plain .b-stat:not(:last-child)::after{display:none}}
-/* plain variant: live services .outcomes .bignum is a STATIC solid-lime figure with the suffix baked into the
-   same span at the same size (site.css: font-weight:900, font-size:clamp(2.6rem,6vw,5rem), line-height:1,
-   color:var(--gs-accent), letter-spacing:-.03em). Override the base white->lime gradient + smaller/lighter suffix
-   so num and suffix render as one solid-lime figure; count-up is skipped and the final value painted on mount. */
+/* Plain variant keeps the solid-lime outcome style while the shared count-up runs on first view.
+   The suffix stays visually joined to the number, and assistive technology reads the final value
+   through the static screen-reader text above. Reduced motion paints the final number at once. */
 .b-proof-plain .b-stat-num,.b-proof-plain .b-stat-suffix{background:none;-webkit-text-fill-color:currentColor;color:var(--gs-accent);font-weight:900;font-size:clamp(2.6rem,6vw,5rem);letter-spacing:-.03em;line-height:1}
+.b-proof.gs-rhythm .b-proof-head{font-size:clamp(2rem,4vw,2.75rem);font-weight:800;line-height:1.08;letter-spacing:-.025em}
+.b-proof.gs-rhythm .b-proof-body{color:var(--gs-text-muted)}
+.b-proof.gs-rhythm .b-proof-clients,.b-proof.gs-rhythm .b-stat-foot{color:var(--gs-text-faint)}
 .b-stat-foot{margin-top:clamp(28px,4vw,44px);text-align:center;color:var(--gs-faint);font-size:.82rem}
 `;
 

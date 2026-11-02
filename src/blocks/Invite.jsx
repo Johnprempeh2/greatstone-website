@@ -40,7 +40,7 @@ export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel,
       ) : null}
     </>
   );
-  const cls = 'b-invite'
+  const cls = 'b-invite gs-rhythm'
     + (framed ? ' b-invite-framed' : '')
     + (band ? ' b-invite-band' : '')
     + (band && pill ? ' b-invite-pillband' : '');
@@ -48,7 +48,7 @@ export function Invite({ id, puck, eyebrow, headline, highlight, body, ctaLabel,
     <section ref={ref} className={cls} id="invite">
       {(framed || band) ? null : <div className="b-invite-aurora" aria-hidden="true" />}
       {framed
-        ? <div className="wrap"><div className="b-invite-card">{inner}</div></div>
+        ? <div className="wrap"><div className="b-invite-card gs-feature-panel">{inner}</div></div>
         : <div className="wrap b-invite-inner">{inner}</div>}
     </section>
   );
@@ -62,7 +62,7 @@ export const css = `
 @media(prefers-reduced-motion:reduce){.b-invite-aurora{animation:none}}
 .b-invite-inner{position:relative;z-index:1;max-width:820px;margin-inline:auto}
 .b-invite h2{margin-top:14px;font-size:clamp(2.2rem,6vw,4rem);font-weight:900;line-height:1.0;letter-spacing:-.035em;color:#fff}
-.b-invite-body{margin:22px auto 0;max-width:54ch;color:var(--gs-muted);font-size:clamp(1.02rem,1.6vw,1.22rem);line-height:1.7}
+.b-invite-body{margin:22px auto 0;max-width:54ch;color:var(--gs-text-muted);font-size:clamp(1.02rem,1.6vw,1.22rem);line-height:1.7}
 .b-invite-actions{margin-top:clamp(30px,5vw,46px);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px}
 .b-invite-email{font-size:.94rem;font-weight:700;color:var(--gs-text);border-bottom:1px solid var(--gs-border);padding-bottom:3px;
   transition:color .25s var(--gs-ease),border-color .25s var(--gs-ease);overflow-wrap:anywhere}
@@ -80,7 +80,7 @@ export const css = `
 /* framed variant: a contained bordered card (the live method .cta-band), no full-bleed aurora */
 .b-invite-framed{padding:clamp(48px,9vw,110px) 0}
 .b-invite-card{position:relative;max-width:880px;margin-inline:auto;text-align:center;overflow:hidden;
-  border:1px solid var(--gs-border);border-radius:22px;background:var(--gs-accent-soft);
+  border:1px solid var(--gs-border);background:var(--gs-accent-soft);
   padding:clamp(40px,6vw,72px);backdrop-filter:blur(10px)}
 .b-invite-card::before{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(600px 320px at 50% -20%,var(--gs-accent-dim),transparent 70%)}
@@ -93,9 +93,10 @@ export const css = `
 .b-invite-band h2{font-size:clamp(27px,3.5vw,42px)}
 .b-invite-pillband{border-top:1px solid var(--gs-border-soft)}
 
+.b-invite.gs-rhythm h2{font-size:clamp(2rem,4vw,2.75rem);font-weight:800;line-height:1.08;letter-spacing:-.025em}
 /* Phone scale, paired with the hero's mobile floor in Hero.jsx: the statement caps at 27px there, so
    section headings cap at 26px here and the ramp holds at every width (375px 22/19, 640px 27/26). */
-@media(max-width:640px){.b-invite h2{font-size:clamp(19px,5vw,26px)}}
+@media(max-width:640px){.b-invite.gs-rhythm h2{font-size:clamp(19px,5vw,26px)}}
 `;
 
 export const puck = {

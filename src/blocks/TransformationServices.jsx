@@ -18,13 +18,13 @@ export function TransformationServices({ id, puck, eyebrow, heading, body, close
           <h2>{service.title}</h2>
           <p>{service.step}</p>
           <p className="b-transform-whole"><strong>As part of the full transformation:</strong> {service.whole}</p>
-          <a href="#go/contact/enquiry">Ask about this step</a>
+          <a href={puck?.publicSite ? '/contact#enquiry' : '#go/contact/enquiry'}>Ask about this step</a>
         </article>)}
       </div>
       <div className="b-transform-close">
         <EditableText editing={editing} id={id} field="closeHeading" value={closeHeading} as="h2" singleLine />
         <EditableText editing={editing} id={id} field="closeBody" value={closeBody} as="p" />
-        <div className="b-transform-actions"><a className="b-cta" href="#enquire/a-free-executive-discovery">Begin the Conversation</a><a href="#go/method">See the full transformation</a></div>
+        <div className="b-transform-actions"><a className="b-cta" href="#enquire/a-free-executive-discovery">Begin the Conversation</a><a href={puck?.publicSite ? '/method' : '#go/method'}>See the full transformation</a></div>
       </div>
     </div>
   </section>;
