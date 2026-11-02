@@ -70,13 +70,15 @@ export const css = `
 .b-pc-assess li{font-size:.68rem;letter-spacing:.04em;color:var(--gs-text-faint);border:1px solid var(--gs-border-soft);border-radius:100px;padding:3px 9px}
 .b-pc-go{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gs-accent);opacity:0;transition:opacity .3s}
 .b-pc-card:hover .b-pc-go{opacity:1}
-.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+.b-pc-capabilities .b-pc-card{grid-column:span 2}
+.b-pc-capabilities .b-pc-card:nth-last-child(2):nth-child(3n + 1){grid-column:2 / span 2}
 .b-pc-capabilities .b-pc-card{border-radius:var(--gs-card-radius);border-color:var(--gs-border-soft)}
 .b-pc-capabilities .b-pc-name,.b-pc-capabilities .b-pc-tag,.b-pc-capabilities .b-pc-def{overflow-wrap:normal;hyphens:none}
 .b-pc-capabilities .b-pc-card:hover,.b-pc-capabilities .b-pc-card:focus-visible{border-color:var(--gs-border-strong)}
 .b-pc-capabilities .b-pc-card::after{display:none}
 .b-pc-capabilities .b-pc-top:empty{display:none}
-@media(max-width:760px){.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.b-pc-capabilities .b-pc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.b-pc-capabilities .b-pc-card,.b-pc-capabilities .b-pc-card:nth-last-child(2):nth-child(3n + 1){grid-column:auto}}
 @media(max-width:560px){.b-pc-capabilities .b-pc-grid{grid-template-columns:1fr}}
 @media(hover:none){.b-pc-go{opacity:1}}
 @media(prefers-reduced-motion:reduce){.b-pc-card:hover{transform:none}}

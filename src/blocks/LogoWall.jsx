@@ -61,6 +61,8 @@ export const css = `
 .b-logos-item a{display:inline-flex;align-items:center}
 .b-logos-item a:hover img,.b-logos-item a:focus-visible img{opacity:1}
 .b-logos-viewport{overflow:hidden;margin-top:clamp(18px,3vw,30px)}
+#gs-blk-consultancy-logos .b-logos{padding-block:32px}
+#gs-blk-consultancy-logos .b-logos-viewport{margin-top:0}
 .b-logos-marquee .b-logos-row{width:max-content;flex-wrap:nowrap;justify-content:flex-start;gap:clamp(26px,5vw,60px);margin:0;animation:bLogoMarquee 40s linear infinite}
 .b-logos-marquee .b-logos-item{flex:none;background:var(--gs-logo-surface);border-radius:4px}.b-logos-marquee .b-logos-item img{width:160px;height:76px;max-width:160px;object-fit:contain;padding:10px;opacity:1}.b-logos-marquee .b-logos-dark-mark img{filter:brightness(0)}
 .b-logos-marquee .b-logos-viewport:hover .b-logos-row,.b-logos-marquee .b-logos-viewport:focus-within .b-logos-row{animation-play-state:paused}

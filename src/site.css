@@ -135,6 +135,39 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 /* ---- layout primitives ---- */
 .wrap { max-width:var(--gs-maxw); margin:0 auto; padding-inline:var(--gs-gutter); }
 .section { padding-block:var(--gs-section-space); position:relative; }
+/* One page rhythm for the consultancy draft. The logo strip and hero form its introduction. */
+.consultancy-page{position:relative;isolation:isolate;background:var(--gs-bg)}
+.consultancy-tide{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at 72% 68%,rgba(58,140,100,.06),transparent 58%),var(--gs-bg)}
+.consultancy-tide.live{background:var(--gs-bg)}
+.consultancy-block{position:relative;z-index:1}
+.consultancy-block .gs-blk>section{background:transparent}
+#gs-blk-consultancy-decide>section,.consultancy-block>.band-light{background:var(--gs-light-bg)}
+/* Consultancy glass: one pane per text group so copy reads over the tide. Not on the hero, logos or the cream Decide band. */
+.consultancy-block :is(.b-pc-head,.b-layer-intro,.b-layer-list,.b-compose-head,.b-bridge-intro,.b-cases-intro,.b-invite-inner,.b-pc-card,.b-compose-problem,.b-compose-answer,.b-layer-slab){--consultancy-glass-blur:16px;background-color:rgba(18,18,18,.55);-webkit-backdrop-filter:blur(var(--consultancy-glass-blur)) saturate(140%);backdrop-filter:blur(var(--consultancy-glass-blur)) saturate(140%)}
+.consultancy-block :is(.b-pc-head,.b-layer-intro,.b-layer-list,.b-compose-head,.b-bridge-intro,.b-cases-intro,.b-invite-inner){border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);border-radius:var(--gs-card-radius)}
+.consultancy-block :is(.b-pc-head,.b-layer-intro,.b-layer-list,.b-compose-head,.b-bridge-intro,.b-cases-intro){display:block;width:fit-content;max-width:100%;box-sizing:border-box;padding:clamp(20px,2.4vw,32px)}
+.consultancy-block .b-pc-head.center{margin-inline:auto}
+.consultancy-block .b-layer-intro{margin-bottom:clamp(24px,3vw,40px)}
+.consultancy-block .b-cases-intro>:first-child,.consultancy-block .b-layer-intro>:first-child,.consultancy-block .b-bridge-intro>:first-child{margin-top:0}
+.consultancy-block :is(.b-pc-head,.b-layer-intro,.b-compose-head,.b-bridge-intro,.b-cases-intro)>:last-child{margin-bottom:0}
+.consultancy-block .b-bridge-intro{margin-bottom:clamp(20px,3vw,32px)}
+.consultancy-block .b-invite-inner{max-width:min(820px,calc(100% - 2 * var(--gs-gutter)));padding:clamp(20px,2.4vw,32px)}
+.consultancy-block :is(.b-compose-problem.is-on,.b-compose-tile.is-on,.b-compose-picked li){background-color:rgba(18,18,18,.55);background-image:linear-gradient(rgba(200,255,0,.08),rgba(200,255,0,.08));border-color:var(--gs-lime)}
+.consultancy-block .b-invite-aurora{display:none}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.consultancy-block :is(.b-pc-head,.b-layer-intro,.b-layer-list,.b-compose-head,.b-bridge-intro,.b-cases-intro,.b-invite-inner,.b-pc-card,.b-compose-problem,.b-compose-answer,.b-layer-slab){background-color:rgba(18,18,18,.85)}}
+@media(max-width:640px){.consultancy-block :is(.b-pc-head,.b-layer-intro,.b-layer-list,.b-compose-head,.b-bridge-intro,.b-cases-intro,.b-invite-inner,.b-pc-card,.b-compose-problem,.b-compose-answer,.b-layer-slab){--consultancy-glass-blur:12px}}
+.consultancy-block .kicker::after,.consultancy-block .b-logos-eyebrow::after{content:"";display:block;width:42px;height:1px;margin-top:10px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .6s var(--gs-ease)}
+.consultancy-block .center .kicker::after,.consultancy-block .b-invite-inner .kicker::after,.consultancy-block .b-invite-card .kicker::after{margin-inline:auto}
+.consultancy-block.is-in .kicker::after,.consultancy-block.is-in .b-logos-eyebrow::after{transform:scaleX(1)}
+.consultancy-ready .consultancy-block:not(.is-in) .gs-blk>section>.wrap{opacity:0;transform:translateY(18px)}
+.consultancy-block .gs-blk>section>.wrap{transition:opacity .65s var(--gs-ease),transform .65s var(--gs-ease)}
+.consultancy-block .b-pc-card,.consultancy-block .b-layer-slab{translate:0 var(--consultancy-parallax,0px)}
+#gs-blk-consultancy-logos .b-logos-viewport{-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+#gs-blk-consultancy-capabilities .b-pc-head{margin-bottom:clamp(32px,5vw,56px)}
+@media(prefers-reduced-motion:reduce){.consultancy-block .gs-blk>section>.wrap{opacity:1!important;transform:none!important;transition:none!important}.consultancy-block .kicker::after,.consultancy-block .b-logos-eyebrow::after{transform:none;transition:none}.consultancy-block .b-pc-card,.consultancy-block .b-layer-slab{translate:none}}
+@media print{.consultancy-tide{display:none}.consultancy-page{background:white}}
+:is(#gs-blk-consultancy-capabilities,#gs-blk-consultancy-method,#gs-blk-consultancy-compose,#gs-blk-consultancy-bridge,#gs-blk-consultancy-cases,#gs-blk-consultancy-decide,#gs-blk-consultancy-invite)>section{padding-block:var(--gs-consultancy-section-space,96px)}
+@media(max-width:640px){:is(#gs-blk-consultancy-capabilities,#gs-blk-consultancy-method,#gs-blk-consultancy-compose,#gs-blk-consultancy-bridge,#gs-blk-consultancy-cases,#gs-blk-consultancy-decide,#gs-blk-consultancy-invite)>section{--gs-consultancy-section-space:64px}}
 .gs-rhythm h1{font-size:clamp(2.7rem,6vw,4.5rem);font-weight:800;line-height:1.04;letter-spacing:-.035em}
 .gs-rhythm h2,.gs-rhythm .h2{font-size:clamp(2rem,4vw,2.75rem);font-weight:800;line-height:1.08;letter-spacing:-.025em}
 .gs-rhythm .lead{max-width:62ch;line-height:1.7}

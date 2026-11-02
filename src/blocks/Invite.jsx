@@ -94,9 +94,8 @@ export const css = `
 .b-invite-pillband{border-top:1px solid var(--gs-border-soft)}
 
 .b-invite.gs-rhythm h2{font-size:clamp(2rem,4vw,2.75rem);font-weight:800;line-height:1.08;letter-spacing:-.025em}
-/* Phone scale, paired with the hero's mobile floor in Hero.jsx: the statement caps at 27px there, so
-   section headings cap at 26px here and the ramp holds at every width (375px 22/19, 640px 27/26). */
-@media(max-width:640px){.b-invite.gs-rhythm h2{font-size:clamp(19px,5vw,26px)}}
+/* The final invitation keeps a section-heading floor on phones. */
+@media(max-width:640px){.b-invite.gs-rhythm h2{font-size:clamp(2rem,8vw,2.75rem)}}
 `;
 
 export const puck = {

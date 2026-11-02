@@ -147,6 +147,8 @@ export const css = `
 .b-proof.gs-rhythm .b-proof-body{color:var(--gs-text-muted)}
 .b-proof.gs-rhythm .b-proof-clients,.b-proof.gs-rhythm .b-stat-foot{color:var(--gs-text-faint)}
 .b-stat-foot{margin-top:clamp(28px,4vw,44px);text-align:center;color:var(--gs-faint);font-size:.82rem}
+#gs-blk-consultancy-stats .b-proof-body{margin-top:14px}
+#gs-blk-consultancy-stats .b-stat-foot:empty{display:none}
 `;
 
 const STAT = (value, suffix, prefix, dec, label) => ({ value, suffix, prefix, dec, label });
