@@ -165,14 +165,14 @@ export const css = `
 .b-hero-inner{max-width:660px;position:relative;z-index:2}
 .b-hero.align-center .b-hero-inner{max-width:1040px;margin-inline:auto}
 /* The consultancy introduction hands the first screen to the client logos. */
-.b-hero.v-consultancy{min-height:0;padding:clamp(64px,7vh,72px) 0 28px}
+.b-hero.v-consultancy{min-height:0;padding:114px 0 28px}
 .b-hero.v-consultancy .b-hero-inner{max-width:900px}
 .b-hero.v-consultancy h1{font-size:clamp(34px,4vw,56px);line-height:1.06;letter-spacing:-.035em;max-width:900px;margin-top:16px}
 .b-hero.v-consultancy .lede{margin-top:18px;max-width:700px;line-height:1.55}
 .b-hero.v-consultancy .b-cta-row{margin-top:24px}
 .b-hero.v-consultancy{isolation:isolate}
 .b-hero.v-consultancy>.td-tide{--td-size-34:34px;--td-size-35:35px;--td-size-140:140px;--td-size-440:440px;--td-palette-04:rgba(58,140,100,.16);--td-palette-05:#000;--td-palette-06:rgba(18,18,18,.74);left:calc(50% - 50vw);right:auto;width:100vw;-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 62%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,#000 62%,transparent 100%)}
-@media(max-width:640px){.b-hero.v-consultancy{padding:64px 0 20px}.b-hero.v-consultancy h1{font-size:34px;max-width:100%}.b-hero.v-consultancy .lede{font-size:15px;line-height:1.5;margin-top:14px}.b-hero.v-consultancy .b-cta-row{margin-top:18px}}
+@media(max-width:640px){.b-hero.v-consultancy{padding:98px 0 20px}.b-hero.v-consultancy h1{font-size:34px;max-width:100%}.b-hero.v-consultancy .lede{font-size:15px;line-height:1.5;margin-top:14px}.b-hero.v-consultancy .b-cta-row{margin-top:18px}}
 /* matches the live homepage .hero-title scale exactly */
 .b-hero h1{font-weight:900;line-height:1.02;letter-spacing:-2.5px;font-size:clamp(40px,6.2vw,84px);
   text-shadow:0 2px 60px rgba(0,0,0,.6);margin-top:20px}
