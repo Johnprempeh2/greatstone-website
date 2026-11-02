@@ -3,6 +3,7 @@ import { pageForPath, navigation } from './proof-data.js';
 import { insightBriefings } from './insight-briefings.mjs';
 import { resolveMediaRefs } from '../next-proof/release-media.mjs';
 import { CookieSettings } from './ConsentAnalytics.jsx';
+import HtmlPage from './HtmlPage.jsx';
 
 export function SiteFrame({ children, release }) {
   const site = release.site;
@@ -19,6 +20,8 @@ export function SiteFrame({ children, release }) {
 }
 
 export default function ProofPage({ path, release }) {
+  // Schema 2 releases carry HTML pages and their own chrome (GRE-3776); schema 1 keeps Puck blocks.
+  if (release.releaseSchema === 2) return <HtmlPage page={release.pages.find((item) => item.path === path)} release={release} />;
   const page = pageForPath(path, release);
   const briefings = path === '/insights' ? insightBriefings(release) : [];
   return <SiteFrame release={release}>

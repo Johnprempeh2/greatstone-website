@@ -82,3 +82,64 @@ test('media asset ids resolve to content addressed public paths', () => {
     logo: `/media/${hash}.webp`,
   });
 });
+
+// GRE-3776: schema 2 releases carry page HTML and CSS, shared chrome and one site stylesheet.
+const htmlLive = (number = 5) => ({
+  schema: 2, siteId: baked.siteId, orgId: null, release: number, theme: {},
+  stylesheet: ':root{--ink:#111}',
+  chrome: { header: { html: '<header>Logo</header>', css: '.a{color:red}' }, footer: { html: '<footer>f</footer>', css: '' },
+    nav: { html: '<nav><a href="/">Home</a></nav>', css: '' } },
+  pages: [
+    { id: 'p-home', slug: '/', title: 'Home', parentPageId: null, menu: 'header', menuOrder: 1, navOrder: 1, seo: { description: 'Home page' },
+      html: '<section class="hero"><h1>Hello</h1></section>', css: '.hero{padding:2rem}' },
+    { id: 'p-contact', slug: '/contact', title: 'Contact', parentPageId: null, menu: null, menuOrder: null, navOrder: 2, seo: {},
+      html: '<gs-island name="enquiry-form" data-form="contact"></gs-island>', css: '' },
+  ],
+  collections: {}, redirects: [], media: {},
+});
+
+test('schema 2 release serves HTML pages, chrome and stylesheet', async () => {
+  const active = await reader(signed(htmlLive()))();
+  assert.equal(active.source, 'blobs');
+  assert.equal(active.refused, null);
+  assert.equal(active.release.releaseSchema, 2);
+  assert.equal(active.release.stylesheet, ':root{--ink:#111}');
+  assert.deepEqual(active.release.chrome.nav, { html: '<nav><a href="/">Home</a></nav>', css: '' });
+  const home = active.release.pages.find((page) => page.path === '/');
+  assert.deepEqual([home.format, home.html, home.css, home.data], ['html', '<section class="hero"><h1>Hello</h1></section>', '.hero{padding:2rem}', undefined]);
+  assert.equal(home.seo.title, 'Home');
+  assert.deepEqual(active.release.site.navigation.map((item) => item.label), ['Home']);
+});
+
+test('schema 1 releases still render Puck data after schema 2 support', async () => {
+  const active = await reader(signed(live(6)))();
+  assert.equal(active.release.releaseSchema, 1);
+  assert.equal(active.release.chrome, null);
+  assert.ok(active.release.pages.every((page) => page.data && !page.format));
+});
+
+test('/_release reports schemas 1 and 2', async () => {
+  const { supportedReleaseSchemas } = await import('./release-reader.mjs');
+  assert.deepEqual(supportedReleaseSchemas, [1, 2]);
+  const report = releaseReport(await reader(signed(htmlLive(7)))(), baked.release.engine, supportedReleaseSchemas);
+  assert.deepEqual([report.release, report.supportedReleaseSchemas], [7, [1, 2]]);
+});
+
+test('invalid schema 2 releases are refused', async () => {
+  const withPage = (change) => { const release = htmlLive(); Object.assign(release.pages[0], change); return release; };
+  const cases = [
+    [{ ...htmlLive(), schema: 3 }, 'release'],
+    [{ ...htmlLive(), stylesheet: undefined }, 'chrome'],
+    [{ ...htmlLive(), chrome: { ...htmlLive().chrome, sidebar: { html: '', css: '' } } }, 'chrome'],
+    [{ ...htmlLive(), chrome: { header: { html: '<header></header>' } } }, 'chrome'],
+    [withPage({ html: undefined }), 'pages'],
+    [withPage({ css: 42 }), 'pages'],
+    // A schema 2 page with only Puck data is not valid schema 2.
+    [withPage({ html: undefined, css: undefined, content: baked.pages[0].data }), 'pages'],
+  ];
+  for (const [release, rule] of cases) {
+    const active = await reader(signed(release))();
+    assert.equal(active.source, 'baked');
+    assert.equal(active.refused.rule, rule, JSON.stringify(release).slice(0, 80));
+  }
+});
