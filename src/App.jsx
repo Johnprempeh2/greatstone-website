@@ -1587,7 +1587,7 @@ export default function App() {
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) and the Intelligence section render on their
           own solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || orgRoute || portalRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence') && !saveData && <Stage background={bg} />}
+      {!(accountRoute || orgRoute || portalRoute || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence' || (current === 'dx-consultancy' && (page.published || page.data)?.content?.some((item) => item.type === 'Hero' && item.props?.variant === 'consultancy' && item.props?.tide))) && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} navigation={state.navigation} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
