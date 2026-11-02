@@ -45,6 +45,8 @@ export const ISLANDS = {
       'data-speed': enumRule('speed', ['still', 'slow', 'normal']),
       'data-colour': enumRule('colour', COLOURS),
     } },
+  // GRE-3778: the frozen landing (Two Doors, v15) renders its published blocks unchanged.
+  'two-doors-landing': { component: 'TwoDoorsLanding', label: 'Two Doors landing', placeholder: 'The frozen Two Doors landing: doors and hero.', height: 900, attributes: {} },
 };
 
 // Returns the island's props and accepted attributes, or null when the name is not registered.

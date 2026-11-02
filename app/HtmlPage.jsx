@@ -11,12 +11,15 @@ import { CookieSettings } from './ConsentAnalytics.jsx';
 import { AccountEntry, AnimationIsland, QuoteIsland, StoneIsland } from './islands.jsx';
 import ProductListIsland from './ProductListIsland.jsx';
 import { Region } from './html-regions.mjs';
+import TwoDoorsLanding from './TwoDoorsLanding.jsx';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding };
 // Islands that read release data on the server get the release; browser islands get only their props.
 const RELEASE_ISLANDS = new Set(['ProductList']);
+// GRE-3778: the frozen landing renders Puck blocks, which need the page's forms and paths.
+const PAGE_ISLANDS = new Set(['TwoDoorsLanding']);
 
 function reactProps(attributes) {
   return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [REACT_NAMES[name] || name, BOOLEANS.has(name) ? true : value]));
@@ -31,7 +34,8 @@ function toReact(nodes, context, path = 'n') {
       // GRE-3777: the placeholder view shows the tag as GSAM live design does, with islandPlaceholderCss.
       if (context.placeholders) return createElement('gs-island', { key, name: node.name, ...node.attributes });
       if (island.component) return createElement(COMPONENTS[island.component],
-        { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}) });
+        { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
+          ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}) });
       return <IslandBlock key={key} type={island.block} props={{ ...node.props, id: `island-${key.replace(/\./g, '-')}` }}
         pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
     }
