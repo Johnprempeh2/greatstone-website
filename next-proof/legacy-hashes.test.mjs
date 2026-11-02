@@ -20,3 +20,17 @@ test('real anchors and unknown hashes stay on their page', () => {
   assert.equal(legacyHashDestination('#unknown', '/', pages), null);
   assert.equal(legacyHashDestination('#go/missing', '/', pages), null);
 });
+
+test('private Vite hashes reach the matching Next routes', () => {
+  assert.equal(legacyHashDestination('#account', '/', pages), '/account');
+  assert.equal(legacyHashDestination('#order-confirmed?session=cs_test_123abc', '/', pages),
+    '/order-confirmed?session=cs_test_123abc');
+  assert.equal(legacyHashDestination('#org', '/account', pages), '/org');
+  assert.equal(legacyHashDestination('#org/e/01234567-89ab-cdef-0123-456789abcdef', '/account', pages),
+    '/org#org/e/01234567-89ab-cdef-0123-456789abcdef');
+  assert.equal(legacyHashDestination('#portal/doc/01234567-89ab-cdef-0123-456789abcdef', '/account', pages),
+    '/portal/doc/01234567-89ab-cdef-0123-456789abcdef');
+  assert.equal(legacyHashDestination('#catalogue/orders', '/account', pages), '/catalogue/orders');
+  assert.equal(legacyHashDestination('#invoice/01234567-89ab-cdef-0123-456789abcdef', '/account', pages),
+    '/invoice/01234567-89ab-cdef-0123-456789abcdef');
+});

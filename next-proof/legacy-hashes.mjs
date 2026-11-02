@@ -7,6 +7,15 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   try { fragment = decodeURIComponent(hash.slice(1)); }
   catch { return null; }
   if (hasAnchor(fragment)) return null;
+  const checkout = /^order-confirmed\?session=(cs_test_[A-Za-z0-9]+)$/i.exec(fragment);
+  if (checkout) return `/order-confirmed?session=${checkout[1]}`;
+  const privateRoute = /^(account|org|portal|invoice|catalogue)(?:\/([\w/-]+))?$/i.exec(fragment);
+  if (privateRoute) {
+    const [, section, rest] = privateRoute;
+    const destination = section === 'org' && rest?.startsWith('e/')
+      ? `/org#org/${rest}` : `/${section}${rest ? `/${rest}` : ''}`;
+    return destination === pathname + hash ? null : destination;
+  }
   const go = fragment.startsWith('go/');
   const parts = (go ? fragment.slice(3) : fragment).split('/').filter(Boolean);
   if (!parts.length) return null;

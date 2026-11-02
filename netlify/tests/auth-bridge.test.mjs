@@ -127,6 +127,12 @@ test('claims, org and role end with the transaction; the next request on the sam
   }
 });
 
+test('a signed-in customer cannot read staff data', { skip }, () => {
+  const staffRows = countAs('authenticated', 'public.users', STAFF);
+  assert.notEqual(staffRows, '0', 'fixture proves the staff row is present and readable to staff');
+  assert.equal(countAs('authenticated', 'public.users', USER), '0');
+});
+
 test('the check above can fail: a session-level set_config does leak to the next request', { skip }, async () => {
   const client = await pool.connect();
   try {
