@@ -10,9 +10,11 @@ export function LayerStack({ id, puck, eyebrow, heading, body, secondStepNote })
   const [active, setActive] = useState(-1);
   const editing = !!puck?.isEditing;
   return <section className="b-layer-stack"><div className="wrap">
-    <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="kicker" singleLine />
-    <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-layer-head" singleLine />
-    <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-layer-lead" />
+    <div className="b-layer-intro">
+      <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="kicker" singleLine />
+      <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-layer-head" singleLine />
+      <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-layer-lead" />
+    </div>
     <div className="b-layer-layout">
       <ol className="b-layer-list">{layers.map((step, i) => <li key={step.name}>
         <button type="button" className={active === i ? 'is-active' : ''} onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onClick={() => setActive(i)} aria-pressed={active === i}>
@@ -26,6 +28,7 @@ export function LayerStack({ id, puck, eyebrow, heading, body, secondStepNote })
 
 export const css = `
 .b-layer-stack{padding:clamp(72px,9vw,128px) 0;background:var(--gs-bg-deep);color:var(--gs-text)}
+.b-layer-intro{display:contents}
 .b-layer-head{font-size:clamp(2.1rem,4.8vw,4.5rem);line-height:1.06;letter-spacing:-.03em;margin:14px 0 18px}
 .b-layer-lead{color:var(--gs-text-muted);max-width:68ch;line-height:1.7}
 .b-layer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:clamp(32px,7vw,100px);align-items:center;margin-top:48px}
