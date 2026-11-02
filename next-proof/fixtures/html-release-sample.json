@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "siteId": "sample-site",
+  "orgId": null,
+  "release": 1,
+  "theme": {},
+  "stylesheet": ":root{--ink:#f5f5f5;--muted:#c4c8c1;--void:#121212;--lime:#c8ff00;--emerald:#1b5039;--line:rgba(200,255,0,.14);--wrap:1180px}\n.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}\n.eyebrow{display:inline-block;color:var(--lime);font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}\n.btn{display:inline-flex;align-items:center;min-height:48px;padding:0 22px;border-radius:999px;background:var(--lime);color:#101712;font-weight:700;text-decoration:none}\n.btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}\n.btn--ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}",
+  "chrome": {
+    "header": {
+      "html": "<header class=\"bar wrap\"><a class=\"brand\" href=\"/\"><img src=\"/assets/greatstone-logo-web.png\" alt=\"Greatstone\" width=\"170\" height=\"40\"></a><a class=\"btn btn--ghost signin\" href=\"/account\">Sign in</a></header>",
+      "css": ".bar{display:flex;align-items:center;justify-content:space-between;min-height:72px}.brand img{display:block;width:150px;height:auto}"
+    },
+    "nav": {
+      "html": "<nav class=\"links wrap\" aria-label=\"Main navigation\"><a href=\"/\">Home</a><a href=\"/services\">Services</a><a href=\"/contact\">Contact</a></nav>",
+      "css": ":root{border-bottom:1px solid var(--line)}.links{display:flex;gap:28px;padding-bottom:14px;overflow-x:auto}.links a{color:var(--ink);font-weight:700;text-decoration:none;white-space:nowrap}.links a:hover{text-decoration:underline;text-underline-offset:4px}"
+    },
+    "footer": {
+      "html": "<footer class=\"foot wrap\"><nav aria-label=\"Legal pages\"><a href=\"/privacy\">Privacy</a><a href=\"/cookies\">Cookies</a><a href=\"/terms\">Terms</a><gs-island name=\"cookie-settings\"></gs-island></nav><p>Sample page for the HTML engine (GRE-3776).</p></footer>",
+      "css": ":root{border-top:1px solid var(--line);margin-top:64px}.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;padding-top:28px;padding-bottom:28px;color:var(--muted)}.foot nav{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}.foot a{color:var(--ink)}"
+    }
+  },
+  "pages": [
+    {
+      "id": "sample-home",
+      "slug": "/",
+      "title": "HTML engine sample",
+      "parentPageId": null,
+      "menu": "header",
+      "menuOrder": 1,
+      "navOrder": 1,
+      "seo": {
+        "description": "Sample schema 2 page for the HTML engine.",
+        "noindex": true
+      },
+      "html": "<section class=\"hero\"><div class=\"wrap\"><span class=\"eyebrow\">Sample HTML page</span><h1>One page, written as HTML, rendered by the site engine.</h1><p class=\"lede\">This page comes from a schema 2 release. The engine cleans the HTML and CSS on every request, scopes the CSS to the page, and renders islands for anything interactive.</p><p class=\"actions\"><a class=\"btn\" href=\"#enquire\">Send an enquiry</a> <a class=\"btn btn--ghost\" href=\"/services\">See services</a></p></div></section>\n<section class=\"cards wrap\" aria-labelledby=\"how\"><h2 id=\"how\">How the page is built</h2><ul><li><h3>HTML</h3><p>Sections, headings, links and images from an allow-list. No scripts and no inline handlers.</p></li><li><h3>CSS</h3><p>Page CSS is prefixed so it can only style this page, never the header or footer.</p></li><li><h3>Islands</h3><p>Forms and tools are placed with a tag and rendered by the engine from its registry.</p></li></ul></section>\n<section class=\"compare wrap\" aria-labelledby=\"what\"><h2 id=\"what\">What the sanitiser keeps</h2><table><tr><th scope=\"col\">Form</th><th scope=\"col\">Result</th></tr><tr><td>Script, iframe, object, embed</td><td>Removed</td></tr><tr><td>on* handlers, javascript: links</td><td>Removed</td></tr><tr><td>Registered islands</td><td>Rendered</td></tr></table></section>\n<section id=\"enquire\" class=\"enquire wrap\"><gs-island name=\"enquiry-form\" data-form=\"contact\"></gs-island></section>\n<script>alert('removed')</script><div onclick=\"alert('removed')\"><gs-island name=\"not-registered\"></gs-island></div>",
+      "css": ".hero{padding:96px 0 72px;background:radial-gradient(circle at 80% 20%,rgba(27,80,57,.55),transparent 60%)}\n.hero h1{max-width:18ch;margin:16px 0;font-size:clamp(2.2rem,5vw,4rem);line-height:1.05;color:var(--ink)}\n.lede{max-width:60ch;color:var(--muted);font-size:1.15rem;line-height:1.6}\n.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}\n.cards{padding-top:56px}.cards h2,.compare h2{color:var(--ink);font-size:clamp(1.6rem,3vw,2.2rem)}\n.cards ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;padding:0;list-style:none}\n.cards li{padding:24px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03)}\n.cards h3{margin:0 0 8px;color:var(--lime)}.cards p{margin:0;color:var(--muted);line-height:1.55}\n.compare{padding-top:56px}.compare table{width:100%;border-collapse:collapse;color:var(--ink)}\n.compare th,.compare td{padding:14px 12px;border-bottom:1px solid var(--line);text-align:left}\n.enquire{padding-top:40px}\nbody ~ footer{display:none}"
+    }
+  ],
+  "collections": {},
+  "redirects": [],
+  "media": {}
+}

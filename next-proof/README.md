@@ -59,3 +59,15 @@ These are engineering estimates, assuming the existing content and design stay i
 The repository currently contains `netlify/functions/enquiry.mjs` as its one named function. GRE-1835 calls the second function “the other one”; Everest needs to identify it before that part of the full move is estimated firmly.
 
 The v15 mock-up contains draft facts and consultancy client marks that the published seed intentionally omits. The side-by-side screenshots show that content difference; the Next proof uses the published projection rather than exposing unconfirmed material. Consultancy client marks still require recorded written permission before they can appear on a public page.
+
+## Schema 2: HTML pages (GRE-3776)
+
+GSAM releases at schema 2 carry each page as `{ html, css }` instead of Puck data, three shared chrome documents (`chrome.header`, `chrome.nav`, `chrome.footer`, each `{ html, css }`) and one site `stylesheet`. `gsam-release.mjs` accepts schemas 1 and 2; `/_release` reports `supportedReleaseSchemas: [1, 2]`. The current pointer, Blobs keys, verify and rollback are unchanged. `ProofPage` chooses the renderer from the release schema, so schema 1 releases still render their blocks.
+
+`app/HtmlPage.jsx` renders a schema 2 page. Every document is sanitised at render time:
+
+- `html-sanitiser.mjs` parses the HTML and keeps only allow-listed elements and attributes. Scripts, frames, objects, embeds, SVG, forms and styles are dropped with their content; `on*` handlers, `style` attributes and unsafe URLs (`javascript:`, protocol-relative, backslashes, control characters) are dropped. The result is a node tree that becomes React elements, so no HTML string reaches the browser unescaped. Nesting that a browser would re-parent is flattened so hydration matches.
+- `css-sanitiser.mjs` parses the CSS and prefixes every selector with its region (`[data-gs-scope="page"]`, `"header"`, `"nav"` or `"footer"`). `:root`, `html` and `body` mean the region itself. Sibling combinators at the start, nesting, global at-rules (`@import`, `@font-face` outside the site stylesheet, `@layer`, `@page` and others), `url()` outside the site or `media:` ids, `expression()` and `image-set()` are removed. CSS with `<`, a backslash escape or unbalanced braces is refused as a whole.
+- `islands.mjs` is the island registry. Page HTML places an island with `<gs-island name="enquiry-form" data-form="contact">`; only registered names render, and only their listed `data-` attributes, each checked against a pattern, reach the island. Islands cannot sit inside a paragraph, heading, link or button.
+
+The public Content Security Policy is unchanged. To see the renderer locally, run `npm run dev:next` and open `/html-sample` (development only; production returns 404). It renders `fixtures/html-release-sample.json` through the release reader. Screenshots are in `docs/screenshots/GRE-3776`.

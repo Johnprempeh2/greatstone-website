@@ -92,6 +92,14 @@ export const proofConfig = {
 };
 
 const publicPuck = { isEditing: false, publicSite: true, renderDropZone: () => null, dragRef: null };
+// GRE-3776: an island in a schema 2 HTML page renders one registered block with its default props,
+// configured only by the props the island registry allowed (next-proof/islands.mjs).
+export function IslandBlock({ type, props, pageSlug, forms, pagePaths }) {
+  const component = proofConfig.components[type];
+  if (!component) throw new Error(`Unsupported island block: ${type}`);
+  const block = { type, props: { ...component.defaultProps, ...props } };
+  return <><style>{modules[type].css || ''}</style>{component.render({ ...publicLinkProps(bindFormBlock(pageSlug, block, forms), pagePaths), puck: publicPuck })}</>;
+}
 function PublishedBriefings({ briefings }) {
   return <section className="proof-briefings" aria-labelledby="proof-briefings-heading"><div className="wrap">
     <h2 id="proof-briefings-heading">Published briefings</h2>
