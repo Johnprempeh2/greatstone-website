@@ -8,6 +8,10 @@ import { parseBridgeKeys } from '../functions/lib/admin-bridge-auth.mjs';
 import { makeAdminBridgeHandler } from '../functions/admin-bridge.mjs';
 import { makeDeepDiveClientHandler } from '../functions/deep-dive-client.mjs';
 import { makeDeepDiveDocumentHandler, allowedDocument, allowedFileType } from '../functions/deep-dive-document.mjs';
+import { createAuthRequest } from '../functions/lib/better-auth.mjs';
+import { getPool } from '../functions/lib/db.mjs';
+import { makeAuthHandler } from '../functions/auth.mjs';
+import { hashSync } from 'bcryptjs';
 import { asCustomer } from '../functions/lib/customer-store.mjs';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import pg from 'pg';
@@ -104,6 +108,8 @@ test('site callback signs the exact answer and leaves failed delivery pending', 
 test('signed PUT replaces one tenant and RLS hides it from another customer', { skip }, async () => {
   const db = startPostgres('deep-dive-site');
   let pool;
+  const previousAuth = { database: process.env.DATABASE_URL, url: process.env.BETTER_AUTH_URL,
+    secret: process.env.BETTER_AUTH_SECRET };
   try {
     await db.migrate('003');
     const CUSTOMER_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -151,6 +157,32 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const read = (id) => asCustomer(pool, { id, email: null, email_verified: true }, clientSnapshot);
     assert.equal((await read(USER_A)).items[0].title, 'Stream');
     assert.equal(await read(USER_B), null);
+    process.env.DATABASE_URL = db.url;
+    process.env.BETTER_AUTH_URL = 'https://site.example.invalid';
+    process.env.BETTER_AUTH_SECRET = randomBytes(32).toString('base64');
+    await pool.query('INSERT INTO better_auth."user" ("id","name","email","emailVerified") VALUES ($1,$2,$3,true)',
+      [USER_A, 'Test client', 'one@example.invalid']);
+    await pool.query('INSERT INTO better_auth."account" ("id","accountId","providerId","userId","password") VALUES ($1,$2,$3,$4,$5)',
+      ['deep-dive-account', USER_A, 'credential', USER_A, hashSync('test-password-only', 4)]);
+    const auth = makeAuthHandler(() => createAuthRequest(pool, async () => {}));
+    const signedIn = await auth(new Request('https://site.example.invalid/api/auth/sign-in/email', {
+      method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://site.example.invalid' },
+      body: JSON.stringify({ email: 'one@example.invalid', password: 'test-password-only' }) }));
+    assert.equal(signedIn.status, 200, await signedIn.clone().text());
+    assert.equal((await signedIn.clone().json()).user.id, USER_A);
+    const cookie = signedIn.headers.get('set-cookie')?.split(';')[0];
+    assert.match(cookie || '', /better-auth\.session_token/);
+    const cookieClient = makeDeepDiveClientHandler({ pool: () => pool, log: () => {} });
+    const cookieDocuments = makeDeepDiveDocumentHandler({ pool: () => pool, keys, log: () => {} });
+    const overview = () => cookieClient(new Request('https://site.example.invalid/api/deep-dive-client', {
+      method: 'POST', headers: { cookie }, body: JSON.stringify({ op: 'overview' }) }));
+    assert.equal((await overview()).status, 200, 'Better Auth cookie can read the client Deep Dive');
+    assert.equal((await cookieDocuments(new Request('https://site.example.invalid/api/deep-dive-document',
+      { headers: { cookie } }))).status, 200, 'Better Auth cookie can list documents');
+    assert.equal((await cookieClient(new Request('https://site.example.invalid/api/deep-dive-client', {
+      method: 'POST', headers: { authorization: 'Bearer old-token' }, body: JSON.stringify({ op: 'overview' }) }))).status, 401);
+    assert.equal((await cookieDocuments(new Request('https://site.example.invalid/api/deep-dive-document',
+      { headers: { authorization: 'Bearer old-token' } }))).status, 401);
     const blobs = new Map();
     const documentHandler = makeDeepDiveDocumentHandler({ pool: () => pool, keys,
       verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email_confirmed_at: '2026-10-25' }),
@@ -253,5 +285,12 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     const rollback = db.psql(readFileSync(new URL('../database/migrations/050_deep_dive_client/rollback.sql', import.meta.url), 'utf8'));
     assert.equal(rollback.status, 0, rollback.stderr);
     assert.equal(db.psql("SELECT to_regclass('public.deep_dive_snapshots') IS NULL").stdout.trim(), 't');
-  } finally { await pool?.end(); db.stop(); }
+  } finally {
+    if (process.env.DATABASE_URL === db.url) await getPool()?.end();
+    for (const [name, value] of Object.entries({ DATABASE_URL: previousAuth.database, BETTER_AUTH_URL: previousAuth.url,
+      BETTER_AUTH_SECRET: previousAuth.secret })) {
+      if (value === undefined) delete process.env[name]; else process.env[name] = value;
+    }
+    await pool?.end(); db.stop();
+  }
 });
