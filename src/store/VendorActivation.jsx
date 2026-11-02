@@ -5,7 +5,6 @@ import { staffDb } from './staff-store-api.mjs';
 // licence's product name) and, once notify-licence-issued is redeployed, in the licence email. Writes go
 // through the signed-in staff session (vendors staff_all RLS, 0004). Plain text, no secrets.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 
 export default function VendorActivation() {
   const [vendors, setVendors] = useState(null); // null = loading

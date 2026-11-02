@@ -19,9 +19,11 @@
 // The Portal shows which of these is in force rather than letting an admin believe a colleague can
 // see their edits.
 
-import { supabase } from '../lib/supabase.mjs';
 import { deepdiveStateRequest } from './deepdive-api.mjs';
 import { normaliseFinding, validateFindingInput, initialState, canValidate, stateAfterConclusion, AGREEMENT } from '../data/deepdive-findings.mjs';
+
+// The database path is the built site's. The dev server and plain node use the file and local stores.
+const DATABASE = import.meta.env?.PROD === true;
 
 // what has happened to an item. `blocked` carries a reason, because "blocked" with no reason is noise.
 export const STATUS = {
@@ -157,7 +159,7 @@ const fileRowToEntry = (r) => ({
   by: r.by || 'portal', actor: r.actor || null, at: r.at,
 });
 export async function loadState(slug) {
-  if (supabase) {
+  if (DATABASE) {
     const data = await deepdiveStateRequest('load', { slug });
     if (data) {
       const map = {};
@@ -217,7 +219,7 @@ export async function saveItem(slug, id, patch, current = {}, log = [], label = 
     ? [...log, { at, id, label, ...madeBy(), changed: Object.fromEntries(changed.map((k) => [k, [before[k], after[k]]])) }]
     : log;
 
-  if (supabase) {
+  if (DATABASE) {
     await deepdiveStateRequest('items', { slug, items: [{ item_id: id, ...after }], entries: nextLog.slice(log.length) });
     return { map: next, log: nextLog, durable: true, backend: 'netlify' };
   }
@@ -285,7 +287,7 @@ export async function saveMany(slug, ids, patch, current = {}, log = [], labelOf
   if (!entries.length) return { map: current, log, durable: null, backend: null, changed: 0 };
   const nextLog = [...log, ...entries];
 
-  if (supabase) {
+  if (DATABASE) {
     const rows = Object.keys(next).filter((id) => ids.includes(id)).map((id) => ({
       item_id: id, status: next[id].status, visibility: next[id].visibility, note: next[id].note,
       agreement: next[id].agreement ?? null,
@@ -313,7 +315,7 @@ export async function saveMany(slug, ids, patch, current = {}, log = [], labelOf
  *  left the record", where the map was just derived from the same read; it is completely wrong for a
  *  rename, which fires on an ordinary typo fix. Naming the one id is right in both cases. */
 export async function releaseItem(slug, id, entry = null) {
-  if (supabase) {
+  if (DATABASE) {
     await deepdiveStateRequest('release', { slug, id, entries: entry ? [entry] : [] });
     return { durable: true, backend: 'netlify' };
   }
@@ -321,7 +323,7 @@ export async function releaseItem(slug, id, entry = null) {
 }
 
 export async function replaceState(slug, map, log, version = null, added = [], release = false) {
-  if (supabase) {
+  if (DATABASE) {
     await deepdiveStateRequest('replace', { slug, release, keepIds: Object.keys(map), entries: added });
     return { durable: true, backend: 'netlify' };
   }
@@ -484,7 +486,7 @@ export async function removeFinding(slug, findingId, current = {}, log = [], fin
 /** One write path for anything that changes the state document, so findings, status and the log can
  *  never land in separate versions of the same file. */
 async function persist(slug, map, log, findings, version, added = [], removedIds = []) {
-  if (supabase) {
+  if (DATABASE) {
     await deepdiveStateRequest('findings', { slug, findings, removedIds, entries: added });
     return { map, log, findings, durable: true, backend: 'netlify' };
   }
@@ -523,7 +525,7 @@ export async function attachFile(slug, entry, current = {}, log = [], findings =
   const nextLog = [...log, { at, id: attachedTo[0], label: name, ...madeBy(),
                              changed: { document: ['', name] } }];
 
-  if (supabase) {
+  if (DATABASE) {
     const row = next.find((f) => f.id === id);
     const back = await deepdiveStateRequest('attach', { slug,
       file: { ...row, originalName: entry.originalName, ext: entry.ext }, entries: nextLog.slice(log.length) });
@@ -566,7 +568,7 @@ export async function detachFile(slug, fileId, current = {}, log = [], findings 
   const nextLog = [...log, { at, id: itemId || (gone.attachedTo || [])[0], label: gone.label, ...madeBy(),
                              changed: { document: [gone.label, ''] } }];
 
-  if (supabase) {
+  if (DATABASE) {
     await deepdiveStateRequest('detach', { slug, id: fileId, last, ties, entries: nextLog.slice(log.length) });
     return { files: next, log: nextLog, version, backend: 'netlify', blobUnused: last };
   }

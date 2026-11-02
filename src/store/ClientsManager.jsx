@@ -3,7 +3,7 @@ import { staffDb } from './staff-store-api.mjs';
 // DX engagement timeline — meeting recaps / milestones / deliverables, each inline HTML OR an external
 // link (e.g. a deployed Netlify recap). Writes go through the staff JWT → staff_all RLS (0004/0013).
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { uploadLicenceFile, removeLicenceFile } from './store-file-api.mjs';
 import { useModal } from './useModal.mjs';
 import DrawerScrim from './DrawerScrim.jsx';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
@@ -349,20 +349,16 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
     if (seatsN !== null && (!Number.isInteger(seatsN) || seatsN < 1)) { setErr('Seats must be a whole number of 1 or more, or left blank.'); return; }
     if (download.trim() && !/^https?:\/\//i.test(download.trim())) { setErr('The download link must start with http:// or https://'); return; }
     setBusy(true);
-    // If a new licence file was chosen, upload it to the private 'licence-files' bucket first. The path is
-    // scoped to this customer's folder ('<customer_id>/…') so Storage RLS (0024) lets only this buyer read
-    // it later via a signed URL. Bail out clearly if the upload fails so we never save a dangling file_path.
+    // If a new licence file was chosen, upload it to the private 'licence-files' store first. The function puts
+    // it under this customer's folder ('<customer_id>/…') so the file index RLS (0024) lets only this buyer read
+    // it later. Bail out clearly if the upload fails so we never save a dangling file_path.
     let filePath = lkey.file_path || null;
     let fileNm = lkey.file_name || null;
     let uploadedPath = null; // set only when we upload a NEW object this save — for rollback + replace cleanup
     if (file) {
-      let safe = (file.name || 'licence').replace(/[^\w.\-]+/g, '_').replace(/^\.+/, '').replace(/\.{2,}/g, '.').slice(-80);
-      if (!safe || safe === '.') safe = 'licence.lic';
-      const rand = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2));
-      const path = customer.id + '/' + rand + '-' + safe;
-      const { error: upErr } = await supabase.storage.from('licence-files').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
-      if (upErr) { setBusy(false); setErr('Could not upload the licence file: ' + upErr.message); return; }
-      uploadedPath = path; filePath = path; fileNm = file.name || safe;
+      try { filePath = await uploadLicenceFile(customer.id, file); }
+      catch (e) { setBusy(false); setErr('Could not upload the licence file: ' + e.message); return; }
+      uploadedPath = filePath; fileNm = file.name || filePath.split('/').pop();
     }
     const payload = {
       offering_name: offering.trim(), variant_name: variant.trim() || null, licence_key: key.trim() || null,
@@ -376,12 +372,12 @@ export function KeyEditor({ lkey, customer, staff, orders = [], onClose, onSaved
     else ({ error } = await staffDb.from('licence_keys').update(payload).eq('id', lkey.id));
     if (error) {
       // roll back a just-uploaded object so a failed save never leaves an orphan in the private bucket
-      if (uploadedPath) { try { await supabase.storage.from('licence-files').remove([uploadedPath]); } catch { /* best effort */ } }
+      if (uploadedPath) { try { await removeLicenceFile(uploadedPath); } catch { /* best effort */ } }
       setBusy(false); setErr(error.message); return;
     }
     // a replaced file supersedes the old object — remove it (best effort; a leftover stays private + scoped)
     if (uploadedPath && lkey.file_path && lkey.file_path !== uploadedPath) {
-      try { await supabase.storage.from('licence-files').remove([lkey.file_path]); } catch { /* best effort */ }
+      try { await removeLicenceFile(lkey.file_path); } catch { /* best effort */ }
     }
     // The buyer is emailed when the ORDER is marked fulfilled (OrdersManager), not here — a single trigger,
     // so issuing a key then fulfilling the order never double-sends. The key/file is visible on the account

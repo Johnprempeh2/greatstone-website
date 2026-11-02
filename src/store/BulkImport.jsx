@@ -4,7 +4,6 @@ import { staffDb } from './staff-store-api.mjs';
 // matching / new / invalid / duplicate SKUs + a field-level diff; nothing is written until you commit.
 // Prices are USD; GBP recalculates automatically from the live FX rate (no GBP is ever written here).
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { variantsToSkuCsv, csvToObjects, buildSkuPlan } from './bulkCsv.mjs';
 
 const usd = (minor) => minor == null ? 'POA' : '$' + (minor / 100).toFixed(2);

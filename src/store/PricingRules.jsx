@@ -3,7 +3,6 @@ import { staffDb } from './staff-store-api.mjs';
 // %/fixed), see a LIVE before→after preview computed by the pricing engine over the real catalogue,
 // then save it (writes pricing_rules + pricing_rule_targets via the authenticated client; staff_all RLS).
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { effectivePrice, fmtMoney, usdToGbpMinor } from '../lib/pricing.mjs';
 
 const blankForm = { name: '', scopeType: 'all', targetIds: [], adjType: 'percentage', pct: '10', fixed: '', label: '', active: false };
