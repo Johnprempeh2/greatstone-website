@@ -23,14 +23,14 @@ test('every one of the 108 legacy paths has a Next landing route', () => {
       assert.equal(rule.destination, expected, path);
       assert.equal(rule.permanent, true, path);
     }
-    assert.ok(expected === '/' || pages.includes(expected) || expected === '/shop' ||
+    assert.ok(expected === '/' || pages.includes(expected) || expected === '/shop' || expected === '/account' ||
       catalogue.vendors.some((vendor) => expected === `/shop/${vendor.slug}`), `${path} lands on a known route`);
   }
 });
 
 test('vendor paths, account paths and old page aliases reach the intended route', () => {
   assert.equal(nextLegacyDestination('/ironsoftware/ironpdf', pages), '/shop/ironsoftware');
-  assert.equal(nextLegacyDestination('/login', pages), '/contact');
+  assert.equal(nextLegacyDestination('/login', pages), '/account');
   assert.equal(nextLegacyDestination('/blog', pages), '/insights');
   assert.equal(nextLegacyDestination('/privacy-policy', pages), '/privacy');
   assert.equal(nextLegacyDestination('/our-services', pages), '/services');

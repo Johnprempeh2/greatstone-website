@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import release from '../next-proof/data/release.json' with { type: 'json' };
 import { checkBuiltLinks } from '../next-proof/scripts/check-built-links.mjs';
+import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 
 export const EDITOR_SITE_ID = 'b546812d-8d25-49dc-94c2-e04a5b31bde4';
 export const EDITOR_CONTRACT = '2';
@@ -16,25 +17,33 @@ function metaContent(html, name) {
   return undefined;
 }
 
-export function checkEditorHtml(html) {
+// expectedCommit is set when the weekly train deploys the alias (GRE-2804): the page must
+// report the engine commit of the release tag, not the release file's 000…0 placeholder.
+export function checkEditorHtml(html, expectedCommit) {
   const siteId = metaContent(html, 'gsam-editor-site-id');
   const contract = metaContent(html, 'gsam-editor-contract');
   if (siteId !== EDITOR_SITE_ID || contract !== EDITOR_CONTRACT) {
     throw new Error(`Editor alias mismatch: siteId=${siteId || 'missing'}, contract=${contract || 'missing'}; expected ${EDITOR_SITE_ID}, ${EDITOR_CONTRACT}`);
   }
-  return { siteId, contract };
+  if (!expectedCommit) return { siteId, contract };
+  const commit = metaContent(html, 'gsam-editor-engine-commit');
+  if (commit !== expectedCommit) throw new Error(`Editor alias engine commit mismatch: ${commit || 'missing'}; expected ${expectedCommit}`);
+  return { siteId, contract, commit };
 }
 
-export async function verifyEditorAlias(fetchPage = fetch) {
+export async function verifyEditorAlias(fetchPage = fetch, expectedCommit) {
   const response = await fetchPage(EDITOR_URL, { cache: 'no-store' });
   if (!response.ok) throw new Error(`Editor alias returned HTTP ${response.status}`);
-  return checkEditorHtml(await response.text());
+  return checkEditorHtml(await response.text(), expectedCommit);
 }
 
 async function main() {
   const [site, option] = process.argv.slice(2);
   if (!site || (option && option !== '--check-only')) throw new Error('Usage: node scripts/deploy-editor-alias.mjs <Netlify site UUID> [--check-only]');
   if (!option) {
+    const contract = spawnSync('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)], { stdio: 'inherit' });
+    if (contract.error) throw contract.error;
+    if (contract.status !== 0) throw new Error(`Site contract check failed (${contract.status})`);
     if (!process.env.NETLIFY_AUTH_TOKEN) throw new Error('NETLIFY_AUTH_TOKEN is required');
     const config = await readFile('netlify.toml', 'utf8');
     if (!config.includes(`GSAM_EDITOR_SITE_ID = "${EDITOR_SITE_ID}"`)) throw new Error('Editor build config has the wrong GSAM site ID');
@@ -42,10 +51,10 @@ async function main() {
     if (result.error) throw result.error;
     if (result.status !== 0) throw new Error(`Netlify alias deploy failed (${result.status})`);
   }
-  const result = await verifyEditorAlias();
+  const result = await verifyEditorAlias(fetch, process.env.GSAM_ENGINE_COMMIT);
   const links = await checkBuiltLinks('https://gsam-editor--greatstone-home.netlify.app', release.pages.map((page) => page.path));
   if (links.failures.length) throw new Error(`Editor alias link check failed:\n${links.failures.join('\n')}`);
-  console.log(`Editor alias verified: siteId=${result.siteId}, contract=${result.contract}`);
+  console.log(`Editor alias verified: siteId=${result.siteId}, contract=${result.contract}${result.commit ? `, engine.commit=${result.commit}` : ''}`);
   console.log(`Editor alias links verified: ${links.pages} pages, ${links.checkedLinks} links`);
 }
 

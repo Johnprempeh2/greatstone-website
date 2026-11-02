@@ -19,7 +19,7 @@ export function nextLegacyDestination(path, publishedPaths = []) {
   const target = classifyLegacyPath(source).dest;
   if (target === '/#shop') return '/shop';
   if (target.startsWith('/#shop/')) return target.replace('/#shop/iron-software', '/shop/ironsoftware').replace('/#shop/', '/shop/');
-  if (target === '/#account') return '/contact';
+  if (target === '/#account') return '/account';
   if (source === '/blog' || source.startsWith('/blog/') || source.startsWith('/news/')) return '/insights';
   return target;
 }

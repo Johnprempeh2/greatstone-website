@@ -56,7 +56,7 @@ for (const f of files) {
 if (hits.length) {
   console.error('✗ SECRET-SHAPED STRINGS FOUND IN THE CLIENT BUNDLE — do not deploy:');
   for (const h of hits) console.error('  %s  in %s  (%s)', h.name, h.file, h.snippet);
-  console.error('\nServer secrets must live in Supabase Edge Function secrets / the host env, never a VITE_ var.');
+  console.error('\nServer secrets must live in the Netlify function environment, never a VITE_ var.');
   process.exit(1);
 }
 console.log('✓ %s/ secret scan clean: %d text files read, %d binary files skipped. No server secrets in the client bundle.', DIST, read, binary);

@@ -54,7 +54,7 @@ export function TimeSavingsCalculator({
   const costYr = hoursYr * c;
 
   return (
-    <section ref={ref} className="b-tsc">
+    <section ref={ref} className="b-tsc band-light gs-rhythm">
       <div className="wrap b-tsc-wrap">
         <div className="b-tsc-head" data-reveal>
           {kicker ? <span className="kicker">{kicker}</span> : null}
@@ -113,6 +113,11 @@ export const css = `
 /* hide the native number spinners for a cleaner figure */
 .b-tsc-input::-webkit-outer-spin-button,.b-tsc-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .b-tsc-input[type=number]{-moz-appearance:textfield}
+.b-tsc.band-light .b-tsc-h{font-size:clamp(2rem,4vw,2.75rem);letter-spacing:-.025em;line-height:1.08}
+.b-tsc.band-light .b-tsc-fwrap{background:var(--gs-card);border-color:var(--gs-border-soft)}
+.b-tsc.band-light .b-tsc-fwrap:focus-within{border-color:var(--gs-emerald);box-shadow:0 0 0 2px var(--gs-border)}
+.b-tsc.band-light .b-tsc-result{background:var(--gs-card);border-color:var(--gs-border-soft);border-radius:var(--gs-card-radius);box-shadow:none}
+.b-tsc.band-light .b-tsc-rbig b,.b-tsc.band-light .b-tsc-rlead{color:var(--gs-emerald)}
 `;
 
 export const puck = {

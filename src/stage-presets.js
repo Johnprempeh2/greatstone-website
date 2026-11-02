@@ -39,30 +39,32 @@ export function normalizeBackground(bg, makeId = (type) => `${type}-${Math.rando
 
 export const smoothstep = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a || 1e-4), 0), 1); return t * t * (3 - 2 * t); };
 
-// Which element is actually scrolling? On the live site it's the window. Inside the Puck editor
-// the page content scrolls a fixed inner canvas (PuckCanvas-root), not the window, so a Stage that
-// only watches window.scrollY sits frozen on scene 1. This resolves the live scroll source so
-// scroll-driven transitions behave identically in the editor and on the published page. `blockTop`
+// Which element is actually scrolling? The Stage may live in a Puck iframe, so use its owner
+// document's window. Some Puck layouts scroll a fixed inner canvas (PuckCanvas-root). `blockTop`
 // returns an element's position in the scroll content's own coordinate space (scroll-invariant).
-export function scrollContext() {
-  const canvas = typeof document !== 'undefined' && document.querySelector('[class*="PuckCanvas-root"]');
+export function scrollContext(doc = typeof document !== 'undefined' ? document : null) {
+  const view = doc?.defaultView;
+  if (!doc || !view) return { top: 0, max: 0, view: 0, blockTop: () => 0, document: doc };
+  const canvas = doc.querySelector('[class*="PuckCanvas-root"]');
   if (canvas && canvas.scrollHeight > canvas.clientHeight + 4) {
     const cr = canvas.getBoundingClientRect();
     return {
       top: canvas.scrollTop,
       max: canvas.scrollHeight - canvas.clientHeight,
       view: canvas.clientHeight,
+      document: doc,
       blockTop: (el) => (el.getBoundingClientRect().top - cr.top) + canvas.scrollTop,
     };
   }
   // documentElement.scrollHeight is the true scrollable height (body's can be shorter with fixed/
   // collapsed-margin descendants), so the final transition doesn't complete early near the bottom
-  const docH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  const docH = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
   return {
-    top: window.scrollY,
-    max: docH - innerHeight,
-    view: innerHeight,
-    blockTop: (el) => el.getBoundingClientRect().top + window.scrollY,
+    top: view.scrollY,
+    max: docH - view.innerHeight,
+    view: view.innerHeight,
+    document: doc,
+    blockTop: (el) => el.getBoundingClientRect().top + view.scrollY,
   };
 }
 
@@ -72,7 +74,7 @@ export function scrollContext() {
 // the editor preview can never drift from the published handoff point.
 export function resolveTransitionAt(tr, sc) {
   if (tr.anchor && tr.anchor.type === 'block') {
-    const el = typeof document !== 'undefined' && document.getElementById('gs-blk-' + tr.anchor.blockId);
+    const el = sc.document?.getElementById('gs-blk-' + tr.anchor.blockId);
     if (el && sc.max > 0) {
       const h = el.getBoundingClientRect().height;
       const edgeOff = tr.anchor.edge === 'center' ? h / 2 : tr.anchor.edge === 'bottom' ? h : 0;

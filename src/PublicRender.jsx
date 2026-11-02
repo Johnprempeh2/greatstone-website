@@ -1,4 +1,5 @@
-import { Fragment } from 'react';
+import { Fragment, useRef } from 'react';
+import { ConsultancyTide } from './blocks/ConsultancyTide.jsx';
 
 // The public site never edits, so this stub is constant — define it once at module scope so every block on
 // every page spreads the SAME object identity (stable props help large blocks skip needless child re-renders).
@@ -13,9 +14,9 @@ const PUCK_PUBLIC = { isEditing: false, renderDropZone: () => null, dragRef: nul
 // gs-blk-<id> background anchor); a minimal `puck` stub is passed for defensiveness.
 export default function PublicRender({ config, data }) {
   const content = (data && data.content) || [];
-  return (
-    <>
-      {content.map((item, i) => {
+  const pageRef = useRef(null);
+  const consultancy = content.some((item) => item.type === 'Hero' && item.props?.variant === 'consultancy' && item.props?.tide);
+  const blocks = content.map((item, i) => {
         const def = config.components[item.type];
         if (!def || typeof def.render !== 'function') {
           // In dev, name the block type that failed to render so a deleted/corrupted type is debuggable
@@ -24,8 +25,11 @@ export default function PublicRender({ config, data }) {
           return null;
         }
         const props = { ...item.props, puck: PUCK_PUBLIC };
-        return <Fragment key={item.props && item.props.id ? item.props.id : item.type + '-' + i}>{def.render(props)}</Fragment>;
-      })}
-    </>
-  );
+        return consultancy
+          ? <div className="consultancy-block" key={item.props?.id || item.type + '-' + i}>{def.render(props)}</div>
+          : <Fragment key={item.props && item.props.id ? item.props.id : item.type + '-' + i}>{def.render(props)}</Fragment>;
+  });
+  return consultancy
+    ? <div ref={pageRef} className="consultancy-page"><ConsultancyTide pageRef={pageRef} content={content} />{blocks}</div>
+    : <>{blocks}</>;
 }

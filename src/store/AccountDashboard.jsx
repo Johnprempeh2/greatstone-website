@@ -26,7 +26,7 @@ const quoteLabel = (s) => QUOTE_LABEL[s] || (String(s || '').charAt(0).toUpperCa
 // One tab per account area — each panel shows ONLY its own content (purchases, keys, then settings).
 const ACCOUNT_TABS = [{ id: 'orders', label: 'Purchases' }, { id: 'keys', label: 'Licence keys' }, { id: 'profile', label: 'Profile' }, { id: 'security', label: 'Security' }, { id: 'billing', label: 'Billing' }];
 
-export default function AccountDashboard({ recovery = false, authError = null, onRecoveryDone, onLanded } = {}) {
+export default function AccountDashboard({ recovery = false, authError = null, verified = false, onRecoveryDone, onLanded } = {}) {
   const [session, setSession] = useState(undefined); // undefined = checking
   const [profile, setProfile] = useState(undefined); // undefined = not yet fetched (vs null = fetched, no customer row)
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function AccountDashboard({ recovery = false, authError = null, o
 
   if (session === undefined) return <div className="ca-wrap"><div className="ca-center">Checking…</div></div>;
   if (recovery || isResetMode()) return <SetNewPassword onDone={onRecoveryDone} />;
-  if (!session) return <AuthGate initialError={authError} />;
+  if (!session) return <AuthGate initialError={authError} verified={verified} />;
   if (profile === undefined) return <div className="ca-wrap"><div className="ca-center">Loading your account…</div></div>;
   // resolved to no customer row → a staff member, or someone not yet set up as a customer. Either way
   // the buyer dashboard is wrong; show a real explanation instead of an empty "Welcome back" with £0.
@@ -50,10 +50,10 @@ export default function AccountDashboard({ recovery = false, authError = null, o
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
-  return <Dashboard session={session} profile={profile} onProfile={setProfile} />;
+  return <Dashboard session={session} profile={profile} onProfile={setProfile} verified={verified} />;
 }
 
-export function AuthGate({ initialError = null } = {}) {
+export function AuthGate({ initialError = null, verified = false } = {}) {
   const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState(''); const [pw, setPw] = useState('');
   const [company, setCompany] = useState(''); const [name, setName] = useState('');
@@ -87,6 +87,7 @@ export function AuthGate({ initialError = null } = {}) {
     <div className="ca-wrap"><div className="ca-signin">
       <span className="st-kicker">Your account</span>
       <h1>{mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : 'Sign in'}</h1>
+      {verified && mode === 'signin' && <p className="ca-ok" role="status">Email confirmed. You can now sign in.</p>}
       <p className="ca-sub">Order history, saved cards and faster checkout for the Greatstone software store.</p>
       {mode !== 'forgot' && (
         // Migrated customers arrive with a real order history but no password (only their email came across
@@ -162,7 +163,7 @@ function SetNewPassword({ onDone }) {
   );
 }
 
-function Dashboard({ session, profile, onProfile }) {
+function Dashboard({ session, profile, onProfile, verified = false }) {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [ordersErr, setOrdersErr] = useState(null);
@@ -332,6 +333,7 @@ function Dashboard({ session, profile, onProfile }) {
 
   return (
     <div className="ca-wrap" role="region" aria-label="Your account">
+      {verified && <p className="ca-ok" role="status">Email confirmed. Your account is ready.</p>}
       {/* role=region (not a 2nd <main>; the shell's #gs-main owns the single unlabelled main) gives SR users a named dashboard landmark. The store is hash-routed, so a bare href would change the route; intercept and just move focus to the content */}
       <a className="gs-skip" href="#acct-main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('acct-main'); if (m) { m.focus(); m.scrollIntoView({ block: 'start' }); } }}>Skip to your account</a>
       <header className="acct-id" id="acct-main" tabIndex={-1}>

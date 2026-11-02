@@ -22,6 +22,7 @@ test('the release carries every published marketing and legal page with complete
     assert.equal(new Set(page.data.content.map((block) => block.props.id)).size, page.data.content.length, `${slug} unique block IDs`);
   }
   assert.deepEqual(pages.home.data.content.map((block) => block.type), ['TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom']);
+  assert.deepEqual(pages.home.data.content.find((block) => block.type === 'TwoDoorsStory').props.range.map((item) => item.href), ['/dx-consultancy', '/dev-tools']);
   assert.deepEqual(pages['dev-tools'].data.content.map((block) => block.type), ['DevTools']);
   assert.ok(!pages.refunds && !pages['ai-market-intelligence']);
 });

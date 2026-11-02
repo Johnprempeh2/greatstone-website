@@ -3,7 +3,7 @@ import { staffDb } from './staff-store-api.mjs';
 // has been issued, instead of a placeholder note buried in each order. RLS-scoped (customer_self, 0017):
 // a buyer reads only their own company's keys; staff issue them.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { downloadStoreFile } from './store-file-api.mjs';
 import { expiryInfo } from './licence-expiry.mjs';
 import { keysToCsv } from './keys-export.mjs';
 import { activationInstructionsFor } from '../lib/activation-match.mjs';
@@ -37,17 +37,13 @@ export default function LicenceKeys() {
   // Match each licence to its range's steps by product name (token-anchored; see lib/activation-match.mjs).
   const activationFor = useCallback((offeringName) => activationInstructionsFor(offeringName, vendors), [vendors]);
 
-  // Download a .lic licence FILE: mint a short-lived signed URL for the private object (Storage RLS lets a
-  // buyer read only their own customer folder, 0024), then trigger the download. No file bytes touch our JS.
+  // Download a .lic licence FILE through /api/store-file (the file index RLS lets a buyer read only their own
+  // customer folder, 0024), then trigger the download.
   const downloadFile = useCallback(async (kk) => {
     if (!kk.file_path) return;
     setFileBusy(kk.id);
     try {
-      const { data, error } = await supabase.storage.from('licence-files').createSignedUrl(kk.file_path, 600, { download: kk.file_name || true });
-      if (error || !data || !data.signedUrl) throw error || new Error('no url');
-      const a = document.createElement('a');
-      a.href = data.signedUrl; a.download = kk.file_name || 'licence.lic';
-      document.body.appendChild(a); a.click(); a.remove();
+      await downloadStoreFile('licence-files', kk.file_path, kk.file_name || 'licence.lic');
       setFileBusy(null);
     } catch { setFileBusy('fail:' + kk.id); setTimeout(() => setFileBusy(null), 4000); }
   }, []);

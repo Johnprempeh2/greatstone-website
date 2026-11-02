@@ -104,7 +104,7 @@ export async function staffStore(client, body) {
   if (['front_door_leads', 'service_inquiries'].includes(table)) {
     if (kind === 'insert') throw new RangeError('Invalid operation');
     if (kind === 'update' && (!payload || Object.keys(payload).some((key) =>
-      !(table === 'front_door_leads' ? ['status', 'last_contacted_at'] : ['status']).includes(key)))) throw new RangeError('Invalid operation');
+      !(table === 'front_door_leads' ? ['status', 'last_contacted_at', 'customer_id'] : ['status', 'customer_id']).includes(key)))) throw new RangeError('Invalid operation');
   }
   if (['portal_acceptances', 'portal_receipt_jobs', 'portal_approvals'].includes(table) && kind !== 'select')
     throw new RangeError('Invalid operation');

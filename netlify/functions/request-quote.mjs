@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { basketItems, priceBasket } from './lib/store-pricing.mjs';
+import { asWorker } from './lib/worker-db.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => Response.json(body, { status, headers: HEADERS });
@@ -49,6 +50,9 @@ async function saveQuote(pool, identity, quoteId, rows, details, document) {
   } finally { client.release(); }
 }
 
+const removePoIndex = (db, path) => asWorker(db, (client) =>
+  client.query(`DELETE FROM storage.objects WHERE bucket_id='po-documents' AND name=$1`, [path]));
+
 export function makeRequestQuoteHandler({ env = process.env, pool = getPool, verify,
   store = () => getStore('po-documents'), log = console.error } = {}) {
   return async (req) => {
@@ -65,9 +69,9 @@ export function makeRequestQuoteHandler({ env = process.env, pool = getPool, ver
         [contact.name, contact.company, contact.phone, body.message, body.poReference].some((value) => value != null && (typeof value !== 'string' || value.length > 2000)))
         return json({ error: 'A valid email is required for a quote.' }, 400);
     } catch { return json({ error: 'Invalid quote request.' }, 400); }
-    let blobPath;
+    let blobPath, db;
     try {
-      const db = pool();
+      db = pool();
       if (!db) return json({ error: 'Quote service unavailable. Please try again.' }, 503);
       const user = await userFromRequest(req, verify).catch(() => null);
       const identity = user?.id && UUID.test(user.id) ? authIdentity(user) : null;
@@ -84,6 +88,9 @@ export function makeRequestQuoteHandler({ env = process.env, pool = getPool, ver
         const safe = name.replace(/[^\w.\-]+/g, '_').replace(/^\.+/, '').slice(-80) || 'purchase-order';
         blobPath = `${quoteId}/${safe}`;
         await store().set(blobPath, bytes);
+        // The guest has no policy on the PO index (0026); the server writes it, as Supabase's service role did.
+        await asWorker(db, (client) => client.query(`INSERT INTO storage.objects (bucket_id,name)
+          VALUES ('po-documents',$1)`, [blobPath]));
         document = { path: blobPath, name };
       }
       const rows = await (async () => {
@@ -100,14 +107,14 @@ export function makeRequestQuoteHandler({ env = process.env, pool = getPool, ver
       })();
       const quotable = rows.filter((row) => !row.unavailable);
       if (!quotable.length) {
-        if (blobPath) try { await store().delete(blobPath); } catch { /* best effort */ }
+        if (blobPath) try { await store().delete(blobPath); await removePoIndex(db, blobPath); } catch { /* best effort */ }
         return json({ error: 'No quotable items.' }, 400);
       }
       const quote = await saveQuote(db, identity, quoteId, quotable, { ...body.contact, email: body.contact.email.trim(),
         message: body.message, poReference: body.poReference }, document);
       return json({ reference: quote.reference, id: quote.id });
     } catch (error) {
-      if (blobPath) try { await store().delete(blobPath); } catch { /* best effort */ }
+      if (blobPath) try { await store().delete(blobPath); await removePoIndex(db, blobPath); } catch { /* best effort */ }
       log('request-quote: failed (' + (error?.code || error?.name || 'error') + ')');
       return json({ error: 'Could not submit the quote request. Please try again.' }, 503);
     }

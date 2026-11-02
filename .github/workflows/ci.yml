@@ -15,6 +15,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Shared site contract
+        run: node contracts/check.mjs
       - name: Unit tests (pricing, cart, bulk CSV)
         run: npm test
       - name: Production build (Vite, base /puck-proof/)

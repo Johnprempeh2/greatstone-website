@@ -3,7 +3,7 @@ import { staffDb } from './staff-store-api.mjs';
 // status, set the finalised inc-VAT total + validity, and convert a won quote to an order + invoice
 // (atomic convert_quote_to_order RPC). Staff_all RLS scopes to the signed-in org.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
+import { downloadStoreFile } from './store-file-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 
 const STATUSES = ['new', 'contacted', 'quoted', 'won', 'lost', 'cancelled'];
@@ -46,13 +46,10 @@ export default function QuotesManager({ staff }) {
   };
 
   const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
-  // Download the buyer's uploaded PO via a short-lived signed URL (private po-documents bucket, staff-read RLS, 0026).
+  // Download the buyer's uploaded PO through /api/store-file (private po-documents store, staff-read RLS, 0026).
   const downloadPo = async (qt) => {
     try {
-      const { data, error } = await supabase.storage.from('po-documents').createSignedUrl(qt.po_document_path, 120, { download: qt.po_document_name || true });
-      if (error || !data?.signedUrl) throw error || new Error('no url');
-      const a = document.createElement('a'); a.href = data.signedUrl; a.download = qt.po_document_name || 'purchase-order';
-      document.body.appendChild(a); a.click(); a.remove();
+      await downloadStoreFile('po-documents', qt.po_document_path, qt.po_document_name || 'purchase-order');
     } catch { flash('Could not open the PO document.'); }
   };
 

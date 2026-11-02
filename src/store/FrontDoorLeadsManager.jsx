@@ -8,10 +8,11 @@ import { staffDb } from './staff-store-api.mjs';
 import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
 import { zipFiles } from '../lib/package-zip.mjs';
 import { buildAgentPackage, packageFolder } from '../../supabase/functions/_shared/front-door-package.mjs';
+import ClientLink from './ClientLink.jsx';
 
 const STATUSES = ['new', 'contacted', 'closed'];
 const COLS = 'id, industry, industry_other, team_size, brand_words, company_name, agents, chat_summary, chat_turns, source, '
-  + 'contact_name, contact_email, contact_role, contact_at, consent_given, consent_at, consent_version, status, last_contacted_at, created_at';
+  + 'contact_name, contact_email, contact_role, contact_at, consent_given, consent_at, consent_version, status, last_contacted_at, created_at, customer_id';
 
 const fmtDate = (s) => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return s; } };
 const fmtTime = (s) => { try { return new Date(s).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return s; } };
@@ -23,6 +24,7 @@ export default function FrontDoorLeadsManager() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notEnabled, setNotEnabled] = useState(false);
+  const [linkEnabled, setLinkEnabled] = useState(true);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [kind, setKind] = useState('all'); // 'all' | 'contact' | 'anonymous'
@@ -31,7 +33,9 @@ export default function FrontDoorLeadsManager() {
 
   const load = useCallback(() => {
     setLoading(true);
-    staffDb.from('front_door_leads').select(COLS).order('created_at', { ascending: false }).limit(300)
+    const query = (cols) => staffDb.from('front_door_leads').select(cols).order('created_at', { ascending: false }).limit(300);
+    query(COLS)
+      .then((res) => (res.error && /customer_id/i.test(res.error.message || '') ? (setLinkEnabled(false), query(COLS.replace(', customer_id', ''))) : res))
       .then(({ data, error }) => {
         if (error) { const absent = isAbsentOrForbidden(error); setNotEnabled(absent); if (!absent) console.error('front door leads load', error); }
         else setNotEnabled(false);
@@ -126,7 +130,7 @@ export default function FrontDoorLeadsManager() {
                           </td>
                           <td><button className="gs-btn ghost sm" onClick={() => setExpanded(expanded === r.id ? null : r.id)} aria-expanded={expanded === r.id}>{expanded === r.id ? 'Hide' : 'View'}</button></td>
                         </tr>
-                        {expanded === r.id ? <tr><td colSpan="6" className="ca-inq-detail"><LeadDetail r={r} onDelete={() => remove(r)} onPackage={() => downloadPackage(r)} /></td></tr> : null}
+                        {expanded === r.id ? <tr><td colSpan="6" className="ca-inq-detail"><LeadDetail r={r} onDelete={() => remove(r)} onPackage={() => downloadPackage(r)} />{linkEnabled ? <ClientLink table="front_door_leads" row={r} onLinked={load} /> : null}</td></tr> : null}
                       </React.Fragment>
                     ))}
               </tbody>
