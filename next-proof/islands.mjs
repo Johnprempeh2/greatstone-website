@@ -22,6 +22,9 @@ export const ISLANDS = {
     attributes: formAttributes },
   'ai-cost-calculator': { block: 'AiCostCalculator', label: 'AI cost calculator', placeholder: 'The AI cost calculator and its results.', height: 560,
     attributes: formAttributes },
+  // GRE-3789: the service catalogue: search, category filter, featured tabs and the inquiry basket.
+  'service-catalog': { block: 'ServiceCatalog', label: 'Service catalogue', placeholder: 'Every service, with search, category filters and the inquiry basket.', height: 1200,
+    attributes: { 'data-block': formAttributes['data-block'] } },
   'cookie-settings': { component: 'CookieSettings', label: 'Cookie settings', placeholder: 'Opens the cookie settings.', height: 32, inline: true, attributes: {} },
   quote: { component: 'QuoteIsland', label: 'Quote', placeholder: 'Adds a service to the basket and sends the quote request.', height: 96,
     attributes: {

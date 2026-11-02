@@ -4,6 +4,7 @@
 // stylesheet. It runs once, at migration time; the site itself never calls it.
 import { createHash } from 'node:crypto';
 import { Window } from 'happy-dom';
+import { stripTags } from '../src/lib/richtext-normalise.mjs';
 
 // Blocks that need code to work become islands (next-proof/islands.mjs). `attributes` reads the island's
 // data attributes from the block's published props.
@@ -14,11 +15,89 @@ export const BLOCK_ISLANDS = {
   BookDeepDive: { name: 'enquiry-form', attributes: formAttributes },
   AiBaselineSurvey: { name: 'ai-baseline-survey', attributes: formAttributes },
   AiCostCalculator: { name: 'ai-cost-calculator', attributes: formAttributes },
+  // GRE-3789: the catalogue is an app over the service data (search, category filter, featured tabs,
+  // popularity and the inquiry basket), not page copy, so it stays code and keeps its published props.
+  ServiceCatalog: { name: 'service-catalog', attributes: (props) => ({ 'data-block': props.id }) },
 };
 // The frozen landing (Two Doors, v15) moves as it is: one island renders its published blocks unchanged.
 export const FROZEN_LANDING = { path: '/', island: 'two-doors-landing' };
-// Blocks whose controls need code that has no island yet (GRE-3777). They export as their still render.
-export const NEEDS_ISLAND = new Set(['ServiceCatalog', 'Faq', 'IndustryPicker', 'Panels', 'Team', 'MaturityMap', 'Ladder', 'IntelBand']);
+
+// GRE-3789: blocks whose controls ran in React keep their render and name a page behaviour
+// (app/html-behaviours.mjs) on the block's section. Each marks what the behaviour needs; scroll reveal
+// (Team, IntelBand, Ladder and most others) needs nothing more than the `data-reveal` already there.
+const blockId = (props, prefix, index) => `${prefix}-${String(props.id || 'block').replace(/[^a-zA-Z0-9_-]/g, '')}-${index}`;
+// Panels "More": the button controls its body and names its two labels.
+function panelsBehaviour(section, props) {
+  const buttons = [...section.querySelectorAll('.b-panel-more')];
+  if (!buttons.length) return null;
+  section.setAttribute('data-behaviour', 'more');
+  buttons.forEach((button, index) => {
+    const body = button.parentElement.querySelector('.b-panel-body');
+    body.id = blockId(props, 'more', index);
+    button.setAttribute('aria-controls', body.id);
+    button.setAttribute('data-label-closed', 'More');
+    button.setAttribute('data-label-open', 'Less');
+  });
+  return 'more';
+}
+// FAQ: the accordion markup already carries aria-expanded and aria-controls. Its JSON-LD moves to page SEO.
+function faqBehaviour(section) {
+  section.setAttribute('data-behaviour', 'faq');
+  return 'faq';
+}
+// IndustryPicker: the server render holds the first industry only, so the headline, title and drains are
+// written out for every industry, each part marked with its tab and all but the first hidden.
+function industryBehaviour(section, props, document) {
+  const industries = props.industries || [];
+  const headline = section.querySelector('.b-ind-headline');
+  const card = section.querySelector('.b-ind-card.specific');
+  const title = card?.querySelector('h3');
+  const drains = card?.querySelector('.b-ind-drains');
+  if (!industries.length || !headline || !title || !drains) return null;
+  section.setAttribute('data-behaviour', 'tabs');
+  section.querySelector('.b-ind-underline')?.setAttribute('data-tab-indicator', '');
+  section.querySelector('.b-ind-swap')?.setAttribute('data-tab-fade', '');
+  const part = (element, index) => { element.setAttribute('data-tab', String(index)); if (index) element.setAttribute('hidden', ''); return element; };
+  const text = (tag, value, className) => { const element = document.createElement(tag); element.textContent = value; if (className) element.className = className; return element; };
+  headline.replaceChildren(...industries.map((industry, index) => {
+    const span = part(document.createElement('span'), index);
+    const words = industry.headline || '';
+    const split = words.indexOf('. ');
+    if (split === -1) span.textContent = words;
+    else span.append(words.slice(0, split + 2), text('span', words.slice(split + 2), 'accent'));
+    return span;
+  }));
+  const titles = industries.map((industry, index) => part(text('h3', industry.specificTitle || ''), index));
+  const lists = industries.map((industry, index) => {
+    const list = part(drains.cloneNode(false), index);
+    list.append(...(industry.drains || []).map((drain) => { const item = document.createElement('li'); item.append(text('span', drain.text || '')); return item; }));
+    return list;
+  });
+  title.replaceWith(...titles);
+  drains.replaceWith(...lists);
+  return 'tabs';
+}
+function climbBehaviour(section) {
+  section.setAttribute('data-behaviour', 'climb');
+  return 'climb';
+}
+// MethodTieIn's chart grows its bars once in view.
+function growBehaviour(section) {
+  const chart = section.querySelector('.b-tiein-chart');
+  if (!chart) return null;
+  chart.setAttribute('data-behaviour', 'grow');
+  return 'grow';
+}
+// A hidden tab part stays hidden even where the block's CSS gives it a display (the drains list is flex).
+export const TAB_CSS = '[data-tab][hidden]{display:none !important}';
+export const BLOCK_BEHAVIOURS = { Panels: panelsBehaviour, Faq: faqBehaviour, IndustryPicker: industryBehaviour, MaturityMap: climbBehaviour, MethodTieIn: growBehaviour };
+
+// The Faq block's structured data, as page SEO: plain-text questions and answers, only when the block
+// emitted it (`showSchema`).
+export function faqSeo(props) {
+  if (props.showSchema === false) return [];
+  return (props.items || []).filter((item) => item?.q && item?.a).map((item) => ({ q: item.q, a: stripTags(item.a) }));
+}
 
 let parserWindow;
 function parse(html) {
@@ -123,6 +202,8 @@ export function exportRenderedPage(documentHtml, page) {
   const content = main.querySelector('.gs-proof-content') || main;
   const blocks = new Map((page.data?.content || []).map((block) => [block.props.id, block]));
   const formBlocks = {};
+  const faq = [];
+  const behaviours = new Set();
 
   if (page.path === FROZEN_LANDING.path) {
     content.replaceChildren(island(document, FROZEN_LANDING.island));
@@ -136,12 +217,19 @@ export function exportRenderedPage(documentHtml, page) {
         anchor.replaceChildren(island(document, BLOCK_ISLANDS[type].name, BLOCK_ISLANDS[type].attributes(block?.props || {})));
         if (block) formBlocks[block.props.id] = block.props;
         notes.push(`${type} → island ${BLOCK_ISLANDS[type].name}`);
-      } else if (NEEDS_ISLAND.has(type)) notes.push(`${type}: still render; its controls need an island (GRE-3777)`);
+      } else if (BLOCK_BEHAVIOURS[type]) {
+        const section = anchor.querySelector('section');
+        const behaviour = section && BLOCK_BEHAVIOURS[type](section, block?.props || {}, document);
+        notes.push(behaviour ? `${type} → behaviour ${behaviour}` : `${type}: no behaviour needed`);
+        if (behaviour) behaviours.add(behaviour);
+        if (type === 'Faq' && block) faq.push(...faqSeo(block.props));
+      }
     }
+    if (faq.length) notes.push(`FAQ structured data → page SEO (${faq.length} questions)`);
   }
   stripEngineAttributes(content);
   renameUnsafeIds(content);
-  const css = inlineStylesToClasses(content);
+  const css = [inlineStylesToClasses(content), behaviours.has('tabs') ? TAB_CSS : ''].filter(Boolean).join('\n');
   const svgs = content.querySelectorAll('svg').length;
   if (svgs) notes.push(`${svgs} inline SVG (kept: the sanitiser allows a drawing subset)`);
   const html = content.innerHTML.replace(/<!-- -->/g, '').trim();
@@ -154,16 +242,17 @@ export function exportRenderedPage(documentHtml, page) {
     nav: { html: '', css: '' },
     footer: { html: footer?.outerHTML || '', css: '' },
   };
-  return { html, css, blockCss, chrome, notes, formBlocks };
+  return { html, css, blockCss, chrome, notes, formBlocks, faq };
 }
 
 // The GSAM release page (the S1 format) for one exported page.
-export function releasePage(page, { html, css }, navigation) {
+export function releasePage(page, { html, css, faq = [] }, navigation) {
   const menuIndex = navigation.findIndex((item) => item.target?.pageId === page.id);
   return {
     id: page.id, slug: page.path, title: page.title, parentPageId: null,
     menu: menuIndex === -1 ? null : 'header', menuOrder: menuIndex === -1 ? null : menuIndex + 1, navOrder: page.navOrder ?? null,
-    seo: { title: page.seo?.title || page.title, description: page.seo?.description || '', noindex: page.seo?.noindex || false },
+    seo: { title: page.seo?.title || page.title, description: page.seo?.description || '', noindex: page.seo?.noindex || false,
+      ...(faq.length ? { faq } : {}) },
     html, css,
   };
 }
