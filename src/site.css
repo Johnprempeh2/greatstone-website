@@ -136,6 +136,23 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 .wrap { max-width:var(--gs-maxw); margin:0 auto; padding-inline:var(--gs-gutter); }
 .section { padding-block:var(--gs-section-space); position:relative; }
 /* One page rhythm for the consultancy draft. The logo strip and hero form its introduction. */
+.consultancy-page{position:relative;isolation:isolate;background:#0b2419}
+.consultancy-tide{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at 72% 68%,rgba(58,140,100,.22),transparent 58%),#0b2419}
+.consultancy-tide.live{background:#0b2419}
+.consultancy-block{position:relative;z-index:1}
+.consultancy-block .gs-blk>section{background:transparent}
+#gs-blk-consultancy-decide>section,.consultancy-block>.band-light{background:var(--gs-light-bg)}
+.consultancy-block .b-pc-card,.consultancy-block .b-compose-problem,.consultancy-block .b-compose-answer,.consultancy-block .b-layer-slab{background-color:rgba(17,39,29,.85)}
+.consultancy-block .b-compose-problem.is-on{background-color:rgba(27,80,57,.9)}
+.consultancy-block .kicker::after,.consultancy-block .b-logos-eyebrow::after{content:"";display:block;width:42px;height:1px;margin-top:10px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .6s var(--gs-ease)}
+.consultancy-block.is-in .kicker::after,.consultancy-block.is-in .b-logos-eyebrow::after{transform:scaleX(1)}
+.consultancy-ready .consultancy-block:not(.is-in) .gs-blk>section>.wrap{opacity:0;transform:translateY(18px)}
+.consultancy-block .gs-blk>section>.wrap{transition:opacity .65s var(--gs-ease),transform .65s var(--gs-ease)}
+.consultancy-block .b-pc-card,.consultancy-block .b-layer-slab{translate:0 var(--consultancy-parallax,0px)}
+#gs-blk-consultancy-logos .b-logos-viewport{-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+#gs-blk-consultancy-capabilities .b-pc-head{margin-bottom:clamp(32px,5vw,56px)}
+@media(prefers-reduced-motion:reduce){.consultancy-block .gs-blk>section>.wrap{opacity:1!important;transform:none!important;transition:none!important}.consultancy-block .kicker::after,.consultancy-block .b-logos-eyebrow::after{transform:none;transition:none}.consultancy-block .b-pc-card,.consultancy-block .b-layer-slab{translate:none}}
+@media print{.consultancy-tide{display:none}.consultancy-page{background:white}}
 :is(#gs-blk-consultancy-capabilities,#gs-blk-consultancy-method,#gs-blk-consultancy-compose,#gs-blk-consultancy-bridge,#gs-blk-consultancy-cases,#gs-blk-consultancy-decide,#gs-blk-consultancy-invite)>section{padding-block:var(--gs-consultancy-section-space,96px)}
 @media(max-width:640px){:is(#gs-blk-consultancy-capabilities,#gs-blk-consultancy-method,#gs-blk-consultancy-compose,#gs-blk-consultancy-bridge,#gs-blk-consultancy-cases,#gs-blk-consultancy-decide,#gs-blk-consultancy-invite)>section{--gs-consultancy-section-space:64px}}
 .gs-rhythm h1{font-size:clamp(2.7rem,6vw,4.5rem);font-weight:800;line-height:1.04;letter-spacing:-.035em}

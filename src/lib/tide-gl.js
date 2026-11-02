@@ -2,14 +2,15 @@ export function mountGreatstoneTide(container, opts) {
   'use strict';
   const VS = [
     'attribute vec2 aG;',
-    'uniform mat4 uPV; uniform float uT; uniform vec3 uP;',
+    'uniform mat4 uPV; uniform float uT; uniform vec3 uP; uniform float uAmp; uniform float uBands;',
     'varying vec2 vW; varying float vDepth; varying float vLight; varying float vCrest; varying float vSwell;',
     'float swell(vec2 p) { vec2 d = p - uP.xy; return uP.z * exp(-dot(d, d) / 3.6); }',
     'float height(vec2 p) {',
     '  float h = 0.26 * sin(p.x * 0.42 + p.y * 0.22 + uT * 0.32)',
     '          + 0.15 * sin(p.x * 0.85 - p.y * 0.48 - uT * 0.41)',
     '          + 0.06 * sin(p.x * 1.9 + p.y * 1.25 + uT * 0.63);',
-    '  return h + 0.5 * swell(p);',
+    '  float bands = 0.22 * sin(p.y * 0.9 + uT * 0.18);',
+    '  return mix(h, bands, uBands) * uAmp + 0.5 * swell(p);',
     '}',
     'void main() {',
     '  vec2 p = vec2(mix(-15.0, 15.0, aG.x), mix(-24.0, 4.0, aG.y));',
@@ -94,7 +95,7 @@ export function mountGreatstoneTide(container, opts) {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
     const U = {};
-    ['uPV', 'uT', 'uP', 'uDpr', 'uProm', 'uHot', 'uRows', 'uDeep', 'uEmer', 'uLime'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
+    ['uPV', 'uT', 'uP', 'uAmp', 'uBands', 'uDpr', 'uProm', 'uHot', 'uRows', 'uDeep', 'uEmer', 'uLime'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
     gl.uniform3fv(U.uDeep, rgb([34, 84, 62]));
     gl.uniform3fv(U.uEmer, rgb([58, 140, 100]));
     gl.uniform3fv(U.uLime, rgb([200, 255, 0]));
@@ -118,23 +119,41 @@ export function mountGreatstoneTide(container, opts) {
     gl.clearColor(0, 0, 0, 0);
     container.appendChild(canvas);
 
+    const presets = {
+      hero: { rise: 0, depth: 0, amp: 1, bands: 0, lime: .78, speed: 1 },
+      calm: { rise: 1, depth: 0, amp: .58, bands: 0, lime: .38, speed: .38 },
+      method: { rise: .8, depth: .2, amp: .65, bands: 1, lime: .45, speed: .22 },
+      compose: { rise: .65, depth: .1, amp: .72, bands: 0, lime: .52, speed: .4 },
+      deep: { rise: .35, depth: 1, amp: .48, bands: 0, lime: .2, speed: .32 },
+      land: { rise: .35, depth: 1, amp: .48, bands: 0, lime: .2, speed: .32 },
+    };
+    const initialScene = o.view === 'calm' ? { ...presets.calm, amp: 1, lime: 1, speed: 1 } : { ...presets.hero, lime: 1 };
+    const scene = { ...initialScene };
+    let targetScene = { ...initialScene };
+    let composeGlow = 0;
     let W = 1, H = 1, DPR = 1, PV = null, IPV = null, eye = null;
+    const mix = (a, b, t) => a + (b - a) * t;
+    function camera() {
+      const aspect = W / H, narrow = aspect < 1.2;
+      const heroEye = narrow ? [0.6, 4.2, 6] : [-0.4, 3.4, 6.4];
+      const calmEye = narrow ? [0, 5.4, 5.2] : [0, 4.6, 6.2];
+      const heroTarget = narrow ? [1.4, -0.6, -3] : [2.4, -0.9, -3];
+      const calmTarget = narrow ? [0.4, -0.8, -4] : [0.6, -1.2, -4];
+      eye = heroEye.map((v, i) => mix(mix(v, calmEye[i], scene.rise), i === 1 ? 3.8 : i === 2 ? 8.4 : 0, scene.depth * .55));
+      const target = heroTarget.map((v, i) => mix(mix(v, calmTarget[i], scene.rise), i === 2 ? -7 : 0, scene.depth * .5));
+      const fov = narrow ? 60 : mix(mix(40, 44, scene.rise), 48, scene.depth);
+      PV = mul(perspective(fov * Math.PI / 180, aspect, .3, 60), lookAt(eye, target));
+      IPV = invert(PV);
+      gl.uniformMatrix4fv(U.uPV, false, new Float32Array(PV));
+    }
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, o.dpr);
       const rect = container.getBoundingClientRect();
       W = Math.max(1, rect.width); H = Math.max(1, rect.height);
       canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      const aspect = W / H, narrow = aspect < 1.2;
-      /* laptop: low, wide view with the swells on the right, clear of the words; phone: a steeper look down */
-      /* ROUND 15: the calm copy below the doors looks down from higher and centred, so the swells fill the section
-         evenly behind the text instead of gathering on the right */
-      const calm = o.view === 'calm';
-      eye = calm ? (narrow ? [0, 5.4, 5.2] : [0, 4.6, 6.2]) : narrow ? [0.6, 4.2, 6.0] : [-0.4, 3.4, 6.4];
-      const target = calm ? (narrow ? [0.4, -0.8, -4] : [0.6, -1.2, -4]) : narrow ? [1.4, -0.6, -3] : [2.4, -0.9, -3];
-      PV = mul(perspective((narrow ? 60 : calm ? 44 : 40) * Math.PI / 180, aspect, 0.3, 60), lookAt(eye, target));
-      IPV = invert(PV);
-      gl.uniformMatrix4fv(U.uPV, false, new Float32Array(PV));
+      const narrow = W / H < 1.2;
+      camera();
       gl.uniform1f(U.uDpr, DPR);
       gl.uniform1f(U.uRows, o.rows ? o.rows(narrow) : narrow ? 1.5 : 2.4);   /* phone: wider spacing, so it reads as swells, not a grid */
     }
@@ -184,17 +203,24 @@ export function mountGreatstoneTide(container, opts) {
     function onTouch(e) { const t = e.touches && e.touches[0]; if (!t || document.hidden) return; clearTimeout(touchOff); at(t.clientX, t.clientY); }
     function onTouchEnd() { clearTimeout(touchOff); touchOff = setTimeout(onLeave, 900); }
 
-    let t0 = null, last = 0, lost = false;
+    let t0 = null, last = 0, elapsed = 0, lost = false;
     function draw(now) {
       if (lost) return;
       if (t0 == null) { t0 = now; last = now; }
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
+      if (!reduce && o.scrollScene) {
+        for (const key of Object.keys(scene)) scene[key] += (targetScene[key] - scene[key]) * (1 - Math.exp(-dt * 3.2));
+        camera();
+      }
+      if (!reduce) elapsed += dt * scene.speed;
       const k = 1 - Math.exp(-dt * 4.5), kOn = 1 - Math.exp(-dt * (want.on ? 3 : 1.4));
       sm.x += (want.x - sm.x) * k; sm.z += (want.z - sm.z) * k; sm.on += (want.on - sm.on) * kOn;
-      gl.uniform1f(U.uT, reduce ? 4.2 : (now - t0) / 1000 * o.speed);
+      gl.uniform1f(U.uT, reduce ? 4.2 : elapsed * o.speed);
+      gl.uniform1f(U.uAmp, scene.amp);
+      gl.uniform1f(U.uBands, scene.bands);
       gl.uniform3f(U.uP, sm.x, sm.z, reduce ? 0 : sm.on * o.swell);
       gl.uniform1f(U.uProm, val(o.prominence));
-      gl.uniform1f(U.uHot, val(o.lime));
+      gl.uniform1f(U.uHot, Math.min(1, val(o.lime) * scene.lime + composeGlow * .24));
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
     }
@@ -212,7 +238,7 @@ export function mountGreatstoneTide(container, opts) {
     const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(onResize) : null;
     if (ro) ro.observe(container);
     const touchEl = o.touchTarget || container;
-    if (!reduce) {
+    if (!reduce && !(o.scrollScene && coarse)) {
       if (coarse) {
         touchEl.addEventListener('touchstart', onTouch, { passive: true });
         touchEl.addEventListener('touchmove', onTouch, { passive: true });
@@ -227,6 +253,13 @@ export function mountGreatstoneTide(container, opts) {
     const api = {
       onLost: null,
       setActive(v) { active = v !== false; },
+      setScene(from, to, progress = 0) {
+        if (reduce) return;
+        const a = presets[from] || presets.hero, b = presets[to] || a;
+        const t = Math.max(0, Math.min(1, progress));
+        for (const key of Object.keys(scene)) targetScene[key] = mix(a[key], b[key], t);
+      },
+      setComposeGlow(value) { composeGlow = reduce ? 0 : Math.max(0, Math.min(1, value)); },
       destroy() {
         if (raf) cancelAnimationFrame(raf);
         if (ro) ro.disconnect();
