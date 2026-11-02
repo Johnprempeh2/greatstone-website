@@ -9,6 +9,7 @@ import { BACKGROUND_EFFECTS, COLOURS } from './motion-contract.mjs';
 export const ISLAND_CONTRACT = 1;
 
 const formKey = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const formAttributes = { 'data-form': { prop: 'formKey', pattern: formKey }, 'data-block': { prop: 'blockId', pattern: formKey } };
 const slug = /^[a-z0-9][a-z0-9-]{0,119}$/;
 const oneOf = (values) => new RegExp(`^(?:${values.map((value) => value.replace(/[.]/g, '\\.')).join('|')})$`);
 const enumRule = (prop, values) => ({ prop, pattern: oneOf(values), values });
@@ -16,11 +17,11 @@ const ANIMATION_EFFECTS = BACKGROUND_EFFECTS.map((effect) => effect.slice(3));
 
 export const ISLANDS = {
   'enquiry-form': { block: 'BookDeepDive', label: 'Enquiry form', placeholder: 'Name, email and message. Sends an enquiry to the team.', height: 520,
-    attributes: { 'data-form': { prop: 'formKey', pattern: formKey } } },
+    attributes: formAttributes },
   'ai-baseline-survey': { block: 'AiBaselineSurvey', label: 'AI baseline survey', placeholder: 'The AI baseline survey and its results.', height: 560,
-    attributes: { 'data-form': { prop: 'formKey', pattern: formKey } } },
+    attributes: formAttributes },
   'ai-cost-calculator': { block: 'AiCostCalculator', label: 'AI cost calculator', placeholder: 'The AI cost calculator and its results.', height: 560,
-    attributes: { 'data-form': { prop: 'formKey', pattern: formKey } } },
+    attributes: formAttributes },
   'cookie-settings': { component: 'CookieSettings', label: 'Cookie settings', placeholder: 'Opens the cookie settings.', height: 32, inline: true, attributes: {} },
   quote: { component: 'QuoteIsland', label: 'Quote', placeholder: 'Adds a service to the basket and sends the quote request.', height: 96,
     attributes: {

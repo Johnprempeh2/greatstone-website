@@ -60,7 +60,8 @@ try {
         await tab.evaluate(() => document.fonts.ready);
         await tab.waitForTimeout(1500);
         files[side] = join(out, `${name}-${width}-${side}.png`);
-        await tab.screenshot({ path: files[side], fullPage: true, animations: 'disabled' });
+        // The dev build's Next badge is not part of either page.
+        await tab.screenshot({ path: files[side], fullPage: true, animations: 'disabled', style: 'nextjs-portal{display:none!important}' });
       }
       const result = await compare(files.today, files.html, join(out, `${name}-${width}-diff.png`));
       rows.push({ path: page.path, width, ...result });

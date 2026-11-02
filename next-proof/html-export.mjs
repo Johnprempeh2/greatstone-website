@@ -7,10 +7,13 @@ import { Window } from 'happy-dom';
 
 // Blocks that need code to work become islands (next-proof/islands.mjs). `attributes` reads the island's
 // data attributes from the block's published props.
+// A form island keeps its published copy and settings through `data-block`, which names the block's props
+// in next-proof/frozen/form-blocks.json (written by the export).
+const formAttributes = (props) => ({ 'data-form': props.formKey, 'data-block': props.id });
 export const BLOCK_ISLANDS = {
-  BookDeepDive: { name: 'enquiry-form', attributes: (props) => ({ 'data-form': props.formKey }) },
-  AiBaselineSurvey: { name: 'ai-baseline-survey', attributes: (props) => ({ 'data-form': props.formKey }) },
-  AiCostCalculator: { name: 'ai-cost-calculator', attributes: (props) => ({ 'data-form': props.formKey }) },
+  BookDeepDive: { name: 'enquiry-form', attributes: formAttributes },
+  AiBaselineSurvey: { name: 'ai-baseline-survey', attributes: formAttributes },
+  AiCostCalculator: { name: 'ai-cost-calculator', attributes: formAttributes },
 };
 // The frozen landing (Two Doors, v15) moves as it is: one island renders its published blocks unchanged.
 export const FROZEN_LANDING = { path: '/', island: 'two-doors-landing' };
@@ -119,6 +122,7 @@ export function exportRenderedPage(documentHtml, page) {
   const blockCss = [...main.querySelectorAll('style')].map((style) => { const css = style.textContent; style.remove(); return css; });
   const content = main.querySelector('.gs-proof-content') || main;
   const blocks = new Map((page.data?.content || []).map((block) => [block.props.id, block]));
+  const formBlocks = {};
 
   if (page.path === FROZEN_LANDING.path) {
     content.replaceChildren(island(document, FROZEN_LANDING.island));
@@ -128,7 +132,9 @@ export function exportRenderedPage(documentHtml, page) {
       const type = anchor.getAttribute('data-gs-block-type');
       const block = blocks.get(anchor.getAttribute('data-gs-block-id'));
       if (BLOCK_ISLANDS[type]) {
-        anchor.replaceWith(island(document, BLOCK_ISLANDS[type].name, BLOCK_ISLANDS[type].attributes(block?.props || {})));
+        // The block's wrapper stays: it carries the section surface and spacing.
+        anchor.replaceChildren(island(document, BLOCK_ISLANDS[type].name, BLOCK_ISLANDS[type].attributes(block?.props || {})));
+        if (block) formBlocks[block.props.id] = block.props;
         notes.push(`${type} → island ${BLOCK_ISLANDS[type].name}`);
       } else if (NEEDS_ISLAND.has(type)) notes.push(`${type}: still render; its controls need an island (GRE-3777)`);
     }
@@ -137,7 +143,7 @@ export function exportRenderedPage(documentHtml, page) {
   renameUnsafeIds(content);
   const css = inlineStylesToClasses(content);
   const svgs = content.querySelectorAll('svg').length;
-  if (svgs) notes.push(`${svgs} inline SVG (the sanitiser drops SVG)`);
+  if (svgs) notes.push(`${svgs} inline SVG (kept: the sanitiser allows a drawing subset)`);
   const html = content.innerHTML.replace(/<!-- -->/g, '').trim();
 
   const header = document.querySelector('header.proof-header');
@@ -148,7 +154,7 @@ export function exportRenderedPage(documentHtml, page) {
     nav: { html: '', css: '' },
     footer: { html: footer?.outerHTML || '', css: '' },
   };
-  return { html, css, blockCss, chrome, notes };
+  return { html, css, blockCss, chrome, notes, formBlocks };
 }
 
 // The GSAM release page (the S1 format) for one exported page.

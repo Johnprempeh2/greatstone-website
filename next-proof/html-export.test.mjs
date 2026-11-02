@@ -26,8 +26,11 @@ test('React ids are renamed with their aria references', () => {
 test('form blocks become islands configured from their published props', () => {
   const out = exportRenderedPage(render('<div><div data-gs-block-type="BookDeepDive" data-gs-block-id="b1"><form></form></div></div>'),
     { path: '/contact', data: { content: [{ type: 'BookDeepDive', props: { id: 'b1', formKey: 'contact' } }] } });
-  assert.equal(out.html, '<div><gs-island name="enquiry-form" data-form="contact"></gs-island></div>');
-  assert.equal(sanitiseHtml(out.html).nodes[0].children[0].type, 'island');
+  // The block wrapper stays for its section surface; the island names the frozen props by block id.
+  assert.equal(out.html, '<div><div><gs-island name="enquiry-form" data-form="contact" data-block="b1"></gs-island></div></div>');
+  assert.deepEqual(out.formBlocks, { b1: { id: 'b1', formKey: 'contact' } });
+  const [island] = sanitiseHtml(out.html).nodes[0].children[0].children;
+  assert.deepEqual([island.type, island.props], ['island', { formKey: 'contact', blockId: 'b1' }]);
 });
 
 test('the frozen landing is one island, and the footer gets cookie settings', () => {

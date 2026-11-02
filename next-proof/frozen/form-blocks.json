@@ -1,0 +1,191 @@
+{
+  "aibaselinesurvey-1pyhln": {
+    "id": "aibaselinesurvey-1pyhln",
+    "anchorId": "ai-readiness",
+    "kicker": "Free AI readiness check",
+    "heading": "Where does your business stand on AI?",
+    "headingLevel": "h2",
+    "intro": "Eight questions, one for each part of our method. See where you stand from Laggard to Pioneer, then take the survey away to run with your team.",
+    "point1": "8 questions, one for each part of our method.",
+    "point2": "See where you stand, from Laggard to Pioneer, next to a Greatstone reference point.",
+    "point3": "Download your result and the blank survey.",
+    "startLabel": "Start the survey",
+    "surveyDownloadNote": "The blank survey downloads as a CSV. You can load it into Google Forms, Typeform or Formstack and send it to your leadership team. It holds the eight questions, each with four answers in order from lowest to highest. It does not score the answers or give a stage.",
+    "gateHeading": "Your result is ready.",
+    "gateBody": "Add your name and work email to see it here and download it.",
+    "nameLabel": "Your name",
+    "companyLabel": "Company (optional)",
+    "emailLabel": "Work email",
+    "dataNotice": "When you press See my result, we send Greatstone your name, work email, company if you give it, and a short summary of your result: your overall stage, your strongest area and the area to move first. Your individual answers stay in your browser. We may reply once about your result. We will not add you to marketing emails.",
+    "submitLabel": "See my result",
+    "backLabel": "Back to the survey",
+    "benchmarkLabel": "Greatstone reference point",
+    "benchmarkNote": "The reference point is a Greatstone guide to help you read the chart. It is not measured data about your sector.",
+    "chartAriaLabel": "Your AI readiness by pillar, scored 1 to 4, next to a Greatstone reference point. Overall {avg} of 4, {phase}. {pillar}",
+    "csvBenchmarkHeader": "Greatstone reference point (1-4)",
+    "sentNote": "Thank you. We have a summary of your result and may reply once about it.",
+    "failNote": "Your result is below. We could not pass it to our team just now; email {contact} if you want to talk it through.",
+    "ctaLabel": "Begin the Conversation",
+    "ctaHref": "#enquire/a-free-executive-discovery",
+    "_section": {
+      "surface": "none",
+      "accent": "default",
+      "spaceTop": "default",
+      "spaceBottom": "default"
+    },
+    "_note": ""
+  },
+  "aicostcalculator-1qfnya": {
+    "id": "aicostcalculator-1qfnya",
+    "anchorId": "ai-cost-calculator",
+    "kicker": "The money on the table",
+    "heading": "How much could AI save you?",
+    "intro": "A rough, honest estimate. Set the numbers for your team, see what the manual work costs in a year, then how much of it AI could take back.",
+    "teamLabel": "People affected",
+    "hoursLabel": "Hours lost per person, per week",
+    "costLabel": "Average hourly cost",
+    "defaultTeam": 12,
+    "defaultHours": 6,
+    "defaultCost": 32,
+    "weeksPerYear": 46,
+    "recoveryPct": 55,
+    "currency": "£",
+    "onTheTableLead": "That work costs you",
+    "savingsLead": "AI could recover about",
+    "gateHeading": "See what AI could recover",
+    "gateBody": "Add your name and work email to see the figure here and download it.",
+    "nameLabel": "Your name",
+    "companyLabel": "Company (optional)",
+    "emailLabel": "Work email",
+    "dataNotice": "When you press See the figure, we send Greatstone your name, work email, company if you give it, and a summary of your estimate: the team size, hours and hourly cost you set, and the yearly figures. We may reply once about your estimate. We will not add you to marketing emails.",
+    "submitLabel": "See the figure",
+    "sentNote": "Thank you. We have a summary of your estimate and may reply once about it.",
+    "failNote": "Your estimate is below. We could not pass it to our team just now; email {contact} if you want to talk it through.",
+    "csvFooter": "A guide, not a quote. The recovery rate is an assumption. A free Executive Discovery replaces these round numbers with your real ones.",
+    "ctaLabel": "Begin the Conversation",
+    "ctaHref": "#enquire/a-free-executive-discovery",
+    "footnote": "A guide, not a quote. The recovery rate is an assumption. A free Executive Discovery replaces these round numbers with your real ones and shows which work to start with.",
+    "_section": {
+      "surface": "none",
+      "accent": "default",
+      "spaceTop": "default",
+      "spaceBottom": "default"
+    },
+    "_note": ""
+  },
+  "bookdeepdive-de8ak": {
+    "id": "bookdeepdive-de8ak",
+    "eyebrow": "",
+    "headline": "Send an Enquiry",
+    "highlight": "",
+    "body": "A few short questions. Only your name and email are required.",
+    "submitLabel": "Send enquiry",
+    "nameLabel": "Your name (required)",
+    "emailLabel": "Work email (required)",
+    "companyLabel": "Organisation",
+    "sizeLabel": "How many people work there?",
+    "sizePlaceholder": "Select if it helps",
+    "sizes": [
+      {
+        "label": "Under 10"
+      },
+      {
+        "label": "11 to 50"
+      },
+      {
+        "label": "51 to 250"
+      },
+      {
+        "label": "More than 250"
+      }
+    ],
+    "showSector": false,
+    "sectorLabel": "Your sector (optional)",
+    "sectorPlaceholder": "Select if it is useful context",
+    "sectorRequired": false,
+    "messageLabel": "Which work would you most like to get time back from?",
+    "messagePlaceholder": "For example: weekly reporting, proposals, social content, research",
+    "consent": "I agree that Greatstone can use these details to reply to my enquiry. See our <a href=\"/privacy\">Privacy Policy</a>.",
+    "sentHeading": "Thank you. Your enquiry has reached us.",
+    "sentBody": "A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at",
+    "sentLinkLabel": "Read how we work",
+    "sentLinkHref": "/method",
+    "failedHeading": "Your message did not reach us.",
+    "failedBody": "Please email us at",
+    "subjectPrefix": "Enquiry",
+    "anchorId": "enquiry",
+    "asideKicker": "What happens next",
+    "asideHeading": "A considered reply, not a sales sequence.",
+    "asideBody": "Every enquiry is read by the team. We reply with a view on whether we can genuinely help, and say so plainly when we cannot.",
+    "asidePoints": [
+      {
+        "icon": "check",
+        "title": "Read by the team",
+        "text": "Not routed into an automated nurture sequence."
+      },
+      {
+        "icon": "clock",
+        "title": "A considered response",
+        "text": "We would rather reply well than reply instantly."
+      },
+      {
+        "icon": "scan",
+        "title": "No obligation",
+        "text": "A conversation is a conversation. Nothing follows it unless you want it to."
+      }
+    ],
+    "interestLabel": "What are you interested in? (optional)",
+    "interestPlaceholder": "Select if it helps",
+    "interests": [
+      {
+        "label": "A free Executive Discovery"
+      },
+      {
+        "label": "A Deep Dive and blueprint"
+      },
+      {
+        "label": "GS Agentic Manager"
+      },
+      {
+        "label": "Specialist expertise for a defined piece of work"
+      },
+      {
+        "label": "Not sure yet"
+      }
+    ],
+    "sectors": [
+      {
+        "label": "Professional Services"
+      },
+      {
+        "label": "Financial Services"
+      },
+      {
+        "label": "Healthcare & Life Sciences"
+      },
+      {
+        "label": "Retail & E-commerce"
+      },
+      {
+        "label": "Manufacturing & Industrial"
+      },
+      {
+        "label": "Logistics & Supply Chain"
+      },
+      {
+        "label": "Property & Construction"
+      },
+      {
+        "label": "Other"
+      }
+    ],
+    "email": "",
+    "_section": {
+      "surface": "panel",
+      "accent": "default",
+      "spaceTop": "default",
+      "spaceBottom": "default"
+    },
+    "_note": ""
+  }
+}
