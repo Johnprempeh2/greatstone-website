@@ -49,8 +49,12 @@ export function ConsultancyTide({ pageRef, content }) {
       page.style.setProperty('--consultancy-parallax', `${Math.max(-8, Math.min(8, (focus - a.top) / Math.max(1, a.height) * 12 - 6))}px`);
       const lit = page.querySelectorAll('.b-compose-problem.is-on').length;
       tide.setComposeGlow(lit ? Math.min(1, .35 + lit * .18) : 0);
+      tide.setStepRows(steps.map((step) => { range.selectNodeContents(step); const r = range.getBoundingClientRect(); return r.top + r.height / 2; }));
     };
     const onScroll = () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(update); };
+    const methodBlock = scenes.find(({ scene }) => scene === 'method')?.block;
+    const steps = methodBlock ? [...methodBlock.querySelectorAll('.b-layer-num, .b-dx-method-number')].slice(0, 4) : [];
+    const range = document.createRange();   /* the number's text box: the span itself can stretch to the whole step */
     const compose = page.querySelector('.b-compose-problems');
     const composeObserver = compose ? new MutationObserver(onScroll) : null;
     if (composeObserver) composeObserver.observe(compose, { attributes: true, subtree: true, attributeFilter: ['class'] });
@@ -67,6 +71,9 @@ export function ConsultancyTide({ pageRef, content }) {
       tide.onLost = () => node.classList.remove('live');
       update();
       if (!reduce) window.addEventListener('scroll', onScroll, { passive: true });
+      if (!reduce) window.addEventListener('resize', onScroll, { passive: true });
+      /* the steps slide in on reveal, so re-read where they sit once they land */
+      methodBlock?.addEventListener('transitionend', onScroll);
     };
     if (document.readyState === 'complete') {
       if ('requestIdleCallback' in window) idleId = requestIdleCallback(start, { timeout: 600 });
@@ -76,6 +83,8 @@ export function ConsultancyTide({ pageRef, content }) {
       cancelled = true;
       window.removeEventListener('load', start);
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      methodBlock?.removeEventListener('transitionend', onScroll);
       if (scrollFrame) cancelAnimationFrame(scrollFrame);
       if (idleId != null) cancelIdleCallback(idleId);
       if (timeoutId != null) clearTimeout(timeoutId);

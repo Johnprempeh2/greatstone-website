@@ -1,3 +1,14 @@
+/* Viewport y (CSS px) of up to four Method steps -> canvas rows in device px from the bottom, as the
+   fragment shader counts them. Steps off screen, or missing, get NO_BAND so the shader draws no band. */
+export const NO_BAND = -1e4;
+export function stepBandRows(ys, height, dpr) {
+  const rows = [NO_BAND, NO_BAND, NO_BAND, NO_BAND];
+  (ys || []).slice(0, 4).forEach((y, i) => {
+    if (Number.isFinite(y) && y >= -40 && y <= height + 40) rows[i] = (height - y) * dpr;
+  });
+  return rows;
+}
+
 export function mountGreatstoneTide(container, opts) {
   'use strict';
   const VS = [
@@ -29,10 +40,12 @@ export function mountGreatstoneTide(container, opts) {
   const FS = [
     '#extension GL_OES_standard_derivatives : enable',
     'precision highp float;',
-    'uniform float uDpr; uniform float uProm; uniform float uHot; uniform float uRows; uniform float uBands; uniform vec3 uDeep; uniform vec3 uEmer; uniform vec3 uLime;',
+    'uniform float uDpr; uniform float uProm; uniform float uHot; uniform float uGlow; uniform float uRows; uniform float uBands; uniform vec4 uStepY; uniform float uStepW; uniform vec3 uDeep; uniform vec3 uEmer; uniform vec3 uLime;',
     'varying vec2 vW; varying float vDepth; varying float vLight; varying float vCrest; varying float vSwell;',
     /* distance to the nearest line in device pixels, and how crowded the lines are here */
     'vec2 lineDist(float u) { float fw = max(fwidth(u), 1e-4); return vec2(abs(fract(u - 0.5) - 0.5) / fw, fw); }',
+    /* one lime band per Method step, level with it on screen; NO_BAND (-1e4) means no band */
+    'float stepBand(float y) { return y < -1000.0 ? 0.0 : exp(-pow((gl_FragCoord.y - y) / uStepW, 2.0)); }',
     'void main() {',
     '  vec2 r = lineDist(vW.y * uRows);',
     '  vec2 c = lineDist(vW.x * 0.9);',
@@ -43,8 +56,8 @@ export function mountGreatstoneTide(container, opts) {
     '  float glow = exp(-r.x * r.x / (16.0 * uDpr * uDpr)) * crowdR;',
     '  float cross = (1.0 - smoothstep(halfW - 0.6, halfW + 0.6, c.x)) * crowdC * 0.16;',
     '  float fog = smoothstep(30.0, 9.0, vDepth) * smoothstep(0.6, 2.2, vDepth);',
-    '  float terraces = (exp(-pow((vW.y + 2.0) / 0.48, 2.0)) + exp(-pow((vW.y + 6.0) / 0.48, 2.0)) + exp(-pow((vW.y + 10.0) / 0.48, 2.0)) + exp(-pow((vW.y + 14.0) / 0.48, 2.0))) * uBands;',
-    '  float hot = clamp(vCrest * 0.55 + vSwell * 0.95 + terraces * 0.72, 0.0, uHot);',
+    '  float terraces = (stepBand(uStepY.x) + stepBand(uStepY.y) + stepBand(uStepY.z) + stepBand(uStepY.w)) * uBands;',
+    '  float hot = clamp(vCrest * (0.55 + 0.6 * uGlow) + vSwell * 0.95 + terraces * 0.72 + uGlow * 0.3 * vLight, 0.0, uHot);',   /* uGlow: a lit Compose problem lifts the lime */
     '  vec3 col = mix(uDeep, uEmer, 0.25 + 0.75 * vLight);',
     '  col = mix(col, uLime, hot);',
     '  float a = (core * (0.28 + 0.55 * vLight + 0.35 * hot + terraces * 0.8) + cross * (0.4 + 0.6 * vLight) + glow * (0.32 * hot + terraces * 0.55)) * fog * uProm;',
@@ -96,7 +109,7 @@ export function mountGreatstoneTide(container, opts) {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
     const U = {};
-    ['uPV', 'uT', 'uP', 'uAmp', 'uBands', 'uDpr', 'uProm', 'uHot', 'uRows', 'uDeep', 'uEmer', 'uLime'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
+    ['uPV', 'uT', 'uP', 'uAmp', 'uBands', 'uStepY', 'uStepW', 'uDpr', 'uProm', 'uHot', 'uGlow', 'uRows', 'uDeep', 'uEmer', 'uLime'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
     gl.uniform3fv(U.uDeep, rgb([34, 84, 62]));
     gl.uniform3fv(U.uEmer, rgb([58, 140, 100]));
     gl.uniform3fv(U.uLime, rgb([200, 255, 0]));
@@ -132,6 +145,7 @@ export function mountGreatstoneTide(container, opts) {
     const scene = { ...initialScene };
     let targetScene = { ...initialScene };
     let composeGlow = 0;
+    let stepRows = stepBandRows(null);
     let W = 1, H = 1, DPR = 1, PV = null, IPV = null, eye = null;
     const mix = (a, b, t) => a + (b - a) * t;
     function camera() {
@@ -219,9 +233,12 @@ export function mountGreatstoneTide(container, opts) {
       gl.uniform1f(U.uT, reduce ? 4.2 : elapsed * o.speed);
       gl.uniform1f(U.uAmp, scene.amp);
       gl.uniform1f(U.uBands, scene.bands);
+      gl.uniform4fv(U.uStepY, stepRows);
+      gl.uniform1f(U.uStepW, 18 * DPR);
       gl.uniform3f(U.uP, sm.x, sm.z, reduce ? 0 : sm.on * o.swell);
       gl.uniform1f(U.uProm, val(o.prominence));
       gl.uniform1f(U.uHot, Math.min(1, val(o.lime) * scene.lime + composeGlow * .24));
+      gl.uniform1f(U.uGlow, composeGlow);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
     }
@@ -260,6 +277,7 @@ export function mountGreatstoneTide(container, opts) {
         const t = Math.max(0, Math.min(1, progress));
         for (const key of Object.keys(scene)) targetScene[key] = mix(a[key], b[key], t);
       },
+      setStepRows(ys) { stepRows = stepBandRows(ys, H, DPR); },
       setComposeGlow(value) { composeGlow = reduce ? 0 : Math.max(0, Math.min(1, value)); },
       destroy() {
         if (raf) cancelAnimationFrame(raf);
