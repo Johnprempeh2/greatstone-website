@@ -1,0 +1,74 @@
+// GRE-1936: plan release 1 from the live site's published content and GSAM's pages.
+// GRE-2389 imported the live pages into GSAM on 25 October; GSAM's block ids from that
+// import are the stable ids. The repo seed mints new ids on every load, so live content
+// is matched to GSAM blocks here and keeps GSAM's id wherever a block already exists.
+
+// Live path -> GSAM sitemap slug, as GRE-2389 imported them. Same-path pages are implicit.
+export const RELEASE_1_PATHS = Object.freeze({
+  '/dx-consultancy': '/consultancy',
+  '/transformation-services': '/consultancy/digital-office',
+  '/how-we-help': '/consultancy/how-we-help',
+  '/method': '/consultancy/how-we-work',
+  '/industries': '/consultancy/industries',
+  '/climb': '/consultancy/the-climb',
+  '/case-studies': '/proof',
+});
+
+export const gsamSlugFor = (livePath) => RELEASE_1_PATHS[livePath] || livePath;
+
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// The k-th block of a type keeps the id of GSAM's k-th block of that type.
+export function stableBlockIds(liveContent, gsamContent = []) {
+  const pool = new Map();
+  for (const block of gsamContent) {
+    if (!pool.has(block.type)) pool.set(block.type, []);
+    pool.get(block.type).push(block.props?.id);
+  }
+  const used = new Set();
+  return liveContent.map((block) => {
+    const reused = pool.get(block.type)?.shift();
+    const id = reused && !used.has(reused) ? reused : block.props.id;
+    if (used.has(id)) throw new Error(`Duplicate block id ${id} on ${block.type}`);
+    used.add(id);
+    return { ...block, props: { ...block.props, id } };
+  });
+}
+
+export function planPage(livePage, gsamPage) {
+  const gsamSlug = gsamSlugFor(livePage.path);
+  if (!gsamPage) return { path: livePage.path, gsamSlug, action: 'missing' };
+  const gsamContent = gsamPage.content?.content || [];
+  const content = stableBlockIds(livePage.data.content, gsamContent);
+  // Release 1 is the live page as published; GSAM-only settings stay in GSAM's history.
+  const root = livePage.data.root || { props: {} };
+  const rootChanged = !same(root, gsamPage.content?.root || {});
+  const changedBlocks = content.filter((block, index) => !same(block, gsamContent[index])).length;
+  const gsamOnlyBlocks = gsamContent.filter((block) => !content.some((live) => live.props.id === block.props?.id))
+    .map((block) => block.type);
+  const unchanged = !rootChanged && changedBlocks === 0 && gsamContent.length === content.length;
+  return {
+    path: livePage.path, gsamSlug, pageId: gsamPage.id, baseRevisionId: gsamPage.latestRevisionId,
+    status: gsamPage.status, action: unchanged ? 'unchanged' : 'update', rootChanged,
+    blocks: content.length, changedBlocks, gsamOnlyBlocks,
+    reusedIds: content.filter((block) => gsamContent.some((g) => g.props?.id === block.props.id)).length,
+    content: { root, content },
+  };
+}
+
+export function planRelease1(release, gsamPages) {
+  const bySlug = new Map(gsamPages.map((page) => [page.slug, page]));
+  const plan = release.pages.map((page) => planPage(page, bySlug.get(gsamSlugFor(page.path))));
+  const ids = plan.flatMap((entry) => entry.content?.content.map((block) => `${entry.gsamSlug}#${block.props.id}`) || []);
+  if (new Set(ids).size !== ids.length) throw new Error('Release 1 has a repeated page block id');
+  return plan;
+}
+
+// Text summary: one line per page, never the content itself.
+export function describePlan(plan) {
+  return plan.map((entry) => entry.action === 'missing'
+    ? `${entry.path} -> ${entry.gsamSlug}: missing in GSAM`
+    : `${entry.path} -> ${entry.gsamSlug}: ${entry.action}, ${entry.blocks} blocks, ${entry.changedBlocks} changed, `
+      + `${entry.reusedIds} GSAM ids kept${entry.rootChanged ? ', page settings changed' : ''}`
+      + `${entry.gsamOnlyBlocks.length ? `, GSAM-only blocks: ${entry.gsamOnlyBlocks.join(' ')}` : ''}`).join('\n');
+}
