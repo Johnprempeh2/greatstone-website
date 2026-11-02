@@ -10,6 +10,8 @@ export const ISLANDS = {
   'ai-baseline-survey': { block: 'AiBaselineSurvey', attributes: { 'data-form': { prop: 'formKey', pattern: formKey } } },
   'ai-cost-calculator': { block: 'AiCostCalculator', attributes: { 'data-form': { prop: 'formKey', pattern: formKey } } },
   'cookie-settings': { component: 'CookieSettings', attributes: {} },
+  // GRE-3778: the frozen landing (Two Doors, v15) renders its published blocks unchanged.
+  'two-doors-landing': { component: 'TwoDoorsLanding', attributes: {} },
 };
 
 // Returns the island's props and accepted attributes, or null when the name is not registered.

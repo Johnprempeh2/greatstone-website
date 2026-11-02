@@ -8,10 +8,11 @@ import { ISLANDS } from '../next-proof/islands.mjs';
 import { CHROME_KEYS } from '../next-proof/gsam-release.mjs';
 import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
+import TwoDoorsLanding from './TwoDoorsLanding.jsx';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings };
+const COMPONENTS = { CookieSettings, TwoDoorsLanding };
 
 function reactProps(attributes) {
   return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [REACT_NAMES[name] || name, BOOLEANS.has(name) ? true : value]));
@@ -23,7 +24,7 @@ function toReact(nodes, context, path = 'n') {
     if (node.type === 'text') return node.value;
     if (node.type === 'island') {
       const island = ISLANDS[node.name];
-      if (island.component) return createElement(COMPONENTS[island.component], { key });
+      if (island.component) return createElement(COMPONENTS[island.component], { key, forms: context.forms, pagePaths: context.pagePaths });
       return <IslandBlock key={key} type={island.block} props={{ ...node.props, id: `island-${key.replace(/\./g, '-')}` }}
         pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
     }
