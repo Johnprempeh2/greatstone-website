@@ -6,7 +6,15 @@ Captured 2 Nov 2026 from `npm run dev` (Vite, current site, `/#<slug>`) and `nex
 
 `<page>-vite-<width>.jpg` and `<page>-next-<width>.jpg`, full page. All 16 captures load with no page errors, and each Vite and Next pair shows the same h1. The Puck blocks match in order, copy and form fields.
 
-The site shell does not match yet. The Next header has no Transformation Services menu, no "Begin the Conversation" button and no search. The Next footer has only the three legal links, and no logo, strapline, page links or email. That is why each Next page is 350 to 680 px shorter. This is tracked as a child issue of GRE-1936.
+Before GRE-3715, the site shell did not match. The Next header had no Transformation Services menu, no "Begin the Conversation" button and no search. The Next footer had only the three legal links, and no logo, strapline, page links or email. The `<page>-next-<width>.jpg` captures show that state (before).
+
+## Site shell (GRE-3715)
+
+`<page>-next-shell-<width>.jpg` is the after capture. The Next site now renders the studio's own `src/Header.jsx`, `src/Footer.jsx` and `src/cms/CommandPalette.jsx`, fed from the release navigation and site settings. The header has the Transformation Services menu with its subtext, DX Dev Tools with Products, "Begin the Conversation", Sign in and search (⌘K). The footer has the logo, strapline, page links, email, legal row and copyright. At 390 the header folds into the same single menu.
+
+`menu-<site>-<width>.jpg` shows the Transformation Services menu at 1440 and the phone menu at 390, on Next and on Vite. `search-<site>-<width>.jpg` shows the ⌘K palette after typing "serv". Next and Vite match.
+
+Two differences remain, and neither is in the shell. The Vite footer also lists "AI Market Intelligence", a page the studio renders as a built-in route but which is not a published page in the release. And each Next page is still 56 to 280 px shorter than Vite. The gap is inside the blocks (for example, the space under the contact hero), not in the header or footer, and it was there before this change.
 
 ## Editor
 
