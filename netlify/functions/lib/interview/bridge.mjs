@@ -171,7 +171,7 @@ export async function roundView(db, eng) {
     id: eng.id, organisationId: eng.customer_id, sponsor: eng.sponsor ?? null,
     mode: eng.mode, status: STATUS_OUT[eng.status] || eng.status, voice: eng.branding_config?.voice !== false, targetMinutes: eng.target_minutes,
     seatTotal: eng.seat_total, costEnvelopePence: Number(eng.cost_envelope_pence),
-    spendPence: Number(spendRow?.spent_pence ?? spendRow?.spend_pence ?? spendRow?.cost_pence ?? 0),
+    spendPence: Number(spendRow?.total_pence ?? 0),
     endDate: eng.end_date, retentionDeleteAfter: eng.retention_delete_after,
     joinUrl: agreement.accepted ? joinUrl(eng.enrol_token) : null,
     agreement: { version: agreement.version, contentSha256: agreement.contentSha256, accepted: agreement.accepted,
