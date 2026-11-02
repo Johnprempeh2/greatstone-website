@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeFrontDoorHandler, stagingStubAllowed } from '../functions/front-door.mjs';
 import { saveLead, updateContact, stamp } from '../functions/lib/front-door-store.mjs';
-import { signSession } from '../../supabase/functions/_shared/front-door-engine.mjs';
+import { signSession } from '../functions/lib/shared/front-door-engine.mjs';
 import pg from 'pg';
 import { startPostgres, skip } from './lib/postgres.mjs';
 

@@ -3,7 +3,7 @@ import { getStore } from '@netlify/blobs';
 import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
-import { pdfDownloadName } from '../../supabase/functions/_shared/portal-file.mjs';
+import { pdfDownloadName } from './lib/shared/portal-file.mjs';
 import { oneDriveSettings, portalFileStorage } from './lib/portal-onedrive.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

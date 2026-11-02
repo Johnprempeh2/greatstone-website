@@ -1,6 +1,6 @@
 // Contact enquiry (GRE-654): the browser half of the BookDeepDive form. Pure apart from the injected fetch,
 // so `node --test` covers it. The `enquiry` Netlify Function (netlify/functions/enquiry.mjs, GRE-1794) saves
-// the enquiry on Netlify Database and alerts the owner; logic and limits are in supabase/functions/_shared/enquiry.mjs.
+// the enquiry on Netlify Database and alerts the owner; logic and limits are in netlify/functions/lib/shared/enquiry.mjs.
 //   POST /api/enquiry { name, company, email, size_band, industry, message, attribution: { first, last }, page, website, turnstile? }
 //   (the optional interest choice is the first line of `message`; `turnstile` is the Cloudflare token when the site has a key)
 //   → { ok: true, ref } | non-2xx { ok: false, error }

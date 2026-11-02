@@ -1,11 +1,11 @@
 // Portal PDF download (Supabase Edge Function, Deno). GRE-1257; spec GRE-1227 revision 2, sections 4 and 8.
 // A signed-in client (or staff, for preview) asks for the designed PDF of one document and gets a signed URL that
 // lasts 60 seconds. The document is read with the caller's own token, so RLS decides who may have it; the stored
-// path is signed with the service role only after that. Logic: ../_shared/portal-file.mjs (covered by node --test).
+// path is signed with the service role only after that. Logic: netlify/functions/lib/shared/portal-file.mjs (covered by node --test).
 // Secrets: none of its own; SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are set by Supabase.
 // Deploy: supabase functions deploy portal-file --no-verify-jwt (it checks the caller itself with getUser()).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { handlePortalFile } from '../_shared/portal-file.mjs';
+import { handlePortalFile } from '../../../netlify/functions/lib/shared/portal-file.mjs';
 
 const SUPA_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';

@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildTeamPackEmail, deliverTeamPack, packAgents, BRAND_SIGNOFF, BOOKING_URL } from './front-door-pack.mjs';
 import { buildAlertEmail } from './front-door-leads.mjs';
-import { BRAND_SIGNOFF as SITE_SIGNOFF } from '../../../src/lib/brand.mjs';
-import { BOOKING_URL as SITE_BOOKING } from '../../../src/lib/booking.js';
+import { BRAND_SIGNOFF as SITE_SIGNOFF } from '../../../../src/lib/brand.mjs';
+import { BOOKING_URL as SITE_BOOKING } from '../../../../src/lib/booking.js';
 
 const agents = [
   { name: 'Kenji', role: 'Lettings coordinator', is_lead: false, personality: ['quick', 'tidy', 'calm'],

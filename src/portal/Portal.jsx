@@ -13,7 +13,7 @@ import DeepDiveClient from './DeepDiveClient.jsx';
 import {
   JOURNEY, KIND_LABEL, journeyStage, docState, panelState, waitingForYou, acceptanceFor, signatoryLabel,
 } from './portal-model.mjs';
-import { receiptRecord, emailStateLabel } from '../../supabase/functions/_shared/portal-receipt.mjs';
+import { receiptRecord, emailStateLabel } from '../../netlify/functions/lib/shared/portal-receipt.mjs';
 import '../store/store.css';
 import '../store/admin.css';
 import './portal.css';

@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from 'react';
 import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import { KIND_LABEL, placeDemos } from './portal-model.mjs';
-import { readingOrder } from '../../supabase/functions/_shared/portal-gita.mjs';
+import { readingOrder } from '../../netlify/functions/lib/shared/portal-gita.mjs';
 import { markEvidence } from './gita-view.mjs';
 import { PRIVACY_NOTE_TITLE, PRIVACY_NOTE_BODY, PRIVACY_LINK_TEXT, PRIVACY_HREF } from './wording.mjs';
 

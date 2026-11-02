@@ -15,7 +15,7 @@ import ActionPanel from './ActionPanel.jsx';
 import { ReceiptView } from './Portal.jsx';
 import { KIND_LABEL, STAFF_STATUS, receiptJobLabel, cleanSections, cleanDemos, fmtDay } from './portal-model.mjs';
 import { confirmationTemplate, fillWording } from './wording.mjs';
-import { MAX_ATTEMPTS } from '../../supabase/functions/_shared/portal-receipt.mjs';
+import { MAX_ATTEMPTS } from '../../netlify/functions/lib/shared/portal-receipt.mjs';
 import './portal.css';
 
 // phase 1 uses the first four kinds (spec section 4); the rest come with later phases
