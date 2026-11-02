@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import release from './data/release.json' with { type: 'json' };
-import { describePlan, gsamSlugFor, planPage, planRelease1, stableBlockIds } from './release-1-sync.mjs';
+import { applyPlan, describePlan, gsamSlugFor, planPage, planRelease1, stableBlockIds } from './release-1-sync.mjs';
 
 const block = (type, id, extra = {}) => ({ type, props: { id, ...extra } });
 const gsamPage = (slug, content, root = { props: { title: 'T' } }) => ({
@@ -39,7 +39,8 @@ test('drift is an update that uses the live root and reports GSAM-only blocks', 
 test('renamed live paths map to the GRE-2389 GSAM pages', () => {
   assert.equal(gsamSlugFor('/case-studies'), '/proof');
   assert.equal(gsamSlugFor('/privacy'), '/privacy');
-  const entry = planPage({ path: '/services', data: { root: {}, content: [] } }, undefined);
+  assert.equal(gsamSlugFor('/services'), '/consultancy/services');
+  const entry = planPage({ path: '/new', data: { root: {}, content: [] } }, undefined);
   assert.equal(entry.action, 'missing');
 });
 
@@ -48,4 +49,26 @@ test('the checked-in release plans every page with unique ids per page', () => {
   assert.equal(plan.length, release.pages.length);
   assert.ok(plan.every((entry) => entry.action === 'missing'));
   assert.match(describePlan(plan), /\/case-studies -> \/proof: missing in GSAM/);
+});
+
+test('apply saves changed pages only and records the revision each one replaced', async () => {
+  const plan = [
+    { path: '/a', gsamSlug: '/a', pageId: 'p1', baseRevisionId: 'r1', action: 'unchanged' },
+    { path: '/b', gsamSlug: '/b', pageId: 'p2', baseRevisionId: 'r2', action: 'update', content: {} },
+  ];
+  const saved = [];
+  const { ok, record } = await applyPlan(plan, async (entry) => { saved.push(entry.pageId); return { state: 'saved', revisionId: 'r3', revisionNumber: 4 }; });
+  assert.equal(ok, true);
+  assert.deepEqual(saved, ['p2']);
+  assert.deepEqual(record[1], { path: '/b', gsamSlug: '/b', pageId: 'p2', previousRevisionId: 'r2', action: 'saved', revisionId: 'r3', revisionNumber: 4 });
+});
+
+test('apply stops at the first conflict and never runs with a missing page', async () => {
+  const update = (id) => ({ path: `/${id}`, gsamSlug: `/${id}`, pageId: id, baseRevisionId: 'r', action: 'update', content: {} });
+  const calls = [];
+  const { ok, record } = await applyPlan([update('a'), update('b')], async (entry) => { calls.push(entry.pageId); return { state: 'conflict', message: 'Changed' }; });
+  assert.equal(ok, false);
+  assert.deepEqual(calls, ['a']);
+  assert.equal(record[0].action, 'conflict');
+  await assert.rejects(applyPlan([{ path: '/x', gsamSlug: '/x', action: 'missing' }], async () => ({})), /no GSAM page/);
 });

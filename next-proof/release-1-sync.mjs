@@ -12,6 +12,8 @@ export const RELEASE_1_PATHS = Object.freeze({
   '/industries': '/consultancy/industries',
   '/climb': '/consultancy/the-climb',
   '/case-studies': '/proof',
+  // GRE-3711: live /services goes into GSAM's /consultancy/services page.
+  '/services': '/consultancy/services',
 });
 
 export const gsamSlugFor = (livePath) => RELEASE_1_PATHS[livePath] || livePath;
@@ -71,4 +73,26 @@ export function describePlan(plan) {
     : `${entry.path} -> ${entry.gsamSlug}: ${entry.action}, ${entry.blocks} blocks, ${entry.changedBlocks} changed, `
       + `${entry.reusedIds} GSAM ids kept${entry.rootChanged ? ', page settings changed' : ''}`
       + `${entry.gsamOnlyBlocks.length ? `, GSAM-only blocks: ${entry.gsamOnlyBlocks.join(' ')}` : ''}`).join('\n');
+}
+
+// GRE-3711: release 1 takes the live content. Each saved page records the revision it
+// replaced, so the redesign drafts and home's GSAM settings can be restored after publish.
+// `save(entry)` returns GSAM's WebsiteSaveResult; a conflict or failure stops the run.
+export async function applyPlan(plan, save) {
+  const record = [];
+  for (const entry of plan) {
+    if (entry.action === 'missing') throw new Error(`${entry.path} has no GSAM page at ${entry.gsamSlug}`);
+    if (entry.action === 'unchanged') {
+      record.push({ path: entry.path, gsamSlug: entry.gsamSlug, pageId: entry.pageId, action: 'unchanged', revisionId: entry.baseRevisionId });
+      continue;
+    }
+    const result = await save(entry);
+    const saved = { path: entry.path, gsamSlug: entry.gsamSlug, pageId: entry.pageId, previousRevisionId: entry.baseRevisionId };
+    if (result?.state !== 'saved') {
+      record.push({ ...saved, action: result?.state || 'failed', message: result?.message || 'No answer from GSAM' });
+      return { ok: false, record };
+    }
+    record.push({ ...saved, action: 'saved', revisionId: result.revisionId, revisionNumber: result.revisionNumber });
+  }
+  return { ok: true, record };
 }
