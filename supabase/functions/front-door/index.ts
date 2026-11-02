@@ -1,6 +1,6 @@
 // Front door (Supabase Edge Function, Deno). Public: an anonymous visitor's intake, the small Everest chat
 // and the three-employee proposal (GRE-416 spec rev 2, B2). Prompts, checks and model calls live in
-// ../_shared/front-door-*.mjs so the B6 eval runs the same code under `node --test`.
+// netlify/functions/lib/shared/front-door-*.mjs so the B6 eval runs the same code under `node --test`.
 // Guards, in order: Cloudflare Turnstile (then a signed session), field limits, six visitor messages,
 // three proposals per IP a day (counted in the database, IP hashed), fixed max output tokens, retry once.
 // Leads (B3): an anonymous row at S5, the contact added at S6, then the internal Resend alert (S8). If the
@@ -15,19 +15,19 @@
 // RESEND_API_KEY, RESEND_FROM, FRONT_DOOR_ALERT_TO (comma list), optional APP_SITE_ORIGIN; no alert without them.
 // The team pack needs RESEND_API_KEY and RESEND_FROM; optional FRONT_DOOR_BOOKING_URL (default: the site's Calendly).
 // Pipedrive: PIPEDRIVE_API_TOKEN, optional PIPEDRIVE_DOMAIN and PIPEDRIVE_STAGE_ID; no push without the token.
-// Local, no cost: FRONT_DOOR_STUB=1 with no ANTHROPIC_API_KEY answers from ../_shared/front-door-stub.mjs
+// Local, no cost: FRONT_DOOR_STUB=1 with no ANTHROPIC_API_KEY answers from netlify/functions/lib/shared/front-door-stub.mjs
 // (never in a hosted project). Use Turnstile's test secret 1x0000000000000000000000000000000AA with it.
 // Deploy: supabase functions deploy front-door --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import {
   normaliseIntake, normaliseMessages, visitorCount, runChat, runProposal, publicAgents,
   signSession, verifySession, transcriptHash, hashIp, sha256, parsePrivateNames,
-} from '../_shared/front-door-engine.mjs';
-import { CHAT_TURNS } from '../_shared/front-door-prompts.mjs';
-import { stubAllowed, stubFetch, STUB_KEY } from '../_shared/front-door-stub.mjs';
-import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from '../_shared/front-door-leads.mjs';
-import { deliverTeamPack, BOOKING_URL } from '../_shared/front-door-pack.mjs';
-import { crmConfig, syncLeadToCrm } from '../_shared/front-door-crm.mjs';
+} from '../../../netlify/functions/lib/shared/front-door-engine.mjs';
+import { CHAT_TURNS } from '../../../netlify/functions/lib/shared/front-door-prompts.mjs';
+import { stubAllowed, stubFetch, STUB_KEY } from '../../../netlify/functions/lib/shared/front-door-stub.mjs';
+import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from '../../../netlify/functions/lib/shared/front-door-leads.mjs';
+import { deliverTeamPack, BOOKING_URL } from '../../../netlify/functions/lib/shared/front-door-pack.mjs';
+import { crmConfig, syncLeadToCrm } from '../../../netlify/functions/lib/shared/front-door-crm.mjs';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 const STUB = stubAllowed({

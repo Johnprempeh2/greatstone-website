@@ -1,6 +1,6 @@
 import { getPool } from './lib/db.mjs';
 import { asWorker } from './lib/worker-db.mjs';
-import { runWorker, resendSend } from '../../supabase/functions/_shared/portal-receipt.mjs';
+import { runWorker, resendSend } from './lib/shared/portal-receipt.mjs';
 
 export function makePortalReceiptWorker({ pool = getPool, env = process.env,
   send = resendSend, log = console.error } = {}) {

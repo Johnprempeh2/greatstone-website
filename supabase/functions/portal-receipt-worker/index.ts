@@ -3,14 +3,14 @@
 // portal_accept() fills in the same transaction as the acceptance. The browser is not in the path: pg_cron calls
 // this every minute (deploy step in 0039), and the portal sends a nudge right after an acceptance so the email
 // usually goes within seconds. A nudge only runs the queue; it cannot choose, change or read anything.
-// Claim, retry schedule, email and idempotency key: ../_shared/portal-receipt.mjs (covered by node --test).
+// Claim, retry schedule, email and idempotency key: netlify/functions/lib/shared/portal-receipt.mjs (covered by node --test).
 // Who may call: the cron (header x-portal-worker-secret = PORTAL_WORKER_SECRET) or any signed-in user (nudge).
 // Secrets: RESEND_API_KEY, RESEND_FROM, PORTAL_RECEIPT_TO (Greatstone owner address, comma list),
 // PORTAL_WORKER_SECRET, optional APP_SITE_ORIGIN. Without the Resend secrets every attempt fails and is retried,
 // so nothing is lost; the studio shows the state.
 // Deploy: supabase functions deploy portal-receipt-worker --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { runWorker, resendSend } from '../_shared/portal-receipt.mjs';
+import { runWorker, resendSend } from '../../../netlify/functions/lib/shared/portal-receipt.mjs';
 
 const SUPA_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';

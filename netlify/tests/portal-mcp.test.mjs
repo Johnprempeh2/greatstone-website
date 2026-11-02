@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { startPostgres, skip, MIGRATIONS } from './lib/postgres.mjs';
 import { createHash } from 'node:crypto';
 import pg from 'pg';
-import { createPortalMcp } from '../../supabase/functions/_shared/portal-mcp.mjs';
+import { createPortalMcp } from '../functions/lib/shared/portal-mcp.mjs';
 import { makePortalMcpHandler } from '../functions/portal-mcp.mjs';
 
 

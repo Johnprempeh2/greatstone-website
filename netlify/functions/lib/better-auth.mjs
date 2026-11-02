@@ -3,7 +3,7 @@ import { betterAuth } from 'better-auth';
 import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { getPool } from './db.mjs';
 import { authServerPool } from './auth-server-pool.mjs';
-import { sendEmail } from '../../../supabase/functions/_shared/front-door-leads.mjs';
+import { sendEmail } from './shared/front-door-leads.mjs';
 
 async function sendAuthMail(to, subject, url) {
   const key = process.env.RESEND_API_KEY;

@@ -8,10 +8,10 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildAgentPackage, slugify, packageFolder, PACKAGE_SCHEMA } from './front-door-package.mjs';
 import { leadRow } from './front-door-leads.mjs';
-import { zipFiles, crc32 } from '../../../src/lib/package-zip.mjs';
+import { zipFiles, crc32 } from '../../../../src/lib/package-zip.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const SAMPLE_DIR = join(here, '../../../docs/front-door-package-sample');
+const SAMPLE_DIR = join(here, '../../../../docs/front-door-package-sample');
 
 // Fictional business and names.
 const intake = { industry: 'Property', company: 'Northwind Lettings', words: ['trusted', 'local', 'quick'], teamSize: '11-50' };

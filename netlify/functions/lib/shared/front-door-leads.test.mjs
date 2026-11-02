@@ -127,7 +127,7 @@ test('sendEmail posts to Resend and reports failure without throwing', async () 
 
 // The migration is the lock-down; check the parts a later edit could quietly undo.
 test('migration 0031 keeps the service_inquiries lock-down and holds no IP', () => {
-  const sql = readFileSync(new URL('../../migrations/0031_front_door_leads.sql', import.meta.url), 'utf8');
+  const sql = readFileSync(new URL('../../../../supabase/migrations/0031_front_door_leads.sql', import.meta.url), 'utf8');
   const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
   assert.match(code, /ENABLE ROW LEVEL SECURITY/);
   assert.match(code, /FORCE ROW LEVEL SECURITY/);

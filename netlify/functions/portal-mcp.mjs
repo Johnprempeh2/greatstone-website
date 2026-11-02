@@ -1,7 +1,7 @@
 import { getStore } from '@netlify/blobs';
 import { getPool } from './lib/db.mjs';
 import { portalMcpRpc } from './lib/portal-mcp-db.mjs';
-import { createPortalMcp } from '../../supabase/functions/_shared/portal-mcp.mjs';
+import { createPortalMcp } from './lib/shared/portal-mcp.mjs';
 import { portalFileStorage } from './lib/portal-onedrive.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };

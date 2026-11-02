@@ -65,7 +65,7 @@ export default function OverviewPanel({ order = [], pages = {}, team = [], activ
 
         <div className="gs-ov-line">
           <span>Catalogue</span>
-          <span>{catCount == null ? 'Live store (Supabase)' : catCount + ' products · managed under Commerce'}</span>
+          <span>{catCount == null ? 'Live store' : catCount + ' products · managed under Commerce'}</span>
         </div>
         <div className="gs-ov-line">
           <span>Team</span>
