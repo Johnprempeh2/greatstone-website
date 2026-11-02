@@ -11,9 +11,9 @@ const ANON_KEY = ime.VITE_SUPABASE_ANON_KEY || penv.NEXT_PUBLIC_SUPABASE_ANON_KE
 
 export function makeClient(key = ANON_KEY, opts = {}) {
   if (!SUPABASE_URL || !key) throw new Error('Supabase env missing (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
-  // detectSessionInUrl (default true, pinned explicit): on a password-reset / confirm landing the buyer
-  // arrives with the session in the URL fragment; supabase-js parses it here to establish the session.
-  return createClient(SUPABASE_URL, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }, ...opts });
+  // Auth off: Better Auth is the only sign-in (John's rule 1, GRE-2609). This client is a data client
+  // only, so it never stores, refreshes or reads a Supabase session from the URL.
+  return createClient(SUPABASE_URL, key, { ...opts, auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
 
 // Default browser client (anon). Server/edge builds a service client explicitly with the secret key.
