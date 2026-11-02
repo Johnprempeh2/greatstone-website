@@ -71,3 +71,22 @@ GSAM releases at schema 2 carry each page as `{ html, css }` instead of Puck dat
 - `islands.mjs` is the island registry. Page HTML places an island with `<gs-island name="enquiry-form" data-form="contact">`; only registered names render, and only their listed `data-` attributes, each checked against a pattern, reach the island. Islands cannot sit inside a paragraph, heading, link or button.
 
 The public Content Security Policy is unchanged. To see the renderer locally, run `npm run dev:next` and open `/html-sample` (development only; production returns 404). It renders `fixtures/html-release-sample.json` through the release reader. Screenshots are in `docs/screenshots/GRE-3776`.
+
+## Islands (GRE-3777)
+
+`islands.mjs` registers ten islands. Each is placed with `<gs-island name="…">` and configured only by its listed `data-` attributes:
+
+| Name | Renders | Attributes |
+|---|---|---|
+| `enquiry-form` | BookDeepDive form, posting to the `enquiry` function | `data-form` |
+| `ai-baseline-survey`, `ai-cost-calculator` | the two tools | `data-form` |
+| `cookie-settings` | the cookie settings button | none |
+| `quote` | adds a service to the basket and opens it; the quote request goes through `/api/service-inquiry` as today | `data-service`, `data-service-name` |
+| `account-entry` | "Sign in", or "My account" once signed in, linking to `/account` | `data-style` (`button`, `link`) |
+| `product-list` | catalogue cards from the release's `offerings` collection | `data-vendor`, `data-category`, `data-limit` (1 to 24), `data-sort` |
+| `stone-3d` | Hero's stone: a still first, the 3D renderer on capable desktops only | `data-size` (`hero`, `accent`) |
+| `animation` | a ContainedMotion background effect; still on phones and with reduced motion | `data-effect`, `data-intensity`, `data-speed`, `data-colour` |
+
+Islands add no new network calls: each wraps the component the block site already runs.
+
+**Placeholders for GSAM live design.** `GET /_islands` answers the island list (names, labels, placeholder text, reserved height, accepted attributes) and `placeholderCss`. With that CSS on a draft page, each `<gs-island>` shows as a labelled box the size of the real island. To see both views locally, run `npm run dev:next` and open `/html-sample/islands` and `/html-sample/islands?view=placeholders` (development only). Screenshots are in `docs/screenshots/GRE-3777`.
