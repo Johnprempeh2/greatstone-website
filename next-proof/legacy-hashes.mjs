@@ -1,4 +1,6 @@
 // Old Vite links used hashes as page routes. Keep them usable on the Next site.
+// Renamed pages: used only when the old path is no longer published.
+const renamed = { proof: '/case-studies' };
 const special = { book: '/contact', shop: '/shop', breakdown: '/method', service: '/services', enquire: '/contact', 'ai-market-intelligence': '/insights' };
 
 export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () => false) {
@@ -16,14 +18,26 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
       ? `/org#org/${rest}` : `/${section}${rest ? `/${rest}` : ''}`;
     return destination === pathname + hash ? null : destination;
   }
+  // Store detail views and the old full-screen briefing hub (#intel, #intel/<id>, IntelBand's default CTA).
+  const detail = /^\/?(product|shop)\/([\w-]+)\/?$/i.exec(fragment);
+  if (detail) return `/${detail[1].toLowerCase()}/${detail[2]}`;
+  if (/^\/?intel(?:\/[\w-]*)?$/i.test(fragment)) return pathname === '/insights' ? null : '/insights';
   const go = fragment.startsWith('go/');
   const parts = (go ? fragment.slice(3) : fragment).split('/').filter(Boolean);
   if (!parts.length) return null;
   if (parts[0] === 'service' || parts[0] === 'enquire') return special[parts[0]];
-  const page = special[parts[0]] || `/${parts[0]}`;
+  let page = special[parts[0]] || `/${parts[0]}`;
+  if (!pagePaths.includes(page) && renamed[parts[0]]) page = renamed[parts[0]];
   if (!go && parts.length > 1) return null;
   if (!pagePaths.includes(page) && page !== '/shop') return null;
   const anchor = parts.slice(1).join('/');
   const destination = page + (anchor ? `#${encodeURIComponent(anchor)}` : '');
   return destination === pathname + hash ? null : destination;
+}
+
+// Auth emails land on /?token=…#account or /?verified=1#account. The query must survive the move to /account.
+export function keepLandingQuery(destination, search) {
+  if (!search || search === '?' || destination.includes('?')) return destination;
+  const hash = destination.indexOf('#');
+  return hash < 0 ? destination + search : destination.slice(0, hash) + search + destination.slice(hash);
 }

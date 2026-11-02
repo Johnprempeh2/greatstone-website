@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { legacyHashDestination } from './legacy-hashes.mjs';
+import { keepLandingQuery, legacyHashDestination } from './legacy-hashes.mjs';
 
 const pages = ['/', '/dev-tools', '/dx-consultancy', '/proof', '/contact', '/method', '/services', '/insights'];
 
@@ -13,6 +13,25 @@ test('old page hashes reach real routes and retain nested anchors', () => {
   assert.equal(legacyHashDestination('#enquire/digital-office', '/services', pages), '/contact');
   assert.equal(legacyHashDestination('#breakdown', '/method', pages), '/method');
   assert.equal(legacyHashDestination('#go/ai-market-intelligence', '/insights', pages), '/insights');
+});
+
+test('old store and briefing hashes reach their Next routes', () => {
+  assert.equal(legacyHashDestination('#product/ironpdf', '/', pages), '/product/ironpdf');
+  assert.equal(legacyHashDestination('#/product/ironpdf', '/', pages), '/product/ironpdf');
+  assert.equal(legacyHashDestination('#shop/ironsoftware', '/', pages), '/shop/ironsoftware');
+  assert.equal(legacyHashDestination('#shop', '/', pages), '/shop');
+  assert.equal(legacyHashDestination('#intel', '/', pages), '/insights');
+  assert.equal(legacyHashDestination('#intel/weekly-briefing', '/about', pages), '/insights');
+  assert.equal(legacyHashDestination('#intel', '/insights', pages), null);
+  assert.equal(legacyHashDestination('#go/proof', '/', ['/', '/case-studies']), '/case-studies');
+});
+
+test('auth email landings keep their token or verified flag on the way to /account', () => {
+  assert.equal(keepLandingQuery(legacyHashDestination('#account', '/', pages), '?token=abc'), '/account?token=abc');
+  assert.equal(keepLandingQuery('/account', '?verified=1'), '/account?verified=1');
+  assert.equal(keepLandingQuery('/dx-consultancy#ai-readiness', '?utm_source=x'), '/dx-consultancy?utm_source=x#ai-readiness');
+  assert.equal(keepLandingQuery('/order-confirmed?session=cs_test_1', '?x=1'), '/order-confirmed?session=cs_test_1');
+  assert.equal(keepLandingQuery('/account', ''), '/account');
 });
 
 test('real anchors and unknown hashes stay on their page', () => {
