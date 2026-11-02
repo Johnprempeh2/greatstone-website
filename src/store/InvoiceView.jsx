@@ -20,6 +20,7 @@ export default function InvoiceView({ orderId }) {
 
   useEffect(() => {
     let alive = true;
+    // The authenticated Netlify function is the data source on both Vite and Next.
     customerStore('invoice', { orderId })
       .then(({ data }) => { if (alive) setOrder(data || null); })
       // a network/RLS/transport rejection must fall through to the "Invoice not found" state, not hang
