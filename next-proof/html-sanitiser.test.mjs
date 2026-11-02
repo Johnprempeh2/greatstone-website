@@ -104,3 +104,18 @@ test('comments, oversized and deeply nested input are dropped', () => {
   assert.ok(sanitiseHtml(deep).removed.includes('div (too deep)'));
   assert.deepEqual(sanitiseHtml(null), { nodes: [], removed: [] });
 });
+
+// GRE-3782: ids that name a global the site sets lazily would replace it (`window.dataLayer ||= []`).
+test('ids cannot clobber the window globals the site reads', () => {
+  for (const id of ['dataLayer', 'gtag', 'google_tag_manager', 'google_tag_data', 'turnstile', 'Calendly', 'mountGreatstoneTide', 'datalayer']) {
+    assert.equal(clean(`<div id="${id}">x</div>`), '<div>x</div>', id);
+  }
+  assert.equal(clean('<div id="dataLayers">x</div><div id="gtag-note">y</div>'), '<div id="dataLayers">x</div><div id="gtag-note">y</div>');
+});
+
+// GRE-3782: `data-gs-scope` picks which region's CSS applies, so page and chrome HTML cannot set it.
+test('data-gs-* attributes are removed', () => {
+  const { nodes, removed } = sanitiseHtml('<div data-gs-scope="header" data-gs-x="1" data-gsx="ok" data-reveal="up">x</div>');
+  assert.equal(toHtml(nodes), '<div data-gsx="ok" data-reveal="up">x</div>');
+  assert.deepEqual(removed, ['div @data-gs-scope', 'div @data-gs-x']);
+});

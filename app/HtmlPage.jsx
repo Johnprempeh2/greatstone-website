@@ -8,6 +8,7 @@ import { ISLANDS } from '../next-proof/islands.mjs';
 import { CHROME_KEYS } from '../next-proof/gsam-release.mjs';
 import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
+import { Region } from './html-regions.mjs';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
@@ -49,9 +50,9 @@ export default function HtmlPage({ page, release }) {
   const css = [site.css, ...CHROME_KEYS.map((key) => chrome[key].css), body.css].filter(Boolean).join('\n');
   return <>
     {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
-    <div data-gs-scope="header">{chrome.header.children}</div>
-    <div data-gs-scope="nav">{chrome.nav.children}</div>
-    <main data-gs-scope="page" data-org-id={release.orgId} data-release={release.release.number}>{body.children}</main>
-    <div data-gs-scope="footer">{chrome.footer.children}</div>
+    <Region scope="header">{chrome.header.children}</Region>
+    <Region scope="nav">{chrome.nav.children}</Region>
+    <Region scope="page" as="main" attributes={{ 'data-org-id': release.orgId, 'data-release': release.release.number }}>{body.children}</Region>
+    <Region scope="footer">{chrome.footer.children}</Region>
   </>;
 }
