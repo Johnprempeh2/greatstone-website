@@ -3,7 +3,6 @@
 // and to published documents; the explicit filters below are belt and braces. Acting goes through portal_accept()
 // only: the company comes from the account and the email from the token, never from this page.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { portalStore } from './portal-store-api.mjs';
 import { getCustomerProfile, isCustomer, signOut, getSession, onAuth } from '../store/customerAuth.mjs';
 import { AuthGate } from '../store/AccountDashboard.jsx';
@@ -18,11 +17,6 @@ import { receiptRecord, emailStateLabel } from '../../supabase/functions/_shared
 import '../store/store.css';
 import '../store/admin.css';
 import './portal.css';
-
-/** Ask the receipt worker to run now (it also runs every minute). Fire and forget: a failed nudge loses nothing. */
-export function nudgeReceiptWorker() {
-  try { supabase.functions.invoke('portal-receipt-worker', { body: {} }).catch(() => {}); } catch { /* the cron sends it */ }
-}
 
 export default function Portal({ route }) {
   const [session, setSession] = useState(undefined);
@@ -184,7 +178,6 @@ function Reader({ id, docs, acceptances, jobs, members, company, email, profile,
   const submit = async ({ name, title, confirmed }) => {
     const { data, error } = await portalStore('accept', { documentId: doc.id, name, title, confirmed });
     if (error) throw error;
-    nudgeReceiptWorker();
     onAccepted();
     return { acceptance: data, job: null };
   };

@@ -232,8 +232,9 @@ test('a request is refused for each way it can be wrong', { skip }, async () => 
   const t = Math.floor(Date.now() / 1000);
   assert.equal(await code(signed('/api/admin/v1/health', { kid: 'test-unknown-1' })), '401 bad_key');
   assert.equal(await code(signed('/api/admin/v1/health', { kid: 'test-old-1' })), '401 bad_key');
-  assert.equal(await code(signed('/api/admin/v1/health', { time: t - 61 })), '401 expired');
-  assert.equal(await code(signed('/api/admin/v1/health', { time: t + 61 })), '401 expired');
+  // well past the 60 s window: t is read before the calls above, so t + 61 can fall inside it once a second ticks (GRE-3707)
+  assert.equal(await code(signed('/api/admin/v1/health', { time: t - 120 })), '401 expired');
+  assert.equal(await code(signed('/api/admin/v1/health', { time: t + 120 })), '401 expired');
   assert.equal(await code(signed('/api/admin/v1/health', { key: seedKey('ff'.repeat(32)) })), '401 bad_signature');
   assert.equal(await code(signed('/api/admin/v1/health', { host: 'greatstoneint.com' })), '401 bad_signature');
   assert.equal(await code(signed('/api/admin/v1/health', { tamper: { 'x-gs-bridge-actor': 'user:john' } })), '401 bad_signature');

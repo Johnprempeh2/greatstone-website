@@ -89,3 +89,28 @@ test('tampered paid request containing a service and tool is refused before Stri
   assert.equal(response.status, 400);
   assert.equal(calls, 0);
 });
+
+test('a PO upload is indexed by the worker role, and both are removed when the quote fails', async () => {
+  const db = database();
+  const blobs = new Map();
+  const store = () => ({ set: async (key, bytes) => blobs.set(key, bytes), delete: async (key) => blobs.delete(key) });
+  const po = { name: 'order.pdf', dataBase64: Buffer.from('%PDF-po').toString('base64') };
+  const handler = makeRequestQuoteHandler({ pool: () => db.pool, verify: async () => null, store, log: () => {} });
+  const result = await handler(new Request('https://stage.example.test/api/request-quote', { method: 'POST',
+    body: JSON.stringify({ items: basket, contact: { email: 'buyer@example.test' }, poDocument: po }) }));
+  assert.equal(result.status, 200);
+  const index = db.calls.findIndex(({ sql }) => sql.includes('INSERT INTO storage.objects'));
+  assert.equal(db.calls[index - 2].sql, 'SET LOCAL ROLE service_role');
+  assert.match(db.calls[index].params[0], /^[0-9a-f-]{36}\/order\.pdf$/);
+  assert.equal(blobs.size, 1);
+
+  const failing = database('none');
+  const pool = { connect: async () => { const client = await failing.pool.connect();
+    return { ...client, query: async (sql, params) => { if (sql.includes('INSERT INTO quotes')) throw new Error('down'); return client.query(sql, params); } }; } };
+  const failed = await makeRequestQuoteHandler({ pool: () => pool, verify: async () => null, store, log: () => {} })(
+    new Request('https://stage.example.test/api/request-quote', { method: 'POST',
+      body: JSON.stringify({ items: basket, contact: { email: 'buyer@example.test' }, poDocument: po }) }));
+  assert.equal(failed.status, 503);
+  assert.equal(blobs.size, 1, 'only the first quote\'s file is left');
+  assert.ok(failing.calls.some(({ sql }) => sql.includes('DELETE FROM storage.objects')));
+});

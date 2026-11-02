@@ -313,13 +313,16 @@ test('the same idempotency key twice writes once; another body under the key is 
 
 test('two calls with the same key at once: one writes, the other waits on the key and replays its answer', { skip }, async () => {
   const idem = key16();
+  const nonces = [key16(), key16()];
   const body = { status: 'contacted', expectedRowVersion: 1 };
-  const [a, b] = await Promise.all([call(patch(`/api/admin/v1/quotes/${QUOTE}`, body, { idem })), call(patch(`/api/admin/v1/quotes/${QUOTE}`, body, { idem }))]);
+  const [a, b] = await Promise.all(nonces.map((nonce) => call(patch(`/api/admin/v1/quotes/${QUOTE}`, body, { idem, nonce }))));
   assert.deepEqual(a, b);
   assert.equal(a.status, 200);
   assert.equal(sql(`SELECT status || ' ' || row_version FROM quotes WHERE id = '${QUOTE}';`), 'contacted 2');
-  assert.equal(sql(`SELECT string_agg(outcome, ' ' ORDER BY outcome) FROM admin_bridge_audit a JOIN admin_bridge_idempotency i ON i.kid = a.kid
-    WHERE i.key = '${idem}' AND a.path = '/api/admin/v1/quotes/${QUOTE}' AND a.at >= i.at;`), 'ok replayed');
+  // Find the two audit rows by nonce, not by time: audit.at is each transaction's start, and the call that began
+  // first need not be the one that claimed the key, so a time filter could drop the replay (GRE-3707).
+  assert.equal(sql(`SELECT string_agg(outcome, ' ' ORDER BY outcome) FROM admin_bridge_audit
+    WHERE nonce IN ('${nonces[0]}', '${nonces[1]}');`), 'ok replayed');
 });
 
 test('a stale expectedRowVersion is a 409 with the current row; a missing one is a 400', { skip }, async () => {

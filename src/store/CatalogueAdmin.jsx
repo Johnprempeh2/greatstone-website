@@ -2,7 +2,6 @@ import { staffDb } from './staff-store-api.mjs';
 // Catalogue admin — Supabase-authenticated. Sign-in gate → offerings manager (list + edit).
 // Writes go through the signed-in user's session; the staff_all RLS (0004) enforces admin-only.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
 import DrawerScrim from './DrawerScrim.jsx';
 import { signIn, signOut, getSession, onAuth, getStaffUser, isStaff } from './adminAuth.mjs';

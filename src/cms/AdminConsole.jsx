@@ -9,8 +9,8 @@
 // they never silently act on a hidden "current" page. Commerce items deep-link to the Supabase
 // catalogue (#catalogue/<tab>), which has its own sign-in — the rail shows that connection's status.
 import { useEffect, useRef } from 'react';
-// adminAuth (and its @supabase/supabase-js dependency) is imported DYNAMICALLY inside the session
-// effect below, so the heavy Supabase client stays out of the eager bundle the public homepage loads.
+// adminAuth is imported DYNAMICALLY inside the session effect below, so the sign-in client stays out
+// of the eager bundle the public homepage loads.
 
 const LOGO = '/assets/greatstone-logo-web.png';
 const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is NOT CMS-overridden

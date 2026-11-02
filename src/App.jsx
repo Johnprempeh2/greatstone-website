@@ -26,7 +26,7 @@ const PuckEditor = lazy(() => import('./EditorMount.jsx'));
 // the public bundle, loaded with the editor and rendered inside Puck's context via headerActions.
 const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
 const ContextBar = lazy(() => import('./cms/ContextBar.jsx')); // universal contextual style strip (editor-only)
-// Live storefront — reads Supabase (@supabase/supabase-js); lazy so the public bundle stays lean
+// Live storefront — reads the store functions; lazy so the public bundle stays lean
 // (the chunk arrives only on the #shop route).
 const LazyStoreBrowse = lazy(() => import('./store/StoreBrowse.jsx'));
 const LazyStoreProduct = lazy(() => import('./store/StoreProduct.jsx'));
