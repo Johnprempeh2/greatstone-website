@@ -5,12 +5,15 @@
 //                                          snapshot the database, set OWNER_IMPORT_SITE and OWNER_IMPORT_UNTIL
 //                                          (at most 60 minutes). Netlify bakes env values into a deploy, so deploy
 //                                          and publish the site next.
-//   submit --site <name> --mode identities|tables|proof --action dry-run|apply --input <export.json>
+//   submit --site <name> --mode identities|tables|proof|mcp-token|mcp-token-revoke --action dry-run|apply --input <file.json>
 //                                          write the payload, then wait for the scheduled tick's result (every
 //                                          five minutes; Netlify picks the minute) until the window ends. If no tick
 //                                          ran, it removes the payload: nothing was applied. A table apply is
 //                                          recounted through the read-only connection.
 //   clear --site <name>                    remove both settings, the payload and the run state; print the last result.
+//
+// mcp-token takes the payload file from scripts/mcp-token-new.mjs ({ label, customerIds, tokenSha256 }); the token
+// itself never goes in it. mcp-token-revoke takes { "tokenId": "<uuid>" } from the register result.
 //
 // Order: prepare, deploy, submit dry-run, submit apply, clear. A window that ends unused leaves the function inert;
 // run clear, then prepare and deploy again.
@@ -23,6 +26,7 @@ import { validateImport } from '../netlify/database/migrations/052_better_auth/i
 import { claimProofHash, clearProofRecords } from './owner-proof-state.mjs';
 import {
   SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, targetColumns, validateProof,
+  validateMcpToken, validateMcpTokenRevoke,
 } from '../netlify/functions/lib/owner-import.mjs';
 
 const API = 'https://api.netlify.com/api/v1';
@@ -101,7 +105,11 @@ async function submit(site, mode, action, input) {
     const built = buildTablesData(source, readonly.columns);
     for (const [table, cols] of Object.entries(built.dropped)) console.log(`Not imported (not insertable on the target): ${table}: ${cols.join(', ')}`);
     data = built.data;
-  } else throw new Error('--mode must be identities, tables or proof');
+  } else if (mode === 'mcp-token' || mode === 'mcp-token-revoke') {
+    if (!SITES[site.name].modes.includes(mode)) throw new Error(`${mode} is not allowed on ${site.name}`);
+    try { data = mode === 'mcp-token' ? validateMcpToken(source) : validateMcpTokenRevoke(source); }
+    catch (error) { throw new Error(`Payload refused: ${error.message}`); } // fixed reasons only, never a value
+  } else throw new Error('--mode must be identities, tables, proof, mcp-token or mcp-token-revoke');
   if (action !== 'dry-run' && action !== 'apply') throw new Error('--action must be dry-run or apply');
 
   try {

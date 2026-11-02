@@ -330,7 +330,7 @@ test('the runner helper refuses rows for a table outside TABLES or missing a col
 });
 
 test('the window check is pure: only staging allows proof', () => {
-  assert.deepEqual(SITES['greatstone-home'].modes, ['tables']);
+  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'mcp-token', 'mcp-token-revoke']);
   assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
   const ok = checkWindow({ env: ENV, context: STAGING, now: NOW });
   assert.equal(ok.site, SITES['gre1795-website-db-staging']);
