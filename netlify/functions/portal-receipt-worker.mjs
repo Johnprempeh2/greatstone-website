@@ -35,5 +35,7 @@ export function makePortalReceiptWorker({ pool = getPool, env = process.env,
   };
 }
 
-export default makePortalReceiptWorker();
+// Netlify accepts only a Response or undefined from a function; any other value fails the run and it retries.
+const worker = makePortalReceiptWorker();
+export default async () => { await worker(); };
 export const config = { schedule: '* * * * *' };

@@ -17,5 +17,7 @@ export function makeInquiryIpPurge({ pool = getPool, log = console.error } = {})
   };
 }
 
-export default makeInquiryIpPurge();
+// Netlify accepts only a Response or undefined from a function; any other value fails the run and it retries.
+const purge = makeInquiryIpPurge();
+export default async () => { await purge(); };
 export const config = { schedule: '17 3 * * *' };
