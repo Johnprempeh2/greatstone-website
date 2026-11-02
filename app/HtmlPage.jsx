@@ -13,6 +13,8 @@ import ProductListIsland from './ProductListIsland.jsx';
 import { Region } from './html-regions.mjs';
 import TwoDoorsLanding from './TwoDoorsLanding.jsx';
 import formBlocks from '../next-proof/frozen/form-blocks.json';
+import HtmlBehaviours from './HtmlBehaviours.jsx';
+import { ldScript } from '../src/lib/ld-json.mjs';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
@@ -41,7 +43,7 @@ function toReact(nodes, context, path = 'n') {
       if (island.component) return createElement(COMPONENTS[island.component],
         { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
           ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}) });
-      // GRE-3778: a form exported from a Puck page keeps its published copy (`data-block`, frozen at export).
+      // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
       const { blockId, ...props } = node.props;
       const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
       return <IslandBlock key={key} type={island.block} props={{ ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }}
@@ -67,11 +69,16 @@ export default function HtmlPage({ page, release, placeholders = false }) {
   const body = region(page, 'page', context);
   if (context.removed.length) console.warn(`[html-page] release ${release.release.number} ${page.path}: removed ${context.removed.join(', ')}`);
   const css = [site.css, placeholders ? islandPlaceholderCss() : '', ...CHROME_KEYS.map((key) => chrome[key].css), body.css].filter(Boolean).join('\n');
+  // GRE-3789: FAQ structured data comes from page SEO (plain text, escaped by ldScript).
+  const faq = page.seo?.faq?.length ? ldScript({ '@context': 'https://schema.org', '@type': 'FAQPage',
+    mainEntity: page.seo.faq.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }) : '';
   return <>
     {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+    {faq && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faq }} />}
     <Region scope="header">{chrome.header.children}</Region>
     <Region scope="nav">{chrome.nav.children}</Region>
     <Region scope="page" as="main" attributes={{ 'data-org-id': release.orgId, 'data-release': release.release.number }}>{body.children}</Region>
     <Region scope="footer">{chrome.footer.children}</Region>
+    {!placeholders && <HtmlBehaviours path={page.path} />}
   </>;
 }
