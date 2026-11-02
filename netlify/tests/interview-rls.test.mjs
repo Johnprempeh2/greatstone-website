@@ -14,6 +14,7 @@ import { getEmployeeContextByUserId } from '../functions/lib/interview/employee.
 import { retentionDelete } from '../functions/lib/interview/retention.mjs';
 import { enrol } from '../functions/interview-join.mjs';
 import { runPortalOp } from '../functions/lib/interview/portal-ops.mjs';
+import { CURRENT as AGREEMENT } from '../functions/lib/interview/agreement.mjs';
 
 const id = (prefix, n) => `${prefix}000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ORG = id('90', 1), ORG2 = id('90', 2);
@@ -28,8 +29,8 @@ const UA = 'ba-user-alice', UB = 'ba-user-bob', UC = 'ba-user-carol', UD = 'ba-u
 
 const TABLES = ['person', 'engagement', 'org_unit', 'employee', 'session', 'turn', 'insight', 'synthesis',
   'synthesis_cache', 'synthesis_run', 'memory_blob', 'context_pack', 'usage_ledger', 'outbox', 'consent_event', 'seat_request',
-  'seat_purchase', 'rate_event', 'audit_log',
-  // 055 (GRE-2653)
+  'seat_purchase', 'rate_event', 'audit_log', 'withdrawal', 'agreement_acceptance',
+  // 062 (GRE-2653)
   'deletion_record', 'anonymised_themes'];
 // not client data: allow-listed in scripts/org-scope-allow.netlify.json
 const UNSCOPED = ['person', 'rate_event'];
@@ -526,7 +527,13 @@ test('(5) R11: after a full fake round no interview row has a null or wrong cust
     await c.query(`INSERT INTO interview.synthesis_run (engagement_id, actor, status, synthesis_id) VALUES ($1, 'gsam', 'done', $2)`, [eng, syn]);
     await c.query(`INSERT INTO interview.seat_request (engagement_id, requested_by, seats) VALUES ($1, $2, 1)`, [eng, emp.e]);
     await c.query(`INSERT INTO interview.seat_purchase (engagement_id, seats, purchased_by) VALUES ($1, 1, $2)`, [eng, emp.e]);
-    // 055: what retention and self-service write
+    await c.query(`INSERT INTO interview.withdrawal (engagement_id, user_id) VALUES ($1, $2)`, [eng, U]);
+    // the organisation's acceptance of the data processing agreement (GRE-2794): its own row, no round
+    await c.query(`INSERT INTO interview.agreement_acceptance (customer_id, agreement_key, agreement_version, content_sha256, user_id, customer_user_id,
+      name, email, role_title, legal_name, read_confirmed, authority_confirmed, ip_address)
+      VALUES ($1, 'interview-dpa', $2, $3, 'ba-user-admin', gen_random_uuid(), 'Ada', 'ada@b.test', 'Director', 'B Ltd', true, true, '192.0.2.1')
+      ON CONFLICT DO NOTHING`, [CB, AGREEMENT.version, AGREEMENT.sha256]);
+    // 062: what retention and self-service write
     await c.query(`INSERT INTO interview.deletion_record (engagement_id, kind) VALUES ($1, 'self_service')`, [eng]);
     await c.query(`INSERT INTO interview.anonymised_themes (engagement_id) VALUES ($1)`, [eng]);
   });
@@ -538,7 +545,8 @@ test('(5) R11: after a full fake round no interview row has a null or wrong cust
     assert.ok(Number(sql(`SELECT count(*) FROM interview.${t} WHERE customer_id = '${CB}'`)) > 0, `${t}: the round wrote a row`);
   }
   // wrong: a row whose customer_id is not its round's
-  const viaEngagement = SCOPED.filter((t) => !['engagement', 'session', 'turn', 'insight', 'consent_event', 'memory_blob'].includes(t));
+  const viaEngagement = SCOPED.filter((t) => !['engagement', 'session', 'turn', 'insight', 'consent_event', 'memory_blob',
+    'agreement_acceptance'].includes(t));
   for (const t of viaEngagement) {
     assert.equal(sql(`SELECT count(*) FROM interview.${t} x JOIN interview.engagement g ON g.id = x.engagement_id
       WHERE x.customer_id <> g.customer_id`), '0', t);
@@ -553,6 +561,19 @@ test('(5) R11: after a full fake round no interview row has a null or wrong cust
   }
   assert.equal(sql(`SELECT count(*) FROM interview.memory_blob m JOIN interview.person p ON p.person_id = m.person_id
     WHERE m.user_id <> p.auth_user_id`), '0');
+});
+
+test('organisation_name and organisation_member answer only a system call keyed to that organisation', { skip }, async () => {
+  const name = (claims, customer) => as(claims, async (c) =>
+    (await c.query('SELECT interview.organisation_name($1) AS n', [customer])).rows[0].n);
+  assert.ok(await name(SYSTEM_B, CB));
+  assert.equal(await name(SYSTEM_B, CA), null);
+  assert.equal(await name(SYSTEM, CB), null);
+  assert.equal(await name(participant('ba-user-eve', 'eve@a.test'), CB), null);
+  const member = (claims, customer) => as(claims, async (c) =>
+    (await c.query('SELECT count(*)::int AS n FROM interview.organisation_member($1, $2)', [customer, 'ba-user-eve'])).rows[0].n);
+  assert.equal(await member(SYSTEM_A, CB), 0);
+  assert.equal(await member(participant('ba-user-eve', 'eve@a.test'), CB), 0);
 });
 
 test('the bridge can switch to interview_worker and back inside one transaction', { skip }, async () => {
@@ -583,6 +604,10 @@ test('join over the real database: an invitation is claimed by user id, a newcom
     UPDATE engagement SET default_unit_id = '${UJ}' WHERE id = '${EJ}';
     INSERT INTO employee (engagement_id, unit_id, name, email, portal_role) VALUES ('${EJ}', '${UJ}', 'Fay', 'Fay@A.test', 'client_admin');`);
   const sys = interviewDb('system', { pool });
+  await sys.sql(`INSERT INTO interview.agreement_acceptance (customer_id, agreement_key, agreement_version, content_sha256, user_id, customer_user_id,
+      name, email, role_title, legal_name, read_confirmed, authority_confirmed, ip_address)
+      VALUES ($1, 'interview-dpa', $2, $3, 'ba-user-admin', gen_random_uuid(), 'Ada', 'ada@b.test', 'Director', 'B Ltd', true, true, '192.0.2.1')
+      ON CONFLICT DO NOTHING`, [CB, AGREEMENT.version, AGREEMENT.sha256]);
   const join = (caller) => enrol({ db: interviewDb(caller, { pool }), sys, caller, token: TOKEN, name: caller.name, ip: '192.0.2.1', env: {} });
   const fay = { id: 'ba-user-fay', email: 'fay@a.test', name: 'Fay' };
   const gus = { id: 'ba-user-gus', email: 'gus@a.test', name: 'Gus' };
@@ -635,7 +660,7 @@ test('an invited person who opens the portal directly claims the one open invita
 });
 
 test('(g) rollback.sql removes the schema and the role', { skip }, () => {
-  sql(readFileSync(join(MIGRATIONS, '054_interview_engine', 'rollback.sql'), 'utf8'));
+  sql(readFileSync(join(MIGRATIONS, '059_interview_engine', 'rollback.sql'), 'utf8'));
   assert.equal(sql(`SELECT count(*) FROM pg_namespace WHERE nspname = 'interview'`), '0');
   assert.equal(sql(`SELECT count(*) FROM pg_roles WHERE rolname = 'interview_worker'`), '0');
   assert.equal(sql(`SELECT count(*) FROM pg_extension WHERE extname = 'ltree'`), '0');

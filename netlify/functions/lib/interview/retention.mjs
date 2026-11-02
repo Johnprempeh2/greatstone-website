@@ -12,7 +12,7 @@
 //     team roll-ups, with no names, quotes, user ids or insight ids. That copy is what the client keeps.
 //   * The full delete also removes the invites (employee rows, which hold name and email) and the people no other
 //     round still needs, the synthesis runs and the engagement's activity log. consent_event outlives the invite
-//     (migration 055), so the consent proof stays without any interview content.
+//     (migration 062), so the consent proof stays without any interview content.
 //   * Every statement is bounded by the engagement id, and by the organisation id when one is given.
 //   * The job writes a deletion_record (counts per table, time) and an outbox event for the engagement owner.
 import { inInterviewTransaction } from './db.mjs';

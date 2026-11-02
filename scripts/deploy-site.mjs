@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
@@ -40,8 +41,8 @@ function onlyNonSiteFiles(files) {
 // migrations, functions, server routes, auth, secrets, dependencies, build config or
 // these scripts. Anything that matches here needs a card for the exact commit.
 function protectedFile(file) {
-  return /^(?:netlify|supabase|scripts)\//.test(file) ||
-    /^(?:netlify\.toml|middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?js|vite\.config\.[cm]?js|public\/_headers)$/.test(file) ||
+  return /^(?:netlify|supabase|scripts|\.github)\//.test(file) || /(?:^|\/)netlify[^/]*\.toml$/.test(file) ||
+    /^(?:middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?[jt]s|vite\.config\.[cm]?js|public\/_headers)$/.test(file) ||
     /(?:^|\/)\.env/.test(file) || /\.sql$/.test(file) ||
     /^app\/(?:.+\/)?route\.[cm]?[jt]sx?$/.test(file) || /^app\/api\//.test(file) ||
     /auth|password|passwd|credential|secret|login|sign-?in/i.test(file);
@@ -56,11 +57,15 @@ async function comments() {
   return json(`${base}/api/issues/${issueId}/comments`, process.env.GSAM_API_KEY);
 }
 
+// The weekly release card (GRE-2641) uses the `weekly-release` key. It covers staging like a
+// staging card does, and it is the only card that can authorise the public site, for its exact SHA.
 async function stagingCardApproved(sha, exact = false) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
+  const kinds = site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
+  const key = new RegExp(`^confirmation:GRE-\\d+:(?:${kinds}):([0-9a-f]{40})(?::v[1-9]\\d*)?$`);
   for (const card of cards) {
-    const approvedSha = /^confirmation:GRE-\d+:staging-deploy:([0-9a-f]{40})(?::v[1-9]\d*)?$/.exec(card.idempotencyKey || '')?.[1];
+    const approvedSha = key.exec(card.idempotencyKey || '')?.[1];
     if (card.kind !== 'request_confirmation' || card.status !== 'accepted' ||
         card.requestedResolverPolicy !== 'human_only' || card.effectiveResolverPolicy !== 'human_only' ||
         !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||
@@ -94,11 +99,11 @@ async function gate(sha) {
     if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
     const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
-    const stagingCard = !exactComment && site === 'gre1795-website-db-staging' && await stagingCardApproved(sha);
+    const stagingCard = !exactComment && await stagingCardApproved(sha, site === 'greatstone-home');
     if (!exactComment && !stagingCard)
       throw new Error(site === 'gre1795-website-db-staging'
         ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
-        : `production refused: a person must comment exactly "${approval}" on this task`);
+        : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}, or a person must comment exactly "${approval}" on this task`);
     return null;
   }
   if (!/^\d+$/.test(prNumber || '')) throw new Error('preview requires a PR number');
@@ -206,23 +211,51 @@ async function refreshStaging(sha) {
   }
 }
 
+// The weekly train (GRE-2804) also ships the gsam-editor alias on greatstone-home from the same
+// commit. The Vite upload does not contain the Next editor, so the editor is built from this
+// checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,
+// contract, engine commit, links). Any failed step fails the train and names the step.
+async function deployEditorAlias(sha) {
+  const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
+  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha };
+  const steps = [
+    ['prepare', process.execPath, ['next-proof/scripts/prepare-netlify.mjs', join(dir, 'editor'), '--editor'], process.cwd()],
+    ['install', 'npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], join(dir, 'editor')],
+    ['build', 'netlify', ['build', '--context', 'branch:gsam-editor'], join(dir, 'editor')],
+    ['upload and check', process.execPath, ['scripts/deploy-editor-alias.mjs', sites.get(site)], join(dir, 'editor')],
+  ];
+  try {
+    for (const [name, bin, args, cwd] of steps) {
+      console.log(`Editor alias step "${name}" at ${sha}`);
+      const result = spawnSync(bin, args, { stdio: 'inherit', cwd, env });
+      if (result.error || result.status !== 0)
+        throw new Error(`train failed at editor alias step "${name}" (${result.error?.message || `exit ${result.status}`}); ` +
+          `the ${site} production step before it already ran`);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
   if (!['preview', 'prod', 'refresh'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod -- <allowed site> [PR number]');
+  command('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)]);
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
   const sha = command('git', ['rev-parse', 'HEAD']);
   if (mode === 'refresh') return refreshStaging(sha);
   const fallback = await gate(sha);
   const baseline = await lastDeployedCommit() || fallback;
+  let files = null;
   if (baseline) {
     command('git', ['cat-file', '-e', `${baseline}^{commit}`]);
-    const files = command('git', ['diff', '--name-only', baseline, sha]).split('\n').filter(Boolean);
-    if (files.length === 0 || onlyNonSiteFiles(files)) {
-      console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
-      return;
-    }
+    files = command('git', ['diff', '--name-only', baseline, sha]).split('\n').filter(Boolean);
   }
-  await lockAndDeploy(sha);
+  if (files && (files.length === 0 || onlyNonSiteFiles(files)))
+    console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
+  else await lockAndDeploy(sha);
+  // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
+  if (mode === 'prod' && site === 'greatstone-home') await deployEditorAlias(sha);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

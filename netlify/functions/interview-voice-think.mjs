@@ -10,6 +10,7 @@
 // Port: data runs with system claims, after the token check (the token, not a person, is the authority here).
 // VOICE_ENABLED is the kill switch. Clause buffering is unchanged: whole clauses only, so the voice can shape them.
 import Anthropic from '@anthropic-ai/sdk';
+import { anthropicKey } from './lib/interview/keys.mjs';
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
 import { interviewEnabled, voiceEnabled, roundVoiceEnabled } from './lib/interview/caller.mjs';
@@ -24,6 +25,7 @@ import { getBudgetStatus, recordUsage } from './lib/interview/budget.mjs';
 import { enqueueOutboxEvent, scheduleOutboxDrain } from './lib/interview/outbox.mjs';
 import { ClauseBuffer } from './lib/interview/voice/clause-buffer.mjs';
 import { withinRate } from './lib/interview/ratelimit.mjs';
+import { closeSessionAfterSignOff, recordConsentUpdates } from './lib/interview/turn-effects.mjs';
 import { bearerFrom, hashSessionToken, tokenHashMatches } from './lib/interview/voice/session-token.mjs';
 import { chunkClose, chunkDone, chunkOpener, chunkText, latestUserMessage, SSE_HEADERS } from './lib/interview/voice/openai-wire.mjs';
 import { VOICE_PROMPT_ADDENDUM } from './lib/interview/voice/prompt-addendum.mjs';
@@ -35,7 +37,7 @@ const TURNS_PER_MIN_SESSION = Number(process.env.VOICE_TURNS_PER_MIN) || 40;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 let anthropic = null;
-const defaultClient = () => (anthropic ??= new Anthropic());
+const defaultClient = () => (anthropic ??= new Anthropic({ apiKey: anthropicKey() }));
 const unauthorised = () => Response.json({ error: 'unauthorised' }, { status: 401, headers: { 'cache-control': 'no-store' } });
 
 /** A refusal Deepgram can still speak, so a failure is never dead air. */
@@ -86,7 +88,8 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
 
     let body;
     try { body = await req.json(); } catch { return Response.json({ error: 'bad request' }, { status: 400 }); }
-    const content = latestUserMessage(body);
+    // one spoken turn; far longer than any utterance, so nothing real is cut
+    const content = (latestUserMessage(body) ?? '').slice(0, 8000);
 
     // ── Load our transcript (the source of truth, not Deepgram's history) ──
     const { data: turnRows, error: turnsError } = await db.from('turn').select('*')
@@ -137,6 +140,8 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
           if (insightError) log.warn(`insight insert failed: ${insightError.message}`);
           state.insights_extracted = (state.insights_extracted ?? 0) + toPersist.length;
         }
+        // spoken consent answers are recorded as typed ones are
+        await recordConsentUpdates(db, { employeeId: ctx.employee.id, sessionId, extraction, log });
         await recordUsage(db, {
           sessionId, engagementId: ctx.engagement.id, model: EXTRACTION_MODEL,
           inputTokens: extraction.usage.inputTokens, outputTokens: extraction.usage.outputTokens,
@@ -148,11 +153,16 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
       state.next_action = deriveNextAction(state);
     }
     const closing = signOffComplete(state);
+    if (closing && state.phase !== 'sign_off') {
+      // as on the typed path: both consents recorded ahead of the pointer means the interview IS in sign-off
+      state.phase = 'sign_off';
+      phaseChanged = true;
+    }
 
     // ── The voice addendum goes in the VOLATILE half: the stable prefix is the cache breakpoint. ──
     const { stable, volatile } = buildSystemPrompt({
       engagement: ctx.engagement, contextPack, orgUnit: ctx.orgUnit, employeeName: ctx.employee.name,
-      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
+      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, employeeUserId: ctx.employee.user_id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
     });
     const system = [
       { type: 'text', text: stable, cache_control: { type: 'ephemeral' } },
@@ -222,6 +232,12 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
                 phase: TAXONOMY_TO_DB_PHASE[previousPhase],
               });
               scheduleOutboxDrain();
+            }
+            // Port: a wholly spoken interview closes itself on sign-off, as a typed one does (turn-effects.mjs)
+            if (closing) {
+              await closeSessionAfterSignOff(db, db, { ctx, session, state, dbPhase: TAXONOMY_TO_DB_PHASE[state.phase],
+                employeePayload: { id: ctx.employee.id, name: ctx.employee.name, role_title: ctx.employee.role_title,
+                  unit_name: ctx.orgUnit?.name ?? null } });
             }
           }
         } catch (e) {

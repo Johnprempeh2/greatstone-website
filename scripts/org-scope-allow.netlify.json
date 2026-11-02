@@ -59,5 +59,7 @@
   "mcp_tokens": "Greatstone agent credential, not client data — no anon/authenticated/service_role grant reaches the token row itself; per-client scope lives on mcp_token_clients, which carries customer_id. Ridge, GRE-2567 step M, 26 Oct 00:00.",
   "mcp_pdf_uploads": "no customer_id of its own — no anon/authenticated/service_role grant reaches it, and the one client path to a row is via document_id -> portal_documents.customer_id, so no client can read another client's rows. Ridge, GRE-2567 step M, 26 Oct 00:00.",
   "mcp_pdf_chunks": "no customer_id of its own — no anon/authenticated/service_role grant reaches it, and the one client path to a row is via document_id -> portal_documents.customer_id, so no client can read another client's rows. Ridge, GRE-2567 step M, 26 Oct 00:00.",
-  "deep_dive_snapshots": "clients can read this table, but RLS policy deep_dive_snapshot_customer joins deep_dive_tenant_links and filters on customer_id = app_customer_id() (1:1 link), so it is correctly client-isolated despite having no customer_id column of its own. Ridge, GRE-2567 step M, 26 Oct 00:00."
+  "deep_dive_snapshots": "clients can read this table, but RLS policy deep_dive_snapshot_customer joins deep_dive_tenant_links and filters on customer_id = app_customer_id() (1:1 link), so it is correctly client-isolated despite having no customer_id column of its own. Ridge, GRE-2567 step M, 26 Oct 00:00.",
+  "client_activity_outbox": "organisation_id is the durable customers.id source key; client roles have no grant, and the bridge read role is limited by app_bridge_org().",
+  "client_activity_sequence": "one global sequence allocator with no client content; client and bridge roles have no grant."
 }

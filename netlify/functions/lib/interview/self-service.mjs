@@ -2,7 +2,7 @@
 // the interview privacy notice; spec `retention-rights-regions` on GRE-2639, section 4).
 //
 // The website account (Better Auth) is the only identity. The person's own rows are read under participant claims,
-// so RLS limits them to the website user id (054; an invite is claimed by user id at join). A client admin
+// so RLS limits them to the website user id (059; an invite is claimed by user id at join). A client admin
 // is a participant like anyone else here: these calls never reach another person's rows.
 //
 // Delete hard-deletes the person's sessions, turns (cascade), insights, synthesis cache entries that hold them,

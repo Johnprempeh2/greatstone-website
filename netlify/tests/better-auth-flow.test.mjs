@@ -5,6 +5,7 @@ import pg from 'pg';
 import { hashSync } from 'bcryptjs';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import { createAuthRequest } from '../functions/lib/better-auth.mjs';
+import { cleanVerificationRedirect, makeAuthHandler } from '../functions/auth.mjs';
 
 const origin = 'http://localhost:5181';
 let db;
@@ -53,19 +54,12 @@ after(async () => {
 });
 
 async function call(path, body, headers = {}) {
-  const scoped = createAuthRequest(auditedPool, async (to, subject, url) => { mail.push({ to, subject, url }); });
-  try {
-    const response = await scoped.auth.handler(new Request(`${origin}/api/auth/${path}`, {
+  const handler = makeAuthHandler(() => createAuthRequest(auditedPool, async (to, subject, url) => { mail.push({ to, subject, url }); }));
+  return handler(new Request(`${origin}/api/auth/${path}`, {
       method: body ? 'POST' : 'GET',
       headers: { 'content-type': 'application/json', origin, ...headers },
       body: body ? JSON.stringify(body) : undefined,
     }));
-    await scoped.finish(true);
-    return response;
-  } catch (error) {
-    await scoped.finish(false);
-    throw error;
-  }
 }
 
 test('sign-up writes user and account in nested transaction and keeps uuid; verification enables sign-in', { skip }, async () => {
@@ -86,6 +80,17 @@ test('sign-up writes user and account in nested transaction and keeps uuid; veri
   assert.notEqual(denied.status, 200, 'unverified email cannot sign in');
   const verified = await call(new URL(mail[0].url).pathname.replace('/api/auth/', '') + new URL(mail[0].url).search);
   assert.ok([200, 302].includes(verified.status), `verification: ${verified.status}`);
+  const landing = new URL(verified.headers.get('location'), origin);
+  assert.equal(landing.pathname, '/');
+  assert.equal(landing.searchParams.get('verified'), '1');
+  assert.equal(landing.searchParams.has('token'), false);
+  assert.equal(landing.searchParams.has('callbackURL'), false);
+  assert.equal(verified.headers.get('referrer-policy'), 'no-referrer');
+  const invalid = await call('verify-email?token=invalid-test&callbackURL=%2F');
+  const invalidLanding = new URL(invalid.headers.get('location'), origin);
+  assert.equal(invalidLanding.searchParams.get('error'), 'INVALID_TOKEN');
+  assert.equal(invalidLanding.searchParams.has('token'), false);
+  assert.equal(invalidLanding.searchParams.has('callbackURL'), false);
   const signedIn = await call('sign-in/email', { email, password });
   assert.equal(signedIn.status, 200, await signedIn.text());
   assert.match(signedIn.headers.get('set-cookie') || '', /better-auth\.session_token/);
@@ -110,6 +115,16 @@ test('sign-up writes user and account in nested transaction and keeps uuid; veri
   assert.equal(newPassword.status, 200, await newPassword.clone().text());
 });
 
+test('verification redirect drops sensitive callback query without changing other auth redirects', () => {
+  const request = new Request(`${origin}/api/auth/verify-email?token=secret&callbackURL=%2F`);
+  const response = Response.redirect(`${origin}/?token=secret&callbackURL=%2F#account`);
+  const cleaned = cleanVerificationRedirect(request, response);
+  assert.equal(cleaned.headers.get('location'), '/?verified=1#account');
+  assert.equal(cleaned.headers.get('referrer-policy'), 'no-referrer');
+  const other = cleanVerificationRedirect(new Request(`${origin}/api/auth/sign-in/email`), response);
+  assert.equal(other, response);
+});
+
 test('an imported bcrypt password signs in under the original UUID', { skip }, async () => {
   const id = 'c0ffee00-0000-4000-8000-000000000049';
   const email = 'legacy-auth-flow@example.test';
@@ -120,4 +135,28 @@ test('an imported bcrypt password signs in under the original UUID', { skip }, a
   const response = await call('sign-in/email', { email, password });
   assert.equal(response.status, 200, await response.clone().text());
   assert.equal((await response.json()).user.id, id);
+});
+
+test('preview hosts: an allowed host gets its own links; another host is refused', { skip }, async () => {
+  process.env.BETTER_AUTH_ALLOWED_HOSTS = '*--preview.example.test';
+  try {
+    const host = 'https://abc123--preview.example.test';
+    const send = async (url, body) => {
+      const scoped = createAuthRequest(auditedPool, async (to, subject, link) => { mail.push({ to, subject, url: link }); });
+      try {
+        const u = new URL(url);
+        return await scoped.auth.handler(new Request(url, { method: 'POST',
+          headers: { 'content-type': 'application/json', origin: u.origin, host: u.host }, body: JSON.stringify(body) }));
+      } finally { await scoped.finish(true); }
+    };
+    const email = 'preview-host@example.test';
+    const ok = await send(`${host}/api/auth/sign-up/email`, { name: 'Preview', email, password: 'preview-password-50' });
+    assert.equal(ok.status, 200, await ok.clone().text());
+    assert.equal(new URL(mail.find((m) => m.to === email).url).origin, host);
+    const other = await send('https://evil.example.test/api/auth/sign-up/email',
+      { name: 'Other', email: 'other-host@example.test', password: 'preview-password-51' });
+    assert.notEqual(other.status, 200);
+  } finally {
+    delete process.env.BETTER_AUTH_ALLOWED_HOSTS;
+  }
 });

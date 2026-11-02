@@ -5,8 +5,9 @@
   "version": "0.1.0",
   "description": "Proof: the Greatstone front-end native in React, with Puck as the in-app visual editor and the bespoke three.js as a React component.",
   "scripts": {
+    "predev": "node scripts/gen-contract-file.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/gen-seo-files.mjs",
+    "prebuild": "node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs",
     "build": "vite build",
     "postbuild": "node scripts/check-dist-secrets.mjs",
     "preview": "vite preview",
@@ -27,9 +28,9 @@
     "org-scope:check:netlify": "node scripts/check-org-scoping.mjs netlify/database/migrations scripts/org-scope-allow.netlify.json",
     "design:detect": "node scripts/design-detect.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check && npm run org-scope:check && npm run org-scope:check:netlify",
-    "build:next": "node scripts/gen-seo-files.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-build-release.mjs && next build",
+    "build:next": "node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-build-release.mjs && next build",
     "check:legacy:next": "node next-proof/scripts/check-legacy-urls.mjs",
-    "dev:next": "node scripts/gen-seo-files.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next dev --port 5181"
+    "dev:next": "node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

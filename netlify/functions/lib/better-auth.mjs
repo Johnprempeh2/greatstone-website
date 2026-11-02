@@ -28,10 +28,13 @@ export function createAuthRequest(pool = getPool(), sendMail = sendAuthMail) {
   const baseURL = process.env.BETTER_AUTH_URL;
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!baseURL || !secret || secret.length < 32) throw new Error('Auth URL or secret is not configured');
+  // Preview uploads get a new URL each time, so the preview context alone may set
+  // BETTER_AUTH_ALLOWED_HOSTS (e.g. "*--site.netlify.app") and resolve the host per request.
+  const allowedHosts = (process.env.BETTER_AUTH_ALLOWED_HOSTS || '').split(',').map((h) => h.trim()).filter(Boolean);
   const database = authServerPool(pool);
   const auth = betterAuth({
     database,
-    baseURL,
+    baseURL: allowedHosts.length ? { allowedHosts, fallback: baseURL, protocol: 'https' } : baseURL,
     secret,
     trustedOrigins: [baseURL],
     advanced: { database: { generateId: () => randomUUID() } },

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, importLiveData, keepTextDeleteInField, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
+import { COPY_PERMISSIONS, EDITOR_COMMANDS, EDITOR_CONTRACT, copyModeAllows, editModeOf, editorState, helloAckPayload, importLiveData, keepTextDeleteInField, liveContentOf, mediaRequest, validEditorCommand, validEditorState, validEditorKey, validMediaRequest } from './frame-editor.mjs';
 import { envelope, validMessage } from './frame-protocol.mjs';
 import { Window } from 'happy-dom';
 
@@ -13,7 +13,13 @@ const event = (type, payload) => ({ origin: bound.origin, source: parent, data: 
 test('editor hello-ack advertises editor contract 2 and live content only in editor mode', () => {
   const editor = readFileSync(new URL('../app/editor/[slug]/Editor.jsx', import.meta.url), 'utf8');
   assert.equal(EDITOR_CONTRACT, 2);
-  assert.match(editor, /envelope\('hello-ack',[^\n]*mode === 'editor' \? \{ editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT, editorMessages: EDITOR_MESSAGES, liveContent: liveContentOf\(liveData\) \} : \{\}/);
+  assert.match(editor, /envelope\('hello-ack', helloAckPayload\(/);
+  const base = { protocol: 1, nonce: bound.nonce, siteId: 'site', engine: { version: '1.0.0', commit: 'a'.repeat(40) },
+    liveData: { content: [{ type: 'Hero' }] }, editorMessages: [], motion: { blocks: [] } };
+  assert.deepEqual(helloAckPayload({ ...base, mode: 'preview' }).siteContract, 1);
+  assert.equal(helloAckPayload({ ...base, mode: 'preview' }).editorContract, undefined);
+  assert.equal(helloAckPayload({ ...base, mode: 'editor' }).editorContract, 2);
+  assert.deepEqual(helloAckPayload({ ...base, mode: 'editor' }).liveContent, { blocks: 1 });
 });
 
 test('Edit copy (GSAM GRE-2394): mode from hello, refused commands and Puck permissions', () => {

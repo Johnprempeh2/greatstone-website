@@ -1,7 +1,14 @@
 // Editor contract 2 (GSAM GRE-2394): Edit copy. GSAM's hello says `editMode`; `layout` switches it live;
 // `import-live` puts the live page into an empty draft. An older GSAM sends no `editMode`: today's editor.
+import { SITE_CONTRACT } from './site-contract.mjs';
+
 export const EDITOR_CONTRACT = 2;
 export const EDITOR_COMMANDS = ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live'];
+export function helloAckPayload({ protocol, nonce, siteId, engine, mode, liveData, editorMessages, motion }) {
+  return { protocol, nonce, siteId, engine, supportedReleaseSchemas: [1],
+    ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT,
+      editorMessages, liveContent: liveContentOf(liveData) } : {}), siteContract: SITE_CONTRACT, ...motion };
+}
 const SWITCH_COMMANDS = ['outline', 'layout'];
 
 export function validEditorCommand(payload) {

@@ -10,6 +10,7 @@
 // caller's claims (participant scope), and the outbox, which participants cannot reach, through a system client.
 // The development-only x-test-employee-email bypass is dropped; tests inject verify and the model client.
 import Anthropic from '@anthropic-ai/sdk';
+import { anthropicKey } from './lib/interview/keys.mjs';
 import { getPool } from './lib/db.mjs';
 import { interviewDb } from './lib/interview/db.mjs';
 import { json, participantFromRequest, interviewEnabled } from './lib/interview/caller.mjs';
@@ -23,6 +24,7 @@ import { loadActiveMemoryBlob, renderMemoryBlob } from './lib/interview/memory.m
 import { getBudgetStatus, recordUsage } from './lib/interview/budget.mjs';
 import { enqueueOutboxEvent, scheduleOutboxDrain } from './lib/interview/outbox.mjs';
 import { withinRate } from './lib/interview/ratelimit.mjs';
+import { closeSessionAfterSignOff, loadInsightPayload, recordConsentUpdates } from './lib/interview/turn-effects.mjs';
 
 const INTERVIEW_MODEL = process.env.INTERVIEW_MODEL ?? 'claude-sonnet-4-6';
 const MAX_REPLY_TOKENS = 400; // a few hundred tokens per turn: short, warm replies
@@ -43,7 +45,7 @@ const HARD_BUDGET_RATIO = Number(process.env.CHAT_HARD_BUDGET_RATIO) || 1.5;
 const INFLIGHT_RECOVERY_MS = 30_000;
 
 let anthropic = null;
-const defaultClient = () => (anthropic ??= new Anthropic());
+const defaultClient = () => (anthropic ??= new Anthropic({ apiKey: anthropicKey() }));
 
 // A model error worth one more attempt: 429, 529, any 5xx, or a dropped connection, checked BEFORE the generic
 // APIError branch because APIConnectionError extends APIError with an undefined status.
@@ -72,15 +74,7 @@ function sseResponse(events) {
   return new Response(stream, { headers: SSE_HEADERS });
 }
 
-async function loadInsightPayload(db, sessionId) {
-  const { data } = await db.from('insight')
-    .select('id, type, label, evidence_quote, time_per_week_hours, confidence, attribution_redacted, second_hand')
-    .eq('session_id', sessionId);
-  return (data ?? []).map((i) => ({
-    id: i.id, type: i.type, label: i.label, evidence_quote: i.evidence_quote, time_per_week_hours: i.time_per_week_hours,
-    confidence: i.confidence, attribution_redacted: i.attribution_redacted, second_hand: i.second_hand,
-  }));
-}
+const MAX_CONTENT_CHARS = 8000;
 
 export function makeChatHandler({ pool = getPool, verify, model = defaultClient, env = process.env, log = console } = {}) {
   return async (req) => {
@@ -107,6 +101,8 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
     // Port: a malformed id would fail its uuid cast in Postgres; answer as "not found" instead of a 500
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) return json({ error: 'Session not found' }, 404);
     const content = typeof body.content === 'string' ? body.content.trim() : '';
+    // Port: new. One message of a conversation, not a document: anything longer is refused before it is stored.
+    if (content.length > MAX_CONTENT_CHARS) return json({ error: 'That message is too long. Please send it in shorter parts.' }, 413);
     // Client-supplied idempotency key for this user turn: a resend after a network stutter carries the same key, so
     // the duplicate collapses onto the original turn instead of being recorded (and re-extracted) twice.
     const clientTurnId = typeof body.clientTurnId === 'string' && body.clientTurnId ? body.clientTurnId.slice(0, 100) : null;
@@ -243,26 +239,7 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
           const { usage: _usage, ...extractedFields } = extraction; // eslint-disable-line no-unused-vars
           await db.from('turn').update({ extracted_fields: extractedFields }).eq('id', userTurn.id);
         }
-        // Consent, both kinds, recorded as the participant answers Everest; the sign-off read-back pre-selects
-        // from these rows and its "Confirm and finish" appends the authoritative pair.
-        const attribution = extraction.consent_updates.attribution;
-        if (attribution) {
-          const { error: consentError } = await db.from('consent_event').insert({
-            employee_id: ctx.employee.id, kind: 'attribution', value: attribution === 'named',
-          });
-          if (consentError) log.warn(`consent insert failed: ${consentError.message}`);
-          // Apply to the session's insight rows at once, so the session_end payload already honours it.
-          const { error: redactError } = await db.from('insight')
-            .update({ attribution_redacted: attribution === 'anonymised' }).eq('session_id', sessionId);
-          if (redactError) log.warn(`attribution apply failed: ${redactError.message}`);
-        }
-        const memoryOptIn = extraction.consent_updates.memory_opt_in;
-        if (typeof memoryOptIn === 'boolean') {
-          const { error: memoryConsentError } = await db.from('consent_event').insert({
-            employee_id: ctx.employee.id, kind: 'memory_opt_in', value: memoryOptIn,
-          });
-          if (memoryConsentError) log.warn(`memory consent insert failed: ${memoryConsentError.message}`);
-        }
+        await recordConsentUpdates(db, { employeeId: ctx.employee.id, sessionId, extraction, log });
         await recordUsage(db, {
           sessionId, engagementId: ctx.engagement.id, model: EXTRACTION_MODEL,
           inputTokens: extraction.usage.inputTokens, outputTokens: extraction.usage.outputTokens,
@@ -310,7 +287,7 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
     // ── Build the model request ──
     const { stable, volatile } = buildSystemPrompt({
       engagement: ctx.engagement, contextPack, orgUnit: ctx.orgUnit, employeeName: ctx.employee.name,
-      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
+      employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, employeeUserId: ctx.employee.user_id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
     });
     // Prompt caching: the stable prefix is one ephemeral cache breakpoint (byte-identical every turn); the volatile
     // runtime state sits after it, uncached.
@@ -373,27 +350,7 @@ export function makeChatHandler({ pool = getPool, verify, model = defaultClient,
             inputTokens: finalMessage?.usage.input_tokens ?? 0, outputTokens: finalMessage?.usage.output_tokens ?? 0,
           });
 
-          if (closing) {
-            // Both consent answers recorded and the warm close sent: end the session; the UI moves to sign-off.
-            const durationSecs = Math.round((Date.now() - new Date(session.started_at).getTime()) / 1000);
-            await db.from('session').update({
-              ended_at: new Date().toISOString(), resumable: false, completion_score: state.completion_score, duration_secs: durationSecs,
-            }).eq('id', sessionId);
-            await db.from('employee').update({ status: 'completed' }).eq('id', ctx.employee.id);
-            const { data: allTurns } = await db.from('turn').select('role, content, ts')
-              .eq('session_id', sessionId).order('seq', { ascending: true });
-            await enqueueOutboxEvent(sys, {
-              payload: {
-                event: 'session_end',
-                engagement: { id: ctx.engagement.id, client_name: ctx.engagement.client_name },
-                employee: employeePayload,
-                session: { id: sessionId, phase: dbPhase, completion_score: state.completion_score },
-                insights: await loadInsightPayload(db, sessionId),
-                transcript: allTurns ?? [],
-              },
-            });
-            scheduleOutboxDrain();
-          }
+          if (closing) await closeSessionAfterSignOff(db, sys, { ctx, session, state, dbPhase, employeePayload });
           send({ type: 'done', agentTurnId: agentTurn?.id ?? null, phase: dbPhase, complete: closing });
         } catch (e) {
           log.error('chat stream failed:', e?.name || 'error');

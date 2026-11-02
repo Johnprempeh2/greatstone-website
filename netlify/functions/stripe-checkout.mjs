@@ -68,10 +68,14 @@ export function makeStripeCheckoutHandler({ env = process.env, pool = getPool, v
       const db = pool();
       if (!db) return json({ error: 'Checkout unavailable.' }, 503);
       const priced = await asCatalogueAnon(db, (client) => priceBasket(client, basket));
+      // A paid request must be entirely made of published, priced products. In particular, never
+      // silently drop a service supplied in a tampered request and then open Stripe for the rest.
+      if (priced.some((row) => !row.unavailable && row.type === 'service'))
+        return json({ error: 'Services can only be requested as a quote.' }, 400);
       const dropped = [], lines = [];
       let subtotal = 0;
       for (const row of priced) {
-        if (row.unavailable || !row.unit || row.unit < 0) {
+        if (row.unavailable || row.type !== 'product' || !row.unit || row.unit < 0) {
           dropped.push({ variantId: row.id, name: row.offering_name ? `${row.offering_name} — ${row.name}` : null,
             reason: row.unavailable ? 'unavailable' : 'price_on_application' });
           continue;

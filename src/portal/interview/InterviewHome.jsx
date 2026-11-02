@@ -193,6 +193,15 @@ export function WelcomeScreen({ isAdmin, seats, consent, clientName, retentionDa
             </div>
           ) : null}
 
+          {seats === 'not-open' ? (
+            <div className="notice-card anim-up" role="status">
+              <strong>This conversation round is not open yet.</strong>{' '}
+              Nothing is wrong with your invitation. Your organisation is
+              still completing the set-up with Greatstone. Please try again
+              later.
+            </div>
+          ) : null}
+
           {consent === 'required' ? (
             <div className="notice-card anim-up" role="status">
               <strong>Please tick the box to agree first.</strong> The

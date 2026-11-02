@@ -4,6 +4,7 @@
 // claims an invitation at join, so only a VERIFIED email counts. Port: the source's development-only
 // x-test-employee-email bypass is not carried over; the tests inject `verify` instead.
 import { userFromRequest } from '../better-auth.mjs';
+import { deepgramKey } from './keys.mjs';
 
 const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 export const json = (body, status = 200, headers = {}) => Response.json(body, { status, headers: { ...HEADERS, ...headers } });
@@ -21,7 +22,7 @@ export async function participantFromRequest(req, verify) {
 export const interviewEnabled = (env = process.env) => env.INTERVIEW_ENABLED === '1';
 
 /** Port of session/page.tsx voiceEnabled(): offered when a Deepgram key is set, and VOICE_ENABLED=0 takes it away. */
-export const voiceEnabled = (env = process.env) => env.VOICE_ENABLED !== '0' && Boolean(env.DEEPGRAM_API_KEY);
+export const voiceEnabled = (env = process.env) => env.VOICE_ENABLED !== '0' && Boolean(deepgramKey(env));
 
 /** The request-time switch: GSAM sends a round with `voice: false` to take voice away from it at once, no redeploy. */
 export const roundVoiceEnabled = (engagement) => engagement?.branding_config?.voice !== false;

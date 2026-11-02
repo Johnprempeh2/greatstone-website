@@ -1,5 +1,5 @@
 // The interview data client (GRE-2612): the supabase-js surface the ported engine uses, over pg, as interview_worker
-// with claims that end with each statement's transaction. A small schema of its own, so it runs without 054.
+// with claims that end with each statement's transaction. A small schema of its own, so it runs without 057.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';

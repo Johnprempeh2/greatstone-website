@@ -27,7 +27,7 @@ Source commit ported: `505ba6a` (Voice: Everest is aura-2-draco-en).
 ## Data plane
 
 All tables live in schema `interview` (no clash with the site's `engagements`, `customers` and so on). Migration
-`netlify/database/migrations/054_interview_engine` is the source's 0001 to 0017 folded into one, adapted only where a
+`netlify/database/migrations/059_interview_engine` is the source's 0001 to 0017 folded into one, adapted only where a
 `Port:` note says so.
 
 ### Organisation and user on every row
@@ -39,7 +39,7 @@ Greatstone tenant, not the client.
 - `engagement.customer_id` is NOT NULL with a foreign key to `customers (id, org_id)`: a round cannot point at an
   organisation that does not exist, or at another tenant's.
 - Every other client-scoped table (`org_unit`, `employee`, `session`, `turn`, `insight`, `synthesis*`,
-  `context_pack`, `usage_ledger`, `outbox`, `consent_event`, `seat_*`, `audit_log`, `memory_blob`) has
+  `context_pack`, `usage_ledger`, `outbox`, `consent_event`, `seat_*`, `audit_log`, `memory_blob`, `withdrawal`) has
   `customer_id NOT NULL`. A trigger fills it from the parent row and refuses a value that disagrees with the parent;
   it cannot change after insert. Rehearsal row R11 (null or wrong organisation id) is 0 by construction.
 - `user_id` (Better Auth user id) is on `employee` (empty until the invited person joins), and NOT NULL on `session`,
@@ -68,7 +68,13 @@ Policies (`interview.is_system()`, `interview.claim_user_id()`, `interview.claim
 - `session`, `turn`, `insight`, `consent_event`, `usage_ledger`, `memory_blob`: participant reaches only rows with
   its own user id.
 - System scope with a `customer_id` claim (every bridge call) reaches only that organisation's rows.
-- `synthesis`, `synthesis_cache`, `seat_request`, `seat_purchase`, `outbox`, `audit_log` (read): system only.
+- `synthesis`, `synthesis_cache`, `seat_request`, `seat_purchase`, `outbox`, `withdrawal`, `audit_log` (read): system
+  only.
+- `withdrawal` is written by delete triggers on `session` and `employee`: each hard delete from a live round leaves
+  `(user_id, session_id or NULL, at)` for GSAM (`GET …/withdrawals`). Deleting a whole round writes none.
+- `organisation_name(customer)` and `organisation_member(customer, user)` are the only reads of `public.customers`,
+  `public.customer_users` and `better_auth."user"`. SECURITY DEFINER, and they answer only a system call whose
+  `customer_id` claim is that organisation.
   `rate_event` and `audit_log` (insert): any worker request.
 - `claim_seat()` and the other source functions stay SECURITY DEFINER with EXECUTE for `interview_worker` only.
 
@@ -92,9 +98,29 @@ db.sql(text, params)        // escape hatch for the few embedded selects (`engag
   `enrol` checks, on the server: the token is active and not expired, the verified email's domain is in
   `allowed_email_domains`, the optional team target is a real unit of this round, a seat is free (`claim_seat` stays
   the hard gate at session start), and the rate limits per token and per IP.
-- People GSAM invites are created ahead (bridge `invites`), with no user id. When they join with a verified account
-  of the invited email, the row takes their Better Auth user id; from then on only the user id matches.
+- GSAM invites a person by `userId` when they already have a website account that is a member of the organisation
+  (`customer_users.auth_subject`): the row has the user id from the start. Otherwise GSAM sends an email and name;
+  the row has no user id until the person joins with a verified account of that email, then takes their Better Auth
+  user id. From then on only the user id matches. The site does not make accounts on a person's behalf.
 - The same account is the client portal login (decision 2, GRE-2609).
+
+## The data processing agreement gate (GRE-2794)
+
+John decided on 26 Oct (gate GRE-2656): no paper signature. A company admin of the client organisation
+(`customer_users.role = 'admin'` or the primary contact) reads the agreement at `#portal/agreement`, ticks that they
+have read it and have authority, types their name, role and the organisation's legal name, and accepts. The row in
+`interview.agreement_acceptance` (migration 058) keeps the version, the text's SHA-256, the time (database clock, UTC),
+the user id, name, email, role, legal name, the optional company details and the IP address. It cannot be updated or
+deleted.
+
+- Until the organisation has a row for the current text, the server refuses invite create and `invites/send` (resend
+  and remind) with `409 agreement_required`, the round view's `joinUrl` is `null`, `#join/<token>` says the round is not
+  open, and `start` takes no seat. The check is on the server in each route, not only in the page.
+- The text is `netlify/functions/lib/interview/agreement/dpa-v2.mjs`, copied unchanged from the approved `dpa` document
+  on GRE-2639. Harbor owns it and the click-accept wording (`WORDING` in `lib/interview/agreement.mjs`). A changed
+  text is a new file and a new version: point `CURRENT` at it, and every organisation accepts again before new invites.
+- The admin downloads the accepted copy (HTML: the record, then the text) from the same page; GSAM reads it through
+  the bridge (`GET …/organisations/{id}/agreement` and `…/agreement/acceptances/{id}/copy`).
 
 ## Endpoints
 
@@ -110,6 +136,8 @@ Interviewee (Better Auth session cookie; 401 without it):
 - `POST /api/interview/join` — `{ op: 'info', token }` (public, no personal data) and `{ op: 'enrol', token, name,
   unitId? }` (signed in, verified email).
 - `POST /api/interview/voice/start` — source `/api/voice/start`; 404 when `VOICE_ENABLED=0` or no Deepgram key.
+- `POST /api/interview/agreement` — `{ op: 'status' }` (any member of the organisation) and `{ op: 'accept', … }`
+  (company admin); `GET /api/interview/agreement?copy=<acceptance id>` downloads the accepted copy (company admin).
 
 - `POST /api/interview/my-data` — `{ op: 'see' }` (the person's own rounds, transcripts, insights, consent choices and
   quotes used; also the download) and `{ op: 'delete', engagementId, confirm: true }` (GRE-2653). Website account
@@ -126,14 +154,14 @@ GSAM bridge (signed, `contracts/gs-interview-v1/`): under `/api/admin/v1/intervi
 
 Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/interview/session`,
 `#portal/interview/complete`, `#portal/interview/goodbye`, `#portal/interview/discarded`,
-`#portal/interview/results`, and the public `#join/<token>`.
+`#portal/interview/results`, the client portal's `#portal/agreement`, and the public `#join/<token>`.
 
 ## Models and switches (environment)
 
 | Variable | Default | Note |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | none | secret, John sets it |
-| `DEEPGRAM_API_KEY` | none | secret, John sets it |
+| `ANTHROPIC_API_KEY` (or `PIA_Key`) | none | secret, John sets it; on staging it is `PIA_Key` |
+| `DEEPGRAM_API_KEY` (or `PAI_Voice_Key`) | none | secret, John sets it; on staging it is `PAI_Voice_Key` |
 | `INTERVIEW_MODEL` | `claude-sonnet-4-6` | as the source |
 | `EXTRACTION_MODEL` | `claude-haiku-4-5` | as the source |
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
@@ -157,36 +185,40 @@ browser client and its tests are ported line for line.
 
 ## Regression suites
 
-Ported to `node --test` under `netlify/tests/interview-*.test.mjs`, against a real local Postgres with the
-migrations applied (`netlify/tests/lib/postgres.mjs`) and a fake Anthropic client by default. Set
-`INTERVIEW_LIVE=1` with `ANTHROPIC_API_KEY` to run the model-dependent ones live. Suites: security probe,
-adversarial chat, concurrency, fuzzy merge, corroboration, interview smoke, plus the RLS suite for schema
-`interview`.
+Ported to `node --test` as `netlify/tests/interview-regress-*.test.mjs` (shared set-up in
+`netlify/tests/lib/interview-harness.mjs`), against a real local Postgres with the migrations applied and fake
+models: security probe, adversarial chat, concurrency, fuzzy merge, corroboration, interview smoke. Each runs twice,
+typed only (`VOICE_ENABLED=0`) and voice on; fuzzy merge is pure and runs once. The smoke checks R11 on every row.
+Plus the schema, RLS, bridge, engine, synthesis and voice unit suites (`netlify/tests/interview-*.test.mjs`).
+Not ported: the source's live-server and live-model runs; a live mode is not built yet.
+
+Run: `node --test netlify/tests/interview-*.test.mjs`.
 
 ## Staging and rollback
 
 Staging is the site `gre1795-website-db-staging`. A preview deploy of a ready pull request gets its own database
-branch (a copy of staging data) and Netlify applies `054_interview_engine` to it before the deploy goes live. Only
+branch (a copy of staging data) and Netlify applies `059_interview_engine` to it before the deploy goes live. Only
 synthetic test accounts and test rounds are used; no client data before John's card.
 
 Environment on the staging site (Functions scope):
 
 - Set by Bedrock: `INTERVIEW_ENABLED=1`, `INTERVIEW_INTERNAL_SECRET` (random, secret; the bridge uses it to start
   the synthesis background function).
-- Set by John (step card on GRE-2612): `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`. Without the Deepgram key voice is
+- Set by John (GRE-2612, 26 Oct): `PIA_Key` (Anthropic) and `PAI_Voice_Key` (Deepgram). The engine also reads
+  `ANTHROPIC_API_KEY` and `DEEPGRAM_API_KEY`, which win when set. Without the Deepgram key voice is
   simply not offered; without the Anthropic key a chat turn fails with the calm error.
 - Existing: `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `GSAM_BRIDGE_KEYS`,
   `APP_SITE_ORIGIN` (the join link's origin).
 
 Rollback, in order: set `INTERVIEW_ENABLED` to anything but `1` (every interviewee endpoint answers 404 at once);
 set `VOICE_ENABLED=0` to take voice away alone; remove the GSAM bridge keys to stop round changes. Code rollback is
-a redeploy of the previous commit. `054_interview_engine/rollback.sql` drops schema `interview` and everything in it:
+a redeploy of the previous commit. `059_interview_engine/rollback.sql` drops schema `interview` and everything in it:
 run it only after the round's outputs are exported to GSAM and a database snapshot is taken.
 
 ## Interview data rights (GRE-2653)
 
 Spec: the `retention-rights-regions` document on GRE-2639. Wording: its `privacy-notice` document. Migration
-`055_interview_data_rights`.
+`062_interview_data_rights`.
 
 - **Retention per round.** `engagement.retention_days` (default 90), `readout_at`, `closed_at` (set when GSAM closes
   the round). Deletion date = readout (or close) + `retention_days`, or `retention_delete_after` if earlier
@@ -194,11 +226,11 @@ Spec: the `retention-rights-regions` document on GRE-2639. Wording: its `privacy
   counts, confidence, hours, team roll-ups; no statements, quotes, ids or names), then a hard delete of sessions,
   turns, insights, synthesis, synthesis cache and runs, outbox, per-person memory, invites (employee rows; those a
   seat request or purchase points at are cleared of name and email), people no other round holds, and the round's
-  activity log. Kept: `consent_event` (it now carries `engagement_id`, keeps the 054 `user_id`, and survives the invite)
+  activity log. Kept: `consent_event` (it now carries `engagement_id`, keeps the 059 `user_id`, and survives the invite)
   and `usage_ledger` (session link nulled). Proof: a `deletion_record` row and a `retention_deleted` outbox event.
 - **Self-service.** `lib/interview/self-service.mjs`, served by `/api/interview/my-data` and the "Interview data"
   card on the account page (`src/portal/InterviewDataCard.jsx`). Participant claims only; RLS matches the
-  person's rows by website user id (054). Delete removes the
+  person's rows by website user id (059). Delete removes the
   person's rows for that round, writes a `withdrawal` consent event, takes them out of every synthesis of the round
   at once (two-voice rule re-applied) and sets `synthesis_stale_at`: a synthesis generated before it cannot be
   released again. The deletion record and activity log do not say who.

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { themeTokens } from './theme.mjs';
+import { publicPathText } from './public-links.mjs';
 
 const proofSiteId = process.env.GSAM_SITE_ID || '00000000-0000-4000-8000-000000001833';
 const orgId = process.env.GSAM_ORG_ID || 'org-greatstone';
@@ -9,16 +10,22 @@ function fixtureId(value) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`;
 }
 
-function releaseLinks(value) {
-  if (typeof value === 'string') return value.replace(/^#shop(?=\/|$)/, '/shop').replace(/^#product(?=\/|$)/, '/product');
-  if (Array.isArray(value)) return value.map(releaseLinks);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, releaseLinks(child)]));
+function releaseLinks(value, pagePaths) {
+  if (typeof value === 'string') return publicPathText(value.replace(/^#shop(?=\/|$)/, '/shop').replace(/^#product(?=\/|$)/, '/product'), pagePaths);
+  if (Array.isArray(value)) return value.map((item) => releaseLinks(item, pagePaths));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, releaseLinks(child, pagePaths)]));
   return value;
 }
 
 // Only persisted public catalogue fields belong in collection fieldsVersion 1.
 // The public read also decorates products with request-time prices and join IDs.
 const pick = (row, keys) => Object.fromEntries(keys.filter((key) => row?.[key] !== undefined).map((key) => [key, row[key]]));
+function priceMinor(value, field) {
+  if (value === null || value === undefined) return value;
+  const number = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+  if (!Number.isSafeInteger(number) || number < 0) throw new Error(`Unsafe ${field}`);
+  return number;
+}
 function expectKeys(row, allowed, kind) {
   const unknown = Object.keys(row).filter((key) => !allowed.includes(key));
   if (unknown.length) throw new Error(`Unmapped ${kind} fields: ${unknown.join(', ')}`);
@@ -26,7 +33,9 @@ function expectKeys(row, allowed, kind) {
 const variant = (row) => {
   const fields = ['id', 'sku', 'name', 'currency', 'platform', 'sort_order', 'license_type', 'min_order_qty', 'billing_period', 'base_price_minor'];
   expectKeys(row, [...fields, 'pricing'], 'variant');
-  return pick(row, fields);
+  const data = pick(row, fields);
+  if ('base_price_minor' in data) data.base_price_minor = priceMinor(data.base_price_minor, 'base_price_minor');
+  return data;
 };
 const spec = (row) => {
   const fields = ['label', 'value', 'sort_order'];
@@ -49,6 +58,12 @@ export function catalogueFields(key, row) {
   const fields = ['id', 'slug', 'name', 'short_description', 'from_price_minor', 'from_price_currency', 'featured', 'platforms', 'type', 'attributes', 'vendor', 'category', 'description', 'seo'];
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
   const data = pick(row, fields);
+  if ('from_price_minor' in data) data.from_price_minor = priceMinor(data.from_price_minor, 'from_price_minor');
+  // Import provenance stays in the database, but is not a public release field.
+  if (data.attributes && 'catalogue_rebuild_source' in data.attributes) {
+    const { catalogue_rebuild_source, ...publicAttributes } = data.attributes;
+    data.attributes = publicAttributes;
+  }
   const variants = (row.offering_variants || row.variants || []).map(variant);
   const specs = (row.offering_specs || row.specs || []).map(spec);
   return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };
@@ -72,6 +87,7 @@ export function toCatalogueCollections(catalogue, targetOrgId = orgId) {
 export function toProofRelease(snapshot) {
   const slugs = Object.keys(snapshot.pages).filter((slug) => snapshot.pages[slug]?.data?.content?.length);
   if (!slugs.includes('home') || !slugs.includes('dev-tools')) throw new Error('Missing published proof page');
+  const pagePaths = slugs.map((slug) => slug === 'home' ? '/' : `/${slug}`);
   const pages = slugs.map((slug, navOrder) => {
     const source = snapshot.pages[slug];
     if (!source?.data?.content?.length) throw new Error(`Missing published proof page: ${slug}`);
@@ -83,7 +99,7 @@ export function toProofRelease(snapshot) {
       title: source.title,
       navOrder,
       seo: source.seo,
-      data: releaseLinks(source.data),
+      data: releaseLinks(source.data, pagePaths),
     };
   });
   const bySlug = Object.fromEntries(pages.map((page) => [page.slug, page]));

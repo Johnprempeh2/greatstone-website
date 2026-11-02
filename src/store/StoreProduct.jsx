@@ -10,20 +10,7 @@ import './store.css';
 const BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || '/';
 const img = (u) => !u ? '' : /^https?:|^data:/.test(u) ? u : BASE + String(u).replace(/^assets\//, '');
 
-const QUOTE_EMAIL = 'dx@greatstonesoftware.co.uk';
 const EMPTY_RELATED = [];
-// "Request a quote" should actually request a quote. The Deep Dive Calendly (#book) is a transformation
-// diagnostic, not a software-licensing quote desk; and POA products can't enter the basket (no price), so
-// the structured cart quote form is unreachable for them. A prefilled enquiry email matches this page's
-// stated "browse-and-enquire, no account needed to ask" model and carries the product context. Subject +
-// body are encodeURIComponent'd (newlines → %0A) so a catalogue-sourced name can't inject mail headers.
-const quoteMailto = (o, variant) => {
-  const what = variant ? (o.name + ', ' + variant.name) : o.name;
-  const vendor = o.vendor && o.vendor.name ? ' (' + o.vendor.name + ')' : '';
-  const subject = 'Quote request: ' + what;
-  const body = 'Hi Greatstone,\n\nPlease send a quote for ' + what + vendor + '.\n\nTeam size / seats:\nLicence term:\nTimeline:\nAnything specific:\n\nThanks,';
-  return 'mailto:' + QUOTE_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-};
 
 export default function StoreProduct({ slug, onBack, applyHead, initialOffering, initialRelated = EMPTY_RELATED }) {
   const [o, setO] = useState(initialOffering); // undefined = loading, null = not found
@@ -110,9 +97,8 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
           </div>
           <div className="sp-cta">
             {fromP && fromP.final != null
-              ? <><button className="gs-btn primary" onClick={() => { const el = document.getElementById('sp-editions'); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }}>See editions &amp; pricing</button>
-                  <a className="gs-btn ghost" href={quoteMailto(o)}>Request a quote</a></>
-              : <a className="gs-btn primary" href={quoteMailto(o)}>Request a quote</a>}
+              ? <button className="gs-btn primary" onClick={() => { const el = document.getElementById('sp-editions'); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }}>See editions &amp; pricing</button>
+              : <button className="gs-btn primary" onClick={() => { const v = o.variants?.[0]; addItem({ variantId: v?.id || o.id, offeringSlug: o.slug, name: o.name, edition: v?.name, vendor: o.vendor?.name, unitMinor: null, kind: o.type === 'service' ? 'service' : 'tool' }); openCart(); }}>Add to basket for a quote</button>}
           </div>
           <p className="sp-note">Browse-and-enquire: we license and support every product directly. No account or card needed to ask.</p>
         </div>
@@ -125,7 +111,7 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
 
       {!!(o.variants && o.variants.length) && <section className="sp-section" id="sp-editions"><h2>Editions &amp; licensing</h2>
         <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th scope="col">Edition</th><th scope="col">Licence</th><th scope="col">Price</th><th scope="col"><span className="gs-sr-only">Add to basket</span></th></tr></thead>
-          <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td>{v.pricing && v.pricing.final != null ? <AddToBasket offering={o} variant={v} /> : <a className="sp-q" href={quoteMailto(o, v)}>Request quote ›</a>}</td></tr>)}</tbody></table></div>
+          <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td><AddToBasket offering={o} variant={v} /></td></tr>)}</tbody></table></div>
         <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p><BasketBar /></section>}
 
       {!!related.length && <section className="sp-section"><h2>Related products</h2>
@@ -157,7 +143,7 @@ function BasketBar() {
 function AddToBasket({ offering, variant }) {
   const [done, setDone] = useState(false);
   const add = () => {
-    addItem({ variantId: variant.id, offeringSlug: offering.slug, name: offering.name, edition: variant.name, vendor: offering.vendor && offering.vendor.name, unitMinor: variant.pricing.final, currency: variant.pricing.currency || 'GBP' });
+    addItem({ variantId: variant.id, offeringSlug: offering.slug, name: offering.name, edition: variant.name, vendor: offering.vendor && offering.vendor.name, unitMinor: variant.pricing?.final ?? null, currency: variant.pricing?.currency || 'GBP', kind: offering.type === 'service' ? 'service' : 'tool' });
     setDone(true); setTimeout(() => setDone(false), 1600);
   };
   return <button className={'sp-add' + (done ? ' done' : '')} onClick={add} aria-label={'Add ' + offering.name + ' ' + variant.name + ' to basket'}>{done ? 'Added ✓' : 'Add to basket'}</button>;

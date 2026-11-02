@@ -94,8 +94,9 @@ under `netlify/`, `supabase/` or `scripts/`; any `.sql` or `.env*` file; Next ro
 `package-lock.json`, `next.config.*`, `vite.config.*` and `public/_headers`; and any path
 containing auth, password, credential, secret, login or sign-in. So front-end, content and
 docs changes ride along, but any migration, function, auth or build-config change needs a new
-card for the exact commit. The public site still requires the exact comment for the current
-HEAD.
+card for the exact commit. The public site requires the exact comment for the current HEAD,
+or an accepted human-only weekly release card (`confirmation:GRE-N:weekly-release:<SHA>`) whose
+details name that site and that exact SHA. See `docs/WEEKLY-RELEASE.md`.
 
 Netlify applies a changed environment variable only on a new upload, and the change check
 below skips a commit that is already live. After a staging config change, reload the live

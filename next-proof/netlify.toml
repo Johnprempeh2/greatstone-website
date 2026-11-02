@@ -5,10 +5,14 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_CATALOGUE_REQUIRED = "1"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
 
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [[headers]]
   for = "/api/*"

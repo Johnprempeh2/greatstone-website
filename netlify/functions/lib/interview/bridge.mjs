@@ -13,9 +13,14 @@ import { closeOutOpenSessions } from './lifecycle.mjs';
 import { deletionDate } from './retention.mjs';
 import { getLatestSynthesis, getReleasedSynthesis, releaseSynthesis, withdrawRelease } from './synthesis/release.mjs';
 import { getInterview, listInterviews, pushReleasedSynthesis } from './bridge-interviews.mjs';
+import { ensurePersonForUser } from './provision.mjs';
+import { acceptanceCopyHtml, acceptanceHistory, acceptanceView, agreementState, copyFilename,
+  requireAgreement } from './agreement.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// a Better Auth user id: the site makes them as uuids (auth.sync_better_auth_user refuses any other)
+const USER_ID = UUID;
 const DOMAIN = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const STATUS_IN = { draft: 'draft', open: 'active', closed: 'closed' };
@@ -49,7 +54,8 @@ export const joinUrl = (token, env) => (token ? `${siteOrigin(env)}/#join/${toke
 // ── checks ───────────────────────────────────────────────────────────────────────────────────────
 
 export function checkRound(body) {
-  only(body, ['schema', 'clientName', 'sponsor', 'mode', 'targetMinutes', 'status', 'voice', 'seatTotal',
+  // the client's name is the organisation's (customers.name), read when the round is saved
+  only(body, ['schema', 'sponsor', 'mode', 'targetMinutes', 'status', 'voice', 'seatTotal',
     'costEnvelopePence', 'endDate', 'retentionDeleteAfter', 'retentionDays', 'readoutAt', 'enrol', 'units', 'contextPack'], 'body');
   if (body.schema !== 'gs-interview-round-v1') bad('schema');
   const enrol = only(body.enrol ?? {}, ['enabled', 'expiresAt', 'allowedEmailDomains', 'defaultUnitId', 'rotateToken'], 'enrol');
@@ -59,7 +65,6 @@ export function checkRound(body) {
   if (!Array.isArray(units) || units.length > 500) bad('units');
   const unitIds = new Set();
   const round = {
-    clientName: str(body.clientName, 200, 'clientName'),
     sponsor: str(body.sponsor, 200, 'sponsor', { nullable: true }),
     mode: ['team', 'person'].includes(body.mode) ? body.mode : bad('mode'),
     targetMinutes: int(body.targetMinutes ?? 20, 5, 90, 'targetMinutes'),
@@ -104,9 +109,9 @@ export function checkRound(body) {
       const map = {};
       for (const [k, v] of Object.entries(pack[key])) {
         if (key === 'units' && !UUID.test(k)) bad('contextPack.units');
-        // people: the employee id from invites (preferred), or a lower-case email before the person is invited
-        if (key === 'people' && !EMAIL.test(k) && !UUID.test(k)) bad('contextPack.people');
-        map[key === 'people' ? k.toLowerCase() : k] = str(v, 20000, `contextPack.${key}`);
+        // people: the website user id (GSAM's key); an employee id or an email from before the person has an account
+        if (key === 'people' && !USER_ID.test(k) && !EMAIL.test(k)) bad('contextPack.people');
+        map[key === 'people' && EMAIL.test(k) ? k.toLowerCase() : k] = str(v, 20000, `contextPack.${key}`);
       }
       if (Object.keys(map).length > 1000) bad(`contextPack.${key}`);
       out[key] = map;
@@ -117,6 +122,9 @@ export function checkRound(body) {
   return round;
 }
 
+// A person is { userId } for an existing website account of the organisation, or { email, name } to invite someone
+// who has no account yet: the account is made by the person, with that email verified, when they join (Better Auth
+// keeps the password with the person). roleTitle, unitId and portalRole go with either.
 export function checkInvites(body) {
   only(body, ['people', 'send'], 'body');
   if (!Array.isArray(body.people) || !body.people.length || body.people.length > 200) bad('people');
@@ -124,13 +132,21 @@ export function checkInvites(body) {
   return {
     send: body.send === true,
     people: body.people.map((p, i) => {
-      only(p, ['email', 'name', 'roleTitle', 'unitId', 'portalRole'], `people[${i}]`);
+      const k = `people[${i}]`;
+      const common = (x) => ({ roleTitle: str(x.roleTitle, 200, `${k}.roleTitle`, { nullable: true }),
+        unitId: x.unitId == null ? null : UUID.test(x.unitId) ? x.unitId : bad(`${k}.unitId`),
+        portalRole: x.portalRole == null ? 'employee' : ROLES.includes(x.portalRole) ? x.portalRole : bad(`${k}.portalRole`) });
+      if (p && typeof p === 'object' && 'userId' in p) {
+        only(p, ['userId', 'roleTitle', 'unitId', 'portalRole'], k);
+        if (typeof p.userId !== 'string' || !USER_ID.test(p.userId) || seen.has(`u:${p.userId}`)) bad(`${k}.userId`);
+        seen.add(`u:${p.userId}`);
+        return { userId: p.userId, ...common(p) };
+      }
+      only(p, ['email', 'name', 'roleTitle', 'unitId', 'portalRole'], k);
       const email = typeof p.email === 'string' ? p.email.trim().toLowerCase() : '';
-      if (!EMAIL.test(email) || email.length > 254 || seen.has(email)) bad(`people[${i}].email`);
-      seen.add(email);
-      return { email, name: str(p.name, 200, `people[${i}].name`), roleTitle: str(p.roleTitle, 200, `people[${i}].roleTitle`, { nullable: true }),
-        unitId: p.unitId == null ? null : UUID.test(p.unitId) ? p.unitId : bad(`people[${i}].unitId`),
-        portalRole: p.portalRole == null ? 'employee' : ROLES.includes(p.portalRole) ? p.portalRole : bad(`people[${i}].portalRole`) };
+      if (!EMAIL.test(email) || email.length > 254 || seen.has(`e:${email}`)) bad(`${k}.email`);
+      seen.add(`e:${email}`);
+      return { userId: null, email, name: str(p.name, 200, `${k}.name`), ...common(p) };
     }),
   };
 }
@@ -146,6 +162,8 @@ async function ownedRound(db, ctx, roundId) {
 }
 
 export async function roundView(db, eng) {
+  // no join link until the organisation has accepted the current data processing agreement (GRE-2794)
+  const agreement = await agreementState(db, eng.customer_id);
   const counts = must(await db.sql(`SELECT e.status::text AS status, count(*)::int AS n FROM employee e
     WHERE e.engagement_id = $1 GROUP BY 1`, [eng.id]));
   const abandoned = must(await db.sql(`SELECT count(*)::int AS n FROM session s JOIN employee e ON e.id = s.employee_id
@@ -154,14 +172,16 @@ export async function roundView(db, eng) {
   const spendRow = Array.isArray(spend.data) ? spend.data[0] : null;
   const c = Object.fromEntries(counts.map((r) => [r.status, r.n]));
   return {
-    id: eng.id, clientName: eng.client_name, organisationId: eng.customer_id, sponsor: eng.sponsor ?? null,
+    id: eng.id, organisationId: eng.customer_id, sponsor: eng.sponsor ?? null,
     mode: eng.mode, status: STATUS_OUT[eng.status] || eng.status, voice: eng.branding_config?.voice !== false, targetMinutes: eng.target_minutes,
     seatTotal: eng.seat_total, costEnvelopePence: Number(eng.cost_envelope_pence),
     spendPence: Number(spendRow?.spent_pence ?? spendRow?.spend_pence ?? spendRow?.cost_pence ?? 0),
     endDate: eng.end_date, retentionDeleteAfter: eng.retention_delete_after,
     retentionDays: eng.retention_days, readoutAt: eng.readout_at ?? null, closedAt: eng.closed_at ?? null,
     deletionDate: deletionDate(eng),
-    joinUrl: joinUrl(eng.enrol_token),
+    joinUrl: agreement.accepted ? joinUrl(eng.enrol_token) : null,
+    agreement: { version: agreement.version, contentSha256: agreement.contentSha256, accepted: agreement.accepted,
+      acceptedAt: agreement.acceptance?.acceptedAt ?? null },
     enrol: { enabled: eng.enrol_enabled, expiresAt: eng.enrol_expires_at, allowedEmailDomains: eng.allowed_email_domains,
       defaultUnitId: eng.default_unit_id },
     contextPackVersion: eng.context_pack_version,
@@ -238,8 +258,10 @@ export async function saveRound(db, ctx, roundId, body) {
   const r = checkRound(body);
   let eng = must(await db.from('engagement').select('*').eq('id', roundId).maybeSingle());
   if (eng && (eng.org_id !== ctx.org || eng.customer_id !== ctx.customerId)) notFound();
+  const name = must(await db.sql('SELECT organisation_name($1) AS name', [ctx.customerId]))[0]?.name;
+  if (!name) bad('organisationId');
   const fields = {
-    client_name: r.clientName, sponsor: r.sponsor, mode: r.mode, target_minutes: r.targetMinutes,
+    client_name: name, sponsor: r.sponsor, mode: r.mode, target_minutes: r.targetMinutes,
     status: r.status, branding_config: { ...(eng?.branding_config ?? {}), voice: r.voice }, seat_total: r.seatTotal, cost_envelope_pence: r.costEnvelopePence, end_date: r.endDate,
     retention_delete_after: r.retentionDeleteAfter, retention_days: r.retentionDays, readout_at: r.readoutAt,
     allowed_email_domains: r.enrol.domains,
@@ -284,24 +306,40 @@ export function inviteEmail({ name, clientName, url, targetMinutes }) {
 export async function invitePeople(db, ctx, roundId, body, after) {
   const { people, send } = checkInvites(body);
   const eng = await ownedRound(db, ctx, roundId);
+  await requireAgreement(db, eng.customer_id);
   const units = new Set(must(await db.from('org_unit').select('id').eq('engagement_id', eng.id)).map((u) => u.id));
   const invited = [];
-  for (const p of people) {
+  for (const [i, p] of people.entries()) {
     if (p.unitId && !units.has(p.unitId)) bad('people.unitId');
-    const domain = p.email.split('@')[1];
+    let member = null;
+    if (p.userId) {
+      member = must(await db.sql('SELECT * FROM organisation_member($1, $2)', [eng.customer_id, p.userId]))[0];
+      if (!member) bad(`people[${i}].userId: not a member of this organisation`);
+    }
+    const email = member?.email ?? p.email;
+    const domain = email.split('@')[1];
     if (p.portalRole !== 'client_admin' && !eng.allowed_email_domains.includes(domain)) bad('people.email: domain not allowed');
-    const existing = must(await db.from('employee').select('id, status').eq('engagement_id', eng.id).eq('email', p.email).maybeSingle());
-    const row = { name: p.name, role_title: p.roleTitle, unit_id: p.unitId ?? eng.default_unit_id, portal_role: p.portalRole };
+    // the person's place: by user id, else an unclaimed invitation to the same email (which an account then claims)
+    let existing = p.userId ? must(await db.from('employee').select('id, user_id').eq('engagement_id', eng.id).eq('user_id', p.userId).maybeSingle()) : null;
+    existing ??= must(await db.from('employee').select('id, user_id').eq('engagement_id', eng.id).eq('email', email).maybeSingle());
+    if (existing?.user_id && p.userId && existing.user_id !== p.userId) bad(`people[${i}].userId: the email is on the round under another account`);
+    const row = { role_title: p.roleTitle, unit_id: p.unitId ?? eng.default_unit_id, portal_role: p.portalRole,
+      ...(member ? {} : { name: p.name }) };
     let employeeId;
     if (existing) {
-      must(await db.from('employee').update(row).eq('id', existing.id));
+      const link = member && !existing.user_id
+        ? { user_id: member.user_id, person_id: await ensurePersonForUser(db, { userId: member.user_id, email, name: member.name }) } : {};
+      must(await db.from('employee').update({ ...row, ...link }).eq('id', existing.id));
       employeeId = existing.id;
     } else {
-      // person_id and user_id are set when the person joins with a verified website account of this email
-      employeeId = must(await db.from('employee').insert({ engagement_id: eng.id, email: p.email,
-        status: 'invited', ...row }).select('id').single()).id;
+      const link = member
+        ? { user_id: member.user_id, name: member.name, person_id: await ensurePersonForUser(db, { userId: member.user_id, email, name: member.name }) }
+        : {}; // user_id and person_id are set when the person joins with a verified website account of this email
+      employeeId = must(await db.from('employee').insert({ engagement_id: eng.id, email, status: 'invited', ...row, ...link })
+        .select('id').single()).id;
     }
-    invited.push({ email: p.email, employeeId, outcome: existing ? 'updated' : 'created', name: p.name });
+    invited.push({ userId: member?.user_id ?? existing?.user_id ?? null, organisationId: eng.customer_id, employeeId,
+      outcome: existing ? 'updated' : 'created', email, name: member?.name ?? p.name });
   }
   await audit(db, eng.id, ctx.actor, 'round.invited', `Invited ${invited.length} people through GSAM`);
   const toSend = send && eng.enrol_token ? invited.filter((i) => i.outcome === 'created') : [];
@@ -311,7 +349,56 @@ export async function invitePeople(db, ctx, roundId, body, after) {
     const sent = await mail({ to: i.email, ...inviteEmail({ name: i.name, clientName: eng.client_name, url, targetMinutes: eng.target_minutes }) });
     if (sent) result.emailed += 1;
   });
-  return { status: 200, body: { invited: invited.map(({ name, ...rest }) => rest), emailed: toSend.length }, rowCount: invited.length,
+  // GSAM stores only the ids: no name or email in the answer
+  return { status: 200, body: { invited: invited.map(({ name, email, ...rest }) => rest), emailed: toSend.length }, rowCount: invited.length,
+    resourceId: roundId };
+}
+
+export function reminderEmail({ name, clientName, url }) {
+  return {
+    subject: `A reminder: your discovery interview for ${clientName}`,
+    text: [`Hello ${name},`, '',
+      `This is a reminder of your conversation with our interviewer for ${clientName}. If you have started, you continue where you stopped.`,
+      '', `Continue here: ${url}`, '', 'Greatstone International'].join('\n'),
+  };
+}
+
+// who each kind reaches: resend the link to those who have not started; remind everyone who has not finished
+const SEND_TO = { resend: ['invited'], remind: ['invited', 'started'] };
+
+export function checkSend(body) {
+  only(body, ['kind', 'userIds', 'employeeIds'], 'body');
+  if (!SEND_TO[body.kind]) bad('kind');
+  const ids = (k) => {
+    const list = body[k] ?? [];
+    if (!Array.isArray(list) || list.some((x) => typeof x !== 'string' || !UUID.test(x))) bad(k);
+    return [...new Set(list.map((x) => x.toLowerCase()))];
+  };
+  const userIds = ids('userIds');
+  const employeeIds = ids('employeeIds');
+  if (!userIds.length && !employeeIds.length) bad('userIds');
+  if (userIds.length + employeeIds.length > 200) bad('userIds');
+  return { kind: body.kind, userIds, employeeIds };
+}
+
+/** Email the join link again (resend) or a reminder (remind) to people already on the round. */
+export async function sendInvites(db, ctx, roundId, body, after) {
+  const { kind, userIds, employeeIds } = checkSend(body);
+  const eng = await ownedRound(db, ctx, roundId);
+  await requireAgreement(db, eng.customer_id);
+  if (eng.status !== 'active' || !eng.enrol_token) bad('the round is not open');
+  const rows = must(await db.sql(`SELECT id, user_id, email, name, status::text AS status FROM employee
+    WHERE engagement_id = $1 AND portal_role <> 'gs_admin' AND (user_id::text = ANY($2::text[]) OR id::text = ANY($3::text[]))`,
+  [eng.id, userIds, employeeIds]));
+  const found = new Set(rows.flatMap((r) => [r.id, r.user_id]));
+  for (const id of [...userIds, ...employeeIds]) if (!found.has(id)) bad(`${id}: not on this round`);
+  const toSend = rows.filter((r) => SEND_TO[kind].includes(r.status));
+  const url = joinUrl(eng.enrol_token);
+  const make = kind === 'resend' ? inviteEmail : reminderEmail;
+  for (const r of toSend) after.push((mail) => mail({ to: r.email,
+    ...make({ name: r.name, clientName: eng.client_name, url, targetMinutes: eng.target_minutes }) }));
+  await audit(db, eng.id, ctx.actor, `round.${kind}`, `Queued ${toSend.length} ${kind} emails through GSAM`);
+  return { status: 200, body: { emailed: toSend.length, skipped: rows.length - toSend.length }, rowCount: toSend.length,
     resourceId: roundId };
 }
 
@@ -360,7 +447,7 @@ export async function closeRound(db, ctx, roundId, body) {
 // ── reads ────────────────────────────────────────────────────────────────────────────────────────
 
 export async function listPeople(db, eng) {
-  return must(await db.sql(`SELECT e.id AS "employeeId", e.email, e.name, e.role_title AS "roleTitle", e.unit_id AS "unitId",
+  return must(await db.sql(`SELECT e.id AS "employeeId", e.user_id AS "userId", e.email, e.name, e.role_title AS "roleTitle", e.unit_id AS "unitId",
       e.portal_role::text AS "portalRole", e.status::text AS status, s.started_at AS "sessionStartedAt", s.ended_at AS "sessionEndedAt",
       s.completion_score AS "completionScore", s.phase::text AS phase
     FROM employee e LEFT JOIN LATERAL (SELECT * FROM session x WHERE x.employee_id = e.id ORDER BY x.started_at DESC LIMIT 1) s ON true
@@ -388,18 +475,65 @@ export async function listEvents(db, eng, params) {
     nextCursor: rows.length > limit ? encode(page[page.length - 1]) : null };
 }
 
+// hard deletes, oldest first: { userId, interviewId (null for the whole person), at }; the cursor is the row id
+export async function listWithdrawals(db, eng, params) {
+  for (const k of params.keys()) if (!['after', 'limit'].includes(k)) bad(k);
+  const after = decode(params.get('after'));
+  const limit = params.has('limit') ? Number(params.get('limit')) : 100;
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) bad('limit');
+  const rows = must(await db.sql(`SELECT w.id, w.user_id, w.session_id, w.at FROM withdrawal w WHERE w.engagement_id = $1
+    AND ($2::uuid IS NULL OR (w.at, w.id) > (SELECT c.at, c.id FROM withdrawal c WHERE c.id = $2 AND c.engagement_id = $1))
+    ORDER BY w.at, w.id LIMIT $3`, [eng.id, after, limit + 1]));
+  const page = rows.slice(0, limit);
+  return { items: page.map((r) => ({ cursor: encode(r), userId: r.user_id, interviewId: r.session_id, at: r.at })),
+    nextCursor: rows.length > limit ? encode(page[page.length - 1]) : null };
+}
+
 /** { customerId, roundId, tail } for interview/organisations/{organisationId}/rounds/{roundId}/…, or null. */
 function roundPath(p) {
   if (p[0] !== 'interview' || p[1] !== 'organisations' || !UUID.test(p[2] || '') || p[3] !== 'rounds' || !p[4]) return null;
   return { customerId: p[2].toLowerCase(), roundId: p[4], tail: p.slice(5) };
 }
 
+// interview/organisations/{organisationId}/agreement[/acceptances/{id}/copy]: the organisation's acceptance of the
+// data processing agreement, and a copy of an accepted agreement with its record (GRE-2794)
+function agreementRoute(p) {
+  if (p[0] !== 'interview' || p[1] !== 'organisations' || !UUID.test(p[2] || '') || p[3] !== 'agreement') return null;
+  const tail = p.slice(4);
+  const copyId = tail.length === 3 && tail[0] === 'acceptances' && tail[2] === 'copy' ? tail[1] : null;
+  if (tail.length && !copyId) return null;
+  const customerId = p[2].toLowerCase();
+  return {
+    resource: 'interview', id: customerId,
+    async run(client, params) {
+      if ([...params.keys()].length) bad('no parameters');
+      const { rows: [{ org }] } = await client.query(`SELECT current_setting('request.jwt.claims', true)::jsonb->>'org' AS org`);
+      // the organisation must be this tenant's
+      const { rows: mine } = await client.query('SELECT 1 FROM customers WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL', [customerId, org]);
+      if (!mine.length) throw new BridgeRequestError('not_found', 'no such organisation');
+      const db = interviewDbOnClient(client, { org, customer_id: customerId });
+      if (copyId) {
+        if (!UUID.test(copyId)) throw new BridgeRequestError('not_found', 'no such acceptance');
+        const row = (await acceptanceHistory(db, customerId)).find((r) => r.id === copyId.toLowerCase());
+        const html = row && acceptanceCopyHtml(row);
+        if (!html) throw new BridgeRequestError('not_found', 'no such acceptance');
+        return { outcome: 'ok', rowCount: 1, body: { item: { filename: copyFilename(row), contentType: 'text/html; charset=utf-8', html } } };
+      }
+      const state = await agreementState(db, customerId);
+      const history = (await acceptanceHistory(db, customerId)).map(acceptanceView);
+      return { outcome: 'ok', rowCount: history.length, body: { item: { ...state, history } } };
+    },
+  };
+}
+
 /** The read route for path parts after /api/admin/v1/, or null when it is not an interview path. */
 export function interviewReadRoute(p) {
+  const agreement = agreementRoute(p);
+  if (agreement) return agreement;
   const at = roundPath(p);
   if (!at) return null;
   const tail = at.tail.join('/');
-  const known = ['', 'people', 'events', 'interviews', 'synthesis/latest', 'synthesis/released'];
+  const known = ['', 'people', 'events', 'withdrawals', 'interviews', 'synthesis/latest', 'synthesis/released'];
   const interviewId = at.tail.length === 2 && at.tail[0] === 'interviews' ? at.tail[1] : null;
   if (!known.includes(tail) && !interviewId) return null;
   return {
@@ -409,10 +543,11 @@ export function interviewReadRoute(p) {
       const ctx = { org, customerId: at.customerId };
       const db = interviewDbOnClient(client, { org, customer_id: at.customerId });
       const eng = await ownedRound(db, ctx, at.roundId);
-      if (tail !== 'events' && [...params.keys()].length) bad('no parameters');
+      if (tail !== 'events' && tail !== 'withdrawals' && [...params.keys()].length) bad('no parameters');
       if (tail === '') return { outcome: 'ok', rowCount: 1, body: { item: await roundView(db, eng) } };
       if (tail === 'people') { const items = await listPeople(db, eng); return { outcome: 'ok', rowCount: items.length, body: { items } }; }
       if (tail === 'events') { const page = await listEvents(db, eng, params); return { outcome: 'ok', rowCount: page.items.length, body: page }; }
+      if (tail === 'withdrawals') { const page = await listWithdrawals(db, eng, params); return { outcome: 'ok', rowCount: page.items.length, body: page }; }
       if (tail === 'interviews') { const list = await listInterviews(db, eng); return { outcome: 'ok', rowCount: list.items.length, body: list }; }
       if (interviewId) { const item = await getInterview(db, eng, interviewId); return { outcome: 'ok', rowCount: 1, body: { item } }; }
       const item = tail === 'synthesis/latest' ? await getLatestSynthesis(db, eng.id) : await getReleasedSynthesis(db, eng.id);
@@ -442,6 +577,7 @@ export function interviewWriteRoute(method, p) {
   });
   if (!tail.length) return route((db, ctx, body) => saveRound(db, ctx, roundId, body));
   if (tail.length === 1 && tail[0] === 'invites') return route((db, ctx, body) => invitePeople(db, ctx, roundId, body, after));
+  if (tail.length === 2 && tail[0] === 'invites' && tail[1] === 'send') return route((db, ctx, body) => sendInvites(db, ctx, roundId, body, after));
   if (tail.length === 1 && tail[0] === 'close') return route((db, ctx, body) => closeRound(db, ctx, roundId, body));
   // synthesis is made in GSAM; the site's own run is the fallback
   if (tail.length === 2 && tail[0] === 'synthesis' && tail[1] === 'released') return route((db, ctx, body) => pushSynthesis(db, ctx, roundId, body));

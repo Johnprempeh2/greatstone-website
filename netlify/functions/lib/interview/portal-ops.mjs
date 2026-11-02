@@ -18,6 +18,7 @@ import { recordUsage } from './budget.mjs';
 import { getReleasedSynthesis } from './synthesis/release.mjs';
 import { verifyForRender } from './synthesis/pipeline.mjs';
 import { roundVoiceEnabled } from './caller.mjs';
+import { acceptanceFor } from './agreement.mjs';
 import { deletionDate } from './retention.mjs';
 import { parseQuoteChoice, QUOTE_CHOICES } from './quotes.mjs';
 
@@ -64,7 +65,7 @@ async function interviewPage({ db, sys, ctx, caller, args, env }) {
     clientName: ctx.engagement.client_name,
     targetMinutes: ctx.engagement.target_minutes ?? 20,
     isAdmin: isAdmin(ctx),
-    seats: args.seats === 'exhausted' ? 'exhausted' : null,
+    seats: args.seats === 'exhausted' || args.seats === 'not-open' ? args.seats : null,
     consent: args.consent === 'required' ? 'required' : null,
     voiceEnabled: env.voice && roundVoiceEnabled(ctx.engagement),
     // GRE-2687: the short privacy notice names the rule and, once the readout is booked, the date (YYYY-MM-DD)
@@ -164,6 +165,8 @@ async function results({ db, sys, caller, args }) {
 async function startConversation({ db, sys, ctx, args }) {
   if (!ctx) return go('');
   if (!args.dataConsent) return go('', '?consent=required');
+  // no seat until the organisation has accepted the current data processing agreement (GRE-2794); nothing is written
+  if (!(await acceptanceFor(sys, ctx.engagement.customer_id))) return go('', '?seats=not-open');
   const { error: consentError } = await db.from('consent_event').insert({ employee_id: ctx.employee.id, kind: 'participation', value: true });
   if (consentError) throw new Error(`could not record consent: ${consentError.message}`);
   const { error: seatError } = await db.rpc('claim_seat', { p_employee_id: ctx.employee.id });

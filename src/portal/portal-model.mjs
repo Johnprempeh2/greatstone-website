@@ -10,6 +10,8 @@ export function parsePortalHash(hash) {
   const h = String(hash || '');
   if (!/^#\/?portal(\/|$)/i.test(h)) return null;
   if (/^#\/?portal\/deep-dive\/?$/i.test(h)) return { view: 'deep-dive' };
+  // the interview data processing agreement (GRE-2794); not #portal/interview…, which is the interview engine's
+  if (/^#\/?portal\/agreement\/?$/i.test(h)) return { view: 'agreement' };
   const m = ROUTE.exec(h);
   if (!m) return { view: 'notfound' };
   if (!m[1]) return { view: 'home' };
@@ -22,12 +24,14 @@ export const JOURNEY = ['Lead and qualification', 'Executive Discovery', 'GITA',
 
 export const KIND_LABEL = {
   engagement_pack: 'Engagement Pack', nda: 'NDA', gita: 'GITA', terms: 'Terms', pre_read: 'Pre-read',
-  north_star: 'North Star', investigation_plan: 'Investigation plan', gdxp: 'GDXP',
+  north_star: 'North Star', investigation_plan: 'Investigation plan', deep_dive: 'Deep Dive', gdxp: 'GDXP',
 };
+
+export const deepDiveDocuments = (docs = []) => docs.filter((doc) => doc.kind === 'deep_dive' && doc.status === 'published');
 
 /**
  * Where the client is, from what has been published to them and what they have accepted. No stage is stored
- * for the portal yet, so this reads the documents: a GDXP means 5; a Deep Dive cannot be seen in phase 1;
+ * for the portal yet, so this reads the documents: a GDXP means 5; a released Deep Dive means 4;
  * a GITA agreed in principle (or terms accepted) means 3; a GITA published means 2; any Executive Discovery
  * document (pack, NDA, pre-read, North Star) means 1; nothing yet means 0.
  */
@@ -36,7 +40,7 @@ export function journeyStage(docs = [], acceptances = []) {
   const acted = new Set(acceptances.map((a) => a.document_id));
   const actedKind = (k) => docs.some((d) => d.kind === k && acted.has(d.id));
   if (kinds.has('gdxp')) return 5;
-  if (kinds.has('investigation_plan')) return 4;
+  if (kinds.has('investigation_plan') || kinds.has('deep_dive')) return 4;
   if (actedKind('gita') || actedKind('terms')) return 3;
   if (kinds.has('gita') || kinds.has('terms')) return 2;
   if (['engagement_pack', 'nda', 'pre_read', 'north_star'].some((k) => kinds.has(k))) return 1;

@@ -12,6 +12,7 @@
 // (USD->GBP fixed at 0.79, Math.ceil so no call is recorded as free) with the Opus tier added.
 
 import Anthropic from '@anthropic-ai/sdk';
+import { anthropicKey } from '../keys.mjs';
 
 export const SYNTHESIS_MODEL = process.env.SYNTHESIS_MODEL ?? 'claude-opus-4-6';
 
@@ -38,7 +39,7 @@ export function synthesisCostPence(model, inputTokens, outputTokens) {
 
 let anthropic = null;
 function client() {
-  if (!anthropic) anthropic = new Anthropic();
+  if (!anthropic) anthropic = new Anthropic({ apiKey: anthropicKey() });
   return anthropic;
 }
 
