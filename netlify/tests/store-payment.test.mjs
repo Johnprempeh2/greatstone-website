@@ -22,6 +22,7 @@ function database(type = 'product') {
       if (sql.includes('FROM pricing_rules') || sql.includes('FROM pricing_rule_targets')) return { rows: [] };
       if (sql.includes('FROM org_settings')) return { rows: [{ usd_to_gbp_display_rate: '1.25' }] };
       if (sql.includes('INSERT INTO quotes')) return { rows: [{ id: params[0], reference: 'Q-TEST' }] };
+      if (sql.includes('po_upload_take_slot')) return { rows: [{ ok: true }] };
       return { rows: [] };
     }, release: () => calls.push({ sql: 'release' }),
   }) };
