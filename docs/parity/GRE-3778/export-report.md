@@ -40,20 +40,21 @@ HTML 4 KB, page CSS 0 rules.
 
 ### /how-we-help
 
-HTML 82 KB, page CSS 4 rules.
+HTML 6 KB, page CSS 4 rules.
 
-- Panels: still render; its controls need an island (GRE-3777)
-- ServiceCatalog: still render; its controls need an island (GRE-3777)
-- 105 inline SVG (kept: the sanitiser allows a drawing subset)
-- sanitiser removes: input ×1
+- Panels → behaviour more
+- ServiceCatalog → island service-catalog
+- 7 inline SVG (kept: the sanitiser allows a drawing subset)
+- sanitiser removes nothing
 
 ### /services
 
 HTML 16 KB, page CSS 13 rules.
 
-- Panels: still render; its controls need an island (GRE-3777)
-- Panels: still render; its controls need an island (GRE-3777)
-- Faq: still render; its controls need an island (GRE-3777)
+- Panels: no behaviour needed
+- Panels: no behaviour needed
+- Faq → behaviour faq
+- FAQ structured data → page SEO (6 questions)
 - 7 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes: script ×1
 
@@ -72,11 +73,10 @@ HTML 4 KB, page CSS 4 rules.
 
 ### /about
 
-HTML 14 KB, page CSS 11 rules.
+HTML 15 KB, page CSS 11 rules.
 
-- Panels: still render; its controls need an island (GRE-3777)
-- Panels: still render; its controls need an island (GRE-3777)
-- Team: still render; its controls need an island (GRE-3777)
+- Panels → behaviour more
+- Panels → behaviour more
 - 11 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes nothing
 
@@ -84,8 +84,7 @@ HTML 14 KB, page CSS 11 rules.
 
 HTML 10 KB, page CSS 5 rules.
 
-- Panels: still render; its controls need an island (GRE-3777)
-- IntelBand: still render; its controls need an island (GRE-3777)
+- Panels → behaviour more
 - 8 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes nothing
 
@@ -93,24 +92,24 @@ HTML 10 KB, page CSS 5 rules.
 
 HTML 10 KB, page CSS 15 rules.
 
-- MaturityMap: still render; its controls need an island (GRE-3777)
-- Ladder: still render; its controls need an island (GRE-3777)
+- MaturityMap → behaviour climb
+- MethodTieIn → behaviour grow
 - 4 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes nothing
 
 ### /industries
 
-HTML 6 KB, page CSS 4 rules.
+HTML 10 KB, page CSS 5 rules.
 
-- IndustryPicker: still render; its controls need an island (GRE-3777)
+- IndustryPicker → behaviour tabs
 - 3 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes nothing
 
 ### /contact
 
-HTML 3 KB, page CSS 3 rules.
+HTML 4 KB, page CSS 3 rules.
 
-- Panels: still render; its controls need an island (GRE-3777)
+- Panels → behaviour more
 - BookDeepDive → island enquiry-form
 - 4 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes nothing
