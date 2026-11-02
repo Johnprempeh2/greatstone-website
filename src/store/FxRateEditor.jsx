@@ -3,7 +3,6 @@ import { staffDb } from './staff-store-api.mjs';
 // reprices on save because GBP is computed from USD at the live rate. Live before→after preview over a
 // sample of real products + an audit history panel (fx_rate_history). Staff-gated via staff_all RLS.
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { usdToGbpMinor, fmtMoney } from '../lib/pricing.mjs';
 import { fxStaleness, FX_AGEING_DAYS } from '../lib/fx-staleness.mjs';
 

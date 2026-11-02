@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { makePortalFileHandler } from '../functions/portal-file.mjs';
 
 const USER = { id: '00000000-0000-4000-8000-000000000001', email: 'member@example.test', email_confirmed_at: '2026-01-01' };
 const DOC = '00000000-0000-4000-8000-000000000002';
+const PDF = '%PDF-test';
+const PDF_SHA = createHash('sha256').update(PDF).digest('hex');
 const req = (id = DOC, token = 'valid') => new Request('https://example.test/api/portal-file', {
   method: 'POST', headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ document_id: id }),
 });
@@ -35,17 +38,17 @@ test('portal PDF is read through the claims transaction before private blob acce
   const sql = [];
   const client = { query: async (statement, values) => {
     sql.push([statement, values]);
-    return { rows: statement.startsWith('SELECT id,title') ? [{ id: DOC, title: 'Test document', version: 2, pdf_path: 'private/path.pdf' }] : [] };
+    return { rows: statement.startsWith('SELECT id,title') ? [{ id: DOC, title: 'Test document', version: 2, pdf_path: 'private/path.pdf', pdf_sha256: PDF_SHA }] : [] };
   }, release: () => sql.push(['release']) };
   let blobPath;
   const handler = makePortalFileHandler({ verify: async () => USER, pool: () => ({ connect: async () => client }),
-    store: () => ({ get: async (path) => { blobPath = path; return new TextEncoder().encode('%PDF-test').buffer; } }) });
+    store: () => ({ get: async (path) => { blobPath = path; return new TextEncoder().encode(PDF).buffer; } }) });
   const result = await handler(req());
   assert.equal(result.status, 200);
   assert.equal(result.headers.get('content-disposition'), 'attachment; filename="test-document-v2.pdf"');
   assert.equal(blobPath, 'private/path.pdf');
   assert.deepEqual(sql.map(([statement]) => statement), ['BEGIN', 'SET LOCAL ROLE authenticated',
-    "SELECT set_config('request.jwt.claims', $1, true)", 'SELECT id,title,version,pdf_path FROM portal_documents WHERE id=$1', 'COMMIT', 'release']);
+    "SELECT set_config('request.jwt.claims', $1, true)", 'SELECT id,title,version,pdf_path,pdf_sha256 FROM portal_documents WHERE id=$1', 'COMMIT', 'release']);
   assert.deepEqual(JSON.parse(sql[2][1][0]), { role: 'authenticated', sub: USER.id, email: USER.email, email_verified: true });
   assert.deepEqual(sql[3][1], [DOC]);
   sql.length = 0;
@@ -54,4 +57,19 @@ test('portal PDF is read through the claims transaction before private blob acce
   }) }),
     store: () => { throw new Error('Blob store reached'); } });
   assert.equal((await denied(req())).status, 404);
+});
+
+test('portal PDF is refused when the stored bytes do not match the recorded hash', async () => {
+  const client = { query: async (statement) => ({ rows: statement.startsWith('SELECT id,title')
+    ? [{ id: DOC, title: 'Test document', version: 2, pdf_path: 'private/path.pdf', pdf_sha256: PDF_SHA }] : [] }),
+  release: () => {} };
+  const logs = [];
+  const handler = makePortalFileHandler({ verify: async () => USER, pool: () => ({ connect: async () => client }),
+    log: (line) => logs.push(line),
+    store: () => ({ get: async () => new TextEncoder().encode('%PDF-tampered').buffer }) });
+  const result = await handler(req());
+  assert.equal(result.status, 503);
+  assert.equal(result.headers.get('content-disposition'), null);
+  assert.deepEqual(await result.json(), { error: 'The PDF is unavailable. Try again.' });
+  assert.deepEqual(logs, ['portal-file: stored PDF does not match its recorded hash']);
 });
