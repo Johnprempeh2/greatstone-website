@@ -29,7 +29,12 @@ test('the release carries every published marketing and legal page with complete
 
 test('release navigation resolves to published page ids and all pages inherit one org', () => {
   const paths = new Map(release.pages.map((page) => [page.id, page.path]));
-  assert.deepEqual(release.site.navigation.map((item) => paths.get(item.target.pageId)), ['/dx-consultancy', '/dev-tools', '/case-studies', '/about', '/insights']);
+  assert.deepEqual(release.site.navigation.map((item) => item.label), ['DX Consultancy', 'DX Dev Tools', 'Transformation Services', 'Case Studies', 'About', 'Insights']);
+  assert.deepEqual(release.site.navigation.filter((item) => !item.children).map((item) => paths.get(item.target.pageId)), ['/dx-consultancy', '/dev-tools', '/case-studies', '/about', '/insights']);
+  const group = release.site.navigation.find((item) => item.children);
+  assert.equal(group.children.length, 9);
+  assert.deepEqual(group.children[0], { id: group.children[0].id, label: 'The full transformation', visible: true, subtext: 'Every step, planned together', target: { kind: 'page', pageId: release.pages.find((page) => page.path === '/method').id } });
+  assert.ok(group.children.slice(1).every((item) => item.subtext && /^\/transformation-services#[a-z-]+$/.test(item.target.href)));
   assert.equal(release.orgId, 'org-greatstone');
   assert.equal(new Set(release.pages.map((page) => page.id)).size, release.pages.length);
   assert.deepEqual(themeStyle(release.theme.tokens)['--gs-accent'], '#c8ff00');

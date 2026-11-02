@@ -70,6 +70,26 @@ export function toCatalogueCollections(catalogue, targetOrgId = orgId) {
   }]));
 }
 
+// The studio's header tree: page links, links and one level of groups, with their subtext.
+// A group has no page of its own in the studio; its target is its first page member.
+function releaseNavigation(items, bySlug, pagePaths) {
+  return (items || []).flatMap((item) => {
+    if (!item?.visible) return [];
+    const subtext = item.subtext ? { subtext: item.subtext } : {};
+    if (item.type === 'group') {
+      const children = releaseNavigation(item.children, bySlug, pagePaths);
+      const first = children.find((child) => child.target.kind === 'page');
+      return first ? [{ id: item.id, label: item.label, visible: true, target: first.target, children }] : [];
+    }
+    if (item.type === 'link') {
+      const href = releaseLinks(item.href, pagePaths);
+      return href ? [{ id: item.id, label: item.label, visible: true, ...subtext, target: { kind: 'link', href } }] : [];
+    }
+    const page = bySlug[item.pageSlug];
+    return page ? [{ id: item.id, label: item.label || page.title, visible: true, ...subtext, target: { kind: 'page', pageId: page.id } }] : [];
+  });
+}
+
 export function toProofRelease(snapshot) {
   const slugs = Object.keys(snapshot.pages).filter((slug) => snapshot.pages[slug]?.data?.content?.length);
   if (!slugs.includes('home') || !slugs.includes('dev-tools')) throw new Error('Missing published proof page');
@@ -103,12 +123,7 @@ export function toProofRelease(snapshot) {
     site: {
       name: snapshot.settings.siteName,
       settings: snapshot.settings,
-      navigation: snapshot.navigation.filter((item) => item.visible && bySlug[item.pageSlug]).map((item) => ({
-        id: item.id,
-        label: item.label,
-        visible: true,
-        target: { kind: 'page', pageId: bySlug[item.pageSlug].id },
-      })),
+      navigation: releaseNavigation(snapshot.navigation, bySlug, pagePaths),
     },
     theme: { revisionId: fixtureId('theme:1'), tokens: themeTokens },
     pages,

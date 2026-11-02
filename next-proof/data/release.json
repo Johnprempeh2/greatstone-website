@@ -48,6 +48,107 @@
         }
       },
       {
+        "id": "nav-36j3nr",
+        "label": "Transformation Services",
+        "visible": true,
+        "target": {
+          "kind": "page",
+          "pageId": "d1c41ae4-1801-41b8-8c01-232418f221c8"
+        },
+        "children": [
+          {
+            "id": "nav-2xfug0",
+            "label": "The full transformation",
+            "visible": true,
+            "subtext": "Every step, planned together",
+            "target": {
+              "kind": "page",
+              "pageId": "d1c41ae4-1801-41b8-8c01-232418f221c8"
+            }
+          },
+          {
+            "id": "nav-2yslnr",
+            "label": "Websites & Web Apps",
+            "visible": true,
+            "subtext": "Sites and apps built around your work",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#websites"
+            }
+          },
+          {
+            "id": "nav-2zd9qu",
+            "label": "Commerce & Storefronts",
+            "visible": true,
+            "subtext": "Sell your products and services online",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#commerce"
+            }
+          },
+          {
+            "id": "nav-30yhsz",
+            "label": "AI Agents & Assistants",
+            "visible": true,
+            "subtext": "AI set up for one clear job",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#ai-assistants"
+            }
+          },
+          {
+            "id": "nav-31m0um",
+            "label": "Automation & Integration",
+            "visible": true,
+            "subtext": "Connect your tools, remove manual steps",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#automation"
+            }
+          },
+          {
+            "id": "nav-328o87",
+            "label": "Comms Channels",
+            "visible": true,
+            "subtext": "Reach people where they already are",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#comms"
+            }
+          },
+          {
+            "id": "nav-336q8s",
+            "label": "Meetings & Knowledge",
+            "visible": true,
+            "subtext": "Keep what your company knows",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#knowledge"
+            }
+          },
+          {
+            "id": "nav-34xlp8",
+            "label": "Intelligence & Reporting",
+            "visible": true,
+            "subtext": "See the business as it is now",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#reporting"
+            }
+          },
+          {
+            "id": "nav-35g3kf",
+            "label": "Brand, Content & Media",
+            "visible": true,
+            "subtext": "Look and sound like who you are",
+            "target": {
+              "kind": "link",
+              "href": "/transformation-services#brand"
+            }
+          }
+        ]
+      },
+      {
         "id": "nav-37dfin",
         "label": "Case Studies",
         "visible": true,
