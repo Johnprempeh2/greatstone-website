@@ -4,15 +4,19 @@
 import { createElement } from 'react';
 import { sanitiseHtml } from '../next-proof/html-sanitiser.mjs';
 import { sanitiseCss } from '../next-proof/css-sanitiser.mjs';
-import { ISLANDS } from '../next-proof/islands.mjs';
+import { ISLANDS, islandPlaceholderCss } from '../next-proof/islands.mjs';
 import { CHROME_KEYS } from '../next-proof/gsam-release.mjs';
 import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
+import { AccountEntry, AnimationIsland, QuoteIsland, StoneIsland } from './islands.jsx';
+import ProductListIsland from './ProductListIsland.jsx';
 import { Region } from './html-regions.mjs';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland };
+// Islands that read release data on the server get the release; browser islands get only their props.
+const RELEASE_ISLANDS = new Set(['ProductList']);
 
 function reactProps(attributes) {
   return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [REACT_NAMES[name] || name, BOOLEANS.has(name) ? true : value]));
@@ -24,7 +28,10 @@ function toReact(nodes, context, path = 'n') {
     if (node.type === 'text') return node.value;
     if (node.type === 'island') {
       const island = ISLANDS[node.name];
-      if (island.component) return createElement(COMPONENTS[island.component], { key });
+      // GRE-3777: the placeholder view shows the tag as GSAM live design does, with islandPlaceholderCss.
+      if (context.placeholders) return createElement('gs-island', { key, name: node.name, ...node.attributes });
+      if (island.component) return createElement(COMPONENTS[island.component],
+        { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}) });
       return <IslandBlock key={key} type={island.block} props={{ ...node.props, id: `island-${key.replace(/\./g, '-')}` }}
         pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
     }
@@ -39,15 +46,15 @@ function region(document, scope, context) {
   return { children: toReact(nodes, context, scope), css: css.css };
 }
 
-export default function HtmlPage({ page, release }) {
+export default function HtmlPage({ page, release, placeholders = false }) {
   const context = { media: release.media, forms: release.collections?.forms, pageSlug: page.slug,
-    pagePaths: release.pages.map((item) => item.path), removed: [] };
+    pagePaths: release.pages.map((item) => item.path), removed: [], release, placeholders };
   const site = sanitiseCss(release.stylesheet, { media: release.media, fontFace: true });
   context.removed.push(...site.removed.map((item) => `stylesheet: ${item}`));
   const chrome = Object.fromEntries(CHROME_KEYS.map((key) => [key, region(release.chrome?.[key], key, context)]));
   const body = region(page, 'page', context);
   if (context.removed.length) console.warn(`[html-page] release ${release.release.number} ${page.path}: removed ${context.removed.join(', ')}`);
-  const css = [site.css, ...CHROME_KEYS.map((key) => chrome[key].css), body.css].filter(Boolean).join('\n');
+  const css = [site.css, placeholders ? islandPlaceholderCss() : '', ...CHROME_KEYS.map((key) => chrome[key].css), body.css].filter(Boolean).join('\n');
   return <>
     {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
     <Region scope="header">{chrome.header.children}</Region>
