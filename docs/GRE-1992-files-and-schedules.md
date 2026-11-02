@@ -16,7 +16,7 @@ index row before it touches the bytes. No visible row, no bytes.
 | `deepdive-files` | `/api/deepdive-file` | staff of the plan's org: upload, read, delete (0029) |
 | `licence-files` | `/api/store-file?bucket=licence-files` | staff upload and delete; a buyer reads only their own customer folder (0024) |
 | `po-documents` | `/api/request-quote` writes, `/api/store-file?bucket=po-documents` reads | the guest has no policy, so the worker role writes the index, as Supabase's service role did; staff read (0026) |
-| `portal-files` | `/api/portal-mcp` writes, `/api/portal-file` reads | unchanged: the reader's `portal_documents` row under RLS. 0037 gives clients no policy on the index, so an index check would refuse every client. Open question for Ridge on GRE-1796. |
+| `portal-files` | `/api/portal-mcp` writes, `/api/portal-file` reads | unchanged: the reader's `portal_documents` row under RLS. 0037 gives clients no policy on the index, so an index check would refuse every client. Ridge accepted this on GRE-1796 (GRE-3717, option 1): no policy change. Condition: `/api/portal-file` checks `sha256(bytes) === pdf_sha256` (read under RLS) before it serves the file, and refuses a mismatch with 503. |
 
 ## Schedules
 
