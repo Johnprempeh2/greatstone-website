@@ -29,7 +29,7 @@ export function mountGreatstoneTide(container, opts) {
   const FS = [
     '#extension GL_OES_standard_derivatives : enable',
     'precision highp float;',
-    'uniform float uDpr; uniform float uProm; uniform float uHot; uniform float uRows; uniform vec3 uDeep; uniform vec3 uEmer; uniform vec3 uLime;',
+    'uniform float uDpr; uniform float uProm; uniform float uHot; uniform float uRows; uniform float uBands; uniform vec3 uDeep; uniform vec3 uEmer; uniform vec3 uLime;',
     'varying vec2 vW; varying float vDepth; varying float vLight; varying float vCrest; varying float vSwell;',
     /* distance to the nearest line in device pixels, and how crowded the lines are here */
     'vec2 lineDist(float u) { float fw = max(fwidth(u), 1e-4); return vec2(abs(fract(u - 0.5) - 0.5) / fw, fw); }',
@@ -43,10 +43,11 @@ export function mountGreatstoneTide(container, opts) {
     '  float glow = exp(-r.x * r.x / (16.0 * uDpr * uDpr)) * crowdR;',
     '  float cross = (1.0 - smoothstep(halfW - 0.6, halfW + 0.6, c.x)) * crowdC * 0.16;',
     '  float fog = smoothstep(30.0, 9.0, vDepth) * smoothstep(0.6, 2.2, vDepth);',
-    '  float hot = clamp(vCrest * 0.55 + vSwell * 0.95, 0.0, uHot);',
+    '  float terraces = (exp(-pow((vW.y + 2.0) / 0.48, 2.0)) + exp(-pow((vW.y + 6.0) / 0.48, 2.0)) + exp(-pow((vW.y + 10.0) / 0.48, 2.0)) + exp(-pow((vW.y + 14.0) / 0.48, 2.0))) * uBands;',
+    '  float hot = clamp(vCrest * 0.55 + vSwell * 0.95 + terraces * 0.72, 0.0, uHot);',
     '  vec3 col = mix(uDeep, uEmer, 0.25 + 0.75 * vLight);',
     '  col = mix(col, uLime, hot);',
-    '  float a = (core * (0.28 + 0.55 * vLight + 0.35 * hot) + cross * (0.4 + 0.6 * vLight) + glow * 0.32 * hot) * fog * uProm;',
+    '  float a = (core * (0.28 + 0.55 * vLight + 0.35 * hot + terraces * 0.8) + cross * (0.4 + 0.6 * vLight) + glow * (0.32 * hot + terraces * 0.55)) * fog * uProm;',
     '  a = clamp(a, 0.0, 1.0);',
     '  gl_FragColor = vec4(col * a, a);',
     '}'
@@ -122,8 +123,8 @@ export function mountGreatstoneTide(container, opts) {
     const presets = {
       hero: { rise: 0, depth: 0, amp: 1, bands: 0, lime: .78, speed: 1 },
       calm: { rise: 1, depth: 0, amp: .58, bands: 0, lime: .38, speed: .38 },
-      method: { rise: .8, depth: .2, amp: .65, bands: 1, lime: .45, speed: .22 },
-      compose: { rise: .65, depth: .1, amp: .72, bands: 0, lime: .52, speed: .4 },
+      method: { rise: .8, depth: .2, amp: .65, bands: 1, lime: .8, speed: .22 },
+      compose: { rise: .65, depth: .1, amp: .72, bands: 0, lime: 1, speed: .4 },
       deep: { rise: .35, depth: 1, amp: .48, bands: 0, lime: .2, speed: .32 },
       land: { rise: .35, depth: 1, amp: .48, bands: 0, lime: .2, speed: .32 },
     };

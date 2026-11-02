@@ -61,7 +61,7 @@ export function ConsultancyTide({ pageRef, content }) {
         scrollScene: true,
         dpr: matchMedia('(max-width: 860px)').matches ? 1.5 : 2,
         prominence: .85,
-      }); } catch { tide = null; }
+      }); } catch (error) { console.error('Consultancy tide failed', error); tide = null; }
       if (!tide) return;
       node.classList.add('live');
       tide.onLost = () => node.classList.remove('live');

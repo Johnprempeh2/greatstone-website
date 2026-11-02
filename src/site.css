@@ -145,6 +145,7 @@ h1,h2,h3 { font-weight:800; line-height:1.04; letter-spacing:-0.02em; }
 .consultancy-block .b-pc-card,.consultancy-block .b-compose-problem,.consultancy-block .b-compose-answer,.consultancy-block .b-layer-slab{background-color:rgba(17,39,29,.85)}
 .consultancy-block .b-compose-problem.is-on{background-color:rgba(27,80,57,.9)}
 .consultancy-block .kicker::after,.consultancy-block .b-logos-eyebrow::after{content:"";display:block;width:42px;height:1px;margin-top:10px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .6s var(--gs-ease)}
+.consultancy-block .center .kicker::after,.consultancy-block .b-invite-inner .kicker::after,.consultancy-block .b-invite-card .kicker::after{margin-inline:auto}
 .consultancy-block.is-in .kicker::after,.consultancy-block.is-in .b-logos-eyebrow::after{transform:scaleX(1)}
 .consultancy-ready .consultancy-block:not(.is-in) .gs-blk>section>.wrap{opacity:0;transform:translateY(18px)}
 .consultancy-block .gs-blk>section>.wrap{transition:opacity .65s var(--gs-ease),transform .65s var(--gs-ease)}
