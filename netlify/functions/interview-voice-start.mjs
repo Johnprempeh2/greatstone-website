@@ -35,10 +35,12 @@ export async function grantDeepgramToken(env = process.env, fetchImpl = fetch) {
       headers: { Authorization: `Token ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ttl_seconds: TOKEN_TTL_SECONDS }),
     });
-    if (!res.ok) return null;
+    // the status only, never the key: a 401 or 403 here is the key's role or region (the pr-140 rehearsal saw a 503)
+    if (!res.ok) { console.error(`interview-voice-start: deepgram grant refused (${res.status})`); return null; }
     const body = await res.json();
     return body.access_token ?? null;
-  } catch {
+  } catch (error) {
+    console.error(`interview-voice-start: deepgram grant failed (${error?.name || 'error'})`);
     return null;
   }
 }
