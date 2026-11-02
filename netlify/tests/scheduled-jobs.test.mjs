@@ -3,8 +3,9 @@ import test from 'node:test';
 import pg from 'pg';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import { asWorker } from '../functions/lib/worker-db.mjs';
-import { makeInquiryIpPurge, PURGE_SQL } from '../functions/inquiry-ip-purge.mjs';
-import { makePortalReceiptWorker } from '../functions/portal-receipt-worker.mjs';
+import { getPool } from '../functions/lib/db.mjs';
+import purgeSchedule, { makeInquiryIpPurge, PURGE_SQL } from '../functions/inquiry-ip-purge.mjs';
+import receiptSchedule, { makePortalReceiptWorker } from '../functions/portal-receipt-worker.mjs';
 
 function database(rows = []) {
   const calls = [];
@@ -57,8 +58,13 @@ test('both schedules run against the migrated schema as the worker role', { skip
       'none,192.0.2.2');
     assert.deepEqual(await makePortalReceiptWorker({ pool: () => pool, env: {}, log: () => {} })(),
       { claimed: 0, sent: 0, retry: 0, failed: 0, alertFailed: 0 });
+    // Netlify fails (and retries) a run whose function returns anything but a Response or undefined.
+    process.env.DATABASE_URL = db.url;
+    assert.equal(await purgeSchedule(), undefined);
+    assert.equal(await receiptSchedule(), undefined);
   } finally {
     await pool?.end();
+    if (process.env.DATABASE_URL) { await getPool()?.end(); delete process.env.DATABASE_URL; }
     db.stop();
   }
 });
