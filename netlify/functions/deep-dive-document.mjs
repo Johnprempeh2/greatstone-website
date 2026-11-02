@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
-import { createClient } from '@supabase/supabase-js';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
 import { asBridgeWriter } from './lib/admin-bridge-write.mjs';
@@ -22,7 +22,6 @@ function requestName(headers) {
   catch { return null; }
 }
 const downloadName = (name) => name.replace(/[^a-zA-Z0-9._ -]/g, '_').replace(/^\.+/, '_');
-const identity = (user) => ({ id: user.id, email: user.email || null, email_verified: !!user.email_confirmed_at });
 const EXTENSIONS = { pdf: 'application/pdf', xlsx: 'application/vnd.openxmlformats-officedocument',
   xls: 'application/x-ole-storage', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
   gif: 'image/gif', webp: 'image/webp', sav: 'application/x-spss-sav', zsav: 'application/x-spss-sav',
@@ -31,17 +30,6 @@ export function allowedFileType(name, bytes) {
   const ext = name?.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
   const kind = sniff(bytes);
   return ext && kind && EXTENSIONS[ext] === kind.mime ? kind : null;
-}
-
-async function verifiedUser(req, verify) {
-  const token = /^Bearer ([^\s]+)$/.exec(req.headers.get('authorization') || '')?.[1];
-  if (!token) return null;
-  if (verify) return verify(token);
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  const { data, error } = await createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-  return error ? null : data.user;
 }
 
 export function allowedDocument(snapshot, row) {
@@ -116,11 +104,11 @@ export function makeDeepDiveDocumentHandler({ pool = getPool, verify, store = ()
         return json(result.body, result.status);
       }
 
-      const user = await verifiedUser(req, verify);
+      const user = await userFromRequest(req, verify);
       if (!UUID.test(user?.id || '')) return json({ error: 'Session expired. Sign in again.' }, 401);
       if (req.method === 'GET') {
         const id = url.searchParams.get('id');
-        const result = await asCustomer(db, identity(user), async (client) => {
+        const result = await asCustomer(db, authIdentity(user), async (client) => {
           const snapshot = await clientSnapshot(client);
           if (!snapshot) return null;
           const { rows } = await client.query(`SELECT id,source_id,kind,file_name,mime,byte_size,blob_key,created_at
@@ -147,7 +135,7 @@ export function makeDeepDiveDocumentHandler({ pool = getPool, verify, store = ()
       const type = allowedFileType(name, bytes);
       if (!type) return json({ error: 'File type is not accepted.' }, 400);
       const path = `${randomUUID()}/${randomUUID()}`;
-      const access = await asCustomer(db, identity(user), async (client) => {
+      const access = await asCustomer(db, authIdentity(user), async (client) => {
         const access = await answerForClient(client, requestId);
         if (!access) return null;
         const { rows: [answer] } = await client.query(`SELECT status FROM deep_dive_answers
