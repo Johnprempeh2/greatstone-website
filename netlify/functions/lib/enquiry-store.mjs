@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 
 const ANON_CLAIMS = JSON.stringify({ role: 'anon', sub: null, email: null, email_verified: false });
-// the columns `anon` holds INSERT on; enquiryRow() (supabase/functions/_shared/enquiry.mjs) fills them
+// the columns `anon` holds INSERT on; enquiryRow() (netlify/functions/lib/shared/enquiry.mjs) fills them
 const COLUMNS = ['id', 'services', 'contact_name', 'contact_email', 'contact_company', 'message', 'size_band', 'industry', 'attribution', 'source', 'ip'];
 const JSONB = new Set(['services', 'attribution']);
 const INSERT = `INSERT INTO service_inquiries (${COLUMNS.join(', ')}) VALUES (${COLUMNS.map((c, i) => '$' + (i + 1) + (JSONB.has(c) ? '::jsonb' : '')).join(', ')})`;

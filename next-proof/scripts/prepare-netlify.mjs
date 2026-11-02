@@ -9,7 +9,7 @@ if (process.argv[3] && !editor) throw new Error('Only --editor is supported as a
 await mkdir(target, { recursive: true });
 const files = ['src', 'app', 'next-proof', 'public', 'scripts', 'contracts', 'package.json', 'package-lock.json', 'next.config.mjs', 'middleware.js'];
 // The functions import netlify/database (owner-import); the Vite deploy carries both, so the Next deploy does too.
-if (!editor) files.push('netlify/functions', 'netlify/database', 'supabase/functions/_shared');
+if (!editor) files.push('netlify/functions', 'netlify/database');
 for (const name of files) {
   await cp(resolve(root, name), resolve(target, name), {
     recursive: true,

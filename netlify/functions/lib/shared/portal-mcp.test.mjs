@@ -7,7 +7,7 @@ import {
   createPortalMcp, checkSectionHtml, checkDocumentFields, safePdfName, fromBase64, sha256Hex, SECTION_TAGS, TOOLS,
   publicTools, PROTOCOL_VERSIONS, GENERAL_ERROR, KINDS,
 } from './portal-mcp.mjs';
-import { ALLOWED, DEMOTE } from '../../../src/lib/sanitize-html.mjs';
+import { ALLOWED, DEMOTE } from '../../../../src/lib/sanitize-html.mjs';
 
 const TOKEN = 'gspm_' + 'ab'.repeat(32);
 const TOKEN_SHA = createHash('sha256').update(TOKEN).digest('hex');

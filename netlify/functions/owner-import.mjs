@@ -5,7 +5,8 @@ import { runOwnerImport, STORE } from './lib/owner-import.mjs';
 // The one-time owner importer (GRE-2578). Scheduled functions have no URL, so nothing can call this; it does nothing
 // unless OWNER_IMPORT_UNTIL, OWNER_IMPORT_SITE and a Blobs payload are all present (lib/owner-import.mjs).
 // The owner pool is opened here for one run and ended after it; no other code path uses it.
-// Remove this function in a follow-up PR after the production move (GRE-2567).
+// After the production move (GRE-2567) its table and identity modes can go, but keep mcp-token-revoke (GRE-3769):
+// it is how a leaked portal MCP token is stopped on Netlify without a deploy of new code.
 export default async (_req, context) => {
   await runOwnerImport({
     env: process.env,

@@ -5,9 +5,9 @@ import {
   normaliseEnquiry, normaliseAttribution, enquiryRow, buildEnquiryAlert, handleEnquiry, splitInterest, sourceLabel, PER_IP_PER_DAY,
 } from './enquiry.mjs';
 
-const MIGRATION = readFileSync(new URL('../../migrations/0035_service_inquiry_attribution.sql', import.meta.url), 'utf8');
-const SIZE_MIGRATION = readFileSync(new URL('../../migrations/0040_service_inquiry_size_band.sql', import.meta.url), 'utf8');
-const SIZE_ROLLBACK = readFileSync(new URL('../../rollback/0040_service_inquiry_size_band_down.sql', import.meta.url), 'utf8');
+const MIGRATION = readFileSync(new URL('../../../../supabase/migrations/0035_service_inquiry_attribution.sql', import.meta.url), 'utf8');
+const SIZE_MIGRATION = readFileSync(new URL('../../../../supabase/migrations/0040_service_inquiry_size_band.sql', import.meta.url), 'utf8');
+const SIZE_ROLLBACK = readFileSync(new URL('../../../../supabase/rollback/0040_service_inquiry_size_band_down.sql', import.meta.url), 'utf8');
 
 const BODY = {
   name: '  Jane   Stonewell ', company: 'Stonewell & Co.', email: 'jane@stonewell.co', industry: 'Retail & E-commerce',
