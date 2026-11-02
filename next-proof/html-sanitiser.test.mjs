@@ -23,14 +23,65 @@ test('inline event handlers are removed from every element', () => {
 });
 
 test('iframe, object, embed and other active elements are removed', () => {
-  for (const tag of ['iframe', 'object', 'embed', 'frame', 'applet', 'portal', 'svg', 'math', 'form', 'input', 'textarea',
+  for (const tag of ['iframe', 'object', 'embed', 'frame', 'applet', 'portal', 'math', 'form', 'input', 'textarea',
     'link', 'meta', 'base', 'style', 'template', 'noscript', 'video', 'audio', 'canvas', 'dialog']) {
     const out = clean(`<div>before<${tag} src="https://evil.test" data="https://evil.test">inside</${tag}>after</div>`);
     assert.doesNotMatch(out, new RegExp(`<${tag}\\b`, 'i'), tag);
   }
   assert.equal(clean('<iframe src="https://evil.test"></iframe><p>x</p>'), '<p>x</p>');
   assert.equal(clean('<object data="x.swf"><embed src="x.swf"></object>'), '');
-  assert.equal(clean('<svg><script>alert(1)</script></svg><math><mi>x</mi></math>'), '');
+  assert.equal(clean('<svg><script>alert(1)</script></svg><math><mi>x</mi></math>'), '<svg></svg>');
+});
+
+// GRE-3778: icons and charts keep a drawing subset of SVG; nothing in it can run code or load a URL.
+test('svg keeps shapes, gradients and a blur', () => {
+  const icon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" class="i">'
+    + '<path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>'
+    + '<circle cx="12" cy="12" r="3" fill="#c8ff00"></circle><line x1="0" y1="0" x2="1" y2="1" stroke-dasharray="3 8"></line></svg>';
+  assert.equal(clean(icon), icon);
+  const chart = '<svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Chart"><defs>'
+    + '<linearGradient id="ridge1" x1="0" y1="0" x2="0" y2="1"><stop offset="45%" stop-color="rgba(200,255,0,0.30)"></stop></linearGradient>'
+    + '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"></feGaussianBlur>'
+    + '<feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>'
+    + '<g class="peaks"><polygon points="0,50 50,0 100,50" fill="url(#ridge1)" filter="url(#glow)"></polygon>'
+    + '<text x="10" y="20" font-size="30" fill="#9aa09a">Summit</text></g></svg>';
+  assert.equal(clean(chart), chart);
+  assert.equal(clean('<svg><line x1="100" x2="172.74613391789285" y2="-1e-7"></line></svg>'), '<svg><line x1="100" x2="172.74613391789285" y2="-1e-7"></line></svg>');
+  assert.equal(clean('<p>a <svg viewBox="0 0 1 1"></svg> b</p>'), '<p>a <svg viewBox="0 0 1 1"></svg> b</p>');
+});
+
+// GRE-3778: tabs and closed FAQ answers keep their focus order: tabindex -1 or 0 only, inert with no value.
+test('tabindex and inert are kept only in their safe forms', () => {
+  assert.equal(clean('<button tabindex="-1">a</button><div tabindex="0" inert="">b</div>'), '<button tabindex="-1" type="button">a</button><div tabindex="0" inert="">b</div>');
+  assert.equal(clean('<a href="/a" tabindex="5">a</a><div inert="x">b</div>'), '<a href="/a">a</a><div>b</div>');
+});
+
+test('svg cannot run code, load anything or hide markup', () => {
+  const attacks = [
+    '<svg onload="alert(1)"></svg>',
+    '<svg><use href="https://evil.test/x.svg#a"></use></svg>',
+    '<svg><use xlink:href="data:image/svg+xml,x"></use></svg>',
+    '<svg><image href="https://evil.test/x.png"></image></svg>',
+    '<svg><a href="javascript:alert(1)"><text>x</text></a></svg>',
+    '<svg><foreignObject><img src="x" onerror="alert(1)"></foreignObject></svg>',
+    '<svg><style>@import "https://evil.test/x.css";</style></svg>',
+    '<svg><animate attributeName="href" to="javascript:alert(1)"></animate></svg>',
+    '<svg><set attributeName="onclick" to="alert(1)"></set></svg>',
+    '<svg><script href="https://evil.test/x.js"></script></svg>',
+    '<svg><path d="M0 0" style="background:url(https://evil.test)"></path></svg>',
+    '<svg><path fill="url(https://evil.test/x.svg#a)" stroke="url(&quot;//evil.test&quot;)"></path></svg>',
+    '<svg><rect filter="url(https://evil.test/f.svg#f)" mask="url(#m)" clip-path="url(#c)"></rect></svg>',
+    '<svg><p>x</p><div><img src=x onerror=alert(1)></div></svg>',
+    '<svg><gs-island name="cookie-settings"></gs-island></svg>',
+    '<svg id="dataLayer"><g id="gs-scope" data-gs-scope="page"></g></svg>',
+    '<svg><path d="M0 0 url(x)" transform="translate(1) expression(alert(1))"></path></svg>',
+  ];
+  for (const attack of attacks) {
+    const out = clean(attack);
+    assert.doesNotMatch(out, /on[a-z]+=|href|url\((?!#)|style|script|foreignObject|<use|<image|<a\b|<animate|<set|<p>|<div|<img|gs-island|dataLayer|gs-scope|expression/i, attack);
+  }
+  assert.equal(clean('<svg><foreignObject><p>x</p></foreignObject><path d="M0 0"></path></svg>'), '<svg><path d="M0 0"></path></svg>');
+  assert.deepEqual(sanitiseHtml('<svg onload="x"><use href="#a"></use></svg>').removed, ['svg @onload', 'use']);
 });
 
 test('javascript: and other unsafe URLs are removed', () => {

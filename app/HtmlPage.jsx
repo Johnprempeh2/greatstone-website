@@ -12,6 +12,7 @@ import { AccountEntry, AnimationIsland, QuoteIsland, StoneIsland } from './islan
 import ProductListIsland from './ProductListIsland.jsx';
 import { Region } from './html-regions.mjs';
 import TwoDoorsLanding from './TwoDoorsLanding.jsx';
+import formBlocks from '../next-proof/frozen/form-blocks.json';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
@@ -21,8 +22,12 @@ const RELEASE_ISLANDS = new Set(['ProductList']);
 // GRE-3778: the frozen landing renders Puck blocks, which need the page's forms and paths.
 const PAGE_ISLANDS = new Set(['TwoDoorsLanding']);
 
+// GRE-3778: SVG presentation attributes (stroke-width, stop-color…) take React's camelCase names.
+const reactName = (name) => REACT_NAMES[name]
+  || (name.includes('-') && !/^(data|aria)-/.test(name) ? name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) : name);
+
 function reactProps(attributes) {
-  return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [REACT_NAMES[name] || name, BOOLEANS.has(name) ? true : value]));
+  return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [reactName(name), BOOLEANS.has(name) ? true : value]));
 }
 
 function toReact(nodes, context, path = 'n') {
@@ -36,7 +41,10 @@ function toReact(nodes, context, path = 'n') {
       if (island.component) return createElement(COMPONENTS[island.component],
         { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
           ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}) });
-      return <IslandBlock key={key} type={island.block} props={{ ...node.props, id: `island-${key.replace(/\./g, '-')}` }}
+      // GRE-3778: a form exported from a Puck page keeps its published copy (`data-block`, frozen at export).
+      const { blockId, ...props } = node.props;
+      const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
+      return <IslandBlock key={key} type={island.block} props={{ ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }}
         pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
     }
     return createElement(node.tag, { key, ...reactProps(node.attributes) }, node.children.length ? toReact(node.children, context, key) : undefined);

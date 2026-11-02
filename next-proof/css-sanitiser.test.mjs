@@ -61,6 +61,9 @@ test('site paths and media references are kept in url()', () => {
   assert.equal(page('.a{background:#000 url(media:hero) no-repeat;mask:url("/mask.svg")}', { media }).css,
     `${scope} .a{background:#000 url("/media/${'b'.repeat(64)}.png") no-repeat;mask:url("/mask.svg")}`);
   assert.equal(page('.a{background:url(media:missing)}', { media }).css, `${scope} .a{}`);
+  // GRE-3778: a same-page fragment (an SVG gradient or filter) is kept; anything around it is not.
+  assert.equal(page('.a{stroke:url(#trailGrad);filter:url("#glow")}').css, `${scope} .a{stroke:url("#trailGrad");filter:url("#glow")}`);
+  assert.equal(page('.a{stroke:url(#a/b);fill:url(#1x);filter:url(https://evil.test/f.svg#glow)}').css, `${scope} .a{}`);
 });
 
 test('keyframes keep their frames; comments are stripped', () => {
