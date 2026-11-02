@@ -2,9 +2,11 @@
 // Netlify gives the owner (write) role only to code running in a deploy, so the two writes that are not migrations
 // (the staging identity import for GRE-1991 and the production row move for GRE-2567) go through this one path.
 //
-// It runs only its own two fixed transforms, never SQL, table or column names from the payload:
-//   identities  the 052_better_auth/import-users.mjs checks and upserts, unchanged
-//   tables      a data-only move into the hard-coded TABLES list below, positional rows checked against the catalog
+// It runs only its own fixed transforms, never SQL, table or column names from the payload:
+//   identities        the 052_better_auth/import-users.mjs checks and upserts, unchanged
+//   tables            a data-only move into the hard-coded TABLES list below, positional rows checked against the catalog
+//   mcp-token         registers a portal MCP token from its SHA-256 (GRE-3769, migration 061); never the token itself
+//   mcp-token-revoke  revokes a portal MCP token by id (040's mcp_portal_revoke_token)
 //
 // Guards, in order. Until the first three pass it reads nothing and writes nothing:
 //   1. OWNER_IMPORT_UNTIL is set, in the future and at most 60 minutes away
@@ -25,7 +27,7 @@ export const OWNER = 'netlifydb_owner';
 // (IMPORT.md), so production takes only the table move for now. A rehearsal site is added here in its own PR.
 export const SITES = Object.freeze({
   'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'] },
-  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables'] },
+  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'mcp-token', 'mcp-token-revoke'] },
 });
 
 // The Supabase tables with rows (cut-over plan, section 1), parents before children. The order is checked against the
@@ -254,6 +256,79 @@ export async function proveIdentities(pool, data, apply) {
   } finally { client.release(); }
 }
 
+// --- portal MCP tokens (GRE-3769) ---
+// The token is made on John's computer (scripts/mcp-token-new.mjs) and goes only into the app's connection. The
+// payload carries its SHA-256 and nothing else secret; a payload with any other field, or with a 'gspm_' value
+// anywhere, is refused. The result carries the token id and the client count, never the hash.
+
+const MCP_TOKEN_FIELDS = 'customerIds,label,tokenSha256';
+export function validateMcpToken(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) refuse('mcp-token-shape');
+  if (JSON.stringify(data).includes('gspm_')) refuse('mcp-token-raw-token');
+  if (Object.keys(data).sort().join(',') !== MCP_TOKEN_FIELDS) refuse('mcp-token-fields');
+  const { label, customerIds, tokenSha256 } = data;
+  if (typeof label !== 'string' || !label.trim() || label.trim().length > 120) refuse('mcp-token-label');
+  if (!Array.isArray(customerIds) || !customerIds.length || customerIds.length > 50
+    || !customerIds.every((id) => typeof id === 'string' && UUID.test(id))
+    || new Set(customerIds).size !== customerIds.length) refuse('mcp-token-clients');
+  if (typeof tokenSha256 !== 'string' || !DIGEST.test(tokenSha256)) refuse('mcp-token-hash');
+  return data;
+}
+
+export function validateMcpTokenRevoke(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)
+    || Object.keys(data).join(',') !== 'tokenId' || typeof data.tokenId !== 'string' || !UUID.test(data.tokenId))
+    refuse('mcp-token-revoke-shape');
+  return data;
+}
+
+/** One transaction as the owner, under the importer's lock; rolled back unless apply. */
+async function ownerTransaction(pool, apply, fn) {
+  const client = await pool.connect();
+  await client.query('BEGIN');
+  try {
+    const { rows: [who] } = await client.query('SELECT current_user AS role');
+    if (who?.role !== OWNER) refuse('owner-role-required');
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('owner-import'))");
+    const out = await fn(client);
+    await client.query(apply ? 'COMMIT' : 'ROLLBACK');
+    return out;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
+
+export async function registerMcpToken(pool, data, apply) {
+  const { label, customerIds, tokenSha256 } = validateMcpToken(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    // the function checks these too; checking first gives a fixed reason instead of a bare SQLSTATE
+    const { rows: [c] } = await client.query(`SELECT count(*)::int AS n, count(DISTINCT org_id)::int AS orgs
+      FROM public.customers WHERE id = ANY($1::uuid[])`, [customerIds]);
+    if (c.n !== customerIds.length) refuse('mcp-token-clients-unknown');
+    if (c.orgs !== 1) refuse('mcp-token-clients-mixed-org');
+    const { rows: [t] } = await client.query('SELECT count(*)::int AS n FROM public.mcp_tokens WHERE token_sha256 = $1', [tokenSha256]);
+    if (t.n) refuse('mcp-token-exists');
+    const { rows: [r] } = await client.query('SELECT mcp_portal_register_token($1, $2::uuid[], $3) AS id', [label, customerIds, tokenSha256]);
+    const { rows: [k] } = await client.query('SELECT count(*)::int AS n FROM public.mcp_token_clients WHERE token_id = $1', [r.id]);
+    if (k.n !== customerIds.length) refuse('mcp-token-clients-differ');
+    // a dry run's id is rolled back with it, so only an apply reports one
+    return { mcpToken: { ...(apply ? { id: r.id } : {}), clients: k.n } };
+  });
+}
+
+export async function revokeMcpToken(pool, data, apply) {
+  const { tokenId } = validateMcpTokenRevoke(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    const { rows } = await client.query('SELECT revoked_at IS NOT NULL AS revoked FROM public.mcp_tokens WHERE id = $1 FOR UPDATE', [tokenId]);
+    if (!rows.length) refuse('mcp-token-not-found');
+    await client.query('SELECT mcp_portal_revoke_token($1)', [tokenId]);
+    const { rows: [after] } = await client.query('SELECT revoked_at IS NOT NULL AS revoked FROM public.mcp_tokens WHERE id = $1', [tokenId]);
+    if (!after.revoked) refuse('mcp-token-not-revoked');
+    return { mcpTokenRevoke: { id: tokenId, alreadyRevoked: rows[0].revoked } };
+  });
+}
+
 // Counts and fixed reasons only: a pg error's message and detail can carry row values.
 function safeError(error) {
   if (error instanceof Refusal) return { reason: error.message };
@@ -294,7 +369,9 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
       try {
         counts = mode === 'identities' ? await moveIdentities(pool, data, action === 'apply')
           : mode === 'proof' ? await proveIdentities(pool, data, action === 'apply')
-            : await moveTables(pool, data, action === 'apply');
+            : mode === 'mcp-token' ? await registerMcpToken(pool, data, action === 'apply')
+              : mode === 'mcp-token-revoke' ? await revokeMcpToken(pool, data, action === 'apply')
+                : await moveTables(pool, data, action === 'apply');
       } finally { await pool.end(); }
       const at = new Date(now).toISOString();
       if (action === 'apply') Object.assign(ledger, { appliedAt: at, counts });

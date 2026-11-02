@@ -479,6 +479,7 @@ test('Netlify MCP handler attaches a 19.5 MB PDF in bounded requests and refuses
 // ── rollback (runs last) ──────────────────────────────────────────────────────────────────────
 
 test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on top of itself', { skip }, () => {
+  ok(null, `\\i '${join(MIGRATIONS, '061_portal_mcp_register/rollback.sql')}'`);
   ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/rollback.sql')}'`);
   const anonGrant = `SELECT has_function_privilege('anon', 'mcp_portal_list_clients(text)', 'EXECUTE');`;
   assert.equal(ok(null, anonGrant), 't');
@@ -504,4 +505,6 @@ test('rollback removes 0038 and restores 0037\'s audit; 0038 applies again on to
   assert.equal(ok(null, anonGrant), 't');
   ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/migration.sql')}'`);
   assert.equal(ok(null, `SELECT has_function_privilege('anon', 'mcp_portal_pdf_begin(text,uuid,uuid,uuid,text,integer,text)', 'EXECUTE');`), 't');
+  ok(null, `\\i '${join(MIGRATIONS, '061_portal_mcp_register/migration.sql')}'`);
+  assert.equal(ok(null, `SELECT has_function_privilege('service_role', 'mcp_portal_register_token(text,uuid[],text)', 'EXECUTE');`), 'f');
 });
