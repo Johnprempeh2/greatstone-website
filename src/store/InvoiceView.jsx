@@ -2,7 +2,6 @@
 // owning customer (customer_self) under RLS. Browser print → PDF; no PDF dependency.
 import React, { useState, useEffect } from 'react';
 import { BRAND_TAGLINE } from '../lib/brand.mjs';
-import { supabase } from '../lib/supabase.mjs';
 import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
 import './store.css';
@@ -21,9 +20,7 @@ export default function InvoiceView({ orderId }) {
 
   useEffect(() => {
     let alive = true;
-    // supabase.mjs returns null when env vars are absent (a build/preview without creds). Guard before the
-    // query: the .catch below only catches promise rejections, not the synchronous throw on a null client.
-    if (!supabase) { setOrder(null); return () => { alive = false; }; }
+    // The authenticated Netlify function is the data source on both Vite and Next.
     customerStore('invoice', { orderId })
       .then(({ data }) => { if (alive) setOrder(data || null); })
       // a network/RLS/transport rejection must fall through to the "Invoice not found" state, not hang

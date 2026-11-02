@@ -1,0 +1,11 @@
+/* Private Next routes load the store and admin screens without studio.css; these are its .gs-btn rules. */
+.gs-btn{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.78rem;border-radius:100px;padding:9px 16px;cursor:pointer;
+  border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s}
+.gs-btn:hover{transform:translateY(-1px)}
+.gs-btn:active{transform:scale(.96)}
+.gs-btn.sm{padding:7px 12px;font-size:.74rem}
+.gs-btn.primary{background:var(--gs-accent);color:#0e1611}
+.gs-btn.ghost{background:rgba(255,255,255,.05);border-color:var(--gs-border-soft);color:var(--gs-text)}
+.gs-btn.danger{background:#ff6b6b;color:#1a0c0c}
+.gs-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+@media (prefers-reduced-motion: reduce){.gs-btn,.gs-btn:hover,.gs-btn:active{transition:none;transform:none}}

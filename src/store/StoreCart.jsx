@@ -11,7 +11,7 @@ import './store.css';
 
 const VAT_RATE = Number((typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_VAT_RATE) || 0.20);
 
-export default function StoreCart({ confirmed = false }) {
+export default function StoreCart({ confirmed = false, sessionId }) {
   const items = useCart();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('cart'); // cart | sent
@@ -95,7 +95,7 @@ export default function StoreCart({ confirmed = false }) {
   }, [q, quoteRef, items]);
   const setQf = (k, v) => setQ(s => ({ ...s, [k]: v }));
 
-  if (confirmed) return <Confirmed />;
+  if (confirmed) return <Confirmed sessionId={sessionId} />;
 
   const sub = cartSubtotalMinor();
   const vat = Math.round(sub * VAT_RATE);
@@ -205,9 +205,9 @@ export default function StoreCart({ confirmed = false }) {
   );
 }
 
-function Confirmed() {
+function Confirmed({ sessionId }) {
   // Stripe redirected back after a successful test payment.
-  const sid = (location.hash.match(/session=([^&]+)/) || [])[1] || '';
+  const sid = sessionId === undefined ? (location.hash.match(/session=([^&]+)/) || [])[1] || '' : sessionId;
   // Only a plausible Stripe session id makes this a real confirmation. A bare/garbage #order-confirmed
   // (a bookmark of the success URL, Back/Forward after paying, or a hand-typed hash) must NOT show a
   // counterfeit "order confirmed" or wipe the basket / fire a phantom conversion.
