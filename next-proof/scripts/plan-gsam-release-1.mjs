@@ -5,11 +5,12 @@
 //   node next-proof/scripts/plan-gsam-release-1.mjs <gsam-site-id> --apply <record-file>
 // Without --apply it is read-only. --apply saves the live content as a new GSAM draft
 // revision on each changed page (GRE-3711) and writes the revision each one replaced to
-// <record-file>, for the restore after publish. It never approves or publishes.
+// <record-file>, for the restore after publish. Pages in RELEASE_1_HELD are left alone.
+// It never approves or publishes.
 // Needs GSAM_API_URL, GSAM_API_KEY and GSAM_COMPANY_ID.
 import { writeFile } from 'node:fs/promises';
 import release from '../data/release.json' with { type: 'json' };
-import { applyPlan, describePlan, planRelease1 } from '../release-1-sync.mjs';
+import { RELEASE_1_HELD, applyPlan, describePlan, planRelease1 } from '../release-1-sync.mjs';
 
 const [siteId, flag, output] = process.argv.slice(2);
 const { GSAM_API_URL, GSAM_API_KEY, GSAM_COMPANY_ID, GSAM_RUN_ID } = process.env;
@@ -45,7 +46,7 @@ if (flag === '--apply') {
     });
     return response.json().catch(() => ({ state: 'failed', message: `GSAM answered ${response.status}` }));
   };
-  const { ok, record } = await applyPlan(plan, save);
+  const { ok, record } = await applyPlan(plan, save, { hold: RELEASE_1_HELD });
   await writeFile(output, `${JSON.stringify({ siteId, appliedAt: new Date().toISOString(), record }, null, 2)}\n`);
   for (const entry of record) {
     console.log(`${entry.gsamSlug}: ${entry.action}${entry.previousRevisionId ? ` (replaced ${entry.previousRevisionId})` : ''}${entry.message ? ` ${entry.message}` : ''}`);

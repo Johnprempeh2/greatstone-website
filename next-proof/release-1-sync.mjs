@@ -16,7 +16,11 @@ export const RELEASE_1_PATHS = Object.freeze({
   '/services': '/consultancy/services',
 });
 
-export const gsamSlugFor = (livePath) => RELEASE_1_PATHS[livePath] || livePath;
+// GSAM pages --apply must not overwrite. /consultancy holds the GRE-3404 draft under
+// review (GRE-3712); take it off this list only for the sync just before cutover.
+export const RELEASE_1_HELD = Object.freeze(['/consultancy']);
+
+export const gsamSlugFor =(livePath) => RELEASE_1_PATHS[livePath] || livePath;
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -78,12 +82,13 @@ export function describePlan(plan) {
 // GRE-3711: release 1 takes the live content. Each saved page records the revision it
 // replaced, so the redesign drafts and home's GSAM settings can be restored after publish.
 // `save(entry)` returns GSAM's WebsiteSaveResult; a conflict or failure stops the run.
-export async function applyPlan(plan, save) {
+export async function applyPlan(plan, save, { hold = [] } = {}) {
   const record = [];
   for (const entry of plan) {
     if (entry.action === 'missing') throw new Error(`${entry.path} has no GSAM page at ${entry.gsamSlug}`);
-    if (entry.action === 'unchanged') {
-      record.push({ path: entry.path, gsamSlug: entry.gsamSlug, pageId: entry.pageId, action: 'unchanged', revisionId: entry.baseRevisionId });
+    if (entry.action === 'unchanged' || hold.includes(entry.gsamSlug)) {
+      const action = entry.action === 'unchanged' ? 'unchanged' : 'held';
+      record.push({ path: entry.path, gsamSlug: entry.gsamSlug, pageId: entry.pageId, action, revisionId: entry.baseRevisionId });
       continue;
     }
     const result = await save(entry);

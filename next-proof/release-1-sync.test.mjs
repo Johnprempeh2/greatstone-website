@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import release from './data/release.json' with { type: 'json' };
-import { applyPlan, describePlan, gsamSlugFor, planPage, planRelease1, stableBlockIds } from './release-1-sync.mjs';
+import { RELEASE_1_HELD, applyPlan, describePlan, gsamSlugFor, planPage, planRelease1, stableBlockIds } from './release-1-sync.mjs';
 
 const block = (type, id, extra = {}) => ({ type, props: { id, ...extra } });
 const gsamPage = (slug, content, root = { props: { title: 'T' } }) => ({
@@ -71,4 +71,13 @@ test('apply stops at the first conflict and never runs with a missing page', asy
   assert.deepEqual(calls, ['a']);
   assert.equal(record[0].action, 'conflict');
   await assert.rejects(applyPlan([{ path: '/x', gsamSlug: '/x', action: 'missing' }], async () => ({})), /no GSAM page/);
+});
+
+test('apply leaves a held page alone and records it as held', async () => {
+  const plan = [{ path: '/dx-consultancy', gsamSlug: '/consultancy', pageId: 'p1', baseRevisionId: 'r16', action: 'update', content: {} }];
+  const calls = [];
+  const { ok, record } = await applyPlan(plan, async (entry) => { calls.push(entry.pageId); return { state: 'saved' }; }, { hold: RELEASE_1_HELD });
+  assert.equal(ok, true);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(record, [{ path: '/dx-consultancy', gsamSlug: '/consultancy', pageId: 'p1', action: 'held', revisionId: 'r16' }]);
 });
