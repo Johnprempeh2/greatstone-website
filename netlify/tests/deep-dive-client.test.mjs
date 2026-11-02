@@ -128,6 +128,10 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
       VALUES ('${A}','${CUSTOMER_A}','${A}');`);
     assert.equal(link.status, 0, link.stderr);
     pool = new pg.Pool({ connectionString: db.url });
+    // The handlers get a pool with no owner queries: netlifydb_owner bypasses RLS, so a request must always
+    // SET LOCAL ROLE in a transaction (GRE-1797). Test setup below still uses `pool` directly.
+    const requestPool = { connect: () => pool.connect(),
+      query: async () => { throw new Error('owner query on a request'); } };
     const pair = generateKeyPairSync('ed25519');
     const publicKey = pair.publicKey.export({ format: 'jwk' }).x;
     const readPair = generateKeyPairSync('ed25519');
@@ -172,8 +176,8 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal((await signedIn.clone().json()).user.id, USER_A);
     const cookie = signedIn.headers.get('set-cookie')?.split(';')[0];
     assert.match(cookie || '', /better-auth\.session_token/);
-    const cookieClient = makeDeepDiveClientHandler({ pool: () => pool, log: () => {} });
-    const cookieDocuments = makeDeepDiveDocumentHandler({ pool: () => pool, keys, log: () => {} });
+    const cookieClient = makeDeepDiveClientHandler({ pool: () => requestPool, log: () => {} });
+    const cookieDocuments = makeDeepDiveDocumentHandler({ pool: () => requestPool, keys, log: () => {} });
     const overview = () => cookieClient(new Request('https://site.example.invalid/api/deep-dive-client', {
       method: 'POST', headers: { cookie }, body: JSON.stringify({ op: 'overview' }) }));
     assert.equal((await overview()).status, 200, 'Better Auth cookie can read the client Deep Dive');
@@ -184,7 +188,7 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal((await cookieDocuments(new Request('https://site.example.invalid/api/deep-dive-document',
       { headers: { authorization: 'Bearer old-token' } }))).status, 401);
     const blobs = new Map();
-    const documentHandler = makeDeepDiveDocumentHandler({ pool: () => pool, keys,
+    const documentHandler = makeDeepDiveDocumentHandler({ pool: () => requestPool, keys,
       verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email_confirmed_at: '2026-10-25' }),
       store: () => ({ set: async (key, bytes) => blobs.set(key, bytes),
         get: async (key) => blobs.get(key), delete: async (key) => blobs.delete(key) }), log: () => {} });
@@ -232,7 +236,7 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.equal(collected.status, 200);
     assert.equal(await collected.text(), '%PDF-1.7');
     let deliver = false;
-    const answerHandler = makeDeepDiveClientHandler({ pool: () => pool,
+    const answerHandler = makeDeepDiveClientHandler({ pool: () => requestPool,
       verify: async (token) => ({ id: token === 'one' ? USER_A : USER_B, email: null, email_confirmed_at: '2026-10-25' }),
       send: async (row) => {
         assert.equal(row.request_id, R);
@@ -269,6 +273,16 @@ test('signed PUT replaces one tenant and RLS hides it from another customer', { 
     assert.notEqual(forgedInsert.status, 0, 'customer must not set initial status');
     assert.match(forgedInsert.stderr, /permission denied/);
     assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'pending');
+    // 061's functions act only for the caller's own customer, whatever ids it passes (GRE-1797)
+    const answerId = db.psql(`SELECT answer_id FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim();
+    const otherCustomer = db.psql(`BEGIN; SET LOCAL ROLE authenticated;
+      SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"${USER_B}","email_verified":true}', true) \\g /dev/null
+      SELECT deep_dive_answer_received('${answerId}');
+      SELECT deep_dive_client_document_add('${A}','${R}','other.pdf','application/pdf',8,'other/key') IS NULL; COMMIT;`);
+    assert.equal(otherCustomer.status, 0, otherCustomer.stderr);
+    assert.deepEqual(otherCustomer.stdout.trim().split('\n'), ['f', 't']);
+    assert.equal(db.psql(`SELECT status FROM deep_dive_answers WHERE request_id='${R}'`).stdout.trim(), 'pending');
+    assert.notEqual(db.psql(`BEGIN; SET LOCAL ROLE anon; SELECT deep_dive_answer_received('${answerId}'); COMMIT;`).status, 0);
     deliver = true;
     const received = await answer('one', 'retry');
     assert.equal(received.status, 200);
