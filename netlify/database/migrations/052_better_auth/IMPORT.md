@@ -44,3 +44,9 @@ write. Staging takes eight (the GRE-1991 export). The rehearsal site and
 `greatstone-home` take ten: Supabase `auth.users` held ten rows, all with a
 password, on 3 Nov 2026 (GRE-2567). If the source count changes before the
 cut-over, change that number in its own reviewed release.
+
+For the rehearsal and the cut-over, `scripts/supabase-export.mjs export --out
+<run scratch>` writes both importer inputs (`identities.json`, `tables.json`)
+and `counts.json` from one read-only Supabase snapshot, mode 0600. It needs
+`SUPABASE_DB_URL` and prints counts only. `counts` prints the same counts and
+writes nothing, for the before, after and catch-up checks.
