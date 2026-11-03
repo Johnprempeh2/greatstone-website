@@ -136,7 +136,12 @@ async function submit(site, mode, action, input) {
     if (mode === 'proof') await site.store.delete(`results/${hash}/${action}`);
     console.log(JSON.stringify({ status: result.status, reason: result.reason, code: result.code, counts: result.counts }, null, 1));
     if (result.status === 'failed') process.exitCode = 1;
-    if (mode === 'tables' && result.status === 'applied') {
+    // A no-op wrote nothing now; its counts are the earlier apply's. Never report it as a success (GRE-2567 H6).
+    if (result.status === 'noop') {
+      console.log('Nothing was written by this submit: the importer says this payload was applied earlier in this window.');
+      process.exitCode = 1;
+    }
+    if (mode === 'tables' && (result.status === 'applied' || result.status === 'noop')) {
       const { differs, byCount, byStats } = await recountTables(readonly.client, result.counts.tables);
       for (const table of differs) console.log(`Recount differs: ${table}`);
       if (differs.length) process.exitCode = 1;

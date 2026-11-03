@@ -13,7 +13,8 @@
 //   2. the site is in the hard-coded SITES allow-list (name and id) and OWNER_IMPORT_SITE names it for this run
 //   3. the deploy context is the one that site's entry names, and the deploy is not an unpublished one
 //   4. a payload is in the private `owner-import` Blobs store, for a mode that site allows, before its notAfter
-//   5. apply needs a passed dry run of the same payload hash; an applied hash never applies again
+//   5. apply needs a passed dry run of the same payload hash in the same window; an applied hash never applies again
+//      in that window
 // Each run is one transaction as `netlifydb_owner` on a pool opened for that run and ended after it. The result blob
 // and the log carry counts, status and a hash prefix only, never row values.
 import { createHash, randomUUID } from 'node:crypto';
@@ -60,6 +61,12 @@ export function stableStringify(value) {
 }
 export const payloadHash = (mode, data) => createHash('sha256').update(stableStringify({ mode, data })).digest('hex');
 export const columnsHash = (columns) => createHash('sha256').update(columns.join(',')).digest('hex');
+// The ledger lives in Blobs, so it outlives a database snapshot restore. Keyed by the window too: a replayed tick in
+// the same window is a no-op, and a new window (prepare takes a fresh snapshot) applies again. Across windows the
+// transforms' own checks refuse rows that already exist (rows-conflict, mcp-token-exists, identities must match).
+// Found by the GRE-2567 re-rehearsal H6, 3 Nov: after the restore, H's ledger made the re-import a no-op on an empty
+// database.
+export const ledgerKey = (until, hash) => `ledger/${new Date(until).toISOString()}/${hash}`;
 
 /** Guards 1-3. Returns the site entry, or a refusal reason. Reads only the environment and the function context. */
 export function checkWindow({ env, context, now = Date.now(), sites = SITES }) {
@@ -392,8 +399,8 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
     const { mode, action, data } = parseEnvelope(raw, gate.site, gate.until, now);
     hash = payloadHash(mode, data);
     result = { hash, mode, action };
-    const ledgerKey = `ledger/${hash}`;
-    const ledger = (await store.get(ledgerKey, { type: 'json' })) || {};
+    const key = ledgerKey(gate.until, hash);
+    const ledger = (await store.get(key, { type: 'json' })) || {};
     if (ledger.appliedAt) {
       Object.assign(result, { status: 'noop', reason: 'already-applied', counts: ledger.counts });
     } else {
@@ -410,7 +417,7 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
       const at = new Date(now).toISOString();
       if (action === 'apply') Object.assign(ledger, { appliedAt: at, counts });
       else Object.assign(ledger, { dryRunAt: at, dryRunCounts: counts });
-      await store.setJSON(ledgerKey, ledger);
+      await store.setJSON(key, ledger);
       Object.assign(result, { status: action === 'apply' ? 'applied' : 'dry-run-ok', counts });
     }
   } catch (error) {

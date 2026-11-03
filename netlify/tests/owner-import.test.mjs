@@ -12,7 +12,7 @@ import { hashSync } from 'bcryptjs';
 import { createHash } from 'node:crypto';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import {
-  runOwnerImport, checkWindow, buildTablesData, targetColumns, payloadHash, columnsHash, recountTables, NEW_ON_TARGET,
+  runOwnerImport, checkWindow, ledgerKey, buildTablesData, targetColumns, payloadHash, columnsHash, recountTables, NEW_ON_TARGET,
   TABLES, SITES,
 } from '../functions/lib/owner-import.mjs';
 
@@ -128,7 +128,7 @@ test('identities: dry run rolls back, apply commits once, the same hash is a no-
   assert.equal(dry.result.status, 'dry-run-ok');
   assert.deepEqual(dry.result.counts, { identities: { source: 8, imported: 8 } });
   assert.equal(owner('SELECT count(*) FROM better_auth."user"'), '0', 'dry run left rows');
-  assert.ok((await store.get(`ledger/${hash}`)).dryRunAt);
+  assert.ok((await store.get(ledgerKey(UNTIL, hash))).dryRunAt);
   assert.equal(store.map.has('payload'), false);
 
   await store.setJSON('payload', envelope('identities', 'apply', USERS));
@@ -146,6 +146,29 @@ test('identities: dry run rolls back, apply commits once, the same hash is a no-
   assert.equal(again.result.reason, 'already-applied');
   assert.equal(owner('SELECT count(*) FROM better_auth."account"'), '8');
   assertNoValues(dry.lines, applied.lines, again.lines, [...store.map.values()]);
+});
+
+// GRE-2567 H6: the ledger is in Blobs, so a snapshot restore leaves it behind. An apply from an earlier window (or
+// the pre-window key) must not turn a new window's run into a no-op on a database that no longer holds the rows.
+test('an apply from an earlier window does not make a new window a no-op', { skip }, async () => {
+  const hash = payloadHash('identities', USERS);
+  const earlier = new Date(NOW - 2 * 60 * 60 * 1000).toISOString();
+  const store = memoryStore({
+    [`ledger/${hash}`]: { dryRunAt: earlier, appliedAt: earlier, counts: { identities: { source: 8, imported: 8 } } },
+    [ledgerKey(earlier, hash)]: { dryRunAt: earlier, appliedAt: earlier, counts: { identities: { source: 8, imported: 8 } } },
+    payload: envelope('identities', 'dry-run', USERS),
+  });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'dry-run-ok');
+  assert.equal((await store.get(ledgerKey(UNTIL, hash))).appliedAt, undefined);
+
+  // the same window still refuses a second apply
+  await store.setJSON('payload', envelope('identities', 'apply', USERS));
+  assert.equal((await tick(store)).result.status, 'applied');
+  await store.setJSON('payload', envelope('identities', 'apply', USERS));
+  const again = await tick(store);
+  assert.equal(again.result.status, 'noop');
+  assert.equal(again.result.reason, 'already-applied');
 });
 
 test('staging proof compares all three digests, then creates one cost-10 legacy fixture', { skip }, async () => {
@@ -195,7 +218,7 @@ test('staging proof compares all three digests, then creates one cost-10 legacy 
   assert.ok(!safe.includes(fixtureId));
   assert.ok(!safe.includes(USERS[0].email));
   assert.ok(!safe.includes(USERS[0].passwordHash));
-  assert.equal((await store.get(`ledger/${hash}`)).counts.identities.matched, 8);
+  assert.equal((await store.get(ledgerKey(UNTIL, hash))).counts.identities.matched, 8);
 });
 
 test('proof refuses an existing non-source user without adding a credential', { skip }, async () => {
