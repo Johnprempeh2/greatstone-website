@@ -54,5 +54,8 @@ export default function ConsentAnalytics() {
 
 /** The cookie-settings island (GRE-3777): reopens the consent banner above. HtmlPage imported it before it existed, so any page with it in the footer failed to render. */
 export function CookieSettings({ label = 'Cookie settings' }) {
-  return <button type="button" className="gs-cookie-settings" onClick={() => window.dispatchEvent(new Event('gs-consent-open'))}>{label}</button>;
+  // Looks like the legal links beside it in the footer (colour, size, underline offset come from there).
+  return <button type="button" className="gs-cookie-settings" style={{ background: 'none', border: 0, padding: 0, font: 'inherit',
+    color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer' }}
+    onClick={() => window.dispatchEvent(new Event('gs-consent-open'))}>{label}</button>;
 }
