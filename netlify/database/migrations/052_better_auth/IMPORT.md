@@ -51,6 +51,16 @@ and `counts.json` from one read-only Supabase snapshot, mode 0600. It needs
 `SUPABASE_DB_URL` and prints counts only. `counts` prints the same counts and
 writes nothing, for the before, after and catch-up checks.
 
+The catch-up (cut-over step 7) is `export --since <step 4 export dir> --out
+<new run scratch dir>`. The importer refuses rows that already exist, so it
+writes only the rows whose primary key is not in the step 4 export.
+`identities.json` is written only when new users appeared. It then holds every
+user, because the importer checks an exact count, so the site's
+`identityCount` must change to that number in a reviewed release first. A row
+changed or removed since step 4 (same key, different values, or gone) stops it
+for a person: it prints the table names and counts and writes nothing.
+`--since` must name the full step 4 export, not an earlier catch-up.
+
 The Supabase pooler's certificate chains to Supabase's own root, so a plain
 `sslmode=require` URL fails with `SELF_SIGNED_CERT_IN_CHAIN`. Keep the check on:
 add `sslmode=verify-full&sslrootcert=<run scratch>/prod-ca-2021.crt` (Supabase
