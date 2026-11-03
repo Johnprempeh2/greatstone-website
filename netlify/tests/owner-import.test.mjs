@@ -12,7 +12,8 @@ import { hashSync } from 'bcryptjs';
 import { createHash } from 'node:crypto';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import {
-  runOwnerImport, checkWindow, buildTablesData, targetColumns, payloadHash, columnsHash, TABLES, SITES,
+  runOwnerImport, checkWindow, buildTablesData, targetColumns, payloadHash, columnsHash, recountTables, NEW_ON_TARGET,
+  TABLES, SITES,
 } from '../functions/lib/owner-import.mjs';
 
 const NOW = Date.parse('2026-10-26T10:00:00Z');
@@ -327,6 +328,50 @@ test('the runner helper refuses rows for a table outside TABLES or missing a col
     assert.throws(() => buildTablesData({ audit_log: [{ id: 1 }] }, columns), /not in TABLES/);
     assert.throws(() => buildTablesData({ organisations: [{ id: ORG }] }, columns), /lack column/);
   } finally { client.release(); }
+});
+
+// GRE-2567 rehearsal (3 Nov): Supabase's service_inquiries has no size_band (042) or customer_id (057), so the real
+// export was refused before any write. Those two named columns are written as NULL; any other missing column refuses.
+test('the runner helper writes NULL for the named new columns only', { skip }, async () => {
+  const client = await pool.connect();
+  try {
+    const columns = await targetColumns(client);
+    const fill = NEW_ON_TARGET.service_inquiries;
+    const cols = columns.get('service_inquiries');
+    const row = Object.fromEntries(cols.filter((c) => !fill.includes(c)).map((c) => [c, `v-${c}`]));
+    const { data } = buildTablesData({ service_inquiries: [row] }, columns);
+    const [built] = data.tables[TABLES.indexOf('service_inquiries')].rows;
+    for (const [i, c] of cols.entries()) assert.equal(built[i], fill.includes(c) ? null : `v-${c}`, c);
+    const { [cols.find((c) => !fill.includes(c))]: _gone, ...short } = row;
+    assert.throws(() => buildTablesData({ service_inquiries: [short] }, columns), /lack column/);
+  } finally { client.release(); }
+});
+
+// GRE-2567 rehearsal (3 Nov): through netlifydb_readonly, count(*) saw 0 rows on the 20 tables that force RLS, so the
+// runner reported a recount difference for a correct import. Postgres's live-row statistics are the second witness.
+test('recount: the read-only role matches an apply by count or by live-row statistics, and catches a wrong count', { skip }, async () => {
+  owner(`DO $$ BEGIN CREATE ROLE netlifydb_readonly LOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    GRANT USAGE ON SCHEMA public TO netlifydb_readonly;
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO netlifydb_readonly;`);
+  const { data, want } = await tablesPayload();
+  const store = memoryStore({ payload: envelope('tables', 'dry-run', data) });
+  await tick(store, { env: TENV, context: REHEARSAL, sites: TEST_SITES });
+  await store.setJSON('payload', envelope('tables', 'apply', data));
+  const { result } = await tick(store, { env: TENV, context: REHEARSAL, sites: TEST_SITES });
+  assert.equal(result.status, 'applied', JSON.stringify(result));
+
+  const ro = new pg.Client({ connectionString: db.url.replace('netlifydb_owner@', 'netlifydb_readonly@') });
+  await ro.connect();
+  try {
+    const seen = (await ro.query('SELECT count(*)::int AS n FROM public.customers')).rows[0].n;
+    assert.ok(want.customers > 0 && seen === 0, 'RLS should hide client rows from the read-only role');
+    const out = await recountTables(ro, result.counts.tables, { tries: 10, waitMs: 1500 });
+    assert.deepEqual(out.differs, []);
+    assert.ok(out.byStats > 0 && out.byCount + out.byStats === TABLES.length, JSON.stringify(out));
+    const wrong = await recountTables(ro, [{ table: 'customers', after: want.customers + 1 }], { tries: 1 });
+    assert.deepEqual(wrong.differs, ['customers']);
+  } finally { await ro.end(); }
+  truncateAll();
 });
 
 test('the window check is pure: only staging allows proof', () => {

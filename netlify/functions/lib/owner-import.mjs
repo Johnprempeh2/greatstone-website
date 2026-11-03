@@ -42,6 +42,12 @@ export const TABLES = Object.freeze([
   'service_popularity_hits',
 ]);
 
+// Columns a Netlify-only migration added to a TABLES table. Supabase rows never carry them, so the move writes NULL
+// (each is nullable with no default). Any other missing column still refuses. Found by the GRE-2567 rehearsal, 3 Nov.
+export const NEW_ON_TARGET = Object.freeze({
+  service_inquiries: Object.freeze(['size_band', 'customer_id']), // 042_service_inquiry_size_band, 057_enquiry_client_link
+});
+
 // A refusal with a fixed message. Anything else is reported by its Postgres code only, as pg messages carry values.
 export class Refusal extends Error {}
 const refuse = (reason) => { throw new Refusal(reason); };
@@ -95,8 +101,9 @@ export async function targetColumns(client) {
 
 /**
  * For the runner: turn an export ({ table: [rowObject] }) into the tables payload, positional in the target's column
- * order. Refuses a table outside TABLES that has rows, or a row missing a target column. Returns the source columns the
- * target does not take (generated ones, or a schema gap the operator must look at) by name only.
+ * order. Refuses a table outside TABLES that has rows, or a row missing a target column other than its NEW_ON_TARGET
+ * ones (written as NULL). Returns the source columns the target does not take (generated ones, or a schema gap the
+ * operator must look at) by name only.
  */
 export function buildTablesData(source, columns) {
   for (const [table, rows] of Object.entries(source))
@@ -105,12 +112,37 @@ export function buildTablesData(source, columns) {
   const tables = TABLES.map((table) => {
     const cols = columns.get(table);
     const rows = source[table] || [];
-    for (const row of rows) for (const c of cols) if (!Object.hasOwn(row, c)) throw new Error(`Export rows for ${table} lack column ${c}`);
+    const fill = NEW_ON_TARGET[table] || [];
+    for (const row of rows) for (const c of cols)
+      if (!Object.hasOwn(row, c) && !fill.includes(c)) throw new Error(`Export rows for ${table} lack column ${c}`);
     const extra = [...new Set(rows.flatMap(Object.keys))].filter((c) => !cols.includes(c));
     if (extra.length) dropped[table] = extra;
-    return { columns: columnsHash(cols), rows: rows.map((row) => cols.map((c) => row[c])) };
+    return { columns: columnsHash(cols), rows: rows.map((row) => cols.map((c) => (Object.hasOwn(row, c) ? row[c] : null))) };
   });
   return { data: { tables }, dropped };
+}
+
+/**
+ * For the runner: recount a table apply through the read-only connection. netlifydb_readonly has no BYPASSRLS and most
+ * TABLES force RLS, so its count(*) sees only what the policies allow: 0 on a client table (GRE-2567 rehearsal, 3 Nov).
+ * Where count(*) differs, the second witness is Postgres's own live-row count (pg_stat_user_tables.n_live_tup), which
+ * RLS does not filter. The statistics arrive a few seconds after the import's session goes idle, so a difference is
+ * read again, at most `tries` times. Returns the tables that still differ (names only) and how many matched each way.
+ */
+export async function recountTables(client, counts, { tries = 4, waitMs = 5000 } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    const { rows } = await client.query(
+      `SELECT relname, n_live_tup::int AS n FROM pg_stat_user_tables WHERE schemaname = 'public'`);
+    const live = new Map(rows.map((r) => [r.relname, r.n]));
+    const out = { differs: [], byCount: 0, byStats: 0 };
+    for (const c of counts) {
+      if (await count(client, c.table) === c.after) out.byCount++;
+      else if (live.get(c.table) === c.after) out.byStats++;
+      else out.differs.push(c.table);
+    }
+    if (!out.differs.length || attempt >= tries) return out;
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
 }
 
 function validateTables(data, columns) {
