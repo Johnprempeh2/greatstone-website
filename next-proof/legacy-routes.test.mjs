@@ -70,6 +70,35 @@ test('an unpublished target uses the interim page, then switches once the target
   assert.equal(nextLegacyDestination('/document-processing', [...pages, '/dev-tools/document-solutions']), '/dev-tools/document-solutions');
 });
 
+// GRE-1822: the content targets built as GSAM pages (four new drafts, four release 1 pages at their sitemap
+// paths, and the old article as a draft insight page, GRE-3844). Once they publish, every old content page
+// lands on its final page.
+const article = '/insights/seamless-api-integration-for-developers';
+const contentTargets = ['/support', '/dev-tools/choosing-tools', '/dev-tools/trials', '/dev-tools/document-solutions',
+  '/consultancy/services', '/consultancy/how-we-work', '/consultancy/how-we-help', '/proof', article];
+
+test('when the GSAM content pages publish, every old content page goes live', () => {
+  const published = [...pages, ...contentTargets];
+  const content = legacyDecisions.filter((row) => !row.target.startsWith('/dev-tools/brands/') &&
+    !row.target.startsWith('/dev-tools/products') && !row.target.startsWith('/account') &&
+    !['/dev-tools/basket', '/dev-tools/checkout', '/'].includes(row.target));
+  const notLive = content.filter((row) => legacyLanding(row.from, published).state !== 'live').map((row) => row.from);
+  assert.deepEqual(notLive, []);
+  assert.equal(nextLegacyDestination('/trial-confirm', published), '/dev-tools/trials');
+  assert.equal(nextLegacyDestination('/assessment-framework/the-external-view', published), '/consultancy/how-we-work');
+  assert.equal(nextLegacyDestination('/testimonials', published), '/proof');
+});
+
+test('the old article waits on /insights, then goes to its insight page once that publishes', () => {
+  const oldArticle = '/news/seamless-api-integration-for-developers';
+  assert.deepEqual([nextLegacyDestination(oldArticle, pages), legacyLanding(oldArticle, pages).state], ['/insights', 'interim']);
+  const published = [...pages, article];
+  assert.equal(legacyLanding(oldArticle, published).state, 'live');
+  const rule = nextLegacyRedirects(legacyPaths, published).find((item) => item.source === oldArticle);
+  assert.deepEqual(rule, { source: oldArticle, destination: article, permanent: true });
+  assert.equal(nextLegacyDestination('/news/another-old-article', published), '/insights');
+});
+
 test('products with an exact catalogue match go to that product; the rest wait for Ben on the brand page', () => {
   const moves = legacyDecisions.filter((row) => row.product);
   assert.equal(moves.length, 15);
