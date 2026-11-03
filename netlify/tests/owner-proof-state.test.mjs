@@ -12,6 +12,7 @@ test('a corrected second proof payload cannot leave records outside clear', asyn
   claimProofHash(map.get('runner/state'), first);
   claimProofHash(map.get('runner/state'), first);
   map.set(`ledger/${first}`, { dryRunAt: 'now' });
+  map.set(`ledger/2026-10-26T10:30:00.000Z/${first}`, { dryRunAt: 'now' }); // the per-window key
   map.set(`results/${first}/dry-run`, { status: 'dry-run-ok' });
   map.set(`results/${first}/apply`, { status: 'applied' });
   map.set('results/latest', { status: 'dry-run-ok' });
@@ -20,6 +21,7 @@ test('a corrected second proof payload cannot leave records outside clear', asyn
   assert.equal(map.has(`ledger/${second}`), false);
   await clearProofRecords(store, map.get('runner/state'));
   assert.equal(map.has(`ledger/${first}`), false);
+  assert.equal(map.has(`ledger/2026-10-26T10:30:00.000Z/${first}`), false);
   assert.equal(map.has(`results/${first}/dry-run`), false);
   assert.equal(map.has(`results/${first}/apply`), false);
   assert.equal(map.has('results/latest'), false);
