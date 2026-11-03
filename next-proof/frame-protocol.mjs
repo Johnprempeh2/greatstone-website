@@ -25,6 +25,15 @@ export function publicFrameAncestors(value = 'https://gsam.tail83d26c.ts.net:310
   return `frame-ancestors 'self' ${allowedHostOrigins(value).join(' ')}`.trim();
 }
 
+// The public site's security headers, as the Vite site's _headers set them. Netlify applies netlify.toml and
+// _headers rules to static files only, so the middleware sets these on Next responses (GRE-3873).
+export const PUBLIC_SECURITY_HEADERS = Object.freeze({
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+});
+
 export function validHello(event, origins, siteId, bound) {
   const data = event.data;
   if (!origins.includes(event.origin) || event.source !== window.parent || !data || data.gs !== FRAME_TAG || data.type !== 'hello') return null;

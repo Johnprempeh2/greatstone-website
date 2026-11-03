@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, publicFrameAncestors, validHello, validMessage } from './frame-protocol.mjs';
+import { PUBLIC_SECURITY_HEADERS, allowedHostOrigins, blockRef, envelope, findBlock, frameCsp, mapMediaRefs, publicFrameAncestors, validHello, validMessage } from './frame-protocol.mjs';
 import { saveRequest } from './frame-save.mjs';
 
 const origin = 'https://studio.example.test';
@@ -49,11 +49,18 @@ test('public pages allow only self and the configured GSAM origins', () => {
 });
 
 test('static public headers permit GSAM framing without conflicting X-Frame-Options', () => {
-  const headers = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8');
+  const headers = readFileSync(new URL('../vite-static/_headers', import.meta.url), 'utf8');
   const publicRule = headers.split('\n\n')[0];
   assert.match(publicRule, /^\/\*\n/m);
   assert.match(publicRule, /^  Content-Security-Policy: frame-ancestors 'self' https:\/\/gsam\.tail83d26c\.ts\.net:3100$/m);
   assert.doesNotMatch(headers, /^  X-Frame-Options:/m);
+});
+
+test('Next public responses keep the Vite site security headers (GRE-3873)', () => {
+  const viteRule = readFileSync(new URL('../vite-static/_headers', import.meta.url), 'utf8').split('\n\n')[0];
+  for (const [name, value] of Object.entries(PUBLIC_SECURITY_HEADERS)) assert.ok(viteRule.split('\n').includes(`  ${name}: ${value}`), name);
+  const middleware = readFileSync(new URL('../middleware.js', import.meta.url), 'utf8');
+  assert.match(middleware, /\} else \{[\s\S]*Object\.entries\(PUBLIC_SECURITY_HEADERS\)/);
 });
 
 test('block reference carries stable identity and treats source as a hint', () => {

@@ -5,9 +5,12 @@ import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 
+// Both sites run the Next build from the root netlify.toml (GRE-3873). Next staging is gre3833-next-db-staging,
+// with its own database; the Vite staging site (gre1795-website-db-staging) is not a deploy target any more.
+const staging = 'gre3833-next-db-staging';
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
-  ['gre1795-website-db-staging', '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb'],
+  [staging, '6689e558-855b-40b1-be45-c530531fed45'],
 ]);
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
@@ -42,7 +45,7 @@ function onlyNonSiteFiles(files) {
 // these scripts. Anything that matches here needs a card for the exact commit.
 function protectedFile(file) {
   return /^(?:netlify|supabase|scripts|\.github)\//.test(file) || /(?:^|\/)netlify[^/]*\.toml$/.test(file) ||
-    /^(?:middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?[jt]s|vite\.config\.[cm]?js|public\/_headers)$/.test(file) ||
+    /^(?:middleware\.[cm]?[jt]s|package(?:-lock)?\.json|next\.config\.[cm]?[jt]s|vite\.config\.[cm]?js|(?:public|vite-static)\/_headers)$/.test(file) ||
     /(?:^|\/)\.env/.test(file) || /\.sql$/.test(file) ||
     /^app\/(?:.+\/)?route\.[cm]?[jt]sx?$/.test(file) || /^app\/api\//.test(file) ||
     /auth|password|passwd|credential|secret|login|sign-?in/i.test(file);
@@ -101,7 +104,7 @@ async function gate(sha) {
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
     const stagingCard = !exactComment && await stagingCardApproved(sha, site === 'greatstone-home');
     if (!exactComment && !stagingCard)
-      throw new Error(site === 'gre1795-website-db-staging'
+      throw new Error(site === staging
         ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
         : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}, or a person must comment exactly "${approval}" on this task`);
     return null;
@@ -188,7 +191,7 @@ async function lockAndDeploy(sha, cwd) {
 // live commit's tree, so main's newer code never rides along. It needs the accepted
 // human-only card for exactly that commit; guard-only drift does not count here.
 async function refreshStaging(sha) {
-  if (site !== 'gre1795-website-db-staging') throw new Error('config refresh is only for gre1795-website-db-staging');
+  if (site !== staging) throw new Error(`config refresh is only for ${staging}`);
   if (command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] !== sha)
     throw new Error('config refresh requires a checkout at exactly origin main');
   const live = await lastDeployedCommit();
@@ -212,8 +215,8 @@ async function refreshStaging(sha) {
 }
 
 // The weekly train (GRE-2804) also ships the gsam-editor alias on greatstone-home from the same
-// commit. The Vite upload does not contain the Next editor, so the editor is built from this
-// checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,
+// commit. The editor has its own config (next-proof/netlify.editor.toml, no functions or database), so it is
+// built from this checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,
 // contract, engine commit, links). Any failed step fails the train and names the step.
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));

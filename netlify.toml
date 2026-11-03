@@ -1,14 +1,15 @@
-# greatstone-home (greatstoneint.com). The site is deployed from a local build (`netlify deploy`), not from git.
+# The Next.js site (GRE-3873). A clean checkout builds it with `netlify build`, so GSAM's content-only rebuild
+# (Netlify's builds API) and `scripts/deploy-site.mjs` build the same thing. With GSAM_SITE_ID set the build bakes
+# the site's current GSAM release from Netlify Blobs and fails when it is missing or invalid.
 # Functions live in netlify/functions; Netlify Database migrations in netlify/database/migrations (GRE-1794).
+# The old Vite site's _redirects and _headers live in vite-static/ and reach only the Vite dist/.
 [build]
-  command = "npm run build"
-  publish = "dist"
+  command = "npm run build:next"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
-  # The root next.config.mjs (Next proof) makes Netlify add its Next.js plugin, which rejects this Vite build (GRE-2285).
-  # The isolated Next deploys copy next-proof/netlify*.toml over this file, so they keep the plugin.
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NEXT_CATALOGUE_REQUIRED = "1"
 
 [functions]
   directory = "netlify/functions"

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { indexingAllowed, releaseIndexHtml } from './src/lib/index-html.mjs';
@@ -7,12 +8,22 @@ import { indexingAllowed, releaseIndexHtml } from './src/lib/index-html.mjs';
 // purpose: it only shapes the HTML at build time and never reaches the browser bundle.
 const indexable = indexingAllowed(process.env.ALLOW_INDEXING);
 const releaseHtml = { name: 'gs-release-index-html', transformIndexHtml: (html) => releaseIndexHtml(html, { indexable, origin: process.env.VITE_SITE_ORIGIN }) };
+// The SPA's _redirects (fallback to index.html) and _headers live in vite-static/, not public/, so they reach
+// only dist/. In public/ they would also ship with the Next build, which the root netlify.toml deploys (GRE-3873).
+const viteNetlifyFiles = {
+  name: 'gs-vite-netlify-files',
+  apply: 'build',
+  generateBundle() {
+    for (const fileName of ['_redirects', '_headers'])
+      this.emitFile({ type: 'asset', fileName, source: readFileSync(new URL(`./vite-static/${fileName}`, import.meta.url), 'utf8') });
+  },
+};
 
 // base '/' — the studio IS the site: deployed at the root of greatstone-home.netlify.app
 // (previously served under the /puck-proof/ subpath of the old static homepage, now retired).
 export default defineConfig(() => ({
   base: '/',
-  plugins: [react(), releaseHtml],
+  plugins: [react(), releaseHtml, viteNetlifyFiles],
   server: { port: 5180, host: true },
   build: {
     rollupOptions: {
