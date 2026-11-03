@@ -50,3 +50,15 @@ For the rehearsal and the cut-over, `scripts/supabase-export.mjs export --out
 and `counts.json` from one read-only Supabase snapshot, mode 0600. It needs
 `SUPABASE_DB_URL` and prints counts only. `counts` prints the same counts and
 writes nothing, for the before, after and catch-up checks.
+
+The Supabase pooler's certificate chains to Supabase's own root, so a plain
+`sslmode=require` URL fails with `SELF_SIGNED_CERT_IN_CHAIN`. Keep the check on:
+add `sslmode=verify-full&sslrootcert=<run scratch>/prod-ca-2021.crt` (Supabase
+Root 2021 CA, SHA-256 `80:70:25:AD:…:CA:FA`). Never use `no-verify`.
+
+Two Netlify-only migrations added columns to `service_inquiries` (042
+`size_band`, 057 `customer_id`). Supabase rows do not have them, so the runner
+writes NULL there (`NEW_ON_TARGET` in `lib/owner-import.mjs`). Any other
+missing column still refuses. After a table apply, the runner recounts through
+the read-only role. That role is under RLS and sees no rows on client tables,
+so where `count(*)` differs it checks Postgres's live-row statistics instead.

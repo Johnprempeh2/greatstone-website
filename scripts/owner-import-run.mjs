@@ -25,7 +25,7 @@ import pg from 'pg';
 import { validateImport } from '../netlify/database/migrations/052_better_auth/import-users.mjs';
 import { claimProofHash, clearProofRecords } from './owner-proof-state.mjs';
 import {
-  SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, targetColumns, validateProof,
+  SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, recountTables, targetColumns, validateProof,
   validateMcpToken, validateMcpTokenRevoke,
 } from '../netlify/functions/lib/owner-import.mjs';
 
@@ -137,11 +137,11 @@ async function submit(site, mode, action, input) {
     console.log(JSON.stringify({ status: result.status, reason: result.reason, code: result.code, counts: result.counts }, null, 1));
     if (result.status === 'failed') process.exitCode = 1;
     if (mode === 'tables' && result.status === 'applied') {
-      for (const c of result.counts.tables) {
-        const { rows: [r] } = await readonly.client.query(`SELECT count(*)::int AS n FROM public."${c.table}"`);
-        if (r.n !== c.after) { console.log(`Recount differs: ${c.table}`); process.exitCode = 1; }
-      }
-      if (!process.exitCode) console.log(`Read-only recount matches for all ${TABLES.length} tables.`);
+      const { differs, byCount, byStats } = await recountTables(readonly.client, result.counts.tables);
+      for (const table of differs) console.log(`Recount differs: ${table}`);
+      if (differs.length) process.exitCode = 1;
+      else console.log(`Read-only recount matches for all ${TABLES.length} tables: ${byCount} by count, ` +
+        `${byStats} by live-row statistics (RLS hides their rows from the read-only role).`);
     }
   } finally { await readonly?.client.end(); }
 }
