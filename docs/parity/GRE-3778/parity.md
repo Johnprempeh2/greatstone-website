@@ -1,6 +1,6 @@
 # GRE-3778 parity: today's render against the HTML export
 
-Captured from http://127.0.0.1:5191 at 2026-11-03T12:29Z, reduced motion, full page. A pixel counts as changed when any colour channel differs at all. Height is today → export.
+Captured from http://127.0.0.1:5193 at 2026-11-03T13:05Z, reduced motion, full page. A pixel counts as changed when any colour channel differs at all. Height is today → export.
 
 | Page | Width | Changed pixels | Share | Height |
 | --- | ---: | ---: | ---: | --- |
@@ -20,19 +20,32 @@ Captured from http://127.0.0.1:5191 at 2026-11-03T12:29Z, reduced motion, full p
 | /privacy | 1440 | 0 | 0.00% | 5346 → 5346 |
 | /cookies | 1440 | 0 | 0.00% | 3678 → 3678 |
 | /terms | 1440 | 0 | 0.00% | 4175 → 4175 |
-| / | 390 | 0 | 0.00% | 5260 → 5260 |
-| /dx-consultancy | 390 | 0 | 0.00% | 5243 → 5243 |
-| /dev-tools | 390 | 0 | 0.00% | 2865 → 2865 |
-| /transformation-services | 390 | 0 | 0.00% | 4261 → 4261 |
-| /how-we-help | 390 | 0 | 0.00% | 28233 → 28233 |
-| /services | 390 | 0 | 0.00% | 7734 → 7734 |
-| /method | 390 | 0 | 0.00% | 2909 → 2909 |
-| /case-studies | 390 | 0 | 0.00% | 3610 → 3610 |
-| /about | 390 | 0 | 0.00% | 8595 → 8595 |
-| /insights | 390 | 0 | 0.00% | 3809 → 3809 |
-| /climb | 390 | 3467 | 0.19% | 4611 → 4611 |
-| /industries | 390 | 0 | 0.00% | 4306 → 4306 |
-| /contact | 390 | 0 | 0.00% | 3636 → 3636 |
-| /privacy | 390 | 0 | 0.00% | 6102 → 6102 |
-| /cookies | 390 | 0 | 0.00% | 4457 → 4457 |
-| /terms | 390 | 0 | 0.00% | 4652 → 4652 |
+| /support | 1440 | 0 | 0.00% | 3246 → 3246 |
+| /dev-tools/choosing-tools | 1440 | 0 | 0.00% | 3503 → 3503 |
+| /dev-tools/trials | 1440 | 0 | 0.00% | 3090 → 3090 |
+| /dev-tools/document-solutions | 1440 | 0 | 0.00% | 2566 → 2566 |
+| / | 390 | 0 | 0.00% | 5303 → 5303 |
+| /dx-consultancy | 390 | 0 | 0.00% | 5286 → 5286 |
+| /dev-tools | 390 | 0 | 0.00% | 2908 → 2908 |
+| /transformation-services | 390 | 0 | 0.00% | 4304 → 4304 |
+| /how-we-help | 390 | 0 | 0.00% | 28276 → 28276 |
+| /services | 390 | 0 | 0.00% | 7777 → 7777 |
+| /method | 390 | 0 | 0.00% | 2952 → 2952 |
+| /case-studies | 390 | 0 | 0.00% | 3653 → 3653 |
+| /about | 390 | 0 | 0.00% | 8638 → 8638 |
+| /insights | 390 | 0 | 0.00% | 3852 → 3852 |
+| /climb | 390 | 3465 | 0.19% | 4654 → 4654 |
+| /industries | 390 | 0 | 0.00% | 4349 → 4349 |
+| /contact | 390 | 0 | 0.00% | 3679 → 3679 |
+| /privacy | 390 | 0 | 0.00% | 6145 → 6145 |
+| /cookies | 390 | 0 | 0.00% | 4500 → 4500 |
+| /terms | 390 | 0 | 0.00% | 4695 → 4695 |
+| /support | 390 | 0 | 0.00% | 3547 → 3547 |
+| /dev-tools/choosing-tools | 390 | 0 | 0.00% | 3997 → 3997 |
+| /dev-tools/trials | 390 | 0 | 0.00% | 3243 → 3243 |
+| /dev-tools/document-solutions | 390 | 0 | 0.00% | 3259 → 3259 |
+
+## Notes
+
+- The last four pages are the GRE-1822 pages, GSAM drafts staged into the baked release for this run (`next-proof/scripts/stage-export-drafts.mjs`). This capture used `PARITY_CHROME=1`, so both sides show the footer links to them. The committed export keeps the published footer, with no links to unpublished pages.
+- /climb: the chart loses its trail glow, because the sanitiser refuses `filter` (John, 3 Nov). The footer wave also differs, by at most 2 colour levels out of 255 on the anti-aliased edges of its strokes (2,419 pixels at 1440, 1,002 at 390). That is not visible. The wave markup and CSS are the same on every page, and every other page's footer matches exactly, so the cause is how the browser draws the page with the glow layer gone, not the export.

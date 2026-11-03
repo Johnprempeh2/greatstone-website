@@ -1,6 +1,6 @@
 # GRE-3778 export report
 
-Engine render from http://127.0.0.1:5191, baked release 1. 16 pages. Site stylesheet 244 KB.
+Engine render from http://127.0.0.1:5193, baked release 1. 20 pages. Site stylesheet 244 KB.
 
 ## Site stylesheet and chrome
 
@@ -130,5 +130,40 @@ HTML 6 KB, page CSS 0 rules.
 
 HTML 5 KB, page CSS 0 rules.
 
+- sanitiser removes nothing
+
+### /support
+
+HTML 9 KB, page CSS 4 rules.
+
+- Panels: no behaviour needed
+- Faq → behaviour faq
+- 5 inline SVG (kept: the sanitiser allows a drawing subset)
+- sanitiser removes nothing
+
+### /dev-tools/choosing-tools
+
+HTML 9 KB, page CSS 4 rules.
+
+- Panels: no behaviour needed
+- Faq → behaviour faq
+- 6 inline SVG (kept: the sanitiser allows a drawing subset)
+- sanitiser removes nothing
+
+### /dev-tools/trials
+
+HTML 8 KB, page CSS 4 rules.
+
+- Panels: no behaviour needed
+- Faq → behaviour faq
+- 5 inline SVG (kept: the sanitiser allows a drawing subset)
+- sanitiser removes nothing
+
+### /dev-tools/document-solutions
+
+HTML 8 KB, page CSS 6 rules.
+
+- Panels: no behaviour needed
+- 12 inline SVG (kept: the sanitiser allows a drawing subset)
 - sanitiser removes nothing
 
