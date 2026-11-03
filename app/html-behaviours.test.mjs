@@ -160,6 +160,55 @@ test('grow: a chart in view grows now; one below the fold when it scrolls in', (
   assert.ok(below.chart.classList.contains('is-grown'));
 });
 
+const CAROUSEL = (extra = '') => `<section data-behaviour="carousel" aria-roledescription="carousel" aria-label="Clients"${extra}>
+  <div data-carousel-track><div>A</div><div>B</div><div>C</div></div>
+  <button type="button" data-carousel-prev aria-label="Previous">‹</button><button type="button" data-carousel-next aria-label="Next">›</button>
+  <button type="button" data-carousel-dot="0">1</button><button type="button" data-carousel-dot="1">2</button><button type="button" data-carousel-dot="2">3</button>
+  <button type="button" data-carousel-pause aria-pressed="false">Pause</button></section>`;
+const slideShown = (root) => [...root.querySelectorAll('[data-carousel-track] > *')].findIndex((slide) => slide.classList.contains('is-active'));
+
+test('carousel: next, previous and dots move the shown slide and wrap at the ends', () => {
+  const { root, window } = page(CAROUSEL());
+  assert.equal(slideShown(root), 0);
+  assert.equal(root.querySelector('[data-carousel-dot="0"]').getAttribute('aria-current'), 'true');
+  root.querySelector('[data-carousel-prev]').click();
+  assert.equal(slideShown(root), 2, 'previous from the first wraps to the last');
+  root.querySelector('[data-carousel-next]').click();
+  assert.equal(slideShown(root), 0);
+  root.querySelector('[data-carousel-dot="1"]').click();
+  assert.equal(slideShown(root), 1);
+  assert.equal(root.querySelector('[data-carousel-dot="0"]').hasAttribute('aria-current'), false);
+  key(window, root.querySelector('[data-carousel-track]'), 'ArrowRight');
+  assert.equal(slideShown(root), 2);
+});
+
+test('carousel: autoplay advances, and stops while paused or with reduced motion', () => {
+  // Run the timer by hand: attach again with a setTimeout that keeps the callback.
+  const manual = (reduced) => {
+    const view = page(CAROUSEL(' data-autoplay="3000"'), { reduced });
+    view.detach();
+    let tick = null;
+    view.window.setTimeout = (fn) => { tick = fn; return 1; };
+    view.window.clearTimeout = () => {};
+    view.root.querySelector('[data-carousel-track]').scrollTo = () => {}; // no layout here
+    view.detach = attachBehaviours(view.root, view.window);
+    return { ...view, tick: () => tick() };
+  };
+  const moving = manual(false);
+  moving.tick();
+  assert.equal(slideShown(moving.root), 1, 'autoplay moved on');
+  moving.root.querySelector('[data-carousel-pause]').click();
+  assert.equal(moving.root.querySelector('[data-carousel-pause]').getAttribute('aria-pressed'), 'true');
+  moving.tick();
+  assert.equal(slideShown(moving.root), 1, 'paused stays put');
+  moving.detach();
+
+  const still = manual(true);
+  still.tick();
+  assert.equal(slideShown(still.root), 0, 'reduced motion never rotates');
+  still.detach();
+});
+
 test('detach removes the listeners; unknown behaviours are ignored', () => {
   const { root, detach } = page(`<section data-behaviour="carousel"></section>
     <section data-behaviour="more"><p id="b" class="is-clamped">x</p><button type="button" aria-expanded="false" aria-controls="b">More</button></section>`);
