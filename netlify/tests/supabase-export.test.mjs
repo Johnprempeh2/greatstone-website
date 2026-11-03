@@ -115,6 +115,23 @@ test('counts: writes nothing and names what would be left behind', { skip }, () 
   } finally { rmSync(fresh, { recursive: true, force: true }); }
 });
 
+test('a failed connect or a bad URL prints no part of SUPABASE_DB_URL (GRE-3863)', { skip }, () => {
+  const marker = 'leakmarker7f3a';
+  const urls = [
+    source.url.replace(/^postgres:\/\/[^@]+@/, `postgres://${marker}_role:${marker}_pw@`), // role does not exist
+    source.url.replace('/netlifydb?', `/${marker}_db?`), // database does not exist
+    `postgres://${marker}_role:${marker}_pw@[${marker}`, // the URL itself does not parse
+  ];
+  for (const url of urls) for (const command of ['counts', 'export']) {
+    const out = spawnSync(process.execPath, [SCRIPT, command, '--out', dir], {
+      encoding: 'utf8', timeout: 20_000, env: { ...process.env, SUPABASE_DB_URL: url },
+    });
+    assert.equal(out.status, 1, `${command} did not fail cleanly: ${out.signal ?? ''}`);
+    assert.ok(!(out.stdout + out.stderr).includes(marker), `${command}: a SUPABASE_DB_URL part reached the output`);
+    assert.match(out.stderr, /Export stopped: could not connect/);
+  }
+});
+
 test('problems: rows outside TABLES and a missing source table are named', () => {
   const tables = Object.fromEntries(TABLES.map((t) => [t, 0]));
   assert.deepEqual(problems({ tables: { ...tables, audit_log: 4 }, authUsersNoPassword: 0, storageObjects: 0 }),

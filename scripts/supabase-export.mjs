@@ -83,9 +83,13 @@ if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
   if (!process.env.SUPABASE_DB_URL) throw new Error('SUPABASE_DB_URL is required');
   if (command !== 'counts' && command !== 'export') throw new Error('Usage: counts | export --out <dir>');
   if (command === 'export' && !values.out) throw new Error('export needs --out <dir> (run scratch)');
-  const client = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL });
-  await client.connect();
+  // parsing the URL can throw too (an uncaught error prints its input), so it sits inside the sanitised catch
+  let client;
+  let connected = false;
   try {
+    client = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL });
+    await client.connect();
+    connected = true;
     if (command === 'counts') {
       await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
       const counts = await sourceCounts(client);
@@ -105,8 +109,11 @@ if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
       if (found.length) process.exitCode = 1;
     }
   } catch (error) {
-    // pg messages can carry row values; report the code only
-    console.error(`Export stopped: ${error.code ? `Postgres ${error.code}` : error.message}`);
+    // pg messages can carry row values, and connect messages SUPABASE_DB_URL parts (role, database, host); report
+    // the code only, and never a connect message
+    const reason = !connected ? `could not connect (${error.code ?? 'no code'})`
+      : error.code ? `code ${error.code}` : error.message;
+    console.error(`Export stopped: ${reason}`);
     process.exitCode = 1;
-  } finally { await client.end(); }
+  } finally { if (connected) await client.end(); }
 }
