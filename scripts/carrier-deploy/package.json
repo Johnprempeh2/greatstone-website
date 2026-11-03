@@ -1,0 +1,8 @@
+{
+  "name": "carrier-deploy-bundler",
+  "private": true,
+  "description": "Pinned function bundler for scripts/carrier-deploy.mjs (GRE-3901). Installed by the tool into run scratch; not part of the site build.",
+  "dependencies": {
+    "@netlify/zip-it-and-ship-it": "16.6.0"
+  }
+}
