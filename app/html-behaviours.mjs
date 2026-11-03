@@ -7,6 +7,7 @@
 //   data-behaviour="tabs"       [role=tab] buttons show the [data-tab="<index>"] parts of the block
 //   data-behaviour="climb"      the /climb map: a trail drawn by scroll, tiers lit as they are reached
 //   data-behaviour="grow"       a chart grows its bars (`is-grown`) once it is in view
+//   data-behaviour="carousel"   a scroll-snap [data-carousel-track] of slides: prev/next, dots, optional autoplay
 //   data-behaviour="site-header" the exported studio header: page marks, menus, "More" (app/header-behaviour.mjs)
 //
 // The state lives in the HTML (aria-expanded, aria-selected, hidden), so the page reads correctly before
@@ -216,7 +217,85 @@ function grow(root, win) {
   return () => observer.disconnect();
 }
 
-export const BEHAVIOURS = { more, faq, tabs, climb, grow, 'site-header': siteHeader };
+// A carousel: the slides are the children of [data-carousel-track], a scroll-snap row the page CSS lays
+// out, so it swipes and scrolls with no script. This adds [data-carousel-prev] / [data-carousel-next],
+// [data-carousel-dot="<index>"] (aria-current on the shown one), arrow keys, and data-autoplay="<ms>"
+// (at least 3000), which pauses on hover, focus, a hidden tab, reduced motion or [data-carousel-pause]
+// (aria-pressed). The shown slide gets `is-active`. It wraps at both ends.
+function carousel(root, win) {
+  const track = root.querySelector('[data-carousel-track]');
+  const slides = track ? [...track.children] : [];
+  if (slides.length < 2) return null;
+  const dots = [...root.querySelectorAll('[data-carousel-dot]')];
+  const pause = root.querySelector('[data-carousel-pause]');
+  const every = Number(root.getAttribute('data-autoplay')) || 0;
+  let active = -1;
+  let hovered = false;
+  let timer = 0;
+  let frame = 0;
+
+  const mark = (index) => {
+    if (index === active) return;
+    active = index;
+    slides.forEach((slide, i) => slide.classList.toggle('is-active', i === index));
+    dots.forEach((dot) => (dot.getAttribute('data-carousel-dot') === String(index) ? dot.setAttribute('aria-current', 'true') : dot.removeAttribute('aria-current')));
+  };
+  // The shown slide is the one whose left edge is nearest the track's.
+  const nearest = () => {
+    const left = track.getBoundingClientRect().left;
+    let best = 0;
+    slides.forEach((slide, i) => { if (Math.abs(slide.getBoundingClientRect().left - left) < Math.abs(slides[best].getBoundingClientRect().left - left)) best = i; });
+    return best;
+  };
+  const go = (index) => {
+    const next = (index + slides.length) % slides.length;
+    track.scrollTo?.({ left: slides[next].offsetLeft - slides[0].offsetLeft, behavior: reducedMotion(win) ? 'auto' : 'smooth' });
+    mark(next);
+  };
+  const paused = () => hovered || root.contains(win.document.activeElement) || win.document.hidden || reducedMotion(win) || pause?.getAttribute('aria-pressed') === 'true';
+  const schedule = () => {
+    win.clearTimeout(timer);
+    if (every >= 3000) timer = win.setTimeout(() => { if (!paused()) go(active + 1); schedule(); }, every);
+  };
+
+  const onClick = (event) => {
+    const target = event.target.closest?.('[data-carousel-prev],[data-carousel-next],[data-carousel-dot],[data-carousel-pause]');
+    if (!target || !root.contains(target)) return;
+    if (target === pause) { pause.setAttribute('aria-pressed', String(pause.getAttribute('aria-pressed') !== 'true')); return; }
+    if (target.hasAttribute('data-carousel-dot')) go(Number(target.getAttribute('data-carousel-dot')) || 0);
+    else go(active + (target.hasAttribute('data-carousel-next') ? 1 : -1));
+    schedule();
+  };
+  const onKey = (event) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+    if (!step || event.target.closest?.('input,textarea,select,[role="tab"]')) return;
+    event.preventDefault();
+    go(active + step);
+    schedule();
+  };
+  const onScroll = () => { if (!frame) frame = win.requestAnimationFrame(() => { frame = 0; mark(nearest()); }); };
+  const enter = () => { hovered = true; };
+  const leave = () => { hovered = false; };
+
+  mark(0);
+  root.addEventListener('click', onClick);
+  root.addEventListener('keydown', onKey);
+  root.addEventListener('pointerenter', enter);
+  root.addEventListener('pointerleave', leave);
+  track.addEventListener('scroll', onScroll, { passive: true });
+  schedule();
+  return () => {
+    root.removeEventListener('click', onClick);
+    root.removeEventListener('keydown', onKey);
+    root.removeEventListener('pointerenter', enter);
+    root.removeEventListener('pointerleave', leave);
+    track.removeEventListener('scroll', onScroll);
+    win.clearTimeout(timer);
+    if (frame) win.cancelAnimationFrame(frame);
+  };
+}
+
+export const BEHAVIOURS = { more, faq, tabs, climb, grow, carousel, 'site-header': siteHeader };
 
 // Attaches every behaviour inside `root` (a region of the page). `context` carries what a behaviour needs
 // to know about the page (the header's: path, title and the analytics `track`). Returns one function
