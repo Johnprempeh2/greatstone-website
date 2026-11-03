@@ -17,3 +17,12 @@ export function consumeVerifiedLanding(location, history) {
   history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
   return true;
 }
+
+// Next /account: the verification redirect arrives as /account?verified=1. Read the marker once and drop it from the URL.
+export function takeVerifiedQuery(location, history) {
+  const url = new URL(location.href);
+  if (url.searchParams.get('verified') !== '1') return false;
+  url.searchParams.delete('verified');
+  history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  return true;
+}
