@@ -1,4 +1,5 @@
-// One-time, reviewed staging migration for the eight existing identities.
+// One-time, reviewed migration for the existing identities: eight on staging, ten on the rehearsal and
+// production sites (GRE-2567). The caller passes the site's reviewed count; nothing else is accepted.
 // Read the approved export from stdin in run scratch; never store it in git.
 // Dry-run by default. --apply commits only on the named staging site.
 // Run out of band in a reviewed migration environment with the owner connection;
@@ -10,8 +11,9 @@ import { getDatabase } from '@netlify/database';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BCRYPT = /^\$2[aby]\$\d\d\$[./A-Za-z0-9]{53}$/;
 
-export function validateImport(input) {
-  if (!Array.isArray(input) || input.length !== 8) throw new Error('Expected exactly eight source users');
+export function validateImport(input, expected = 8) {
+  if (!Number.isInteger(expected) || expected < 1) throw new Error('Invalid expected identity count');
+  if (!Array.isArray(input) || input.length !== expected) throw new Error(`Expected exactly ${expected} source users`);
   const ids = new Set();
   const emails = new Set();
   return input.map((user) => {
@@ -29,7 +31,7 @@ export function validateImport(input) {
   });
 }
 
-export async function importUsers(pool, users, apply = false) {
+export async function importUsers(pool, users, apply = false, expected = 8) {
   const client = await pool.connect();
   await client.query('BEGIN');
   try {
@@ -59,7 +61,7 @@ export async function importUsers(pool, users, apply = false) {
     const { rows } = await client.query(`SELECT count(*)::int AS count FROM better_auth."user" u
       JOIN better_auth."account" a ON a."userId"=u."id" AND a."providerId"='credential'
       WHERE u."id"=ANY($1::text[])`, [users.map((user) => user.id)]);
-    if (rows[0].count !== 8) throw new Error('Imported identity count differs from source');
+    if (rows[0].count !== expected) throw new Error('Imported identity count differs from source');
     await client.query(apply ? 'COMMIT' : 'ROLLBACK');
     return rows[0].count;
   } catch (error) {

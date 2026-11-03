@@ -95,7 +95,8 @@ async function submit(site, mode, action, input) {
   let data;
   let readonly;
   if (mode === 'identities') {
-    validateImport(source); // fail here, before anything is written
+    if (!SITES[site.name].modes.includes(mode)) throw new Error(`${mode} is not allowed on ${site.name}`);
+    validateImport(source, SITES[site.name].identityCount); // fail here, before anything is written
     data = source;
   } else if (mode === 'proof') {
     if (site.name !== 'gre1795-website-db-staging') throw new Error('Proof is staging only');

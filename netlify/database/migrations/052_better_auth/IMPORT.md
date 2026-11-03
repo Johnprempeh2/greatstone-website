@@ -38,6 +38,9 @@ restore the staging snapshot taken before the import; do not delete shared
 `auth.users` rows by hand. Migration 052 has its own schema rollback, which
 must not run after anyone has signed in without restoring that snapshot.
 
-For production, obtain a fresh export and change the fixed count only in a
-separate reviewed release. The staging export covers eight users; the source
-now has ten.
+Each site in `SITES` (`netlify/functions/lib/owner-import.mjs`) carries its
+reviewed `identityCount`; an export of any other size is refused before any
+write. Staging takes eight (the GRE-1991 export). The rehearsal site and
+`greatstone-home` take ten: Supabase `auth.users` held ten rows, all with a
+password, on 3 Nov 2026 (GRE-2567). If the source count changes before the
+cut-over, change that number in its own reviewed release.
