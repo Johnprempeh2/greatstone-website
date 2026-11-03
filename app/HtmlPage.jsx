@@ -11,15 +11,25 @@ import { CookieSettings } from './ConsentAnalytics.jsx';
 import { AccountEntry, AnimationIsland, QuoteIsland, StoneIsland } from './islands.jsx';
 import ProductListIsland from './ProductListIsland.jsx';
 import { Region } from './html-regions.mjs';
+import TwoDoorsLanding from './TwoDoorsLanding.jsx';
+import formBlocks from '../next-proof/frozen/form-blocks.json';
+import HtmlBehaviours from './HtmlBehaviours.jsx';
+import { ldScript } from '../src/lib/ld-json.mjs';
 
 const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding };
 // Islands that read release data on the server get the release; browser islands get only their props.
 const RELEASE_ISLANDS = new Set(['ProductList']);
+// GRE-3778: the frozen landing renders Puck blocks, which need the page's forms and paths.
+const PAGE_ISLANDS = new Set(['TwoDoorsLanding']);
+
+// GRE-3778: SVG presentation attributes (stroke-width, stop-color…) take React's camelCase names.
+const reactName = (name) => REACT_NAMES[name]
+  || (name.includes('-') && !/^(data|aria)-/.test(name) ? name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) : name);
 
 function reactProps(attributes) {
-  return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [REACT_NAMES[name] || name, BOOLEANS.has(name) ? true : value]));
+  return Object.fromEntries(Object.entries(attributes).map(([name, value]) => [reactName(name), BOOLEANS.has(name) ? true : value]));
 }
 
 function toReact(nodes, context, path = 'n') {
@@ -31,8 +41,12 @@ function toReact(nodes, context, path = 'n') {
       // GRE-3777: the placeholder view shows the tag as GSAM live design does, with islandPlaceholderCss.
       if (context.placeholders) return createElement('gs-island', { key, name: node.name, ...node.attributes });
       if (island.component) return createElement(COMPONENTS[island.component],
-        { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}) });
-      return <IslandBlock key={key} type={island.block} props={{ ...node.props, id: `island-${key.replace(/\./g, '-')}` }}
+        { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
+          ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}) });
+      // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
+      const { blockId, ...props } = node.props;
+      const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
+      return <IslandBlock key={key} type={island.block} props={{ ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }}
         pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
     }
     return createElement(node.tag, { key, ...reactProps(node.attributes) }, node.children.length ? toReact(node.children, context, key) : undefined);
@@ -55,11 +69,16 @@ export default function HtmlPage({ page, release, placeholders = false }) {
   const body = region(page, 'page', context);
   if (context.removed.length) console.warn(`[html-page] release ${release.release.number} ${page.path}: removed ${context.removed.join(', ')}`);
   const css = [site.css, placeholders ? islandPlaceholderCss() : '', ...CHROME_KEYS.map((key) => chrome[key].css), body.css].filter(Boolean).join('\n');
+  // GRE-3789: FAQ structured data comes from page SEO (plain text, escaped by ldScript).
+  const faq = page.seo?.faq?.length ? ldScript({ '@context': 'https://schema.org', '@type': 'FAQPage',
+    mainEntity: page.seo.faq.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }) : '';
   return <>
     {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+    {faq && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faq }} />}
     <Region scope="header">{chrome.header.children}</Region>
     <Region scope="nav">{chrome.nav.children}</Region>
     <Region scope="page" as="main" attributes={{ 'data-org-id': release.orgId, 'data-release': release.release.number }}>{body.children}</Region>
     <Region scope="footer">{chrome.footer.children}</Region>
+    {!placeholders && <HtmlBehaviours path={page.path} />}
   </>;
 }

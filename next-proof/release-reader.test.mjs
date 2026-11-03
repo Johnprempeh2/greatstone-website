@@ -143,3 +143,19 @@ test('invalid schema 2 releases are refused', async () => {
     assert.equal(active.refused.rule, rule, JSON.stringify(release).slice(0, 80));
   }
 });
+
+// GRE-3789: page SEO can carry FAQ structured data (plain text), which the engine writes as JSON-LD.
+test('schema 2 page SEO carries FAQ questions; malformed ones refuse the release', async () => {
+  const release = htmlLive(8);
+  release.pages[1].seo = { faq: [{ q: 'Where does data go?', a: 'Your own instance.', extra: 'dropped' }] };
+  const active = await reader(signed(release))();
+  assert.equal(active.refused, null);
+  assert.deepEqual(active.release.pages.find((page) => page.path === '/contact').seo.faq, [{ q: 'Where does data go?', a: 'Your own instance.' }]);
+  assert.equal(active.release.pages.find((page) => page.path === '/').seo.faq, undefined);
+  for (const faq of ['text', [{ q: 'Q' }], [{ q: '', a: 'A' }], [{ q: 'Q', a: 'x'.repeat(4001) }], Array(51).fill({ q: 'Q', a: 'A' })]) {
+    const bad = htmlLive(8);
+    bad.pages[0].seo = { faq };
+    const refused = await reader(signed(bad))();
+    assert.equal(refused.refused?.rule, 'pages', JSON.stringify(faq).slice(0, 40));
+  }
+});

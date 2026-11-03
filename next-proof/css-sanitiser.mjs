@@ -98,6 +98,8 @@ function safeCssUrl(raw, media) {
     const item = Object.hasOwn(media, value.slice(6)) ? media[value.slice(6)] : null;
     return item?.key ? `/${item.key}` : null;
   }
+  // GRE-3778: a fragment names a gradient or filter in the same page's SVG; it cannot load anything.
+  if (/^#[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(value)) return value;
   return value.startsWith('/') && !value.startsWith('//') ? value : null;
 }
 
