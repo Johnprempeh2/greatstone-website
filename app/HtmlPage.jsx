@@ -8,19 +8,26 @@ import { ISLANDS, islandPlaceholderCss } from '../next-proof/islands.mjs';
 import { CHROME_KEYS } from '../next-proof/chrome-keys.mjs';
 import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
-import { AccountEntry, AnimationIsland, QuoteIsland, StoneIsland } from './islands.jsx';
+import { AccountEntry, AnimationIsland, QuoteIsland, SiteSearch, StoneIsland } from './islands.jsx';
 import ProductListIsland from './ProductListIsland.jsx';
 import { Region } from './html-regions.mjs';
 import TwoDoorsLanding from './TwoDoorsLanding.jsx';
 import formBlocks from '../next-proof/frozen/form-blocks.json';
 import HtmlBehaviours from './HtmlBehaviours.jsx';
 import { ldScript } from '../src/lib/ld-json.mjs';
+import { publicNavOrder } from '../src/lib/nav-order.js';
+import { siteChrome } from './site-chrome.mjs';
 
 const REACT_NAMES = { class: 'className', tabindex: 'tabIndex', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch };
 // Islands that read release data on the server get the release; browser islands get only their props.
 const RELEASE_ISLANDS = new Set(['ProductList']);
+// GRE-3862: the site search gets the public pages it lists, not the whole release.
+const searchLinks = (release) => {
+  const { order, pages, paths } = siteChrome(release);
+  return publicNavOrder(order, pages, false).map((slug) => ({ label: pages[slug].title, href: paths[slug] }));
+};
 // GRE-3778: the frozen landing renders Puck blocks, which need the page's forms and paths.
 const PAGE_ISLANDS = new Set(['TwoDoorsLanding']);
 
@@ -42,7 +49,8 @@ function toReact(nodes, context, path = 'n') {
       if (context.placeholders) return createElement('gs-island', { key, name: node.name, ...node.attributes });
       if (island.component) return createElement(COMPONENTS[island.component],
         { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
-          ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}) });
+          ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}),
+          ...(island.component === 'SiteSearch' ? { links: context.searchLinks ||= searchLinks(context.release) } : {}) });
       // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
       const { blockId, ...props } = node.props;
       const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
@@ -79,6 +87,6 @@ export default function HtmlPage({ page, release, placeholders = false }) {
     <Region scope="nav">{chrome.nav.children}</Region>
     <Region scope="page" as="main" attributes={{ 'data-org-id': release.orgId, 'data-release': release.release.number }}>{body.children}</Region>
     <Region scope="footer">{chrome.footer.children}</Region>
-    {!placeholders && <HtmlBehaviours path={page.path} />}
+    {!placeholders && <HtmlBehaviours path={page.path} title={page.title} />}
   </>;
 }

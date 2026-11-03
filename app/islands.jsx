@@ -2,7 +2,9 @@
 
 // GRE-3777: the browser islands of schema 2 (HTML) pages. Each one reuses the component the block site
 // already runs, configured only by the props next-proof/islands.mjs accepted from the page HTML.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { usePathname, useRouter } from 'next/navigation';
 import { InquiryToggle } from '../src/store/BasketServiceControls.jsx';
 import StoreCart from '../src/store/StoreCart.jsx';
 import { useCart, openCart } from '../src/store/cart.mjs';
@@ -10,6 +12,9 @@ import { getSession, onAuth } from '../src/store/customerAuth.mjs';
 import { StoneSymbol, css as heroCss } from '../src/blocks/Hero.jsx';
 import { ContainedMotion, css as containedMotionCss } from '../src/blocks/ContainedMotion.jsx';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
+import { UserIcon } from '../src/Header.jsx';
+import { Search } from '../src/blocks/icons.jsx';
+import CommandPalette from '../src/cms/CommandPalette.jsx';
 
 export const islandCss = `
 .gs-island-quote{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
@@ -49,6 +54,7 @@ export function QuoteIsland({ service, serviceName }) {
 
 // A link to the account page: "Sign in" until the browser has a session, then "My account".
 export function AccountEntry({ look = 'button' }) {
+  const router = useRouter();
   const [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
     let active = true;
@@ -56,8 +62,38 @@ export function AccountEntry({ look = 'button' }) {
     const { data } = onAuth((session) => setSignedIn(Boolean(session)));
     return () => { active = false; data?.subscription?.unsubscribe?.(); };
   }, []);
+  // GRE-3862: the studio header's account button, with its own labels. A button, as in the header, so it
+  // keeps the header's look.
+  if (look === 'header') {
+    const label = signedIn ? 'Account' : 'Sign in';
+    return <button type="button" className="gs-accountbtn" onClick={() => router.push('/account')} aria-label={label} title={label}><UserIcon /><span className="gs-accountlabel">{label}</span></button>;
+  }
   return <><style>{islandCss}</style>
     <a className={look === 'link' ? 'gs-island-link' : 'gs-island-btn gs-island-btn--ghost'} href="/account">{signedIn ? 'My account' : 'Sign in'}</a></>;
+}
+
+// GRE-3862: the studio header's search: the ⌘K button and the command palette over the site's public
+// pages (`links`, from the release) plus the storefront and account routes, as in SiteShell. The palette
+// opens on the document body, outside the header's contained box, so it covers the screen as today.
+export function SiteSearch({ links = [] }) {
+  const router = useRouter();
+  const pathname = usePathname() || '/';
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setOpen((value) => !value); } };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  const commands = useMemo(() => [
+    ...links.map((link) => ({ id: `go-${link.href}`, group: 'Go to', label: link.label, hint: link.href === pathname ? 'current' : '', run: () => router.push(link.href) })),
+    { id: 'go-shop', group: 'Go to', label: 'Products', hint: 'storefront', run: () => router.push('/shop') },
+    { id: 'go-account', group: 'Go to', label: 'Your account', run: () => router.push('/account') },
+    { id: 'go-org', group: 'Go to', label: 'Your organisation', run: () => router.push('/org') },
+  ], [links, pathname, router]);
+  return <>
+    <button type="button" className="gs-cmdbtn" onClick={() => setOpen(true)} title="Command palette (⌘K)" aria-label="Search and commands"><Search /><kbd>⌘K</kbd></button>
+    {open && createPortal(<CommandPalette open={open} onClose={() => setOpen(false)} commands={commands} />, document.body)}
+  </>;
 }
 
 // The 3D stone. The still paints first, phones included; Hero's StoneSymbol loads the renderer on capable

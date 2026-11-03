@@ -52,7 +52,10 @@ export default function ConsentAnalytics() {
   </div>}</>;
 }
 
-/** The cookie-settings island (GRE-3777): reopens the consent banner above. HtmlPage imported it before it existed, so any page with it in the footer failed to render. */
+/** The cookie-settings island (GRE-3777): reopens the consent banner above. HtmlPage imported it before it existed, so any page with it in the footer failed to render.
+ * GRE-3862: as in the studio footer, it shows only when analytics is configured (with no container there
+ * is no banner to reopen), and takes the footer's look there. */
 export function CookieSettings({ label = 'Cookie settings' }) {
-  return <button type="button" className="gs-cookie-settings" onClick={() => window.dispatchEvent(new Event('gs-consent-open'))}>{label}</button>;
+  if (!id) return null;
+  return <button type="button" className="gs-cookie-settings foot-cookie-settings" onClick={() => window.dispatchEvent(new Event('gs-consent-open'))}>{label}</button>;
 }

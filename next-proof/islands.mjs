@@ -31,8 +31,11 @@ export const ISLANDS = {
       'data-service': { prop: 'service', pattern: slug },
       'data-service-name': { prop: 'serviceName', pattern: /^[A-Za-z0-9][A-Za-z0-9 &,.'()+/-]{0,79}$/ },
     } },
+  // GRE-3862: `header` is the studio header's account button.
   'account-entry': { component: 'AccountEntry', label: 'Account entry', placeholder: 'Sign in, or My account when signed in.', height: 48, inline: true,
-    attributes: { 'data-style': enumRule('look', ['button', 'link']) } },
+    attributes: { 'data-style': enumRule('look', ['button', 'link', 'header']) } },
+  // GRE-3862: the studio header's search: the ⌘K button and the palette of the site's pages.
+  'site-search': { component: 'SiteSearch', label: 'Site search', placeholder: 'Search the site (⌘K).', height: 38, inline: true, attributes: {} },
   'product-list': { component: 'ProductList', label: 'Product list', placeholder: 'Products from the catalogue collection.', height: 360,
     attributes: {
       'data-vendor': { prop: 'vendor', pattern: slug },

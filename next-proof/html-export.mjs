@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto';
 import { Window } from 'happy-dom';
 import { stripTags } from '../src/lib/richtext-normalise.mjs';
+import { exportFooter, exportHeader } from './html-chrome.mjs';
 
 // Blocks that need code to work become islands (next-proof/islands.mjs). `attributes` reads the island's
 // data attributes from the block's published props.
@@ -191,9 +192,11 @@ function stripEngineAttributes(root) {
 }
 
 // Turns one server-rendered page (the full document from the engine) into its schema 2 parts.
-// `page` is the baked release page (schema 1, with Puck data). Returns the page document, the block CSS
-// found inline in the render (it goes into the site stylesheet), chrome and notes for the report.
-export function exportRenderedPage(documentHtml, page) {
+// `page` is the baked release page (schema 1, with Puck data); `site` the chrome data the shell passes the
+// header (app/site-chrome.mjs). Returns the page document, the block CSS found inline in the render (it
+// goes into the site stylesheet), chrome and notes for the report. A missing header or footer comes back
+// empty, and the export script stops on it.
+export function exportRenderedPage(documentHtml, page, site) {
   const document = parse(documentHtml);
   const main = document.querySelector('main');
   if (!main) throw new Error(`${page.path}: the render has no <main>`);
@@ -234,14 +237,9 @@ export function exportRenderedPage(documentHtml, page) {
   if (svgs) notes.push(`${svgs} inline SVG (kept: the sanitiser allows a drawing subset)`);
   const html = content.innerHTML.replace(/<!-- -->/g, '').trim();
 
-  const header = document.querySelector('header.proof-header');
-  const footer = document.querySelector('footer.proof-footer');
-  footer?.querySelector('nav')?.append(island(document, 'cookie-settings'));
-  const chrome = {
-    header: { html: header?.outerHTML || '', css: '' },
-    nav: { html: '', css: '' },
-    footer: { html: footer?.outerHTML || '', css: '' },
-  };
+  // GRE-3862: the studio header and footer (next-proof/html-chrome.mjs).
+  const empty = { html: '', css: '' };
+  const chrome = { header: exportHeader(document, site) || empty, nav: empty, footer: exportFooter(document) || empty };
   return { html, css, blockCss, chrome, notes, formBlocks, faq };
 }
 
