@@ -5,7 +5,7 @@
 // It runs only its own fixed transforms, never SQL, table or column names from the payload:
 //   identities        the 052_better_auth/import-users.mjs checks and upserts, unchanged
 //   tables            a data-only move into the hard-coded TABLES list below, positional rows checked against the catalog
-//   mcp-token         registers a portal MCP token from its SHA-256 (GRE-3769, migration 061); never the token itself
+//   mcp-token         registers a portal MCP token from its SHA-256 (GRE-3769, migration 064); never the token itself
 //   mcp-token-revoke  revokes a portal MCP token by id (040's mcp_portal_revoke_token)
 //
 // Guards, in order. Until the first three pass it reads nothing and writes nothing:

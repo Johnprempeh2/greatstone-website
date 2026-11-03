@@ -1,4 +1,4 @@
-// Portal MCP tokens on Netlify Database (GRE-3769): migration 061's mcp_portal_register_token and the owner
+// Portal MCP tokens on Netlify Database (GRE-3769): migration 064's mcp_portal_register_token and the owner
 // importer's mcp-token and mcp-token-revoke modes, on a throwaway real Postgres with every migration applied
 // (lib/postgres.mjs). Proves: register refuses a bad hash (a raw token too), mixed orgs, unknown clients and a
 // hash already registered; no role but the owner can call it; a registered token works with
