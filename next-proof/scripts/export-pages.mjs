@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { toProofRelease } from '../release-adapter.mjs';
+import { applyLegalWording } from '../legal-wording.mjs';
 import { publishedCatalogue } from '../catalogue-source.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
@@ -36,7 +37,7 @@ try {
     seo: pages[slug].seo,
     data: pages[slug].published,
   }])) };
-  await writeFile(resolve(import.meta.dirname, '../data/release.json'), JSON.stringify(toProofRelease(selected), null, 2) + '\n');
+  await writeFile(resolve(import.meta.dirname, '../data/release.json'), JSON.stringify(applyLegalWording(toProofRelease(selected)), null, 2) + '\n');
   console.log(`Exported schema 1 release for ${publishedSlugs.length} published pages and ${catalogue?.offerings.length || 0} published offerings`);
 } finally {
   await rm(temp, { recursive: true, force: true });
