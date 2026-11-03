@@ -3,6 +3,7 @@ import test from 'node:test';
 import { toProofRelease } from './release-adapter.mjs';
 import { browseOfferings, catalogueFromRelease, offeringBySlug } from './catalogue-data.mjs';
 import { publishedCatalogue } from './catalogue-source.mjs';
+import { validateRelease } from './release-validator.mjs';
 
 const page = { data: { content: [{ type: 'Hero', props: { id: 'hero-1', shopHref: '#shop/sample-vendor', productHref: '#product/sample-one' } }] }, title: 'Page', seo: { title: 'Page', description: 'Page' } };
 const snapshot = {
@@ -67,4 +68,24 @@ test('public catalogue fixture is usable locally but rejected by required releas
     if (required === undefined) delete process.env.NEXT_CATALOGUE_REQUIRED;
     else process.env.NEXT_CATALOGUE_REQUIRED = required;
   }
+});
+
+test('empty catalogue text, a deleted category and BIGINT prices from the database still pass the release schema', () => {
+  const nullable = structuredClone(snapshot);
+  for (const key of Object.keys(nullable.pages)) nullable.pages[key].data.root = { props: {} };
+  const vendor = { id: 'vendor-1', slug: 'sample-vendor', name: 'Sample Vendor', logo_url: null, description: null };
+  nullable.catalogue.vendors = [vendor];
+  nullable.catalogue.categories = [{ id: 'category-1', slug: 'documents', name: 'Documents', description: null }];
+  nullable.catalogue.offerings = [{
+    id: 'offering-1', slug: 'sample-one', name: 'Sample One', short_description: null, description: null,
+    from_price_minor: null, from_price_currency: null, featured: false, platforms: [], type: 'product', attributes: {},
+    vendor: { id: 'vendor-1', slug: 'sample-vendor', name: 'Sample Vendor', logo_url: null }, category: null, from_price_minor: '120000', from_price_currency: 'GBP',
+    variants: [{ id: 'variant-1', sku: 'S1', name: 'One', currency: 'GBP', platform: null, sort_order: 0, license_type: null, min_order_qty: 1, billing_period: null, base_price_minor: '120000' }],
+  }];
+  const release = toProofRelease(nullable);
+  assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId }), null);
+  assert.equal(release.collections.vendors.entries[0].fields.data.logo_url, '');
+  // BIGINT minor units arrive from Postgres as strings.
+  assert.equal(release.collections.offerings.entries[0].fields.data.from_price_minor, 120000);
+  assert.equal(release.collections.offerings.entries[0].fields.data.variants[0].base_price_minor, 120000);
 });

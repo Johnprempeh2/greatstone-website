@@ -1,6 +1,7 @@
 import './fonts.css';
 import '../src/site.css';
 import '../src/index.css';
+import '../src/studio.css';
 import '../src/two-doors.css';
 import '../src/store/store.css';
 import './proof.css';

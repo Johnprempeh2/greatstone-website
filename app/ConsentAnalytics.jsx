@@ -51,8 +51,3 @@ export default function ConsentAnalytics() {
     </div>
   </div>}</>;
 }
-
-export function CookieSettings() {
-  if (!id) return null;
-  return <button className="proof-cookie-settings" type="button" onClick={() => window.dispatchEvent(new Event('gs-consent-open'))}>Cookie settings</button>;
-}
