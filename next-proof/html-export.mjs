@@ -254,3 +254,33 @@ export function releasePage(page, { html, css, faq = [] }, navigation) {
     html, css,
   };
 }
+
+// GSAM draft pages (GRE-1822) added to the baked release for one export run. A draft at a path the
+// release already serves would replace a published page, so it is refused.
+export function stageDraftPages(baked, drafts) {
+  const taken = new Set(baked.pages.flatMap((page) => [page.path, page.id]));
+  const staged = drafts.filter((draft) => !(taken.has(draft.id) && baked.pages.some((page) => page.id === draft.id && page.path === draft.path)));
+  for (const draft of staged) {
+    if (taken.has(draft.path)) throw new Error(`${draft.path}: the baked release already has a page here`);
+    if (!Array.isArray(draft.data?.content)) throw new Error(`${draft.path}: draft has no block content`);
+  }
+  return { ...baked, pages: [...baked.pages, ...staged.map(({ id, revisionId, path, slug, title, navOrder, seo, data }) =>
+    // The drafts have no SEO title yet; the release needs one, so it follows the site's "Page · Site" form.
+    ({ id, revisionId, slug, path, title, navOrder: navOrder ?? null,
+      seo: { ...seo, title: seo?.title || `${title} · Greatstone International`, description: seo?.description || '' }, data }))] };
+}
+
+// The shared chrome without the footer links the staged drafts add. Each link must be there exactly once
+// and nowhere else in the chrome, so a change to the footer markup stops the export instead of leaking a
+// link to an unpublished page.
+export function withoutDraftLinks(chrome, drafts) {
+  let footer = chrome.footer.html;
+  for (const { path, title } of drafts) {
+    const link = `<a href="${path}">${title}</a>`;
+    if (footer.split(link).length !== 2) throw new Error(`${path}: expected one footer link to the staged draft`);
+    footer = footer.replace(link, '');
+    if (Object.values({ ...chrome, footer: { html: footer } }).some((part) => part.html.includes(`href="${path}"`)))
+      throw new Error(`${path}: the chrome links to the staged draft outside the footer list`);
+  }
+  return { ...chrome, footer: { ...chrome.footer, html: footer } };
+}

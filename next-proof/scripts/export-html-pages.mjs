@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { transformSync } from 'esbuild';
-import { exportRenderedPage, releasePage, stripCssComments } from '../html-export.mjs';
+import { exportRenderedPage, releasePage, stripCssComments, withoutDraftLinks } from '../html-export.mjs';
 import { sanitiseHtml } from '../html-sanitiser.mjs';
 import { sanitiseCss } from '../css-sanitiser.mjs';
 import { CHROME_KEYS } from '../gsam-release.mjs';
@@ -62,6 +62,15 @@ for (const [match, data] of stylesheet.matchAll(/url\("?data:image\/svg\+xml,([^
   stylesheet = stylesheet.replaceAll(match, `url(/assets/html-export/${name})`);
 }
 
+// Staged GSAM drafts (scripts/stage-export-drafts.mjs) are not published, but the footer lists every page
+// in the release, so their render adds a link to each. The shared chrome drops those links, unless
+// PARITY_CHROME=1 keeps them so a parity run compares like with like.
+const exportUrl = new URL('../data/html-export-release.json', import.meta.url);
+const draftIds = new Set(JSON.parse(await readFile(new URL('../frozen/gre-1822-drafts.json', import.meta.url), 'utf8')).pages.map((page) => page.id));
+const drafts = baked.pages.filter((page) => draftIds.has(page.id));
+if (drafts.length && process.env.PARITY_CHROME !== '1') chrome = withoutDraftLinks(chrome, drafts);
+else if (drafts.length) console.log('PARITY_CHROME=1: the chrome links to staged drafts; for parity only, do not commit this export');
+
 const release = {
   schema: 2, siteId: baked.siteId, orgId: baked.orgId, release: 1, theme: baked.theme,
   stylesheet, chrome,
@@ -88,7 +97,7 @@ for (const { page, exported } of pages) {
     ...exported.notes.map((note) => `- ${note}`), removedBy('sanitiser removes', [...html, ...css]) || '- sanitiser removes nothing', '');
 }
 
-await writeFile(new URL('../data/html-export-release.json', import.meta.url), `${JSON.stringify(release, null, 2)}\n`);
+await writeFile(exportUrl, `${JSON.stringify(release, null, 2)}\n`);
 await writeFile(new URL('../frozen/form-blocks.json', import.meta.url), `${JSON.stringify(formBlocks, null, 2)}\n`);
 const reportDir = new URL('../../docs/parity/GRE-3778/', import.meta.url);
 await mkdir(reportDir, { recursive: true });

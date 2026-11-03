@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { exportRenderedPage, releasePage, stripCssComments } from './html-export.mjs';
+import { exportRenderedPage, releasePage, stageDraftPages, stripCssComments, withoutDraftLinks } from './html-export.mjs';
 import { sanitiseHtml } from './html-sanitiser.mjs';
 import { sanitiseCss } from './css-sanitiser.mjs';
 
@@ -107,4 +107,25 @@ test('the maturity map names the climb behaviour; the catalogue becomes an islan
   assert.match(out.html, /<gs-island name="service-catalog" data-block="servicecatalog-1"><\/gs-island>/);
   assert.deepEqual(out.formBlocks, { 'servicecatalog-1': { id: 'servicecatalog-1', services: [] } });
   assert.deepEqual(sanitiseHtml(out.html).removed, []);
+});
+
+test('GSAM draft pages join the baked release once, never over a published page', () => {
+  const baked = { pages: [{ id: 'a', path: '/about', data: { content: [] } }] };
+  const draft = { id: 'd', revisionId: 'r', path: '/support', slug: 'support', title: 'Support', seo: { noindex: false }, data: { content: [], root: { props: {} } } };
+  const staged = stageDraftPages(baked, [draft]);
+  assert.deepEqual(staged.pages.map((page) => page.path), ['/about', '/support']);
+  assert.equal(staged.pages[1].id, 'd');
+  // Staging twice changes nothing.
+  assert.deepEqual(stageDraftPages(staged, [draft]).pages, staged.pages);
+  assert.throws(() => stageDraftPages(baked, [{ ...draft, path: '/about' }]), /already has a page/);
+  assert.throws(() => stageDraftPages(baked, [{ ...draft, data: {} }]), /no block content/);
+});
+
+test('the shared chrome drops the footer links staged drafts add, and nothing else', () => {
+  const draft = { path: '/support', title: 'Support' };
+  const chrome = { header: { html: '<nav><a href="/about">About</a></nav>', css: '' }, nav: { html: '', css: '' },
+    footer: { html: '<nav class="foot-links"><a href="/about">About</a><a href="/support">Support</a></nav>', css: '.x{}' } };
+  assert.deepEqual(withoutDraftLinks(chrome, [draft]).footer, { html: '<nav class="foot-links"><a href="/about">About</a></nav>', css: '.x{}' });
+  assert.throws(() => withoutDraftLinks({ ...chrome, footer: { html: '', css: '' } }, [draft]), /one footer link/);
+  assert.throws(() => withoutDraftLinks({ ...chrome, header: { html: '<a href="/support">Help</a>', css: '' } }, [draft]), /outside the footer/);
 });
