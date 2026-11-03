@@ -11,9 +11,13 @@ import { createElement } from 'react';
 
 export const REGION_STYLE = Object.freeze({ contain: 'layout', overflow: 'clip' });
 export const MENU_REGION_STYLE = Object.freeze({ contain: 'layout', position: 'relative', zIndex: 2 });
-const MENU_REGIONS = new Set(['header', 'nav']);
+// GRE-3862: the header box also stays at the top of the screen as the page scrolls, so the studio
+// header, which is fixed, stays in view as it does today. Only the box is pinned: what the header holds
+// is still placed inside it.
+export const HEADER_REGION_STYLE = Object.freeze({ contain: 'layout', position: 'sticky', top: 0, zIndex: 2 });
+const REGION_STYLES = { header: HEADER_REGION_STYLE, nav: MENU_REGION_STYLE };
 
 export function Region({ scope, as = 'div', attributes = {}, children }) {
-  const style = MENU_REGIONS.has(scope) ? MENU_REGION_STYLE : REGION_STYLE;
+  const style = REGION_STYLES[scope] || REGION_STYLE;
   return createElement('div', { style }, createElement(as, { 'data-gs-scope': scope, ...attributes }, children));
 }

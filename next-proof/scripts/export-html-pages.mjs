@@ -12,9 +12,11 @@ import { exportRenderedPage, releasePage, stripCssComments } from '../html-expor
 import { sanitiseHtml } from '../html-sanitiser.mjs';
 import { sanitiseCss } from '../css-sanitiser.mjs';
 import { CHROME_KEYS } from '../gsam-release.mjs';
+import { siteChrome } from '../../app/site-chrome.mjs';
 
 const base = process.env.PROOF_BASE || 'http://127.0.0.1:5181';
 const baked = JSON.parse(await readFile(new URL('../data/release.json', import.meta.url), 'utf8'));
+const siteData = siteChrome(baked);
 
 async function get(path) {
   const response = await fetch(new URL(path, base));
@@ -30,14 +32,14 @@ let chrome;
 for (const page of baked.pages) {
   const documentHtml = await get(page.path);
   for (const [, href] of documentHtml.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)) stylesheetLinks.add(href.replace(/\?.*$/, ''));
-  const exported = exportRenderedPage(documentHtml, page);
+  const exported = exportRenderedPage(documentHtml, page, siteData);
   exported.blockCss.forEach((css) => blockCss.add(css));
   Object.assign(formBlocks, exported.formBlocks);
   chrome ||= exported.chrome;
   // A shell the exporter does not recognise would otherwise publish every page with no header or footer.
   if (!exported.chrome.header.html || !exported.chrome.footer.html)
     throw new Error(`${page.path}: no header or footer found in the render; the site shell changed, so update the chrome export`);
-  if (exported.chrome.header.html !== chrome.header.html || exported.chrome.footer.html !== chrome.footer.html)
+  if (CHROME_KEYS.some((key) => exported.chrome[key].html !== chrome[key].html || exported.chrome[key].css !== chrome[key].css))
     throw new Error(`${page.path}: header or footer differs from the first page; chrome must be shared`);
   pages.push({ page, exported });
 }
@@ -76,7 +78,7 @@ const lines = [
   `Engine render from ${base}, baked release ${baked.release.number}. ${pages.length} pages. Site stylesheet ${Math.round(stylesheet.length / 1024)} KB.`, '',
   '## Site stylesheet and chrome', '',
   removedBy('stylesheet', site.removed) || '- stylesheet: nothing removed',
-  ...CHROME_KEYS.map((key) => removedBy(key, sanitiseHtml(chrome[key].html).removed) || `- ${key}: nothing removed`), '',
+  ...CHROME_KEYS.map((key) => removedBy(key, [...sanitiseHtml(chrome[key].html).removed, ...sanitiseCss(chrome[key].css, { scope: key }).removed]) || `- ${key}: nothing removed`), '',
   '## Pages', '',
 ];
 for (const { page, exported } of pages) {

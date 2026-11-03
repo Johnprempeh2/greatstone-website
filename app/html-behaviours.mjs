@@ -7,10 +7,13 @@
 //   data-behaviour="tabs"       [role=tab] buttons show the [data-tab="<index>"] parts of the block
 //   data-behaviour="climb"      the /climb map: a trail drawn by scroll, tiers lit as they are reached
 //   data-behaviour="grow"       a chart grows its bars (`is-grown`) once it is in view
+//   data-behaviour="site-header" the exported studio header: page marks, menus, "More" (app/header-behaviour.mjs)
 //
 // The state lives in the HTML (aria-expanded, aria-selected, hidden), so the page reads correctly before
 // the script runs and GSAM edits the content as plain HTML. The script only toggles attributes, classes,
 // styles and button labels named in data attributes: no fetch, no HTML.
+import { siteHeader } from './header-behaviour.mjs';
+
 const IMPORTANT = 'important';
 // Inline styles became page classes marked !important at export, so a runtime value must be too.
 const setStyle = (element, property, value) => element?.style.setProperty(property, value, IMPORTANT);
@@ -213,15 +216,17 @@ function grow(root, win) {
   return () => observer.disconnect();
 }
 
-export const BEHAVIOURS = { more, faq, tabs, climb, grow };
+export const BEHAVIOURS = { more, faq, tabs, climb, grow, 'site-header': siteHeader };
 
-// Attaches every behaviour inside `root` (the page region). Returns one function that detaches them all.
-export function attachBehaviours(root, win = root?.ownerDocument?.defaultView) {
+// Attaches every behaviour inside `root` (a region of the page). `context` carries what a behaviour needs
+// to know about the page (the header's: path, title and the analytics `track`). Returns one function
+// that detaches them all.
+export function attachBehaviours(root, win = root?.ownerDocument?.defaultView, context = {}) {
   if (!root || !win) return () => {};
   const detach = [reveal(root, win)];
   for (const element of root.querySelectorAll('[data-behaviour]')) {
     const name = element.getAttribute('data-behaviour');
-    if (Object.hasOwn(BEHAVIOURS, name)) detach.push(BEHAVIOURS[name](element, win));
+    if (Object.hasOwn(BEHAVIOURS, name)) detach.push(BEHAVIOURS[name](element, win, context));
   }
   return () => detach.forEach((stop) => stop?.());
 }

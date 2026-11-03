@@ -4,7 +4,8 @@ import { exportRenderedPage, releasePage, stripCssComments } from './html-export
 import { sanitiseHtml } from './html-sanitiser.mjs';
 import { sanitiseCss } from './css-sanitiser.mjs';
 
-const render = (content) => `<!doctype html><html><body><header class="proof-header"><a href="/">Home</a></header><main><style>.b{color:red}</style><div class="gs-proof-content">${content}</div></main><footer class="proof-footer"><nav aria-label="Legal pages"><a href="/privacy">Privacy</a></nav></footer></body></html>`;
+// GRE-3862: the studio shell. The header and footer exports have their own tests (html-chrome.test.mjs).
+const render = (content) => `<!doctype html><html><body><main><style>.b{color:red}</style><div class="gs-proof-content">${content}</div></main><footer class="site-footer"><nav class="foot-legal" aria-label="Legal"><a href="/privacy">Privacy</a></nav></footer></body></html>`;
 
 test('inline styles become page classes the sanitisers keep', () => {
   const out = exportRenderedPage(render('<div data-gs-block-type="Hero" data-gs-block-id="h1" id="gs-blk-h1"><p style="width:40%;--accent:#c8ff00">Hi</p></div>'), { path: '/x', data: { content: [] } });
@@ -38,6 +39,8 @@ test('the frozen landing is one island, and the footer gets cookie settings', ()
   assert.equal(out.html, '<gs-island name="two-doors-landing"></gs-island>');
   assert.equal(sanitiseHtml(out.html).nodes[0].type, 'island');
   assert.match(out.chrome.footer.html, /<gs-island name="cookie-settings"><\/gs-island><\/nav>/);
+  // A render without the studio header exports none; the export script stops on that.
+  assert.deepEqual(out.chrome.header, { html: '', css: '' });
 });
 
 test('CSS comments go, strings stay', () => {
