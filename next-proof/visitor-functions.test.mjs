@@ -48,13 +48,16 @@ test('editor package carries the host guard and builds without database provisio
     assert.doesNotMatch(pkg.scripts['build:next:editor'], /export-pages/);
     assert.match(pkg.scripts['build:next:editor'], /gen-contract-file/);
     assert.ok((await stat(join(target, 'contracts/VENDORED.json'))).isFile());
+    // Portal and catalogue pages import the shared helpers (GRE-3768); the function handlers stay out.
+    assert.ok((await stat(join(target, 'netlify/functions/lib/shared/portal-receipt.mjs'))).isFile());
     for (const name of ['@netlify/database', '@netlify/database-dev']) {
       assert.equal(pkg.dependencies?.[name], undefined);
       assert.equal(pkg.devDependencies?.[name], undefined);
       assert.equal(lock.packages[''].dependencies?.[name], undefined);
       assert.equal(lock.packages[''].devDependencies?.[name], undefined);
     }
-    await assert.rejects(stat(join(target, 'netlify/functions')));
+    assert.deepEqual(await readdir(join(target, 'netlify/functions')), ['lib']);
+    assert.deepEqual(await readdir(join(target, 'netlify/functions/lib')), ['shared']);
     await assert.rejects(stat(join(target, 'netlify/database')));
   } finally {
     await rm(target, { recursive: true, force: true });
