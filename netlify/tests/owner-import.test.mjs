@@ -104,7 +104,7 @@ test('payload refusals: counts-only result, payload deleted, nothing written', {
     ['notAfter beyond the window', envelope('identities', 'dry-run', USERS, new Date(NOW + 40 * 60 * 1000).toISOString()), 'payload-expired'],
     ['not an envelope', { mode: 'identities' }, 'payload-invalid'],
     ['apply before a dry run', envelope('identities', 'apply', USERS), 'dry-run-required'],
-    ['seven users', envelope('identities', 'dry-run', USERS.slice(0, 7)), 'Expected exactly eight source users'],
+    ['seven users', envelope('identities', 'dry-run', USERS.slice(0, 7)), 'Expected exactly 8 source users'],
     ['malformed hash', envelope('identities', 'dry-run', USERS.map((u, i) => (i ? u : { ...u, passwordHash: 'x' }))), 'Invalid source hash'],
   ];
   for (const [label, payload, reason] of cases) {
@@ -330,8 +330,48 @@ test('the runner helper refuses rows for a table outside TABLES or missing a col
 });
 
 test('the window check is pure: only staging allows proof', () => {
-  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'mcp-token', 'mcp-token-revoke']);
+  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke']);
   assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
+  assert.deepEqual(SITES['gre2567-cutover-rehearsal'].modes, ['tables', 'identities']);
+  assert.deepEqual(Object.values(SITES).map((site) => site.identityCount), [8, 10, 10]);
   const ok = checkWindow({ env: ENV, context: STAGING, now: NOW });
   assert.equal(ok.site, SITES['gre1795-website-db-staging']);
+});
+
+// GRE-2567: the rehearsal and production sites take the ten Supabase identities (3 Nov count); staging keeps eight.
+// Last in the file: it adds ten identities that the staging tests above must not see.
+test('identities: each site accepts only its reviewed count (ten on the rehearsal site)', { skip }, async () => {
+  const site = SITES['gre2567-cutover-rehearsal'];
+  const context = { site: { name: 'gre2567-cutover-rehearsal', id: site.id }, deploy: { context: 'production', published: true } };
+  const env = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'gre2567-cutover-rehearsal' };
+  const TEN = Array.from({ length: 10 }, (_, i) => ({
+    id: hex(0xa0 + i, 100 + i), email: `rehearsal${i}@example.test`, name: `Rehearsal ${i}`, emailVerified: true,
+    passwordHash: `$2b$10$${String.fromCharCode(97 + i).repeat(53)}`,
+  }));
+  const before = owner('SELECT count(*) FROM better_auth."user"');
+
+  for (const [label, users, reason] of [['eight users', TEN.slice(0, 8), 'Expected exactly 10 source users'],
+    ['eleven users', [...TEN, { ...TEN[0], id: hex(0xbb, 199), email: 'extra@example.test' }], 'Expected exactly 10 source users']]) {
+    const store = memoryStore({ payload: envelope('identities', 'dry-run', users) });
+    const { result } = await tick(store, { env, context });
+    assert.equal(result.status, 'failed', label);
+    assert.equal(result.reason, reason, label);
+  }
+  // the same ten on staging are refused: staging's reviewed count stays eight
+  const staging = await tick(memoryStore({ payload: envelope('identities', 'dry-run', TEN) }));
+  assert.equal(staging.result.reason, 'Expected exactly 8 source users');
+
+  const store = memoryStore({ payload: envelope('identities', 'dry-run', TEN) });
+  const dry = await tick(store, { env, context });
+  assert.equal(dry.result.status, 'dry-run-ok');
+  assert.deepEqual(dry.result.counts, { identities: { source: 10, imported: 10 } });
+  assert.equal(owner('SELECT count(*) FROM better_auth."user"'), before, 'dry run left rows');
+
+  await store.setJSON('payload', envelope('identities', 'apply', TEN));
+  const applied = await tick(store, { env, context });
+  assert.equal(applied.result.status, 'applied');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" a WHERE a."providerId" = 'credential'
+    AND a."userId" = ANY(ARRAY['${TEN.map((u) => u.id).join("','")}'])`), '10');
+  const text = JSON.stringify([dry.lines, applied.lines, [...store.map.values()]]);
+  for (const u of TEN) assert.ok(!text.includes(u.email) && !text.includes(u.passwordHash), 'a row value reached a log line or result');
 });

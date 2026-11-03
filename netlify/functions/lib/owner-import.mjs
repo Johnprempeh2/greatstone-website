@@ -23,11 +23,13 @@ export const STORE = 'owner-import';
 export const MAX_WINDOW_MS = 60 * 60 * 1000;
 export const OWNER = 'netlifydb_owner';
 
-// Reviewed targets. Production identities need a fresh export of ten and a reviewed change to the fixed count
-// (IMPORT.md), so production takes only the table move for now. A rehearsal site is added here in its own PR.
+// Reviewed targets. identityCount is the exact number of source identities a site accepts: eight on staging (the
+// GRE-1991 export), ten on the rehearsal and production sites (Supabase auth.users, counted 3 Nov 2026, GRE-2567).
+// The rehearsal site is a throwaway copy of the cut-over (GRE-1701 rule 3); remove its entry when the site is deleted.
 export const SITES = Object.freeze({
-  'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'] },
-  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'mcp-token', 'mcp-token-revoke'] },
+  'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'], identityCount: 8 },
+  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke'], identityCount: 10 },
+  'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
 });
 
 // The Supabase tables with rows (cut-over plan, section 1), parents before children. The order is checked against the
@@ -174,12 +176,12 @@ export async function moveTables(pool, data, apply = false) {
   } finally { client.release(); }
 }
 
-async function moveIdentities(pool, data, apply) {
+async function moveIdentities(pool, data, apply, expected) {
   // import-users.mjs throws fixed messages for its own checks; a pg error keeps its code and is reported by it
   const fixed = (error) => (error?.code ? error : new Refusal(error.message));
   let users;
-  try { users = validateImport(data); } catch (error) { throw fixed(error); }
-  try { return { identities: { source: users.length, imported: await importUsers(pool, users, apply) } }; }
+  try { users = validateImport(data, expected); } catch (error) { throw fixed(error); }
+  try { return { identities: { source: users.length, imported: await importUsers(pool, users, apply, expected) } }; }
   catch (error) { throw fixed(error); }
 }
 
@@ -367,7 +369,7 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
       const pool = openPool();
       let counts;
       try {
-        counts = mode === 'identities' ? await moveIdentities(pool, data, action === 'apply')
+        counts = mode === 'identities' ? await moveIdentities(pool, data, action === 'apply', gate.site.identityCount)
           : mode === 'proof' ? await proveIdentities(pool, data, action === 'apply')
             : mode === 'mcp-token' ? await registerMcpToken(pool, data, action === 'apply')
               : mode === 'mcp-token-revoke' ? await revokeMcpToken(pool, data, action === 'apply')
