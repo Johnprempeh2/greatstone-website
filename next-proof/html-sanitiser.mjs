@@ -67,38 +67,34 @@ const DATA_ATTRIBUTE = /^data-(?!gs-)[a-z][a-z0-9-]{0,47}$/;
 const ARIA_ATTRIBUTE = /^aria-[a-z]{2,24}$/;
 const ATTRIBUTE_VALUE_LIMIT = 2000;
 
-// GRE-3778: a drawing subset of SVG, for icons and charts. Shapes, gradients and a blur only: no `use`,
-// `image`, `a`, `foreignObject`, `style`, `script`, animation or any link attribute, so an SVG can
-// neither run code nor load anything. Inside an <svg> anything else is dropped with its content, since
-// a browser parses HTML there differently. Paint can only point at an id on the same page.
+// GRE-3778: the safe SVG subset John approved on 3 Nov, for icons and charts: shapes, gradients, clip
+// paths and masks. No `use`, `image`, `a`, `foreignObject`, `style`, `script`, animation, `filter`,
+// `pattern` or any link attribute, so an SVG can neither run code nor load anything. Inside an <svg>
+// anything else is dropped with its content, since a browser parses HTML there differently. Paint, clip
+// paths and masks can only point at an id on the same page.
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-const SVG_ELEMENTS = new Set(['svg', 'g', 'defs', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan',
-  'linearGradient', 'radialGradient', 'stop', 'filter', 'feGaussianBlur', 'feMerge', 'feMergeNode', 'feOffset', 'feFlood', 'feComposite']);
+const SVG_ELEMENTS = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon', 'title', 'desc', 'defs',
+  'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask']);
 const SVG_NUMBER = /^-?(\d{1,6}(\.\d{1,17})?|\.\d{1,17})(e-?\d{1,2})?(%|px)?$/;
 const SVG_NUMBERS = /^[-+0-9.eE,\s]{1,20000}$/;
-const SVG_REF = /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/;
 const SVG_PAINT = /^(none|currentColor|transparent|#[0-9a-fA-F]{3,8}|rgba?\([\d.\s,%]{1,40}\)|url\(#[a-zA-Z][a-zA-Z0-9_-]{0,63}\))$/;
 const SVG_URL_REF = /^(none|url\(#[a-zA-Z][a-zA-Z0-9_-]{0,63}\))$/;
 const SVG_TRANSFORM = /^\s*((translate|scale|rotate|skewX|skewY|matrix)\([-+0-9.eE,\s]{0,120}\)[\s,]*){1,6}$/;
 const enumOf = (...values) => new RegExp(`^(${values.join('|')})$`);
 const SVG_ATTRIBUTES = {
-  viewBox: /^-?[\d.]{1,10}([\s,]+-?[\d.]{1,10}){3}$/, preserveAspectRatio: /^(none|x(Min|Mid|Max)Y(Min|Mid|Max))( (meet|slice))?$/,
+  viewBox: /^-?[\d.]{1,10}([\s,]+-?[\d.]{1,10}){3}$/, xmlns: /^http:\/\/www\.w3\.org\/2000\/svg$/,
   focusable: enumOf('true', 'false'), width: SVG_NUMBER, height: SVG_NUMBER, x: SVG_NUMBER, y: SVG_NUMBER,
   x1: SVG_NUMBER, y1: SVG_NUMBER, x2: SVG_NUMBER, y2: SVG_NUMBER, cx: SVG_NUMBER, cy: SVG_NUMBER, r: SVG_NUMBER,
-  rx: SVG_NUMBER, ry: SVG_NUMBER, fx: SVG_NUMBER, fy: SVG_NUMBER, dx: SVG_NUMBER, dy: SVG_NUMBER, offset: SVG_NUMBER,
+  rx: SVG_NUMBER, ry: SVG_NUMBER, offset: SVG_NUMBER,
   d: /^[MmZzLlHhVvCcSsQqTtAa0-9eE.,+\s-]{1,20000}$/, points: SVG_NUMBERS,
-  fill: SVG_PAINT, stroke: SVG_PAINT, 'stop-color': SVG_PAINT, 'flood-color': SVG_PAINT,
-  opacity: SVG_NUMBER, 'fill-opacity': SVG_NUMBER, 'stroke-opacity': SVG_NUMBER, 'stop-opacity': SVG_NUMBER, 'flood-opacity': SVG_NUMBER,
+  fill: SVG_PAINT, stroke: SVG_PAINT, 'stop-color': SVG_PAINT,
+  opacity: SVG_NUMBER, 'fill-opacity': SVG_NUMBER, 'stroke-opacity': SVG_NUMBER, 'stop-opacity': SVG_NUMBER,
   'stroke-width': SVG_NUMBER, 'stroke-dasharray': /^(none|[\d.,\s]{1,80})$/, 'stroke-dashoffset': SVG_NUMBER, 'stroke-miterlimit': SVG_NUMBER,
   'stroke-linecap': enumOf('butt', 'round', 'square'), 'stroke-linejoin': enumOf('miter', 'round', 'bevel'),
   'fill-rule': enumOf('nonzero', 'evenodd'), 'clip-rule': enumOf('nonzero', 'evenodd'),
-  'vector-effect': enumOf('none', 'non-scaling-stroke'), filter: SVG_URL_REF,
+  'clip-path': SVG_URL_REF, mask: SVG_URL_REF,
   transform: SVG_TRANSFORM, gradientTransform: SVG_TRANSFORM,
-  gradientUnits: enumOf('userSpaceOnUse', 'objectBoundingBox'), filterUnits: enumOf('userSpaceOnUse', 'objectBoundingBox'),
-  spreadMethod: enumOf('pad', 'reflect', 'repeat'),
-  stdDeviation: SVG_NUMBERS, in: SVG_REF, in2: SVG_REF, result: SVG_REF, operator: enumOf('over', 'in', 'out', 'atop', 'xor', 'arithmetic'),
-  'font-size': SVG_NUMBER, 'font-weight': /^(normal|bold|[1-9]00)$/, 'text-anchor': enumOf('start', 'middle', 'end'),
-  'dominant-baseline': enumOf('auto', 'middle', 'central', 'hanging', 'alphabetic'), 'letter-spacing': SVG_NUMBER,
+  gradientUnits: enumOf('userSpaceOnUse', 'objectBoundingBox'),
 };
 
 let parserWindow;
@@ -144,7 +140,7 @@ function safeSrcset(value, media) {
 function cleanSvgAttributes(tag, element, removed) {
   const attributes = {};
   for (const { name, value } of element.attributes) {
-    const global = name === 'class' || name === 'role' || ARIA_ATTRIBUTE.test(name) || DATA_ATTRIBUTE.test(name);
+    const global = name === 'class' || name === 'role' || ARIA_ATTRIBUTE.test(name);
     const rule = Object.hasOwn(SVG_ATTRIBUTES, name) ? SVG_ATTRIBUTES[name] : null;
     let clean = null;
     if (name === 'id') clean = ID.test(value) && !RESERVED_ID.test(value) ? value : null;

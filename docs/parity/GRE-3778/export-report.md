@@ -1,6 +1,6 @@
 # GRE-3778 export report
 
-Engine render from http://127.0.0.1:5297, baked release 1. 16 pages. Site stylesheet 165 KB.
+Engine render from http://127.0.0.1:5181, baked release 1. 16 pages. Site stylesheet 165 KB.
 
 ## Site stylesheet and chrome
 
@@ -95,7 +95,7 @@ HTML 10 KB, page CSS 15 rules.
 - MaturityMap → behaviour climb
 - MethodTieIn → behaviour grow
 - 4 inline SVG (kept: the sanitiser allows a drawing subset)
-- sanitiser removes nothing
+- sanitiser removes: svg @preserveAspectRatio ×1, filter ×1, text ×6
 
 ### /industries
 

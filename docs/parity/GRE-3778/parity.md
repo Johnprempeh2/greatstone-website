@@ -1,6 +1,6 @@
 # GRE-3778 parity: today's render against the HTML export
 
-Captured from http://127.0.0.1:5297 at 2026-11-02T23:48Z, reduced motion, full page. A pixel counts as changed when any colour channel differs at all. Height is today → export.
+Captured from http://127.0.0.1:5181 at 2026-11-03T09:46Z, reduced motion, full page. A pixel counts as changed when any colour channel differs at all. Height is today → export.
 
 | Page | Width | Changed pixels | Share | Height |
 | --- | ---: | ---: | ---: | --- |
@@ -14,7 +14,7 @@ Captured from http://127.0.0.1:5297 at 2026-11-02T23:48Z, reduced motion, full p
 | /case-studies | 1440 | 0 | 0.00% | 3299 → 3299 |
 | /about | 1440 | 0 | 0.00% | 5240 → 5240 |
 | /insights | 1440 | 0 | 0.00% | 2760 → 2760 |
-| /climb | 1440 | 0 | 0.00% | 4203 → 4203 |
+| /climb | 1440 | 248876 | 4.11% | 4203 → 4203 |
 | /industries | 1440 | 0 | 0.00% | 2937 → 2937 |
 | /contact | 1440 | 0 | 0.00% | 2701 → 2701 |
 | /privacy | 1440 | 0 | 0.00% | 5177 → 5177 |
@@ -30,7 +30,7 @@ Captured from http://127.0.0.1:5297 at 2026-11-02T23:48Z, reduced motion, full p
 | /case-studies | 390 | 0 | 0.00% | 3238 → 3238 |
 | /about | 390 | 0 | 0.00% | 8223 → 8223 |
 | /insights | 390 | 0 | 0.00% | 3437 → 3437 |
-| /climb | 390 | 0 | 0.00% | 4239 → 4239 |
+| /climb | 390 | 18316 | 1.11% | 4239 → 4239 |
 | /industries | 390 | 0 | 0.00% | 3934 → 3934 |
 | /contact | 390 | 0 | 0.00% | 3265 → 3265 |
 | /privacy | 390 | 0 | 0.00% | 5813 → 5813 |
