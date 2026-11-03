@@ -1,0 +1,741 @@
+{
+  "source": "GSAM draft pages from GRE-1822 (latest revision), read 2026-11-03",
+  "pages": [
+    {
+      "id": "e55f0d8b-c477-40db-a777-692c40db54e7",
+      "revisionId": "9f4893d4-0c52-47fa-9501-eb0c4694a803",
+      "revisionNumber": 2,
+      "path": "/support",
+      "slug": "support",
+      "title": "Support",
+      "navOrder": 6,
+      "seo": {
+        "noindex": false
+      },
+      "data": {
+        "content": [
+          {
+            "type": "Hero",
+            "props": {
+              "id": "hero-g182201",
+              "kicker": "Support",
+              "headline": "Help from people who use these tools every day",
+              "highlight": "",
+              "body": "Whether you are automating Microsoft Office formats with Aspose, building paperless workflows with ActivePDF, PDFlib or Investintech, or designing interfaces with DevExpress, our team knows the components you work with.",
+              "prompt": "",
+              "cueStyle": "text",
+              "headlineSuffix": "",
+              "align": "left",
+              "size": "standard",
+              "ctaLabel": "Ask a support question",
+              "ctaHref": "/contact",
+              "ctaLabel2": "",
+              "ctaHref2": "#",
+              "meta": [],
+              "lines": [],
+              "pillEyebrow": false,
+              "gridBackdrop": false,
+              "scrollCue": false,
+              "stone": "none",
+              "variant": "statement",
+              "cueLabel": "Continue",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /support page(s), lightly edited. Not yet confirmed by John. The old page promised a 4-hour response; other old pages said 1.5 hours and 24 hours. No response time is shown until John confirms one."
+            }
+          },
+          {
+            "type": "Panels",
+            "props": {
+              "id": "panels-g182202",
+              "eyebrow": "",
+              "heading": "We are here to help",
+              "intro": "We master every component in our range, so first-line support comes from specialists who know the products.",
+              "panelsLabel": "",
+              "columns": "three",
+              "panelStyle": "card",
+              "headAlign": "left",
+              "bodyClamp": "none",
+              "coda": "",
+              "ctaLabel": "",
+              "ctaHref": "",
+              "ctaVariant": "ghost",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "headingLevel": "h2",
+              "items": [
+                {
+                  "label": "",
+                  "icon": "technology",
+                  "title": "Installs, updates and service packs",
+                  "text": "If you need help installing a new version or service pack, or something is not working, our support team can guide you through it.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                },
+                {
+                  "label": "",
+                  "icon": "compass",
+                  "title": "\"How do I...?\" questions",
+                  "text": "Our team are power users who work with these tools daily. They can point you in the right direction with practical tips and advice.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                },
+                {
+                  "label": "",
+                  "icon": "briefing",
+                  "title": "Feature requests",
+                  "text": "If your work needs a feature or change in a component, tell us. We pass suggestions to the product makers and follow them up.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                }
+              ],
+              "_section": {
+                "surface": "panel",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /support and /free-expert-consultation-and-support page(s), lightly edited. Not yet confirmed by John. Removed \"around the clock\" and \"weekly discussions with principals\" until confirmed."
+            }
+          },
+          {
+            "type": "Faq",
+            "props": {
+              "id": "faq-g182203",
+              "showSchema": false,
+              "kicker": "Questions",
+              "heading": "Common questions about Greatstone and our support",
+              "intro": "",
+              "items": [
+                {
+                  "q": "What does Greatstone provide?",
+                  "a": "Greatstone supplies developer components for web, desktop and mobile development, with free advice before you buy and support after you buy."
+                },
+                {
+                  "q": "How do I ask for a quote?",
+                  "a": "Use the contact page and tell us about your project. Our team will review it and come back to you to discuss what you need."
+                },
+                {
+                  "q": "Which technologies do you work with?",
+                  "a": "Our team works across a broad range of technologies, including .NET, Java, Python, JavaScript, React, Angular, Node.js and PHP."
+                },
+                {
+                  "q": "How can I reach the support team?",
+                  "a": "By email, by phone or through the contact page. Tell us which product and version you are using and what you are trying to do."
+                },
+                {
+                  "q": "Can you help with onboarding and implementation?",
+                  "a": "Yes. We can guide you through onboarding and implementation and share good practice for integrating a component into your project."
+                },
+                {
+                  "q": "Is support only for customers who have bought?",
+                  "a": "No. We offer free advice before you buy, and our support continues after your purchase."
+                },
+                {
+                  "q": "Can you help with customisations or extra features?",
+                  "a": "Yes. Talk to us about what your project needs and we will discuss the options with you and, where needed, with the product maker."
+                }
+              ],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /faqs and /support-services-faqs page(s), lightly edited. Not yet confirmed by John. Held for confirmation, not carried across: response times, training webinars, community forums, security audit claims, industry list and \"support included in the subscription\"."
+            }
+          },
+          {
+            "type": "Invite",
+            "props": {
+              "id": "invite-g182204",
+              "eyebrow": "Get in touch",
+              "headline": "Tell us what you are working on.",
+              "highlight": "",
+              "body": "Send us your question through the contact page and our team will come back to you.",
+              "ctaLabel": "Contact support",
+              "ctaHref": "/contact",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "ctaLabel2": "",
+              "ctaHref2": "#",
+              "email": "",
+              "variant": "framed",
+              "pill": false,
+              "contactOptions": [],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /support page(s), lightly edited. Not yet confirmed by John."
+            }
+          }
+        ],
+        "root": {
+          "props": {
+            "title": "Support"
+          }
+        }
+      }
+    },
+    {
+      "id": "144f41d3-3691-43c1-90cd-5c1252813cc3",
+      "revisionId": "df386e48-261e-4008-b654-1e95aac6a945",
+      "revisionNumber": 2,
+      "path": "/dev-tools/choosing-tools",
+      "slug": "choosing-tools",
+      "title": "Choosing tools",
+      "navOrder": 3,
+      "seo": {
+        "noindex": false
+      },
+      "data": {
+        "content": [
+          {
+            "type": "Hero",
+            "props": {
+              "id": "hero-g182205",
+              "kicker": "DX Dev Tools",
+              "headline": "Choosing the right component",
+              "highlight": "",
+              "body": "Choosing the building blocks of your next solution is an important decision. Our product specialists give free advice before you buy, so you choose the component that suits your work.",
+              "prompt": "",
+              "cueStyle": "text",
+              "headlineSuffix": "",
+              "align": "left",
+              "size": "standard",
+              "ctaLabel": "Ask for advice",
+              "ctaHref": "/contact",
+              "ctaLabel2": "Browse products",
+              "ctaHref2": "/shop",
+              "meta": [],
+              "lines": [],
+              "pillEyebrow": false,
+              "gridBackdrop": false,
+              "scrollCue": false,
+              "stone": "none",
+              "variant": "statement",
+              "cueLabel": "Continue",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /specialist-product-knowledge and /hand-picked-product-range page(s), lightly edited. Not yet confirmed by John."
+            }
+          },
+          {
+            "type": "Panels",
+            "props": {
+              "id": "panels-g182206",
+              "eyebrow": "",
+              "heading": "How we help you choose",
+              "intro": "",
+              "panelsLabel": "",
+              "columns": "three",
+              "panelStyle": "card",
+              "headAlign": "left",
+              "bodyClamp": "none",
+              "coda": "",
+              "ctaLabel": "",
+              "ctaHref": "",
+              "ctaVariant": "ghost",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "headingLevel": "h2",
+              "items": [
+                {
+                  "label": "",
+                  "icon": "people",
+                  "title": "Specialist product knowledge",
+                  "text": "We master every product we take on. That knowledge is why we work as a preferred partner with the makers in our range.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                },
+                {
+                  "label": "",
+                  "icon": "compass",
+                  "title": "Pre-sales advice",
+                  "text": "From your first contact to your purchase, our specialists help you compare options by phone, email or the contact page, and point you to the product that fits.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                },
+                {
+                  "label": "",
+                  "icon": "assurance",
+                  "title": "After-sales support",
+                  "text": "After you buy, we help with installation, updates and questions about your product. If you want a new feature, we want to hear about it.",
+                  "ctaLabel": "See support",
+                  "ctaHref": "/support"
+                }
+              ],
+              "_section": {
+                "surface": "panel",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /specialist-product-knowledge and /why-choose-us page(s), lightly edited. Not yet confirmed by John."
+            }
+          },
+          {
+            "type": "Prose",
+            "props": {
+              "id": "prose-g182207",
+              "kicker": "A hand-picked range",
+              "kickerLevel": "p",
+              "body": "We listen to what our customers need and find the components that answer it. We work with makers who keep improving their products, and we only take on components we can master and support. Our range includes ActivePDF, Apryse, Aspose, Conholdate, DevExpress, GroupDocs, Investintech, IRIS, Iron Software and PDFlib, for file format automation, PDF work, user interface development, document collaboration and more.",
+              "align": "left",
+              "width": "reading",
+              "appearance": {
+                "surround": "none",
+                "pad": "standard",
+                "textScale": "default"
+              },
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /hand-picked-product-range page(s), lightly edited. Not yet confirmed by John. The old page listed Nitro, which is not in the current catalogue; the brand list now follows the catalogue. \"Best prices on the market\" from /we-keep-it-cost-effective is not carried across (no price claims)."
+            }
+          },
+          {
+            "type": "Faq",
+            "props": {
+              "id": "faq-g182208",
+              "showSchema": false,
+              "kicker": "Questions",
+              "heading": "Developer components: common questions",
+              "intro": "",
+              "items": [
+                {
+                  "q": "What kinds of developer components do you offer?",
+                  "a": "Libraries for document processing, file format automation and data handling, APIs for integrating with other services, and UI frameworks for building responsive interfaces."
+                },
+                {
+                  "q": "How do I integrate a component into my project?",
+                  "a": "Each component comes with documentation and code samples from its maker. If you get stuck, our team can help you through the integration."
+                },
+                {
+                  "q": "Which programming languages are supported?",
+                  "a": "It depends on the component. Many support .NET and Java, and others support C++, JavaScript, Python and more. Each product page lists its platforms."
+                },
+                {
+                  "q": "Can I try a component before I buy?",
+                  "a": "Most components have a free trial, so you can test them on your own work first."
+                },
+                {
+                  "q": "Are the components open source?",
+                  "a": "No. They are commercial products, licensed by their makers. Licence options differ by product; ask us and we will explain them."
+                },
+                {
+                  "q": "Do they work with my development tools?",
+                  "a": "Most components work with common tools and platforms, such as Visual Studio and the major cloud platforms. Check the product page or ask us about your set-up."
+                }
+              ],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /developer-components-faqs page(s), lightly edited. Not yet confirmed by John. Held for confirmation: quarterly release schedule, 24-hour response, security audit and licensing-model claims."
+            }
+          },
+          {
+            "type": "Invite",
+            "props": {
+              "id": "invite-g182209",
+              "eyebrow": "Need advice?",
+              "headline": "Not sure which component fits?",
+              "highlight": "",
+              "body": "Tell us what you are building. We will recommend the components that would work best for you.",
+              "ctaLabel": "Ask for advice",
+              "ctaHref": "/contact",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "ctaLabel2": "",
+              "ctaHref2": "#",
+              "email": "",
+              "variant": "framed",
+              "pill": false,
+              "contactOptions": [],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /specialist-product-knowledge page(s), lightly edited. Not yet confirmed by John."
+            }
+          }
+        ],
+        "root": {
+          "props": {
+            "title": "Choosing tools"
+          }
+        }
+      }
+    },
+    {
+      "id": "e739911f-2ca3-4be3-ba7d-6a8b1f545e47",
+      "revisionId": "e42eb5af-ccea-4a6a-af8e-093e60545738",
+      "revisionNumber": 2,
+      "path": "/dev-tools/trials",
+      "slug": "trials",
+      "title": "Trials",
+      "navOrder": 4,
+      "seo": {
+        "noindex": false
+      },
+      "data": {
+        "content": [
+          {
+            "type": "Hero",
+            "props": {
+              "id": "hero-g18220a",
+              "kicker": "DX Dev Tools",
+              "headline": "Try a component before you buy",
+              "highlight": "",
+              "body": "Most of our developer components have a free trial. Try one on your own project, with no obligation to buy and no card details needed.",
+              "prompt": "",
+              "cueStyle": "text",
+              "headlineSuffix": "",
+              "align": "left",
+              "size": "standard",
+              "ctaLabel": "Browse products",
+              "ctaHref": "/shop",
+              "ctaLabel2": "Ask about a trial",
+              "ctaHref2": "/contact",
+              "meta": [],
+              "lines": [],
+              "pillEyebrow": false,
+              "gridBackdrop": false,
+              "scrollCue": false,
+              "stone": "none",
+              "variant": "statement",
+              "cueLabel": "Continue",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /component-free-trial-faqs and /home-page-alt page(s), lightly edited. Not yet confirmed by John."
+            }
+          },
+          {
+            "type": "Panels",
+            "props": {
+              "id": "panels-g18220b",
+              "eyebrow": "",
+              "heading": "What a trial gives you",
+              "intro": "",
+              "panelsLabel": "",
+              "columns": "three",
+              "panelStyle": "card",
+              "headAlign": "left",
+              "bodyClamp": "none",
+              "coda": "",
+              "ctaLabel": "",
+              "ctaHref": "",
+              "ctaVariant": "ghost",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "headingLevel": "h2",
+              "items": [
+                {
+                  "label": "",
+                  "icon": "layers",
+                  "title": "Fully working components",
+                  "text": "A trial gives you the component's features so you can test it properly on your own work.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                },
+                {
+                  "label": "",
+                  "icon": "briefing",
+                  "title": "Example code and instructions",
+                  "text": "Sample source code and instructions help you get started quickly.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                },
+                {
+                  "label": "",
+                  "icon": "people",
+                  "title": "Help from Greatstone",
+                  "text": "Our team can help you with questions while you evaluate.",
+                  "ctaLabel": "",
+                  "ctaHref": ""
+                }
+              ],
+              "_section": {
+                "surface": "panel",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /home-page-alt page(s), lightly edited. Not yet confirmed by John. The old page said \"30-day free trial\"; the FAQ said 14 to 30 days. The length is shown per product until John confirms."
+            }
+          },
+          {
+            "type": "Faq",
+            "props": {
+              "id": "faq-g18220c",
+              "showSchema": false,
+              "kicker": "Questions",
+              "heading": "Free trials: common questions",
+              "intro": "",
+              "items": [
+                {
+                  "q": "How long does a free trial last?",
+                  "a": "It depends on the component; most trials last between 14 and 30 days. The product page or our team can tell you the trial length for a particular product."
+                },
+                {
+                  "q": "Do I need to give payment details?",
+                  "a": "No. You only give payment details if you decide to buy after the trial."
+                },
+                {
+                  "q": "Can I get help during the trial?",
+                  "a": "Yes. Our team can help with questions or problems while you evaluate the component."
+                },
+                {
+                  "q": "How do I start a trial?",
+                  "a": "Find the product, then ask us for a trial through the product page or the contact page. We will send you what you need to get started."
+                },
+                {
+                  "q": "Can I have more time?",
+                  "a": "If you need longer to evaluate, contact us and we will do our best to arrange an extension with the maker."
+                },
+                {
+                  "q": "Can I try more than one component?",
+                  "a": "Yes. Each trial is separate, so you can compare different tools for your project."
+                },
+                {
+                  "q": "What happens when the trial ends?",
+                  "a": "You can buy a licence to keep using the component. If you do not buy, the trial stops working as the maker's terms describe."
+                }
+              ],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /component-free-trial-faqs page(s), lightly edited. Not yet confirmed by John. Held for confirmation: \"all features with no restrictions\", \"commercial use during trial\" and usage limits; these differ by maker."
+            }
+          },
+          {
+            "type": "Invite",
+            "props": {
+              "id": "invite-g18220d",
+              "eyebrow": "After you ask",
+              "headline": "Thank you for starting a trial.",
+              "highlight": "",
+              "body": "When you ask for a trial, we will be in touch as soon as possible with what you need.",
+              "ctaLabel": "Browse products",
+              "ctaHref": "/shop",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "ctaLabel2": "",
+              "ctaHref2": "#",
+              "email": "",
+              "variant": "framed",
+              "pill": false,
+              "contactOptions": [],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /trial-confirm page(s), lightly edited. Not yet confirmed by John. Trial confirmation wording; a separate confirmation page is not in the sitemap."
+            }
+          }
+        ],
+        "root": {
+          "props": {
+            "title": "Trials"
+          }
+        }
+      }
+    },
+    {
+      "id": "2f7b26e0-b3c4-47a5-8581-979507264023",
+      "revisionId": "ccd94bb8-cc48-4873-beab-afabb6a9a369",
+      "revisionNumber": 2,
+      "path": "/dev-tools/document-solutions",
+      "slug": "document-solutions",
+      "title": "Document solutions",
+      "navOrder": 2,
+      "seo": {
+        "noindex": false
+      },
+      "data": {
+        "content": [
+          {
+            "type": "Hero",
+            "props": {
+              "id": "hero-g18220e",
+              "kicker": "DX Dev Tools",
+              "headline": "Components for every stage of a document's life",
+              "highlight": "",
+              "body": "Create, store, share and process documents, and connect them to your data, with components from the makers we know best.",
+              "prompt": "",
+              "cueStyle": "text",
+              "headlineSuffix": "",
+              "align": "left",
+              "size": "standard",
+              "ctaLabel": "Ask for advice",
+              "ctaHref": "/contact",
+              "ctaLabel2": "Browse products",
+              "ctaHref2": "/shop",
+              "meta": [],
+              "lines": [],
+              "pillEyebrow": false,
+              "gridBackdrop": false,
+              "scrollCue": false,
+              "stone": "none",
+              "variant": "statement",
+              "cueLabel": "Continue",
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /document-creation and related pages page(s), lightly edited. Not yet confirmed by John. The old pages' text could not be recovered (the extraction failed and no archive copy exists). This wording is new and needs John's approval."
+            }
+          },
+          {
+            "type": "Panels",
+            "props": {
+              "id": "panels-g18220f",
+              "eyebrow": "",
+              "heading": "Find the right tools for the job",
+              "intro": "",
+              "panelsLabel": "",
+              "columns": "three",
+              "panelStyle": "card",
+              "headAlign": "left",
+              "bodyClamp": "none",
+              "coda": "",
+              "ctaLabel": "",
+              "ctaHref": "",
+              "ctaVariant": "ghost",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "headingLevel": "h2",
+              "items": [
+                {
+                  "label": "",
+                  "icon": "structure",
+                  "title": "Document creation",
+                  "text": "Generate documents, reports and PDFs from your applications and data.",
+                  "ctaLabel": "Browse Aspose",
+                  "ctaHref": "/shop/aspose"
+                },
+                {
+                  "label": "",
+                  "icon": "layers",
+                  "title": "Document archiving",
+                  "text": "Convert and store documents in formats that last and can be searched.",
+                  "ctaLabel": "Browse PDFlib",
+                  "ctaHref": "/shop/pdflib"
+                },
+                {
+                  "label": "",
+                  "icon": "people",
+                  "title": "Document collaboration",
+                  "text": "View, annotate, compare and sign documents inside your own applications.",
+                  "ctaLabel": "Browse GroupDocs",
+                  "ctaHref": "/shop/groupdocs"
+                },
+                {
+                  "label": "",
+                  "icon": "transform",
+                  "title": "Document processing",
+                  "text": "Extract, convert and recognise text and data from documents and scans.",
+                  "ctaLabel": "Browse Apryse",
+                  "ctaHref": "/shop/apryse"
+                },
+                {
+                  "label": "",
+                  "icon": "technology",
+                  "title": "Data infrastructure and integration",
+                  "text": "Connect documents to the systems and data they belong with.",
+                  "ctaLabel": "Ask us",
+                  "ctaHref": "/contact"
+                }
+              ],
+              "_section": {
+                "surface": "panel",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /document-creation, /document-achieving, /document-collaboration, /document-processing, /data-infrastructure-integration page(s), lightly edited. Not yet confirmed by John. New short descriptions; brand links are suggestions. Ben or John to confirm which brands go with each topic."
+            }
+          },
+          {
+            "type": "Invite",
+            "props": {
+              "id": "invite-g18220g",
+              "eyebrow": "Need advice?",
+              "headline": "Not sure where to start?",
+              "highlight": "",
+              "body": "Tell us what your documents need to do. We will suggest the components that fit.",
+              "ctaLabel": "Ask for advice",
+              "ctaHref": "/contact",
+              "ctaStyle": {
+                "size": "default",
+                "fillMobile": "no"
+              },
+              "ctaLabel2": "",
+              "ctaHref2": "#",
+              "email": "",
+              "variant": "framed",
+              "pill": false,
+              "contactOptions": [],
+              "_section": {
+                "surface": "none",
+                "accent": "default",
+                "spaceTop": "default",
+                "spaceBottom": "default"
+              },
+              "_note": "DRAFT (GRE-1822): text from the old /document-creation and related pages page(s), lightly edited. Not yet confirmed by John."
+            }
+          }
+        ],
+        "root": {
+          "props": {
+            "title": "Document solutions"
+          }
+        }
+      }
+    }
+  ]
+}
