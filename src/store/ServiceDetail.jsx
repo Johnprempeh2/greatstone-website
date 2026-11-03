@@ -13,7 +13,8 @@ import ServiceDemo from './service-demos/index.jsx';
 import './store.css';
 import './service-detail.css';
 
-export default function ServiceDetail({ slug, onBack, applyHead }) {
+// `catalogueHref` is the listing the breadcrumb returns to (the Next site passes the page that lists the services).
+export default function ServiceDetail({ slug, onBack, applyHead, catalogueHref = '#go/services' }) {
   const { services, email } = useServices();
   const svc = findService(services, slug);
 
@@ -46,7 +47,7 @@ export default function ServiceDetail({ slug, onBack, applyHead }) {
       <div className="st-scrim" aria-hidden="true" />
       <div className="sp-wrap sd-wrap">
         <nav className="sp-crumb" aria-label="Breadcrumb">
-          <a href="#go/services">Services</a><span className="sep" aria-hidden="true">›</span>
+          <a href={catalogueHref}>Services</a><span className="sep" aria-hidden="true">›</span>
           <span className="here">{svc.category}</span><span className="sep" aria-hidden="true">›</span>
           <span className="here">{svc.name}</span>
         </nav>
