@@ -49,6 +49,9 @@ test('svg keeps shapes, gradients, clip paths and masks', () => {
     + '<polygon points="0,50 50,0 100,50" fill="url(#ridge1)" fill-rule="evenodd" clip-rule="evenodd" fill-opacity="0.8"></polygon>'
     + '<polyline points="0,40 100,10" stroke="url(#glow)" stroke-opacity="0.4"></polyline></g></svg>';
   assert.equal(clean(chart), chart);
+  const labels = '<svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid slice"><text class="tier-tag" x="10" y="20" font-size="30" font-weight="600" fill="#9aa09a"'
+    + ' text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">Tier <tspan x="10" y="40" fill="currentColor">one</tspan></text></svg>';
+  assert.equal(clean(labels), labels);
   assert.equal(clean('<svg><line x1="100" x2="172.74613391789285" y2="-1e-7"></line></svg>'), '<svg><line x1="100" x2="172.74613391789285" y2="-1e-7"></line></svg>');
   assert.equal(clean('<p>a <svg viewBox="0 0 1 1"></svg> b</p>'), '<p>a <svg viewBox="0 0 1 1"></svg> b</p>');
 });
@@ -107,11 +110,12 @@ test('svg cannot hide markup or take reserved ids', () => {
     '<svg><gs-island name="cookie-settings"></gs-island></svg>',
     '<svg id="dataLayer"><g id="gs-scope" data-gs-scope="page"></g></svg>',
     '<svg><path d="M0 0 url(x)" transform="translate(1) expression(alert(1))"></path></svg>',
-    '<svg xmlns="http://evil.test/ns"><text>x</text></svg>',
+    '<svg xmlns="http://evil.test/ns"><text onclick="alert(1)" style="x" font-size="expression(1)">x<tspan href="https://evil.test"></tspan></text></svg>',
+    '<svg preserveAspectRatio="url(https://evil.test)"></svg>',
   ];
   for (const attack of attacks) {
     const out = clean(attack);
-    assert.doesNotMatch(out, /<p>|<div|<img|gs-island|dataLayer|gs-scope|expression|evil|<text/i, attack);
+    assert.doesNotMatch(out, /<p>|<div|<img|gs-island|dataLayer|gs-scope|expression|evil|onclick|style|href/i, attack);
   }
   assert.equal(clean('<svg><foreignObject><p>x</p></foreignObject><path d="M0 0"></path></svg>'), '<svg><path d="M0 0"></path></svg>');
   assert.deepEqual(sanitiseHtml('<svg onload="x"><use href="#a"></use></svg>').removed, ['svg @onload', 'use']);

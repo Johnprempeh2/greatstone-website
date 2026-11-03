@@ -34,6 +34,9 @@ for (const page of baked.pages) {
   exported.blockCss.forEach((css) => blockCss.add(css));
   Object.assign(formBlocks, exported.formBlocks);
   chrome ||= exported.chrome;
+  // A shell the exporter does not recognise would otherwise publish every page with no header or footer.
+  if (!exported.chrome.header.html || !exported.chrome.footer.html)
+    throw new Error(`${page.path}: no header or footer found in the render; the site shell changed, so update the chrome export`);
   if (exported.chrome.header.html !== chrome.header.html || exported.chrome.footer.html !== chrome.footer.html)
     throw new Error(`${page.path}: header or footer differs from the first page; chrome must be shared`);
   pages.push({ page, exported });
@@ -44,10 +47,12 @@ for (const page of baked.pages) {
 const linked = [];
 for (const href of stylesheetLinks) linked.push(await get(href));
 // Minified, which also drops the rules the dev build repeats, so it fits the sanitiser's size limit. The
-// sanitiser refuses data: URLs, so inline SVG images become files under /assets/html-export.
+// sanitiser refuses data: URLs, so inline SVG images become files under /assets/html-export. It also
+// refuses backslash escapes, so `charset: 'utf8'` writes escaped characters (`content: "\2026"`) as
+// themselves.
 const assetDir = new URL('../../public/assets/html-export/', import.meta.url);
 await mkdir(assetDir, { recursive: true });
-let stylesheet = transformSync([...linked, ...blockCss].map(stripCssComments).join('\n'), { loader: 'css', minify: true }).code;
+let stylesheet = transformSync([...linked, ...blockCss].map(stripCssComments).join('\n'), { loader: 'css', minify: true, charset: 'utf8' }).code;
 for (const [match, data] of stylesheet.matchAll(/url\("?data:image\/svg\+xml,([^")]+)"?\)/g)) {
   const svg = decodeURIComponent(data);
   const name = `${createHash('sha256').update(svg).digest('hex').slice(0, 16)}.svg`;
