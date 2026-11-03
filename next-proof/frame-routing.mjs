@@ -1,4 +1,4 @@
-const framePath = /^\/(editor|preview)(\/|$)/;
+const framePath = /^\/(editor|preview|live-design)(\/|$)/;
 const statefulPath = /^\/(api|studio)(\/|$)/;
 
 export function frameRouteDecision({ pathname, hostname, editorHost, method, origin, fetchSite, publicOrigin }) {

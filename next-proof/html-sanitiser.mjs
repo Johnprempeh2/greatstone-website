@@ -98,7 +98,16 @@ const SVG_ATTRIBUTES = {
 };
 
 let parserWindow;
+let inertDocument;
 function fragment(html) {
+  // In the browser (GSAM live design, app/live-design) an inert document parses without running
+  // scripts or loading anything; happy-dom stays out of the browser bundle (next.config.mjs).
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.implementation) {
+    inertDocument ||= document.implementation.createHTMLDocument('');
+    const template = inertDocument.createElement('template');
+    template.innerHTML = html;
+    return template.content;
+  }
   parserWindow ||= new Window({ settings: {
     disableJavaScriptEvaluation: true, disableJavaScriptFileLoading: true, disableCSSFileLoading: true,
     disableIframePageLoading: true, disableComputedStyleRendering: true,
