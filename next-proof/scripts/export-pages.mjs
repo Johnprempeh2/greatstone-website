@@ -31,7 +31,7 @@ try {
   const { pages, settings, navigation } = snapshot;
   const publishedSlugs = snapshot.order.filter((slug) => pages[slug]?.status === 'published' && pages[slug]?.published?.content?.length);
   const catalogue = await publishedCatalogue();
-  const selected = { settings, catalogue, navigation: navigation.filter((item) => item.type === 'page' && publishedSlugs.includes(item.pageSlug)), pages: Object.fromEntries(publishedSlugs.map((slug) => [slug, {
+  const selected = { settings, catalogue, navigation, pages: Object.fromEntries(publishedSlugs.map((slug) => [slug, {
     title: pages[slug].title,
     seo: pages[slug].seo,
     data: pages[slug].published,

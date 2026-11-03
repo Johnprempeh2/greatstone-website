@@ -20,6 +20,13 @@ function releaseLinks(value, pagePaths) {
 // Only persisted public catalogue fields belong in collection fieldsVersion 1.
 // The public read also decorates products with request-time prices and join IDs.
 const pick = (row, keys) => Object.fromEntries(keys.filter((key) => row?.[key] !== undefined).map((key) => [key, row[key]]));
+// Nullable text columns (no logo, no description) become '' to fit the string schema.
+const blank = (data, keys) => {
+  for (const key of keys) if (data[key] === null) data[key] = '';
+  return data;
+};
+// BIGINT minor-unit prices arrive from Postgres as digit strings.
+const minor = (value) => (typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value);
 function expectKeys(row, allowed, kind) {
   const unknown = Object.keys(row).filter((key) => !allowed.includes(key));
   if (unknown.length) throw new Error(`Unmapped ${kind} fields: ${unknown.join(', ')}`);
@@ -27,7 +34,9 @@ function expectKeys(row, allowed, kind) {
 const variant = (row) => {
   const fields = ['id', 'sku', 'name', 'currency', 'platform', 'sort_order', 'license_type', 'min_order_qty', 'billing_period', 'base_price_minor'];
   expectKeys(row, [...fields, 'pricing'], 'variant');
-  return pick(row, fields);
+  const data = pick(row, fields);
+  if ('base_price_minor' in data) data.base_price_minor = minor(data.base_price_minor);
+  return data;
 };
 const spec = (row) => {
   const fields = ['label', 'value', 'sort_order'];
@@ -39,17 +48,19 @@ export function catalogueFields(key, row) {
   if (key === 'vendors') {
     const fields = ['id', 'slug', 'name', 'logo_url', 'description'];
     expectKeys(row, fields, 'vendor');
-    return { data: pick(row, fields) };
+    return { data: blank(pick(row, fields), ['logo_url', 'description']) };
   }
   if (key === 'categories') {
     const fields = ['id', 'slug', 'name', 'description'];
     expectKeys(row, fields, 'category');
-    return { data: pick(row, fields) };
+    return { data: blank(pick(row, fields), ['description']) };
   }
   if (key !== 'offerings') throw new RangeError(`Unknown catalogue collection: ${key}`);
   const fields = ['id', 'slug', 'name', 'short_description', 'from_price_minor', 'from_price_currency', 'featured', 'platforms', 'type', 'attributes', 'vendor', 'category', 'description', 'seo'];
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
-  const data = pick(row, fields);
+  const data = blank(pick(row, fields), ['short_description', 'description']);
+  if (data.vendor) data.vendor = blank({ ...data.vendor }, ['logo_url']);
+  if ('from_price_minor' in data) data.from_price_minor = minor(data.from_price_minor);
   const variants = (row.offering_variants || row.variants || []).map(variant);
   const specs = (row.offering_specs || row.specs || []).map(spec);
   return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };
@@ -68,6 +79,26 @@ export function toCatalogueCollections(catalogue, targetOrgId = orgId) {
       fields: catalogueFields(key, row),
     })),
   }]));
+}
+
+// The studio's header tree: page links, links and one level of groups, with their subtext.
+// A group has no page of its own in the studio; its target is its first page member.
+function releaseNavigation(items, bySlug, pagePaths) {
+  return (items || []).flatMap((item) => {
+    if (!item?.visible) return [];
+    const subtext = item.subtext ? { subtext: item.subtext } : {};
+    if (item.type === 'group') {
+      const children = releaseNavigation(item.children, bySlug, pagePaths);
+      const first = children.find((child) => child.target.kind === 'page');
+      return first ? [{ id: item.id, label: item.label, visible: true, target: first.target, children }] : [];
+    }
+    if (item.type === 'link') {
+      const href = releaseLinks(item.href, pagePaths);
+      return href ? [{ id: item.id, label: item.label, visible: true, ...subtext, target: { kind: 'link', href } }] : [];
+    }
+    const page = bySlug[item.pageSlug];
+    return page ? [{ id: item.id, label: item.label || page.title, visible: true, ...subtext, target: { kind: 'page', pageId: page.id } }] : [];
+  });
 }
 
 export function toProofRelease(snapshot) {
@@ -103,12 +134,7 @@ export function toProofRelease(snapshot) {
     site: {
       name: snapshot.settings.siteName,
       settings: snapshot.settings,
-      navigation: snapshot.navigation.filter((item) => item.visible && bySlug[item.pageSlug]).map((item) => ({
-        id: item.id,
-        label: item.label,
-        visible: true,
-        target: { kind: 'page', pageId: bySlug[item.pageSlug].id },
-      })),
+      navigation: releaseNavigation(snapshot.navigation, bySlug, pagePaths),
     },
     theme: { revisionId: fixtureId('theme:1'), tokens: themeTokens },
     pages,
