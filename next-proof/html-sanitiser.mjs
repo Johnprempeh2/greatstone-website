@@ -68,13 +68,13 @@ const ARIA_ATTRIBUTE = /^aria-[a-z]{2,24}$/;
 const ATTRIBUTE_VALUE_LIMIT = 2000;
 
 // GRE-3778: the safe SVG subset John approved on 3 Nov, for icons and charts: shapes, gradients, clip
-// paths and masks. No `use`, `image`, `a`, `foreignObject`, `style`, `script`, animation, `filter`,
+// paths and masks, plus text labels and `preserveAspectRatio` for charts (John, 3 Nov, /climb). No `use`, `image`, `a`, `foreignObject`, `style`, `script`, animation, `filter`,
 // `pattern` or any link attribute, so an SVG can neither run code nor load anything. Inside an <svg>
 // anything else is dropped with its content, since a browser parses HTML there differently. Paint, clip
 // paths and masks can only point at an id on the same page.
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const SVG_ELEMENTS = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon', 'title', 'desc', 'defs',
-  'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask']);
+  'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'text', 'tspan']);
 const SVG_NUMBER = /^-?(\d{1,6}(\.\d{1,17})?|\.\d{1,17})(e-?\d{1,2})?(%|px)?$/;
 const SVG_NUMBERS = /^[-+0-9.eE,\s]{1,20000}$/;
 const SVG_PAINT = /^(none|currentColor|transparent|#[0-9a-fA-F]{3,8}|rgba?\([\d.\s,%]{1,40}\)|url\(#[a-zA-Z][a-zA-Z0-9_-]{0,63}\))$/;
@@ -82,7 +82,8 @@ const SVG_URL_REF = /^(none|url\(#[a-zA-Z][a-zA-Z0-9_-]{0,63}\))$/;
 const SVG_TRANSFORM = /^\s*((translate|scale|rotate|skewX|skewY|matrix)\([-+0-9.eE,\s]{0,120}\)[\s,]*){1,6}$/;
 const enumOf = (...values) => new RegExp(`^(${values.join('|')})$`);
 const SVG_ATTRIBUTES = {
-  viewBox: /^-?[\d.]{1,10}([\s,]+-?[\d.]{1,10}){3}$/, xmlns: /^http:\/\/www\.w3\.org\/2000\/svg$/,
+  viewBox: /^-?[\d.]{1,10}([\s,]+-?[\d.]{1,10}){3}$/, preserveAspectRatio: /^(none|x(Min|Mid|Max)Y(Min|Mid|Max))( (meet|slice))?$/,
+  xmlns: /^http:\/\/www\.w3\.org\/2000\/svg$/,
   focusable: enumOf('true', 'false'), width: SVG_NUMBER, height: SVG_NUMBER, x: SVG_NUMBER, y: SVG_NUMBER,
   x1: SVG_NUMBER, y1: SVG_NUMBER, x2: SVG_NUMBER, y2: SVG_NUMBER, cx: SVG_NUMBER, cy: SVG_NUMBER, r: SVG_NUMBER,
   rx: SVG_NUMBER, ry: SVG_NUMBER, offset: SVG_NUMBER,
@@ -95,6 +96,8 @@ const SVG_ATTRIBUTES = {
   'clip-path': SVG_URL_REF, mask: SVG_URL_REF,
   transform: SVG_TRANSFORM, gradientTransform: SVG_TRANSFORM,
   gradientUnits: enumOf('userSpaceOnUse', 'objectBoundingBox'),
+  'font-size': SVG_NUMBER, 'font-weight': /^(normal|bold|[1-9]00)$/, 'text-anchor': enumOf('start', 'middle', 'end'),
+  'dominant-baseline': enumOf('auto', 'middle', 'central', 'hanging', 'alphabetic'), 'letter-spacing': SVG_NUMBER,
 };
 
 let parserWindow;
