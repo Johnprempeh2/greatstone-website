@@ -275,6 +275,51 @@ test('a weekly release card never covers public-site drift, other sites or agent
   assert.match(result.stderr, /production refused/);
 });
 
+function cutoverCard(sha, changes = {}) {
+  return stagingCard(sha, { idempotencyKey: `confirmation:GRE-2567:cutover:${sha}`,
+    payload: { detailsMarkdown: `Approve cut-over: greatstone-home ${sha}` }, ...changes });
+}
+
+test('the GRE-2567 cut-over card authorises the public site for its exact SHA', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.servePublicSite();
+  f.setInteractions([cutoverCard(f.base)]);
+  f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /--prod/);
+});
+
+test('the cut-over card never covers staging, another SHA, drift, agent resolution or other text', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.servePublicSite();
+  f.setInteractions([cutoverCard(f.base)]);
+  let result = await f.run('prod');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+  const cases = [
+    cutoverCard(f.base, { status: 'pending' }),
+    cutoverCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
+    cutoverCard(f.base, { requestedResolverPolicy: 'anyone' }),
+    cutoverCard(f.base, { idempotencyKey: `confirmation:GRE-9999:cutover:${f.base}` }),
+    cutoverCard(f.base, { payload: { detailsMarkdown: `Approve cut-over: ${site} ${f.base}` } }),
+    cutoverCard('a'.repeat(40)),
+  ];
+  for (const card of cases) {
+    f.setInteractions([card]);
+    result = await f.run('prod', 'greatstone-home');
+    assert.equal(result.status, 1, JSON.stringify(card));
+    assert.match(result.stderr, /production refused/);
+  }
+  f.setInteractions([cutoverCard(f.base)]);
+  await f.commit('src/app.js', 'front-end');
+  result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /production refused/);
+});
+
 async function weeklyTrain(t) {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');

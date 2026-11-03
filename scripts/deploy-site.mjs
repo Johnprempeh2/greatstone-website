@@ -94,12 +94,25 @@ function onMain(sha) {
   return command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] === sha;
 }
 
+// John's single cut-over card on GRE-2567 (plan step J) also covers the switch (step 6): the public site only, and
+// only its exact SHA. It is the same card carrier-deploy.mjs publish checks, so the cut-over needs one approval.
+async function cutoverCardApproved(sha) {
+  if (site !== 'greatstone-home') return false;
+  const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
+  const key = new RegExp(`^confirmation:GRE-2567:cutover:${sha}(?::v[1-9]\\d*)?$`);
+  return cards.some((card) => card.kind === 'request_confirmation' && card.status === 'accepted' &&
+    card.requestedResolverPolicy === 'human_only' && card.effectiveResolverPolicy === 'human_only' &&
+    card.resolvedByUserId && !card.resolvedByAgentId && key.test(card.idempotencyKey || '') &&
+    card.payload?.detailsMarkdown?.includes(`Approve cut-over: greatstone-home ${sha}`));
+}
+
 async function gate(sha) {
   if (mode === 'prod') {
     if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
     const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
-    const stagingCard = !exactComment && await stagingCardApproved(sha, site === 'greatstone-home');
+    const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home') ||
+      await cutoverCardApproved(sha));
     if (!exactComment && !stagingCard)
       throw new Error(site === 'gre1795-website-db-staging'
         ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
