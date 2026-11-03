@@ -6,16 +6,24 @@
 //   counts.json       row counts only: every public table, auth.users and storage.objects
 // It prints counts and table names only, never row values. Needs SUPABASE_DB_URL (a read-only login is enough).
 //
-//   counts                   print the counts; writes nothing (the before, after and catch-up checks)
-//   export --out <dir>       write the three files into <dir> (run scratch), mode 0600, never over an existing file
+//   counts                              print the counts; writes nothing (the before, after and catch-up checks)
+//   export --out <dir>                  write the three files into <dir> (run scratch), mode 0600, never over an
+//                                       existing file
+//   export --since <step 4 dir> --out <dir>
+//                                       the catch-up (cut-over step 7, GRE-3902): the same files, holding only the rows
+//                                       whose primary key is not in the earlier export. identities.json is written only
+//                                       when new users appeared, and then holds every user, as the importer checks an
+//                                       exact count (SITES identityCount must change to it in a reviewed release first).
+//                                       A row changed or removed since the earlier export stops it for a person, and it
+//                                       writes nothing.
 //
 // It exits non-zero when a public table outside TABLES has rows (they would be left behind), when a user has no
 // password, or when storage holds objects (the move has no file step). Remove the files in the same run.
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import pg from 'pg';
-import { TABLES } from '../netlify/functions/lib/owner-import.mjs';
+import { TABLES, stableStringify } from '../netlify/functions/lib/owner-import.mjs';
 
 const quoteIdent = (name) => `"${String(name).replaceAll('"', '""')}"`;
 const regclass = async (client, name) => (await client.query('SELECT to_regclass($1) IS NOT NULL AS ok', [name])).rows[0].ok;
@@ -48,6 +56,11 @@ export function problems(counts) {
   return out;
 }
 
+const IDENTITIES = `SELECT id::text AS id, email,
+    coalesce(nullif(raw_user_meta_data->>'full_name', ''), nullif(raw_user_meta_data->>'name', ''), email) AS name,
+    email_confirmed_at IS NOT NULL AS "emailVerified", encrypted_password AS "passwordHash"
+    FROM auth.users WHERE deleted_at IS NULL ORDER BY id`;
+
 /**
  * The export, in one REPEATABLE READ READ ONLY transaction so the counts match the rows. Table rows stay as
  * Postgres's own JSON text (no number round trip). Returns { identities, tablesJson, counts }.
@@ -56,10 +69,7 @@ export async function exportSource(client) {
   await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   try {
     const counts = await sourceCounts(client);
-    const { rows: identities } = await client.query(`SELECT id::text AS id, email,
-        coalesce(nullif(raw_user_meta_data->>'full_name', ''), nullif(raw_user_meta_data->>'name', ''), email) AS name,
-        email_confirmed_at IS NOT NULL AS "emailVerified", encrypted_password AS "passwordHash"
-        FROM auth.users WHERE deleted_at IS NULL ORDER BY id`);
+    const { rows: identities } = await client.query(IDENTITIES);
     const parts = [];
     for (const table of TABLES) {
       if (!Object.hasOwn(counts.tables, table)) { parts.push(`${JSON.stringify(table)}:[]`); continue; }
@@ -72,6 +82,98 @@ export async function exportSource(client) {
   } finally { await client.query('ROLLBACK'); }
 }
 
+/** Primary-key columns of every TABLES entry that has one, from the source catalog. */
+export async function primaryKeys(client) {
+  const { rows } = await client.query(`SELECT c.relname AS table, array_agg(a.attname::text ORDER BY k.ord) AS cols
+      FROM pg_index i JOIN pg_class c ON c.oid = i.indrelid
+      CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum, ord)
+      JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
+     WHERE i.indisprimary AND c.relnamespace = 'public'::regnamespace AND c.relname = ANY($1::text[])
+     GROUP BY c.relname`, [TABLES]);
+  return new Map(rows.map((r) => [r.table, r.cols]));
+}
+
+/**
+ * The catch-up read, in one REPEATABLE READ READ ONLY transaction: the counts, the identities, every TABLES row as
+ * Postgres's own JSON text, and the primary keys. Returns { identities, rows: { table: [jsonText] }, keys, counts }.
+ */
+export async function readSource(client) {
+  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  try {
+    const counts = await sourceCounts(client);
+    const { rows: identities } = await client.query(IDENTITIES);
+    const keys = await primaryKeys(client);
+    const rows = {};
+    for (const table of TABLES) {
+      if (!Object.hasOwn(counts.tables, table)) { rows[table] = []; continue; }
+      rows[table] = (await client.query(`SELECT row_to_json(t)::text AS j FROM public.${quoteIdent(table)} t`)).rows.map((r) => r.j);
+      if (rows[table].length !== counts.tables[table]) throw new Error(`Count moved inside the snapshot: ${table}`);
+    }
+    return { identities, rows, keys, counts };
+  } finally { await client.query('ROLLBACK'); }
+}
+
+/** The earlier (step 4) export's tables and identities. A fixed message on failure: a JSON error quotes the file. */
+export function readSince(dir) {
+  try {
+    const tables = JSON.parse(readFileSync(join(dir, 'tables.json'), 'utf8'));
+    const identities = JSON.parse(readFileSync(join(dir, 'identities.json'), 'utf8'));
+    if (!tables || typeof tables !== 'object' || Array.isArray(tables) || !Array.isArray(identities)) throw new Error();
+    return { tables, identities };
+  } catch { throw new Error('--since needs the earlier export\'s tables.json and identities.json'); }
+}
+
+/** Sorts one table's rows against the earlier export by key: new (kept as text), changed, removed. Counts only. */
+function diffByKey(earlier, current, keyOf) {
+  const before = new Map();
+  for (const row of earlier) before.set(keyOf(row), stableStringify(row));
+  const out = { new: [], changed: 0, removed: 0 };
+  const seen = new Set();
+  for (const { text, row } of current) {
+    const key = keyOf(row);
+    seen.add(key);
+    if (!before.has(key)) out.new.push(text);
+    else if (before.get(key) !== stableStringify(row)) out.changed++;
+  }
+  for (const key of before.keys()) if (!seen.has(key)) out.removed++;
+  return out;
+}
+
+/**
+ * The catch-up: what the source holds now against the earlier export. Returns
+ *   tablesJson    { table: [row] } for every TABLES entry, only the rows whose key is not in the earlier export
+ *   identities    every current user when new users appeared, else null (the importer checks an exact count)
+ *   summary       { table: { new, changed, removed } } for tables where any is non-zero, and auth.users
+ *   stops         what stops it for a person, names and counts only
+ */
+export function catchUp(since, current) {
+  const summary = {};
+  const stops = [];
+  const parts = [];
+  const note = (name, d) => {
+    const n = { new: d.new.length, changed: d.changed, removed: d.removed };
+    if (n.new || n.changed || n.removed) summary[name] = n;
+    if (n.changed) stops.push(`Changed since the earlier export: ${name} (${n.changed})`);
+    if (n.removed) stops.push(`Removed since the earlier export: ${name} (${n.removed})`);
+  };
+  for (const table of TABLES) {
+    const earlier = Array.isArray(since.tables[table]) ? since.tables[table] : [];
+    const rows = current.rows[table].map((text) => ({ text, row: JSON.parse(text) }));
+    const key = current.keys.get(table);
+    if (!key) {
+      if (earlier.length || rows.length) stops.push(`No primary key on the source: ${table}`);
+      parts.push(`${JSON.stringify(table)}:[]`);
+      continue;
+    }
+    const d = diffByKey(earlier, rows, (row) => JSON.stringify(key.map((c) => row[c] ?? null)));
+    note(table, d);
+    parts.push(`${JSON.stringify(table)}:[${d.new.join(',')}]`);
+  }
+  const users = diffByKey(since.identities, current.identities.map((row) => ({ text: null, row })), (row) => row.id);
+  note('auth.users', users);
+  return { tablesJson: `{${parts.join(',')}}`, identities: users.new.length ? current.identities : null, summary, stops };
+}
+
 function printCounts(counts) {
   console.log(JSON.stringify(counts, null, 1));
   const total = Object.values(counts.tables).reduce((a, b) => a + b, 0);
@@ -79,10 +181,12 @@ function printCounts(counts) {
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
-  const { positionals: [command], values } = parseArgs({ allowPositionals: true, options: { out: { type: 'string' } } });
+  const { positionals: [command], values } = parseArgs({ allowPositionals: true,
+    options: { out: { type: 'string' }, since: { type: 'string' } } });
   if (!process.env.SUPABASE_DB_URL) throw new Error('SUPABASE_DB_URL is required');
-  if (command !== 'counts' && command !== 'export') throw new Error('Usage: counts | export --out <dir>');
+  if (command !== 'counts' && command !== 'export') throw new Error('Usage: counts | export [--since <dir>] --out <dir>');
   if (command === 'export' && !values.out) throw new Error('export needs --out <dir> (run scratch)');
+  const since = command === 'export' && values.since ? readSince(values.since) : null;
   // parsing the URL can throw too (an uncaught error prints its input), so it sits inside the sanitised catch
   let client;
   let connected = false;
@@ -90,15 +194,35 @@ if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
     client = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL });
     await client.connect();
     connected = true;
+    const write = (name, text) => writeFileSync(join(values.out, name), text, { mode: 0o600, flag: 'wx' });
     if (command === 'counts') {
       await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
       const counts = await sourceCounts(client);
       await client.query('ROLLBACK');
       printCounts(counts);
       for (const p of problems(counts)) console.log(p);
+    } else if (since) {
+      const current = await readSource(client);
+      const { tablesJson, identities, summary, stops } = catchUp(since, current);
+      printCounts(current.counts);
+      console.log(`Since the earlier export: ${JSON.stringify(summary)}`);
+      const found = [...problems(current.counts), ...stops];
+      for (const p of found) console.log(p);
+      if (found.length) {
+        console.log('Stopped for a person: nothing written.');
+        process.exitCode = 1;
+      } else {
+        write('tables.json', tablesJson);
+        write('counts.json', JSON.stringify(current.counts, null, 1));
+        if (identities) write('identities.json', JSON.stringify(identities));
+        const moved = Object.entries(summary).filter(([t]) => t !== 'auth.users').reduce((a, [, n]) => a + n.new, 0);
+        console.log(`Wrote tables.json (${moved} new rows) and counts.json.`);
+        if (identities) console.log(`Wrote identities.json (${identities.length} users, ${summary['auth.users'].new} new): `
+          + `the site's identityCount must become ${identities.length} in a reviewed release before it is submitted.`);
+        else console.log('No new users: no identities.json.');
+      }
     } else {
       const { identities, tablesJson, counts } = await exportSource(client);
-      const write = (name, text) => writeFileSync(join(values.out, name), text, { mode: 0o600, flag: 'wx' });
       write('identities.json', JSON.stringify(identities));
       write('tables.json', tablesJson);
       write('counts.json', JSON.stringify(counts, null, 1));
