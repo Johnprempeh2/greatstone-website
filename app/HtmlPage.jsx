@@ -5,7 +5,7 @@ import { createElement } from 'react';
 import { sanitiseHtml } from '../next-proof/html-sanitiser.mjs';
 import { sanitiseCss } from '../next-proof/css-sanitiser.mjs';
 import { ISLANDS, islandPlaceholderCss } from '../next-proof/islands.mjs';
-import { CHROME_KEYS } from '../next-proof/gsam-release.mjs';
+import { CHROME_KEYS } from '../next-proof/chrome-keys.mjs';
 import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
 import { AccountEntry, AnimationIsland, QuoteIsland, StoneIsland } from './islands.jsx';
@@ -16,7 +16,7 @@ import formBlocks from '../next-proof/frozen/form-blocks.json';
 import HtmlBehaviours from './HtmlBehaviours.jsx';
 import { ldScript } from '../src/lib/ld-json.mjs';
 
-const REACT_NAMES = { class: 'className', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
+const REACT_NAMES = { class: 'className', tabindex: 'tabIndex', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
 const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding };
 // Islands that read release data on the server get the release; browser islands get only their props.

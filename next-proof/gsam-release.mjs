@@ -9,7 +9,8 @@ const problem = (rule, message) => ({ rule, message });
 // GRE-3776: schema 2 pages carry { html, css } instead of Puck data, with shared chrome and one site
 // stylesheet. Both schemas render until every page has moved (S4).
 export const WEBSITE_RELEASE_SCHEMAS = [1, 2];
-export const CHROME_KEYS = ['header', 'nav', 'footer'];
+export { CHROME_KEYS } from './chrome-keys.mjs';
+import { CHROME_KEYS } from './chrome-keys.mjs';
 const htmlDocument = (value) => plainObject(value) && typeof value.html === 'string' && typeof value.css === 'string';
 // GRE-3789: a page's FAQ structured data is page SEO: plain-text questions and answers the engine writes
 // as FAQPage JSON-LD (it was the Faq block's script before the export).

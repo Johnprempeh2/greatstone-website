@@ -8,6 +8,7 @@ const decide = (overrides) => frameRouteDecision({ ...base, ...overrides }).stat
 test('editor host serves public pages and frame routes, but not stateful endpoints', () => {
   assert.equal(decide({ pathname: '/editor/home' }), 200);
   assert.equal(decide({ pathname: '/preview/home' }), 200);
+  assert.equal(decide({ pathname: '/live-design' }), 200);
   assert.equal(decide({ pathname: '/_next/static/chunk.js' }), 200);
   for (const pathname of ['/', '/about', '/contact', '/shop', '/_release']) assert.equal(decide({ pathname }), 200);
   for (const pathname of ['/studio', '/api/save']) assert.equal(decide({ pathname }), 404);
@@ -17,6 +18,7 @@ test('editor host serves public pages and frame routes, but not stateful endpoin
 test('public host refuses frame routes and framing public pages', () => {
   assert.equal(decide({ hostname: 'www.example.test', pathname: '/editor/home' }), 404);
   assert.equal(decide({ hostname: 'www.example.test', pathname: '/preview/home' }), 404);
+  assert.equal(decide({ hostname: 'www.example.test', pathname: '/live-design' }), 404);
   assert.equal(decide({ hostname: 'www.example.test', pathname: '/' }), 200);
 });
 
