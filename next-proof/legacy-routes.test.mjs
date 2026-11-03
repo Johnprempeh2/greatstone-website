@@ -70,6 +70,23 @@ test('an unpublished target uses the interim page, then switches once the target
   assert.equal(nextLegacyDestination('/document-processing', [...pages, '/dev-tools/document-solutions']), '/dev-tools/document-solutions');
 });
 
+// GRE-1822: the content targets built as GSAM pages (four new drafts, four release 1 pages at their sitemap
+// paths). Once they publish, every old content page lands on its final page; only the old article waits.
+const contentTargets = ['/support', '/dev-tools/choosing-tools', '/dev-tools/trials', '/dev-tools/document-solutions',
+  '/consultancy/services', '/consultancy/how-we-work', '/consultancy/how-we-help', '/proof'];
+
+test('when the GSAM content pages publish, every old content page goes live', () => {
+  const published = [...pages, ...contentTargets];
+  const content = legacyDecisions.filter((row) => !row.target.startsWith('/dev-tools/brands/') &&
+    !row.target.startsWith('/dev-tools/products') && !row.target.startsWith('/account') &&
+    !['/dev-tools/basket', '/dev-tools/checkout', '/'].includes(row.target));
+  const notLive = content.filter((row) => legacyLanding(row.from, published).state !== 'live').map((row) => row.from);
+  assert.deepEqual(notLive, ['/news/seamless-api-integration-for-developers']);
+  assert.equal(nextLegacyDestination('/trial-confirm', published), '/dev-tools/trials');
+  assert.equal(nextLegacyDestination('/assessment-framework/the-external-view', published), '/consultancy/how-we-work');
+  assert.equal(nextLegacyDestination('/testimonials', published), '/proof');
+});
+
 test('products with an exact catalogue match go to that product; the rest wait for Ben on the brand page', () => {
   const moves = legacyDecisions.filter((row) => row.product);
   assert.equal(moves.length, 15);
