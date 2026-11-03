@@ -20,8 +20,8 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
       ? `/org#org/${rest}` : `/${section}${rest ? `/${rest}` : ''}`;
     return destination === pathname + hash ? null : destination;
   }
-  // Store detail views and the old full-screen briefing hub (#intel, #intel/<id>, IntelBand's default CTA).
-  const detail = /^\/?(product|shop)\/([\w-]+)\/?$/i.exec(fragment);
+  // Store and service detail views, and the old full-screen briefing hub (#intel, #intel/<id>, IntelBand's default CTA).
+  const detail = /^\/?(product|shop|service)\/([\w-]+)\/?$/i.exec(fragment);
   if (detail) return `/${detail[1].toLowerCase()}/${detail[2]}`;
   if (/^\/?intel(?:\/[\w-]*)?$/i.test(fragment)) return pathname === '/insights' ? null : '/insights';
   const go = fragment.startsWith('go/');
@@ -36,6 +36,10 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   const destination = page + (anchor ? `#${encodeURIComponent(anchor)}` : '');
   return destination === pathname + hash ? null : destination;
 }
+
+// GRE-1824: "#book" opened the booking popup on the Vite site; the Next site does the same
+// rather than sending the visitor to the contact page they may already be on.
+export const isBookingHash = (hash) => hash === '#book';
 
 // Auth emails land on /?token=…#account or /?verified=1#account. The query must survive the move to /account.
 export function keepLandingQuery(destination, search) {
