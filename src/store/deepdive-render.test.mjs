@@ -30,6 +30,7 @@ const root = join(here, '..', '..');
 const ENTRY = `
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 import * as S from '${join(root, 'src/data/deepdive-schema.mjs')}';
 import ProcessPage from '${join(root, 'src/store/ProcessPage.jsx')}';
 import QuestionPage from '${join(root, 'src/store/QuestionPage.jsx')}';
@@ -240,7 +241,13 @@ export async function run() {
     try {
       const root = createRoot(el);
       roots.push(root);
-      root.render(React.createElement(Boundary, { onError: (m) => { err = m; } }, make()));
+      // ⚠ THE 30ms BELOW WAS THE ONLY THING STANDING BETWEEN render() AND THE MEASUREMENT. render()
+      // queues the commit on React's scheduler, which yields every 5ms; on a busy CI runner the
+      // earlier mounts' leftover work held the queue past 30ms and a screen measured 0 that paints
+      // fine (PersonPage: 0, once, on PR #196). Pinned to one core with six copies running, 6 of 6
+      // runs failed on a different screen each time. flushSync commits before it returns, so the
+      // first paint no longer depends on how fast the machine is; the wait is for effects only.
+      flushSync(() => root.render(React.createElement(Boundary, { onError: (m) => { err = m; } }, make())));
     } catch (e) { err = 'sync: ' + String(e.message).slice(0, 300); }
     await new Promise((r) => setTimeout(r, 30));
     const chars = Math.max((el.textContent || '').trim().length,
