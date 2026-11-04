@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { publicIntelligence } from './intelligence-public.mjs';
+import { existsSync } from 'node:fs';
+import { publicIntelligence, newsImage, vendorLogo } from './intelligence-public.mjs';
+import images from './data/intelligence-images.json' with { type: 'json' };
 import snapshot from './data/intelligence-snapshot.json' with { type: 'json' };
 
 const boards = {
@@ -57,4 +59,26 @@ test('the committed snapshot is public-safe', () => {
   assert.doesNotMatch(raw, /greatstone|gsam|lodestone|keystone|"lens"|"take"|"action"/i);
   assert.ok(snapshot.boards.length >= 1 && snapshot.news.length >= 1);
   assert.deepEqual(publicIntelligence({ boards: { boards: snapshot.boards.map((view) => ({ ...view, snapshotDate: view.date })) }, briefing: null }).boards, snapshot.boards);
+});
+
+test('GRE-1861: every news item gets a hosted image with alt text, chosen by its topic', () => {
+  const site = (src) => new URL(`../public${src}`, import.meta.url);
+  for (const image of [images.fallback, ...Object.values(images.topics)]) {
+    assert.match(image.src, /^\/assets\/intel\/news\/[a-z-]+\.webp$/);
+    assert.ok(existsSync(site(image.src)), image.src);
+    assert.ok(image.alt.length > 10);
+  }
+  assert.equal(newsImage({ tag: 'Anthropic · Research' }, images), images.topics.research);
+  assert.equal(newsImage({ tag: 'Someone · Unknown' }, images), images.fallback);
+  assert.equal(newsImage({}, images), images.fallback);
+  for (const item of snapshot.news) assert.ok(newsImage(item, images)?.src);
+});
+
+test('GRE-1861: vendor logos are only the self-hosted marks; anything else falls back to a monogram', () => {
+  assert.equal(vendorLogo('openai.com'), '/assets/intel/logos/openai.com.svg');
+  assert.equal(vendorLogo('alpha.example'), null);
+  assert.equal(vendorLogo('../../etc/passwd'), null);
+  assert.equal(vendorLogo(undefined), null);
+  const domains = [...snapshot.boards.flatMap((view) => view.entries), ...snapshot.news, ...snapshot.movers].map((item) => item.domain);
+  for (const logo of domains.map(vendorLogo).filter(Boolean)) assert.ok(existsSync(new URL(`../public${logo}`, import.meta.url)), logo);
 });

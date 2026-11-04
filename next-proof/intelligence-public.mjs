@@ -56,6 +56,18 @@ function mover(item) {
   return compact({ name, tag: text(item.tag, 60), note: text(item.note, 300), url: url(item.url), domain: domain(item.domain), direction: item.direction });
 }
 
+// Vendor marks the site hosts at public/assets/intel/logos/<domain>.svg (Simple Icons, CC0). Others show a monogram.
+const LOGO_DOMAINS = new Set(['anthropic.com', 'apple.com', 'cline.bot', 'cursor.com', 'deepseek.com', 'github.com', 'google.com', 'kimi.com',
+  'meta.com', 'microsoft.com', 'mistral.ai', 'openai.com', 'perplexity.ai', 'postman.com', 'qwen.ai', 'replit.com']);
+
+export const vendorLogo = (value) => (LOGO_DOMAINS.has(domain(value)) ? `/assets/intel/logos/${value.toLowerCase()}.svg` : null);
+
+/** The picture for a news item: the image set for its topic (the part of its tag after "·"), else the fallback. */
+export function newsImage(item, images) {
+  const topic = typeof item?.tag === 'string' ? item.tag.split('·').pop().trim().toLowerCase() : '';
+  return images?.topics?.[topic] ?? images?.fallback ?? null;
+}
+
 /** Builds the public snapshot from GSAM's `boards` and latest `ai_briefing` report responses. */
 export function publicIntelligence({ boards, briefing }) {
   const views = (boards?.boards ?? [])
