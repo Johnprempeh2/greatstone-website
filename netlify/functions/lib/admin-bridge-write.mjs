@@ -14,11 +14,14 @@ const BEGIN = { write: 'admin_bridge_begin_write', refund_request: 'admin_bridge
 const FINISH = { write: 'admin_bridge_finish_write', refund_request: 'admin_bridge_finish_refund' };
 
 // ── refusals ────────────────────────────────────────────────────────────────────────────────────────
-// A refused write answers with a code; the audit outcome is the code, except over_refundable, which is a conflict.
-export const WRITE_STATUS = { bad_request: 400, denied: 403, not_found: 404, conflict: 409, over_refundable: 409,
-  idempotency_mismatch: 409 };
+// A refused write answers with a code; the audit outcome is the code, except over_refundable, which is a conflict,
+// and licence_key_in_text, which is a bad_request.
+const AUDIT_OUTCOME = { over_refundable: 'conflict', licence_key_in_text: 'bad_request' };
+export const WRITE_STATUS = { bad_request: 400, licence_key_in_text: 400, denied: 403, not_found: 404, conflict: 409,
+  over_refundable: 409, idempotency_mismatch: 409 };
 const PG_REFUSAL = {
   GB400: 'bad_request', GB403: 'denied', GB404: 'not_found', GB409: 'conflict', GBR01: 'over_refundable',
+  GBK01: 'licence_key_in_text',
   23502: 'bad_request', 23503: 'bad_request', 23514: 'bad_request', '22P02': 'bad_request', 22003: 'bad_request',
   22007: 'bad_request', 22008: 'bad_request', 22023: 'bad_request', 22001: 'bad_request',
   23505: 'conflict', 42501: 'denied',
@@ -61,7 +64,7 @@ export async function asBridgeWriter(pool, call, work) {
         const code = refusal(error);
         if (!code) throw error;
         await client.query('ROLLBACK TO SAVEPOINT bridge_write');
-        result = { outcome: code === 'over_refundable' ? 'conflict' : code, status: WRITE_STATUS[code],
+        result = { outcome: AUDIT_OUTCOME[code] || code, status: WRITE_STATUS[code],
           body: { error: { code } }, rowCount: 0 };
         if (code === 'conflict' && call.current) {
           const current = await call.current(client);
@@ -490,6 +493,30 @@ function clientUserRoute(method, parts) {
   } };
 }
 
+// A product range's activation steps (GRE-3981, migrations 027 and 065): the steps live on the vendor, not the
+// licence, and go to every buyer in the range. Steps that contain a full licence key are refused in the database
+// (licence_key_in_text); an agent changes only a draft vendor (049). The answer names no licence key.
+async function activationSteps(client, vendorId) {
+  const { rows: [v] } = await client.query(`SELECT id, name, status, activation_instructions, row_version, updated_at,
+      bridge_vendor_licence_count(id) AS licences FROM vendors WHERE id = $1::uuid AND deleted_at IS NULL`, [vendorId]);
+  return v ? { vendorId: v.id, vendorName: v.name, status: v.status, activationSteps: v.activation_instructions,
+    rowVersion: v.row_version, updatedAt: v.updated_at, licencesInRange: v.licences } : null;
+}
+
+function activationRoute(method, parts) {
+  const [res, vendorId, sub, extra] = parts;
+  if (res !== 'vendors' || sub !== 'activation-steps' || extra !== undefined || method !== 'PUT') return null;
+  return { current: (client) => (UUID.test(vendorId) ? activationSteps(client, vendorId) : null), run: async (client, ctx, body) => {
+    const { activation_instructions: steps } = pick(body, { activationSteps: ['activation_instructions', text(20000)] },
+      { allow: ['expectedRowVersion'] });
+    if (body.activationSteps === undefined) bad('activationSteps is required');
+    if (steps !== null && !steps.trim()) bad('activationSteps is blank; send null to clear');
+    await update(client, 'vendors', needId(vendorId), expectedRowVersion(body), { activation_instructions: steps });
+    const item = await activationSteps(client, vendorId);
+    return { status: 200, body: { item }, rowCount: 1, resourceId: vendorId };
+  } };
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -517,7 +544,8 @@ function refundRoute(method, parts) {
 export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
-  const route = catalogueRoute(method, parts) || commerceRoute(method, parts) || clientUserRoute(method, parts);
+  const route = activationRoute(method, parts) || catalogueRoute(method, parts) || commerceRoute(method, parts)
+    || clientUserRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
 

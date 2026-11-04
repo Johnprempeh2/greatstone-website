@@ -8,6 +8,7 @@
 //                                           POST /customers/<id>/users (write key)
 //   POST/PATCH/DELETE                       the typed write routes (write key) and refund requests (refund_request
 //                                           key), in lib/admin-bridge-write.mjs
+//   PUT /api/admin/v1/vendors/<id>/activation-steps   a product range's activation steps (write key, GRE-3981)
 // Every request is signed (lib/admin-bridge-auth.mjs). With GSAM_BRIDGE_KEYS empty every call is refused, so the
 // function is safe to deploy before a key exists. A failure returns { error: { code } } only (a write conflict adds
 // the current row); the detail goes to the site log, never to the caller.
