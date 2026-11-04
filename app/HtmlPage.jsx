@@ -10,6 +10,7 @@ import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
 import { AccountEntry, AnimationIsland, QuoteIsland, SiteSearch, StoneIsland } from './islands.jsx';
 import ProductListIsland from './ProductListIsland.jsx';
+import IntelDashboardIsland from './IntelDashboardIsland.jsx';
 import { Region } from './html-regions.mjs';
 import TwoDoorsLanding from './TwoDoorsLanding.jsx';
 import formBlocks from '../next-proof/frozen/form-blocks.json';
@@ -20,7 +21,7 @@ import { siteChrome } from './site-chrome.mjs';
 
 const REACT_NAMES = { class: 'className', tabindex: 'tabIndex', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch, IntelDashboard: IntelDashboardIsland };
 // Islands that read release data on the server get the release; browser islands get only their props.
 const RELEASE_ISLANDS = new Set(['ProductList']);
 // GRE-3862: the site search gets the public pages it lists, not the whole release.

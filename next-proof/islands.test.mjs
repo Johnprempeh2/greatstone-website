@@ -97,3 +97,12 @@ test('GRE-3777: the product list reads the offerings collection with the island 
   const byVendor = browseOfferings(catalogueFromRelease(release), { vendor });
   assert.ok(byVendor.length > 0 && byVendor.every((item) => item.vendor.slug === vendor));
 });
+
+test('GRE-1861: the intelligence dashboard island takes only a known starting tab', () => {
+  const { nodes, removed } = island('<gs-island name="intel-dashboard" data-tab="compare"></gs-island>');
+  assert.deepEqual(nodes[0].props, { tab: 'compare' });
+  assert.deepEqual(removed, []);
+  const bad = island('<gs-island name="intel-dashboard" data-tab="admin" data-feed="https://x.example"></gs-island>');
+  assert.deepEqual(bad.nodes[0].props, {});
+  assert.deepEqual(bad.removed, ['gs-island[intel-dashboard] @data-tab', 'gs-island[intel-dashboard] @data-feed']);
+});
