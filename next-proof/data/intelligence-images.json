@@ -1,0 +1,13 @@
+{
+ "fallback": { "src": "/assets/intel/news/agents.webp", "alt": "Glowing lime and teal points joined by thin lines on a black background" },
+ "topics": {
+  "agents": { "src": "/assets/intel/news/agents.webp", "alt": "Glowing lime and teal points joined by thin lines on a black background" },
+  "copilot": { "src": "/assets/intel/news/copilot.webp", "alt": "A keyboard lit in lime below a monitor of blurred code in a dark room" },
+  "education": { "src": "/assets/intel/news/education.webp", "alt": "A stack of books, a pencil and a closed laptop on a dark desk" },
+  "platforms": { "src": "/assets/intel/news/platforms.webp", "alt": "A phone and a tablet with dark screens and lime edges on black slate" },
+  "research": { "src": "/assets/intel/news/research.webp", "alt": "Glass slides under a microscope lens, lit in lime on a black surface" },
+  "risk": { "src": "/assets/intel/news/risk.webp", "alt": "A brass balance scale beside a closed leather folder on a dark desk" },
+  "science": { "src": "/assets/intel/news/science.webp", "alt": "Lab flasks, test tubes and a molecule model glowing lime on a black bench" },
+  "security": { "src": "/assets/intel/news/security.webp", "alt": "A dark padlock resting on a circuit board with lime traces" }
+ }
+}

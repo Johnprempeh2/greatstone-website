@@ -4,6 +4,7 @@
 // Overview (lead story, what is trending, the numbers, the podium, the movers), the three leaderboards,
 // a two-model compare and the news. It reads only the public snapshot (next-proof/intelligence-public.mjs).
 import { useId, useRef, useState } from 'react';
+import { newsImage, vendorLogo } from '../next-proof/intelligence-public.mjs';
 
 const TABS = [['overview', 'Overview'], ['leaderboards', 'Leaderboards'], ['compare', 'Compare'], ['news', 'News']];
 const BOARD_LABEL = { ai_systems: 'AI assistants', frontier_models: 'Frontier models', tools_agents: 'Tools and agents' };
@@ -16,9 +17,25 @@ const day = (value, year = false) => {
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' });
 };
 
+// The vendor's mark when the site hosts it, else (or if it fails to load) the first letter of the name.
 function Mark({ name = '', domain }) {
+  const [failed, setFailed] = useState(false);
+  const logo = failed ? null : vendorLogo(domain);
   const letter = (name.trim()[0] || '?').toUpperCase();
-  return <span className="gi-mark" aria-hidden="true" data-domain={domain || undefined}>{letter}</span>;
+  return (
+    <span className={`gi-mark${logo ? ' has-logo' : ''}`} aria-hidden="true">
+      {logo ? <img src={logo} alt="" width="20" height="20" loading="lazy" onError={() => setFailed(true)} /> : letter}
+    </span>
+  );
+}
+
+function Picture({ image, className, eager }) {
+  if (!image?.src) return null;
+  return <img className={className} src={image.src} alt={image.alt || ''} width="1200" height="672" loading={eager ? 'eager' : 'lazy'} decoding="async" />;
+}
+
+function Source({ item }) {
+  return <span className="gi-source-name"><Mark name={item.sourceName} domain={item.domain} />{item.sourceName}</span>;
 }
 
 function Movement({ movement }) {
@@ -48,14 +65,17 @@ function SectionHead({ title, action, onAction }) {
   );
 }
 
-function Lead({ item }) {
+function Lead({ item, image }) {
   return (
     <article className="gi-card gi-lead">
-      <p className="gi-meta"><span>{item.sourceName}</span>{item.tag ? <span className="gi-tag">{item.tag}</span> : null}{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}</p>
+      <Picture image={image} className="gi-lead-img" eager />
+      <div className="gi-lead-body">
+      <p className="gi-meta"><Source item={item} />{item.tag ? <span className="gi-tag">{item.tag}</span> : null}{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}</p>
       <h4><Out href={item.url}>{item.headline}</Out></h4>
       {item.verdict ? <p className="gi-verdict">{item.verdict}</p> : null}
       {item.points ? <ul className="gi-points">{item.points.slice(0, 3).map((point) => <li key={point}>{point}</li>)}</ul> : null}
       <Out href={item.url} className="gi-source">Read at {item.sourceName || 'the source'}<span aria-hidden="true"> ↗</span></Out>
+      </div>
     </article>
   );
 }
@@ -125,7 +145,7 @@ function Compare({ view }) {
       </div>
       <div className="gi-card gi-table-wrap">
         <table className="gi-table">
-          <thead><tr><th scope="col">Measure</th><th scope="col">{a.name}</th><th scope="col">{b.name}</th></tr></thead>
+          <thead><tr><th scope="col">Measure</th>{[a, b].map((entry, index) => <th scope="col" key={index}><span className="gi-th"><Mark name={entry.maker || entry.name} domain={entry.domain} />{entry.name}</span></th>)}</tr></thead>
           <tbody>{rows.map(([label, x, y]) => <tr key={label}><th scope="row">{label}</th><td>{show(x)}</td><td>{show(y)}</td></tr>)}</tbody>
         </table>
       </div>
@@ -134,21 +154,24 @@ function Compare({ view }) {
   );
 }
 
-function NewsList({ items }) {
+function NewsList({ items, images }) {
   return (
     <ul className="gi-news">
       {items.map((item) => (
         <li key={item.url + item.headline} className="gi-card gi-news-card">
-          <p className="gi-meta"><span>{item.sourceName}</span>{item.tag ? <span className="gi-tag">{item.tag}</span> : null}{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}{item.rumoured ? <span className="gi-tag">Rumoured</span> : null}</p>
+          <Picture image={newsImage(item, images)} className="gi-news-img" />
+          <div className="gi-news-body">
+          <p className="gi-meta"><Source item={item} />{item.tag ? <span className="gi-tag">{item.tag}</span> : null}{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}{item.rumoured ? <span className="gi-tag">Rumoured</span> : null}</p>
           <h4><Out href={item.url}>{item.headline}</Out></h4>
           {item.verdict ? <p>{item.verdict}</p> : null}
+          </div>
         </li>
       ))}
     </ul>
   );
 }
 
-function Overview({ data, open }) {
+function Overview({ data, images, open }) {
   const by = (board) => data.boards.find((view) => view.board === board);
   const systems = by('ai_systems'); const models = by('frontier_models'); const tools = by('tools_agents');
   const lead = data.news.find((item) => item.lead) ?? data.news[0];
@@ -165,14 +188,17 @@ function Overview({ data, open }) {
         <section aria-label="Leading the field">
           <SectionHead title="Leading the field" action="All news" onAction={() => open('news')} />
           <div className="gi-lead-grid">
-            <Lead item={lead} />
+            <Lead item={lead} image={newsImage(lead, images)} />
             {trending.length ? (
               <aside className="gi-card gi-trending" aria-label="Trending now">
                 <h4 className="gi-kicker">Trending now</h4>
                 <ol>{trending.map((item) => (
-                  <li key={item.url + item.headline}><Out href={item.url}>
+                  <li key={item.url + item.headline}><Out href={item.url} className="gi-trend">
+                    <Picture image={newsImage(item, images)} className="gi-trend-img" />
+                    <span className="gi-trend-text">
                     <span className="gi-meta"><span className="gi-tag">{item.tag || item.sourceName}</span>{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}</span>
                     <span className="gi-trend-h">{item.headline}</span>
+                    </span>
                   </Out></li>
                 ))}</ol>
               </aside>
@@ -194,8 +220,8 @@ function Overview({ data, open }) {
             <div className="gi-board-head"><h3>Movers</h3><p>What changed on the benchmarks</p></div>
             <ul>{data.movers.map((item) => (
               <li key={item.name}>
-                <span className={`gi-move ${item.direction === 'up' ? 'is-up' : 'is-down'}`}><span aria-hidden="true">{item.direction === 'up' ? '▲' : '▼'}</span><span className="gi-sr">{item.direction === 'up' ? 'Up' : 'Down'}</span></span>
-                <span><Out href={item.url}>{item.name}</Out>{item.note ? <small>{item.note}</small> : null}</span>
+                <Mark name={item.name} domain={item.domain} />
+                <span><Out href={item.url}>{item.name}</Out> <span className={`gi-move ${item.direction === 'up' ? 'is-up' : 'is-down'}`}><span aria-hidden="true">{item.direction === 'up' ? '▲' : '▼'}</span><span className="gi-sr">{item.direction === 'up' ? 'Up' : 'Down'}</span></span>{item.note ? <small>{item.note}</small> : null}</span>
               </li>
             ))}</ul>
           </section>
@@ -205,7 +231,7 @@ function Overview({ data, open }) {
   );
 }
 
-export default function IntelDashboard({ data, tab: initial = 'overview' }) {
+export default function IntelDashboard({ data, images, tab: initial = 'overview' }) {
   const [tab, setTab] = useState(TABS.some(([id]) => id === initial) ? initial : 'overview');
   const tabs = useRef([]);
   const base = useId();
@@ -233,48 +259,54 @@ export default function IntelDashboard({ data, tab: initial = 'overview' }) {
         {data.date ? <p className="gi-updated"><span className="gi-dot" aria-hidden="true" />Updated {day(data.date, true)}</p> : null}
       </div>
       <div role="tabpanel" id={`${base}-${tab}-panel`} aria-labelledby={`${base}-${tab}`} className="gi-panel">
-        {tab === 'overview' ? <Overview data={data} open={open} /> : null}
+        {tab === 'overview' ? <Overview data={data} images={images} open={open} /> : null}
         {tab === 'leaderboards' ? <div className="gi-boards">{data.boards.map((view) => <Board key={view.board} view={view} />)}</div> : null}
         {tab === 'compare' ? <Compare view={data.boards.find((view) => view.board === 'frontier_models')} /> : null}
-        {tab === 'news' ? <NewsList items={data.news} /> : null}
+        {tab === 'news' ? <NewsList items={data.news} images={images} /> : null}
       </div>
     </div>
   );
 }
 
 const css = `
-.gi{--gi-lime:#c8ff00;--gi-teal:#4ecdc4;--gi-ink:#f2f4ef;--gi-mute:#a3a9a0;--gi-line:rgba(255,255,255,.08);color:var(--gi-ink);font-family:inherit}
+.gi{--gi-lime:#c8ff00;--gi-teal:#4ecdc4;--gi-ink:#f2f4ef;--gi-mute:#a3a9a0;--gi-line:rgba(255,255,255,.08);--gi-glass:rgba(16,18,16,.86);color:var(--gi-ink);font-family:inherit}
 .gi-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .gi-bar-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;margin-bottom:28px}
-.gi-tabs{display:flex;gap:4px;padding:4px;border:1px solid var(--gi-line);border-radius:999px;background:rgba(30,38,32,.55);overflow-x:auto;max-width:100%;scrollbar-width:none}
+.gi-tabs{display:flex;gap:4px;padding:4px;border:1px solid var(--gi-line);border-radius:999px;background:var(--gi-glass);overflow-x:auto;max-width:100%;scrollbar-width:none}
 .gi-tab{flex:none;min-height:40px;padding:0 18px;border:0;border-radius:999px;background:transparent;color:var(--gi-mute);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:color .2s,background .2s}
 .gi-tab:hover{color:var(--gi-ink)}
 .gi-tab[aria-selected="true"]{background:var(--gi-lime);color:#0e1611}
-.gi-tab:focus-visible,.gi-link:focus-visible,.gi a:focus-visible,.gi select:focus-visible{outline:2px solid var(--gi-teal);outline-offset:2px}
+.gi-tab:focus-visible,.gi-link:focus-visible,.gi a:focus-visible,.gi select:focus-visible{outline:2px solid var(--gi-lime);outline-offset:2px}
 .gi-updated{display:flex;align-items:center;gap:8px;margin:0;color:var(--gi-mute);font-size:13px}
 .gi-dot{width:7px;height:7px;border-radius:50%;background:var(--gi-lime);box-shadow:0 0 10px rgba(200,255,0,.6)}
 .gi-stack{display:grid;gap:40px}
 .gi-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
-.gi-head h3,.gi-kicker{margin:0;color:var(--gi-teal);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.gi-head h3,.gi-kicker{margin:0;color:var(--gi-lime);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
 .gi-link{border:0;background:none;padding:4px 0;color:var(--gi-ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
 .gi-link:hover{color:var(--gi-lime)}
-.gi-card{background:rgba(30,38,32,.55);border:1px solid rgba(255,255,255,.07);border-radius:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.gi-card{background:var(--gi-glass);border:1px solid rgba(255,255,255,.07);border-radius:18px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .gi a{color:inherit;text-decoration:none}
 .gi a:hover{color:var(--gi-lime)}
 .gi-lead-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px}
-.gi-lead{padding:32px;display:flex;flex-direction:column;gap:14px;border-color:rgba(200,255,0,.25)}
+.gi-lead{display:flex;flex-direction:column;overflow:hidden;border-color:rgba(200,255,0,.22)}
+.gi-lead-img{display:block;width:100%;height:auto;aspect-ratio:16/7;object-fit:cover}
+.gi-lead-body{flex:1;display:flex;flex-direction:column;gap:14px;padding:28px 32px 32px}
 .gi-lead h4{margin:0;font-size:clamp(24px,2.4vw,34px);font-weight:800;line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
 .gi-verdict{margin:0;color:#dfe3dc;font-size:17px;line-height:1.55;max-width:62ch}
 .gi-points{margin:0;padding-left:18px;color:var(--gi-mute);line-height:1.55;display:grid;gap:6px}
 .gi-source{margin-top:auto;color:var(--gi-lime)!important;font-weight:700;font-size:14px}
 .gi-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;color:var(--gi-mute);font-size:13px}
 .gi-meta>span:first-child{color:var(--gi-ink);font-weight:700}
-.gi-tag{padding:2px 9px;border:1px solid rgba(78,205,196,.35);border-radius:999px;color:var(--gi-teal);font-size:12px;font-weight:700}
-.gi-meta>.gi-tag:first-child{color:var(--gi-teal)}
+.gi-tag{padding:2px 9px;border:1px solid rgba(255,255,255,.14);border-radius:999px;color:#d7dcd4;font-size:12px;font-weight:700}
+.gi-source-name{display:inline-flex;align-items:center;gap:8px}
+.gi-source-name .gi-mark{width:22px;height:22px;border-radius:6px;font-size:11px}
+.gi-source-name .gi-mark img{width:13px;height:13px}
 .gi-trending{padding:24px}
 .gi-trending ol{list-style:none;margin:14px 0 0;padding:0;display:grid}
 .gi-trending li+li{border-top:1px solid var(--gi-line)}
-.gi-trending a{display:grid;gap:6px;padding:12px 0}
+.gi-trend{display:grid!important;grid-template-columns:72px minmax(0,1fr);gap:14px;align-items:start;padding:12px 0}
+.gi-trend-img{display:block;width:72px;height:72px;border-radius:10px;object-fit:cover}
+.gi-trend-text{display:grid;gap:6px;min-width:0}
 .gi-trend-h{font-size:15px;font-weight:700;line-height:1.35}
 .gi-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .gi-stat{display:grid;gap:4px;padding:20px 22px}
@@ -282,7 +314,7 @@ const css = `
 .gi-stat-value{font-size:36px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .gi-stat-sub{color:var(--gi-mute);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gi-podium{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:16px}
-.gi-step{position:relative;display:grid;justify-items:center;gap:6px;padding:24px 16px;text-align:center;background:rgba(30,38,32,.55);border:1px solid rgba(255,255,255,.07);border-radius:18px 18px 6px 6px}
+.gi-step{position:relative;display:grid;justify-items:center;gap:6px;padding:24px 16px;text-align:center;background:var(--gi-glass);border:1px solid rgba(255,255,255,.07);border-radius:18px 18px 6px 6px}
 .gi-step-1{min-height:250px;border-color:rgba(200,255,0,.4);box-shadow:0 0 0 1px rgba(200,255,0,.08),0 18px 48px -24px rgba(200,255,0,.35)}
 .gi-step-2{min-height:215px}.gi-step-3{min-height:190px}
 .gi-step-name{font-size:18px;font-weight:800}
@@ -290,8 +322,9 @@ const css = `
 .gi-step-score{margin-top:auto;font-size:40px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .gi-step-1 .gi-step-score{color:var(--gi-lime)}
 .gi-step-place{position:absolute;top:12px;right:14px;color:var(--gi-mute);font-size:12px;font-weight:800}
-.gi-mark{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;background:rgba(78,205,196,.12);border:1px solid rgba(78,205,196,.3);color:var(--gi-teal);font-size:14px;font-weight:800}
-.gi-step .gi-mark{width:44px;height:44px;font-size:18px}
+.gi-mark{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--gi-ink);font-size:14px;font-weight:800}
+.gi-mark img{display:block;width:18px;height:18px}
+.gi-step .gi-mark{width:48px;height:48px;font-size:18px}.gi-step .gi-mark img{width:26px;height:26px}
 .gi-two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;align-items:start}
 .gi-board{padding:24px}
 .gi-board-head h3{margin:0;font-size:20px;font-weight:800}
@@ -302,7 +335,7 @@ const css = `
 .gi-row-name{display:grid;min-width:0;font-weight:700}
 .gi-row-name small{color:var(--gi-mute);font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gi-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
-.gi-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--gi-teal),var(--gi-lime))}
+.gi-bar span{display:block;height:100%;border-radius:999px;background:var(--gi-lime);opacity:.85}
 .gi-score{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
 .gi-row-note{grid-column:3/-1;margin:0;color:var(--gi-mute);font-size:13px;line-height:1.5}
 .gi-move{justify-self:end;font-size:12px;font-weight:800;white-space:nowrap}
@@ -310,13 +343,15 @@ const css = `
 .gi-boards{display:grid;gap:20px}
 .gi-movers{padding:24px}
 .gi-movers ul{list-style:none;margin:0;padding:0}
-.gi-movers li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--gi-line);font-weight:700}
-.gi-movers li .gi-move{justify-self:start;padding-top:2px}
+.gi-movers li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--gi-line);font-weight:700}
+.gi-movers li .gi-move{margin-left:4px}
 .gi-movers small{display:block;margin-top:4px;color:var(--gi-mute);font-weight:500;font-size:13px;line-height:1.45}
 .gi-compare{display:grid;gap:16px}
 .gi-pickers{display:grid;grid-template-columns:repeat(2,minmax(0,280px));gap:12px}
 .gi-pickers label{display:grid;gap:6px;color:var(--gi-mute);font-size:13px;font-weight:700}
-.gi-pickers select{min-height:44px;padding:0 12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#121813;color:var(--gi-ink);font:inherit;font-size:15px}
+.gi-pickers select{min-height:44px;padding:0 12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#101411;color:var(--gi-ink);font:inherit;font-size:15px}
+.gi-th{display:inline-flex;align-items:center;gap:10px}
+.gi-th .gi-mark{width:26px;height:26px;border-radius:8px}.gi-th .gi-mark img{width:15px;height:15px}
 .gi-table-wrap{overflow-x:auto}
 .gi-table{width:100%;border-collapse:collapse;font-size:15px}
 .gi-table th,.gi-table td{padding:14px 20px;border-top:1px solid var(--gi-line);text-align:right;font-variant-numeric:tabular-nums}
@@ -324,13 +359,15 @@ const css = `
 .gi-table th[scope="row"],.gi-table thead th:first-child{text-align:left;color:var(--gi-mute);font-weight:600}
 .gi-fine{margin:0;color:var(--gi-mute);font-size:13px}
 .gi-news{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.gi-news-card{display:grid;align-content:start;gap:10px;padding:24px}
+.gi-news-card{display:flex;flex-direction:column;overflow:hidden}
+.gi-news-img{display:block;width:100%;height:auto;aspect-ratio:16/8;object-fit:cover}
+.gi-news-body{display:grid;align-content:start;gap:10px;padding:20px 24px 24px}
 .gi-news-card h4{margin:0;font-size:18px;font-weight:800;line-height:1.3}
 .gi-news-card p:not(.gi-meta){margin:0;color:#c4c8c1;line-height:1.55;font-size:15px}
 .gi-empty{margin:0;padding:32px;color:var(--gi-mute)}
 @media (max-width:960px){.gi-lead-grid,.gi-two{grid-template-columns:1fr}.gi-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){
-  .gi-bar-top{margin-bottom:20px}.gi-tabs{display:grid;grid-template-columns:repeat(4,auto);width:100%}.gi .gi-tab{padding:0 6px;font-size:13px}.gi-lead{padding:22px}.gi-stat{padding:16px}.gi-stat-value{font-size:28px}
+  .gi-bar-top{margin-bottom:20px}.gi-tabs{display:grid;grid-template-columns:repeat(4,auto);width:100%}.gi .gi-tab{padding:0 6px;font-size:13px}.gi-lead-body{padding:20px 22px 24px}.gi-lead-img{aspect-ratio:16/9}.gi-trend{grid-template-columns:60px minmax(0,1fr)}.gi-trend-img{width:60px;height:60px}.gi-stat{padding:16px}.gi-stat-value{font-size:28px}
   .gi-podium{gap:8px}.gi-step{padding:18px 8px}.gi-step-name{font-size:15px}.gi-step-score{font-size:28px}
   .gi-step-1{min-height:210px}.gi-step-2{min-height:180px}.gi-step-3{min-height:160px}
   .gi-row{grid-template-columns:20px 28px minmax(0,1fr) 36px 40px;gap:8px}.gi-row .gi-bar{display:none}.gi-row .gi-mark{width:28px;height:28px}
