@@ -18,7 +18,9 @@ export default async function LiveDesignPage() {
     release: release.release, siteId, orgId: release.orgId, media: release.media, theme: release.theme,
     chrome: release.chrome ?? null, stylesheet: release.stylesheet ?? '',
     collections: release.collections ?? {},
-    pages: release.pages.map((page) => ({ path: page.path, slug: page.slug })),
+    // The header's site search (GRE-3862) lists pages by title and builds the nav from `site`.
+    site: release.site,
+    pages: release.pages.map((page) => ({ id: page.id, path: page.path, slug: page.slug, title: page.title })),
   };
   return <>
     <LiveDraft base={base} siteId={siteId} origins={allowedHostOrigins(process.env.GSAM_EDITOR_ORIGINS, process.env.NODE_ENV === 'development')} />
