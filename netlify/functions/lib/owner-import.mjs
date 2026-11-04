@@ -7,6 +7,7 @@
 //   tables            a data-only move into the hard-coded TABLES list below, positional rows checked against the catalog
 //   mcp-token         registers a portal MCP token from its SHA-256 (GRE-3769, migration 064); never the token itself
 //   mcp-token-revoke  revokes a portal MCP token by id (040's mcp_portal_revoke_token)
+//   approver          registers the one portal approver (039's portal_approvers) from John's card (GRE-3964)
 //
 // Guards, in order. Until the first three pass it reads nothing and writes nothing:
 //   1. OWNER_IMPORT_UNTIL is set, in the future and at most 60 minutes away
@@ -29,7 +30,7 @@ export const OWNER = 'netlifydb_owner';
 // The rehearsal site is a throwaway copy of the cut-over (GRE-1701 rule 3); remove its entry when the site is deleted.
 export const SITES = Object.freeze({
   'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'], identityCount: 8 },
-  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke'], identityCount: 10 },
+  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver'], identityCount: 10 },
   'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
 });
 
@@ -370,6 +371,50 @@ export async function revokeMcpToken(pool, data, apply) {
   });
 }
 
+// --- the portal approver (GRE-3964) ---
+// 039 left portal_approvers to John in the Supabase SQL editor, so no agent, staff owner or migration makes an
+// approver. Netlify Database gives the owner role only to a deploy, so John names himself on the cut-over card and
+// this mode writes that one row. It takes an email and a label, and only an active owner of the Greatstone org whose
+// auth_subject is a sign-in (auth.users id) qualifies. While any approver row exists it refuses: one approver, John.
+// The result carries counts only, never the email or an id.
+
+// src/lib/staff-provision.mjs GREATSTONE_ORG_ID, the id the migrations seed
+export const GREATSTONE_ORG_ID = '11111111-1111-4111-8111-111111111111';
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+export function validateApprover(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) refuse('approver-shape');
+  if (Object.keys(data).sort().join(',') !== 'email,label') refuse('approver-fields');
+  const { email, label } = data;
+  if (typeof email !== 'string' || email.length > 254 || !EMAIL.test(email)
+    || email !== email.trim().toLowerCase()) refuse('approver-email');
+  if (typeof label !== 'string' || !label.trim() || label.trim().length > 120) refuse('approver-label');
+  return data;
+}
+
+export async function registerApprover(pool, data, apply) {
+  const { email, label } = validateApprover(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    // nothing else writes this table, but the check and the insert must still see the same rows
+    await client.query('LOCK TABLE public.portal_approvers IN SHARE ROW EXCLUSIVE MODE');
+    const { rows: [a] } = await client.query('SELECT count(*)::int AS n FROM public.portal_approvers');
+    if (a.n) refuse('approver-exists');
+    const { rows } = await client.query(`SELECT u.role::text AS role, (u.is_active AND u.deleted_at IS NULL) AS active,
+        (SELECT a.id FROM auth.users a WHERE a.id::text = lower(u.auth_subject)) AS auth_user_id
+      FROM public.users u WHERE u.org_id = $1 AND u.email = $2`, [GREATSTONE_ORG_ID, email]);
+    if (rows.length !== 1) refuse('approver-user-unknown');
+    const [user] = rows;
+    if (!user.active) refuse('approver-user-inactive');
+    if (user.role !== 'owner') refuse('approver-not-owner');
+    if (!user.auth_user_id) refuse('approver-no-sign-in');
+    const inserted = await client.query('INSERT INTO public.portal_approvers (auth_user_id, label) VALUES ($1, $2)',
+      [user.auth_user_id, label.trim()]);
+    const { rows: [b] } = await client.query('SELECT count(*)::int AS n FROM public.portal_approvers');
+    if (inserted.rowCount !== 1 || b.n !== 1) refuse('approver-count-differs');
+    return { approver: { before: 0, inserted: 1, after: 1 } };
+  });
+}
+
 // Counts and fixed reasons only: a pg error's message and detail can carry row values.
 function safeError(error) {
   if (error instanceof Refusal) return { reason: error.message };
@@ -412,7 +457,8 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
           : mode === 'proof' ? await proveIdentities(pool, data, action === 'apply')
             : mode === 'mcp-token' ? await registerMcpToken(pool, data, action === 'apply')
               : mode === 'mcp-token-revoke' ? await revokeMcpToken(pool, data, action === 'apply')
-                : await moveTables(pool, data, action === 'apply');
+                : mode === 'approver' ? await registerApprover(pool, data, action === 'apply')
+                  : await moveTables(pool, data, action === 'apply');
       } finally { await pool.end(); }
       const at = new Date(now).toISOString();
       if (action === 'apply') Object.assign(ledger, { appliedAt: at, counts });

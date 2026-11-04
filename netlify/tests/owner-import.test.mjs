@@ -398,7 +398,7 @@ test('recount: the read-only role matches an apply by count or by live-row stati
 });
 
 test('the window check is pure: only staging allows proof', () => {
-  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke']);
+  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver']);
   assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
   assert.deepEqual(SITES['gre2567-cutover-rehearsal'].modes, ['tables', 'identities']);
   assert.deepEqual(Object.values(SITES).map((site) => site.identityCount), [8, 10, 10]);

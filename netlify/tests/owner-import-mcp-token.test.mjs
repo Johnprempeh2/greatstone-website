@@ -217,7 +217,7 @@ test('the modes are production-only and refused on a site that does not list the
 });
 
 test('validators are pure and fixed: SITES, payload shape', () => {
-  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke']);
+  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver']);
   assert.ok(!SITES['gre1795-website-db-staging'].modes.some((m) => MODES.includes(m)));
   const { token, payload } = makeMcpToken('Pure', [A]);
   assert.deepEqual(Object.keys(payload).sort(), ['customerIds', 'label', 'tokenSha256']);
