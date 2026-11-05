@@ -210,15 +210,23 @@ async function refreshStaging(sha) {
     throw new Error(`config refresh refused: live commit ${live} is not on main`);
   if (!await stagingCardApproved(live, true))
     throw new Error(`config refresh refused: this task needs an accepted human-only staging card for ${site} and ${live}`);
-  const dir = await mkdtemp(join(tmpdir(), 'gsam-refresh-'));
+  console.log(`Refreshing ${site} config: re-uploading live commit ${live}`);
+  await deployInstalled(live);
+}
+
+// Every upload is an export of the commit with a fresh `npm ci`. The working checkout's
+// node_modules may be missing or stale, and Netlify bundles functions from whatever it
+// finds there: 9376a4e reached staging without @netlify/database and every admin-bridge
+// call gave 502 (GRE-4105).
+async function deployInstalled(sha) {
+  const dir = await mkdtemp(join(tmpdir(), 'gsam-deploy-'));
   try {
     const tree = join(dir, 'tree');
     await mkdir(tree);
-    command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), live]);
+    command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), sha]);
     command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
     command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], tree);
-    console.log(`Refreshing ${site} config: re-uploading live commit ${live}`);
-    await lockAndDeploy(live, tree);
+    await lockAndDeploy(sha, tree);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -266,7 +274,7 @@ async function main() {
   }
   if (files && (files.length === 0 || onlyNonSiteFiles(files)))
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
-  else await lockAndDeploy(sha);
+  else await deployInstalled(sha);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
   if (mode === 'prod' && site === 'greatstone-home') await deployEditorAlias(sha);
 }

@@ -48,7 +48,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   // TREE_LOG records which source tree npm and the upload ran in (config refresh tests).
   await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
-  await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\nprintf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
+  await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\n[ -z "$TREE_LOG" ] || printf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
   let comments = [];
   let interactions = [];
   let deploys = [];
@@ -111,6 +111,17 @@ test('contract mismatch stops an otherwise approved upload before Netlify runs',
   const accepted = await f.run();
   assert.equal(accepted.status, 0, accepted.stderr);
   assert.match(await readFile(f.log, 'utf8'), /deploy --site/);
+});
+
+test('every upload runs npm ci in an export of the commit, not the working checkout (GRE-4105)', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'committed code');
+  await writeFile(join(f.cwd, 'src', 'app.js'), 'uncommitted edit');
+  git(f.cwd, 'update-index', '--assume-unchanged', 'src/app.js');
+  f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in committed code\nnetlify in committed code\n');
 });
 
 test('accepted human-only staging card permits exact SHA and guard-only drift', async (t) => {
@@ -337,8 +348,8 @@ test('the weekly train deploys the public site, then the editor alias from the s
     `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod\n` +
     'build --context branch:gsam-editor\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
-  // npm and the editor build run in the prepared copy of this checkout.
-  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'netlify in original\nnpm ci in original\nnetlify in original\n');
+  // The public upload installs in an export of the commit; the editor installs and builds in its prepared copy.
+  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\nnpm ci in original\nnetlify in original\n');
   for (const step of ['prepare', 'install', 'build', 'upload and check'])
     assert.match(result.stdout, new RegExp(`Editor alias step "${step}" at ${f.base}`));
 });
