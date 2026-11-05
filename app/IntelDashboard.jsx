@@ -4,7 +4,7 @@
 // Overview (lead story, what is trending, the numbers, the podium, the movers), the three leaderboards,
 // a two-model compare and the news. It reads only the public snapshot (next-proof/intelligence-public.mjs).
 import { useId, useRef, useState } from 'react';
-import { newsImage, vendorLogo } from '../next-proof/intelligence-public.mjs';
+import { vendorLogo } from '../next-proof/intelligence-public.mjs';
 
 const TABS = [['overview', 'Overview'], ['leaderboards', 'Leaderboards'], ['compare', 'Compare'], ['news', 'News']];
 const BOARD_LABEL = { ai_systems: 'AI assistants', frontier_models: 'Frontier models', tools_agents: 'Tools and agents' };
@@ -29,9 +29,13 @@ function Mark({ name = '', domain }) {
   );
 }
 
-function Picture({ image, className, eager }) {
-  if (!image?.src) return null;
-  return <img className={className} src={image.src} alt={image.alt || ''} width="1200" height="672" loading={eager ? 'eager' : 'lazy'} decoding="async" />;
+// The story's own preview image, saved on the site when the snapshot was built; else the vendor's mark on a tile.
+function Picture({ item, className, eager }) {
+  const [failed, setFailed] = useState(false);
+  if (item.image?.src && !failed) {
+    return <img className={className} src={item.image.src} alt={item.image.alt || item.headline} width="1200" height="630" loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(true)} />;
+  }
+  return <span className={`${className} gi-img-tile`}><Mark name={item.sourceName} domain={item.domain} /></span>;
 }
 
 function Source({ item }) {
@@ -65,10 +69,10 @@ function SectionHead({ title, action, onAction }) {
   );
 }
 
-function Lead({ item, image }) {
+function Lead({ item }) {
   return (
     <article className="gi-card gi-lead">
-      <Picture image={image} className="gi-lead-img" eager />
+      <Picture item={item} className="gi-lead-img" eager />
       <div className="gi-lead-body">
       <p className="gi-meta"><Source item={item} />{item.tag ? <span className="gi-tag">{item.tag}</span> : null}{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}</p>
       <h4><Out href={item.url}>{item.headline}</Out></h4>
@@ -154,12 +158,12 @@ function Compare({ view }) {
   );
 }
 
-function NewsList({ items, images }) {
+function NewsList({ items }) {
   return (
     <ul className="gi-news">
       {items.map((item) => (
         <li key={item.url + item.headline} className="gi-card gi-news-card">
-          <Picture image={newsImage(item, images)} className="gi-news-img" />
+          <Picture item={item} className="gi-news-img" />
           <div className="gi-news-body">
           <p className="gi-meta"><Source item={item} />{item.tag ? <span className="gi-tag">{item.tag}</span> : null}{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}{item.rumoured ? <span className="gi-tag">Rumoured</span> : null}</p>
           <h4><Out href={item.url}>{item.headline}</Out></h4>
@@ -171,7 +175,7 @@ function NewsList({ items, images }) {
   );
 }
 
-function Overview({ data, images, open }) {
+function Overview({ data, open }) {
   const by = (board) => data.boards.find((view) => view.board === board);
   const systems = by('ai_systems'); const models = by('frontier_models'); const tools = by('tools_agents');
   const lead = data.news.find((item) => item.lead) ?? data.news[0];
@@ -188,13 +192,13 @@ function Overview({ data, images, open }) {
         <section aria-label="Leading the field">
           <SectionHead title="Leading the field" action="All news" onAction={() => open('news')} />
           <div className="gi-lead-grid">
-            <Lead item={lead} image={newsImage(lead, images)} />
+            <Lead item={lead} />
             {trending.length ? (
               <aside className="gi-card gi-trending" aria-label="Trending now">
                 <h4 className="gi-kicker">Trending now</h4>
                 <ol>{trending.map((item) => (
                   <li key={item.url + item.headline}><Out href={item.url} className="gi-trend">
-                    <Picture image={newsImage(item, images)} className="gi-trend-img" />
+                    <Picture item={item} className="gi-trend-img" />
                     <span className="gi-trend-text">
                     <span className="gi-meta"><span className="gi-tag">{item.tag || item.sourceName}</span>{item.date ? <time dateTime={item.date}>{day(item.date)}</time> : null}</span>
                     <span className="gi-trend-h">{item.headline}</span>
@@ -231,7 +235,7 @@ function Overview({ data, images, open }) {
   );
 }
 
-export default function IntelDashboard({ data, images, tab: initial = 'overview' }) {
+export default function IntelDashboard({ data, tab: initial = 'overview' }) {
   const [tab, setTab] = useState(TABS.some(([id]) => id === initial) ? initial : 'overview');
   const tabs = useRef([]);
   const base = useId();
@@ -259,10 +263,10 @@ export default function IntelDashboard({ data, images, tab: initial = 'overview'
         {data.date ? <p className="gi-updated"><span className="gi-dot" aria-hidden="true" />Updated {day(data.date, true)}</p> : null}
       </div>
       <div role="tabpanel" id={`${base}-${tab}-panel`} aria-labelledby={`${base}-${tab}`} className="gi-panel">
-        {tab === 'overview' ? <Overview data={data} images={images} open={open} /> : null}
+        {tab === 'overview' ? <Overview data={data} open={open} /> : null}
         {tab === 'leaderboards' ? <div className="gi-boards">{data.boards.map((view) => <Board key={view.board} view={view} />)}</div> : null}
         {tab === 'compare' ? <Compare view={data.boards.find((view) => view.board === 'frontier_models')} /> : null}
-        {tab === 'news' ? <NewsList items={data.news} images={images} /> : null}
+        {tab === 'news' ? <NewsList items={data.news} /> : null}
       </div>
     </div>
   );
@@ -361,6 +365,9 @@ const css = `
 .gi-news{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .gi-news-card{display:flex;flex-direction:column;overflow:hidden}
 .gi-news-img{display:block;width:100%;height:auto;aspect-ratio:16/8;object-fit:cover}
+.gi-img-tile{display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.06),rgba(255,255,255,.015) 70%);border-bottom:1px solid rgba(255,255,255,.06)}
+.gi-img-tile .gi-mark{width:64px;height:64px;border-radius:16px;font-size:24px}.gi-img-tile .gi-mark img{width:34px;height:34px}
+.gi-trend-img.gi-img-tile{border:1px solid rgba(255,255,255,.08)}.gi-trend-img.gi-img-tile .gi-mark{width:36px;height:36px;border-radius:10px;font-size:15px}.gi-trend-img.gi-img-tile .gi-mark img{width:20px;height:20px}
 .gi-news-body{display:grid;align-content:start;gap:10px;padding:20px 24px 24px}
 .gi-news-card h4{margin:0;font-size:18px;font-weight:800;line-height:1.3}
 .gi-news-card p:not(.gi-meta){margin:0;color:#c4c8c1;line-height:1.55;font-size:15px}

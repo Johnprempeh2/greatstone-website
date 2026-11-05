@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { publicIntelligence, newsImage, vendorLogo } from './intelligence-public.mjs';
-import images from './data/intelligence-images.json' with { type: 'json' };
+import { publicIntelligence, vendorLogo } from './intelligence-public.mjs';
 import snapshot from './data/intelligence-snapshot.json' with { type: 'json' };
 
 const boards = {
@@ -61,17 +60,14 @@ test('the committed snapshot is public-safe', () => {
   assert.deepEqual(publicIntelligence({ boards: { boards: snapshot.boards.map((view) => ({ ...view, snapshotDate: view.date })) }, briefing: null }).boards, snapshot.boards);
 });
 
-test('GRE-1861: every news item gets a hosted image with alt text, chosen by its topic', () => {
-  const site = (src) => new URL(`../public${src}`, import.meta.url);
-  for (const image of [images.fallback, ...Object.values(images.topics)]) {
-    assert.match(image.src, /^\/assets\/intel\/news\/[a-z-]+\.webp$/);
-    assert.ok(existsSync(site(image.src)), image.src);
-    assert.ok(image.alt.length > 10);
+test('GRE-1861: news pictures in the committed snapshot are saved on the site, with the headline as alt text', () => {
+  const pictured = snapshot.news.filter((item) => item.image);
+  assert.ok(pictured.length >= 1);
+  for (const item of pictured) {
+    assert.match(item.image.src, /^\/assets\/intel\/news\/[a-f0-9]{16}\.(webp|png|jpg|gif|avif)$/);
+    assert.ok(existsSync(new URL(`../public${item.image.src}`, import.meta.url)), item.image.src);
+    assert.equal(item.image.alt, item.headline);
   }
-  assert.equal(newsImage({ tag: 'Anthropic · Research' }, images), images.topics.research);
-  assert.equal(newsImage({ tag: 'Someone · Unknown' }, images), images.fallback);
-  assert.equal(newsImage({}, images), images.fallback);
-  for (const item of snapshot.news) assert.ok(newsImage(item, images)?.src);
 });
 
 test('GRE-1861: vendor logos are only the self-hosted marks; anything else falls back to a monogram', () => {
