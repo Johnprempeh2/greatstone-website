@@ -7,6 +7,7 @@
 // rolls back to the savepoint and still commits its audit row (and spends its nonce). The answer is stored under the
 // idempotency key, so a retry with the same key and body gets the same answer and writes nothing.
 import { BridgeRequestError, CHILD_COLUMNS, bridgeFx, bridgeRow } from './admin-bridge-store.mjs';
+import { checkDocumentFields } from './shared/portal-mcp.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const ROLE = { write: 'gsam_bridge_write', refund_request: 'gsam_bridge_refund' };
@@ -517,6 +518,76 @@ function activationRoute(method, parts) {
   } };
 }
 
+// Portal documents (GRE-4081, migration 066): the studio's Client portal actions. Fields are checked here as the
+// portal MCP checks an agent's (section html is refused, not rewritten, so the draft holds what John approves); 039's
+// triggers and 066's functions hold every rule again. Approve and publish is for a person linked to a registered
+// portal approver only; withdraw is for people only. Answers carry the document, never its PDF path.
+const PORTAL_FIELDS = { kind: 'kind', series: 'series', title: 'title', summary: 'summary', body: 'body', demos: 'demos',
+  action: 'action', confirmationText: 'confirmation_text', signatoryEmail: 'signatory_email' };
+function portalFields(body, mode, allow) {
+  const fields = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (allow.includes(k)) continue;
+    if (!PORTAL_FIELDS[k]) bad(`unknown field ${k}`);
+    fields[PORTAL_FIELDS[k]] = v;
+  }
+  if (checkDocumentFields(fields, mode).length) bad('document fields');
+  return fields;
+}
+const portalDoc = async (client, docId) => (await client.query('SELECT bridge_portal_document($1::uuid) AS item', [docId])).rows[0].item;
+const sha = (x, k) => (typeof x === 'string' && /^[0-9a-f]{64}$/.test(x) ? x : bad(k));
+
+function portalRoute(method, parts) {
+  const [res, docId, action, extra] = parts;
+  if (res !== 'portal-documents' || extra !== undefined) return null;
+  if (docId === undefined) {
+    if (method !== 'POST') return null;
+    return { run: async (client, ctx, body) => {
+      const customer = id({ nullable: false })(body.customerId, 'customerId');
+      const fields = portalFields(body, 'create', ['customerId']);
+      const { rows: [r] } = await client.query('SELECT bridge_portal_create($1::uuid, $2::jsonb) AS id', [customer, JSON.stringify(fields)]);
+      return answer(201, await portalDoc(client, r.id));
+    } };
+  }
+  if (!UUID.test(docId)) return null;
+  const current = (client) => portalDoc(client, docId);
+  if (action === undefined && method === 'PATCH') {
+    return { current, run: async (client, ctx, body) => {
+      const fields = portalFields(body, 'update', ['expectedRowVersion']);
+      await client.query('SELECT bridge_portal_edit_draft($1::uuid, $2, $3::jsonb)', [docId, expectedRowVersion(body), JSON.stringify(fields)]);
+      return answer(200, await portalDoc(client, docId));
+    } };
+  }
+  if (method !== 'POST') return null;
+  if (action === 'submit' || action === 'return-to-draft') {
+    return { current, run: async (client, ctx, body) => {
+      pick(body, {}, { allow: ['expectedRowVersion'] });
+      await client.query('SELECT bridge_portal_set_draft_state($1::uuid, $2, $3)',
+        [docId, expectedRowVersion(body), action === 'submit' ? 'pending_approval' : 'draft']);
+      return answer(200, await portalDoc(client, docId));
+    } };
+  }
+  if (action === 'withdraw') {
+    return { people: true, current, run: async (client, ctx, body) => {
+      people(ctx.actor);
+      pick(body, {}, { allow: ['expectedRowVersion'] });
+      await client.query('SELECT bridge_portal_withdraw($1::uuid, $2)', [docId, expectedRowVersion(body)]);
+      return answer(200, await portalDoc(client, docId));
+    } };
+  }
+  if (action === 'approve-and-publish') {
+    return { people: true, current, run: async (client, ctx, body) => {
+      people(ctx.actor);
+      const a = pick(body, { expectedContentSha256: ['sha', sha], gsamApprovalRef: ['ref', text(200)] },
+        { required: ['expectedContentSha256'] });
+      const { rows: [r] } = await client.query('SELECT bridge_portal_approve_and_publish($1::uuid, $2, $3) AS approval_id',
+        [docId, a.sha, a.ref ?? null]);
+      return answer(200, await portalDoc(client, docId), { approvalId: r.approval_id });
+    } };
+  }
+  return null;
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -544,7 +615,7 @@ function refundRoute(method, parts) {
 export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
-  const route = activationRoute(method, parts) || catalogueRoute(method, parts) || commerceRoute(method, parts)
+  const route = portalRoute(method, parts) || activationRoute(method, parts) || catalogueRoute(method, parts) || commerceRoute(method, parts)
     || clientUserRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
