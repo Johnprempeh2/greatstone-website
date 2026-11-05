@@ -220,7 +220,7 @@ test('the worker sees every row under FORCE RLS, where anon and an unknown user 
   // idempotency keys and refund requests (049: the webhook reaches refund requests only through its trigger),
   // the private Deep Dive mapping, snapshots and pending answers (050), billing lines (055), the client activity outbox and counter (056),
   // the PO upload counter, which only its anon function touches (063), and the GSAM approver link, which John adds by
-  // hand like portal_approvers (066).
+  // hand like portal_approvers (067).
   assert.deepEqual(noGrant, ['public.admin_bridge_audit', 'public.admin_bridge_change', 'public.admin_bridge_idempotency',
     'public.admin_bridge_nonce', 'public.billing_lines', 'public.client_activity_outbox', 'public.client_activity_sequence',
     'public.deep_dive_answers', 'public.deep_dive_documents', 'public.deep_dive_snapshots', 'public.deep_dive_tenant_links',

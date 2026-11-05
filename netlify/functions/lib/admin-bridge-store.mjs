@@ -328,6 +328,22 @@ export async function bridgeUsers(client, searchParams) {
   return r.items;
 }
 
+// People and access (GRE-4082, migration 066): the whole list in one page, as a staff or member list is short.
+const ACCESS_READ = {
+  'access-staff': 'bridge_access_staff()',
+  'access-portal-approvers': 'bridge_access_portal_approvers()',
+  'access-members': 'bridge_access_client_members($1::uuid)',
+};
+/** Staff, portal approvers or one client organisation's members, as { items, nextCursor: null }. */
+export async function bridgeAccess(client, target, searchParams) {
+  if ([...searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'access lists take no parameters');
+  if (target.id !== undefined && !UUID.test(target.id)) throw new BridgeRequestError('not_found');
+  const { rows: [r] } = await client.query(`SELECT ${ACCESS_READ[target.resource]} AS items`,
+    target.id !== undefined ? [target.id] : []);
+  if (r.items === null) throw new BridgeRequestError('not_found');
+  return { items: r.items, nextCursor: null };
+}
+
 const ROWS_CURSOR = /^\d{1,9}$/;
 /** An import job and one page of its rows, by row number. ?limit=&cursor= page the rows. */
 export async function bridgeImport(client, id, searchParams) {

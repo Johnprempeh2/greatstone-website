@@ -518,9 +518,9 @@ function activationRoute(method, parts) {
   } };
 }
 
-// Portal documents (GRE-4081, migration 066): the studio's Client portal actions. Fields are checked here as the
+// Portal documents (GRE-4081, migration 067): the studio's Client portal actions. Fields are checked here as the
 // portal MCP checks an agent's (section html is refused, not rewritten, so the draft holds what John approves); 039's
-// triggers and 066's functions hold every rule again. Approve and publish is for a person linked to a registered
+// triggers and 067's functions hold every rule again. Approve and publish is for a person linked to a registered
 // portal approver only; withdraw is for people only. Answers carry the document, never its PDF path.
 const PORTAL_FIELDS = { kind: 'kind', series: 'series', title: 'title', summary: 'summary', body: 'body', demos: 'demos',
   action: 'action', confirmationText: 'confirmation_text', signatoryEmail: 'signatory_email' };
@@ -588,6 +588,54 @@ function portalRoute(method, parts) {
   return null;
 }
 
+// People and access (GRE-4082, migration 066): staff roles, portal approvers and client company members. Every
+// change is people only until John answers on GRE-4079; the database functions refuse an agent again.
+const STAFF_ROLES = ['owner', 'admin', 'editor', 'sales', 'viewer'];
+const MEMBER_ROLES = ['admin', 'member'];
+
+function accessRoute(method, parts) {
+  const [res, kind, rowId, sub, memberId, extra] = parts;
+  if (res !== 'access' || extra !== undefined) return null;
+  // fn(body) checks the body and returns [sql, params]; the function's jsonb answer is out
+  const route = (resource, resourceId, fn, reply) => ({ people: true, resource, resourceId, run: async (client, ctx, body) => {
+    people(ctx.actor);
+    const [sql, params] = fn(body);
+    const { rows: [r] } = await client.query(`SELECT ${sql} AS out`, params);
+    return { ...reply(r.out), rowCount: 1, resourceId };
+  } });
+  const item = (out) => ({ status: 200, body: { item: out } });
+  const made = (out) => ({ status: out.created ? 201 : 200, body: { item: out.item } });
+  const gone = (out) => ({ status: 200, body: out });
+  const empty = (body) => pick(body, {});
+  const memberRole = (body) => pick(body, { role: ['role', oneOf(MEMBER_ROLES)] }, { required: ['role'] }).role;
+
+  if (kind === 'staff' && rowId !== undefined && sub === undefined && method === 'PATCH') {
+    return route('access-staff', rowId, (body) => ['bridge_access_set_staff_role($1::uuid, $2)',
+      [needId(rowId), pick(body, { role: ['role', oneOf(STAFF_ROLES)] }, { required: ['role'] }).role]], item);
+  }
+  if (kind === 'portal-approvers' && rowId !== undefined && sub === undefined) {
+    if (method === 'PUT') return route('access-portal-approvers', rowId, (body) => ['bridge_access_put_portal_approver($1::uuid, $2)',
+      [needId(rowId), pick(body, { label: ['label', text(100, { required: true })] }, { required: ['label'] }).label]], made);
+    if (method === 'DELETE') return route('access-portal-approvers', rowId, (body) => (empty(body),
+      ['bridge_access_remove_portal_approver($1::uuid)', [needId(rowId)]]), gone);
+    return null;
+  }
+  if (kind !== 'clients' || rowId === undefined || sub !== 'members') return null;
+  if (memberId === undefined) {
+    if (method !== 'POST') return null;
+    return route('access-members', rowId, (body) => {
+      const m = pick(body, { email: ['email', text(254, { required: true })], name: ['name', text(200, { required: true })],
+        role: ['role', oneOf(MEMBER_ROLES)] }, { required: ['email', 'name', 'role'] });
+      return ['bridge_access_add_client_member($1::uuid, $2, $3, $4)', [needId(rowId), m.email, m.name, m.role]];
+    }, made);
+  }
+  if (method === 'PATCH') return route('access-members', memberId, (body) => [
+    'bridge_access_set_client_member_role($1::uuid, $2::uuid, $3)', [needId(rowId), needId(memberId), memberRole(body)]], item);
+  if (method === 'DELETE') return route('access-members', memberId, (body) => (empty(body),
+    ['bridge_access_remove_client_member($1::uuid, $2::uuid)', [needId(rowId), needId(memberId)]]), gone);
+  return null;
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -616,7 +664,7 @@ export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
   const route = portalRoute(method, parts) || activationRoute(method, parts) || catalogueRoute(method, parts) || commerceRoute(method, parts)
-    || clientUserRoute(method, parts);
+    || clientUserRoute(method, parts) || accessRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
 

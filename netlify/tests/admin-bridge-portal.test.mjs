@@ -1,4 +1,4 @@
-// GSAM admin bridge, portal documents (GRE-4081, migration 066_bridge_portal_documents). Signed requests through
+// GSAM admin bridge, portal documents (GRE-4081, migration 067_bridge_portal_documents). Signed requests through
 // makeAdminBridgeHandler on a throwaway real Postgres (lib/postgres.mjs) prove each route: create, edit a draft,
 // submit, return to draft, approve and publish, withdraw. Every write names the GSAM actor in the bridge audit, the
 // change log and the portal audit. Approve and publish is refused to an agent, to a person who is not linked to a
@@ -355,7 +355,7 @@ test('a write outside the bridge is audited as before, with no bridge actor', { 
 });
 
 test('the rollback removes the link table and functions, restores the audit triggers, and the migration applies again', { skip }, () => {
-  const dir = new URL('../database/migrations/066_bridge_portal_documents/', import.meta.url).pathname;
+  const dir = new URL('../database/migrations/067_bridge_portal_documents/', import.meta.url).pathname;
   sql(`\\i '${dir}rollback.sql'`);
   assert.equal(sql(`SELECT count(*) FROM pg_proc WHERE proname LIKE 'bridge_portal_%' OR proname LIKE '_bridge_portal_%';`), '0');
   assert.equal(sql(`SELECT to_regclass('public.portal_bridge_approvers') IS NULL;`), 't');
