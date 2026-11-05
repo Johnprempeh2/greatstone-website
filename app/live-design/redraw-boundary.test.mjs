@@ -4,6 +4,7 @@ import { Window } from 'happy-dom';
 
 const window = new Window({ url: 'https://example.test/' });
 Object.assign(globalThis, { window, document: window.document, HTMLElement: window.HTMLElement, Node: window.Node });
+if (!globalThis.navigator) globalThis.navigator = window.navigator;
 const { createElement } = await import('react');
 const { createRoot } = await import('react-dom/client');
 const { act } = await import('react');
