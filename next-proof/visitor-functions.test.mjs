@@ -9,28 +9,25 @@ import { build } from 'esbuild';
 
 const exec = promisify(execFile);
 
-test('isolated Next deploy retains the visitor functions and their server imports', async () => {
-  const target = await mkdtemp(join(tmpdir(), 'greatstone-next-functions-'));
-  try {
-    await exec(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target]);
-    const config = await readFile(join(target, 'netlify.toml'), 'utf8');
-    assert.match(config, /\[functions\][\s\S]*directory = "netlify\/functions"/);
-    // Every Vite-site function keeps its path on the Next deploy (GRE-1973 regression gate).
-    const names = (await readdir('netlify/functions')).filter((name) => name.endsWith('.mjs'));
-    assert.ok(names.length >= 25);
-    for (const name of names) {
-      const entry = join(target, 'netlify/functions', name);
-      assert.ok((await stat(entry)).isFile());
-      await build({ entryPoints: [entry], bundle: true, format: 'esm', platform: 'node', packages: 'external', write: false });
-    }
-    for (const script of ['gen-seo-files.mjs', 'gen-contract-file.mjs', 'prepare-puck-css.mjs']) {
-      assert.ok((await stat(join(target, 'scripts', script))).isFile());
-    }
-    assert.ok((await stat(join(target, 'contracts/site-contract/schemas/contract-file.schema.json'))).isFile());
-    assert.equal(await readFile(join(target, 'middleware.js'), 'utf8'), await readFile('middleware.js', 'utf8'));
-  } finally {
-    await rm(target, { recursive: true, force: true });
+test('the checkout itself builds the Next site with the visitor functions (GRE-3873)', async () => {
+  const config = await readFile('netlify.toml', 'utf8');
+  assert.match(config, /^\s*command = "npm run build:next"$/m);
+  assert.match(config, /^\s*publish = "\.next"$/m);
+  assert.match(config, /^\s*NEXT_CATALOGUE_REQUIRED = "1"$/m);
+  assert.doesNotMatch(config, /NETLIFY_NEXT_PLUGIN_SKIP/);
+  assert.match(config, /\[functions\][\s\S]*directory = "netlify\/functions"/);
+  // The Vite SPA fallback and headers would shadow every Next route; they must not sit in public/.
+  for (const name of ['_redirects', '_headers']) await assert.rejects(stat(join('public', name)));
+  // Every Vite-site function keeps its path on the Next deploy (GRE-1973 regression gate).
+  const names = (await readdir('netlify/functions')).filter((name) => name.endsWith('.mjs'));
+  assert.ok(names.length >= 25);
+  for (const name of names) {
+    await build({ entryPoints: [join('netlify/functions', name)], bundle: true, format: 'esm', platform: 'node', packages: 'external', write: false });
   }
+});
+
+test('only the editor alias is prepared in a scratch copy', async () => {
+  await assert.rejects(exec(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', join(tmpdir(), 'unused')]), /pass --editor/);
 });
 
 test('editor package carries the host guard and builds without database provisioning or catalogue export', async () => {

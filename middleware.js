@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { allowedHostOrigins, frameCsp, publicFrameAncestors } from './next-proof/frame-protocol.mjs';
+import { PUBLIC_SECURITY_HEADERS, allowedHostOrigins, frameCsp, publicFrameAncestors } from './next-proof/frame-protocol.mjs';
 import { frameRouteDecision } from './next-proof/frame-routing.mjs';
 
 export function middleware(request) {
@@ -27,6 +27,7 @@ export function middleware(request) {
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=()');
   } else {
     response.headers.set('Content-Security-Policy', publicFrameAncestors(process.env.GSAM_EDITOR_ORIGINS || undefined));
+    for (const [name, value] of Object.entries(PUBLIC_SECURITY_HEADERS)) response.headers.set(name, value);
     response.headers.delete('X-Frame-Options');
   }
   return response;

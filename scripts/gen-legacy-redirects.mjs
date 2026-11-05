@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Generate the legacy → SPA 301 block in public/_redirects from the crawled old-site URL list.
+// Generate the legacy → SPA 301 block in vite-static/_redirects from the crawled old-site URL list.
 //
-//   node scripts/gen-legacy-redirects.mjs           # rewrite the block in public/_redirects
+//   node scripts/gen-legacy-redirects.mjs           # rewrite the block in vite-static/_redirects
 //   node scripts/gen-legacy-redirects.mjs --check    # verify it is in sync (exit 1 if not); for CI
 //   node scripts/gen-legacy-redirects.mjs --audit     # print how every known old URL is handled
 //
@@ -16,7 +16,7 @@ import { renderBlock, auditCoverage, productRedirectRules, BLOCK_BEGIN, BLOCK_EN
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const URLS = join(DIR, 'legacy-urls.txt');
-const REDIRECTS = join(DIR, '..', 'public', '_redirects');
+const REDIRECTS = join(DIR, '..', 'vite-static', '_redirects');
 const mode = process.argv.includes('--check') ? 'check' : process.argv.includes('--audit') ? 'audit' : 'write';
 // Optional migrated slug map for exact per-product redirects: --product-map <file>, else the default path
 // if it exists. Absent → vendor wildcards cover every product (the default until Ben supplies the map).
@@ -73,12 +73,12 @@ const current = readFileSync(REDIRECTS, 'utf8');
 const next = spliceBlock(current, block);
 
 if (mode === 'check') {
-  if (current === next) { console.log('✓ public/_redirects legacy block is in sync.'); process.exit(0); }
-  console.error('✗ public/_redirects legacy block is OUT OF SYNC. Run: node scripts/gen-legacy-redirects.mjs');
+  if (current === next) { console.log('✓ vite-static/_redirects legacy block is in sync.'); process.exit(0); }
+  console.error('✗ vite-static/_redirects legacy block is OUT OF SYNC. Run: node scripts/gen-legacy-redirects.mjs');
   process.exit(1);
 }
 
-if (current === next) { console.log('public/_redirects already up to date (no change).'); process.exit(0); }
+if (current === next) { console.log('vite-static/_redirects already up to date (no change).'); process.exit(0); }
 writeFileSync(REDIRECTS, next, 'utf8');
 const n = block.split('\n').filter((l) => /\s301/.test(l)).length;
-console.log(`Wrote ${n} legacy redirect rules into public/_redirects` + (productCount ? ` (incl. ${productCount} product-exact overrides).` : '.'));
+console.log(`Wrote ${n} legacy redirect rules into vite-static/_redirects` + (productCount ? ` (incl. ${productCount} product-exact overrides).` : '.'));

@@ -42,8 +42,13 @@ An item without evidence comes off the note, or the train waits.
 
 | Site | What it is | What the train deploys | Checks |
 | --- | --- | --- | --- |
-| `gre1795-website-db-staging` | The Vite site (`netlify.toml`, `npm run build`) | `npm run deploy:prod -- gre1795-website-db-staging` | Checklist items 1 to 6. No editor checks: it is a single-page app, so `/editor/<slug>` serves the homepage, not the editor (GRE-2793). |
-| `greatstone-home` (public site) | The Vite site, same build | `npm run deploy:prod -- greatstone-home`, only with a `weekly-release` card for the exact SHA | Checklist items 1 to 6. |
+| `gre3833-next-db-staging` | The Next.js site (root `netlify.toml`, `npm run build:next`), with its own staging database | `npm run deploy:prod -- gre3833-next-db-staging` | Checklist items 1 to 6. |
+| `greatstone-home` (public site) | The Next.js site, same build | `npm run deploy:prod -- greatstone-home`, only with a `weekly-release` card for the exact SHA | Checklist items 1 to 6. |
+
+Since GRE-3873 both sites build the Next.js site from the checkout; the Vite site and `gre1795-website-db-staging`
+are no longer deployed. With `GSAM_SITE_ID` set on the Netlify site, the build bakes that site's current GSAM
+release and fails, leaving the live deploy in place, when the site has no release yet. Without it, the build
+exports the checked-in pages and needs the site's published catalogue, which a local build cannot read.
 | `gsam-editor` alias on `greatstone-home` | The Next editor (`next-proof/netlify.editor.toml`) | The same `npm run deploy:prod -- greatstone-home` run, right after the public upload, from the same commit | Checklist item 7. These apply only here. |
 
 The train ships the editor alias with the public site (GRE-2804). After the `greatstone-home` upload (or
@@ -57,7 +62,7 @@ its "no changes" skip), `scripts/deploy-site.mjs` runs four named steps from the
    `--no-build`, then fails unless `/editor/home` reports GSAM's site ID, editor contract 2 and the tag
    commit, and the link check passes.
 
-The Vite upload does not contain the Next editor, so the alias has its own build from the same tag.
+The editor alias has its own config (`next-proof/netlify.editor.toml`: no functions, no database), so it has its own build from the same tag.
 A failed step fails the train with `train failed at editor alias step "<step>"`. The public upload before
 it has already run: either fix and rerun the same command at the same tag, or roll both back.
 Staging and preview deploys never touch the alias.
@@ -92,7 +97,7 @@ One `request_confirmation` on the weekly release issue, `human_only`, so John or
 - `idempotencyKey`: `confirmation:GRE-<release issue>:weekly-release:<40-character SHA>`
 - `detailsMarkdown` holds one line per site that ships, for example
   `Approve production deploy: greatstone-home <SHA>` and
-  `Approve production deploy: gre1795-website-db-staging <SHA>`, then the change list, the checklist
+  `Approve production deploy: gre3833-next-db-staging <SHA>`, then the change list, the checklist
   evidence and the rollback.
 
 `scripts/deploy-site.mjs` accepts this card for the public site only for the exact SHA. For the staging

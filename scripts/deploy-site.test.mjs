@@ -7,7 +7,7 @@ import { spawnSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 
 const script = new URL('./deploy-site.mjs', import.meta.url).pathname;
-const site = 'gre1795-website-db-staging';
+const site = 'gre3833-next-db-staging';
 
 function git(cwd, ...args) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
@@ -177,7 +177,7 @@ test('staging card never covers drift into migrations, functions, auth or build 
     'netlify/edge-functions/gate.mjs', 'supabase/migrations/1_x.sql', 'db/seed.sql',
     'app/media/[file]/route.js', 'app/api/hook.js', 'middleware.js', 'netlify.toml',
     'package.json', 'package-lock.json', 'next.config.mjs', 'vite.config.js', '.env.production',
-    'public/_headers', 'scripts/list-edge-secrets.mjs', 'src/cms/auth.js', 'src/store/adminAuth.mjs',
+    'public/_headers', 'vite-static/_headers', 'scripts/list-edge-secrets.mjs', 'src/cms/auth.js', 'src/store/adminAuth.mjs',
     'src/store/PasswordInput.jsx', 'src/lib/login.js',
   ];
   for (const path of protectedPaths) {
@@ -399,7 +399,7 @@ test('docs-only skips; site changes deploy only with preview gate', async (t) =>
   f.setComments([{ authorAgentId: '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7', body: 'Preview ready for PR #12' }]);
   result = await f.run();
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:preview:12:[0-9a-f]{40}\n$/);
 });
 
 test('another board user cannot mark an unlabelled PR ready for preview', async (t) => {
@@ -428,7 +428,7 @@ test('unapproved production is refused before upload', async (t) => {
   f.setComments([{ authorType: 'user', body: `Approve production deploy: ${site} ${f.base}` }]);
   const approved = await f.run('prod');
   assert.equal(approved.status, 0, approved.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:[0-9a-f]{40} --prod\n$/);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:[0-9a-f]{40} --prod\n$/);
 });
 
 test('newer run supersedes an in-flight run for the same site', async (t) => {
@@ -576,7 +576,7 @@ test('config refresh re-uploads the live approved commit tree from origin main',
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, new RegExp(`re-uploading live commit ${f.base}`));
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:${f.base} --prod\n`);
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
 });
 
@@ -584,7 +584,7 @@ test('config refresh never targets the public site', async (t) => {
   const f = await refreshFixture(t);
   const result = await f.run('refresh', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /config refresh is only for gre1795-website-db-staging/);
+  assert.match(result.stderr, /config refresh is only for gre3833-next-db-staging/);
   await assert.rejects(readFile(f.log));
 });
 

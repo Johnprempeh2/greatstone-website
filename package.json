@@ -27,6 +27,7 @@
     "design:detect": "node scripts/design-detect.mjs",
     "preflight": "npm test && npm run build && npm run redirects:check && npm run secrets:check && npm run rls:check",
     "build:next": "node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-build-release.mjs && next build",
+    "postbuild:next": "node scripts/check-dist-secrets.mjs .next/static",
     "check:legacy:next": "node next-proof/scripts/check-legacy-urls.mjs",
     "dev:next": "node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs && node scripts/prepare-puck-css.mjs && node next-proof/scripts/export-pages.mjs && next dev --port 5181"
   },

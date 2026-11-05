@@ -91,7 +91,7 @@ If `main` moves after approval, the card still covers the newer commit when the 
 commit is an ancestor and no file changed in between is protected. Protected means anything
 under `netlify/`, `supabase/` or `scripts/`; any `.sql` or `.env*` file; Next route handlers
 (`app/**/route.js`, `app/api/`); `middleware.js`, `netlify.toml`, `package.json`,
-`package-lock.json`, `next.config.*`, `vite.config.*` and `public/_headers`; and any path
+`package-lock.json`, `next.config.*`, `vite.config.*` and `_headers` (in `public/` or `vite-static/`); and any path
 containing auth, password, credential, secret, login or sign-in. So front-end, content and
 docs changes ride along, but any migration, function, auth or build-config change needs a new
 card for the exact commit. The public site requires the exact comment for the current HEAD,

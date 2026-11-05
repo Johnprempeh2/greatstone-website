@@ -55,6 +55,14 @@ test('private Vite hashes reach the matching Next routes', () => {
     '/invoice/01234567-89ab-cdef-0123-456789abcdef');
 });
 
+test('old Studio links reach the staff area, not a page editor (GRE-3873)', () => {
+  const pages = ['/', '/about'];
+  assert.equal(legacyHashDestination('#admin', '/', pages), '/catalogue');
+  assert.equal(legacyHashDestination('#admin/editor/home', '/', pages), '/catalogue');
+  assert.equal(legacyHashDestination('#admin', '/catalogue', pages), null);
+  assert.equal(legacyHashDestination('#administrators', '/', pages), null);
+});
+
 test('only the bare #book hash opens the booking popup', () => {
   assert.equal(isBookingHash('#book'), true);
   assert.equal(isBookingHash('#booking'), false);

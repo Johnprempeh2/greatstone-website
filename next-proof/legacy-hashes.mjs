@@ -11,6 +11,8 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   if (hasAnchor(fragment)) return null;
   const checkout = /^order-confirmed\?session=(cs_test_[A-Za-z0-9]+)$/i.exec(fragment);
   if (checkout) return `/order-confirmed?session=${checkout[1]}`;
+  // The old Studio (#admin) is off on the Next site: GSAM edits the pages. Staff land in the staff area (GRE-3873).
+  if (/^\/?admin(?:\/[\w/-]*)?$/i.test(fragment)) return pathname === '/catalogue' ? null : '/catalogue';
   const privateRoute = /^(account|org|portal|invoice|catalogue)(?:\/([\w/-]+))?$/i.exec(fragment);
   if (privateRoute) {
     const [, section, rest] = privateRoute;
