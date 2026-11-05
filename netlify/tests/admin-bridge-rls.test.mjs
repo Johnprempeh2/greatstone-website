@@ -193,7 +193,9 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   const billing = join(MIGRATIONS, '055_billing_lines');
   const activity = join(MIGRATIONS, '056_client_activity_outbox');
   const clientUsers = join(MIGRATIONS, '054_gsam_bridge_client_users');
+  const access = join(MIGRATIONS, '066_bridge_people_access');
   // Roll back dependent tables and policies before the bridge roles and tenant links.
+  owner(readFileSync(join(access, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(documents, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(activity, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(billing, 'rollback.sql'), 'utf8'));
@@ -213,6 +215,7 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   owner(readFileSync(join(billing, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(activity, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(documents, 'migration.sql'), 'utf8'));
+  owner(readFileSync(join(access, 'migration.sql'), 'utf8'));
   assert.equal(ok(GOOD, 'SELECT count(*) FROM customers;'), '1');
   assert.equal(ok(GOOD, 'SELECT licence_key_last4 FROM licence_keys;'), 'AB12');
 });
