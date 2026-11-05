@@ -122,7 +122,8 @@ const RESOURCES = {
   'portal-documents': {
     table: 'portal_documents', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'true',
     columns: ['id', 'customer_id', 'kind', 'series', 'version', 'title', 'summary', 'action', 'signatory_email', 'status',
-      'created_by_kind', 'created_run_id', 'published_at', 'withdrawn_at', 'created_at', 'updated_at'],
+      'created_by_kind', 'created_run_id', 'published_at', 'withdrawn_at', 'created_at', 'updated_at', 'content_sha256',
+      'row_version', 'approval_id'],
     extra: { has_pdf: 'x.pdf_sha256 IS NOT NULL' },
   },
   'portal-acceptances': {
