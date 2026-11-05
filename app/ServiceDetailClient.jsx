@@ -10,6 +10,6 @@ export default function ServiceDetailClient({ slug, catalogue, listingPath }) {
   const back = listingPath || '/';
   return <ServicesContext.Provider value={catalogue}>
     <ServiceDetail slug={slug} catalogueHref={back} onBack={() => { window.location.href = back; }} />
-    <StoreCart />
+    <div className="st-v15"><StoreCart /></div>
   </ServicesContext.Provider>;
 }
