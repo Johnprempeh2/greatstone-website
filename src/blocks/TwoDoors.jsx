@@ -175,9 +175,12 @@ export function TwoDoorsStory(props) {
     <TideTail enabled={tide} />
     <section className="td-public-clients" aria-labelledby="td-public-clients-heading">
       <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2 id="td-public-clients-heading">Organisations we have worked with</h2></div>
-      <ul className="td-public-clients-grid">{publicClientMarks.map(({ name, image }) => <li key={name}>
-        <img src={image} alt={name} loading="lazy" width="240" height="120" />
-      </li>)}</ul>
+      {/* GRE-4097: ticker. The second list is a hidden copy so the loop is seamless. */}
+      <div className="lv-tk" role="region" aria-label="Clients we have worked with"><div className="lv-tk-rail">
+        {[false, true].map((copy) => <ul key={String(copy)} className="lv-tk-list" aria-hidden={copy ? 'true' : undefined}>{publicClientMarks.map(({ name, image }) => <li key={name}>
+          <img src={image} alt={copy ? '' : name} loading="lazy" width="240" height="120" />
+        </li>)}</ul>)}
+      </div></div>
     </section>
     <section className="td-story" id="about"><div>{(REVIEW_CONTENT || !copy.storyKicker?.startsWith('Copy placeholder')) && editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
     {approvedNumbers.length ? <div className="td-review-strip td-numbers" aria-label={copy.numbersLabel}>{approvedNumbers.map((item, i) => <div key={i}><b>{item.value}</b><span>{item.label}</span></div>)}</div> : REVIEW_CONTENT && <div className="td-review-strip" role="note"><b>{copy.draftNumbersHeading}</b><span>{copy.draftNumbersLine}</span></div>}
