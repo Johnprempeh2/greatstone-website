@@ -3,6 +3,7 @@
 // then renders each draft GSAM sends with the engine's own HTML renderer, islands included.
 import { useEffect, useRef, useState } from 'react';
 import HtmlPage from '../HtmlPage.jsx';
+import { RedrawBoundary } from './redraw-boundary.mjs';
 import { envelope, validHello, validMessage } from '../../next-proof/frame-protocol.mjs';
 
 const text = (value, max) => (typeof value === 'string' && value.length <= max ? value : null);
@@ -44,5 +45,5 @@ export default function LiveDraft({ base, siteId, origins }) {
 
   if (!draft) return <p style={{ padding: 24, fontFamily: 'system-ui', color: '#9ca29b' }}>Waiting for GSAM to send the page…</p>;
   const release = { ...base, chrome: draft.chrome ?? base.chrome, stylesheet: draft.stylesheet ?? base.stylesheet, pages: base.pages };
-  return <HtmlPage page={draft.page} release={release} />;
+  return <RedrawBoundary><HtmlPage page={draft.page} release={release} /></RedrawBoundary>;
 }
