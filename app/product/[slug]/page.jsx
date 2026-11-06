@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import CatalogueProductClient from '../../CatalogueProductClient.jsx';
 import { SiteFrame } from '../../ProofPage.jsx';
+import { ShopClose, ShopTide } from '../../catalogue.jsx';
 import { catalogueFromRelease } from '../../catalogue-data.js';
 import { activeRelease } from '../../release-source.js';
 import { offeringBySlug } from '../../../next-proof/catalogue-data.mjs';
@@ -33,5 +34,5 @@ export default async function Product({ params }) {
   const structured = { '@context': 'https://schema.org', '@type': 'Product', name: item.name, description: item.short_description || item.description,
     brand: { '@type': 'Brand', name: item.vendor?.name || 'Greatstone International' },
     offers: { '@type': 'Offer', priceCurrency: item.from_price_currency || 'GBP', availability: 'https://schema.org/InStock', url: 'https://greatstoneint.com/product/' + encodeURIComponent(slug) } };
-  return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><CatalogueProductClient item={item} related={related} /></SiteFrame>;
+  return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><div className="st-v15"><ShopTide /><CatalogueProductClient item={item} related={related} /><ShopClose release={release} /></div></SiteFrame>;
 }

@@ -2,6 +2,7 @@ import { CatalogueBrowse } from '../catalogue.jsx';
 import { catalogueFromRelease } from '../catalogue-data.js';
 import { activeRelease } from '../release-source.js';
 import { browseOfferings } from '../../next-proof/catalogue-data.mjs';
+import { filterByUseCase, showsGroups } from '../shop-use-cases.mjs';
 
 const baseMetadata = {
   title: 'Software Catalogue · Greatstone International',
@@ -14,8 +15,9 @@ export default async function Shop({ searchParams }) {
   const { release } = await activeRelease();
   const catalogue = catalogueFromRelease(release);
   const params = await searchParams;
-  const filters = Object.fromEntries(['vendor', 'category', 'platform', 'q', 'sort'].map((key) => [key, typeof params?.[key] === 'string' ? params[key] : '']));
-  const rows = browseOfferings(catalogue, filters);
+  const filters = Object.fromEntries(['vendor', 'category', 'platform', 'q', 'sort', 'usecase'].map((key) => [key, typeof params?.[key] === 'string' ? params[key] : '']));
+  const rows = filterByUseCase(browseOfferings(catalogue, filters), filters.usecase);
+  if (showsGroups(filters)) return <CatalogueBrowse release={release} catalogue={{ ...catalogue, rows, matches: rows.length, nextHref: null }} filters={filters} />;
   const page = Math.max(1, Math.min(Math.ceil(rows.length / 24) || 1, Number.parseInt(params?.page, 10) || 1));
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value));
   query.set('page', String(page + 1));

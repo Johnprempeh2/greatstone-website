@@ -277,3 +277,127 @@
 
 /* cart drawer must be opaque (the --gs-bg-card token resolves transparent in this stylesheet) */
 .sc-drawer { background:#21251f; }
+
+/* ── v15 look for the shop, product pages and checkout (GRE-1862) ─────────────
+   Scoped to .st-v15, which the Next shop routes and basket wrap their content in. Every value
+   comes from the --td-* tokens in two-doors-theme.css, the one theme file the landing uses. */
+.st-v15 { font-family:var(--td-font); color:var(--td-text); }
+.st-v15 .st-scrim { background:var(--td-palette-39); }
+.st-v15 .st-wrap, .st-v15 .sp-wrap { max-width:calc(var(--td-page-width) + 2 * clamp(20px,5vw,64px)); }
+.st-v15 .st-kicker { font-size:var(--td-size-12); font-weight:800; letter-spacing:.2em; color:var(--td-lime); }
+.st-v15 .st-h1 { font-weight:900; font-size:clamp(32px,4.4vw,60px); line-height:1.04; letter-spacing:-.035em; max-width:21ch; }
+.st-v15 .st-h1 .accent { color:var(--td-lime); }
+.st-v15 .st-lead { color:var(--td-muted); font-size:var(--td-size-18); line-height:1.6; }
+.st-v15 .st-stat { border-color:var(--td-palette-02); background:var(--td-palette-34); color:var(--td-muted); }
+.st-v15 .st-stat b { color:var(--td-text); }
+/* the landing's glowing divider, laid flat under the hero; it does not move, so it is its own still */
+.st-v15 .st-glow { position:relative; height:var(--td-size-1); margin:clamp(28px,4vw,44px) 0 clamp(8px,2vw,16px); background:linear-gradient(90deg,transparent,var(--td-lime) 25%,var(--td-teal) 75%,transparent); box-shadow:0 0 var(--td-size-12) var(--td-palette-33); }
+.st-v15 .st-glow:before { content:""; position:absolute; inset:-4px 0; filter:blur(8px); opacity:.5; background:inherit; }
+
+.st-v15 .st-search input, .st-v15 .st-select, .st-v15 .sc-email input, .st-v15 .sc-quote input, .st-v15 .sc-quote textarea { border-color:var(--td-palette-02); background:var(--td-palette-34); color:var(--td-text); min-height:var(--td-size-48); }
+.st-v15 .sc-quote textarea { min-height:96px; }
+.st-v15 .st-search input:focus, .st-v15 .sc-email input:focus, .st-v15 .sc-quote input:focus, .st-v15 .sc-quote textarea:focus { border-color:var(--td-palette-28); box-shadow:none; outline:var(--td-size-3,3px) solid var(--td-lime); outline-offset:2px; }
+.st-v15 :focus-visible { outline:3px solid var(--td-lime); outline-offset:4px; }
+
+/* lime pill buttons, sentence case, as on the landing */
+.st-v15 .st-more, .st-v15 .sp-cta .gs-btn.primary, .st-v15 .sc-confirm-cta .gs-btn.primary, .st-v15 .sp-basketbar-btn, .st-v15 .sp-add { display:inline-flex; align-items:center; justify-content:center; min-height:var(--td-size-48); padding:var(--td-size-14) var(--td-size-22); border-radius:var(--td-pill-radius); border:0; background:var(--td-lime); color:var(--td-palette-22); font-family:var(--td-font); font-size:var(--td-size-14); font-weight:850; text-transform:none; letter-spacing:0; }
+.st-v15 .sp-add { min-height:40px; padding:var(--td-size-8) var(--td-size-18); }
+.st-v15 .sp-add.done { background:transparent; color:var(--td-lime); box-shadow:inset 0 0 0 1px var(--td-palette-28); }
+.st-v15 .st-more:hover, .st-v15 .sp-cta .gs-btn.primary:hover, .st-v15 .sc-confirm-cta .gs-btn.primary:hover, .st-v15 .sp-basketbar-btn:hover, .st-v15 .sp-add:not(.done):hover { transform:none; box-shadow:0 var(--td-size-8) var(--td-size-30) var(--td-palette-23); }
+.st-v15 .sp-cta .gs-btn.ghost, .st-v15 .sc-confirm-cta .gs-btn.ghost { display:inline-flex; align-items:center; justify-content:center; min-height:var(--td-size-48); padding:var(--td-size-14) var(--td-size-22); border-radius:var(--td-pill-radius); border:var(--td-size-1) solid var(--td-palette-25); background:transparent; color:var(--td-text); font-family:var(--td-font); font-size:var(--td-size-14); font-weight:800; }
+.st-v15 .st-toolbar .st-more { margin:0; }
+.st-v15 .sp-back .st-more, .st-v15 .sp-back .gs-btn { background:transparent; color:var(--td-text); box-shadow:inset 0 0 0 1px var(--td-palette-25); }
+.st-v15 .sp-back .st-more:hover { box-shadow:inset 0 0 0 1px var(--td-lime); }
+.st-v15 .st-grid > .st-more { grid-column:1/-1; justify-self:center; margin-top:var(--td-size-24); }
+
+.st-v15 .st-facet h2 { font-size:var(--td-size-12); letter-spacing:.2em; color:var(--td-palette-08); }
+.st-v15 .st-pill { border-color:var(--td-palette-02); background:var(--td-palette-34); color:var(--td-muted); }
+.st-v15 .st-pill:hover { border-color:var(--td-palette-28); color:var(--td-text); }
+.st-v15 .st-pill.on { background:var(--td-lime); border-color:var(--td-lime); color:var(--td-palette-22); }
+.st-v15 .st-clear { color:var(--td-lime); }
+
+/* glass cards with the landing's 18px corners and quiet borders */
+.st-v15 .st-card, .st-v15 .sp-rel, .st-v15 .sp-stage, .st-v15 .sp-pricebox, .st-v15 .sp-table-wrap, .st-v15 .st-empty { border:var(--td-size-1) solid var(--td-palette-02); border-radius:var(--td-panel-radius); background:var(--td-palette-34); backdrop-filter:blur(6px); }
+.st-v15 .st-card { padding:var(--td-size-22); }
+.st-v15 .st-card:hover, .st-v15 .sp-rel:hover { transform:none; border-color:var(--td-palette-28); }
+.st-v15 .st-card-icon, .st-v15 .sp-thumb { border-color:var(--td-palette-02); background:var(--td-palette-29); }
+.st-v15 .st-card h3, .st-v15 .sp-rel .rn { letter-spacing:-.01em; text-wrap:balance; }
+.st-v15 .st-card .desc, .st-v15 .st-lead, .st-v15 .td-close p, .st-v15 .sc-confirm p { text-wrap:pretty; }
+.st-v15 .st-card .vendor span, .st-v15 .sp-rel .rv, .st-v15 .sp-vendor span { color:var(--td-palette-08); letter-spacing:.12em; }
+.st-v15 .st-card .desc, .st-v15 .st-price .lbl, .st-v15 .st-price .st-vat { color:var(--td-muted); }
+.st-v15 .st-badge { background:transparent; border-color:var(--td-palette-02); color:var(--td-muted); border-radius:var(--td-pill-radius); padding:.3em .75em; font-size:var(--td-size-12); }
+.st-v15 .st-foot { border-top-color:var(--td-palette-02); }
+.st-v15 .st-go, .st-v15 .sp-rel .rp { color:var(--td-lime); }
+.st-v15 .st-empty { border-style:solid; }
+
+.st-v15 .sp-crumb a { color:var(--td-muted); }
+.st-v15 .sp-crumb a:hover { color:var(--td-lime); }
+.st-v15 .sp-title { font-weight:900; font-size:clamp(30px,3.6vw,50px); letter-spacing:-.035em; line-height:1.05; }
+.st-v15 .sp-lead, .st-v15 .sp-prose { color:var(--td-muted); }
+.st-v15 .sp-pricebox { padding:var(--td-size-22) var(--td-size-26); }
+.st-v15 .sp-pricebox .lbl { letter-spacing:.2em; color:var(--td-palette-08); }
+.st-v15 .sp-section h2 { font-size:clamp(26px,3vw,42px); letter-spacing:-.035em; line-height:1.15; }
+.st-v15 .sp-table th { color:var(--td-palette-08); border-bottom-color:var(--td-palette-02); background:var(--td-palette-29); }
+.st-v15 .sp-table td { border-bottom-color:var(--td-palette-02); }
+.st-v15 .sp-table tr:hover td { background:var(--td-palette-29); }
+.st-v15 .sp-basketbar { border:var(--td-size-1) solid var(--td-palette-28); border-radius:var(--td-panel-radius); background:var(--td-palette-34); }
+.st-v15 .sp-nav { border-color:var(--td-palette-25); background:var(--td-palette-24); }
+.st-v15 .sp-nav:hover { background:var(--td-lime); color:var(--td-palette-22); }
+
+@media (max-width:880px){ .st-v15 .st-facets { display:none; } .st-v15 .st-facets.open { display:flex; position:static; } .st-v15 .st-filterbtn { min-height:var(--td-size-48); padding:var(--td-size-14) var(--td-size-22); border:var(--td-size-1) solid var(--td-palette-25); background:transparent; color:var(--td-text); font-family:var(--td-font); font-size:var(--td-size-14); font-weight:800; } }
+
+/* basket and checkout: a dark glass drawer like the landing's menus */
+/* main is its own stacking layer under the fixed site header, so while the basket is open main
+   is lifted above it; otherwise the header covers the basket's heading and close button */
+.gs-public:has(.st-v15 .sc-scrim) { z-index:45; }
+.st-v15 .sc-fab { border:0; background:var(--td-lime); box-shadow:0 var(--td-size-8) var(--td-size-30) var(--td-palette-13); }
+.st-v15 .sc-fab:hover { transform:none; box-shadow:0 var(--td-size-8) var(--td-size-30) var(--td-palette-23); }
+.st-v15 .sc-fab-badge { border-color:var(--td-ink); }
+.st-v15 .sc-scrim { background:var(--td-palette-13); backdrop-filter:blur(var(--td-glass-menu)); }
+.st-v15 .sc-drawer { background:var(--td-palette-24); border-left:var(--td-size-1) solid var(--td-palette-02); font-family:var(--td-font); color:var(--td-text); }
+.st-v15 .sc-head h2 { font-size:var(--td-size-22); font-weight:900; letter-spacing:-.02em; }
+.st-v15 .sc-item { border-bottom-color:var(--td-palette-02); }
+.st-v15 .sc-it-chip, .st-v15 .sc-qty button { border-color:var(--td-palette-25); }
+.st-v15 .sc-panel, .st-v15 .sc-method { border:var(--td-size-1) solid var(--td-palette-02); border-radius:var(--td-panel-radius); background:var(--td-palette-34); }
+.st-v15 .sc-method:hover:not(:disabled) { transform:none; border-color:var(--td-palette-28); background:var(--td-palette-29); }
+.st-v15 .sc-method-card { border-color:var(--td-palette-28); background:var(--td-palette-34); }
+.st-v15 .sc-method-card:hover:not(:disabled) { border-color:var(--td-lime); background:var(--td-palette-29); }
+.st-v15 .sc-method-ic { border-color:var(--td-palette-02); background:var(--td-palette-29); }
+.st-v15 .sc-method-ic svg { stroke:var(--td-lime); }
+.st-v15 .sc-quote label, .st-v15 .sc-method-d, .st-v15 .sc-po-intro { color:var(--td-muted); }
+.st-v15 .sc-quote .sc-po-num input { border-color:var(--td-palette-28); background:var(--td-palette-34); }
+.st-v15 .sc-tick { background:var(--td-palette-34); border-color:var(--td-palette-28); }
+.st-v15 .sc-confirm h1 { font-size:clamp(30px,3.6vw,50px); letter-spacing:-.035em; text-wrap:balance; }
+.st-v15 .sc-confirm p { color:var(--td-muted); }
+.st-v15 .sc-note a, .st-v15 .sc-quote-alone-fallback { color:var(--td-lime); }
+
+/* the landing's close band ends the shop and product pages */
+.st-v15 .st-close-wrap { position:relative; z-index:1; padding:clamp(24px,4vw,48px) 0 0; }
+.st-v15 .st-close-wrap .td-close { width:min(var(--td-page-width),calc(100% - 2 * clamp(20px,5vw,64px))); }
+.st-v15 .st-close-wrap .td-close h2 { font-size:var(--td-size-30); letter-spacing:-.045em; line-height:1.12; }
+@media (max-width:760px){ .st-v15 .st-close-wrap .td-close { display:block; } .st-v15 .st-close-wrap .td-close .td-pill { margin-top:var(--td-size-22); width:100%; } }
+
+/* slow lime and teal waves across the whole page, behind the glass panels (John, 6 Nov). Each
+   line slides one repeat (1440 units) at its own pace, so it loops without a seam. With reduced
+   motion the waves stay still. */
+.st-v15 .st-tide { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; opacity:.6; }
+.st-v15 .st-tide .td-tide { z-index:0; -webkit-mask-image:none; mask-image:none; }
+.st-v15 .st-tide .td-tide:after { background:var(--td-palette-26); }
+@media (max-width:860px){ .st-v15 .st-tide { opacity:.9; } }
+.st-v15 .sp-wrap, .st-v15 .st-close-wrap { position:relative; z-index:1; }
+
+/* liquid glass on every panel: a light catching fill, a bright top edge and a deep blur of the waves */
+.st-v15 .st-card, .st-v15 .sp-rel, .st-v15 .sp-stage, .st-v15 .sp-pricebox, .st-v15 .sp-table-wrap, .st-v15 .st-empty, .st-v15 .sp-basketbar, .st-v15 .sc-panel, .st-v15 .sc-method, .st-v15 .st-stat, .st-v15 .st-close-wrap .td-close { border:var(--td-size-1) solid var(--td-glass-edge); background:var(--td-glass-fill); backdrop-filter:blur(var(--td-glass-panel)) saturate(160%); -webkit-backdrop-filter:blur(var(--td-glass-panel)) saturate(160%); box-shadow:var(--td-glass-shine); }
+.st-v15 .st-card:hover, .st-v15 .sp-rel:hover, .st-v15 .sc-method:hover:not(:disabled) { border-color:var(--td-palette-28); }
+.st-v15 .st-search input, .st-v15 .st-select, .st-v15 .st-pill { backdrop-filter:blur(var(--td-glass-panel)); -webkit-backdrop-filter:blur(var(--td-glass-panel)); }
+.st-v15 .st-pill.on { box-shadow:none; }
+
+/* the shop grouped by use case */
+.st-v15 .st-results { min-width:0; }
+.st-v15 .st-usecases { display:flex; flex-wrap:wrap; gap:var(--td-size-8); margin-bottom:var(--td-size-24); }
+.st-v15 .st-group + .st-group { margin-top:clamp(36px,5vw,56px); }
+.st-v15 .st-group-head { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:var(--td-size-8) var(--td-size-24); margin-bottom:var(--td-size-18); }
+.st-v15 .st-group-head h2 { margin:0; font-size:var(--td-size-22); font-weight:900; letter-spacing:-.02em; }
+.st-v15 .st-group-head p { margin:var(--td-size-6) 0 0; color:var(--td-muted); font-size:var(--td-size-14); text-wrap:pretty; }
+.st-v15 .st-group-head .st-clear { font-weight:800; white-space:nowrap; }
+@media (max-width:560px){ .st-v15 .st-usecases { flex-wrap:nowrap; overflow-x:auto; margin-inline:calc(-1 * clamp(20px,5vw,64px)); padding-inline:clamp(20px,5vw,64px); scrollbar-width:none; } .st-v15 .st-usecases .st-pill { flex:none; } }
