@@ -132,7 +132,7 @@ const homeCopy = {
   consultancyTag: 'For leaders who transform', toolsTag: 'For teams who deliver',
   moreClosed: 'What’s inside ↓', moreOpen: 'Less ↑', logoLabel: 'Our team has delivered for', logoDraft: 'Client logos await written permission.',
   consultancyPoint1: 'Diagnose', consultancyPoint1Text: 'Find the work worth changing first.', consultancyPoint2: 'Deliver', consultancyPoint2Text: 'Build it with specialists and reviewers.', consultancyPoint3: 'Run', consultancyPoint3Text: 'Keep a managed team on it, with a person approving.',
-  consultancyCta: 'Discuss your transformation →', proofLink: 'See our work', toolsCta: 'Browse DX Dev Tools →',
+  consultancyCta: 'Browse DX Consultancy →', proofLink: 'See our work', toolsCta: 'Browse DX Dev Tools →',
   chooserHeading: 'Choose your side', chooserLine: 'Two ways to work with Greatstone.', consultancyChooserLine: 'Transform with AI', toolsChooserLine: 'Proven developer tools', orLabel: 'OR', swipeHint: '← Swipe or tap a side →',
   toolsPoint1: 'Browse by brand', toolsPoint1Text: 'Start with the platform you know.', toolsPoint2: 'Find the fit', toolsPoint2Text: 'Compare product capabilities.', toolsPoint3: 'Buy or renew', toolsPoint3Text: 'Keep the route direct.',
   chooseHref: '#choose', contactHref: '/contact', proofHref: '/proof', toolsHref: '/dev-tools',
@@ -809,6 +809,13 @@ function migrate(state) {
     linkConsultancyFromHome(state.pages.home);
     state.order = ['home', 'dx-consultancy', ...(state.order || []).filter((slug) => slug !== 'home' && slug !== 'dx-consultancy')];
     state._aiLeadToolsPlaced = true;
+  }
+  // John, 6 Nov: the consultancy door browses DX Consultancy, like the tools door browses DX Dev Tools.
+  if (!state._consultancyBrowseCta) {
+    for (const data of [state.pages.home?.data, state.pages.home?.published]) {
+      for (const block of data?.content || []) if (block.type === 'TwoDoors' && block.props?.consultancyCta === 'Discuss your transformation →') block.props.consultancyCta = 'Browse DX Consultancy →';
+    }
+    state._consultancyBrowseCta = true;
   }
   if (!state._dxConsultancyMethodPlaced) {
     const page = state.pages['dx-consultancy'];

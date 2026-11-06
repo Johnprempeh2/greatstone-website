@@ -148,7 +148,7 @@ export function TwoDoors(props) {
               {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt ? '' : undefined} loading="lazy" />{logo.alt && <span>{logo.alt}</span>}</li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
               <ul><li><b>{copy.consultancyPoint1}</b> {copy.consultancyPoint1Text}</li><li><b>{copy.consultancyPoint2}</b> {copy.consultancyPoint2Text}</li><li><b>{copy.consultancyPoint3}</b> {copy.consultancyPoint3Text}</li></ul>
             </div></div>
-            <a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'consultancyCta', copy.consultancyCta)}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{editText(props, 'proofLink', copy.proofLink)}</a>
+            <a className="td-pill" href={safeHref(copy.consultancyHref || '/dx-consultancy')}>{editText(props, 'consultancyCta', copy.consultancyCta)}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{editText(props, 'proofLink', copy.proofLink)}</a>
           </div>
         </article>
         <div className="td-divider" aria-hidden="true"><span>{copy.orLabel}</span></div>
