@@ -1,5 +1,5 @@
 // GRE-2673. Interview state changes emit client activity in the same transaction, through the engine's own calls:
-// an invitation, claim_seat, sign-off and close-out. Retries do not repeat an event, a rolled-back action leaves none,
+// an invitation, the first real session, sign-off and close-out. A test run (an admin's default) is not client activity. Retries do not repeat an event, a rolled-back action leaves none,
 // and the signed pull returns them with only opaque ids and fixed labels. Against a real Postgres.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,6 +11,9 @@ import { canonicalQuery, canonicalString, parseBridgeKeys } from '../functions/l
 import { makeAdminBridgeHandler } from '../functions/admin-bridge.mjs';
 import { interviewDb, inInterviewTransaction } from '../functions/lib/interview/db.mjs';
 import { closeOutSession } from '../functions/lib/interview/lifecycle.mjs';
+import { runPortalOp } from '../functions/lib/interview/portal-ops.mjs';
+import { closeSessionAfterSignOff } from '../functions/lib/interview/turn-effects.mjs';
+import { CURRENT as AGREEMENT } from '../functions/lib/interview/agreement.mjs';
 
 const vector = JSON.parse(readFileSync(new URL('../../contracts/gs-bridge-v1/vectors.json', import.meta.url))).key;
 const privateKey = createPrivateKey({
@@ -21,8 +24,10 @@ const id = (prefix, n) => `${prefix}000000-0000-4000-8000-${String(n).padStart(1
 const ORG = id('90', 1);
 const CLIENT = id('91', 1);
 const ROUND = id('e1', 1);
-const ALICE = id('c1', 1), BOB = id('c1', 2), ADMIN = id('c1', 3);
+const ALICE = id('c1', 1), BOB = id('c1', 2), ADMIN = id('c1', 3), TRIAL = id('c1', 4), SAVER = id('c1', 5);
 const UA = 'ba-user-alice', UB = 'ba-user-bob';
+const TRIAL_ID = { id: 'ba-user-trial', email: 'trial@a.test' };
+const SAVER_ID = { id: 'ba-user-saver', email: 'saver@a.test' };
 const ALICE_ID = { id: UA, email: 'alice@a.test' };
 const BOB_ID = { id: UB, email: 'bob@a.test' };
 let db, pool, handler;
@@ -77,6 +82,8 @@ test('invite, start, complete and close-out each emit once, keyed by the client'
     must(await participant.rpc('claim_seat', { p_employee_id: employee }));
     must(await participant.rpc('claim_seat', { p_employee_id: employee })); // retry: already started, no event
   }
+  // claim_seat runs before the session, so it cannot tell a test run: the first real session is the start
+  assert.deepEqual((await events()).map((r) => r.kind), ['interview.invited', 'interview.invited']);
   const alice = interviewDb(ALICE_ID, { pool });
   const session = must(await alice.from('session').insert({ employee_id: ALICE, phase: 'sign_off' }).select('id').single()).id;
   must(await alice.from('session').update({ ended_at: new Date().toISOString(), resumable: false }).eq('id', session));
@@ -91,8 +98,8 @@ test('invite, start, complete and close-out each emit once, keyed by the client'
   const rows = await events();
   assert.deepEqual(rows.map((r) => [r.kind, r.subject_id]), [
     ['interview.invited', `interview_employee:${ALICE}`], ['interview.invited', `interview_employee:${BOB}`],
-    ['interview.started', `interview_employee:${ALICE}`], ['interview.started', `interview_employee:${BOB}`],
-    ['interview.completed', `interview_employee:${ALICE}`], ['interview.abandoned', `interview_session:${open}`],
+    ['interview.started', `interview_employee:${ALICE}`], ['interview.completed', `interview_employee:${ALICE}`],
+    ['interview.started', `interview_employee:${BOB}`], ['interview.abandoned', `interview_session:${open}`],
   ]);
   assert(rows.every((r) => r.organisation_id === CLIENT));
   assert.deepEqual([...new Set(rows.map((r) => r.label))],
@@ -100,6 +107,42 @@ test('invite, start, complete and close-out each emit once, keyed by the client'
   assert(rows.every((r) => !/private|alice|bob|@/i.test(JSON.stringify(r))));
   // a sign-off is not an abandonment: Alice's ended session has no end_reason
   assert.equal((await query('SELECT end_reason FROM interview.session WHERE id = $1', [session])).rows[0].end_reason, null);
+});
+
+test("an admin's test run emits no start or completion; a saved run emits each once", { skip }, async () => {
+  const before = (await events()).length;
+  const system = interviewDb('system', { pool });
+  must(await system.from('employee').insert([
+    { id: TRIAL, engagement_id: ROUND, name: 'Trial Private', email: 'trial@a.test', status: 'invited', portal_role: 'client_admin' },
+    { id: SAVER, engagement_id: ROUND, name: 'Saver Private', email: 'saver@a.test', status: 'invited', portal_role: 'client_admin' },
+  ]));
+  await query('UPDATE interview.employee SET user_id = $2 WHERE id = $1', [TRIAL, TRIAL_ID.id]);
+  await query('UPDATE interview.employee SET user_id = $2 WHERE id = $1', [SAVER, SAVER_ID.id]);
+  await query(`INSERT INTO interview.agreement_acceptance (customer_id, agreement_key, agreement_version, content_sha256, user_id,
+      customer_user_id, name, email, role_title, legal_name, read_confirmed, authority_confirmed, ip_address)
+    VALUES ($1, 'interview-dpa', $2, $3, 'ba-user-trial', gen_random_uuid(), 'Ada', 'ada@a.test', 'Director', 'A Ltd', true, true,
+      '192.0.2.1') ON CONFLICT DO NOTHING`, [CLIENT, AGREEMENT.version, AGREEMENT.sha256]);
+
+  // start through the portal op, then sign off through the engine's own close: the test run is the admin default
+  async function run(caller, employee, args) {
+    const db = interviewDb(caller, { pool });
+    const op = { db, sys: system, caller, args: { dataConsent: true, ...args }, log: { warn() {}, error() {}, info() {} } };
+    await runPortalOp('start', op);
+    await runPortalOp('start', op); // a re-clicked start continues the live session
+    const live = must(await db.from('session').select('id, started_at, is_test').eq('employee_id', employee).is('ended_at', null));
+    assert.equal(live.length, 1);
+    await closeSessionAfterSignOff(db, system, { ctx: { employee: { id: employee }, engagement: { id: ROUND, client_name: 'Private round' } },
+      session: live[0], state: { completion_score: 1 }, dbPhase: 'sign_off', employeePayload: { id: employee } });
+    return live[0];
+  }
+  assert.equal((await run(TRIAL_ID, TRIAL, {})).is_test, true);
+  assert.equal((await query('SELECT status FROM interview.employee WHERE id = $1', [TRIAL])).rows[0].status, 'completed');
+  assert.equal((await run(SAVER_ID, SAVER, { runMode: 'save' })).is_test, false);
+
+  assert.deepEqual((await events()).slice(before).map((r) => [r.kind, r.subject_id]), [
+    ['interview.invited', `interview_employee:${TRIAL}`], ['interview.invited', `interview_employee:${SAVER}`],
+    ['interview.started', `interview_employee:${SAVER}`], ['interview.completed', `interview_employee:${SAVER}`],
+  ]);
 });
 
 test('a participant cannot mark a session closed out, and end_reason does not change', { skip }, async () => {
@@ -134,12 +177,13 @@ test('the signed pull returns interview events with opaque ids and fixed labels 
   const { items } = await response.json();
   const interview = items.filter((item) => item.kind.startsWith('interview.'));
   assert.deepEqual(interview.map((item) => item.kind), ['interview.invited', 'interview.invited', 'interview.started',
-    'interview.started', 'interview.completed', 'interview.abandoned', 'interview.abandoned']);
+    'interview.completed', 'interview.started', 'interview.abandoned', 'interview.invited', 'interview.invited',
+    'interview.started', 'interview.completed', 'interview.abandoned']);
   for (const item of interview) {
     assert.deepEqual(Object.keys(item).sort(), ['id', 'kind', 'label', 'occurredAt', 'organisationId', 'sequence', 'subjectId']);
     assert.equal(item.organisationId, CLIENT);
     assert.match(item.subjectId, /^interview_(employee|session):[0-9a-f-]{36}$/);
     assert.match(item.label, /^Interview (invited|started|completed|abandoned)$/);
   }
-  assert(!/private|alice|bob|carol|@a\.test|Greatstone Admin/i.test(JSON.stringify(items)));
+  assert(!/private|alice|bob|carol|trial|saver|@a\.test|Greatstone Admin/i.test(JSON.stringify(items)));
 });
