@@ -1,0 +1,81 @@
+/* ── v15 look for My account: sign-in, password reset, purchases, licence keys and settings (GRE-1863) ──
+   Scoped to .acct-v15, which only the /account route wraps its content in, so the organisation hub that
+   shares admin.css keeps its look. The wrapper also carries .st-v15, so every value comes from the --td-*
+   tokens and liquid glass in two-doors-theme.css, the one theme file the landing and the shop use. */
+.acct-v15 .ca-wrap { position:relative; z-index:1; max-width:calc(var(--td-page-width) + 2 * clamp(20px,5vw,64px)); padding:clamp(80px,8vw,112px) clamp(20px,5vw,64px) clamp(56px,8vw,96px); font-family:var(--td-font); color:var(--td-text); }
+.acct-v15 .ca-center { color:var(--td-muted); }
+
+/* type: the landing's kicker, a heavy tight headline and muted body */
+.acct-v15 .st-kicker { display:block; font-size:var(--td-size-12); font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:var(--td-lime); }
+.acct-v15 .acct-id-name, .acct-v15 .ca-signin h1 { font-weight:900; letter-spacing:-.035em; line-height:1.04; text-wrap:balance; }
+.acct-v15 .acct-id-name { font-size:clamp(32px,4.4vw,56px); margin-top:var(--td-size-6); }
+.acct-v15 .ca-signin h1 { font-size:clamp(30px,3.6vw,44px); margin:var(--td-size-8) 0 var(--td-size-10); }
+.acct-v15 .acct-id-sub, .acct-v15 .ca-sub, .acct-v15 .acct-askadmin, .acct-v15 .acct-next-text p { color:var(--td-muted); text-wrap:pretty; }
+.acct-v15 .acct-welcome, .acct-v15 .ca-note, .acct-v15 .ca-trust, .acct-v15 .lk-meta, .acct-v15 .acct-secinfo span { color:var(--td-palette-08); }
+.acct-v15 .acct-ordhead h2, .acct-v15 .pr-form h2, .acct-v15 .acct-next-text h2 { font-size:var(--td-size-22); font-weight:900; letter-spacing:-.02em; }
+.acct-v15 .ca-link, .acct-v15 .acct-pending-link { color:var(--td-lime); text-underline-offset:3px; }
+.acct-v15 :focus-visible { outline:3px solid var(--td-lime); outline-offset:4px; }
+
+/* identity: lime monogram, then the landing's glowing lime-to-teal line under it; the line does not move */
+.acct-v15 .acct-id { position:relative; align-items:flex-end; gap:var(--td-size-18); margin-bottom:clamp(36px,5vw,56px); padding-bottom:clamp(24px,3vw,36px); }
+.acct-v15 .acct-id:after { content:""; position:absolute; left:0; right:0; bottom:0; height:var(--td-size-1); background:linear-gradient(90deg,var(--td-lime),var(--td-teal) 60%,transparent); box-shadow:0 0 var(--td-size-12) var(--td-palette-33); }
+.acct-v15 .acct-avatar { width:64px; height:64px; background:var(--td-lime); color:var(--td-palette-22); font-size:var(--td-size-22); letter-spacing:0; }
+.acct-v15 .acct-tier { background:transparent; border:var(--td-size-1) solid var(--td-palette-28); color:var(--td-lime); }
+
+/* lime pill buttons and quiet outline pills, sentence case, as on the landing */
+.acct-v15 .gs-btn { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:var(--td-size-10) var(--td-size-18); border-radius:var(--td-pill-radius); font-family:var(--td-font); font-size:var(--td-size-14); font-weight:800; letter-spacing:0; text-transform:none; }
+.acct-v15 .gs-btn.sm { min-height:40px; padding:var(--td-size-8) var(--td-size-14); font-size:13px; }
+.acct-v15 .gs-btn.primary { border:0; background:var(--td-lime); color:var(--td-palette-22); }
+.acct-v15 .gs-btn.ghost { border:var(--td-size-1) solid var(--td-palette-25); background:transparent; color:var(--td-text); }
+.acct-v15 .gs-btn:hover:not(:disabled) { transform:none; }
+.acct-v15 .gs-btn.primary:hover:not(:disabled) { box-shadow:0 var(--td-size-8) var(--td-size-30) var(--td-palette-23); }
+.acct-v15 .gs-btn.ghost:hover:not(:disabled) { border-color:var(--td-lime); }
+.acct-v15 .ca-signin form > .gs-btn.primary, .acct-v15 .ca-signin form > button[type="submit"] { min-height:var(--td-size-48); }
+
+/* liquid glass panels with the landing's 18px corners */
+.acct-v15 .ca-signin, .acct-v15 .org-stat, .acct-v15 .ca-table-wrap, .acct-v15 .pr-form, .acct-v15 .lk-card, .acct-v15 .lk-empty, .acct-v15 .acct-next { border:var(--td-size-1) solid var(--td-glass-edge); border-radius:var(--td-panel-radius); background:var(--td-glass-fill); backdrop-filter:blur(var(--td-glass-panel)) saturate(160%); -webkit-backdrop-filter:blur(var(--td-glass-panel)) saturate(160%); box-shadow:var(--td-glass-shine); }
+.acct-v15 .ca-signin { max-width:440px; margin:clamp(8px,3vh,32px) auto 0; padding:clamp(24px,4vw,40px); }
+.acct-v15 .org-stats { gap:var(--td-size-14); margin-bottom:var(--td-size-24); }
+.acct-v15 .org-stat { padding:var(--td-size-18) var(--td-size-22); color:var(--td-text); }
+.acct-v15 button.org-stat:hover { border-color:var(--td-palette-28); }
+.acct-v15 .org-stat-v { font-size:clamp(26px,2.6vw,34px); letter-spacing:-.035em; }
+.acct-v15 .org-stat-l { color:var(--td-palette-08); letter-spacing:.2em; font-size:var(--td-size-12); }
+.acct-v15 .acct-next { padding:var(--td-size-22) var(--td-size-26); border-color:var(--td-palette-28); margin-bottom:var(--td-size-24); }
+.acct-v15 .acct-pending { border-radius:var(--td-panel-radius); padding:var(--td-size-18) var(--td-size-22); }
+.acct-v15 .pr-form { padding:clamp(22px,3vw,32px); max-width:640px; }
+.acct-v15 .lk-card { padding:var(--td-size-22); }
+.acct-v15 .lk-empty { padding:var(--td-size-26); }
+.acct-v15 .lk-key { border-radius:10px; }
+
+/* the account sections: one rounded segmented control, lime on the open tab */
+.acct-v15 .ca-tabs { padding:var(--td-size-4); border:var(--td-size-1) solid var(--td-glass-edge); background:var(--td-glass-fill); backdrop-filter:blur(var(--td-glass-panel)); -webkit-backdrop-filter:blur(var(--td-glass-panel)); }
+.acct-v15 .ca-tabs button { min-height:40px; padding:var(--td-size-8) var(--td-size-18); color:var(--td-muted); font-family:var(--td-font); font-size:var(--td-size-14); font-weight:800; }
+.acct-v15 .ca-tabs button:hover { color:var(--td-text); }
+.acct-v15 .ca-tabs button.on { background:var(--td-lime); color:var(--td-palette-22); }
+.acct-v15 .acct-tabs { margin-bottom:var(--td-size-8); }
+
+/* fields: glass inputs with a lime ring on focus */
+.acct-v15 .ca-signin label, .acct-v15 .pr-form label { color:var(--td-muted); font-size:13px; }
+.acct-v15 .ca-signin input, .acct-v15 .pr-form input, .acct-v15 .acct-ordsearch { min-height:var(--td-size-48); border:var(--td-size-1) solid var(--td-palette-02); border-radius:12px; background:var(--td-palette-34); color:var(--td-text); font-family:var(--td-font); }
+.acct-v15 .acct-ordsearch { border-radius:var(--td-pill-radius); padding-inline:var(--td-size-18); }
+.acct-v15 .ca-signin input:focus, .acct-v15 .pr-form input:focus, .acct-v15 .acct-ordsearch:focus { border-color:var(--td-palette-28); box-shadow:none; background:var(--td-palette-29); }
+.acct-v15 .ca-signin input:focus-visible, .acct-v15 .pr-form input:focus-visible, .acct-v15 .acct-ordsearch:focus-visible { outline:3px solid var(--td-lime); outline-offset:2px; }
+.acct-v15 .ca-note.ca-reclaim { border:0; border-radius:0; background:none; padding:0; color:var(--td-muted); font-size:var(--td-size-14); }
+/* inside the sign-in card the toggle sits flat on the glass, so it is not a card within a card */
+.acct-v15 .ca-signin .ca-tabs { border:0; background:var(--td-palette-34); box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+
+/* tables: quiet headers, lime-tinted hover, glass behind */
+.acct-v15 .ca-table th { color:var(--td-palette-08); letter-spacing:.2em; border-bottom-color:var(--td-palette-02); background:var(--td-palette-29); }
+.acct-v15 .ca-table td { color:var(--td-muted); border-bottom-color:var(--td-palette-02); }
+.acct-v15 .ca-table tr:hover td { background:var(--td-palette-29); }
+.acct-v15 .ca-table .ca-amt { color:var(--td-text); }
+.acct-v15 .ca-ref { background:var(--td-palette-29); color:var(--td-text); border-radius:6px; }
+.acct-v15 .ca-status { border-radius:var(--td-pill-radius); padding:.25em .75em; }
+.acct-v15 .acct-ordhead { flex-wrap:wrap; margin-top:clamp(28px,4vw,44px); }
+.acct-v15 .acct-seclist, .acct-v15 .acct-secrow { border-color:var(--td-palette-02); }
+
+@media (max-width:640px){
+  .acct-v15 .acct-orders tbody tr { border-color:var(--td-glass-edge); border-radius:14px; background:var(--td-palette-34); }
+  .acct-v15 .acct-id-actions { width:100%; }
+  .acct-v15 .acct-id-actions .gs-btn { flex:1 1 auto; }
+}
