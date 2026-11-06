@@ -22,6 +22,7 @@ function database(type = 'product') {
       if (sql.includes('FROM pricing_rules') || sql.includes('FROM pricing_rule_targets')) return { rows: [] };
       if (sql.includes('FROM org_settings')) return { rows: [{ usd_to_gbp_display_rate: '1.25' }] };
       if (sql.includes('INSERT INTO quotes')) return { rows: [{ id: params[0], reference: 'Q-TEST' }] };
+      if (sql.includes('po_upload_take_slot')) return { rows: [{ ok: true }] };
       return { rows: [] };
     }, release: () => calls.push({ sql: 'release' }),
   }) };
@@ -88,4 +89,32 @@ test('tampered paid request containing a service and tool is refused before Stri
   }));
   assert.equal(response.status, 400);
   assert.equal(calls, 0);
+});
+
+test('a PO upload is indexed in the visitor\'s own quote transaction, never as the worker role (GRE-1797)', async () => {
+  const db = database();
+  const blobs = new Map();
+  const store = () => ({ set: async (key, bytes) => blobs.set(key, bytes), delete: async (key) => blobs.delete(key) });
+  const po = { name: 'order.pdf', dataBase64: Buffer.from('%PDF-po').toString('base64') };
+  const handler = makeRequestQuoteHandler({ pool: () => db.pool, verify: async () => null, store, log: () => {} });
+  const result = await handler(new Request('https://stage.example.test/api/request-quote', { method: 'POST',
+    body: JSON.stringify({ items: basket, contact: { email: 'buyer@example.test' }, poDocument: po }) }));
+  assert.equal(result.status, 200);
+  const quoteIndex = db.calls.findIndex(({ sql }) => sql.includes('INSERT INTO quotes'));
+  const index = db.calls.findIndex(({ sql }) => sql === 'SELECT visitor_quote_po_index()');
+  assert.ok(index > quoteIndex && index < db.calls.findIndex((call, i) => i > quoteIndex && call.sql === 'COMMIT'));
+  assert.match(db.calls[quoteIndex].params[10], /^[0-9a-f-]{36}\/order\.pdf$/);
+  assert.equal(db.calls.some(({ sql }) => sql.includes('service_role') || sql.includes('storage.objects')), false);
+  assert.equal(blobs.size, 1);
+
+  const failing = database('none');
+  const pool = { connect: async () => { const client = await failing.pool.connect();
+    return { ...client, query: async (sql, params) => { if (sql.includes('INSERT INTO quotes')) throw new Error('down'); return client.query(sql, params); } }; } };
+  const failed = await makeRequestQuoteHandler({ pool: () => pool, verify: async () => null, store, log: () => {} })(
+    new Request('https://stage.example.test/api/request-quote', { method: 'POST',
+      body: JSON.stringify({ items: basket, contact: { email: 'buyer@example.test' }, poDocument: po }) }));
+  assert.equal(failed.status, 503);
+  assert.equal(blobs.size, 1, 'only the first quote\'s file is left');
+  assert.ok(failing.calls.some(({ sql }) => sql === 'ROLLBACK'), 'the index row rolls back with the quote');
+  assert.equal(failing.calls.some(({ sql }) => sql.includes('service_role') || sql.includes('storage.objects')), false);
 });

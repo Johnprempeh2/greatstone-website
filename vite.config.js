@@ -26,7 +26,6 @@ export default defineConfig(() => ({
           if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';
           if (id.includes('node_modules/@measured/puck')) return 'puck';
           if (id.includes('node_modules/three/')) return 'three';
-          if (id.includes('node_modules/@supabase/')) return 'supabase';
           // The admin studio is deferred purely by the React.lazy boundaries in App.jsx (the 33 cms/* panels).
           // We deliberately do NOT force them into a named manualChunk: a named group also pulls in the panels'
           // shared transitive deps (puck.config, store.js, MediaField, LinkField, ...) which the PUBLIC entry

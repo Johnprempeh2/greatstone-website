@@ -3,7 +3,7 @@
 // dropped, then each paragraph or list item that starts with "Known:", "Indicated:" or "To validate:" (or the
 // bracket form) gets the reader's own tag and class. The marker text is replaced by a tag that a screen reader
 // reads as "Known:", so the meaning never rests on colour. Browser-only (DOMParser); returns the input without a DOM.
-import { EVIDENCE, evidenceMarker } from '../../supabase/functions/_shared/portal-gita.mjs';
+import { EVIDENCE, evidenceMarker } from '../../netlify/functions/lib/shared/portal-gita.mjs';
 
 // drop the first `n` characters of an element's text, across nested inline nodes, then any inline wrapper left empty
 function dropLeadingText(el, n) {

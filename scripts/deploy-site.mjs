@@ -8,7 +8,13 @@ import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
   ['gre1795-website-db-staging', '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb'],
+  ['gre3833-next-db-staging', '6689e558-855b-40b1-be45-c530531fed45'],
 ]);
+// Staging sites take a staging card. Greatstone website staging (gre3833) is the one staging site since
+// GRE-4202 and serves the Next copy, so its upload is the prepared Next proof, not the Vite build.
+const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
+const nextSites = new Set(['gre3833-next-db-staging']);
+const catalogueFixture = 'next-proof/fixtures/public-catalogue-2026-10-22.json';
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
@@ -94,14 +100,27 @@ function onMain(sha) {
   return command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] === sha;
 }
 
+// John's single cut-over card on GRE-2567 (plan step J) also covers the switch (step 6): the public site only, and
+// only its exact SHA. It is the same card carrier-deploy.mjs publish checks, so the cut-over needs one approval.
+async function cutoverCardApproved(sha) {
+  if (site !== 'greatstone-home') return false;
+  const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
+  const key = new RegExp(`^confirmation:GRE-2567:cutover:${sha}(?::v[1-9]\\d*)?$`);
+  return cards.some((card) => card.kind === 'request_confirmation' && card.status === 'accepted' &&
+    card.requestedResolverPolicy === 'human_only' && card.effectiveResolverPolicy === 'human_only' &&
+    card.resolvedByUserId && !card.resolvedByAgentId && key.test(card.idempotencyKey || '') &&
+    card.payload?.detailsMarkdown?.includes(`Approve cut-over: greatstone-home ${sha}`));
+}
+
 async function gate(sha) {
   if (mode === 'prod') {
     if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
     const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
-    const stagingCard = !exactComment && await stagingCardApproved(sha, site === 'greatstone-home');
+    const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home') ||
+      await cutoverCardApproved(sha));
     if (!exactComment && !stagingCard)
-      throw new Error(site === 'gre1795-website-db-staging'
+      throw new Error(stagingSites.has(site)
         ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
         : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}, or a person must comment exactly "${approval}" on this task`);
     return null;
@@ -188,7 +207,7 @@ async function lockAndDeploy(sha, cwd) {
 // live commit's tree, so main's newer code never rides along. It needs the accepted
 // human-only card for exactly that commit; guard-only drift does not count here.
 async function refreshStaging(sha) {
-  if (site !== 'gre1795-website-db-staging') throw new Error('config refresh is only for gre1795-website-db-staging');
+  if (!stagingSites.has(site)) throw new Error('config refresh is only for a staging site');
   if (command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] !== sha)
     throw new Error('config refresh requires a checkout at exactly origin main');
   const live = await lastDeployedCommit();
@@ -197,27 +216,50 @@ async function refreshStaging(sha) {
     throw new Error(`config refresh refused: live commit ${live} is not on main`);
   if (!await stagingCardApproved(live, true))
     throw new Error(`config refresh refused: this task needs an accepted human-only staging card for ${site} and ${live}`);
-  const dir = await mkdtemp(join(tmpdir(), 'gsam-refresh-'));
+  console.log(`Refreshing ${site} config: re-uploading live commit ${live}`);
+  await deployInstalled(live);
+}
+
+// Every upload is an export of the commit with a fresh `npm ci`. The working checkout's
+// node_modules may be missing or stale, and Netlify bundles functions from whatever it
+// finds there: 9376a4e reached staging without @netlify/database and every admin-bridge
+// call gave 502 (GRE-4105).
+async function deployInstalled(sha) {
+  const dir = await mkdtemp(join(tmpdir(), 'gsam-deploy-'));
   try {
     const tree = join(dir, 'tree');
     await mkdir(tree);
-    command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), live]);
+    command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), sha]);
     command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
-    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], tree);
-    console.log(`Refreshing ${site} config: re-uploading live commit ${live}`);
-    await lockAndDeploy(live, tree);
+    const upload = nextSites.has(site) ? await prepareNext(tree, join(dir, 'next')) : tree;
+    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], upload);
+    await lockAndDeploy(sha, upload);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+// The Next copy of the exported commit, with its functions and Netlify Database migrations. The CLI build
+// gets only the read-only database role, which cannot SET ROLE anon for the catalogue export, so the build
+// uses the checked-in catalogue fixture instead (next-proof/README.md). /api/catalogue still reads the site's database.
+async function prepareNext(tree, target) {
+  command(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target], tree);
+  const config = join(target, 'netlify.toml');
+  const toml = await readFile(config, 'utf8');
+  if (!toml.includes('NEXT_CATALOGUE_REQUIRED = "1"')) throw new Error('next-proof/netlify.toml has no NEXT_CATALOGUE_REQUIRED line to replace');
+  await writeFile(config, toml.replace('NEXT_CATALOGUE_REQUIRED = "1"', `NEXT_CATALOGUE_FIXTURE = "${catalogueFixture}"`));
+  return target;
 }
 
 // The weekly train (GRE-2804) also ships the gsam-editor alias on greatstone-home from the same
 // commit. The Vite upload does not contain the Next editor, so the editor is built from this
 // checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,
 // contract, engine commit, links). Any failed step fails the train and names the step.
+// `netlify build` has no --site flag and a fresh clone has no .netlify link, so the site ID
+// goes in NETLIFY_SITE_ID (GRE-4199).
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
-  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha };
+  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha, NETLIFY_SITE_ID: sites.get(site) };
   const steps = [
     ['prepare', process.execPath, ['next-proof/scripts/prepare-netlify.mjs', join(dir, 'editor'), '--editor'], process.cwd()],
     ['install', 'npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], join(dir, 'editor')],
@@ -253,7 +295,7 @@ async function main() {
   }
   if (files && (files.length === 0 || onlyNonSiteFiles(files)))
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
-  else await lockAndDeploy(sha);
+  else await deployInstalled(sha);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
   if (mode === 'prod' && site === 'greatstone-home') await deployEditorAlias(sha);
 }

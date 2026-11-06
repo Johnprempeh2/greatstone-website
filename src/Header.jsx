@@ -6,6 +6,7 @@ import { track } from './lib/analytics.js';
 import { safeHref } from './lib/safe-url.js';
 import { PRIMARY_CTA_LABEL } from './lib/brand.mjs';
 import { getSession, onAuth } from './store/customerAuth.mjs';
+import { BOOK_PAGE, buildNavModel, headerLeaves } from './lib/nav-model.mjs';
 
 const LOGO = '/assets/greatstone-logo-web.png';
 const LOGO_WEBP = '/assets/greatstone-logo-web.webp'; // 47% smaller twin; only offered when the logo is the built-in default (a CMS-overridden logo has no .webp sibling)
@@ -18,51 +19,14 @@ const firstSceneKind = (bg) => {
   return opt && opt.scenes && opt.scenes[0];
 };
 const Chevron = (p) => (<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...p}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>);
-const UserIcon = (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...p}><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.8" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>);
+export const UserIcon = (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...p}><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.8" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>);
 
-// The persistent primary CTA ("Begin the Conversation") lands the visitor on the booking page (slug BOOK_PAGE).
-const BOOK_PAGE = 'contact';
-
-// Resolve one CMS navigation item into a render model node, or null to drop it. A page item is dropped
-// for the public when its page is unpublished or missing; an editor sees all. label blank on a page item
-// falls back to the page's own title. Groups resolve their children the same way and drop if empty.
-function resolveNavItem(item, pages, canEdit) {
-  if (!item || item.visible === false) return null;
-  if (item.type === 'group') {
-    const members = (item.children || []).map((c) => resolveNavItem(c, pages, canEdit)).filter(Boolean);
-    if (!members.length) return null;
-    return { kind: 'group', label: item.label || 'More', members };
-  }
-  if (item.type === 'link') {
-    if (!item.href) return null;
-    return { kind: 'url', href: item.href, label: item.label || item.href, subtext: item.subtext, newTab: !!item.newTab };
-  }
-  // default: a page link
-  const slug = item.pageSlug;
-  const p = slug && pages[slug];
-  if (!p) return null;
-  if (!canEdit && !(p.status === 'published' || p.published)) return null;
-  return { kind: 'page', slug, label: item.label || p.title || slug, subtext: item.subtext };
-}
-
-// Build the header nav render model from the CMS navigation tree. Falls back to a flat list of pages
-// (in page order) if the tree is empty, so the bar is never blank. When searching (q) we flatten the
-// groups and filter by label so every match surfaces.
-function buildNavModel(navigation, order, pages, canEdit, q) {
-  let nav = navigation;
-  // footerOnly pages (Terms, Privacy, …) belong in the footer's legal row, never the header — so the
-  // order-fallback (used when no nav tree is configured) skips them just as the configured tree omits them.
-  if (!Array.isArray(nav) || !nav.length) nav = (order || []).filter((slug) => !(pages[slug] && pages[slug].footerOnly)).map((slug) => ({ type: 'page', pageSlug: slug }));
-  const items = nav.map((i) => resolveNavItem(i, pages, canEdit)).filter(Boolean);
-  if (!q) return items;
-  const flat = [];
-  items.forEach((it) => { if (it.kind === 'group') flat.push(...it.members); else flat.push(it); });
-  return flat.filter((it) => (it.label || '').toLowerCase().includes(q));
-}
+// A page link's address. The Vite studio routes by hash; the Next site passes hrefFor with real paths.
+const hashHref = (slug) => '#' + slug;
 
 // render a single page/url leaf as an inline nav link (page = SPA navigate; url = anchor, internal
 // '#…' hrefs are caught by App's global click handler, external opens per newTab)
-function NavLeaf({ item, current, shopActive, onNavigate, onActivate, className }) {
+function NavLeaf({ item, current, shopActive, onNavigate, onActivate, className, hrefFor = hashHref }) {
   if (item.kind === 'url') {
     return <a className={className} href={safeHref(item.href)} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined} onClick={onActivate}><span>{item.label}{item.subtext && <small>{item.subtext}</small>}</span></a>;
   }
@@ -74,7 +38,7 @@ function NavLeaf({ item, current, shopActive, onNavigate, onActivate, className 
     <a
       aria-current={active ? 'page' : undefined}
       className={className + (active ? ' is-active' : '')}
-      href={'#' + item.slug}
+      href={hrefFor(item.slug)}
       onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); onNavigate(item.slug); }}
     ><span>{item.label}{item.subtext && <small>{item.subtext}</small>}</span></a>
   );
@@ -84,12 +48,12 @@ function NavLeaf({ item, current, shopActive, onNavigate, onActivate, className 
 // (ArrowDown opens + enters the menu, roving Up/Down/Home/End, Escape closes + restores focus, outside
 // click closes). Highlights itself when the current page is one of its members. The DX Dev Tools
 // group holds the Products route (kind 'shop'); "More" holds only genuine overflow.
-function NavGroup({ label, members, current, shopActive, onNavigate }) {
+function NavGroup({ label, members, current, shopActive, onNavigate, hrefFor }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const btnRef = useRef(null);
   const popRef = useRef(null);
-  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => (m.kind === 'page' && m.slug === current) || (m.kind === 'url' && m.href?.startsWith('#go/' + current + '/')));
+  const active = shopActive ? members.some((m) => m.kind === 'shop') : members.some((m) => (m.kind === 'page' && m.slug === current) || (m.kind === 'url' && (m.href?.startsWith('#go/' + current + '/') || (!!hrefFor && !!current && m.href?.startsWith(hrefFor(current) + '#')))));
 
   // Hover intent: open immediately, but close on a short grace delay that is cancelled the moment the
   // cursor re-enters the group (button OR menu). This is what stops the menu vanishing while the cursor
@@ -140,7 +104,7 @@ function NavGroup({ label, members, current, shopActive, onNavigate }) {
             <button key="shop" className={'gs-navmenu-item' + (shopActive ? ' is-active' : '')} aria-current={shopActive ? 'page' : undefined}
               onClick={() => { m.onSelect(); setOpen(false); }}>{m.label}</button>
           ) : (
-            <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} className="gs-navmenu-item" onActivate={() => setOpen(false)}
+            <NavLeaf key={m.slug || m.href || i} item={m} current={current} shopActive={shopActive} hrefFor={hrefFor} className="gs-navmenu-item" onActivate={() => setOpen(false)}
               onNavigate={(slug) => { onNavigate(slug); setOpen(false); }} />
           ))}
         </div>
@@ -156,7 +120,7 @@ const MIN_INLINE = 3;
 // the nav order move into a "More" menu, so a laptop keeps the first launch pages one click away (GRE-659
 // review); only when fewer than MIN_INLINE fit, or on a phone, does the bar collapse into a single dropdown.
 // All measured, not breakpoint-guessed. Editing affordances appear only for a signed-in user with edit rights.
-export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName }) {
+export default function Header({ order, pages, navigation, current, query, onSearch, onNavigate, onNewPage, onShop, shopActive, onAccount, accountActive, onEdit, bg, onSetBg, onCommand, user, canEdit, onSignOut, logo, ctaLabel, siteName, hrefFor = hashHref }) {
   const [clientSignedIn, setClientSignedIn] = useState(false);
   useEffect(() => {
     let mounted = true;
@@ -172,26 +136,15 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const q = (query || '').trim().toLowerCase();
   // nav is driven by the editable CMS navigation tree (state.navigation); public sees only published
   // pages, editors see everything, and a blank tree falls back to page order so the bar is never empty.
-  const navModel = buildNavModel(navigation, order, pages, canEdit, q).map((item) =>
-    item.kind === 'page' && item.slug === 'dev-tools' && onShop
-      ? { kind: 'group', label: item.label, members: [item, { kind: 'shop', label: 'Products', onSelect: onShop }] }
-      : item);
+  const navModel = buildNavModel(navigation, order, pages, canEdit, q, onShop ? { kind: 'shop', label: 'Products', onSelect: onShop } : null);
   // the persistent CTA lands on the Contact / booking page (form + one-click Calendly) instead of
   // jumping straight to Calendly. Keep the GA4 value (book_deep_dive) stable so history doesn't fragment.
   const goBook = (where) => { track('cta_click', { cta: 'book_deep_dive', cta_location: where }); onNavigate(BOOK_PAGE); };
   // the collapsed toggle should name the user's ACTUAL location, including the Products/account routes
   const menuLabel = shopActive ? 'Products' : accountActive ? 'Your account' : (current === 'home' || current === 'dev-tools') ? 'Menu' : (pages[current] && pages[current].title) || 'Menu';
 
-  // the inline bar's items in priority order (the configured nav); the end of the list is the first to move
-  // into "More" when the row is narrow. The storefront sits under DX Dev Tools.
-  // The booking page's nav entry also sits in "More": the lime CTA beside the bar already goes there, and two
-  // copies of the same action side by side compete (GRE-659 review). The phone menu keeps the full tree.
-  const isBookLeaf = (it) => it.kind === 'page' && it.slug === BOOK_PAGE;
-  const baseLeaves = navModel.filter((it) => !isBookLeaf(it));
-  const pins = navModel.filter(isBookLeaf);
-  const hasNamedMore = baseLeaves.some((it) => it.kind === 'group' && it.label === 'More');
-  const leaves = hasNamedMore ? baseLeaves.map((it) => it.kind === 'group' && it.label === 'More' ? { ...it, members: [...it.members, ...pins] } : it) : baseLeaves;
-  const pinnedMore = hasNamedMore ? [] : pins;
+  // the inline bar's items in priority order; the end of the list is the first to move into "More" (src/lib/nav-model.mjs)
+  const { leaves, pinnedMore } = headerLeaves(navModel);
   const leavesKey = leaves.map((l) => l.kind + ':' + l.label).join('|') + '|' + pinnedMore.length;
 
   const wrapRef = useRef(null);
@@ -270,12 +223,12 @@ export default function Header({ order, pages, navigation, current, query, onSea
   const menuLeaf = (m, sub) => m.kind === 'url' ? (
     <a key={m.href} role="menuitem" className={'gs-navmenu-item' + (sub ? ' is-sub' : '')} href={safeHref(m.href)} target={m.newTab ? '_blank' : undefined} rel={m.newTab ? 'noopener noreferrer' : undefined} onClick={() => setMenuOpen(false)}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
   ) : (
-    <a key={m.slug} role="menuitem" href={'#' + m.slug} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
+    <a key={m.slug} role="menuitem" href={hrefFor(m.slug)} aria-current={m.slug === current && !shopActive ? 'page' : undefined} className={'gs-navmenu-item' + (sub ? ' is-sub' : '') + (m.slug === current && !shopActive ? ' is-active' : '')} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { setMenuOpen(false); return; } e.preventDefault(); onNavigate(m.slug); setMenuOpen(false); }}><span>{m.label}{m.subtext && <small>{m.subtext}</small>}</span></a>
   );
 
   return (
     <header className={'gs-header' + (current === 'home' || current === 'dev-tools' ? ' td-header' : '')}>
-      <a className="gs-logo" href="#" aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
+      <a className="gs-logo" href={hrefFor === hashHref ? '#' : hrefFor(order[0])} aria-label={brandName} onClick={(e) => { e.preventDefault(); onNavigate(order[0]); }}>
         <picture>
           {logoSrc === LOGO && <source type="image/webp" srcSet={LOGO_WEBP} />}
           <img src={logoSrc} alt={brandName} width="800" height="160" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -311,11 +264,11 @@ export default function Header({ order, pages, navigation, current, query, onSea
         ) : (
           <nav className="gs-nav" aria-label="Primary">
             {inlineLeaves.map((it, i) => it.kind === 'group' ? (
-              <NavGroup key={'g' + i} label={it.label} members={it.members} current={current} shopActive={shopActive} onNavigate={onNavigate} />
+              <NavGroup key={'g' + i} label={it.label} members={it.members} current={current} shopActive={shopActive} onNavigate={onNavigate} hrefFor={hrefFor} />
             ) : (
-              <NavLeaf key={it.slug || it.href || i} item={it} current={current} shopActive={shopActive} onNavigate={onNavigate} className="gs-navlink" />
+              <NavLeaf key={it.slug || it.href || i} item={it} current={current} shopActive={shopActive} onNavigate={onNavigate} hrefFor={hrefFor} className="gs-navlink" />
             ))}
-            {moreLeaves.length ? <NavGroup label="More" members={moreLeaves} current={current} shopActive={shopActive} onNavigate={onNavigate} /> : null}
+            {moreLeaves.length ? <NavGroup label="More" members={moreLeaves} current={current} shopActive={shopActive} onNavigate={onNavigate} hrefFor={hrefFor} /> : null}
             {navModel.length === 0 && <span className="gs-nomatch">no pages match “{query}”</span>}
           </nav>
         )}

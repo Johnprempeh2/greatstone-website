@@ -25,7 +25,7 @@ export function CatalogueBrowse({ catalogue, filters = {}, release }) {
   </div></SiteFrame>;
 }
 
-function OfferingCard({ item }) {
+export function OfferingCard({ item }) {
   const icon = image(item.attributes?.icon || item.vendor?.logo_url);
   return <a className="st-card" href={'/product/' + encodeURIComponent(item.slug)} aria-label={item.name + ' by ' + (item.vendor?.name || '')}>
     <span className="st-card-icon">{icon && <img src={icon} alt="" loading="lazy" />}</span><h3>{item.name}</h3>

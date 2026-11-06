@@ -2,7 +2,6 @@ import { staffDb } from './staff-store-api.mjs';
 // Catalogue admin — Supabase-authenticated. Sign-in gate → offerings manager (list + edit).
 // Writes go through the signed-in user's session; the staff_all RLS (0004) enforces admin-only.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase.mjs';
 import { useModal } from './useModal.mjs';
 import DrawerScrim from './DrawerScrim.jsx';
 import { signIn, signOut, getSession, onAuth, getStaffUser, isStaff } from './adminAuth.mjs';
@@ -84,7 +83,7 @@ function SignInGate() {
   };
   return (
     <div className="ca-wrap"><div className="ca-signin">
-      <button type="button" className="ca-link" style={{ alignSelf: 'flex-start', marginBottom: 4 }} onClick={() => { if (typeof history !== 'undefined' && history.length > 1) history.back(); else location.hash = 'admin'; }}>← Back</button>
+      <button type="button" className="ca-link" style={{ display: 'block', marginBottom: 12 }} onClick={() => { if (typeof history !== 'undefined' && history.length > 1) history.back(); else location.hash = 'admin'; }}>← Back</button>
       <span className="st-kicker">Catalogue admin</span>
       <h1>Sign in</h1>
       <p className="ca-sub">Manage the Greatstone software catalogue, pricing and quotes.</p>

@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { staffDb } from './staff-store-api.mjs';
 import { isAbsentOrForbidden } from '../lib/pg-absent.mjs';
 import { zipFiles } from '../lib/package-zip.mjs';
-import { buildAgentPackage, packageFolder } from '../../supabase/functions/_shared/front-door-package.mjs';
+import { buildAgentPackage, packageFolder } from '../../netlify/functions/lib/shared/front-door-package.mjs';
 import ClientLink from './ClientLink.jsx';
 
 const STATUSES = ['new', 'contacted', 'closed'];

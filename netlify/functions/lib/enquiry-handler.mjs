@@ -1,13 +1,13 @@
 // The `enquiry` Netlify Function's request handling (GRE-1794), built so `node --test` can run it against a
 // local Netlify Database and fake Resend and Turnstile. It replaces the Supabase edge function
 // (supabase/functions/enquiry) with the same contract and the same logic, handleEnquiry in
-// supabase/functions/_shared/enquiry.mjs:
+// netlify/functions/lib/shared/enquiry.mjs:
 //   POST /api/enquiry { name?, company?, email, size_band?, industry?, message?, attribution?, page?, website?, turnstile? }
 //   → 200 { ok: true, ref } when the row is saved or the owner alert went (the lead is on record)
 //   → 4xx/5xx { ok: false, error } otherwise; the form then shows the contact address.
 // Order: honeypot, Turnstile (when TURNSTILE_SECRET_KEY is set), field checks, ten enquiries per IP a day,
 // save as `anon`, owner alert by Resend (GRE-652 §4.6). A lead is lost only when the save and the alert both fail.
-import { handleEnquiry, sendEmail } from '../../../supabase/functions/_shared/enquiry.mjs';
+import { handleEnquiry, sendEmail } from './shared/enquiry.mjs';
 import { enquiryStore } from './enquiry-store.mjs';
 import { verifyTurnstile } from './turnstile.mjs';
 

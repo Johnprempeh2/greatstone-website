@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { TideField } from './TideField.jsx';
+import { TideField, TideTail } from './TideField.jsx';
 import { track } from '../lib/analytics.js';
 import { MediaField } from '../cms/MediaField.jsx';
 import { safeHref, safeMailto } from '../lib/safe-url.js';
@@ -18,20 +18,21 @@ const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLi
 const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
 const doorSides = ['consultancy', 'choose', 'tools'], touchLayoutQuery = '(max-width:1023px)';
-// GRE-2570: order and names follow the public Greatstone Software slider. Only
-// the six visually matched local files are rendered as marks; missing files stay neutral.
+// GRE-2570: order and names follow the public Greatstone Software slider.
+// image: one light tone on transparent, for the dark home page (scripts/client-logos-light.mjs).
+// colour: the original mark, for the logo wall's white tiles.
 const publicClientMarks = [
-  { name: 'Allen & Overy', image: '/assets/two-doors/clients/06.png' },
-  { name: 'LCP', image: null },
-  { name: 'London Business School', image: '/assets/two-doors/clients/04.png' },
-  { name: 'University Hospitals Bristol and Weston NHS Foundation Trust', image: '/assets/two-doors/clients/02.png' },
-  { name: 'Bank of Ireland UK', image: null },
-  { name: 'Welsh Government', image: '/assets/two-doors/clients/05.png' },
-  { name: 'Phillips 66', image: null },
-  { name: 'Lloyds Bank', image: '/assets/two-doors/clients/03.png' },
-  { name: 'Civica', image: null },
-  { name: 'D.', image: '/assets/two-doors/clients/01.png' },
-  { name: 'Shawbrook Bank', image: null },
+  { name: 'Allen & Overy', image: '/assets/two-doors/clients/light/allen-overy.png', colour: '/assets/two-doors/clients/06.png' },
+  { name: 'LCP', image: '/assets/two-doors/clients/light/lcp.png', colour: '/assets/two-doors/clients/lcp.svg' },
+  { name: 'London Business School', image: '/assets/two-doors/clients/light/london-business-school.png', colour: '/assets/two-doors/clients/04.png' },
+  { name: 'University Hospitals Bristol and Weston NHS Foundation Trust', image: '/assets/two-doors/clients/light/uhbw-nhs.png', colour: '/assets/two-doors/clients/02.png' },
+  { name: 'Bank of Ireland UK', image: '/assets/two-doors/clients/light/bank-of-ireland.png', colour: '/assets/two-doors/clients/bank-of-ireland.svg' },
+  { name: 'Welsh Government', image: '/assets/two-doors/clients/light/welsh-government.png', colour: '/assets/two-doors/clients/05.png' },
+  { name: 'Phillips 66', image: '/assets/two-doors/clients/light/phillips-66.png', colour: '/assets/two-doors/clients/phillips-66.svg' },
+  { name: 'Lloyds Bank', image: '/assets/two-doors/clients/light/lloyds-bank.png', colour: '/assets/two-doors/clients/03.png' },
+  { name: 'Civica', image: '/assets/two-doors/clients/light/civica.png', colour: '/assets/two-doors/clients/civica.svg' },
+  { name: 'D.', image: '/assets/two-doors/clients/light/d.png', colour: '/assets/two-doors/clients/01.png' },
+  { name: 'Shawbrook Bank', image: '/assets/two-doors/clients/light/shawbrook.png', colour: '/assets/two-doors/clients/shawbrook.svg' },
 ];
 const doorPanels = (node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
 const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - node.clientWidth, panel.offsetLeft - (node.clientWidth - panel.offsetWidth) / 2));
@@ -147,7 +148,7 @@ export function TwoDoors(props) {
               {approvedLogos.length ? <div className="td-client-logos"><p>{copy.logoLabel}</p><ul>{approvedLogos.map((logo, i) => <li key={i}><img src={logo.image} alt={logo.alt ? '' : undefined} loading="lazy" />{logo.alt && <span>{logo.alt}</span>}</li>)}</ul></div> : REVIEW_CONTENT && <p className="td-draft">{copy.logoDraft}</p>}
               <ul><li><b>{copy.consultancyPoint1}</b> {copy.consultancyPoint1Text}</li><li><b>{copy.consultancyPoint2}</b> {copy.consultancyPoint2Text}</li><li><b>{copy.consultancyPoint3}</b> {copy.consultancyPoint3Text}</li></ul>
             </div></div>
-            <a className="td-pill" href={safeHref(copy.contactHref)}>{editText(props, 'consultancyCta', copy.consultancyCta)}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{editText(props, 'proofLink', copy.proofLink)}</a>
+            <a className="td-pill" href={safeHref(copy.consultancyHref || '/dx-consultancy')}>{editText(props, 'consultancyCta', copy.consultancyCta)}</a><a className="td-text-link" href={safeHref(copy.proofHref)}>{editText(props, 'proofLink', copy.proofLink)}</a>
           </div>
         </article>
         <div className="td-divider" aria-hidden="true"><span>{copy.orLabel}</span></div>
@@ -171,11 +172,11 @@ export function TwoDoorsStory(props) {
   const copy = { ...props };
   const approvedNumbers = numbers.filter((number) => number?.value && number?.label && number?.verified);
   return <div className="td-segment td-story-segment">
-    <TideField view="calm" enabled={tide} />
+    <TideTail enabled={tide} />
     <section className="td-public-clients" aria-labelledby="td-public-clients-heading">
       <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2 id="td-public-clients-heading">Organisations we have worked with</h2></div>
-      <ul>{publicClientMarks.map(({ name, image }) => <li key={name}>
-        {image ? <img src={image} alt={name} loading="lazy" width="160" height="80" /> : <span className="td-public-client-pending">{name}</span>}
+      <ul className="td-public-clients-grid">{publicClientMarks.map(({ name, image }) => <li key={name}>
+        <img src={image} alt={name} loading="lazy" width="240" height="120" />
       </li>)}</ul>
     </section>
     <section className="td-story" id="about"><div>{(REVIEW_CONTENT || !copy.storyKicker?.startsWith('Copy placeholder')) && editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
@@ -278,3 +279,4 @@ export const devToolsPuck = {
   defaultProps: { ...textDefaults(devFields), heading: '', intro: '', tools: [] },
   render: (props) => <DevTools {...props} />,
 };
+export { publicClientMarks };

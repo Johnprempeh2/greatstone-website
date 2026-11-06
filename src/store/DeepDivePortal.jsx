@@ -2993,7 +2993,7 @@ function Engagement({ slug, staff, itemKind = null, itemId = null }) {
   // backend `setLog(w.log)` then replaced React's log with `frozenLog + one row`, so tidying five
   // boxes left ONE history entry on screen while the database held all five.
   const stateRef = useRef({ map: {}, log: [], version: null });
-  const [backend, setBackend] = useState('supabase');
+  const [backend, setBackend] = useState('netlify');
   const [stateVersion, setStateVersion] = useState(null);
   // AFTER the state it mirrors. Placed above `map`, this effect's own dependency array referenced
   // three consts that had not been declared yet — a temporal dead zone, so the portal threw

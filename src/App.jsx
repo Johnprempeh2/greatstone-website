@@ -9,6 +9,7 @@ import { arrivalAction, parseEnquireHref, setPendingInterest } from './lib/enqui
 import { openBooking } from './lib/booking.js';
 import { siteOrigin } from './lib/site-origin.mjs';
 import { readAuthLanding, consumeVerifiedLanding } from './lib/auth-landing.mjs';
+import { proofBarsProblem } from './lib/proof-bars.mjs';
 import ConsentBanner from './ConsentBanner.jsx';
 
 // The 3D Stage pulls in three.js (~520KB) — purely a decorative background, so it must not block
@@ -25,7 +26,7 @@ const PuckEditor = lazy(() => import('./EditorMount.jsx'));
 // the public bundle, loaded with the editor and rendered inside Puck's context via headerActions.
 const UndoRedo = lazy(() => import('./cms/UndoRedo.jsx'));
 const ContextBar = lazy(() => import('./cms/ContextBar.jsx')); // universal contextual style strip (editor-only)
-// Live storefront — reads Supabase (@supabase/supabase-js); lazy so the public bundle stays lean
+// Live storefront — reads the store functions; lazy so the public bundle stays lean
 // (the chunk arrives only on the #shop route).
 const LazyStoreBrowse = lazy(() => import('./store/StoreBrowse.jsx'));
 const LazyStoreProduct = lazy(() => import('./store/StoreProduct.jsx'));
@@ -471,7 +472,12 @@ export default function App() {
   }, [readPageHash]);
 
   // First paint: honour a deep link straight to a marketing page.
+  // A path link (/dev-tools, which the frozen doors and the Next pages use) becomes its hash route here,
+  // otherwise this build serves the homepage for it.
   useEffect(() => {
+    if (typeof location === 'undefined') return;
+    const path = location.pathname.match(/^\/([a-z0-9-]+)\/?$/i);
+    if (path && !location.hash && stateRef.current.pages?.[path[1].toLowerCase()]) history.replaceState(null, '', '/' + location.search + '#' + path[1].toLowerCase());
     const page = readPageHash();
     if (page) setCurrent(page);
   }, [readPageHash]);
@@ -760,6 +766,8 @@ export default function App() {
   // the Releases change-review queue (Approve) share one path. Returns true once published, false on cancel.
   async function publishPage(slug, data) {
     if (!canPublish) { flash('Editors can’t publish directly. Request review, then an admin publishes.'); return false; }
+    const proofProblem = proofBarsProblem(data?.content);
+    if (proofProblem) { flash(proofProblem); return false; }
     // accessibility/SEO preflight: warn (don't hard-block) if any image is missing alt text
     const missing = findMissingAlt(data && data.content, state.products);
     if (missing.length) {
@@ -1596,7 +1604,7 @@ export default function App() {
       {/* The 3D stage is a hero backdrop for the storefront/public pages only. Utility pages
           (account, catalogue admin, order confirmation) and the Intelligence section render on their
           own solid surface — no bleed-through, no WebGL cost. */}
-      {!(accountRoute || orgRoute || portalRoute || interview || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence') && !saveData && <Stage background={bg} />}
+      {!(accountRoute || orgRoute || portalRoute || interview || catalogueAdmin || confirmRoute || invoiceRoute || intelArticle || current === 'ai-market-intelligence' || (current === 'dx-consultancy' && (page.published || page.data)?.content?.some((item) => item.type === 'Hero' && item.props?.variant === 'consultancy' && item.props?.tide))) && !saveData && <Stage background={bg} />}
       <Header
         order={state.order} pages={state.pages} navigation={state.navigation} current={current} query={query}
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}

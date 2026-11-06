@@ -105,7 +105,7 @@ export default function SignIn({ onAuthed, onCancel, notice }) {
             Demo staff (password <b style={{ color: 'var(--gs-text-muted)' }}>stone</b>):<br />
             admin@greatstone.dev · editor@greatstone.dev<br /><br />
           </>)}
-          The same account signs you into the live catalogue. Editing rights are enforced by role on the server (Supabase RLS).
+          The same account signs you into the live catalogue. Editing rights are enforced by role on the server.
         </p>
       </form>
     </div>

@@ -125,7 +125,7 @@ test('one-time import checks all eight ids and hashes, rolls back dry run, and k
     email: `import-${index + 1}@example.test`, name: 'Test', emailVerified: true,
     passwordHash: '$2b$12$' + 'A'.repeat(53),
   }));
-  assert.throws(() => validateImport(fixture.slice(1)), /eight/);
+  assert.throws(() => validateImport(fixture.slice(1)), /Expected exactly 8 source users/);
   assert.throws(() => validateImport([{ ...fixture[0], passwordHash: 'plain' }, ...fixture.slice(1)]), /Invalid/);
   const duplicateId = 'abcdefab-0000-4000-8000-000000000001';
   assert.throws(() => validateImport([

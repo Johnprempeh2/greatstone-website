@@ -481,12 +481,13 @@ test('Deep Dive release uses registered approval, named signer and the receipt q
   assert.equal(ok('b1', `SELECT count(*) FROM portal_receipt_jobs WHERE acceptance_id='${receipt}';`), '0');
   assert.equal(ok('owner', `SELECT event FROM portal_audit WHERE detail->>'acceptance_id'='${receipt}' ORDER BY at;`),
     'accepted\nreceipt_queued');
-  refused(null, `\\i '${join(MIGRATIONS, '061_deep_dive_portal_documents/rollback.sql')}'`, /retain Deep Dive/);
+  refused(null, `\\i '${join(MIGRATIONS, '070_deep_dive_portal_documents/rollback.sql')}'`, /retain Deep Dive/);
 });
 
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
 test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {
+  ok(null, `\\i '${join(MIGRATIONS, '067_bridge_portal_documents/rollback.sql')}'`);
   ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/rollback.sql')}'`);
   const down38 = `\\i '${join(MIGRATIONS, '041_portal_receipt_worker/rollback.sql')}'`;
   assert.equal(ok(null, `${down38}\nSELECT count(*) FROM pg_proc WHERE proname IN ('portal_is_approver', 'portal_claim_receipt_jobs', 'portal_receipt_document');`), '0');

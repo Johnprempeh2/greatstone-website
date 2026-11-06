@@ -1,0 +1,302 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { RichTextField } from '../cms/RichTextField.jsx';
+import EditableText from './EditableText.jsx';
+import { useReveal } from './reveal.js';
+import { Arrow } from './icons.jsx';
+import { useServices, serviceSlug } from '../store/services.mjs';
+import { addService, openCart } from '../store/cart.mjs';
+import { track } from '../lib/analytics.js';
+import { PRIMARY_CTA_HREF } from '../lib/brand.mjs';
+import { resolveProblems, groupServices, toggleSlug, summarise, countMessage } from '../lib/compose-explorer.mjs';
+import { useComposeProblems, loadComposeProblems } from '../store/compose-problems.mjs';
+
+// ComposeExplorer (GRE-3407): pick a business problem and the catalogue services that compose the answer light up
+// (emerald with a lime edge, the rest dim); or build your own by toggling services directly. A summary counts the
+// services and the areas they touch, and sends the selection to the shared basket. Services, names and categories
+// come from the live catalogue (ServicesContext); problems and their services come from the site database
+// (compose_problems, via /api/compose-problems), with src/data/compose-problems.mjs as first paint and offline fallback.
+// Nothing about a problem or a service is typed here or copied into the page.
+
+export function ComposeExplorer({ id, puck, eyebrow, heading, body, customLabel, basketLabel, quoteLabel, quoteHref }) {
+  const editing = !!puck?.isEditing;
+  const ref = useReveal();
+  const boardRef = useRef(null);
+  const answerRef = useRef(null);
+  const { services, categories } = useServices();
+  const problems = useComposeProblems();
+  useEffect(() => { loadComposeProblems(); }, []);
+  const list = useMemo(() => resolveProblems(problems, services), [problems, services]);
+  const groups = useMemo(() => groupServices(services, categories), [services, categories]);
+  const [active, setActive] = useState(null); // a problem id, 'custom', or null
+  const [selected, setSelected] = useState(() => new Set());
+  const [boardOpen, setBoardOpen] = useState(false); // the full catalogue stays folded until the visitor asks for it
+  const [barOpen, setBarOpen] = useState(false);
+  const [jump, setJump] = useState(0); // bumped when a new answer should be brought into view
+  const sum = useMemo(() => summarise(selected, services), [selected, services]);
+  const answering = list.find((p) => p.id === active);
+  const litOrder = useMemo(() => new Map(sum.chosen.map((s, i) => [serviceSlug(s), i])), [sum.chosen]);
+
+  // a new answer comes into view: the answer panel (on a phone it sits below the stacked problems), or with the
+  // board open, its first lit service. Instant under reduced motion.
+  useEffect(() => {
+    if (!jump) return;
+    const board = boardOpen && boardRef.current;
+    const target = board ? board.querySelector('.b-compose-tile.is-on') || board : answerRef.current;
+    if (!target || !target.scrollIntoView) return;
+    const still = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ block: board ? 'center' : 'nearest', behavior: still ? 'auto' : 'smooth' });
+  }, [jump]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const clear = () => { setActive(null); setSelected(new Set()); };
+  const pickProblem = (p) => {
+    if (active === p.id) { clear(); return; }
+    setActive(p.id); setSelected(new Set(p.services));
+    setJump((n) => n + 1);
+    track('compose_problem', { problem: p.id });
+  };
+  const buildOwn = () => {
+    if (active === 'custom') { clear(); setBoardOpen(false); return; }
+    setActive('custom'); setSelected(new Set()); setBoardOpen(true);
+  };
+  const toggleBoard = () => {
+    if (boardOpen) { setBoardOpen(false); return; }
+    setBoardOpen(true);
+    if (selected.size) setJump((n) => n + 1);
+  };
+  // toggling a service directly turns the current answer into the visitor's own build
+  const toggle = (slug) => { setActive('custom'); setSelected((cur) => toggleSlug(cur, slug)); };
+  const addAll = () => {
+    sum.chosen.forEach((s) => addService({ slug: serviceSlug(s), name: s.name, category: s.category }));
+    track('compose_add_to_basket', { problem: active || 'none', count: sum.count });
+    openCart();
+  };
+  const basketText = basketLabel + (sum.count ? ` (${sum.count})` : '');
+  const boardLabel = boardOpen ? 'Hide the full catalogue' : sum.count ? 'Edit this list' : `See all ${services.length} services`;
+
+  return (
+    <section ref={ref} className="b-compose">
+      <div className="wrap">
+        <div className="b-compose-head" data-reveal>
+          <EditableText editing={editing} id={id} field="eyebrow" value={eyebrow} as="p" className="kicker" singleLine />
+          <EditableText editing={editing} id={id} field="heading" value={heading} as="h2" className="b-compose-h2" singleLine />
+          <EditableText editing={editing} id={id} field="body" value={body} as="p" className="b-compose-body" />
+        </div>
+
+        <div className={'b-compose-layout' + (selected.size ? ' is-lit' : '') + (boardOpen ? ' is-open' : '')}>
+          <div className="b-compose-problems" role="group" aria-label="Business problems" data-reveal>
+            {list.map((p) => (
+              <button key={p.id} type="button" className={'b-compose-problem' + (active === p.id ? ' is-on' : '')}
+                aria-pressed={active === p.id} onClick={() => pickProblem(p)}>
+                <span className="b-compose-ptitle">{p.title}</span>
+                {p.subline ? <span className="b-compose-psub">{p.subline}</span> : null}
+                {editing && p.placeholder ? <span className="b-compose-flag">Placeholder: John to confirm</span> : null}
+              </button>
+            ))}
+          </div>
+          <button type="button" className={'b-compose-own' + (active === 'custom' ? ' is-on' : '')} aria-pressed={active === 'custom'} onClick={buildOwn}>
+            <span className="b-compose-own-label">{customLabel}</span>
+            <span className="b-compose-own-sub">Pick services yourself from all {services.length}.</span>
+          </button>
+
+          {/* the answer sits right under the problems, so the services light up where the visitor just clicked */}
+          <section ref={answerRef} className="b-compose-answer" aria-label="Your selection">
+            <div className="b-compose-answer-main">
+              <p className="b-compose-count" role="status" aria-live="polite">{countMessage(sum, answering?.title)}</p>
+              {sum.count ? (
+                <>
+                  <ul className="b-compose-picked" aria-label="Selected services">
+                    {sum.chosen.map((s, i) => (
+                      <li key={(active || '') + serviceSlug(s)} style={{ '--i': Math.min(i, 10) }}>{s.name}</li>
+                    ))}
+                  </ul>
+                  <ul className="b-compose-areas" aria-label="Areas this touches">
+                    {sum.areas.map((a) => <li key={a}>{a}</li>)}
+                  </ul>
+                </>
+              ) : <p className="b-compose-hint">Pick a problem above, or build your own from the catalogue.</p>}
+            </div>
+            <div className="b-compose-ctas">
+              {sum.count ? <button type="button" className="b-compose-cta is-fill" onClick={addAll}>{basketText}</button> : null}
+              <a className="b-compose-cta" href={quoteHref || PRIMARY_CTA_HREF}>{quoteLabel}<Arrow /></a>
+              {sum.count || boardOpen ? (
+                <button type="button" className="b-compose-toggle" aria-expanded={boardOpen} aria-controls={`${id || 'compose'}-board`} onClick={toggleBoard}>
+                  {boardLabel}
+                </button>
+              ) : null}
+            </div>
+          </section>
+
+          <div ref={boardRef} id={`${id || 'compose'}-board`} className="b-compose-board" hidden={!boardOpen}>
+            {groups.map((g) => (
+              <div key={g.name} className="b-compose-group">
+                <h3 className="b-compose-gname">{g.name}</h3>
+                <div className="b-compose-tiles" role="group" aria-label={g.name}>
+                  {g.services.map((s) => {
+                    const slug = serviceSlug(s);
+                    const on = selected.has(slug);
+                    return (
+                      <button key={slug} type="button" className={'b-compose-tile' + (on ? ' is-on' : '')}
+                        aria-pressed={on} onClick={() => toggle(slug)}
+                        style={on ? { '--i': Math.min(litOrder.get(slug) || 0, 10) } : undefined}>
+                        {s.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* while browsing the open board, a one-line bar keeps the count and the basket in reach */}
+          {boardOpen && sum.count ? (
+            <div className={'b-compose-bar' + (barOpen ? ' is-expanded' : '')}>
+              <div className="b-compose-bar-row">
+                <button type="button" className="b-compose-bar-count" aria-expanded={barOpen} onClick={() => setBarOpen((o) => !o)}>
+                  {sum.count} {sum.count === 1 ? 'service' : 'services'}<span aria-hidden="true" className="b-compose-bar-caret" />
+                </button>
+                <button type="button" className="b-compose-cta is-fill" onClick={addAll}>{basketText}</button>
+              </div>
+              {barOpen ? (
+                <div className="b-compose-bar-more">
+                  <ul className="b-compose-areas" aria-label="Areas this touches">{sum.areas.map((a) => <li key={a}>{a}</li>)}</ul>
+                  <a className="b-compose-cta" href={quoteHref || PRIMARY_CTA_HREF}>{quoteLabel}<Arrow /></a>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export const css = `
+.b-compose{padding:clamp(80px,10vw,144px) 0;position:relative}
+.b-compose-head{max-width:62ch;margin-bottom:clamp(28px,4vw,48px)}
+.b-compose-h2{margin-top:.5em;font-size:clamp(2rem,4vw,2.75rem);font-weight:800;line-height:1.08;letter-spacing:-.025em}
+.b-compose-body{margin-top:1rem;color:var(--gs-text-muted);font-size:clamp(1rem,1.4vw,1.12rem);line-height:1.7}
+.b-compose-layout{display:flex;flex-direction:column;gap:16px}
+.b-compose-problems{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.b-compose-problem{display:flex;flex-direction:column;gap:6px;min-height:44px;text-align:left;padding:18px 20px;font-family:inherit;
+  color:var(--gs-text);background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:24px;cursor:pointer;
+  transition:border-color .25s var(--gs-ease),background-color .25s var(--gs-ease),transform .25s var(--gs-ease)}
+.b-compose-problem:hover{border-color:var(--gs-border-strong);transform:translateY(-2px)}
+.b-compose-problem:focus-visible,.b-compose-own:focus-visible,.b-compose-tile:focus-visible,.b-compose-cta:focus-visible,
+.b-compose-toggle:focus-visible,.b-compose-bar-count:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
+.b-compose-problem.is-on{background:var(--gs-emerald);border-color:var(--gs-accent)}
+.b-compose-ptitle{font-size:1rem;font-weight:800;line-height:1.3;letter-spacing:-.01em}
+.b-compose-psub{font-size:.88rem;line-height:1.5;color:var(--gs-text-muted)}
+.b-compose-problem.is-on .b-compose-psub{color:var(--gs-text)}
+.b-compose-flag{align-self:flex-start;margin-top:4px;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gs-bg);background:var(--gs-warning);border-radius:6px;padding:3px 7px}
+/* "build your own" is a quiet text-button under the row, not an eighth card */
+.b-compose-own{align-self:flex-start;display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:.25em .6em;min-height:44px;padding:10px 2px;
+  font-family:inherit;text-align:left;color:var(--gs-text);background:none;border:0;cursor:pointer}
+.b-compose-own-label{font-size:.95rem;font-weight:800;text-decoration:underline;text-decoration-color:var(--gs-accent);text-underline-offset:4px;text-decoration-thickness:2px}
+.b-compose-own-sub{font-size:.88rem;color:var(--gs-text-muted)}
+.b-compose-own:hover .b-compose-own-label,.b-compose-own.is-on .b-compose-own-label{color:var(--gs-accent)}
+.b-compose-answer{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px 32px;align-items:start;padding:24px 28px;
+  background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:24px;transition:border-color .25s var(--gs-ease)}
+.b-compose-answer{scroll-margin:96px 0 16px}
+.b-compose-layout.is-lit .b-compose-answer{border-color:var(--gs-accent-mid)}
+.b-compose-answer-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.b-compose-count{font-size:1.15rem;font-weight:800;line-height:1.3}
+.b-compose-hint{color:var(--gs-text-muted);font-size:.95rem;line-height:1.55}
+.b-compose-picked{list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.b-compose-picked li{--i:0;padding:9px 15px;font-size:.86rem;font-weight:600;line-height:1.3;color:var(--gs-text);background:var(--gs-emerald);
+  border:1px solid var(--gs-accent);border-radius:999px;box-shadow:0 0 0 1px var(--gs-accent-mid),0 0 22px var(--gs-accent-glow);
+  animation:b-compose-light .25s var(--gs-ease) both;animation-delay:calc(var(--i) * 40ms)}
+@keyframes b-compose-light{from{opacity:0;transform:translateY(6px);box-shadow:none}}
+.b-compose-areas{list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.b-compose-areas li{font-size:.75rem;font-weight:700;color:var(--gs-accent);background:var(--gs-accent-soft);border:1px solid var(--gs-border);border-radius:999px;padding:4px 10px}
+.b-compose-ctas{display:flex;flex-direction:column;gap:10px}
+.b-compose-cta{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:44px;padding:0 20px;font-family:inherit;
+  font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;white-space:nowrap;color:var(--gs-text);
+  background:transparent;border:1px solid var(--gs-text);border-radius:999px;cursor:pointer;transition:background-color .2s var(--gs-ease),color .2s var(--gs-ease)}
+.b-compose-cta:hover{background:var(--gs-text);color:var(--gs-bg)}
+.b-compose-cta svg{width:14px;height:14px}
+.b-compose-cta.is-fill{color:var(--gs-bg);background:var(--gs-accent);border-color:var(--gs-accent)}
+.b-compose-cta.is-fill:hover{background:var(--gs-text);border-color:var(--gs-text)}
+.b-compose-toggle{min-height:44px;padding:0 4px;font-family:inherit;font-size:.88rem;font-weight:700;color:var(--gs-text-muted);background:none;border:0;cursor:pointer;
+  text-decoration:underline;text-underline-offset:4px}
+.b-compose-toggle:hover{color:var(--gs-text)}
+.b-compose-board{display:flex;flex-direction:column;gap:22px;min-width:0;padding-top:12px}
+.b-compose-board[hidden]{display:none}
+.b-compose-gname{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gs-text-faint);margin-bottom:10px}
+.b-compose-tiles{display:flex;flex-wrap:wrap;gap:8px}
+.b-compose-tile{--i:0;min-height:44px;max-width:100%;padding:10px 16px;font-family:inherit;font-size:.86rem;font-weight:600;line-height:1.3;text-align:left;
+  color:var(--gs-text-muted);background:var(--gs-card);border:1px solid var(--gs-border-soft);border-radius:999px;cursor:pointer;
+  transition:color .25s var(--gs-ease),background-color .25s var(--gs-ease),border-color .25s var(--gs-ease),box-shadow .25s var(--gs-ease),transform .25s var(--gs-ease),opacity .25s var(--gs-ease);
+  transition-delay:calc(var(--i) * 24ms)}
+.b-compose-tile:hover{color:var(--gs-text);border-color:var(--gs-border-strong)}
+/* once an answer is lit, everything outside it steps back */
+.b-compose-layout.is-lit .b-compose-tile:not(.is-on){opacity:.45;background:transparent}
+.b-compose-layout.is-lit .b-compose-tile:not(.is-on):hover,.b-compose-layout.is-lit .b-compose-tile:not(.is-on):focus-visible{opacity:1}
+.b-compose-tile.is-on{color:var(--gs-text);background:var(--gs-emerald);border-color:var(--gs-accent);
+  box-shadow:0 0 0 1px var(--gs-accent-mid),0 0 22px var(--gs-accent-glow);transform:translateY(-1px)}
+.b-compose-bar{position:sticky;bottom:12px;z-index:2;display:flex;flex-direction:column;gap:12px;padding:8px 8px 8px 18px;
+  background:var(--gs-bg-deep);border:1px solid var(--gs-accent-mid);border-radius:24px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.b-compose-bar-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.b-compose-bar-count{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0;font-family:inherit;font-size:.95rem;font-weight:800;
+  color:var(--gs-text);background:none;border:0;cursor:pointer}
+.b-compose-bar-caret{width:8px;height:8px;border-right:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(-45deg) translate(-1px,1px);transition:transform .2s var(--gs-ease)}
+.b-compose-bar.is-expanded .b-compose-bar-caret{transform:rotate(135deg) translate(-1px,1px)}
+.b-compose-bar-more{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:0 10px 6px 0}
+html:has(.b-compose-bar){scroll-padding-bottom:96px}
+@media(max-width:900px){
+  /* on a phone the answer follows the problem cards directly; "build your own" comes after it */
+  .b-compose-own{order:1}
+  .b-compose-board,.b-compose-bar{order:2}
+  .b-compose-answer{grid-template-columns:minmax(0,1fr);padding:20px}
+  .b-compose-ctas{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .b-compose-ctas .b-compose-cta{flex:1 1 180px}
+}
+@media(max-width:600px){
+  .b-compose-count{font-size:1rem}
+  .b-compose-ctas .b-compose-cta{flex:1 1 100%;padding:0 12px}
+  .b-compose-bar .b-compose-cta{padding:0 14px;font-size:.72rem;letter-spacing:.04em}
+}
+@media(prefers-reduced-motion:reduce){
+  .b-compose-problem,.b-compose-tile,.b-compose-cta,.b-compose-answer,.b-compose-bar-caret{transition:none}
+  .b-compose-picked li{animation:none}
+  .b-compose-problem:hover,.b-compose-tile.is-on{transform:none}
+}
+@media print{.b-compose-bar{display:none}.b-compose-tile,.b-compose-picked li{box-shadow:none}}
+`;
+
+// The problems are site data, not page data, so the studio points to where they are edited instead of copying them.
+function ProblemsNote() {
+  return (
+    <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0 }}>
+      Problems and their services come from the site database (tables compose_problems and compose_problem_services).
+      To change them, edit src/data/compose-problems.mjs, run node scripts/gen-compose-seed.mjs and apply
+      netlify/database/seed/compose-problems.sql. Problems marked placeholder show a flag here until John confirms them.
+    </p>
+  );
+}
+
+export const puck = {
+  label: 'Compose explorer',
+  fields: {
+    eyebrow: { type: 'custom', label: 'Eyebrow', render: (props) => <RichTextField {...props} variant="eyebrow" /> },
+    heading: { type: 'custom', label: 'Heading', render: (props) => <RichTextField {...props} variant="heading" /> },
+    body: { type: 'custom', label: 'Introduction', render: (props) => <RichTextField {...props} /> },
+    customLabel: { type: 'text', label: '"Build your own" label' },
+    basketLabel: { type: 'text', label: 'Basket button label' },
+    quoteLabel: { type: 'text', label: 'Quote link label' },
+    quoteHref: { type: 'text', label: 'Quote link' },
+    problemsNote: { type: 'custom', label: 'Business problems', render: ProblemsNote },
+  },
+  defaultProps: {
+    eyebrow: 'Compose the answer',
+    heading: 'Start with the problem, not the product.',
+    body: 'Pick what is getting in the way. The services that solve it light up, drawn from the full catalogue. Or build your own and take the list to a conversation with us.',
+    customLabel: 'Or build your own',
+    basketLabel: 'Add to basket',
+    quoteLabel: 'Request a quote',
+    quoteHref: PRIMARY_CTA_HREF,
+  },
+  render: (props) => <ComposeExplorer {...props} />,
+};
+
+export default ComposeExplorer;

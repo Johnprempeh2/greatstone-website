@@ -6,11 +6,13 @@ import collectionSchema from './release-schema/collections.v1.schema.json' with 
 import motionSchema from './release-schema/blocks-motion.v1.schema.json' with { type: 'json' };
 import motionManifest from './release-schema/manifest.v1.json' with { type: 'json' };
 import { validPageScene } from './page-scene.mjs';
+import { proofBarsProblem } from '../src/lib/proof-bars.mjs';
 
-export const supportedReleaseSchemas = [1];
+// Schemas the engine accepts from GSAM (gsam-release.mjs). The baked proof release is always schema 1.
+export const supportedReleaseSchemas = [1, 2];
 export const supportedBlocks = new Set([
   'TwoDoors', 'TwoDoorsStory', 'TwoDoorsProof', 'TwoDoorsTools', 'TwoDoorsClose', 'TwoDoorsBottom', 'DevTools',
-  'Hero', 'Prose', 'Panels', 'ServiceCatalog', 'TransformationServices', 'DxConsultancyMethod', 'Invite', 'Steps', 'FeatureGrid',
+  'Hero', 'Prose', 'Panels', 'ServiceCatalog', 'TransformationServices', 'DxConsultancyMethod', 'LayerStack', 'BridgeMap', 'ProofBars', 'Invite', 'Steps', 'FeatureGrid',
   'Faq', 'PillarCards', 'MaturityModel', 'Chapter', 'Team', 'LogoWall',
   'IntelBand', 'MaturityMap', 'Ladder', 'MethodTieIn', 'IndustryPicker',
   'BookDeepDive', 'AiBaselineSurvey', 'AiCostCalculator',
@@ -63,7 +65,7 @@ function checkBlocks(blocks, ids) {
 export function validateRelease(release, { siteId, orgId } = {}) {
   if (!release || typeof release !== 'object' || Array.isArray(release)) return fail('R1', 'Release root must be an object');
   if (Buffer.byteLength(JSON.stringify(release)) > 10 * 1024 * 1024) return fail('R13', 'Release exceeds 10 MB');
-  if (!supportedReleaseSchemas.includes(release.schema)) return fail('R2', `Unsupported schema ${release.schema}`);
+  if (release.schema !== 1) return fail('R2', `Unsupported schema ${release.schema}`);
   if (!validShape(release)) return fail('R1', `${validShape.errors[0].instancePath || '/'} ${validShape.errors[0].message}`);
   if (release.siteId !== siteId) return fail('R3', 'Site id does not match this engine');
   if (release.orgId !== orgId || Object.values(release.collections).some((collection) => collection.entries.some((entry) => entry.orgId !== orgId))) return fail('R4', 'Organisation id does not match this engine');
@@ -72,9 +74,11 @@ export function validateRelease(release, { siteId, orgId } = {}) {
   const paths = new Set(release.pages.map((page) => page.path));
   if (!['id', 'slug', 'path'].every((key) => unique(release.pages, key)) || release.pages.filter((page) => page.path === '/').length !== 1 || release.pages.some((page) => page.seo.canonicalPath && !paths.has(page.seo.canonicalPath))) return fail('R5', 'Page ids, slugs, paths or canonical paths are invalid');
   for (const page of release.pages) {
-    if (page.data.root.props.pageScene !== undefined && !validPageScene(page.data.root.props.pageScene)) return fail('R6', 'Invalid page 3D background');
+    if (page.data.root.props.pageScene !== undefined && !validPageScene(page.data.root.props.pageScene, page.data.content.map((block) => block.props.id))) return fail('R6', 'Invalid page 3D background');
     const bad = checkBlocks(page.data.content, new Set());
     if (bad) return bad;
+    const proofProblem = proofBarsProblem(page.data.content);
+    if (proofProblem) return fail('R6', proofProblem);
   }
 
   let missingMedia;

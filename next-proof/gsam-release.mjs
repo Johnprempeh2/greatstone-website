@@ -6,6 +6,17 @@ const hashPattern = /^[0-9a-f]{64}$/;
 const mediaPath = /^media\/([0-9a-f]{64})\.(png|jpg|webp|avif|gif)$/;
 const plainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const problem = (rule, message) => ({ rule, message });
+// GRE-3776: schema 2 pages carry { html, css } instead of Puck data, with shared chrome and one site
+// stylesheet. Both schemas render until every page has moved (S4).
+export const WEBSITE_RELEASE_SCHEMAS = [1, 2];
+export { CHROME_KEYS } from './chrome-keys.mjs';
+import { CHROME_KEYS } from './chrome-keys.mjs';
+const htmlDocument = (value) => plainObject(value) && typeof value.html === 'string' && typeof value.css === 'string';
+// GRE-3789: a page's FAQ structured data is page SEO: plain-text questions and answers the engine writes
+// as FAQPage JSON-LD (it was the Faq block's script before the export).
+const faqItem = (item) => plainObject(item) && typeof item.q === 'string' && typeof item.a === 'string' &&
+  item.q.trim() && item.a.trim() && item.q.length <= 500 && item.a.length <= 4000;
+const validSeoFaq = (faq) => faq === undefined || (Array.isArray(faq) && faq.length <= 50 && faq.every(faqItem));
 
 export function validateCurrent(current) {
   if (!plainObject(current) || current.schema !== 1 || !Number.isSafeInteger(current.release) || current.release < 1 ||
@@ -18,18 +29,21 @@ export function validateCurrent(current) {
 }
 
 export function validateGsamRelease(value, { siteId, orgId, number }) {
-  if (!plainObject(value) || value.schema !== 1 || value.siteId !== siteId ||
+  if (!plainObject(value) || !WEBSITE_RELEASE_SCHEMAS.includes(value.schema) || value.siteId !== siteId ||
       (value.orgId !== null && value.orgId !== orgId) || value.release !== number || !plainObject(value.theme) ||
       !Array.isArray(value.pages) || !value.pages.length || !plainObject(value.collections) ||
       !Array.isArray(value.redirects) || !plainObject(value.media)) return problem('release', 'Release envelope is invalid');
+  const html = value.schema === 2;
+  if (html && (typeof value.stylesheet !== 'string' || !plainObject(value.chrome) ||
+      Object.entries(value.chrome).some(([key, item]) => !CHROME_KEYS.includes(key) || !htmlDocument(item)))) return problem('chrome', 'Release chrome or stylesheet is invalid');
   const ids = new Set();
   const paths = new Set();
   for (const page of value.pages) {
     if (!plainObject(page) || typeof page.id !== 'string' || !page.id || ids.has(page.id) ||
         typeof page.slug !== 'string' || !/^\/(?:[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*)?$/.test(page.slug) || paths.has(page.slug) ||
-        typeof page.title !== 'string' || !plainObject(page.seo) || !plainObject(page.content) ||
-        !Array.isArray(page.content.content) || !plainObject(page.content.root)) return problem('pages', 'Release page is invalid');
-    if (page.content.content.some((block) => !plainObject(block) || !supportedBlocks.has(block.type) || !plainObject(block.props)))
+        typeof page.title !== 'string' || !plainObject(page.seo) || !validSeoFaq(page.seo.faq) || (html ? !htmlDocument(page) : !plainObject(page.content) ||
+        !Array.isArray(page.content.content) || !plainObject(page.content.root))) return problem('pages', 'Release page is invalid');
+    if (!html && page.content.content.some((block) => !plainObject(block) || !supportedBlocks.has(block.type) || !plainObject(block.props)))
       return problem('pages', 'Release contains an unsupported block');
     ids.add(page.id);
     paths.add(page.slug);
@@ -49,13 +63,16 @@ export function readGsamRelease(raw, current, identity, baked) {
   catch { return { refused: problem('release', 'Release is not valid JSON') }; }
   const refused = validateGsamRelease(published, { ...identity, number: current.release });
   if (refused) return { refused };
+  const html = published.schema === 2;
 
   try {
     const pages = published.pages.map((page) => ({
       id: page.id, slug: page.slug === '/' ? 'home' : page.slug.split('/').at(-1), path: page.slug, title: page.title,
       seo: { title: page.seo.title || page.title, description: page.seo.description || '',
         ...(page.seo.ogImageAssetId && published.media[page.seo.ogImageAssetId] ? { ogImage: `/${published.media[page.seo.ogImageAssetId]}` } : {}),
-        noindex: page.seo.noindex || false }, data: page.content,
+        noindex: page.seo.noindex || false,
+        ...(page.seo.faq?.length ? { faq: page.seo.faq.map(({ q, a }) => ({ q, a })) } : {}) },
+      ...(html ? { format: 'html', html: page.html, css: page.css } : { data: page.content }),
     }));
     if (!pages.some((page) => page.path === '/')) return { refused: problem('pages', 'Release has no home page') };
     const navigation = published.pages.filter((page) => page.menu === 'header')
@@ -71,6 +88,9 @@ export function readGsamRelease(raw, current, identity, baked) {
       release: { ...baked.release, number: published.release },
       site: { ...baked.site, navigation },
       theme: { ...baked.theme, tokens: { ...baked.theme.tokens, ...tokens } },
+      releaseSchema: published.schema,
+      chrome: html ? Object.fromEntries(CHROME_KEYS.map((key) => [key, { html: published.chrome[key]?.html || '', css: published.chrome[key]?.css || '' }])) : null,
+      stylesheet: html ? published.stylesheet : null,
       pages, collections, redirects: published.redirects, gsamSnapshot: true,
       media: Object.fromEntries(Object.entries(published.media).map(([id, key]) => [id, { key }])),
     } };

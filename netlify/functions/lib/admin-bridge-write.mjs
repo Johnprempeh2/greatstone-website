@@ -7,6 +7,7 @@
 // rolls back to the savepoint and still commits its audit row (and spends its nonce). The answer is stored under the
 // idempotency key, so a retry with the same key and body gets the same answer and writes nothing.
 import { BridgeRequestError, CHILD_COLUMNS, bridgeFx, bridgeRow } from './admin-bridge-store.mjs';
+import { checkDocumentFields } from './shared/portal-mcp.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const ROLE = { write: 'gsam_bridge_write', refund_request: 'gsam_bridge_refund' };
@@ -14,11 +15,14 @@ const BEGIN = { write: 'admin_bridge_begin_write', refund_request: 'admin_bridge
 const FINISH = { write: 'admin_bridge_finish_write', refund_request: 'admin_bridge_finish_refund' };
 
 // ── refusals ────────────────────────────────────────────────────────────────────────────────────────
-// A refused write answers with a code; the audit outcome is the code, except over_refundable, which is a conflict.
-export const WRITE_STATUS = { bad_request: 400, denied: 403, not_found: 404, conflict: 409, over_refundable: 409,
-  idempotency_mismatch: 409, agreement_required: 409 };
+// A refused write answers with a code; the audit outcome is the code, except over_refundable and agreement_required,
+// which are a conflict, and licence_key_in_text, which is a bad_request.
+const AUDIT_OUTCOME = { over_refundable: 'conflict', agreement_required: 'conflict', licence_key_in_text: 'bad_request' };
+export const WRITE_STATUS = { bad_request: 400, licence_key_in_text: 400, denied: 403, not_found: 404, conflict: 409,
+  over_refundable: 409, idempotency_mismatch: 409, agreement_required: 409 };
 const PG_REFUSAL = {
   GB400: 'bad_request', GB403: 'denied', GB404: 'not_found', GB409: 'conflict', GBR01: 'over_refundable',
+  GBK01: 'licence_key_in_text',
   23502: 'bad_request', 23503: 'bad_request', 23514: 'bad_request', '22P02': 'bad_request', 22003: 'bad_request',
   22007: 'bad_request', 22008: 'bad_request', 22023: 'bad_request', 22001: 'bad_request',
   23505: 'conflict', 42501: 'denied',
@@ -61,8 +65,7 @@ export async function asBridgeWriter(pool, call, work) {
         const code = refusal(error);
         if (!code) throw error;
         await client.query('ROLLBACK TO SAVEPOINT bridge_write');
-        // the audit row knows the five outcomes; the answer keeps the precise code
-        result = { outcome: code === 'over_refundable' || code === 'agreement_required' ? 'conflict' : code, status: WRITE_STATUS[code],
+        result = { outcome: AUDIT_OUTCOME[code] || code, status: WRITE_STATUS[code],
           body: { error: { code } }, rowCount: 0 };
         if (code === 'conflict' && call.current) {
           const current = await call.current(client);
@@ -491,6 +494,148 @@ function clientUserRoute(method, parts) {
   } };
 }
 
+// A product range's activation steps (GRE-3981, migrations 027 and 065): the steps live on the vendor, not the
+// licence, and go to every buyer in the range. Steps that contain a full licence key are refused in the database
+// (licence_key_in_text); an agent changes only a draft vendor (049). The answer names no licence key.
+async function activationSteps(client, vendorId) {
+  const { rows: [v] } = await client.query(`SELECT id, name, status, activation_instructions, row_version, updated_at,
+      bridge_vendor_licence_count(id) AS licences FROM vendors WHERE id = $1::uuid AND deleted_at IS NULL`, [vendorId]);
+  return v ? { vendorId: v.id, vendorName: v.name, status: v.status, activationSteps: v.activation_instructions,
+    rowVersion: v.row_version, updatedAt: v.updated_at, licencesInRange: v.licences } : null;
+}
+
+function activationRoute(method, parts) {
+  const [res, vendorId, sub, extra] = parts;
+  if (res !== 'vendors' || sub !== 'activation-steps' || extra !== undefined || method !== 'PUT') return null;
+  return { current: (client) => (UUID.test(vendorId) ? activationSteps(client, vendorId) : null), run: async (client, ctx, body) => {
+    const { activation_instructions: steps } = pick(body, { activationSteps: ['activation_instructions', text(20000)] },
+      { allow: ['expectedRowVersion'] });
+    if (body.activationSteps === undefined) bad('activationSteps is required');
+    if (steps !== null && !steps.trim()) bad('activationSteps is blank; send null to clear');
+    await update(client, 'vendors', needId(vendorId), expectedRowVersion(body), { activation_instructions: steps });
+    const item = await activationSteps(client, vendorId);
+    return { status: 200, body: { item }, rowCount: 1, resourceId: vendorId };
+  } };
+}
+
+// Portal documents (GRE-4081, migration 067): the studio's Client portal actions. Fields are checked here as the
+// portal MCP checks an agent's (section html is refused, not rewritten, so the draft holds what John approves); 039's
+// triggers and 067's functions hold every rule again. Approve and publish is for a person linked to a registered
+// portal approver only; withdraw is for people only. Answers carry the document, never its PDF path.
+const PORTAL_FIELDS = { kind: 'kind', series: 'series', title: 'title', summary: 'summary', body: 'body', demos: 'demos',
+  action: 'action', confirmationText: 'confirmation_text', signatoryEmail: 'signatory_email' };
+function portalFields(body, mode, allow) {
+  const fields = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (allow.includes(k)) continue;
+    if (!PORTAL_FIELDS[k]) bad(`unknown field ${k}`);
+    fields[PORTAL_FIELDS[k]] = v;
+  }
+  if (checkDocumentFields(fields, mode).length) bad('document fields');
+  return fields;
+}
+const portalDoc = async (client, docId) => (await client.query('SELECT bridge_portal_document($1::uuid) AS item', [docId])).rows[0].item;
+const sha = (x, k) => (typeof x === 'string' && /^[0-9a-f]{64}$/.test(x) ? x : bad(k));
+
+function portalRoute(method, parts) {
+  const [res, docId, action, extra] = parts;
+  if (res !== 'portal-documents' || extra !== undefined) return null;
+  if (docId === undefined) {
+    if (method !== 'POST') return null;
+    return { run: async (client, ctx, body) => {
+      const customer = id({ nullable: false })(body.customerId, 'customerId');
+      const fields = portalFields(body, 'create', ['customerId']);
+      const { rows: [r] } = await client.query('SELECT bridge_portal_create($1::uuid, $2::jsonb) AS id', [customer, JSON.stringify(fields)]);
+      return answer(201, await portalDoc(client, r.id));
+    } };
+  }
+  if (!UUID.test(docId)) return null;
+  const current = (client) => portalDoc(client, docId);
+  if (action === undefined && method === 'PATCH') {
+    return { current, run: async (client, ctx, body) => {
+      const fields = portalFields(body, 'update', ['expectedRowVersion']);
+      await client.query('SELECT bridge_portal_edit_draft($1::uuid, $2, $3::jsonb)', [docId, expectedRowVersion(body), JSON.stringify(fields)]);
+      return answer(200, await portalDoc(client, docId));
+    } };
+  }
+  if (method !== 'POST') return null;
+  if (action === 'submit' || action === 'return-to-draft') {
+    return { current, run: async (client, ctx, body) => {
+      pick(body, {}, { allow: ['expectedRowVersion'] });
+      await client.query('SELECT bridge_portal_set_draft_state($1::uuid, $2, $3)',
+        [docId, expectedRowVersion(body), action === 'submit' ? 'pending_approval' : 'draft']);
+      return answer(200, await portalDoc(client, docId));
+    } };
+  }
+  if (action === 'withdraw') {
+    return { people: true, current, run: async (client, ctx, body) => {
+      people(ctx.actor);
+      pick(body, {}, { allow: ['expectedRowVersion'] });
+      await client.query('SELECT bridge_portal_withdraw($1::uuid, $2)', [docId, expectedRowVersion(body)]);
+      return answer(200, await portalDoc(client, docId));
+    } };
+  }
+  if (action === 'approve-and-publish') {
+    return { people: true, current, run: async (client, ctx, body) => {
+      people(ctx.actor);
+      const a = pick(body, { expectedContentSha256: ['sha', sha], gsamApprovalRef: ['ref', text(200)] },
+        { required: ['expectedContentSha256'] });
+      const { rows: [r] } = await client.query('SELECT bridge_portal_approve_and_publish($1::uuid, $2, $3) AS approval_id',
+        [docId, a.sha, a.ref ?? null]);
+      return answer(200, await portalDoc(client, docId), { approvalId: r.approval_id });
+    } };
+  }
+  return null;
+}
+
+// People and access (GRE-4082, migration 066): staff roles, portal approvers and client company members. Every
+// change is people only until John answers on GRE-4079; the database functions refuse an agent again.
+const STAFF_ROLES = ['owner', 'admin', 'editor', 'sales', 'viewer'];
+const MEMBER_ROLES = ['admin', 'member'];
+
+function accessRoute(method, parts) {
+  const [res, kind, rowId, sub, memberId, extra] = parts;
+  if (res !== 'access' || extra !== undefined) return null;
+  // fn(body) checks the body and returns [sql, params]; the function's jsonb answer is out
+  const route = (resource, resourceId, fn, reply) => ({ people: true, resource, resourceId, run: async (client, ctx, body) => {
+    people(ctx.actor);
+    const [sql, params] = fn(body);
+    const { rows: [r] } = await client.query(`SELECT ${sql} AS out`, params);
+    return { ...reply(r.out), rowCount: 1, resourceId };
+  } });
+  const item = (out) => ({ status: 200, body: { item: out } });
+  const made = (out) => ({ status: out.created ? 201 : 200, body: { item: out.item } });
+  const gone = (out) => ({ status: 200, body: out });
+  const empty = (body) => pick(body, {});
+  const memberRole = (body) => pick(body, { role: ['role', oneOf(MEMBER_ROLES)] }, { required: ['role'] }).role;
+
+  if (kind === 'staff' && rowId !== undefined && sub === undefined && method === 'PATCH') {
+    return route('access-staff', rowId, (body) => ['bridge_access_set_staff_role($1::uuid, $2)',
+      [needId(rowId), pick(body, { role: ['role', oneOf(STAFF_ROLES)] }, { required: ['role'] }).role]], item);
+  }
+  if (kind === 'portal-approvers' && rowId !== undefined && sub === undefined) {
+    if (method === 'PUT') return route('access-portal-approvers', rowId, (body) => ['bridge_access_put_portal_approver($1::uuid, $2)',
+      [needId(rowId), pick(body, { label: ['label', text(100, { required: true })] }, { required: ['label'] }).label]], made);
+    if (method === 'DELETE') return route('access-portal-approvers', rowId, (body) => (empty(body),
+      ['bridge_access_remove_portal_approver($1::uuid)', [needId(rowId)]]), gone);
+    return null;
+  }
+  if (kind !== 'clients' || rowId === undefined || sub !== 'members') return null;
+  if (memberId === undefined) {
+    if (method !== 'POST') return null;
+    return route('access-members', rowId, (body) => {
+      const m = pick(body, { email: ['email', text(254, { required: true })], name: ['name', text(200, { required: true })],
+        role: ['role', oneOf(MEMBER_ROLES)] }, { required: ['email', 'name', 'role'] });
+      return ['bridge_access_add_client_member($1::uuid, $2, $3, $4)', [needId(rowId), m.email, m.name, m.role]];
+    }, made);
+  }
+  if (method === 'PATCH') return route('access-members', memberId, (body) => [
+    'bridge_access_set_client_member_role($1::uuid, $2::uuid, $3)', [needId(rowId), needId(memberId), memberRole(body)]], item);
+  if (method === 'DELETE') return route('access-members', memberId, (body) => (empty(body),
+    ['bridge_access_remove_client_member($1::uuid, $2::uuid)', [needId(rowId), needId(memberId)]]), gone);
+  return null;
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -518,7 +663,8 @@ function refundRoute(method, parts) {
 export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
-  const route = catalogueRoute(method, parts) || commerceRoute(method, parts) || clientUserRoute(method, parts);
+  const route = portalRoute(method, parts) || activationRoute(method, parts) || catalogueRoute(method, parts) || commerceRoute(method, parts)
+    || clientUserRoute(method, parts) || accessRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
 

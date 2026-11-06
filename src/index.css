@@ -7,9 +7,9 @@
 :root{ --gs-muted:var(--gs-text-muted); --gs-faint:var(--gs-text-faint); }
 
 /* shared CTA (matches site.css .btn--primary) used by Hero + Invite */
-.b-cta{display:inline-flex;align-items:center;gap:.6em;background:var(--gs-accent);color:#0e1611;font-weight:700;font-size:.95rem;
-  padding:.9em 1.7em;border-radius:100px;transition:transform var(--gs-dur) var(--gs-ease),box-shadow var(--gs-dur) var(--gs-ease)}
-.b-cta:hover{transform:translateY(-2px);box-shadow:0 12px 44px -12px var(--gs-accent-glow)}
+.b-cta{display:inline-flex;align-items:center;justify-content:center;gap:.6em;min-height:44px;background:var(--gs-lime);color:var(--gs-bg-deep);font-weight:700;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;
+  padding:.9em 1.7em;border:1px solid transparent;border-radius:100px;transition:transform var(--gs-dur-standard) var(--gs-ease),background var(--gs-dur-standard),color var(--gs-dur-standard),border-color var(--gs-dur-standard)}
+.b-cta:hover{transform:translateY(-2px);background:var(--gs-text);color:var(--gs-bg)}
 /* CTA style modifiers (cta-style.mjs ctaStyleClass): Large grows the target; full-width-on-mobile. */
 .b-cta.gs-cta-lg{font-size:1.06rem;padding:1.05em 2em}
 @media(max-width:560px){.b-cta.gs-cta-fill{display:flex;width:100%;justify-content:center}}
@@ -39,14 +39,18 @@
 @media(max-width:760px){.gs-cursor{display:none!important}.gs-cursor-on,.gs-cursor-on *{cursor:auto!important}}
 
 /* ghost secondary (matches site.css .btn--ghost): bordered, accent-soft fill, body text */
-.b-cta.ghost{background:var(--gs-accent-soft);color:var(--gs-text);border:1px solid var(--gs-border-strong,var(--gs-accent-mid))}
-.b-cta.ghost:hover{box-shadow:none;border-color:var(--gs-accent-mid)}
+.b-cta.ghost{background:transparent;color:var(--gs-text);border:1px solid var(--gs-text)}
+.b-cta.ghost:hover{background:var(--gs-text);color:var(--gs-bg)}
+@media(prefers-reduced-motion:reduce){.b-cta:hover{transform:none}}
+.band-light .b-cta{background:var(--gs-lime);color:var(--gs-bg-deep)}
+.band-light .b-cta.ghost{background:transparent;color:var(--gs-text);border-color:var(--gs-text)}
+.band-light .b-cta:hover,.band-light .b-cta.ghost:hover{background:var(--gs-emerald);color:#fff;border-color:var(--gs-emerald)}
 /* row that holds a primary + a ghost button side by side, wrapping on narrow screens */
 .b-cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 @keyframes gsDrift{0%{transform:translate3d(-3%,-2%,0) scale(1.02)}100%{transform:translate3d(4%,3%,0) scale(1.08)}}
 
 /* confident, restrained entrance, set once and never re-hidden (JS adds .is-in) */
-[data-reveal]{opacity:0;transform:translateY(22px);transition:opacity .7s var(--gs-ease),transform .7s var(--gs-ease)}
+[data-reveal]{opacity:0;transform:translateY(20px);transition:opacity var(--gs-dur-standard) var(--gs-ease),transform var(--gs-dur-standard) var(--gs-ease);transition-delay:var(--gs-reveal-delay,0ms)}
 [data-reveal].is-in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none;transition:none}}
 

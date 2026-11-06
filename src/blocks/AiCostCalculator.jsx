@@ -112,7 +112,7 @@ export function AiCostCalculator({
   }, [lead, team, hours, cost, weeksPerYear, recoveryPct, currency, csvFooter, costYr, saving, hoursYr, pct]);
 
   return (
-    <section ref={ref} id={anchorId || undefined} className="b-acc" tabIndex={anchorId ? -1 : undefined}>
+    <section ref={ref} id={anchorId || undefined} className="b-acc band-light gs-rhythm" tabIndex={anchorId ? -1 : undefined}>
       <div className="wrap b-acc-wrap">
         <div className="b-acc-head" data-reveal>
           {kicker ? <span className="kicker">{kicker}</span> : null}
@@ -212,6 +212,12 @@ export const css = `
 .b-acc-dl{background:none;border:1px solid var(--gs-border-strong,rgba(200,255,0,.18));color:var(--gs-text);font:inherit;font-size:.88rem;font-weight:700;cursor:pointer;border-radius:100px;padding:.65em 1.1em;transition:border-color .2s var(--gs-ease,ease)}
 .b-acc-dl:hover{border-color:var(--gs-accent)}
 .b-acc-foot{margin-top:18px;font-size:.8rem;color:var(--gs-text-faint);max-width:70ch;line-height:1.6}
+.b-acc.band-light .b-acc-h{font-size:clamp(2rem,4vw,2.75rem);letter-spacing:-.025em;line-height:1.08}
+.b-acc.band-light .b-acc-fwrap,.b-acc.band-light .b-acc-gfield input{background:var(--gs-card);border-color:var(--gs-border-soft)}
+.b-acc.band-light .b-acc-fwrap:focus-within{border-color:var(--gs-emerald);box-shadow:0 0 0 2px var(--gs-border)}
+.b-acc.band-light .b-acc-result{background:var(--gs-card);border-color:var(--gs-border-soft);border-radius:var(--gs-card-radius);box-shadow:none}
+.b-acc.band-light .b-acc-sbig,.b-acc.band-light .b-acc-slead{color:var(--gs-emerald)}
+.b-acc.band-light .b-acc-err{color:var(--gs-light-error-text);background:var(--gs-light-error-bg);border-color:var(--gs-light-error-text)}
 @media(prefers-reduced-motion:reduce){.b-acc-fwrap{transition:none}}
 `;
 

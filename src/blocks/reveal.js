@@ -11,6 +11,9 @@ export function useReveal(deps = []) {
     if (!root) return;
     const nodes = root.matches('[data-reveal]') ? [root, ...root.querySelectorAll('[data-reveal]')] : [...root.querySelectorAll('[data-reveal]')];
     if (!nodes.length) return;
+    nodes.forEach((node, index) => {
+      if (!node.style.transitionDelay) node.style.setProperty('--gs-reveal-delay', `${(index % 4) * 70}ms`);
+    });
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       nodes.forEach((n) => n.classList.add('is-in'));
       return;
@@ -23,6 +26,10 @@ export function useReveal(deps = []) {
       else toObserve.push(n);                          // only genuinely below-the-fold nodes wait on the observer
     });
     if (!toObserve.length) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      toObserve.forEach((node) => node.classList.add('is-in'));
+      return;
+    }
     const obs = new IntersectionObserver((entries) => {
       entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); obs.unobserve(e.target); } });
     }, { threshold: 0.16, rootMargin: '0px 0px -6% 0px' });

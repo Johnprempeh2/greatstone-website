@@ -27,6 +27,8 @@ const Q = {
   otherB: 'a1000000-0000-4000-8000-000000000004', // company B's quote, fresh
   otherGuest: 'a1000000-0000-4000-8000-000000000005', // another guest's quote, fresh
   old: 'a1000000-0000-4000-8000-000000000006', // a guest quote from two hours ago
+  po: 'a1000000-0000-4000-8000-000000000007', // made by anon with a PO document (061)
+  poFailed: 'a1000000-0000-4000-8000-000000000008', // a PO quote whose transaction fails
 };
 
 let db;
@@ -139,6 +141,28 @@ test('guest: reads back only id, reference and created_at of the quote it just m
   refused('anon', Q.guest, `UPDATE quotes SET po_document_path = '${Q.guest}/x.pdf' WHERE id = '${Q.guest}';`, /permission denied/);
   refused('anon', Q.guest, `DELETE FROM quotes WHERE id = '${Q.guest}';`, /permission denied/);
   refused('anon', Q.guest, `DELETE FROM quote_items WHERE quote_id = '${Q.guest}';`, /permission denied/);
+});
+
+test('guest: indexes the PO document of the quote it just made, and no other (061, GRE-1797)', { skip }, () => {
+  const po = (id) => `po_document_path, po_document_name := '${id}/order.pdf', 'order.pdf'`;
+  const indexed = (id) => owner(`SELECT count(*) FROM storage.objects WHERE bucket_id = 'po-documents' AND name = '${id}/order.pdf';`);
+  // the guest has no right on the index itself; only the function writes it
+  refused('anon', Q.po, `INSERT INTO storage.objects (bucket_id, name) VALUES ('po-documents', '${Q.po}/order.pdf');`, /permission denied/);
+  assert.equal(ok('anon', Q.po, `${quote(Q.po, po(Q.po))};\nSELECT visitor_quote_po_index();`), 't');
+  assert.equal(indexed(Q.po), '1');
+  // its own quote from an earlier transaction, or with no quote made, indexes nothing
+  assert.equal(ok('anon', Q.po, 'SELECT visitor_quote_po_index();'), 'f');
+  owner(`UPDATE quotes SET po_document_path = '${Q.otherGuest}/order.pdf' WHERE id = '${Q.otherGuest}';`);
+  assert.equal(ok('anon', Q.otherGuest, 'SELECT visitor_quote_po_index();'), 'f');
+  assert.equal(indexed(Q.otherGuest), '0');
+  // a failed quote leaves no index row: both roll back together
+  refused('anon', Q.poFailed, `${quote(Q.poFailed, po(Q.poFailed))};\nSELECT visitor_quote_po_index();\n${item(Q.poFailed, VAR.draft, OFF.draft)}`,
+    /row-level security/);
+  assert.equal(indexed(Q.poFailed), '0');
+  // the guest cannot remove an index row, and service_role cannot call the function
+  refused('anon', Q.po, `DELETE FROM storage.objects WHERE name = '${Q.po}/order.pdf';`, /permission denied/);
+  assert.equal(indexed(Q.po), '1');
+  assert.equal(db.psql(`BEGIN; SET LOCAL ROLE service_role; SELECT visitor_quote_po_index(); COMMIT;`).status === 0, false);
 });
 
 test('signed-in buyer: a quote for their own company only, with the staff columns closed', { skip }, () => {
