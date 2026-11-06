@@ -459,7 +459,12 @@ export default function App() {
   }, [readPageHash]);
 
   // First paint: honour a deep link straight to a marketing page.
+  // A path link (/dev-tools, which the frozen doors and the Next pages use) becomes its hash route here,
+  // otherwise this build serves the homepage for it.
   useEffect(() => {
+    if (typeof location === 'undefined') return;
+    const path = location.pathname.match(/^\/([a-z0-9-]+)\/?$/i);
+    if (path && !location.hash && stateRef.current.pages?.[path[1].toLowerCase()]) history.replaceState(null, '', '/' + location.search + '#' + path[1].toLowerCase());
     const page = readPageHash();
     if (page) setCurrent(page);
   }, [readPageHash]);
