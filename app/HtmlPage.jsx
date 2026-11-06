@@ -85,7 +85,9 @@ export default function HtmlPage({ page, release, placeholders = false }) {
     {faq && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faq }} />}
     <Region scope="header">{chrome.header.children}</Region>
     <Region scope="nav">{chrome.nav.children}</Region>
-    <Region scope="page" as="main" attributes={{ 'data-org-id': release.orgId, 'data-release': release.release.number }}>{body.children}</Region>
+    {/* GSAM edits a page as <main id="gs-page">, so the page agent writes its CSS as `#gs-page …`. This wrapper
+        makes those selectors match here too; without it every agent layout (a carousel row) fell back to stacking. */}
+    <Region scope="page" as="main" attributes={{ 'data-org-id': release.orgId, 'data-release': release.release.number }}><div id="gs-page" style={{ display: 'contents' }}>{body.children}</div></Region>
     <Region scope="footer">{chrome.footer.children}</Region>
     {!placeholders && <HtmlBehaviours path={page.path} title={page.title} />}
   </>;
