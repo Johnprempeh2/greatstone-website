@@ -32,6 +32,8 @@ export const SITES = Object.freeze({
   'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'], identityCount: 8 },
   'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver'], identityCount: 10 },
   'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
+  // The Next staging site's database starts empty (GRE-4222): tables only, for the fake GRE-4103 org and test client.
+  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production', modes: ['tables'], identityCount: 0 },
 });
 
 // The Supabase tables with rows (cut-over plan, section 1), parents before children. The order is checked against the

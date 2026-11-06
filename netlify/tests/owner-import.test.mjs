@@ -401,7 +401,8 @@ test('the window check is pure: only staging allows proof', () => {
   assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver']);
   assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
   assert.deepEqual(SITES['gre2567-cutover-rehearsal'].modes, ['tables', 'identities']);
-  assert.deepEqual(Object.values(SITES).map((site) => site.identityCount), [8, 10, 10]);
+  assert.deepEqual(SITES['gre3833-next-db-staging'].modes, ['tables']);
+  assert.deepEqual(Object.values(SITES).map((site) => site.identityCount), [8, 10, 10, 0]);
   const ok = checkWindow({ env: ENV, context: STAGING, now: NOW });
   assert.equal(ok.site, SITES['gre1795-website-db-staging']);
 });
