@@ -47,7 +47,8 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   const log = join(cwd, 'netlify-args.txt');
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   // TREE_LOG records which source tree npm and the upload ran in (config refresh tests).
-  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  // Like the real CLI, `netlify build` in an unlinked checkout fails unless NETLIFY_SITE_ID names the site (GRE-4199).
+  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -n "$NETLIFY_SITE_ID" ] || [ -f .netlify/state.json ] || { echo "Error: Could not find the project ID" >&2; exit 4; }\n[ "$1" != build ] || printf "build site %s\\n" "$NETLIFY_SITE_ID" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
   await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\n[ -z "$TREE_LOG" ] || printf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
   let comments = [];
   let interactions = [];
@@ -65,8 +66,9 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
   const url = `http://127.0.0.1:${server.address().port}`;
+  const { NETLIFY_SITE_ID: _linked, ...parentEnv } = process.env;
   const env = {
-    ...process.env, PATH: `${join(cwd, 'bin')}:${process.env.PATH}`,
+    ...parentEnv, PATH: `${join(cwd, 'bin')}:${process.env.PATH}`,
     NODE_ENV: 'test', NETLIFY_AUTH_TOKEN: 'test-token', NETLIFY_TEST_API_URL: url,
     GSAM_API_URL: url, GSAM_API_KEY: 'test-key', GSAM_TASK_ID: 'test-task', DEPLOY_LOG: log,
   };
@@ -346,7 +348,7 @@ test('the weekly train deploys the public site, then the editor alias from the s
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await readFile(f.log, 'utf8'),
     `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod\n` +
-    'build --context branch:gsam-editor\n' +
+    'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
   // The public upload installs in an export of the commit; the editor installs and builds in its prepared copy.
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\nnpm ci in original\nnetlify in original\n');
@@ -361,7 +363,20 @@ test('the editor alias still ships when the public upload is skipped', async (t)
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Skipped greatstone-home: no changes/);
   assert.equal(await readFile(f.log, 'utf8'),
-    `build --context branch:gsam-editor\nalias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+    'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
+    `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+});
+
+// GRE-4199: a prod train from a fresh clone has no .netlify/state.json, and `netlify build` has no
+// --site flag, so the build step must name the site through NETLIFY_SITE_ID, overriding any stray value.
+test('the editor alias builds from a fresh, unlinked clone', async (t) => {
+  const f = await weeklyTrain(t);
+  f.env.NETLIFY_SITE_ID = '00000000-0000-0000-0000-000000000000';
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /Could not find the project ID/);
+  assert.match(await readFile(f.log, 'utf8'),
+    new RegExp(`^build site 3b1e97e6-e184-4251-badd-deed532be3ab\\nalias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}$`, 'm'));
 });
 
 test('a failed editor alias step fails the train and names the step', async (t) => {
