@@ -48,7 +48,7 @@ export function QuoteIsland({ service, serviceName }) {
   return <div className="gs-island-quote"><style>{islandCss}</style>
     {service && serviceName ? <InquiryToggle service={{ slug: service, name: serviceName }} size="lg" onAdded={openCart} /> : null}
     <button type="button" className="gs-island-btn" onClick={openCart}>{quoted ? `Review quote (${quoted})` : 'Request a quote'}</button>
-    {ownsCart ? <StoreCart /> : null}
+    {ownsCart ? <div className="st-v15"><StoreCart /></div> : null}
   </div>;
 }
 

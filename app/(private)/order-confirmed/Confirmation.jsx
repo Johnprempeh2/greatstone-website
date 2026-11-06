@@ -3,5 +3,5 @@
 import StoreCart from '../../../src/store/StoreCart.jsx';
 
 export default function Confirmation({ sessionId }) {
-  return <StoreCart confirmed sessionId={sessionId} />;
+  return <div className="st-v15"><StoreCart confirmed sessionId={sessionId} /></div>;
 }
