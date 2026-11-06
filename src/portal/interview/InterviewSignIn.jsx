@@ -16,8 +16,8 @@ import { WaveDecoration } from './WaveDecoration.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { Button } from './Button.jsx';
 import { isUnverifiedError, signInErrorMessage, verifyCallbackURL } from './auth-model.mjs';
+import { currentHash } from './route.mjs';
 
-const currentHash = () => (typeof location !== 'undefined' ? location.hash : '');
 
 /** Send a fresh verification link that returns to this page. */
 export async function resendVerification(email) {

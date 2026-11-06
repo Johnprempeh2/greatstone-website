@@ -23,7 +23,7 @@ import { PageLoading } from './PageStatus.jsx';
 import { GsLogo } from './GsLogo.jsx';
 import { ButtonLink } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
-import { INTERVIEW_BASE } from './route.mjs';
+import { INTERVIEW_BASE, currentHash, hrefFor } from './route.mjs';
 import { isVerified } from './auth-model.mjs';
 import './interview.css';
 
@@ -45,7 +45,7 @@ function NotFound() {
         <h1>That page isn&rsquo;t here</h1>
         <p className="welcome-lead">The link may be incomplete. Your conversation is safe.</p>
         <div className="welcome-cta">
-          <ButtonLink href={INTERVIEW_BASE} variant="ghost">
+          <ButtonLink href={hrefFor(INTERVIEW_BASE)} variant="ghost">
             Back to the welcome page
           </ButtonLink>
         </div>
@@ -76,8 +76,8 @@ function SignedIn({ children }) {
   return children;
 }
 
-export default function InterviewApp({ route }) {
-  const hash = typeof location !== 'undefined' ? location.hash : '';
+// `hash` is passed by the Next pages (GRE-4245): during a soft navigation the address bar is not updated yet.
+export default function InterviewApp({ route, hash = currentHash() }) {
   let body;
   if (route.view === 'join') body = <JoinPage key={hash} route={route} />;
   else {

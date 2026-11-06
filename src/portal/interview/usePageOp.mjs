@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { portalOp, redirectOf, navigate, followRedirect } from './api.mjs';
+import { currentHash } from './route.mjs';
 
 /** → { status: 'loading' | 'ready' | 'redirecting' | 'signed-out' | 'error', data, error, reload } */
 export function usePageOp(op, args = {}) {
@@ -22,7 +23,7 @@ export function usePageOp(op, args = {}) {
       const to = redirectOf(data);
       if (to) {
         // A loader that redirects to the page it is on would loop; show it as a failed load instead.
-        if (typeof location !== 'undefined' && location.hash === to) {
+        if (currentHash() === to) {
           return setState({ status: 'error', data: null, error: 'This page could not be shown just now.' });
         }
         navigate(to);

@@ -2,6 +2,8 @@
 // source's Supabase Auth password form and typed-email enrolment (docs/INTERVIEW-ENGINE.md "Identity and
 // enrolment"). Pure helpers, tested; the screens are InterviewSignIn.jsx and JoinPage.jsx.
 
+import { hrefFor } from './route.mjs';
+
 export const MIN_PASSWORD = 8;
 
 /** A Better Auth session whose email is verified. The user id is the key; the verified email only claims an invite at join. */
@@ -46,4 +48,8 @@ export function signUpErrorMessage(error) {
 }
 
 /** Where the verification email returns the person: straight back to the page they signed up on. */
-export const verifyCallbackURL = (hash) => '/' + (String(hash || '').startsWith('#') ? hash : '#' + (hash || ''));
+export const verifyCallbackURL = (hash) => {
+  const h = String(hash || '').startsWith('#') ? hash : '#' + (hash || '');
+  const href = hrefFor(h);
+  return href === h ? '/' + h : href;
+};

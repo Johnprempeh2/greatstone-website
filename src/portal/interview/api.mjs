@@ -2,7 +2,7 @@
 // server actions and read server components; the website calls Netlify Functions with the Better Auth session
 // cookie. Everything here is plain fetch, so the pure parts (the SSE frame parser) run under `node --test`.
 
-import { safeRedirect } from './route.mjs';
+import { safeRedirect, currentHash, goToHash } from './route.mjs';
 
 export const PORTAL_URL = '/api/interview/portal';
 export const CHAT_URL = '/api/interview/chat';
@@ -69,10 +69,10 @@ export const redirectOf = (data) => (data && typeof data === 'object' ? safeRedi
  */
 export function navigate(hash, reload) {
   if (typeof location === 'undefined' || !hash) return false;
-  if (location.hash === hash) {
+  if (currentHash() === hash) {
     if (typeof reload === 'function') reload();
   } else {
-    location.hash = hash;
+    goToHash(hash);
   }
   return true;
 }

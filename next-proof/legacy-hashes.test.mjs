@@ -61,3 +61,10 @@ test('only the bare #book hash opens the booking popup', () => {
   assert.equal(isBookingHash('#go/book'), false);
   assert.equal(isBookingHash(''), false);
 });
+
+test('interview invite and view hashes reach their Next paths with the query (GRE-4245)', () => {
+  assert.equal(legacyHashDestination('#join/abc_DEF-1?team=u-1', '/', pages), '/join/abc_DEF-1?team=u-1');
+  assert.equal(legacyHashDestination('#portal/interview', '/', pages), '/portal/interview');
+  assert.equal(legacyHashDestination('#portal/interview?seats=exhausted', '/portal', pages), '/portal/interview?seats=exhausted');
+  assert.equal(legacyHashDestination('#portal/interview/complete', '/portal/interview', pages), '/portal/interview/complete');
+});
