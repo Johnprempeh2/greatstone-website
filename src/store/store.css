@@ -376,3 +376,24 @@
 .st-v15 .st-close-wrap .td-close { width:min(var(--td-page-width),calc(100% - 2 * clamp(20px,5vw,64px))); }
 .st-v15 .st-close-wrap .td-close h2 { font-size:var(--td-size-30); letter-spacing:-.045em; line-height:1.12; }
 @media (max-width:760px){ .st-v15 .st-close-wrap .td-close { display:block; } .st-v15 .st-close-wrap .td-close .td-pill { margin-top:var(--td-size-22); width:100%; } }
+
+/* a slow lime and teal wave behind the shop (John, 6 Nov). The path repeats every half width, so
+   sliding it half its width loops without a seam. With reduced motion it is a still wave. */
+.st-v15 .st-waves { position:fixed; left:0; right:0; top:38vh; height:clamp(180px,34vh,320px); overflow:hidden; pointer-events:none; z-index:0; opacity:.5; mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent); }
+.st-v15 .st-waves svg { display:block; width:200%; height:100%; animation:st-wave-drift 48s linear infinite; }
+.st-v15 .st-wave { fill:none; stroke-width:2; vector-effect:non-scaling-stroke; }
+.st-v15 .st-wave--lime { stroke:var(--td-palette-30); filter:drop-shadow(0 0 6px var(--td-palette-30)); }
+.st-v15 .st-wave--teal { stroke:var(--td-palette-33); filter:drop-shadow(0 0 8px var(--td-palette-33)); animation:st-wave-swell 12s ease-in-out infinite alternate; transform-origin:center; }
+@keyframes st-wave-drift { to { transform:translateX(-50%); } }
+@keyframes st-wave-swell { to { transform:translateY(14px) scaleY(.82); } }
+@media (prefers-reduced-motion:reduce){ .st-v15 .st-waves svg, .st-v15 .st-wave--teal { animation:none; } }
+
+/* the shop grouped by use case */
+.st-v15 .st-results { min-width:0; }
+.st-v15 .st-usecases { display:flex; flex-wrap:wrap; gap:var(--td-size-8); margin-bottom:var(--td-size-24); }
+.st-v15 .st-group + .st-group { margin-top:clamp(36px,5vw,56px); }
+.st-v15 .st-group-head { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:var(--td-size-8) var(--td-size-24); margin-bottom:var(--td-size-18); }
+.st-v15 .st-group-head h2 { margin:0; font-size:var(--td-size-22); font-weight:900; letter-spacing:-.02em; }
+.st-v15 .st-group-head p { margin:var(--td-size-6) 0 0; color:var(--td-muted); font-size:var(--td-size-14); text-wrap:pretty; }
+.st-v15 .st-group-head .st-clear { font-weight:800; white-space:nowrap; }
+@media (max-width:560px){ .st-v15 .st-usecases { flex-wrap:nowrap; overflow-x:auto; margin-inline:calc(-1 * clamp(20px,5vw,64px)); padding-inline:clamp(20px,5vw,64px); scrollbar-width:none; } .st-v15 .st-usecases .st-pill { flex:none; } }
