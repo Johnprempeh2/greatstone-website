@@ -236,9 +236,11 @@ async function deployInstalled(sha) {
 // commit. The Vite upload does not contain the Next editor, so the editor is built from this
 // checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,
 // contract, engine commit, links). Any failed step fails the train and names the step.
+// `netlify build` has no --site flag and a fresh clone has no .netlify link, so the site ID
+// goes in NETLIFY_SITE_ID (GRE-4199).
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
-  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha };
+  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha, NETLIFY_SITE_ID: sites.get(site) };
   const steps = [
     ['prepare', process.execPath, ['next-proof/scripts/prepare-netlify.mjs', join(dir, 'editor'), '--editor'], process.cwd()],
     ['install', 'npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], join(dir, 'editor')],
