@@ -26,8 +26,9 @@ export async function closeOutSession(db, engagementId, sessionId) {
     const now = new Date();
     const durationSecs = Math.max(0, Math.round((now.getTime() - new Date(row.started_at).getTime()) / 1000));
     // Guard the write against a race with a real sign-off completing: only close out a session that is still open.
+    // end_reason marks it closed out, not signed off; its trigger emits interview.abandoned in this statement (GRE-2673).
     const { error: updateError } = await db.from('session')
-      .update({ ended_at: now.toISOString(), resumable: false, duration_secs: durationSecs })
+      .update({ ended_at: now.toISOString(), resumable: false, duration_secs: durationSecs, end_reason: 'closed_out' })
       .eq('id', row.id)
       .is('ended_at', null);
     if (updateError) return fail(`Could not close out the session: ${updateError.message}`);
