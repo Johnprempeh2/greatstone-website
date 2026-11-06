@@ -81,7 +81,14 @@ draft only if the PR has the `preview` label or Mikey or John comments exactly
 on the current task. It is never automatic or scheduled. Replace the site and PR number as
 needed. The command refuses other Netlify sites.
 
-For `gre1795-website-db-staging` only, an accepted GS Agentic Manager human-only
+Greatstone website staging, `gre3833-next-db-staging`, is the one staging site since GRE-4202.
+It serves the Next copy, so its upload is `next-proof/scripts/prepare-netlify.mjs` run on the
+exported commit, with `npm ci` in the prepared copy and the catalogue fixture in place of the
+required catalogue export (`next-proof/README.md`). Functions and `netlify/database` migrations
+ship with it.
+
+For the staging sites (`gre3833-next-db-staging` and the retired `gre1795-website-db-staging`)
+only, an accepted GS Agentic Manager human-only
 `request_confirmation` on the current task also authorises the upload. Its recorded approval
 must name that site and the approved SHA. If a reviewed guard repair changes HEAD after approval,
 the approved commit must be an ancestor and every intervening change must be confined to
@@ -100,8 +107,8 @@ details name that site and that exact SHA. See `docs/WEEKLY-RELEASE.md`.
 
 Netlify applies a changed environment variable only on a new upload, and the change check
 below skips a commit that is already live. After a staging config change, reload the live
-commit with `node scripts/deploy-site.mjs refresh gre1795-website-db-staging`. It runs only
-for that site, from a clean checkout at exactly the remote `main` commit, and only when the
+commit with `node scripts/deploy-site.mjs refresh gre3833-next-db-staging`. It runs only
+for a staging site, from a clean checkout at exactly the remote `main` commit, and only when the
 live production upload's commit is on `main` and has an accepted human-only staging card on
 the current task for exactly that commit (guard-only drift does not count). It exports that
 commit's tree to a temporary folder, runs `npm ci` there, and uploads it with the same title,

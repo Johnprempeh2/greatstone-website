@@ -35,12 +35,14 @@ async function fixture(t) {
 import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '../..');
 for (const name of ['src', 'scripts']) cpSync(resolve(root, name), resolve(process.argv[2], name), { recursive: true });
+if (!process.argv[3]) cpSync(resolve(root, 'next-proof/netlify.toml'), resolve(process.argv[2], 'netlify.toml'));
 `);
+  await writeFile(join(cwd, 'next-proof', 'netlify.toml'), '[build.environment]\n  NEXT_CATALOGUE_REQUIRED = "1"\n');
   await writeFile(join(cwd, 'scripts', 'deploy-editor-alias.mjs'), `import { appendFileSync } from 'node:fs';
 appendFileSync(process.env.DEPLOY_LOG, \`alias \${process.argv[2]} \${process.env.GSAM_ENGINE_COMMIT}\\n\`);
 if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
 `);
-  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs', 'next-proof/scripts/prepare-netlify.mjs', 'scripts/deploy-editor-alias.mjs');
+  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs', 'next-proof/scripts/prepare-netlify.mjs', 'next-proof/netlify.toml', 'scripts/deploy-editor-alias.mjs');
   git(cwd, 'commit', '-qm', 'base');
   const base = git(cwd, 'rev-parse', 'HEAD');
   git(cwd, 'checkout', '-qb', 'test-pr');
@@ -48,7 +50,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   // TREE_LOG records which source tree npm and the upload ran in (config refresh tests).
   // Like the real CLI, `netlify build` in an unlinked checkout fails unless NETLIFY_SITE_ID names the site (GRE-4199).
-  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -n "$NETLIFY_SITE_ID" ] || [ -f .netlify/state.json ] || { echo "Error: Could not find the project ID" >&2; exit 4; }\n[ "$1" != build ] || printf "build site %s\\n" "$NETLIFY_SITE_ID" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -n "$NETLIFY_SITE_ID" ] || [ -f .netlify/state.json ] || { echo "Error: Could not find the project ID" >&2; exit 4; }\n[ "$1" != build ] || printf "build site %s\\n" "$NETLIFY_SITE_ID" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\n[ -z "$TOML_LOG" ] || [ "$1" != deploy ] || cat netlify.toml >> "$TOML_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
   await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\n[ -z "$TREE_LOG" ] || printf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
   let comments = [];
   let interactions = [];
@@ -90,15 +92,16 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   }
   return { cwd, base, env, log, commit, run,
     setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
-    setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); } };
+    setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); },
+    serve: (name) => { served.push(name); } };
 }
 
-function stagingCard(sha, changes = {}) {
+function stagingCard(sha, changes = {}, cardSite = site) {
   return { kind: 'request_confirmation', status: 'accepted', requestedResolverPolicy: 'human_only',
     effectiveResolverPolicy: 'human_only',
     resolvedByUserId: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', resolvedByAgentId: null,
     idempotencyKey: `confirmation:GRE-2064:staging-deploy:${sha}`,
-    payload: { detailsMarkdown: `Approve production deploy: ${site} ${sha}` }, ...changes };
+    payload: { detailsMarkdown: `Approve production deploy: ${cardSite} ${sha}` }, ...changes };
 }
 
 test('contract mismatch stops an otherwise approved upload before Netlify runs', async (t) => {
@@ -610,7 +613,7 @@ test('config refresh never targets the public site', async (t) => {
   const f = await refreshFixture(t);
   const result = await f.run('refresh', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /config refresh is only for gre1795-website-db-staging/);
+  assert.match(result.stderr, /config refresh is only for a staging site/);
   await assert.rejects(readFile(f.log));
 });
 
@@ -670,4 +673,62 @@ test('config refresh refuses off origin main, a dirty checkout, or no live uploa
   assert.equal(result.status, 1);
   assert.match(result.stderr, /is not on main/);
   await assert.rejects(readFile(f.log));
+});
+
+// GRE-4202: Greatstone website staging (gre3833) is the one staging site, and it serves the Next copy.
+const nextStaging = 'gre3833-next-db-staging';
+
+async function nextStagingFixture(t) {
+  const f = await fixture(t);
+  f.serve(nextStaging);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
+  f.env.TOML_LOG = join(f.cwd, 'bin', 'toml.txt');
+  return f;
+}
+
+test('Greatstone website staging uploads the prepared Next copy of the commit with its own staging card', async (t) => {
+  const f = await nextStagingFixture(t);
+  f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
+  const result = await f.run('prod', nextStaging);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await readFile(f.log, 'utf8'),
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
+  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
+  // The CLI build cannot read the catalogue as anon, so it uses the checked-in fixture, never the required export.
+  const toml = await readFile(f.env.TOML_LOG, 'utf8');
+  assert.match(toml, /NEXT_CATALOGUE_FIXTURE = "next-proof\/fixtures\/public-catalogue-2026-10-22\.json"/);
+  assert.doesNotMatch(toml, /NEXT_CATALOGUE_REQUIRED/);
+  assert.doesNotMatch(result.stdout, /Editor alias step/);
+});
+
+test('Greatstone website staging refuses a card for another site or no card', async (t) => {
+  const f = await nextStagingFixture(t);
+  for (const cards of [[], [stagingCard(f.base)], [stagingCard(f.base, { status: 'pending' }, nextStaging)]]) {
+    f.setInteractions(cards);
+    const result = await f.run('prod', nextStaging);
+    assert.equal(result.status, 1, JSON.stringify(cards));
+    assert.match(result.stderr, /needs an accepted human-only staging card for gre3833-next-db-staging/);
+  }
+  await assert.rejects(readFile(f.log));
+});
+
+test('a Greatstone website staging card never authorises the public site', async (t) => {
+  const f = await nextStagingFixture(t);
+  f.servePublicSite();
+  f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  await assert.rejects(readFile(f.log));
+});
+
+test('config refresh re-uploads the live Next copy on Greatstone website staging', async (t) => {
+  const f = await refreshFixture(t);
+  f.serve(nextStaging);
+  f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
+  const result = await f.run('refresh', nextStaging);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await readFile(f.log, 'utf8'),
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
+  assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
 });
