@@ -8,6 +8,8 @@
 //   mcp-token         registers a portal MCP token from its SHA-256 (GRE-3769, migration 064); never the token itself
 //   mcp-token-revoke  revokes a portal MCP token by id (040's mcp_portal_revoke_token)
 //   approver          registers the one portal approver (039's portal_approvers) from John's card (GRE-3964)
+//   staging-approver  staging only: a fake signed-in owner, made portal approver and linked to one GSAM person
+//                     (067's portal_bridge_approvers), so the bridge's approve and publish can be proved (GRE-4081)
 //
 // Guards, in order. Until the first three pass it reads nothing and writes nothing:
 //   1. OWNER_IMPORT_UNTIL is set, in the future and at most 60 minutes away
@@ -32,8 +34,9 @@ export const SITES = Object.freeze({
   'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'], identityCount: 8 },
   'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver'], identityCount: 10 },
   'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
-  // The Next staging site's database starts empty (GRE-4222): tables only, for the fake GRE-4103 org and test client.
-  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production', modes: ['tables'], identityCount: 0 },
+  // The Next staging site's database starts empty (GRE-4222): the fake GRE-4103 org and test client, and the fake
+  // approver for the bridge's approve and publish check (GRE-4081).
+  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production', modes: ['tables', 'staging-approver'], identityCount: 0 },
 });
 
 // The Supabase tables with rows (cut-over plan, section 1), parents before children. The order is checked against the
@@ -417,6 +420,56 @@ export async function registerApprover(pool, data, apply) {
   });
 }
 
+// --- the staging bridge approver (GRE-4081) ---
+// A staging database has no real sign-ins, so this mode writes a fixed fake one: an auth.users row, an active owner
+// of the Greatstone org signed in as it, that sign-in as the portal approver, and the 067 link from one GSAM person
+// (user:<id>) to it. Only the GSAM actor and a label come from the payload; ids and email are the fixed ones below.
+// It refuses while any approver or link exists, so it writes once per database. Allowed on staging sites only.
+
+export const STAGING_APPROVER = Object.freeze({
+  authUserId: '41030000-0000-4000-8000-0000000000a1',
+  staffId: '41030000-0000-4000-8000-0000000000a2',
+  email: 'gre-4103-approver@staging.invalid',
+});
+const GSAM_PERSON = /^user:[A-Za-z0-9_-]{1,64}$/; // 067's check on portal_bridge_approvers.gsam_actor
+
+export function validateStagingApprover(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) refuse('staging-approver-shape');
+  if (Object.keys(data).sort().join(',') !== 'gsamActor,label') refuse('staging-approver-fields');
+  if (typeof data.gsamActor !== 'string' || !GSAM_PERSON.test(data.gsamActor)) refuse('staging-approver-actor');
+  if (typeof data.label !== 'string' || !data.label.trim() || data.label.trim().length > 100) refuse('staging-approver-label');
+  return data;
+}
+
+export async function registerStagingApprover(pool, data, apply) {
+  const { gsamActor, label } = validateStagingApprover(data);
+  const { authUserId, staffId, email } = STAGING_APPROVER;
+  return ownerTransaction(pool, apply, async (client) => {
+    await client.query('LOCK TABLE public.portal_approvers, public.portal_bridge_approvers IN SHARE ROW EXCLUSIVE MODE');
+    const n = async (sql, params) => (await client.query(sql, params)).rows[0].n;
+    if (await n('SELECT count(*)::int AS n FROM public.organisations WHERE id = $1', [GREATSTONE_ORG_ID]) !== 1)
+      refuse('staging-approver-no-org');
+    if (await n('SELECT count(*)::int AS n FROM public.portal_approvers') || await n('SELECT count(*)::int AS n FROM public.portal_bridge_approvers'))
+      refuse('staging-approver-exists');
+    if (await n('SELECT count(*)::int AS n FROM auth.users WHERE id = $1 OR email = $2', [authUserId, email])
+      || await n('SELECT count(*)::int AS n FROM public.users WHERE id = $1 OR (org_id = $2 AND email = $3)', [staffId, GREATSTONE_ORG_ID, email]))
+      refuse('staging-approver-fixture-exists');
+    await client.query('INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ($1, $2, now())', [authUserId, email]);
+    await client.query(`INSERT INTO public.users (id, org_id, email, full_name, role, auth_subject, is_active)
+      VALUES ($1, $2, $3, $4, 'owner', $5, true)`, [staffId, GREATSTONE_ORG_ID, email, `${label.trim()} (staging approver)`, authUserId]);
+    await client.query('INSERT INTO public.portal_approvers (auth_user_id, label) VALUES ($1, $2)', [authUserId, label.trim()]);
+    await client.query('INSERT INTO public.portal_bridge_approvers (gsam_actor, auth_user_id, label) VALUES ($1, $2, $3)',
+      [gsamActor, authUserId, label.trim()]);
+    // the same join bridge_portal_approve_and_publish makes: the link must reach an active owner of the org
+    const linked = await n(`SELECT count(*)::int AS n FROM public.portal_bridge_approvers b
+        JOIN public.portal_approvers r ON r.auth_user_id = b.auth_user_id
+       WHERE b.gsam_actor = $1 AND EXISTS (SELECT 1 FROM public.users u WHERE u.auth_subject = b.auth_user_id::text
+         AND u.org_id = $2 AND u.is_active AND u.deleted_at IS NULL)`, [gsamActor, GREATSTONE_ORG_ID]);
+    if (linked !== 1) refuse('staging-approver-link-differs');
+    return { stagingApprover: { signIns: 1, staff: 1, approvers: 1, links: 1 } };
+  });
+}
+
 // Counts and fixed reasons only: a pg error's message and detail can carry row values.
 function safeError(error) {
   if (error instanceof Refusal) return { reason: error.message };
@@ -460,7 +513,8 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
             : mode === 'mcp-token' ? await registerMcpToken(pool, data, action === 'apply')
               : mode === 'mcp-token-revoke' ? await revokeMcpToken(pool, data, action === 'apply')
                 : mode === 'approver' ? await registerApprover(pool, data, action === 'apply')
-                  : await moveTables(pool, data, action === 'apply');
+                  : mode === 'staging-approver' ? await registerStagingApprover(pool, data, action === 'apply')
+                    : await moveTables(pool, data, action === 'apply');
       } finally { await pool.end(); }
       const at = new Date(now).toISOString();
       if (action === 'apply') Object.assign(ledger, { appliedAt: at, counts });
