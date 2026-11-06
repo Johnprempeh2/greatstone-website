@@ -49,10 +49,13 @@ function UseCaseGroup({ group, filters }) {
   </section>;
 }
 
-// A slow lime and teal wave behind the shop (John, 6 Nov). Without motion it is a still wave.
-function ShopWaves() {
+// Slow lime and teal waves across the whole page, behind the glass panels (John, 6 Nov).
+// Each line repeats every 1440 units, so sliding it 1440 loops without a seam. Without motion they stay still.
+const WAVES = [[90, 50, 'lime'], [210, 70, 'teal'], [330, 40, 'lime'], [450, 80, 'teal'], [570, 55, 'lime'], [690, 75, 'teal'], [810, 45, 'lime']];
+const wavePath = (y, a) => `M0 ${y} C240 ${y - a} 480 ${y - a} 720 ${y} S1200 ${y + a} 1440 ${y} S1920 ${y - a} 2160 ${y} S2640 ${y + a} 2880 ${y}`;
+export function ShopWaves() {
   return <div className="st-waves" aria-hidden="true">
-    <svg viewBox="0 0 2880 320" preserveAspectRatio="none"><path className="st-wave st-wave--lime" d="M0 160 C240 80 480 80 720 160 S1200 240 1440 160 S1920 80 2160 160 S2640 240 2880 160" /><path className="st-wave st-wave--teal" d="M0 200 C240 280 480 280 720 200 S1200 120 1440 200 S1920 280 2160 200 S2640 120 2880 200" /></svg>
+    <svg viewBox="0 0 2880 900" preserveAspectRatio="none">{WAVES.map(([y, a, tone], index) => <g key={y} className={'st-wave-line st-wave-line--' + (index % 3)}><path className={'st-wave st-wave--' + tone} d={wavePath(y, a)} /></g>)}</svg>
   </div>;
 }
 
