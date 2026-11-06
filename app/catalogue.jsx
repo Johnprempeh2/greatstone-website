@@ -2,6 +2,8 @@ import { fmtMoney } from '../src/lib/pricing.mjs';
 import { safeHref } from '../src/lib/safe-url.js';
 import { SiteFrame } from './ProofPage.jsx';
 import CatalogueFilters from './CatalogueFilters.jsx';
+import { ShopTide } from './ShopTide.jsx';
+export { ShopTide };
 import { landingClose } from './shop-close.mjs';
 import { USE_CASES, groupByUseCase, showsGroups, useCaseHref } from './shop-use-cases.mjs';
 
@@ -11,7 +13,7 @@ const image = (value) => !value ? '' : safeHref(value.startsWith('assets/') ? '/
 
 export function CatalogueBrowse({ catalogue, filters = {}, release }) {
   const offerings = catalogue.rows;
-  return <SiteFrame release={release}><div className="st-v15"><div className="st-scrim" aria-hidden="true" /><ShopWaves /><div className="st-wrap">
+  return <SiteFrame release={release}><div className="st-v15"><div className="st-scrim" aria-hidden="true" /><ShopTide /><div className="st-wrap">
     <header className="st-head"><span className="st-kicker">Software Catalogue</span>
       <h1 className="st-h1">Developer software,<br /><span className="accent">licensed and supported.</span></h1>
       <p className="st-lead">The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the vendors who make them, licensed and supported by us in the UK.</p>
@@ -47,16 +49,6 @@ function UseCaseGroup({ group, filters }) {
       {group.rows.length > GROUP_LIMIT && <a className="st-clear" href={useCaseHref(filters, group.slug)}>See all {group.rows.length} →</a>}</div>
     <div className="st-grid">{group.rows.slice(0, GROUP_LIMIT).map((item) => <OfferingCard key={item.id} item={item} />)}</div>
   </section>;
-}
-
-// Slow lime and teal waves across the whole page, behind the glass panels (John, 6 Nov).
-// Each line repeats every 1440 units, so sliding it 1440 loops without a seam. Without motion they stay still.
-const WAVES = [[90, 50, 'lime'], [210, 70, 'teal'], [330, 40, 'lime'], [450, 80, 'teal'], [570, 55, 'lime'], [690, 75, 'teal'], [810, 45, 'lime']];
-const wavePath = (y, a) => `M0 ${y} C240 ${y - a} 480 ${y - a} 720 ${y} S1200 ${y + a} 1440 ${y} S1920 ${y - a} 2160 ${y} S2640 ${y + a} 2880 ${y}`;
-export function ShopWaves() {
-  return <div className="st-waves" aria-hidden="true">
-    <svg viewBox="0 0 2880 900" preserveAspectRatio="none">{WAVES.map(([y, a, tone], index) => <g key={y} className={'st-wave-line st-wave-line--' + (index % 3)}><path className={'st-wave st-wave--' + tone} d={wavePath(y, a)} /></g>)}</svg>
-  </div>;
 }
 
 // The landing's close band (GRE-1862), with the landing's own words.

@@ -380,16 +380,10 @@
 /* slow lime and teal waves across the whole page, behind the glass panels (John, 6 Nov). Each
    line slides one repeat (1440 units) at its own pace, so it loops without a seam. With reduced
    motion the waves stay still. */
-.st-v15 .st-waves { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; opacity:.55; mask-image:linear-gradient(180deg,transparent,#000 12%,#000 88%,transparent); }
-.st-v15 .st-waves svg { display:block; width:200%; height:100%; }
-.st-v15 .st-wave { fill:none; stroke-width:1.5; vector-effect:non-scaling-stroke; }
-.st-v15 .st-wave--lime { stroke:var(--td-palette-30); filter:drop-shadow(0 0 6px var(--td-palette-30)); }
-.st-v15 .st-wave--teal { stroke:var(--td-palette-33); filter:drop-shadow(0 0 8px var(--td-palette-33)); }
-.st-v15 .st-wave-line { animation:st-wave-drift 60s linear infinite; }
-.st-v15 .st-wave-line--1 { animation-duration:84s; animation-direction:reverse; }
-.st-v15 .st-wave-line--2 { animation-duration:110s; }
-@keyframes st-wave-drift { to { transform:translateX(-1440px); } }
-@media (prefers-reduced-motion:reduce){ .st-v15 .st-wave-line { animation:none; } }
+.st-v15 .st-tide { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; opacity:.6; }
+.st-v15 .st-tide .td-tide { z-index:0; -webkit-mask-image:none; mask-image:none; }
+.st-v15 .st-tide .td-tide:after { background:var(--td-palette-26); }
+@media (max-width:860px){ .st-v15 .st-tide { opacity:.9; } }
 .st-v15 .sp-wrap, .st-v15 .st-close-wrap { position:relative; z-index:1; }
 
 /* liquid glass on every panel: a light catching fill, a bright top edge and a deep blur of the waves */
