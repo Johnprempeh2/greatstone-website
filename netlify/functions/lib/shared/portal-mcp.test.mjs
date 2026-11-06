@@ -244,6 +244,7 @@ test('document fields: a full GITA passes; wrong kinds, demo links, sections and
     signatory_email: 'person@client.example.test',
   };
   assert.deepEqual(checkDocumentFields(gita, 'create'), []);
+  assert.deepEqual(checkDocumentFields({ ...gita, kind: 'deep_dive', action: 'accept' }, 'create'), []);
   assert.deepEqual(checkDocumentFields({ summary: 'only this' }, 'update'), []);
   const p = (f, mode = 'create') => checkDocumentFields(f, mode).join('; ');
   assert.match(p({ ...gita, kind: 'journey_map' }), new RegExp(`kind must be one of: ${KINDS.join(', ')}`));

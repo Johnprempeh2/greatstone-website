@@ -26,7 +26,12 @@ const blank = (data, keys) => {
   return data;
 };
 // BIGINT minor-unit prices arrive from Postgres as digit strings.
-const minor = (value) => (typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value);
+function priceMinor(value, field) {
+  if (value === null || value === undefined) return value;
+  const number = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+  if (!Number.isSafeInteger(number) || number < 0) throw new Error(`Unsafe ${field}`);
+  return number;
+}
 function expectKeys(row, allowed, kind) {
   const unknown = Object.keys(row).filter((key) => !allowed.includes(key));
   if (unknown.length) throw new Error(`Unmapped ${kind} fields: ${unknown.join(', ')}`);
@@ -35,7 +40,7 @@ const variant = (row) => {
   const fields = ['id', 'sku', 'name', 'currency', 'platform', 'sort_order', 'license_type', 'min_order_qty', 'billing_period', 'base_price_minor'];
   expectKeys(row, [...fields, 'pricing'], 'variant');
   const data = pick(row, fields);
-  if ('base_price_minor' in data) data.base_price_minor = minor(data.base_price_minor);
+  if ('base_price_minor' in data) data.base_price_minor = priceMinor(data.base_price_minor, 'base_price_minor');
   return data;
 };
 const spec = (row) => {
@@ -60,7 +65,12 @@ export function catalogueFields(key, row) {
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
   const data = blank(pick(row, fields), ['short_description', 'description']);
   if (data.vendor) data.vendor = blank({ ...data.vendor }, ['logo_url']);
-  if ('from_price_minor' in data) data.from_price_minor = minor(data.from_price_minor);
+  if ('from_price_minor' in data) data.from_price_minor = priceMinor(data.from_price_minor, 'from_price_minor');
+  // Import provenance stays in the database, but is not a public release field.
+  if (data.attributes && 'catalogue_rebuild_source' in data.attributes) {
+    const { catalogue_rebuild_source, ...publicAttributes } = data.attributes;
+    data.attributes = publicAttributes;
+  }
   const variants = (row.offering_variants || row.variants || []).map(variant);
   const specs = (row.offering_specs || row.specs || []).map(spec);
   return { data: { ...data, offering_variants: variants, variants, offering_specs: specs, specs } };

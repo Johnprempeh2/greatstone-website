@@ -15,11 +15,11 @@ const BEGIN = { write: 'admin_bridge_begin_write', refund_request: 'admin_bridge
 const FINISH = { write: 'admin_bridge_finish_write', refund_request: 'admin_bridge_finish_refund' };
 
 // ── refusals ────────────────────────────────────────────────────────────────────────────────────────
-// A refused write answers with a code; the audit outcome is the code, except over_refundable, which is a conflict,
-// and licence_key_in_text, which is a bad_request.
-const AUDIT_OUTCOME = { over_refundable: 'conflict', licence_key_in_text: 'bad_request' };
+// A refused write answers with a code; the audit outcome is the code, except over_refundable and agreement_required,
+// which are a conflict, and licence_key_in_text, which is a bad_request.
+const AUDIT_OUTCOME = { over_refundable: 'conflict', agreement_required: 'conflict', licence_key_in_text: 'bad_request' };
 export const WRITE_STATUS = { bad_request: 400, licence_key_in_text: 400, denied: 403, not_found: 404, conflict: 409,
-  over_refundable: 409, idempotency_mismatch: 409 };
+  over_refundable: 409, idempotency_mismatch: 409, agreement_required: 409 };
 const PG_REFUSAL = {
   GB400: 'bad_request', GB403: 'denied', GB404: 'not_found', GB409: 'conflict', GBR01: 'over_refundable',
   GBK01: 'licence_key_in_text',

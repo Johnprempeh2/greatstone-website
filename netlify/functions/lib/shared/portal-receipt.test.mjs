@@ -76,6 +76,14 @@ test('the receipt email is built from the record, with a self-contained copy att
   assert.match(copy, /href="https:\/\/demo\.example\.test\/one"/);
 });
 
+test('a released Deep Dive receipt delivers the accepted version and fingerprint', () => {
+  const document = { ...DOC, kind: 'deep_dive', title: 'Synthetic Deep Dive report' };
+  const mail = buildReceiptEmail({ acceptance: ACC, document, siteOrigin: 'https://site.example.test/' });
+  assert.equal(mail.subject, 'Accepted: Synthetic Deep Dive report (version 2)');
+  assert.match(mail.text, new RegExp(SHA));
+  assert.match(Buffer.from(mail.attachment.content, 'base64').toString('utf8'), /Made-up <strong>scope<\/strong>/);
+});
+
 test('provider errors are kept short and without email addresses', () => {
   assert.equal(cleanError('resend 422: Invalid `to` field: person.one@client-a.example.test'), 'resend 422: Invalid `to` field: <address>');
   assert.equal(cleanError('x'.repeat(900)).length, 500);
@@ -119,6 +127,19 @@ function fakeDb(jobs) {
   };
 }
 const job = (n, extra = {}) => ({ id: 'job-' + n, acceptance_id: 'acc-' + n, status: 'queued', attempts: 0, next_attempt_at: 0, ...extra });
+
+test('the worker sends a Deep Dive acceptance receipt with the immutable copy', async () => {
+  const db = fakeDb([job(4)]);
+  db.load = async () => ({ acceptance: ACC, document: { ...DOC, kind: 'deep_dive', title: 'Synthetic Deep Dive report' } });
+  const sends = [];
+  const result = await runWorker({ db, ownerTo: ['owner@example.test'], siteOrigin: 'https://site.example.test',
+    send: async (message) => { sends.push(message); return { ok: true, id: 'synthetic-message' }; } });
+  assert.deepEqual([result.claimed, result.sent], [1, 1]);
+  assert.deepEqual(sends[0].to, [ACC.signer_email, 'owner@example.test']);
+  assert.match(sends[0].text, /Synthetic Deep Dive report/);
+  assert.match(Buffer.from(sends[0].attachments[0].content, 'base64').toString('utf8'), new RegExp(SHA));
+  assert.equal(db.jobs[0].status, 'sent');
+});
 
 test('two workers at once: each job is claimed and sent once, with its idempotency key', async () => {
   const db = fakeDb([job(1), job(2), job(3)]);

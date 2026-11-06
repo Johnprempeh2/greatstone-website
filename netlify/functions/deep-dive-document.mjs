@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
-import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { asBridgeWriter } from './lib/admin-bridge-write.mjs';
 import { asBridgeReader } from './lib/admin-bridge-store.mjs';
 import { verifyBridgeRequest, parseBridgeKeys, BridgeAuthError } from './lib/admin-bridge-auth.mjs';
@@ -113,7 +113,8 @@ export function makeDeepDiveDocumentHandler({ pool = getPool, verify, store = ()
           if (!snapshot) return null;
           const { rows } = await client.query(`SELECT id,source_id,kind,file_name,mime,byte_size,blob_key,created_at
             FROM deep_dive_documents WHERE customer_id=app_customer_id() ORDER BY created_at DESC LIMIT 1000`);
-          const visible = rows.filter((row) => allowedDocument(snapshot, row));
+          // Deliverables become client-readable only through the approved portal_documents version.
+          const visible = rows.filter((row) => row.kind !== 'deliverable' && allowedDocument(snapshot, row));
           return id ? visible.find((row) => row.id === id) || null : visible.map(({ blob_key, ...row }) => row);
         });
         if (id) {

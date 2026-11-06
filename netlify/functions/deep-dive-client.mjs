@@ -1,6 +1,6 @@
-import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
+import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { answerForClient, clientSnapshot } from './lib/deep-dive-client.mjs';
 import { sendDeepDiveAnswer } from './lib/deep-dive-answer.mjs';
 
