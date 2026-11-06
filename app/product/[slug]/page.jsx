@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import CatalogueProductClient from '../../CatalogueProductClient.jsx';
 import { SiteFrame } from '../../ProofPage.jsx';
 import { pricedCatalogue } from '../../catalogue-pricing.js';
-import { ShopClose, ShopWaves } from '../../catalogue.jsx';
+import { ShopClose, ShopTide } from '../../catalogue.jsx';
 import { activeRelease } from '../../release-source.js';
 import { offeringBySlug } from '../../../next-proof/catalogue-data.mjs';
 import { productOffer } from '../../../src/lib/pricing.mjs';
@@ -37,7 +37,7 @@ export default async function Product({ params }) {
     offers: productOffer(item, 'https://greatstoneint.com/product/' + encodeURIComponent(slug)) };
   const image = item.attributes?.mainImage || item.attributes?.icon || item.vendor?.logo_url;
   if (image) structured.image = /^https?:/.test(image) ? image : 'https://greatstoneint.com/' + String(image).replace(/^\/?(assets\/)?/, '');
-  return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><div className="st-v15"><ShopWaves /><CatalogueProductClient item={item} related={related} /><ShopClose release={release} /></div></SiteFrame>;
+  return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><div className="st-v15"><ShopTide /><CatalogueProductClient item={item} related={related} /><ShopClose release={release} /></div></SiteFrame>;
 }
 
 // Rendered on first visit, then kept like the static pages (Next cutover gap 6): no build-time list needed.
