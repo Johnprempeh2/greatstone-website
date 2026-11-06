@@ -69,3 +69,48 @@ export function safeRedirect(target) {
   const t = String(target || '');
   return /^#\/?portal(\/|$|\?)/i.test(t) ? t : null;
 }
+
+// GRE-4245: the Next copy serves these views at real paths (/portal/interview…, /join/<token>). The views
+// still speak in hashes; in path mode every href, navigation and "where am I" read goes through the helpers
+// below. The Next pages switch it on when they load; the Vite app never does.
+let pathRoutes = false;
+let pushPath = null;
+
+/** Path mode on. `push` is Next's router.push, so moving between views is a soft navigation. */
+export function enablePathRoutes(push) {
+  pathRoutes = true;
+  if (push) pushPath = push;
+}
+
+/** '#portal/interview/x?q' → '/portal/interview/x?q', '#join/t?team=u' → '/join/t?team=u', '#portal' → '/portal'. */
+export function interviewPathOf(hash) {
+  const m = /^#\/?((?:portal|join)(?:[/?].*)?)$/i.exec(String(hash || ''));
+  return m ? '/' + m[1] : null;
+}
+
+/** A Next path read back as its hash: ('/join/t', '?team=u') → '#join/t?team=u'. Not an interview path → null. */
+export function interviewHashOf(pathname, search) {
+  const path = String(pathname || '').replace(/\/+$/, '');
+  if (!/^\/(portal\/interview|join)(\/|$)/i.test(path)) return null;
+  const qs = String(search || '').replace(/^\?/, '');
+  return '#' + path.slice(1) + (qs ? '?' + qs : '');
+}
+
+/** The hash this page is on, in either mode. */
+export function currentHash() {
+  if (typeof location === 'undefined') return '';
+  return pathRoutes ? interviewHashOf(location.pathname, location.search) || '' : location.hash;
+}
+
+/** What an <a href> should hold for a hash: the hash itself, or its Next path. */
+export function hrefFor(hash) {
+  return (pathRoutes && interviewPathOf(hash)) || hash;
+}
+
+/** Go to a hash's view. In path mode that is its Next path; otherwise the hash. */
+export function goToHash(hash) {
+  const path = pathRoutes && interviewPathOf(hash);
+  if (!path) location.hash = hash;
+  else if (pushPath) pushPath(path);
+  else location.assign(path);
+}

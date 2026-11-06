@@ -7,7 +7,7 @@
  * Port: source components/CompletionCard.tsx. next/link to '/' became a plain hash link to the portal home.
  */
 
-import { PORTAL_HOME_HASH } from './route.mjs';
+import { PORTAL_HOME_HASH, hrefFor } from './route.mjs';
 
 export function CompletionCard() {
   return (
@@ -62,7 +62,7 @@ export function CompletionCard() {
           </p>
         </div>
       </div>
-      <a href={PORTAL_HOME_HASH} className="btn btn-primary" style={{ marginTop: '24px' }}>
+      <a href={hrefFor(PORTAL_HOME_HASH)} className="btn btn-primary" style={{ marginTop: '24px' }}>
         Back to your portal
       </a>
     </div>

@@ -28,7 +28,7 @@ import { ChatMessage, TypingDots, AgentAvatar } from './ChatMessage.jsx';
 import { ConfirmDialog } from './ConfirmDialog.jsx';
 import { useVoice } from './voice/useVoice.mjs';
 import { CHAT_URL, portalOp, followRedirect, navigate, parseSseFrames } from './api.mjs';
-import { interviewHref, PORTAL_HOME_HASH } from './route.mjs';
+import { interviewHref, hrefFor, PORTAL_HOME_HASH } from './route.mjs';
 import { VOICE_HINT, lastAgentTurnId as findLastAgentTurnId, needsKickoff, newClientTurnId } from './model.mjs';
 
 const COMPLETE_HASH = interviewHref('complete');
@@ -284,7 +284,7 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
         <div className="chat-bar-inner">
           {/* Quiet route home: no confirm needed, state persists by design. */}
           <a
-            href={PORTAL_HOME_HASH}
+            href={hrefFor(PORTAL_HOME_HASH)}
             title="Back to your portal"
             aria-label="Back to your portal"
             style={{ flexShrink: 0, lineHeight: 0, textDecoration: 'none' }}
@@ -296,7 +296,7 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
                 resumable so nothing is lost. This is the labelled counterpart to
                 the logo link, answering "how do I get back to my dashboard?". */}
             <a
-              href={PORTAL_HOME_HASH}
+              href={hrefFor(PORTAL_HOME_HASH)}
               className="btn btn-ghost btn-sm"
               title="Back to your dashboard"
               aria-label="Back to your dashboard"

@@ -1,4 +1,6 @@
 // Old Vite links used hashes as page routes. Keep them usable on the Next site.
+import { interviewPathOf, parseInterviewHash } from '../src/portal/interview/route.mjs';
+
 // Renamed pages: used only when the old path is no longer published.
 const renamed = { proof: '/case-studies' };
 const special = { book: '/contact', shop: '/shop', breakdown: '/method', service: '/services', enquire: '/contact', 'ai-market-intelligence': '/insights' };
@@ -9,6 +11,8 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   try { fragment = decodeURIComponent(hash.slice(1)); }
   catch { return null; }
   if (hasAnchor(fragment)) return null;
+  // GRE-4245: interview links (#join/<token>, #portal/interview…?seats=…) keep their query on the way to the path.
+  if (parseInterviewHash(hash)) return interviewPathOf(hash);
   const checkout = /^order-confirmed\?session=(cs_test_[A-Za-z0-9]+)$/i.exec(fragment);
   if (checkout) return `/order-confirmed?session=${checkout[1]}`;
   const privateRoute = /^(account|org|portal|invoice|catalogue)(?:\/([\w/-]+))?$/i.exec(fragment);
