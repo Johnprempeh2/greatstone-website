@@ -322,8 +322,8 @@ test('the GRE-2567 cut-over card authorises the public site for its exact SHA', 
   f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /--context production --json/);
-  assert.deepEqual(f.restores, ['draft-1']);
+  assert.match(await readFile(f.log, 'utf8'), /--prod --json/);
+  assert.deepEqual(f.restores, []);
 });
 
 test('the cut-over card never covers staging, another SHA, drift, agent resolution or other text', async (t) => {
@@ -369,7 +369,7 @@ test('the weekly train deploys the public site, then the editor alias from the s
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --context production --json\n` +
+    `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod --json\n` +
     'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
   // The public upload installs in an export of the commit; the editor installs and builds in its prepared copy.
@@ -407,7 +407,7 @@ test('a failed editor alias step fails the train and names the step', async (t) 
   let result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /train failed at editor alias step "upload and check" \(exit 1\)/);
-  assert.match(await readFile(f.log, 'utf8'), /--context production --json\n/);
+  assert.match(await readFile(f.log, 'utf8'), /--prod --json\n/);
 
   f = await weeklyTrain(t);
   f.env.NETLIFY_BUILD_FAIL = '1';
@@ -809,31 +809,31 @@ test('the public site takes the commit on staging once main has moved on, still 
 });
 
 // Next cutover step 4: the public site is checked before it is published, and put back if its APIs fail after.
-test('the public promote checks pages on the unpublished upload, then publishes it', async (t) => {
+test('the public promote uploads as production, then checks the live site', async (t) => {
   const f = await weeklyTrain(t);
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(f.restores, ['draft-1']);
+  assert.deepEqual(f.restores, []);
   assert.match(result.stdout, /Fallback: the deploy live before this one is live-before/);
   assert.match(result.stdout, /Published draft-1: 6 pages and 4 APIs answered 200/);
 });
 
-test('a page failing on the unpublished upload publishes nothing', async (t) => {
+test('a page failing on the live site after the upload puts the earlier deploy back', async (t) => {
   const f = await weeklyTrain(t);
   f.failing.add('/shop');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /not published: \/shop failed on the unpublished upload draft-1/);
-  assert.deepEqual(f.restores, []);
+  assert.match(result.stderr, /\/shop failed after publishing draft-1; restored live-before/);
+  assert.deepEqual(f.restores, ['live-before']);
 });
 
-test('an API failing after publish puts the earlier live deploy back at once', async (t) => {
+test('an API failing after the upload puts the earlier live deploy back at once', async (t) => {
   const f = await weeklyTrain(t);
   f.failing.add('/api/catalogue');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /\/api\/catalogue failed after publishing draft-1; restored live-before/);
-  assert.deepEqual(f.restores, ['draft-1', 'live-before']);
+  assert.deepEqual(f.restores, ['live-before']);
 });
 
 // The rehearsal (7 Nov): the public promote, run on staging with no card, with a failure that can be planted.
@@ -843,9 +843,9 @@ test('a rehearsal runs the checked promote on staging and never touches the publ
   git(f.cwd, 'checkout', '-q', 'main');
   const result = await f.run('rehearse', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:[0-9a-f]{40} --context production --json$/m);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:[0-9a-f]{40} --prod --json$/m);
   assert.doesNotMatch(await readFile(f.log, 'utf8'), /3b1e97e6-e184-4251-badd-deed532be3ab --message/);
-  assert.deepEqual(f.restores, ['draft-1']);
+  assert.deepEqual(f.restores, []);
 });
 
 test('a planted API failure in a rehearsal puts the earlier staging deploy back', async (t) => {
@@ -856,7 +856,7 @@ test('a planted API failure in a rehearsal puts the earlier staging deploy back'
   const result = await f.run('rehearse', 'gre3833-next-db-staging');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /\/api\/catalogue \(planted\) failed after publishing draft-1; restored live-before/);
-  assert.deepEqual(f.restores, ['draft-1', 'live-before']);
+  assert.deepEqual(f.restores, ['live-before']);
 });
 
 test('a rehearsal refuses the public site, and a planted failure is ignored outside a rehearsal', async (t) => {

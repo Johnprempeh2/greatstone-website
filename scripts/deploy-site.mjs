@@ -19,7 +19,7 @@ const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-sta
 const stagingSite = 'gre3833-next-db-staging';
 // The public site runs the same Next build as staging (Next cutover step 4, through John's Deploy card).
 const nextSites = new Set([stagingSite, 'greatstone-home']);
-// The public pages and APIs a promote checks: pages on the unpublished upload, APIs once it is published.
+// The public pages and APIs a promote checks on the live site straight after the upload.
 export const PAGE_CHECKS = ['/', '/dev-tools', '/about', '/contact', '/shop', '/_release'];
 export const API_CHECKS = ['/api/auth/get-session', '/api/catalogue', '/api/popularity', '/api/compose-problems'];
 // The CLI build cannot read the catalogue as anon, so the Next build reads the live public catalogue over HTTP
@@ -178,26 +178,22 @@ async function status(url) {
   try { return (await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(30_000) })).status; } catch { return 0; }
 }
 
-// Check before publish (Next cutover step 4): the pages on the unpublished upload, then publish it, then the APIs that
-// need the site's database (an unpublished deploy has none), and put the deploy that was live back at once if any
-// check fails. The earlier deploy stays on Netlify, so a person can also restore it by hand: its id is printed.
-async function publishChecked({ deploy_id: deployId, deploy_url: deployUrl }) {
+// The checked promote (Next cutover step 4). Netlify attaches the site's database only to an upload built as a
+// production deploy (an upload built unpublished keeps "Auth database is not configured" even after it is
+// published, found in the 7 Nov rehearsal), so the upload goes live at once and is checked there: the key pages
+// and the APIs that need the database. If any fails, the deploy that was live before is put back at once. That
+// earlier deploy stays on Netlify, so a person can also restore it by hand: its id is printed first.
+async function checkLive({ deploy_id: deployId, deploy_url: deployUrl }, before) {
   const siteId = sites.get(site);
-  const before = (await netlifyApi(`/sites/${siteId}`)).published_deploy?.id;
-  console.log(`Fallback: the deploy live before this one is ${before}. Restore it with: netlify api restoreSiteDeploy --data '{"site_id":"${siteId}","deploy_id":"${before}"}'`);
-  const pageFailures = [];
-  for (const path of PAGE_CHECKS) if (await status(deployUrl + path) !== 200) pageFailures.push(path);
-  if (pageFailures.length) throw new Error(`not published: ${pageFailures.join(', ')} failed on the unpublished upload ${deployId}`);
-  await netlifyApi(`/sites/${siteId}/deploys/${deployId}/restore`, 'POST');
   const live = process.env.NODE_ENV === 'test' ? deployUrl : site === 'greatstone-home' ? 'https://greatstoneint.com' : `https://${site}.netlify.app`;
-  const apiFailures = [];
-  for (const path of API_CHECKS) if (await status(live + path) !== 200) apiFailures.push(path);
-  // A rehearsal can plant one failing API check to prove the restore fires; the public promote never reads this.
+  const failures = [];
+  for (const path of [...PAGE_CHECKS, ...API_CHECKS]) if (await status(live + path) !== 200) failures.push(path);
+  // A rehearsal can plant one failing check to prove the restore fires; the public promote never reads this.
   const planted = mode === 'rehearse' ? process.env.REHEARSE_FAIL_API : null;
-  if (planted && !apiFailures.includes(planted)) apiFailures.push(`${planted} (planted)`);
-  if (apiFailures.length) {
+  if (planted && !failures.includes(planted)) failures.push(`${planted} (planted)`);
+  if (failures.length) {
     if (before) await netlifyApi(`/sites/${siteId}/deploys/${before}/restore`, 'POST');
-    throw new Error(`${apiFailures.join(', ')} failed after publishing ${deployId}; restored ${before}`);
+    throw new Error(`${failures.join(', ')} failed after publishing ${deployId}; restored ${before}`);
   }
   console.log(`Published ${deployId}: ${PAGE_CHECKS.length} pages and ${API_CHECKS.length} APIs answered 200`);
 }
@@ -245,16 +241,21 @@ async function lockAndDeploy(sha, cwd) {
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
     // The public site is checked before it is published: an unpublished upload built with production settings.
     const checked = (channel === 'prod' && site === 'greatstone-home') || mode === 'rehearse';
-    if (checked) args.push('--context', 'production', '--json');
     // Staging's own production URL is the staging site, so it is a --prod upload to that site.
-    else if (channel === 'prod' || channel === 'staging') args.push('--prod');
+    if (channel === 'prod' || channel === 'staging') args.push('--prod');
+    if (checked) args.push('--json');
+    let before = null;
+    if (checked) {
+      before = (await netlifyApi(`/sites/${sites.get(site)}`)).published_deploy?.id;
+      console.log(`Fallback: the deploy live before this one is ${before}. Restore it with: netlify api restoreSiteDeploy --data '{"site_id":"${sites.get(site)}","deploy_id":"${before}"}'`);
+    }
     console.log(`Deploying ${site} ${mode} at ${sha}`);
     const child = spawn('netlify', args, { stdio: checked ? ['ignore', 'pipe', 'inherit'] : 'inherit', signal: controller.signal, cwd });
     let out = '';
     child.stdout?.on('data', (part) => { out += part; });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
     if (code !== 0) throw new Error(`netlify deploy exited ${code}`);
-    if (checked) await publishChecked(JSON.parse(out.slice(out.indexOf('{'))));
+    if (checked) await checkLive(JSON.parse(out.slice(out.indexOf('{'))), before);
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
   } finally {
     try { if (JSON.parse(await readFile(file, 'utf8')).own === own) await rm(file); } catch { /* newer run owns it */ }
