@@ -2,7 +2,7 @@
 // shareable join link, #join/<token>. POST /api/interview/join:
 //   { op: 'info', token, team? }  public: is the link active, the client's name, the allowed domains, the teams
 //   { op: 'enrol', token, name, unitId? }  signed in with a VERIFIED website account
-// Gated as the source: the token is active and unexpired, the email is on an allowed work domain, a team target is a
+// Gated as the source: the token is active and unexpired, self-enrolment is on for anyone not already invited (GRE-4418), the email is on an allowed work domain, a team target is a
 // real team of this round (re-checked, never trusted), a seat is free (claim_seat stays the hard gate at session
 // start), and rate limits per token and per IP.
 // Port: identity is the website account (Better Auth, email verified), so the source's typed-email identity gap is
@@ -47,11 +47,14 @@ export async function joinInfo(sys, token, team) {
   const expired = eng?.enrol_expires_at ? new Date(eng.enrol_expires_at).getTime() < Date.now() : false;
   // Port: a round GSAM has not opened (draft) or has closed is not active either
   // and no join link works until the organisation has accepted the data processing agreement (GRE-2794)
-  const valid = Boolean(eng && eng.enrol_enabled && !expired && eng.status === 'active' && await acceptanceFor(sys, eng.customer_id));
+  const valid = Boolean(eng && !expired && eng.status === 'active' && await acceptanceFor(sys, eng.customer_id));
   if (!valid) return { valid: false, expired };
+  // Self-enrol off (GRE-4418): the link is still the one in every invitation email, so it stays valid for the people
+  // GSAM invited and enrol() refuses everyone else. Nothing about the round is shown to a stranger holding the link.
+  if (!eng.enrol_enabled) return { valid: true, selfEnrol: false, clientName: null, domains: [], targetMinutes: eng.target_minutes ?? 20, team: null, teams: [] };
   const teams = await teamsFor(sys, eng);
   const teamUnit = team ? teams.find((t) => t.id === team) ?? null : null;
-  return { valid: true, clientName: eng.client_name, domains: eng.allowed_email_domains ?? [], targetMinutes: eng.target_minutes ?? 20,
+  return { valid: true, selfEnrol: true, clientName: eng.client_name, domains: eng.allowed_email_domains ?? [], targetMinutes: eng.target_minutes ?? 20,
     team: teamUnit, teams: teamUnit ? [] : teams };
 }
 
@@ -71,7 +74,7 @@ export async function enrol({ db, sys, caller, token, name: nameRaw, unitId: uni
 
   let eng;
   try { eng = await roundForToken(sys, token); } catch { return { ok: false, message: 'Something went wrong on our side. Please try again shortly.' }; }
-  if (!eng || !eng.enrol_enabled || eng.status !== 'active') {
+  if (!eng || eng.status !== 'active') {
     return { ok: false, message: 'This invitation link is not active. Please check with whoever shared it.' };
   }
   if (eng.enrol_expires_at && new Date(eng.enrol_expires_at).getTime() < Date.now()) {
@@ -92,6 +95,10 @@ export async function enrol({ db, sys, caller, token, name: nameRaw, unitId: uni
     return { ok: false, message: 'This invitation is linked to another account. Please sign in with the account it was sent to.' };
   }
   const isNew = !(existing && existing.length > 0);
+  // enrol_enabled gates self-enrolment only (GRE-4418): people GSAM invited claim their row above whatever it says.
+  if (isNew && !eng.enrol_enabled) {
+    return { ok: false, message: 'This link is for people invited to this round. Please sign in with the email address your invitation was sent to.' };
+  }
   const domain = email.split('@')[1] ?? '';
   const allowed = (eng.allowed_email_domains ?? []).map((d) => d.toLowerCase());
   if (isNew && (allowed.length === 0 || !allowed.includes(domain))) {

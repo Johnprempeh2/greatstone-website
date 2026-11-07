@@ -7,7 +7,9 @@
  * Port: source app/join/[token]/page.tsx + JoinForm.tsx. What changed, and why (docs/INTERVIEW-ENGINE.md
  * "Identity and enrolment"): the website account is the only way in, and the VERIFIED email is the join key.
  *   - The page's token lookup is `POST /api/interview/join { op: 'info', token, team? }` → { data: { valid,
- *     expired, clientName, domains, team, teams: [{ id, name }] } } (public, no personal data). ?team=<unitId>
+ *     expired, selfEnrol, clientName, domains, team, teams: [{ id, name }] } } (public, no personal data). With
+ *     self-enrol off the link stays valid for invited people only and carries no client name, domains or teams
+ *     (GRE-4418). ?team=<unitId>
  *     is honoured exactly as before: only when it is a real team of this round (`team`, resolved server-side).
  *   - The source enrol() created the account itself (typed email + password). Here the person first signs up
  *     (Better Auth sends a verification email that returns them to this link) or signs in, and only then
@@ -92,13 +94,18 @@ export default function JoinPage({ route }) {
           <GsLogo className="welcome-logo anim-up" />
           <div className="kicker anim-up d-1">Parallel Discovery Agent</div>
           <h1 className="anim-up d-2">
-            {teamUnit
-              ? `Join the ${teamUnit.name} conversation at ${eng.clientName}`
-              : `Join the conversation at ${eng.clientName}`}
+            {eng.selfEnrol === false
+              ? 'Join your conversation'
+              : teamUnit
+                ? `Join the ${teamUnit.name} conversation at ${eng.clientName}`
+                : `Join the conversation at ${eng.clientName}`}
           </h1>
           <p className="welcome-lead anim-up d-3">
             A short, confidential conversation about how your work really gets done, run
-            independently by Greatstone. Create your account and you can start straight away.
+            independently by Greatstone.{' '}
+            {eng.selfEnrol === false
+              ? 'Log in or create your account with the email address your invitation was sent to.'
+              : 'Create your account and you can start straight away.'}
           </p>
           <div className="signin-card anim-up d-4">
             <JoinForm
