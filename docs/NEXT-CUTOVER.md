@@ -105,3 +105,26 @@ On 7 Nov the Next build of main was published to staging (gre3833, its own datab
 - **Item 7 is the real risk.** Better Auth plus the client portal and interview flows have to be proven end to end on staging. If they pass, that is half a day. If auth or the portal need porting work, it is 2 to 4 days.
 - **Items 8 and 9:** half a day.
 - **Overall:** about 3 to 6 working days before staging can hold the Next site with confidence, and then the step 4 production switch through John's Deploy card.
+
+## Gap 7 settled, and gaps 8 and 9 (7 Nov, later)
+
+**Signed in on staging** as the verified audit account. It was verified through the guarded owner-import window, using the `verify-test-account` mode from #246 (dry run, then apply, 1 row). The catalogue on staging is the live public catalogue (GRE-4439, `tables` mode: 41 categories, 10 vendors, 237 offerings, 819 variants and 2,831 specs; staging `/api/catalogue` total 159).
+
+| Signed-in page | Result on Next staging |
+|---|---|
+| `/account` | Renders, with the account email: "No customer account here". This is correct for an account with no customer company. |
+| `/portal` | "This is not a client account", which is correct. |
+| `/catalogue` | "Not authorised … isn't a catalogue editor", which is correct. |
+| `/invoice/<id>` | "Invoice not found", with a 400 from the store for a made-up id. This is correct. |
+| `/order-confirmed`, `/join/<token>` | Correct empty states. |
+| `/org` | Stays on "Loading your organisation…" for an account with no customer company. **This is the same on the live site**: both builds render the same `src/store/OrgDashboard.jsx`, which has no "no organisation" state. So it is an existing bug, not a cutover gap. |
+
+Every signed-in page renders the same component as the Vite site, so a client account sees the same thing.
+
+- **Gap 8, service detail:** matches. `/#service/business-website-build` vs `/service/business-website-build` have the same title and h1, and text of 2411 vs 2424 chars.
+- **Gap 9, analytics:** matches. Neither site loads GTM, and neither shows a consent button (no GTM id is set on the live site). When GTM is switched on, Next reads `NEXT_PUBLIC_GTM_ID` or `VITE_GTM_ID`.
+- **`INTERVIEW_ENABLED` (note only):** the live site does not set it, so `/api/interview/*` answer 404 there. Staging sets it. After the switch the interview routes stay off on production until someone sets it there; that is a separate decision for John.
+
+## Catalogue in the Next build (#247)
+
+A CLI build cannot read the catalogue from the database, so the Next build reads the same public projection from `https://greatstoneint.com/api/catalogue` (`NEXT_CATALOGUE_API`), and `NEXT_CATALOGUE_REQUIRED` still applies. A draft build on staging had all 86 products.
