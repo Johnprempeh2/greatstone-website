@@ -73,15 +73,29 @@ These were rendered signed out only, so they compare the shell, not the signed-i
 - The meta description differs on `/shop`, and is missing on the signed-in pages.
 - GTM was absent on both sides in this run (consent-gated), so analytics parity is unverified. It needs a run that accepts consent and checks the dataLayer and GA4 hits.
 
+## Rerun on published staging (gap 7)
+
+On 7 Nov the Next build of main was published to staging (gre3833, its own database, with the 22 Oct catalogue fixture), and the audit was run again (`docs/next-cutover/result-staging.json`). The public page results did not change, and the draft-only 502 has gone.
+
+| Check | Result |
+|---|---|
+| `/api/auth/get-session`, `/api/popularity`, `/api/compose-problems`, `/api/catalogue` | 200 on Next staging. Settled. |
+| Better Auth sign-up (`STAGING_TEST_EMAIL` in `.env.example`) | 200. The account was created unverified with **no session** (token null), as `requireEmailVerification` intends. |
+| Sign-in for that unverified account | 403 `EMAIL_NOT_VERIFIED`. A wrong password gives 401. The auth database and function chain works end to end. |
+| Signed-in content (account, org, portal, invoice, catalogue admin) | **Still unproven.** Staging sends no email (it has no mail key), so the test account cannot be verified. This needs a staging-only way to mark one test account verified (a seed like `scripts/seed-staging-portal.mjs`, scoped to gre3833). |
+| `/api/interview/portal`, `/api/interview/my-data` | **Keep.** The site's own interview portal uses them (`src/portal/interview/api.mjs`, `InterviewDataCard.jsx`). Vite answers 404 only because `INTERVIEW_ENABLED` is unset on production; staging sets it. This is a matter of environment, not a routing gap. |
+| `/ironsoftware` | **Not a gap** (correction). `/shop/ironsoftware` is a real Next storefront (200). |
+| `/shop/<vendor>` "half the text" | **Data, not code** (correction). Vite's `#shop/aspose` lists all 86 products, because it ignores the vendor. Next lists the vendor's own products from the 24-product fixture. It needs the live catalogue on staging (GRE-4439). The title "Products" vs "Software Catalogue" is cosmetic. |
+
 ## Gap list (to fix before step 3)
 
-1. Pages missing on Next: `/proof` and `/ai-market-intelligence` (plus the `#intel` alias).
-2. Vendor storefront parity (`/shop/<vendor>`), and the `/shop` title and description.
-3. `/ironsoftware` redirect target, plus 301s for `/about-us` and `/contact-us`.
-4. `Referrer-Policy` and `Permissions-Policy` headers, and one HSTS value.
-5. Titles, canonical tags and robots tags on the signed-in pages and `/privacy/interviews`.
-6. Home page caching: static or ISR for public pages instead of `no-store`.
-7. Prove auth (Better Auth), account, org, portal, join and interview flows, `/api/popularity` and `/api/compose-problems` on a **published** staging deploy, with the live catalogue export.
+1. Pages missing on Next: `/proof` and `/ai-market-intelligence` (plus the `#intel` alias). The Next site renders the pages published from GSAM, so these two pages need publishing in the Website module (content, not code). The legacy rules already send `/proof` to `/case-studies` once that page exists.
+2. `/shop`: the meta description and title are cosmetic. Storefront size is a data matter (see above).
+3. 301s for `/about-us` and `/contact-us` (PR #243). `/ironsoftware` is fine.
+4. `Referrer-Policy` and `Permissions-Policy` headers, and one HSTS value (PR #243).
+5. Titles on the signed-in pages and `/privacy/interviews` (PR #244). They stay noindex, so they need no canonical.
+6. Public page caching: CDN cache with revalidation instead of `no-store` (PR #243).
+7. Auth and APIs are proven on staging (see the rerun above). Still open: signed-in content, which needs a staging-only verified test account. Also the live catalogue on staging (GRE-4439).
 8. A service detail page with a real slug.
 9. Analytics: GTM after consent.
 
