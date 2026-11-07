@@ -1,5 +1,6 @@
 // Public front door. The approved prompts and email templates remain in the shared modules used by the
 // former Edge Function. Database work always enters through an anon, transaction-local RLS context.
+import { pingGsam } from './lib/gsam-ping.mjs';
 import { randomUUID } from 'node:crypto';
 import { getPool } from './lib/db.mjs';
 import { publicIp } from './lib/public-actions.mjs';
@@ -103,6 +104,7 @@ export function makeFrontDoorHandler({ pool = getPool, env = process.env, fetchI
     if (leadId) {
       try { lead = await updateContact(db(), leadId, update); }
       catch (e) { log('front-door: contact not saved', e?.code || e?.name); }
+      if (lead) await pingGsam();
     }
     if (!lead) {
       const sent = await alert({ contact: update, studioUrl, packSent: false });
