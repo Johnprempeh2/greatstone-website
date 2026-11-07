@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Window } from 'happy-dom';
-import { attachBehaviours } from './html-behaviours.mjs';
+import { attachBehaviour, attachBehaviours } from './html-behaviours.mjs';
 
 // A page region holding `html`, in a window whose reduced-motion setting the test chooses.
 function page(html, { reduced = false } = {}) {
@@ -207,6 +207,24 @@ test('carousel: autoplay advances, and stops while paused or with reduced motion
   still.tick();
   assert.equal(slideShown(still.root), 0, 'reduced motion never rotates');
   still.detach();
+});
+
+test('carousel: an element the island attached is not attached again by the page scan', () => {
+  const window = new Window({ url: 'https://example.test/' });
+  window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+  window.document.body.innerHTML = `<main data-gs-scope="page">${CAROUSEL()}</main>`;
+  const root = window.document.querySelector('main');
+  const own = attachBehaviour(root.querySelector('[data-behaviour]'), window);
+  const scan = attachBehaviours(root, window);
+  const pause = root.querySelector('[data-carousel-pause]');
+  pause.click();
+  assert.equal(pause.getAttribute('aria-pressed'), 'true', 'one click toggles once, not twice');
+  scan();
+  root.querySelector('[data-carousel-next]').click();
+  assert.equal(slideShown(root), 1, 'the first caller still owns it');
+  own();
+  root.querySelector('[data-carousel-next]').click();
+  assert.equal(slideShown(root), 1, 'detached');
 });
 
 test('detach removes the listeners; unknown behaviours are ignored', () => {

@@ -297,15 +297,23 @@ function carousel(root, win) {
 
 export const BEHAVIOURS = { more, faq, tabs, climb, grow, carousel, 'site-header': siteHeader };
 
+// GRE-4310: an island can attach its own element's behaviour, and the page region scan can find the same
+// element too. Each element is attached once; the first caller owns the detach.
+const attached = new WeakSet();
+export function attachBehaviour(element, win = element?.ownerDocument?.defaultView, context = {}) {
+  const name = element?.getAttribute('data-behaviour');
+  if (!win || !Object.hasOwn(BEHAVIOURS, name) || attached.has(element)) return () => {};
+  attached.add(element);
+  const stop = BEHAVIOURS[name](element, win, context);
+  return () => { attached.delete(element); stop?.(); };
+}
+
 // Attaches every behaviour inside `root` (a region of the page). `context` carries what a behaviour needs
 // to know about the page (the header's: path, title and the analytics `track`). Returns one function
 // that detaches them all.
 export function attachBehaviours(root, win = root?.ownerDocument?.defaultView, context = {}) {
   if (!root || !win) return () => {};
   const detach = [reveal(root, win)];
-  for (const element of root.querySelectorAll('[data-behaviour]')) {
-    const name = element.getAttribute('data-behaviour');
-    if (Object.hasOwn(BEHAVIOURS, name)) detach.push(BEHAVIOURS[name](element, win, context));
-  }
+  for (const element of root.querySelectorAll('[data-behaviour]')) detach.push(attachBehaviour(element, win, context));
   return () => detach.forEach((stop) => stop?.());
 }
