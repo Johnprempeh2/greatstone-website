@@ -10,6 +10,8 @@
 //   approver          registers the one portal approver (039's portal_approvers) from John's card (GRE-3964)
 //   staging-approver  staging only: a fake signed-in owner, made portal approver and linked to one GSAM person
 //                     (067's portal_bridge_approvers), so the bridge's approve and publish can be proved (GRE-4081)
+//   verify-test-account  staging only: marks the one throwaway audit account verified (staging sends no email), so
+//                     the Next cutover can prove the signed-in pages; it takes an email of a fixed shape and nothing else
 //
 // Guards, in order. Until the first three pass it reads nothing and writes nothing:
 //   1. OWNER_IMPORT_UNTIL is set, in the future and at most 60 minutes away
@@ -36,7 +38,7 @@ export const SITES = Object.freeze({
   'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
   // The Next staging site's database starts empty (GRE-4222): the fake GRE-4103 org and test client, and the fake
   // approver for the bridge's approve and publish check (GRE-4081).
-  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production', modes: ['tables', 'staging-approver'], identityCount: 0 },
+  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production', modes: ['tables', 'staging-approver', 'verify-test-account'], identityCount: 0 },
 });
 
 // The Supabase tables with rows (cut-over plan, section 1), parents before children. The order is checked against the
@@ -420,6 +422,28 @@ export async function registerApprover(pool, data, apply) {
   });
 }
 
+// --- the staging audit account (Next cutover, 7 Nov 2026) ---
+// Staging has no mail sender, so a Better Auth sign-up there can never verify. This mode verifies one throwaway
+// account whose address has the fixed audit shape (STAGING_TEST_EMAIL in .env.example), and nothing else: it refuses
+// any other address and refuses unless exactly one such unverified account exists. Allowed on gre3833 only.
+export const STAGING_AUDIT_EMAIL = /^staging-audit\+\d{1,13}@example\.com$/;
+
+export function validateTestAccount(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).join(',') !== 'email') refuse('test-account-fields');
+  if (typeof data.email !== 'string' || !STAGING_AUDIT_EMAIL.test(data.email)) refuse('test-account-email');
+  return data;
+}
+
+export async function verifyTestAccount(pool, data, apply) {
+  const { email } = validateTestAccount(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    const { rowCount } = await client.query(
+      'UPDATE better_auth."user" SET "emailVerified" = true, "updatedAt" = now() WHERE email = $1 AND NOT "emailVerified"', [email]);
+    if (rowCount !== 1) refuse('test-account-not-found');
+    return { testAccount: { verified: 1 } };
+  });
+}
+
 // --- the staging bridge approver (GRE-4081) ---
 // A staging database has no real sign-ins, so this mode writes a fixed fake one: an auth.users row, an active owner
 // of the Greatstone org signed in as it, that sign-in as the portal approver, and the 067 link from one GSAM person
@@ -514,6 +538,7 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
               : mode === 'mcp-token-revoke' ? await revokeMcpToken(pool, data, action === 'apply')
                 : mode === 'approver' ? await registerApprover(pool, data, action === 'apply')
                   : mode === 'staging-approver' ? await registerStagingApprover(pool, data, action === 'apply')
+                    : mode === 'verify-test-account' ? await verifyTestAccount(pool, data, action === 'apply')
                     : await moveTables(pool, data, action === 'apply');
       } finally { await pool.end(); }
       const at = new Date(now).toISOString();

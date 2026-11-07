@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import {
   runOwnerImport, checkWindow, ledgerKey, buildTablesData, targetColumns, payloadHash, columnsHash, recountTables, NEW_ON_TARGET,
-  TABLES, SITES,
+  TABLES, SITES, validateTestAccount,
 } from '../functions/lib/owner-import.mjs';
 
 const NOW = Date.parse('2026-10-26T10:00:00Z');
@@ -397,11 +397,43 @@ test('recount: the read-only role matches an apply by count or by live-row stati
   truncateAll();
 });
 
+test('verify-test-account takes only the fixed audit address shape, and only gre3833 allows it', () => {
+  assert.deepEqual(validateTestAccount({ email: 'staging-audit+1794084654@example.com' }), { email: 'staging-audit+1794084654@example.com' });
+  for (const data of [{ email: 'john@greatstoneint.com' }, { email: 'staging-audit+1@example.com.evil.test' }, { email: 'staging-audit@example.com' },
+    { email: 'staging-audit+1@example.com', role: 'owner' }, null, []])
+    assert.throws(() => validateTestAccount(data), /test-account-/, JSON.stringify(data));
+  const allowing = Object.entries(SITES).filter(([, site]) => site.modes.includes('verify-test-account')).map(([name]) => name);
+  assert.deepEqual(allowing, ['gre3833-next-db-staging']);
+});
+
+const NEXT_STAGING = { site: { name: 'gre3833-next-db-staging', id: SITES['gre3833-next-db-staging'].id }, deploy: { context: 'production', published: true } };
+const NEXT_ENV = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'gre3833-next-db-staging' };
+
+test('verify-test-account: dry run changes nothing, apply verifies the one audit account, a second run refuses', { skip }, async () => {
+  const email = 'staging-audit+42@example.com';
+  owner(`INSERT INTO better_auth."user" ("id", "name", "email", "emailVerified") VALUES ('${hex(42, 42)}', 'Audit', '${email}', false)`);
+  const verified = () => owner(`SELECT "emailVerified" FROM better_auth."user" WHERE email = '${email}'`);
+  const store = memoryStore({ payload: envelope('verify-test-account', 'dry-run', { email }) });
+  let { result } = await tick(store, { env: NEXT_ENV, context: NEXT_STAGING });
+  assert.equal(result.status, 'dry-run-ok');
+  assert.equal(verified(), 'f');
+  store.map.set('payload', JSON.stringify(envelope('verify-test-account', 'apply', { email })));
+  ({ result } = await tick(store, { env: NEXT_ENV, context: NEXT_STAGING }));
+  assert.equal(result.status, 'applied');
+  assert.deepEqual(result.counts, { testAccount: { verified: 1 } });
+  assert.equal(verified(), 't');
+  // the same mode with another address: a refused envelope, nothing written
+  store.map.set('payload', JSON.stringify(envelope('verify-test-account', 'dry-run', { email: 'staging-audit+43@example.com' })));
+  ({ result } = await tick(store, { env: NEXT_ENV, context: NEXT_STAGING }));
+  assert.equal(result.status, 'failed');
+  owner(`DELETE FROM better_auth."user" WHERE email = '${email}'`);
+});
+
 test('the window check is pure: only staging allows proof', () => {
   assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver']);
   assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
   assert.deepEqual(SITES['gre2567-cutover-rehearsal'].modes, ['tables', 'identities']);
-  assert.deepEqual(SITES['gre3833-next-db-staging'].modes, ['tables', 'staging-approver']);
+  assert.deepEqual(SITES['gre3833-next-db-staging'].modes, ['tables', 'staging-approver', 'verify-test-account']);
   assert.deepEqual(Object.values(SITES).map((site) => site.identityCount), [8, 10, 10, 0]);
   const ok = checkWindow({ env: ENV, context: STAGING, now: NOW });
   assert.equal(ok.site, SITES['gre1795-website-db-staging']);
