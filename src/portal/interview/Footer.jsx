@@ -5,12 +5,14 @@
  * it is the same markup, written once.
  */
 
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
+
 export function InterviewFooter({ borderless = false }) {
   return (
     <footer className={borderless ? 'gs-footer borderless' : 'gs-footer'}>
       <div className="footer-tagline">The Foundation of Digital Excellence</div>
       <div className="footer-contact">
-        <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>
+        <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>
       </div>
       <div className="footer-legal">&copy; 2026 Greatstone International Ltd. All rights reserved.</div>
     </footer>

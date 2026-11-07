@@ -13,6 +13,7 @@ import { WaveDecoration } from './WaveDecoration.jsx';
 import { Button } from './Button.jsx';
 import { InterviewFooter, DotDivider } from './Footer.jsx';
 import { useActionForm } from './usePageOp.mjs';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 export default function InterviewGoodbye() {
   const [actionError, setActionError] = useState(null);
@@ -39,7 +40,7 @@ export default function InterviewGoodbye() {
           <p className="welcome-lead anim-up d-4">
             Changed your mind? You can still take part &mdash; nothing is
             locked in. Or if anything here felt unclear, email{' '}
-            <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>{' '}
+            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>{' '}
             and we will sort it.
           </p>
 

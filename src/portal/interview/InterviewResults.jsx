@@ -22,6 +22,7 @@ import { pageFallback } from './PageStatus.jsx';
 import { InterviewSignIn } from './InterviewSignIn.jsx';
 import { usePageOp } from './usePageOp.mjs';
 import { BOARD_GROUPS, bandFor, holdingProgress, hoursLabel, visibleSynthesis } from './model.mjs';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 // ─── Small presentational helpers ────────────────────────────────────────────
 
@@ -98,7 +99,7 @@ export default function InterviewResults({ route }) {
           <p>
             The synthesis working view is visible to engagement administrators
             only. If you were expecting access, email{' '}
-            <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>{' '}
+            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>{' '}
             and we will sort it.
           </p>
         </div>
@@ -191,7 +192,7 @@ function HoldingScreen({ data }) {
 
         <p style={{ marginTop: 16, fontSize: 13, color: 'var(--gs-text-faint, #707070)' }}>
           We will let you know the moment it is released. Questions in the meantime? Email{' '}
-          <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>.
+          <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>.
         </p>
       </div>
     </main>
