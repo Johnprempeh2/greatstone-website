@@ -8,13 +8,17 @@
 //                                           POST /customers/<id>/users (write key)
 //   POST/PATCH/DELETE                       the typed write routes (write key) and refund requests (refund_request
 //                                           key), in lib/admin-bridge-write.mjs
+//   PUT /api/admin/v1/vendors/<id>/activation-steps   a product range's activation steps (write key, GRE-3981)
+//   GET /api/admin/v1/access/staff | /access/portal-approvers | /access/clients/<id>/members
+//                                           people and access (GRE-4082); the changes are write routes, people only
+//   POST/PATCH /api/admin/v1/portal-documents[/<id>[/<action>]]   portal documents (write key, GRE-4081)
 // Every request is signed (lib/admin-bridge-auth.mjs). With GSAM_BRIDGE_KEYS empty every call is refused, so the
 // function is safe to deploy before a key exists. A failure returns { error: { code } } only (a write conflict adds
 // the current row); the detail goes to the site log, never to the caller.
 import { getPool } from './lib/db.mjs';
 import { BridgeAuthError, SCHEME, parseAllowedIps, parseBridgeKeys, verifyBridgeRequest } from './lib/admin-bridge-auth.mjs';
-import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeActivityEvents, bridgeFx, bridgeGet, bridgeImport, bridgeList, bridgePayments,
-  bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
+import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeAccess, bridgeActivityEvents, bridgeFx, bridgeGet, bridgeImport, bridgeList,
+  bridgePayments, bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
 import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
 import { interviewReadRoute, interviewWriteRoute } from './lib/interview/bridge.mjs';
@@ -25,6 +29,9 @@ const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosnif
 const PREFIX = '/api/admin/v1/';
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_SNAPSHOT_BYTES = 2 * 1024 * 1024;
+// a portal document holds up to 60 sections of html
+const MAX_PORTAL_BYTES = 1024 * 1024;
+const PORTAL_WRITE = /^\/api\/admin\/v1\/portal-documents(\/[0-9a-f-]{36})?$/i;
 const STATUS = {
   bad_key: 401, expired: 401, bad_signature: 401, replay: 401,
   capability_denied: 403, ip_denied: 403, not_found: 404, bad_request: 400, unavailable: 503, ...WRITE_STATUS,
@@ -39,6 +46,11 @@ function parts(pathname) {
 function readRoute(p) {
   if (p.length === 1 && (p[0] === 'health' || p[0] === 'schema' || p[0] === 'users')) return { resource: p[0] };
   if (p.length === 1 && p[0] === 'activity-events') return { resource: 'activity-events' };
+  if (p[0] === 'access') {
+    if (p.length === 2 && (p[1] === 'staff' || p[1] === 'portal-approvers')) return { resource: `access-${p[1]}` };
+    if (p.length === 4 && p[1] === 'clients' && p[3] === 'members' && p[2]) return { resource: 'access-members', id: p[2] };
+    return null;
+  }
   if (!RESOURCE_NAMES.includes(p[0])) return null;
   if (p.length === 1) return { resource: p[0] };
   if (p.length === 2 && p[1] && p[0] !== 'fx' && p[0] !== 'payments') return { resource: p[0], id: p[1] };
@@ -64,7 +76,8 @@ export function makeAdminBridgeHandler({
 } = {}) {
   return async (req) => {
     const isSnapshot = req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname);
-    const maxBytes = isSnapshot ? MAX_SNAPSHOT_BYTES : MAX_BODY_BYTES;
+    const isPortal = (req.method === 'POST' || req.method === 'PATCH') && PORTAL_WRITE.test(new URL(req.url).pathname);
+    const maxBytes = isSnapshot ? MAX_SNAPSHOT_BYTES : isPortal ? MAX_PORTAL_BYTES : MAX_BODY_BYTES;
     if (Number(req.headers.get('content-length')) > maxBytes) return fail('bad_request');
     const body = req.method === 'GET' || req.method === 'HEAD' ? '' : await req.text();
     if (Buffer.byteLength(body) > maxBytes) return fail('bad_request');
@@ -104,7 +117,7 @@ export function makeAdminBridgeHandler({
     if (!db) return fail('unavailable');
 
     const audit = { ...call, method: req.method, path: (url.pathname + url.search).slice(0, 2048),
-      resource: (target.resource || p[0]).slice(0, 40), resourceId: isRead ? target.id?.slice(0, 80) ?? null : p[1]?.slice(0, 80) ?? null };
+      resource: (target.resource || p[0]).slice(0, 40), resourceId: (isRead ? target.id : target.resourceId ?? p[1])?.slice(0, 80) ?? null };
     try {
       if (!isRead) {
         if ([...url.searchParams.keys()].length) return fail('bad_request');
@@ -136,6 +149,10 @@ export function makeAdminBridgeHandler({
         }
         if (target.resource === 'activity-events') {
           const page = await bridgeActivityEvents(client, url.searchParams);
+          return { outcome: 'ok', rowCount: page.items.length, body: page };
+        }
+        if (target.resource.startsWith('access-')) {
+          const page = await bridgeAccess(client, target, url.searchParams);
           return { outcome: 'ok', rowCount: page.items.length, body: page };
         }
         if (target.resource === 'users') {

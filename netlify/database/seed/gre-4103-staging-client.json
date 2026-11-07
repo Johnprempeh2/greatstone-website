@@ -1,0 +1,35 @@
+{
+  "organisations": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "slug": "gre-4103-staging-org",
+      "name": "Staging test organisation (GRE-4103)",
+      "domain": null,
+      "settings": {},
+      "base_currency": "GBP",
+      "created_at": "2026-11-06T00:00:00Z",
+      "updated_at": "2026-11-06T00:00:00Z",
+      "deleted_at": null
+    }
+  ],
+  "customers": [
+    {
+      "id": "41030000-0000-4000-8000-000000000001",
+      "org_id": "11111111-1111-4111-8111-111111111111",
+      "slug": "gre-4103-test-client",
+      "name": "GRE-4103 Test Client",
+      "tier_id": null,
+      "domain": null,
+      "billing_currency": null,
+      "notes": "Fake staging client for GRE-4103 bridge checks only.",
+      "metadata": {},
+      "created_at": "2026-11-06T00:00:00Z",
+      "updated_at": "2026-11-06T00:00:00Z",
+      "created_by": null,
+      "updated_by": null,
+      "deleted_at": null,
+      "row_version": 1,
+      "stripe_customer_id": null
+    }
+  ]
+}

@@ -12,10 +12,10 @@ import { sanitizeHtml } from '../lib/sanitize-html.mjs';
 import DocumentView from './DocumentView.jsx';
 import { downloadPortalPdf, portalFileStatus } from './portal-file.mjs';
 import ActionPanel from './ActionPanel.jsx';
-import { ReceiptView, nudgeReceiptWorker } from './Portal.jsx';
+import { ReceiptView } from './Portal.jsx';
 import { KIND_LABEL, STAFF_STATUS, receiptJobLabel, cleanSections, cleanDemos, fmtDay } from './portal-model.mjs';
 import { confirmationTemplate, fillWording } from './wording.mjs';
-import { MAX_ATTEMPTS } from '../../supabase/functions/_shared/portal-receipt.mjs';
+import { MAX_ATTEMPTS } from '../../netlify/functions/lib/shared/portal-receipt.mjs';
 import './portal.css';
 
 const EDITOR_KINDS = ['engagement_pack', 'nda', 'gita', 'terms', 'deep_dive'];
@@ -77,7 +77,6 @@ export default function PortalStaff({ customer, staff, members = [], flash }) {
   };
   const sendAgain = (a) => act(a.id, async () => {
     const r = await staffDb.rpc('portal_requeue_receipt', { p_acceptance_id: a.id });
-    if (!r.error) nudgeReceiptWorker();
     return r;
   }, 'Queued again. The email goes within a minute.');
   const newVersion = (d) => setEditing({

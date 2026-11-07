@@ -20,6 +20,12 @@ function releaseLinks(value, pagePaths) {
 // Only persisted public catalogue fields belong in collection fieldsVersion 1.
 // The public read also decorates products with request-time prices and join IDs.
 const pick = (row, keys) => Object.fromEntries(keys.filter((key) => row?.[key] !== undefined).map((key) => [key, row[key]]));
+// Nullable text columns (no logo, no description) become '' to fit the string schema.
+const blank = (data, keys) => {
+  for (const key of keys) if (data[key] === null) data[key] = '';
+  return data;
+};
+// BIGINT minor-unit prices arrive from Postgres as digit strings.
 function priceMinor(value, field) {
   if (value === null || value === undefined) return value;
   const number = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
@@ -47,17 +53,18 @@ export function catalogueFields(key, row) {
   if (key === 'vendors') {
     const fields = ['id', 'slug', 'name', 'logo_url', 'description'];
     expectKeys(row, fields, 'vendor');
-    return { data: pick(row, fields) };
+    return { data: blank(pick(row, fields), ['logo_url', 'description']) };
   }
   if (key === 'categories') {
     const fields = ['id', 'slug', 'name', 'description'];
     expectKeys(row, fields, 'category');
-    return { data: pick(row, fields) };
+    return { data: blank(pick(row, fields), ['description']) };
   }
   if (key !== 'offerings') throw new RangeError(`Unknown catalogue collection: ${key}`);
   const fields = ['id', 'slug', 'name', 'short_description', 'from_price_minor', 'from_price_currency', 'featured', 'platforms', 'type', 'attributes', 'vendor', 'category', 'description', 'seo'];
   expectKeys(row, [...fields, 'offering_variants', 'offering_specs', 'variants', 'specs', 'vendor_id', 'category_id', 'pricing', 'from', 'status'], 'offering');
-  const data = pick(row, fields);
+  const data = blank(pick(row, fields), ['short_description', 'description']);
+  if (data.vendor) data.vendor = blank({ ...data.vendor }, ['logo_url']);
   if ('from_price_minor' in data) data.from_price_minor = priceMinor(data.from_price_minor, 'from_price_minor');
   // Import provenance stays in the database, but is not a public release field.
   if (data.attributes && 'catalogue_rebuild_source' in data.attributes) {
@@ -82,6 +89,26 @@ export function toCatalogueCollections(catalogue, targetOrgId = orgId) {
       fields: catalogueFields(key, row),
     })),
   }]));
+}
+
+// The studio's header tree: page links, links and one level of groups, with their subtext.
+// A group has no page of its own in the studio; its target is its first page member.
+function releaseNavigation(items, bySlug, pagePaths) {
+  return (items || []).flatMap((item) => {
+    if (!item?.visible) return [];
+    const subtext = item.subtext ? { subtext: item.subtext } : {};
+    if (item.type === 'group') {
+      const children = releaseNavigation(item.children, bySlug, pagePaths);
+      const first = children.find((child) => child.target.kind === 'page');
+      return first ? [{ id: item.id, label: item.label, visible: true, target: first.target, children }] : [];
+    }
+    if (item.type === 'link') {
+      const href = releaseLinks(item.href, pagePaths);
+      return href ? [{ id: item.id, label: item.label, visible: true, ...subtext, target: { kind: 'link', href } }] : [];
+    }
+    const page = bySlug[item.pageSlug];
+    return page ? [{ id: item.id, label: item.label || page.title, visible: true, ...subtext, target: { kind: 'page', pageId: page.id } }] : [];
+  });
 }
 
 export function toProofRelease(snapshot) {
@@ -117,12 +144,7 @@ export function toProofRelease(snapshot) {
     site: {
       name: snapshot.settings.siteName,
       settings: snapshot.settings,
-      navigation: snapshot.navigation.filter((item) => item.visible && bySlug[item.pageSlug]).map((item) => ({
-        id: item.id,
-        label: item.label,
-        visible: true,
-        target: { kind: 'page', pageId: bySlug[item.pageSlug].id },
-      })),
+      navigation: releaseNavigation(snapshot.navigation, bySlug, pagePaths),
     },
     theme: { revisionId: fixtureId('theme:1'), tokens: themeTokens },
     pages,

@@ -32,10 +32,6 @@ export function allowedFileType(name, bytes) {
   return ext && kind && EXTENSIONS[ext] === kind.mime ? kind : null;
 }
 
-async function verifiedUser(req, verify) {
-  return userFromRequest(req, verify);
-}
-
 export function allowedDocument(snapshot, row) {
   if (row.kind === 'client') return snapshot.documentRequests.some((r) => r.id === row.source_id);
   if (row.kind === 'collected') return snapshot.files.some((f) => f.id === row.source_id && f.status === 'held');
@@ -108,7 +104,7 @@ export function makeDeepDiveDocumentHandler({ pool = getPool, verify, store = ()
         return json(result.body, result.status);
       }
 
-      const user = await verifiedUser(req, verify);
+      const user = await userFromRequest(req, verify);
       if (!UUID.test(user?.id || '')) return json({ error: 'Session expired. Sign in again.' }, 401);
       if (req.method === 'GET') {
         const id = url.searchParams.get('id');
@@ -149,25 +145,18 @@ export function makeDeepDiveDocumentHandler({ pool = getPool, verify, store = ()
         const existing = await client.query(`SELECT id FROM deep_dive_documents WHERE tenant_id=$1 AND source_id=$2 AND kind='client'`,
           [access.tenantId, requestId]);
         if (existing.rows.length) return { existing: true, id: existing.rows[0].id };
-        const { rows: [customer] } = await client.query('SELECT app_customer_id() AS id');
-        return { tenantId: access.tenantId, customerId: customer.id };
+        return { tenantId: access.tenantId };
       });
       if (!access) return json({ error: 'This request is not available.' }, 404);
       if (access.existing) return json({ data: { id: access.id, status: 'saved' } });
       await store().set(path, bytes);
       try {
-        const { rows: [row] } = await db.query(`INSERT INTO deep_dive_documents
-          (tenant_id,customer_id,source_id,kind,file_name,mime,byte_size,blob_key)
-          SELECT l.tenant_id,l.customer_id,$2::uuid,'client',$4,$5,$6,$7
-          FROM deep_dive_tenant_links l JOIN deep_dive_snapshots s ON s.tenant_id=l.tenant_id
-          WHERE l.tenant_id=$1 AND l.customer_id=$3 AND EXISTS
-            (SELECT 1 FROM jsonb_array_elements(s.snapshot->'documentRequests') r
-              WHERE r->>'id'=$2::uuid::text AND r->>'status'='open')
-            AND NOT EXISTS (SELECT 1 FROM deep_dive_answers a WHERE a.tenant_id=l.tenant_id
-              AND a.customer_id=l.customer_id AND a.request_id=$2 AND a.status='received') RETURNING id`,
-          [access.tenantId, requestId, access.customerId, name, type.mime, bytes.length, path]);
-        if (!row) { await store().delete(path).catch(() => {}); return json({ error: 'This request is not available.' }, 404); }
-        return json({ data: { id: row.id, status: 'saved' } }, 201);
+        // The client has no INSERT grant here; 061's function writes its own row in its claims transaction (GRE-1797).
+        const id = await asCustomer(db, authIdentity(user), async (client) => (await client.query(
+          'SELECT deep_dive_client_document_add($1,$2,$3,$4,$5,$6) AS id',
+          [access.tenantId, requestId, name, type.mime, bytes.length, path])).rows[0].id);
+        if (!id) { await store().delete(path).catch(() => {}); return json({ error: 'This request is not available.' }, 404); }
+        return json({ data: { id, status: 'saved' } }, 201);
       } catch (error) { await store().delete(path).catch(() => {}); throw error; }
     } catch (error) {
       if (error instanceof BridgeAuthError) return json({ error: 'Access denied.' }, 403);

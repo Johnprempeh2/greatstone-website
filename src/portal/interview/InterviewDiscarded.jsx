@@ -10,7 +10,7 @@ import { GsLogo } from './GsLogo.jsx';
 import { WaveDecoration } from './WaveDecoration.jsx';
 import { ButtonLink } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
-import { INTERVIEW_BASE } from './route.mjs';
+import { INTERVIEW_BASE, hrefFor } from './route.mjs';
 
 export default function InterviewDiscarded() {
   return (
@@ -34,7 +34,7 @@ export default function InterviewDiscarded() {
           </p>
 
           <div className="welcome-cta anim-up d-5">
-            <ButtonLink href={INTERVIEW_BASE} variant="ghost">
+            <ButtonLink href={hrefFor(INTERVIEW_BASE)} variant="ghost">
               Back to the welcome page
             </ButtonLink>
             <p className="welcome-note">

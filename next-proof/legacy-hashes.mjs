@@ -1,4 +1,8 @@
 // Old Vite links used hashes as page routes. Keep them usable on the Next site.
+import { interviewPathOf, parseInterviewHash } from '../src/portal/interview/route.mjs';
+
+// Renamed pages: used only when the old path is no longer published.
+const renamed = { proof: '/case-studies' };
 const special = { book: '/contact', shop: '/shop', breakdown: '/method', service: '/services', enquire: '/contact', 'ai-market-intelligence': '/insights' };
 
 export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () => false) {
@@ -7,14 +11,41 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   try { fragment = decodeURIComponent(hash.slice(1)); }
   catch { return null; }
   if (hasAnchor(fragment)) return null;
+  // GRE-4245: interview links (#join/<token>, #portal/interview…?seats=…) keep their query on the way to the path.
+  if (parseInterviewHash(hash)) return interviewPathOf(hash);
+  const checkout = /^order-confirmed\?session=(cs_test_[A-Za-z0-9]+)$/i.exec(fragment);
+  if (checkout) return `/order-confirmed?session=${checkout[1]}`;
+  const privateRoute = /^(account|org|portal|invoice|catalogue)(?:\/([\w/-]+))?$/i.exec(fragment);
+  if (privateRoute) {
+    const [, section, rest] = privateRoute;
+    const destination = section === 'org' && rest?.startsWith('e/')
+      ? `/org#org/${rest}` : `/${section}${rest ? `/${rest}` : ''}`;
+    return destination === pathname + hash ? null : destination;
+  }
+  // Store and service detail views, and the old full-screen briefing hub (#intel, #intel/<id>, IntelBand's default CTA).
+  const detail = /^\/?(product|shop|service)\/([\w-]+)\/?$/i.exec(fragment);
+  if (detail) return `/${detail[1].toLowerCase()}/${detail[2]}`;
+  if (/^\/?intel(?:\/[\w-]*)?$/i.test(fragment)) return pathname === '/insights' ? null : '/insights';
   const go = fragment.startsWith('go/');
   const parts = (go ? fragment.slice(3) : fragment).split('/').filter(Boolean);
   if (!parts.length) return null;
   if (parts[0] === 'service' || parts[0] === 'enquire') return special[parts[0]];
-  const page = special[parts[0]] || `/${parts[0]}`;
+  let page = special[parts[0]] || `/${parts[0]}`;
+  if (!pagePaths.includes(page) && renamed[parts[0]]) page = renamed[parts[0]];
   if (!go && parts.length > 1) return null;
   if (!pagePaths.includes(page) && page !== '/shop') return null;
   const anchor = parts.slice(1).join('/');
   const destination = page + (anchor ? `#${encodeURIComponent(anchor)}` : '');
   return destination === pathname + hash ? null : destination;
+}
+
+// GRE-1824: "#book" opened the booking popup on the Vite site; the Next site does the same
+// rather than sending the visitor to the contact page they may already be on.
+export const isBookingHash = (hash) => hash === '#book';
+
+// Auth emails land on /?token=…#account or /?verified=1#account. The query must survive the move to /account.
+export function keepLandingQuery(destination, search) {
+  if (!search || search === '?' || destination.includes('?')) return destination;
+  const hash = destination.indexOf('#');
+  return hash < 0 ? destination + search : destination.slice(0, hash) + search + destination.slice(hash);
 }

@@ -122,7 +122,8 @@ const RESOURCES = {
   'portal-documents': {
     table: 'portal_documents', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'true',
     columns: ['id', 'customer_id', 'kind', 'series', 'version', 'title', 'summary', 'action', 'signatory_email', 'status',
-      'created_by_kind', 'created_run_id', 'published_at', 'withdrawn_at', 'created_at', 'updated_at'],
+      'created_by_kind', 'created_run_id', 'published_at', 'withdrawn_at', 'created_at', 'updated_at', 'content_sha256',
+      'row_version', 'approval_id'],
     extra: { has_pdf: 'x.pdf_sha256 IS NOT NULL' },
   },
   'portal-acceptances': {
@@ -325,6 +326,22 @@ export async function bridgeUsers(client, searchParams) {
   if (ids.length > MAX_LIMIT || !ids.every((x) => UUID.test(x))) throw new BridgeRequestError('bad_request', 'ids');
   const { rows: [r] } = await client.query('SELECT bridge_client_users($1::uuid[]) AS items', [[...new Set(ids)]]);
   return r.items;
+}
+
+// People and access (GRE-4082, migration 066): the whole list in one page, as a staff or member list is short.
+const ACCESS_READ = {
+  'access-staff': 'bridge_access_staff()',
+  'access-portal-approvers': 'bridge_access_portal_approvers()',
+  'access-members': 'bridge_access_client_members($1::uuid)',
+};
+/** Staff, portal approvers or one client organisation's members, as { items, nextCursor: null }. */
+export async function bridgeAccess(client, target, searchParams) {
+  if ([...searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'access lists take no parameters');
+  if (target.id !== undefined && !UUID.test(target.id)) throw new BridgeRequestError('not_found');
+  const { rows: [r] } = await client.query(`SELECT ${ACCESS_READ[target.resource]} AS items`,
+    target.id !== undefined ? [target.id] : []);
+  if (r.items === null) throw new BridgeRequestError('not_found');
+  return { items: r.items, nextCursor: null };
 }
 
 const ROWS_CURSOR = /^\d{1,9}$/;

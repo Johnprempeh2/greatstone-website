@@ -30,7 +30,7 @@
  * Port: source src/lib/voice/browser-client.ts, line for line; TypeScript types and `private` modifiers
  * dropped (the fields keep their names). The pure barge-in classifier is imported from the server-side port
  * (netlify/functions/lib/interview/voice/barge-in.mjs, same exports as the source) rather than duplicated.
- * The capture worklet is bundled from this folder (source: /voice-capture-worklet.js in the Next public folder).
+ * The capture worklet is /voice-capture-worklet.js in the public folder, as in the source.
  */
 
 import {
@@ -38,11 +38,12 @@ import {
   classifyBargeIn,
   POST_SPEECH_GATE_MS,
 } from '../../../../netlify/functions/lib/interview/voice/barge-in.mjs';
-// Port: Vite emits the worklet as its own file and gives us its URL (audio worklets load from a URL). no-inline
-// keeps it a real same-origin file, as the source served it, rather than a data: URI a CSP could refuse.
-import workletUrl from './voice-capture-worklet.js?url&no-inline';
 // GRE-2687: one place for the Deepgram host (US, John 25 Oct); the server's Settings keep mip_opt_out: true.
 import { DEEPGRAM_AGENT_URL } from '../../../../netlify/functions/lib/interview/voice/regions.mjs';
+// Audio worklets load from a URL. A real same-origin file from public/ (as the source served it) works under
+// both Vite and Next, and is never a data: URI a CSP could refuse. GRE-4245: the Vite-only `?url` import broke
+// the Next build.
+const workletUrl = '/voice-capture-worklet.js';
 
 /** @typedef {'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'ended'} VoiceState */
 

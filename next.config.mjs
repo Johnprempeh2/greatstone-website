@@ -7,6 +7,12 @@ const config = {
   async redirects() {
     return nextLegacyRedirects(undefined, release.pages.map((page) => page.path));
   },
+  // GRE-1831 live design renders pages in the browser, where the sanitiser uses the browser's own
+  // inert parser: happy-dom (Node only) is not bundled for the client.
+  webpack(webpackConfig, { isServer }) {
+    if (!isServer) webpackConfig.resolve.alias = { ...webpackConfig.resolve.alias, 'happy-dom': false };
+    return webpackConfig;
+  },
   env: {
     NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID || process.env.VITE_GTM_ID || '',
     NEXT_PUBLIC_SUPABASE_URL: process.env.VITE_SUPABASE_URL || '',

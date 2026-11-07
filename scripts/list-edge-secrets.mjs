@@ -4,7 +4,8 @@
 //
 // A name counts when a function reads it as Deno.env.get('NAME'), or as env.NAME / env['NAME'] in a module
 // it imports (crmConfig(Deno.env.toObject()) reads PIPEDRIVE_* that way). Relative imports are followed, so
-// a name read in _shared/ is listed under each function that pulls that module in. Test files are skipped.
+// a name read in a shared module (netlify/functions/lib/shared, GRE-3768) is listed under each function that
+// pulls that module in. Test files are skipped.
 // A name with no note prints as `unknown`: add it to scripts/edge-secrets.json.
 // --check (GRE-715) exits 1 when a name is `unknown` or a note names a secret no function reads any more.
 //
@@ -22,6 +23,8 @@ const READS = [
   /\benv\.([A-Z][A-Z0-9_]*)\b/g,
   /\benv\[\s*['"`]([A-Z][A-Z0-9_]*)['"`]\s*\]/g,
 ];
+// The edge functions' shared helpers live with the Netlify Functions now (GRE-3768); follow imports there too.
+const SHARED = join(ROOT, 'netlify', 'functions', 'lib', 'shared');
 const IMPORTS = /(?:\bfrom|\bimport)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g;
 
 /** Secret names one source file reads. */
@@ -62,7 +65,7 @@ export function scanSecrets(functionsDir) {
       }
       for (const m of code.matchAll(IMPORTS)) {
         const target = resolve(dirname(file), m[1]);
-        const inside = !relative(functionsDir, target).startsWith('..');
+        const inside = [functionsDir, SHARED].some((dir) => !relative(dir, target).startsWith('..'));
         if (inside && SOURCE.test(target) && !TEST.test(target) && existsSync(target) && statSync(target).isFile()) queue.push(target);
       }
     }

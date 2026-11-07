@@ -1,6 +1,6 @@
 // Steps the interview bridge routes queue for after their transaction commits (GRE-2612): invite emails through the
 // site's Resend account, and the hand-off to the synthesis background function. Neither ever calls GSAM.
-import { sendEmail } from '../../../../supabase/functions/_shared/front-door-leads.mjs';
+import { sendEmail } from '../shared/front-door-leads.mjs';
 
 export function interviewMailer(env = process.env, send = sendEmail) {
   return async ({ to, subject, text }) => {

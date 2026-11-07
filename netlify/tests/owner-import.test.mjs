@@ -8,9 +8,12 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
+import { hashSync } from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import { startPostgres, skip } from './lib/postgres.mjs';
 import {
-  runOwnerImport, checkWindow, buildTablesData, targetColumns, payloadHash, columnsHash, TABLES, SITES,
+  runOwnerImport, checkWindow, ledgerKey, buildTablesData, targetColumns, payloadHash, columnsHash, recountTables, NEW_ON_TARGET,
+  TABLES, SITES,
 } from '../functions/lib/owner-import.mjs';
 
 const NOW = Date.parse('2026-10-26T10:00:00Z');
@@ -22,8 +25,11 @@ const ENV = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'gre1795-website-db-
 const TENV = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'owner-import-test' };
 
 const hex = (n, i) => n.toString(16).padStart(8, '0') + `-0000-4000-8000-${String(i).padStart(12, '0')}`;
+const APPROVED_PREFIXES = ['079636cf', 'd814b01d', 'c3f9c60f', '2d47ada5',
+  '7a0c5d8e', '681507c1', 'e81bc42a', '5a85a5ba'];
 const USERS = Array.from({ length: 8 }, (_, i) => ({
-  id: hex(0xa0000000 + i, i), email: `person${i}@example.test`, name: `Person ${i}`, emailVerified: i % 2 === 0,
+  id: `${APPROVED_PREFIXES[i]}-0000-4000-8000-${String(i).padStart(12, '0')}`,
+  email: `person${i}@example.test`, name: `Person ${i}`, emailVerified: i % 2 === 0,
   passwordHash: `$2b$10$${String.fromCharCode(65 + i).repeat(53)}`,
 }));
 const SECRETS = USERS.flatMap((u) => [u.email, u.passwordHash, u.name]);
@@ -99,7 +105,7 @@ test('payload refusals: counts-only result, payload deleted, nothing written', {
     ['notAfter beyond the window', envelope('identities', 'dry-run', USERS, new Date(NOW + 40 * 60 * 1000).toISOString()), 'payload-expired'],
     ['not an envelope', { mode: 'identities' }, 'payload-invalid'],
     ['apply before a dry run', envelope('identities', 'apply', USERS), 'dry-run-required'],
-    ['seven users', envelope('identities', 'dry-run', USERS.slice(0, 7)), 'Expected exactly eight source users'],
+    ['seven users', envelope('identities', 'dry-run', USERS.slice(0, 7)), 'Expected exactly 8 source users'],
     ['malformed hash', envelope('identities', 'dry-run', USERS.map((u, i) => (i ? u : { ...u, passwordHash: 'x' }))), 'Invalid source hash'],
   ];
   for (const [label, payload, reason] of cases) {
@@ -122,7 +128,7 @@ test('identities: dry run rolls back, apply commits once, the same hash is a no-
   assert.equal(dry.result.status, 'dry-run-ok');
   assert.deepEqual(dry.result.counts, { identities: { source: 8, imported: 8 } });
   assert.equal(owner('SELECT count(*) FROM better_auth."user"'), '0', 'dry run left rows');
-  assert.ok((await store.get(`ledger/${hash}`)).dryRunAt);
+  assert.ok((await store.get(ledgerKey(UNTIL, hash))).dryRunAt);
   assert.equal(store.map.has('payload'), false);
 
   await store.setJSON('payload', envelope('identities', 'apply', USERS));
@@ -142,11 +148,102 @@ test('identities: dry run rolls back, apply commits once, the same hash is a no-
   assertNoValues(dry.lines, applied.lines, again.lines, [...store.map.values()]);
 });
 
+// GRE-2567 H6: the ledger is in Blobs, so a snapshot restore leaves it behind. An apply from an earlier window (or
+// the pre-window key) must not turn a new window's run into a no-op on a database that no longer holds the rows.
+test('an apply from an earlier window does not make a new window a no-op', { skip }, async () => {
+  const hash = payloadHash('identities', USERS);
+  const earlier = new Date(NOW - 2 * 60 * 60 * 1000).toISOString();
+  const store = memoryStore({
+    [`ledger/${hash}`]: { dryRunAt: earlier, appliedAt: earlier, counts: { identities: { source: 8, imported: 8 } } },
+    [ledgerKey(earlier, hash)]: { dryRunAt: earlier, appliedAt: earlier, counts: { identities: { source: 8, imported: 8 } } },
+    payload: envelope('identities', 'dry-run', USERS),
+  });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'dry-run-ok');
+  assert.equal((await store.get(ledgerKey(UNTIL, hash))).appliedAt, undefined);
+
+  // the same window still refuses a second apply
+  await store.setJSON('payload', envelope('identities', 'apply', USERS));
+  assert.equal((await tick(store)).result.status, 'applied');
+  await store.setJSON('payload', envelope('identities', 'apply', USERS));
+  const again = await tick(store);
+  assert.equal(again.result.status, 'noop');
+  assert.equal(again.result.reason, 'already-applied');
+});
+
+test('staging proof compares all three digests, then creates one cost-10 legacy fixture', { skip }, async () => {
+  const digest = (value) => createHash('sha256').update(value).digest('hex');
+  const fixtureId = 'f1000000-0000-4000-8000-000000000001';
+  const fixtureEmail = 'gre2805-fixture@example.test';
+  const fixturePassword = 'fixture-password-for-test';
+  const data = {
+    source: USERS.map((u) => ({
+      id: u.id, uuidDigest: digest(u.id), emailDigest: digest(u.email), bcryptDigest: digest(u.passwordHash),
+    })),
+    fixture: { id: fixtureId, email: fixtureEmail, passwordHash: hashSync(fixturePassword, 10) },
+  };
+  const failing = structuredClone(data);
+  failing.source[0].bcryptDigest = digest('incorrect');
+  const failure = await tick(memoryStore({ payload: envelope('proof', 'dry-run', failing) }));
+  assert.equal(failure.result.counts.identities.matched, 7, 'a changed bcrypt digest must fail the check');
+  assert.deepEqual(failure.result.counts.checks[0], {
+    prefix: USERS[0].id.slice(0, 8), uuid: true, email: true, bcrypt: false,
+  });
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '0');
+  const failingStore = memoryStore({ payload: envelope('proof', 'dry-run', failing) });
+  await tick(failingStore);
+  await failingStore.setJSON('payload', envelope('proof', 'apply', failing));
+  assert.equal((await tick(failingStore)).result.reason, 'proof-mismatch');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '0');
+
+  const hash = payloadHash('proof', data);
+  const store = memoryStore({ payload: envelope('proof', 'dry-run', data) });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'dry-run-ok');
+  assert.equal(dry.result.counts.identities.matched, 8);
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '0');
+  await store.setJSON('payload', envelope('proof', 'apply', data));
+  const applied = await tick(store);
+  assert.equal(applied.result.status, 'applied');
+  assert.equal(applied.result.counts.fixtureId, undefined);
+  assert.equal(owner(`SELECT count(*) FROM better_auth."user" WHERE "id"='${fixtureId}'`), '1');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}' AND "providerId"='credential'`), '1');
+  await store.setJSON('payload', envelope('proof', 'apply', data));
+  assert.equal((await tick(store)).result.status, 'noop');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}'`), '1');
+  const safe = JSON.stringify([...store.map.values(), dry.lines, applied.lines]);
+  assert.ok(!safe.includes(fixtureEmail));
+  assert.ok(!safe.includes(fixturePassword));
+  assert.ok(!safe.includes(data.fixture.passwordHash));
+  assert.ok(!safe.includes(fixtureId));
+  assert.ok(!safe.includes(USERS[0].email));
+  assert.ok(!safe.includes(USERS[0].passwordHash));
+  assert.equal((await store.get(ledgerKey(UNTIL, hash))).counts.identities.matched, 8);
+});
+
+test('proof refuses an existing non-source user without adding a credential', { skip }, async () => {
+  const digest = (value) => createHash('sha256').update(value).digest('hex');
+  const fixtureId = 'f2000000-0000-4000-8000-000000000002';
+  const fixtureEmail = 'existing-person@example.test';
+  owner(`INSERT INTO better_auth."user" ("id", "name", "email", "emailVerified")
+    VALUES ('${fixtureId}', 'Existing person', '${fixtureEmail}', true)`);
+  const data = {
+    source: USERS.map((u) => ({ id: u.id, uuidDigest: digest(u.id),
+      emailDigest: digest(u.email), bcryptDigest: digest(u.passwordHash) })),
+    fixture: { id: fixtureId, email: fixtureEmail, passwordHash: hashSync('test-only-password', 10) },
+  };
+  const store = memoryStore({ payload: envelope('proof', 'dry-run', data) });
+  const dry = await tick(store);
+  assert.equal(dry.result.status, 'failed');
+  assert.equal(dry.result.reason, 'proof-fixture-conflict');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" WHERE "userId"='${fixtureId}'`), '0');
+});
+
 test('a role other than netlifydb_owner is refused before any write', { skip }, async () => {
   owner('CREATE ROLE owner_import_other LOGIN; GRANT USAGE ON SCHEMA better_auth TO owner_import_other;');
   const other = new pg.Pool({ connectionString: db.url.replace('netlifydb_owner@', 'owner_import_other@'), max: 1 });
   try {
-    const users = USERS.map((u) => ({ ...u, id: u.id.replace(/^a/, 'b'), email: `x${u.email}` }));
+    const users = USERS.map((u, i) => ({ ...u, id: hex(0xb0000000 + i, i), email: `x${u.email}` }));
     const store = memoryStore({ payload: envelope('identities', 'dry-run', users) });
     const { result } = await tick(store, { open: () => other });
     assert.equal(result.status, 'failed');
@@ -256,9 +353,94 @@ test('the runner helper refuses rows for a table outside TABLES or missing a col
   } finally { client.release(); }
 });
 
-test('the window check is pure: production allows only the table move', () => {
-  assert.deepEqual(SITES['greatstone-home'].modes, ['tables']);
-  assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities']);
+// GRE-2567 rehearsal (3 Nov): Supabase's service_inquiries has no size_band (042) or customer_id (057), so the real
+// export was refused before any write. Those two named columns are written as NULL; any other missing column refuses.
+test('the runner helper writes NULL for the named new columns only', { skip }, async () => {
+  const client = await pool.connect();
+  try {
+    const columns = await targetColumns(client);
+    const fill = NEW_ON_TARGET.service_inquiries;
+    const cols = columns.get('service_inquiries');
+    const row = Object.fromEntries(cols.filter((c) => !fill.includes(c)).map((c) => [c, `v-${c}`]));
+    const { data } = buildTablesData({ service_inquiries: [row] }, columns);
+    const [built] = data.tables[TABLES.indexOf('service_inquiries')].rows;
+    for (const [i, c] of cols.entries()) assert.equal(built[i], fill.includes(c) ? null : `v-${c}`, c);
+    const { [cols.find((c) => !fill.includes(c))]: _gone, ...short } = row;
+    assert.throws(() => buildTablesData({ service_inquiries: [short] }, columns), /lack column/);
+  } finally { client.release(); }
+});
+
+// GRE-2567 rehearsal (3 Nov): through netlifydb_readonly, count(*) saw 0 rows on the 20 tables that force RLS, so the
+// runner reported a recount difference for a correct import. Postgres's live-row statistics are the second witness.
+test('recount: the read-only role matches an apply by count or by live-row statistics, and catches a wrong count', { skip }, async () => {
+  owner(`DO $$ BEGIN CREATE ROLE netlifydb_readonly LOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    GRANT USAGE ON SCHEMA public TO netlifydb_readonly;
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO netlifydb_readonly;`);
+  const { data, want } = await tablesPayload();
+  const store = memoryStore({ payload: envelope('tables', 'dry-run', data) });
+  await tick(store, { env: TENV, context: REHEARSAL, sites: TEST_SITES });
+  await store.setJSON('payload', envelope('tables', 'apply', data));
+  const { result } = await tick(store, { env: TENV, context: REHEARSAL, sites: TEST_SITES });
+  assert.equal(result.status, 'applied', JSON.stringify(result));
+
+  const ro = new pg.Client({ connectionString: db.url.replace('netlifydb_owner@', 'netlifydb_readonly@') });
+  await ro.connect();
+  try {
+    const seen = (await ro.query('SELECT count(*)::int AS n FROM public.customers')).rows[0].n;
+    assert.ok(want.customers > 0 && seen === 0, 'RLS should hide client rows from the read-only role');
+    const out = await recountTables(ro, result.counts.tables, { tries: 10, waitMs: 1500 });
+    assert.deepEqual(out.differs, []);
+    assert.ok(out.byStats > 0 && out.byCount + out.byStats === TABLES.length, JSON.stringify(out));
+    const wrong = await recountTables(ro, [{ table: 'customers', after: want.customers + 1 }], { tries: 1 });
+    assert.deepEqual(wrong.differs, ['customers']);
+  } finally { await ro.end(); }
+  truncateAll();
+});
+
+test('the window check is pure: only staging allows proof', () => {
+  assert.deepEqual(SITES['greatstone-home'].modes, ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver']);
+  assert.deepEqual(SITES['gre1795-website-db-staging'].modes, ['identities', 'proof']);
+  assert.deepEqual(SITES['gre2567-cutover-rehearsal'].modes, ['tables', 'identities']);
+  assert.deepEqual(SITES['gre3833-next-db-staging'].modes, ['tables', 'staging-approver']);
+  assert.deepEqual(Object.values(SITES).map((site) => site.identityCount), [8, 10, 10, 0]);
   const ok = checkWindow({ env: ENV, context: STAGING, now: NOW });
   assert.equal(ok.site, SITES['gre1795-website-db-staging']);
+});
+
+// GRE-2567: the rehearsal and production sites take the ten Supabase identities (3 Nov count); staging keeps eight.
+// Last in the file: it adds ten identities that the staging tests above must not see.
+test('identities: each site accepts only its reviewed count (ten on the rehearsal site)', { skip }, async () => {
+  const site = SITES['gre2567-cutover-rehearsal'];
+  const context = { site: { name: 'gre2567-cutover-rehearsal', id: site.id }, deploy: { context: 'production', published: true } };
+  const env = { OWNER_IMPORT_UNTIL: UNTIL, OWNER_IMPORT_SITE: 'gre2567-cutover-rehearsal' };
+  const TEN = Array.from({ length: 10 }, (_, i) => ({
+    id: hex(0xa0 + i, 100 + i), email: `rehearsal${i}@example.test`, name: `Rehearsal ${i}`, emailVerified: true,
+    passwordHash: `$2b$10$${String.fromCharCode(97 + i).repeat(53)}`,
+  }));
+  const before = owner('SELECT count(*) FROM better_auth."user"');
+
+  for (const [label, users, reason] of [['eight users', TEN.slice(0, 8), 'Expected exactly 10 source users'],
+    ['eleven users', [...TEN, { ...TEN[0], id: hex(0xbb, 199), email: 'extra@example.test' }], 'Expected exactly 10 source users']]) {
+    const store = memoryStore({ payload: envelope('identities', 'dry-run', users) });
+    const { result } = await tick(store, { env, context });
+    assert.equal(result.status, 'failed', label);
+    assert.equal(result.reason, reason, label);
+  }
+  // the same ten on staging are refused: staging's reviewed count stays eight
+  const staging = await tick(memoryStore({ payload: envelope('identities', 'dry-run', TEN) }));
+  assert.equal(staging.result.reason, 'Expected exactly 8 source users');
+
+  const store = memoryStore({ payload: envelope('identities', 'dry-run', TEN) });
+  const dry = await tick(store, { env, context });
+  assert.equal(dry.result.status, 'dry-run-ok');
+  assert.deepEqual(dry.result.counts, { identities: { source: 10, imported: 10 } });
+  assert.equal(owner('SELECT count(*) FROM better_auth."user"'), before, 'dry run left rows');
+
+  await store.setJSON('payload', envelope('identities', 'apply', TEN));
+  const applied = await tick(store, { env, context });
+  assert.equal(applied.result.status, 'applied');
+  assert.equal(owner(`SELECT count(*) FROM better_auth."account" a WHERE a."providerId" = 'credential'
+    AND a."userId" = ANY(ARRAY['${TEN.map((u) => u.id).join("','")}'])`), '10');
+  const text = JSON.stringify([dry.lines, applied.lines, [...store.map.values()]]);
+  for (const u of TEN) assert.ok(!text.includes(u.email) && !text.includes(u.passwordHash), 'a row value reached a log line or result');
 });

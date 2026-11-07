@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getSession } from '../lib/better-auth-client.mjs';
 import { MAX_FILE_BYTES } from '../data/deepdive-sniff.mjs';
 import './portal.css';
 import './deep-dive-client.css';
@@ -7,6 +8,7 @@ import { deepDiveDocuments, docState } from './portal-model.mjs';
 import { portalStore } from './portal-store-api.mjs';
 
 async function call(op, args = {}) {
+  if (!await getSession()) throw new Error('Your session has ended. Sign in again.');
   const response = await fetch('/api/deep-dive-client', { method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ op, ...args }) });
@@ -16,6 +18,7 @@ async function call(op, args = {}) {
 }
 
 async function documents(op, args = {}) {
+  if (!await getSession()) throw new Error('Your session has ended. Sign in again.');
   const url = new URL('/api/deep-dive-document', location.origin);
   if (args.requestId) url.searchParams.set('requestId', args.requestId);
   if (args.id) url.searchParams.set('id', args.id);

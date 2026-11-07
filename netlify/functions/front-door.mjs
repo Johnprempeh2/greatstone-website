@@ -7,12 +7,12 @@ import { takeSlot, releaseSlot, saveLead, updateContact, stamp, saveCrmIds } fro
 import {
   normaliseIntake, normaliseMessages, visitorCount, runChat, runProposal, publicAgents,
   signSession, verifySession, transcriptHash, hashIp, sha256, parsePrivateNames,
-} from '../../supabase/functions/_shared/front-door-engine.mjs';
-import { CHAT_TURNS } from '../../supabase/functions/_shared/front-door-prompts.mjs';
-import { stubAllowed, stubFetch, STUB_KEY } from '../../supabase/functions/_shared/front-door-stub.mjs';
-import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from '../../supabase/functions/_shared/front-door-leads.mjs';
-import { deliverTeamPack, BOOKING_URL } from '../../supabase/functions/_shared/front-door-pack.mjs';
-import { crmConfig, syncLeadToCrm } from '../../supabase/functions/_shared/front-door-crm.mjs';
+} from './lib/shared/front-door-engine.mjs';
+import { CHAT_TURNS } from './lib/shared/front-door-prompts.mjs';
+import { stubAllowed, stubFetch, STUB_KEY } from './lib/shared/front-door-stub.mjs';
+import { leadRow, contactUpdate, buildAlertEmail, sendEmail, isLeadId } from './lib/shared/front-door-leads.mjs';
+import { deliverTeamPack, BOOKING_URL } from './lib/shared/front-door-pack.mjs';
+import { crmConfig, syncLeadToCrm } from './lib/shared/front-door-crm.mjs';
 
 const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers });

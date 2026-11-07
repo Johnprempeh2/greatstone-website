@@ -8,6 +8,7 @@ const decide = (overrides) => frameRouteDecision({ ...base, ...overrides }).stat
 test('editor host serves public pages and frame routes, but not stateful endpoints', () => {
   assert.equal(decide({ pathname: '/editor/home' }), 200);
   assert.equal(decide({ pathname: '/preview/home' }), 200);
+  assert.equal(decide({ pathname: '/live-design' }), 200);
   assert.equal(decide({ pathname: '/_next/static/chunk.js' }), 200);
   for (const pathname of ['/', '/about', '/contact', '/shop', '/_release']) assert.equal(decide({ pathname }), 200);
   for (const pathname of ['/studio', '/api/save']) assert.equal(decide({ pathname }), 404);
@@ -17,6 +18,7 @@ test('editor host serves public pages and frame routes, but not stateful endpoin
 test('public host refuses frame routes and framing public pages', () => {
   assert.equal(decide({ hostname: 'www.example.test', pathname: '/editor/home' }), 404);
   assert.equal(decide({ hostname: 'www.example.test', pathname: '/preview/home' }), 404);
+  assert.equal(decide({ hostname: 'www.example.test', pathname: '/live-design' }), 404);
   assert.equal(decide({ hostname: 'www.example.test', pathname: '/' }), 200);
 });
 
@@ -27,4 +29,16 @@ test('state-changing public requests need exact Origin or same-origin fetch meta
   assert.equal(decide({ pathname, hostname, method, fetchSite: 'same-site' }), 403);
   assert.equal(decide({ pathname, hostname, method, fetchSite: 'same-origin' }), 200);
   assert.equal(decide({ pathname: '/studio/save', hostname, method, fetchSite: null }), 403);
+});
+
+test('signed machine endpoints skip the cross-site check; cookie routes keep it', () => {
+  const hostname = 'www.example.test', method = 'POST';
+  assert.equal(decide({ pathname: '/api/admin/v1/portal-documents', hostname, method }), 200);
+  assert.equal(decide({ pathname: '/api/admin/v1/portal-documents', hostname, method, origin: 'https://evil.example' }), 200);
+  assert.equal(decide({ pathname: '/api/stripe-webhook', hostname, method }), 200);
+  assert.equal(decide({ pathname: '/api/admin/v1/portal-documents', method }), 404);
+  for (const pathname of ['/api/admin', '/api/admin/v1', '/api/admin/v2/x', '/api/stripe-webhook/x', '/api/stripe-webhooks', '/api/stripe-checkout', '/api/auth/login', '/studio/admin/v1/x']) {
+    assert.equal(decide({ pathname, hostname, method }), 403, pathname);
+    assert.equal(decide({ pathname, hostname, method, origin: 'https://evil.example' }), 403, pathname);
+  }
 });

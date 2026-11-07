@@ -1,9 +1,10 @@
 // Editor contract 2 (GSAM GRE-2394): Edit copy. GSAM's hello says `editMode`; `layout` switches it live;
 // `import-live` puts the live page into an empty draft. An older GSAM sends no `editMode`: today's editor.
+import { splitTwoDoorsToolsDraft } from './two-doors-draft.mjs';
 import { SITE_CONTRACT } from './site-contract.mjs';
 
 export const EDITOR_CONTRACT = 2;
-export const EDITOR_COMMANDS = ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live'];
+export const EDITOR_COMMANDS = ['undo', 'redo', 'save', 'add-block', 'deselect', 'outline', 'layout', 'import-live', 'viewport'];
 export function helloAckPayload({ protocol, nonce, siteId, engine, mode, liveData, editorMessages, motion }) {
   return { protocol, nonce, siteId, engine, supportedReleaseSchemas: [1],
     ...(mode === 'editor' ? { editorCommands: EDITOR_COMMANDS, editorContract: EDITOR_CONTRACT,
@@ -12,7 +13,8 @@ export function helloAckPayload({ protocol, nonce, siteId, engine, mode, liveDat
 const SWITCH_COMMANDS = ['outline', 'layout'];
 
 export function validEditorCommand(payload) {
-  return !!payload && typeof payload === 'object' && !Array.isArray(payload) &&
+  if (payload?.command === 'viewport') return !!editorViewportUi(payload.width) && payload.on === undefined && Object.keys(payload).every((key) => ['command', 'width'].includes(key));
+  return !!payload && typeof payload === 'object' && !Array.isArray(payload) && payload.width === undefined &&
     EDITOR_COMMANDS.includes(payload.command) &&
     (SWITCH_COMMANDS.includes(payload.command) ? typeof payload.on === 'boolean' : payload.on === undefined);
 }
@@ -91,4 +93,15 @@ export function mediaRequest(item, element, components) {
   const match = find(item.props, fields);
   if (!match) return null;
   return { blockId: item.props.id, ...match, kind: element.tagName === 'VIDEO' ? 'animation' : 'image' };
+}
+
+/** Viewport is editor UI state, never page content or a draft revision. */
+export function editorViewportUi(width) {
+  if (width !== null && ![390, 768, 1440].includes(width)) return null;
+  return { viewports: { current: { width: width ?? '100%', height: 'auto' }, controlsVisible: false, options: [] } };
+}
+
+/** Opening Edit copy cannot migrate a draft's structure or trigger a structural save. */
+export function prepareEditorDraft(data, copy) {
+  return copy ? data : splitTwoDoorsToolsDraft(data);
 }

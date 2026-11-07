@@ -1,8 +1,9 @@
+import { createHash } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
-import { pdfDownloadName } from '../../supabase/functions/_shared/portal-file.mjs';
+import { pdfDownloadName } from './lib/shared/portal-file.mjs';
 import { oneDriveSettings, portalFileStorage } from './lib/portal-onedrive.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,11 +31,16 @@ export function makePortalFileHandler({ pool = getPool, verify, store = () => ge
         return Response.json({ connected: settings().enabled }, { headers: HEADERS });
       }
       const doc = await asCustomer(db, authIdentity(user),
-        async (client) => (await client.query('SELECT id,title,version,pdf_path FROM portal_documents WHERE id=$1', [body.document_id])).rows[0]);
+        async (client) => (await client.query('SELECT id,title,version,pdf_path,pdf_sha256 FROM portal_documents WHERE id=$1', [body.document_id])).rows[0]);
       if (!doc) return json('This document is not in your portal.', 404);
       if (!doc.pdf_path) return json('This document has no PDF.', 404);
       const bytes = await files.get(doc.pdf_path);
       if (!bytes) return json('The PDF is unavailable. Try again.', 503);
+      // The stored file must match the hash recorded under RLS; a changed file is never served.
+      if (createHash('sha256').update(Buffer.from(bytes)).digest('hex') !== doc.pdf_sha256) {
+        log('portal-file: stored PDF does not match its recorded hash');
+        return json('The PDF is unavailable. Try again.', 503);
+      }
       return new Response(bytes, { headers: { ...HEADERS, 'content-type': 'application/octet-stream',
         'content-disposition': `attachment; filename="${pdfDownloadName(doc)}"` } });
     } catch (error) {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, readFile, stat, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, stat, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from 'esbuild';
@@ -15,10 +15,13 @@ test('isolated Next deploy retains the visitor functions and their server import
     await exec(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target]);
     const config = await readFile(join(target, 'netlify.toml'), 'utf8');
     assert.match(config, /\[functions\][\s\S]*directory = "netlify\/functions"/);
-    for (const name of ['enquiry', 'catalogue']) {
-      const entry = join(target, 'netlify/functions', `${name}.mjs`);
+    // Every Vite-site function keeps its path on the Next deploy (GRE-1973 regression gate).
+    const names = (await readdir('netlify/functions')).filter((name) => name.endsWith('.mjs'));
+    assert.ok(names.length >= 25);
+    for (const name of names) {
+      const entry = join(target, 'netlify/functions', name);
       assert.ok((await stat(entry)).isFile());
-      await build({ entryPoints: [entry], bundle: true, platform: 'node', packages: 'external', write: false });
+      await build({ entryPoints: [entry], bundle: true, format: 'esm', platform: 'node', packages: 'external', write: false });
     }
     for (const script of ['gen-seo-files.mjs', 'gen-contract-file.mjs', 'prepare-puck-css.mjs']) {
       assert.ok((await stat(join(target, 'scripts', script))).isFile());
@@ -45,13 +48,20 @@ test('editor package carries the host guard and builds without database provisio
     assert.doesNotMatch(pkg.scripts['build:next:editor'], /export-pages/);
     assert.match(pkg.scripts['build:next:editor'], /gen-contract-file/);
     assert.ok((await stat(join(target, 'contracts/VENDORED.json'))).isFile());
+    // Portal and catalogue pages import the shared helpers (GRE-3768); the function handlers stay out.
+    assert.ok((await stat(join(target, 'netlify/functions/lib/shared/portal-receipt.mjs'))).isFile());
     for (const name of ['@netlify/database', '@netlify/database-dev']) {
       assert.equal(pkg.dependencies?.[name], undefined);
       assert.equal(pkg.devDependencies?.[name], undefined);
       assert.equal(lock.packages[''].dependencies?.[name], undefined);
       assert.equal(lock.packages[''].devDependencies?.[name], undefined);
     }
-    await assert.rejects(stat(join(target, 'netlify/functions')));
+    assert.deepEqual(await readdir(join(target, 'netlify/functions')), ['lib']);
+    assert.deepEqual((await readdir(join(target, 'netlify/functions/lib'))).sort(), ['interview', 'shared']);
+    // The voice client imports the barge-in rules (GRE-4282); nothing else from interview ships.
+    assert.deepEqual(await readdir(join(target, 'netlify/functions/lib/interview')), ['voice']);
+    assert.deepEqual(await readdir(join(target, 'netlify/functions/lib/interview/voice')), ['barge-in.mjs']);
+    await assert.rejects(stat(join(target, 'netlify/database')));
   } finally {
     await rm(target, { recursive: true, force: true });
   }

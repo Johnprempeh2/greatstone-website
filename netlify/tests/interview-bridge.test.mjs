@@ -147,6 +147,12 @@ test('GSAM creates, updates and reads a round', { skip }, async () => {
   const read = await call(signed(`${AT}/${ROUND}`));
   assert.equal(read.status, 200);
   assert.deepEqual(read.body.item.counts, { invited: 0, started: 0, completed: 0, declined: 0, abandoned: 0 });
+  assert.equal(read.body.item.spendPence, 0);
+  // GSAM sees the model spend against the envelope (engagement_spend's total_pence; the pr-140 rehearsal read 0)
+  sql(`INSERT INTO interview.usage_ledger (engagement_id, model, cost_pence) VALUES ('${ROUND}', 'claude-sonnet-4-6', 37),
+    ('${ROUND}', 'claude-haiku-4-5', 5)`);
+  assert.equal((await call(signed(`${AT}/${ROUND}`))).body.item.spendPence, 42);
+  sql(`DELETE FROM interview.usage_ledger WHERE engagement_id = '${ROUND}'`);
   // a read key cannot write, and another round id is not found
   assert.equal((await call(signed(`${AT}/${ROUND}`, { method: 'POST', kid: 'test-read-1', body: round() }))).status, 403);
   assert.equal((await call(signed(`${AT}/b1000000-0000-4000-8000-0000000000ff`))).status, 404);

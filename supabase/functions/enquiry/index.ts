@@ -4,14 +4,14 @@
 // enquiry in service_inquiries (0023 + 0035 + 0040) with the service role, then sends the owner a Resend alert. If
 // the row cannot be saved the alert carries the whole enquiry, so a lead is never silently lost; only when
 // both fail does the visitor get an error (and the page shows the contact address).
-// The logic is ../_shared/enquiry.mjs, covered by `node --test`. Wire contract: src/lib/enquiry.mjs.
+// The logic is netlify/functions/lib/shared/enquiry.mjs, covered by `node --test`. Wire contract: src/lib/enquiry.mjs.
 // Guards: a honeypot field, field limits, ten enquiries per IP a day (counted in service_inquiries.ip, as
 // 0023's rpc does).
 // Secrets: RESEND_API_KEY, RESEND_FROM, ENQUIRY_ALERT_TO (comma list, the enquiry owner; no alert without
 // it), optional APP_SITE_ORIGIN for the studio link.
 // Deploy: supabase functions deploy enquiry --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { handleEnquiry, sendEmail } from '../_shared/enquiry.mjs';
+import { handleEnquiry, sendEmail } from '../../../netlify/functions/lib/shared/enquiry.mjs';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';

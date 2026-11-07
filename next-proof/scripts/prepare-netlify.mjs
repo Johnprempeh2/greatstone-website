@@ -8,7 +8,11 @@ if (!target) throw new Error('Pass a new scratch directory for the proof deploy.
 if (process.argv[3] && !editor) throw new Error('Only --editor is supported as a preparation mode.');
 await mkdir(target, { recursive: true });
 const files = ['src', 'app', 'next-proof', 'public', 'scripts', 'contracts', 'package.json', 'package-lock.json', 'next.config.mjs', 'middleware.js'];
-if (!editor) files.push('netlify/functions', 'supabase/functions/_shared');
+// The functions import netlify/database (owner-import); the Vite deploy carries both, so the Next deploy does too.
+if (!editor) files.push('netlify/functions', 'netlify/database');
+// The editor has no functions, but the portal and catalogue pages import the shared helpers (GRE-3768).
+// The voice interview client imports the dependency-free barge-in rules (GRE-4282).
+else files.push('netlify/functions/lib/shared', 'netlify/functions/lib/interview/voice/barge-in.mjs');
 for (const name of files) {
   await cp(resolve(root, name), resolve(target, name), {
     recursive: true,

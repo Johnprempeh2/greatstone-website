@@ -39,6 +39,8 @@ For the isolated GSAM editor alias, run `node next-proof/scripts/prepare-netlify
 
 The isolated copy includes the existing `netlify/functions` entries and their shared server code. Netlify serves `/api/enquiry` and `/api/catalogue` beside Next, using the same handlers, database access and visitor responses as Vite. Resend, Turnstile and database credentials remain Netlify server environment variables; they are not Next public variables. Run `node scripts/check-dist-secrets.mjs .next/static` after a Next build to scan client assets. Do not switch the public site during this phase.
 
+Deploy Next previews to `gre3833-next-db-staging` (GRE-3833) and nowhere else before cutover. It has its own Netlify Database with no production data: migrations only, no git link, so only a deliberate `netlify deploy --site 6689e558-855b-40b1-be45-c530531fed45` touches it. A deploy applies `netlify/database/migrations` to the database of the site being deployed. Netlify never runs `netlify/database/seed/`; that SQL is applied by hand. Do not put the Next copy on `gre1795-website-db-staging`, which holds the shared staging data. A local `netlify build` gets only the read-only database role, which cannot `SET ROLE anon` for the catalogue export, so a local preview build drops `NEXT_CATALOGUE_REQUIRED` in the scratch copy and sets `NEXT_CATALOGUE_FIXTURE`. The deployed `/api/catalogue` still reads the site's own database.
+
 The checked draft is [GRE-1833 Next.js proof](https://gre-1833-next-proof--greatstone-home.netlify.app/). It is separate from the production URL. The editor is a review surface only. It has no Supabase connection, authentication or content writes. Existing links to the shop and other pages still need real routes in the full move.
 
 ## What the full move still needs
@@ -59,3 +61,34 @@ These are engineering estimates, assuming the existing content and design stay i
 The repository currently contains `netlify/functions/enquiry.mjs` as its one named function. GRE-1835 calls the second function “the other one”; Everest needs to identify it before that part of the full move is estimated firmly.
 
 The v15 mock-up contains draft facts and consultancy client marks that the published seed intentionally omits. The side-by-side screenshots show that content difference; the Next proof uses the published projection rather than exposing unconfirmed material. Consultancy client marks still require recorded written permission before they can appear on a public page.
+
+## Schema 2: HTML pages (GRE-3776)
+
+GSAM releases at schema 2 carry each page as `{ html, css }` instead of Puck data, three shared chrome documents (`chrome.header`, `chrome.nav`, `chrome.footer`, each `{ html, css }`) and one site `stylesheet`. `gsam-release.mjs` accepts schemas 1 and 2; `/_release` reports `supportedReleaseSchemas: [1, 2]`. The current pointer, Blobs keys, verify and rollback are unchanged. `ProofPage` chooses the renderer from the release schema, so schema 1 releases still render their blocks.
+
+`app/HtmlPage.jsx` renders a schema 2 page. Every document is sanitised at render time:
+
+- `html-sanitiser.mjs` parses the HTML and keeps only allow-listed elements and attributes. Scripts, frames, objects, embeds, SVG, forms and styles are dropped with their content; `on*` handlers, `style` attributes and unsafe URLs (`javascript:`, protocol-relative, backslashes, control characters) are dropped. The result is a node tree that becomes React elements, so no HTML string reaches the browser unescaped. Nesting that a browser would re-parent is flattened so hydration matches.
+- `css-sanitiser.mjs` parses the CSS and prefixes every selector with its region (`[data-gs-scope="page"]`, `"header"`, `"nav"` or `"footer"`). `:root`, `html` and `body` mean the region itself. Sibling combinators at the start, nesting, global at-rules (`@import`, `@font-face` outside the site stylesheet, `@layer`, `@page` and others), `url()` outside the site or `media:` ids, `expression()` and `image-set()` are removed. CSS with `<`, a backslash escape or unbalanced braces is refused as a whole.
+- `islands.mjs` is the island registry. Page HTML places an island with `<gs-island name="enquiry-form" data-form="contact">`; only registered names render, and only their listed `data-` attributes, each checked against a pattern, reach the island. Islands cannot sit inside a paragraph, heading, link or button.
+
+The public Content Security Policy is unchanged. To see the renderer locally, run `npm run dev:next` and open `/html-sample` (development only; production returns 404). It renders `fixtures/html-release-sample.json` through the release reader. Screenshots are in `docs/screenshots/GRE-3776`.
+
+## Islands (GRE-3777)
+
+`islands.mjs` registers ten islands. Each is placed with `<gs-island name="…">` and configured only by its listed `data-` attributes:
+
+| Name | Renders | Attributes |
+|---|---|---|
+| `enquiry-form` | BookDeepDive form, posting to the `enquiry` function | `data-form` |
+| `ai-baseline-survey`, `ai-cost-calculator` | the two tools | `data-form` |
+| `cookie-settings` | the cookie settings button | none |
+| `quote` | adds a service to the basket and opens it; the quote request goes through `/api/service-inquiry` as today | `data-service`, `data-service-name` |
+| `account-entry` | "Sign in", or "My account" once signed in, linking to `/account` | `data-style` (`button`, `link`) |
+| `product-list` | catalogue cards from the release's `offerings` collection | `data-vendor`, `data-category`, `data-limit` (1 to 24), `data-sort` |
+| `stone-3d` | Hero's stone: a still first, the 3D renderer on capable desktops only | `data-size` (`hero`, `accent`) |
+| `animation` | a ContainedMotion background effect; still on phones and with reduced motion | `data-effect`, `data-intensity`, `data-speed`, `data-colour` |
+
+Islands add no new network calls: each wraps the component the block site already runs.
+
+**Placeholders for GSAM live design.** `GET /_islands` answers the island list (names, labels, placeholder text, reserved height, accepted attributes) and `placeholderCss`. With that CSS on a draft page, each `<gs-island>` shows as a labelled box the size of the real island. To see both views locally, run `npm run dev:next` and open `/html-sample/islands` and `/html-sample/islands?view=placeholders` (development only). Screenshots are in `docs/screenshots/GRE-3777`.

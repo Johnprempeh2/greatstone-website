@@ -38,6 +38,37 @@ restore the staging snapshot taken before the import; do not delete shared
 `auth.users` rows by hand. Migration 052 has its own schema rollback, which
 must not run after anyone has signed in without restoring that snapshot.
 
-For production, obtain a fresh export and change the fixed count only in a
-separate reviewed release. The staging export covers eight users; the source
-now has ten.
+Each site in `SITES` (`netlify/functions/lib/owner-import.mjs`) carries its
+reviewed `identityCount`; an export of any other size is refused before any
+write. Staging takes eight (the GRE-1991 export). The rehearsal site and
+`greatstone-home` take ten: Supabase `auth.users` held ten rows, all with a
+password, on 3 Nov 2026 (GRE-2567). If the source count changes before the
+cut-over, change that number in its own reviewed release.
+
+For the rehearsal and the cut-over, `scripts/supabase-export.mjs export --out
+<run scratch>` writes both importer inputs (`identities.json`, `tables.json`)
+and `counts.json` from one read-only Supabase snapshot, mode 0600. It needs
+`SUPABASE_DB_URL` and prints counts only. `counts` prints the same counts and
+writes nothing, for the before, after and catch-up checks.
+
+The catch-up (cut-over step 7) is `export --since <step 4 export dir> --out
+<new run scratch dir>`. The importer refuses rows that already exist, so it
+writes only the rows whose primary key is not in the step 4 export.
+`identities.json` is written only when new users appeared. It then holds every
+user, because the importer checks an exact count, so the site's
+`identityCount` must change to that number in a reviewed release first. A row
+changed or removed since step 4 (same key, different values, or gone) stops it
+for a person: it prints the table names and counts and writes nothing.
+`--since` must name the full step 4 export, not an earlier catch-up.
+
+The Supabase pooler's certificate chains to Supabase's own root, so a plain
+`sslmode=require` URL fails with `SELF_SIGNED_CERT_IN_CHAIN`. Keep the check on:
+add `sslmode=verify-full&sslrootcert=<run scratch>/prod-ca-2021.crt` (Supabase
+Root 2021 CA, SHA-256 `80:70:25:AD:…:CA:FA`). Never use `no-verify`.
+
+Two Netlify-only migrations added columns to `service_inquiries` (042
+`size_band`, 057 `customer_id`). Supabase rows do not have them, so the runner
+writes NULL there (`NEW_ON_TARGET` in `lib/owner-import.mjs`). Any other
+missing column still refuses. After a table apply, the runner recounts through
+the read-only role. That role is under RLS and sees no rows on client tables,
+so where `count(*)` differs it checks Postgres's live-row statistics instead.

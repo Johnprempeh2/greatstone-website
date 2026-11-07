@@ -31,7 +31,8 @@ export function makeDeepDiveClientHandler({ pool = getPool, verify, send = sendD
       if (!db) return reply({ error: 'Deep Dive unavailable.' }, 503);
       const identity = authIdentity(user);
       if (input.op === 'overview') return reply({ data: await asCustomer(db, identity, clientSnapshot) });
-      const row = await asCustomer(db, identity, async (client) => {
+      // Every query runs in the client's claims transaction, never on the owner pool, which bypasses RLS (GRE-1797).
+      const answer = async (client) => {
         const access = await answerForClient(client, input.requestId);
         if (!access && input.op === 'answer') return null;
         if (input.op === 'retry') {
@@ -53,18 +54,19 @@ export function makeDeepDiveClientHandler({ pool = getPool, verify, send = sendD
         const existing = await client.query(`SELECT * FROM deep_dive_answers
           WHERE request_id=$1 AND customer_id=app_customer_id() LIMIT 1`, [input.requestId]);
         return existing.rows[0] || null;
+      };
+      const row = await asCustomer(db, identity, async (client) => {
+        const found = await answer(client);
+        if (!found?.document_id) return found;
+        const { rows: [file] } = await client.query(`SELECT file_name FROM deep_dive_documents
+          WHERE id=$1 AND customer_id=app_customer_id()`, [found.document_id]);
+        return { ...found, file_name: file?.file_name || null };
       });
       if (!row) return reply({ error: 'This request is not available.' }, 404);
       if (row.status === 'received') return reply({ data: { status: 'received' } });
-      if (row.document_id) {
-        const { rows: [file] } = await db.query(`SELECT file_name FROM deep_dive_documents
-          WHERE id=$1 AND tenant_id=$2 AND customer_id=$3`, [row.document_id, row.tenant_id, row.customer_id]);
-        row.file_name = file?.file_name || null;
-      }
       const received = await send(row);
-      if (received) await db.query(`UPDATE deep_dive_answers
-        SET status='received',received_at=now() WHERE answer_id=$1 AND customer_id=$2 AND status='pending'`,
-      [row.answer_id, row.customer_id]);
+      if (received) await asCustomer(db, identity, (client) =>
+        client.query('SELECT deep_dive_answer_received($1)', [row.answer_id]));
       return reply({ data: { status: received ? 'received' : 'pending' } }, received ? 200 : 202);
     } catch (error) {
       log('deep-dive-client: request failed (' + (error?.code || error?.name || 'error') + ')');

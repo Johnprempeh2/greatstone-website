@@ -1,24 +1,23 @@
 import { ProofBlocks } from './ProofBlocks.jsx';
-import { pageForPath, navigation } from './proof-data.js';
+import { pageForPath } from './proof-data.js';
+import { siteChrome } from './site-chrome.mjs';
 import { insightBriefings } from './insight-briefings.mjs';
-import { resolveMediaRefs } from '../next-proof/release-media.mjs';
-import { CookieSettings } from './ConsentAnalytics.jsx';
+import HtmlPage from './HtmlPage.jsx';
+import { SiteHeader, SiteFooter } from './SiteShell.jsx';
 
 export function SiteFrame({ children, release }) {
-  const site = release.site;
-  const legalPages = release.pages.filter((page) => ['privacy', 'cookies', 'terms'].includes(page.slug));
+  const chrome = siteChrome(release);
   return <>
-    <header className="proof-header">
-      <a href="/" aria-label={site.name}><img src={resolveMediaRefs(site.settings.logo, release.media)} alt={site.name} width="170" height="40" /></a>
-      <nav className="proof-desktop-nav" aria-label="Main navigation">{navigation(release).map((item) => <a href={item.href} key={item.id}>{item.label}</a>)}</nav>
-      <details className="proof-mobile-nav"><summary aria-label="Open navigation"><span aria-hidden="true" /></summary><nav aria-label="Main navigation">{navigation(release).map((item) => <a href={item.href} key={item.id}>{item.label}</a>)}</nav></details>
-    </header>
-    <main data-org-id={release.orgId} data-release={release.release.number}>{children}</main>
-    <footer className="proof-footer"><nav aria-label="Legal pages">{legalPages.map((item) => <a href={item.path} key={item.id}>{item.title}</a>)}<CookieSettings /></nav></footer>
+    <a className="gs-skip" href="#gs-main">Skip to content</a>
+    <SiteHeader {...chrome} />
+    <main className="gs-public" id="gs-main" tabIndex={-1} data-org-id={release.orgId} data-release={release.release.number}>{children}</main>
+    <SiteFooter {...chrome} />
   </>;
 }
 
 export default function ProofPage({ path, release }) {
+  // Schema 2 releases carry HTML pages and their own chrome (GRE-3776); schema 1 keeps Puck blocks.
+  if (release.releaseSchema === 2) return <HtmlPage page={release.pages.find((item) => item.path === path)} release={release} />;
   const page = pageForPath(path, release);
   const briefings = path === '/insights' ? insightBriefings(release) : [];
   return <SiteFrame release={release}>

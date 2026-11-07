@@ -56,7 +56,7 @@
           "type": { "enum": ["product"] },
           "attributes": { "type": "object", "additionalProperties": false,
             "properties": { "icon": { "$ref": "#/$defs/image" }, "gallery": { "type": "array", "items": { "$ref": "#/$defs/image" } }, "mainImage": { "$ref": "#/$defs/image" }, "sourceUrl": { "$ref": "#/$defs/image" } } },
-          "vendor": { "$ref": "#/$defs/vendorSummary" }, "category": { "$ref": "#/$defs/categorySummary" },
+          "vendor": { "$ref": "#/$defs/vendorSummary" }, "category": { "anyOf": [{ "$ref": "#/$defs/categorySummary" }, { "type": "null" }] },
           "description": { "$ref": "#/$defs/text" },
           "seo": { "type": "object", "additionalProperties": false,
             "properties": { "metaTitle": { "$ref": "#/$defs/text" }, "metaDescription": { "$ref": "#/$defs/text" }, "socialImage": { "$ref": "#/$defs/image" } } },
