@@ -2,6 +2,9 @@
 // server/src/services/impeccable-helper.ts (impeccableLiveScript). Do not edit by hand.
 (function () {
   var BASE = "http://localhost:" + 47123 + "/";
+  // GSAM starts a new session each time the editor opens and forgets old ones on a restart, so a
+  // checkpoint Impeccable saved earlier names a session nothing will answer: it would lock the picker.
+  try { window.localStorage.removeItem("impeccable-live-session"); } catch (e) { /* storage denied */ }
   var pending = {}, rid = 0, streams = [], lastClicks = [], picked = {};
   function post(msg) { msg.source = "gs-impeccable"; window.parent.postMessage(msg, "*"); }
 
