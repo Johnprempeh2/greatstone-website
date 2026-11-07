@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "deploy:preview": "node scripts/deploy-site.mjs preview",
     "deploy:prod": "node scripts/deploy-site.mjs prod",
-    "deploy:staging": "node scripts/deploy-site.mjs staging gre1795-website-db-staging",
+    "deploy:staging": "node scripts/deploy-site.mjs staging gre3833-next-db-staging",
     "test": "node --test",
     "check:dist": "node scripts/check-dist-secrets.mjs",
     "redirects": "node scripts/gen-legacy-redirects.mjs",

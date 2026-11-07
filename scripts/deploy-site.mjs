@@ -10,14 +10,12 @@ const sites = new Map([
   ['gre1795-website-db-staging', '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb'],
   ['gre3833-next-db-staging', '6689e558-855b-40b1-be45-c530531fed45'],
 ]);
-// Staging sites take a staging card. Greatstone website staging (gre3833) is the one staging site since
-// GRE-4202 and serves the Next copy, so its upload is the prepared Next proof, not the Vite build.
+// Staging sites take a staging card for a prod-mode upload. Greatstone website staging (gre3833) is the one
+// staging site since GRE-4202. Staging holds the edits (John, 7 Nov): every merge to main goes there with no
+// card (deploy:staging), as the same Vite build as the public site on its own Netlify Database, not the Next
+// proof. "Deploy these changes" promotes its commit.
 const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
-const nextSites = new Set(['gre3833-next-db-staging']);
-// Staging holds the edits (John, 7 Nov): every merge to main goes here with no card, as the same Vite
-// build as the public site, on its own Netlify Database. "Deploy these changes" promotes its commit.
-const stagingSite = 'gre1795-website-db-staging';
-const catalogueFixture = 'next-proof/fixtures/public-catalogue-2026-10-22.json';
+const stagingSite = 'gre3833-next-db-staging';
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
@@ -242,9 +240,8 @@ async function deployInstalled(sha) {
     await mkdir(tree);
     command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), sha]);
     command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
-    const upload = nextSites.has(site) ? await prepareNext(tree, join(dir, 'next')) : tree;
-    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], upload);
-    await lockAndDeploy(sha, upload);
+    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], tree);
+    await lockAndDeploy(sha, tree);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -253,15 +250,6 @@ async function deployInstalled(sha) {
 // The Next copy of the exported commit, with its functions and Netlify Database migrations. The CLI build
 // gets only the read-only database role, which cannot SET ROLE anon for the catalogue export, so the build
 // uses the checked-in catalogue fixture instead (next-proof/README.md). /api/catalogue still reads the site's database.
-async function prepareNext(tree, target) {
-  command(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target], tree);
-  const config = join(target, 'netlify.toml');
-  const toml = await readFile(config, 'utf8');
-  if (!toml.includes('NEXT_CATALOGUE_REQUIRED = "1"')) throw new Error('next-proof/netlify.toml has no NEXT_CATALOGUE_REQUIRED line to replace');
-  await writeFile(config, toml.replace('NEXT_CATALOGUE_REQUIRED = "1"', `NEXT_CATALOGUE_FIXTURE = "${catalogueFixture}"`));
-  return target;
-}
-
 // The weekly train (GRE-2804) also ships the gsam-editor alias on greatstone-home from the same
 // commit. The Vite upload does not contain the Next editor, so the editor is built from this
 // checkout in a prepared copy, then uploaded and checked by deploy-editor-alias.mjs (site ID,

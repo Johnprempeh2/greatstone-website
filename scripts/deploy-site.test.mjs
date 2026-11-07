@@ -687,7 +687,7 @@ async function nextStagingFixture(t) {
   return f;
 }
 
-test('Greatstone website staging uploads the prepared Next copy of the commit with its own staging card', async (t) => {
+test('Greatstone website staging uploads the same Vite tree as the public site with its own staging card', async (t) => {
   const f = await nextStagingFixture(t);
   f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
   const result = await f.run('prod', nextStaging);
@@ -695,10 +695,8 @@ test('Greatstone website staging uploads the prepared Next copy of the commit wi
   assert.equal(await readFile(f.log, 'utf8'),
     `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
-  // The CLI build cannot read the catalogue as anon, so it uses the checked-in fixture, never the required export.
-  const toml = await readFile(f.env.TOML_LOG, 'utf8');
-  assert.match(toml, /NEXT_CATALOGUE_FIXTURE = "next-proof\/fixtures\/public-catalogue-2026-10-22\.json"/);
-  assert.doesNotMatch(toml, /NEXT_CATALOGUE_REQUIRED/);
+  // Not the Next proof (7 Nov): the upload carries the repo's own config, never the Next fixture rewrite.
+  assert.doesNotMatch(await readFile(f.env.TOML_LOG, 'utf8').catch(() => ''), /NEXT_CATALOGUE_FIXTURE/);
   assert.doesNotMatch(result.stdout, /Editor alias step/);
 });
 
@@ -722,7 +720,7 @@ test('a Greatstone website staging card never authorises the public site', async
   await assert.rejects(readFile(f.log));
 });
 
-test('config refresh re-uploads the live Next copy on Greatstone website staging', async (t) => {
+test('config refresh re-uploads the live tree on Greatstone website staging', async (t) => {
   const f = await refreshFixture(t);
   f.serve(nextStaging);
   f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
@@ -737,11 +735,12 @@ test('config refresh re-uploads the live Next copy on Greatstone website staging
 // takes the exact commit staging holds, behind the weekly-release card.
 test('staging uploads main to the staging site with no card, then the editor alias', async (t) => {
   const f = await fixture(t);
+  f.serve('gre3833-next-db-staging');
   git(f.cwd, 'checkout', '-q', 'main');
-  const result = await f.run('staging');
+  const result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:staging:${f.base} --prod\n` +
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod\n` +
     'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
 });
@@ -749,13 +748,15 @@ test('staging uploads main to the staging site with no card, then the editor ali
 test('staging refuses a branch that is not main, and any other site', async (t) => {
   const f = await fixture(t);
   await f.commit('src/app.js', 'pr code');
-  let result = await f.run('staging');
+  let result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /staging requires main/);
   git(f.cwd, 'checkout', '-q', 'main');
-  result = await f.run('staging', 'greatstone-home');
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /staging deploys only gre1795-website-db-staging/);
+  for (const other of ['greatstone-home', 'gre1795-website-db-staging']) {
+    result = await f.run('staging', other);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /staging deploys only gre3833-next-db-staging/);
+  }
   await assert.rejects(readFile(f.log));
 });
 
@@ -770,6 +771,7 @@ test('the public site takes the commit on staging once main has moved on, still 
   await f.commit('src/app.js', 'newer main code');
   git(f.cwd, 'push', '-q', 'origin', 'main');
   git(f.cwd, 'checkout', '-q', '--detach', staged);
+  f.serve('gre3833-next-db-staging');
   f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${staged}` }]);
   let result = await f.run('prod', 'greatstone-home');
   assert.match(result.stderr, /production refused/);
