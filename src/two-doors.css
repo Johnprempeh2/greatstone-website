@@ -111,4 +111,6 @@
 @media(max-width:760px){.td-header,.td-home{--td-header-height:var(--td-size-66)}.td-header .gs-logo img{width:var(--td-size-138)}}
 @media(max-width:380px){.td-intro,.td-story,.td-range,.td-section,.td-close,.td-review-strip{width:calc(100% - var(--td-size-28))}.td-stepbar button{font-size:var(--td-size-10)}.td-door-copy{padding:var(--td-size-18)}.td-pill{font-size:var(--td-size-12);padding-inline:var(--td-size-15)}.td-text-link{font-size:var(--td-size-12);margin-left:var(--td-size-8)}}
 @media(max-width:420px){.td-header .gs-logo img{max-width:var(--td-size-104)}}
+.td-public-clients li{transition:transform 150ms ease-out}@media(hover:hover){.td-public-clients li:hover{transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){.td-public-clients li,.td-public-clients li:hover{transition:none;transform:none}}
 @media(prefers-reduced-motion:reduce){.td-home *, .td-home *:before,.td-home *:after,.td-segment *, .td-segment *:before,.td-segment *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
