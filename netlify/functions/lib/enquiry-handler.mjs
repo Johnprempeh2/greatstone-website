@@ -7,6 +7,7 @@
 //   → 4xx/5xx { ok: false, error } otherwise; the form then shows the contact address.
 // Order: honeypot, Turnstile (when TURNSTILE_SECRET_KEY is set), field checks, ten enquiries per IP a day,
 // save as `anon`, owner alert by Resend (GRE-652 §4.6). A lead is lost only when the save and the alert both fail.
+import { pingGsam } from './gsam-ping.mjs';
 import { handleEnquiry, sendEmail } from './shared/enquiry.mjs';
 import { enquiryStore } from './enquiry-store.mjs';
 import { verifyTurnstile } from './turnstile.mjs';
@@ -47,6 +48,7 @@ export function makeEnquiryHandler({ env = {}, getPool = () => null, fetchImpl =
         sendAlert: (msg) => sendEmail({ apiKey: env.RESEND_API_KEY, from: env.RESEND_FROM, to: alertTo.length ? alertTo : '', ...msg, fetchImpl }),
         log,
       });
+      if (out.status < 300) await pingGsam(env, fetchImpl);
       return json(out.body, out.status);
     } catch (e) {
       log('error', 'enquiry: failed (' + ((e && e.name) || 'error') + ')');
