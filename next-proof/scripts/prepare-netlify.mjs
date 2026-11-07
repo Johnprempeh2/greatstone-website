@@ -11,8 +11,9 @@ const files = ['src', 'app', 'next-proof', 'public', 'scripts', 'contracts', 'pa
 // The functions import netlify/database (owner-import); the Vite deploy carries both, so the Next deploy does too.
 if (!editor) files.push('netlify/functions', 'netlify/database');
 // The editor has no functions, but the portal and catalogue pages import the shared helpers (GRE-3768).
-// The voice interview client imports the dependency-free barge-in rules (GRE-4282).
-else files.push('netlify/functions/lib/shared', 'netlify/functions/lib/interview/voice/barge-in.mjs');
+// The voice interview client imports the dependency-free barge-in rules (GRE-4282)
+// and the Deepgram region map (GRE-2687).
+else files.push('netlify/functions/lib/shared', 'netlify/functions/lib/interview/voice/barge-in.mjs', 'netlify/functions/lib/interview/voice/regions.mjs');
 for (const name of files) {
   await cp(resolve(root, name), resolve(target, name), {
     recursive: true,
