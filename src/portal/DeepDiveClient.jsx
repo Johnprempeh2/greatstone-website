@@ -6,6 +6,7 @@ import './deep-dive-client.css';
 import { sharedStreams } from './deep-dive-progress.mjs';
 import { deepDiveDocuments, docState } from './portal-model.mjs';
 import { portalStore } from './portal-store-api.mjs';
+import PortalHeader from './PortalHeader.jsx';
 
 async function call(op, args = {}) {
   if (!await getSession()) throw new Error('Your session has ended. Sign in again.');
@@ -107,7 +108,7 @@ export default function DeepDiveClient({ company, api = call, documentApi = docu
   };
   useEffect(() => { load(); }, []);
   return <div className="ca-wrap pt-wrap" role="region" aria-label="Client Deep Dive">
-    <div className="pt-bar"><a className="pt-back" href="#portal">← Your portal</a><span className="pt-bar-co">{company.name}</span></div>
+    <PortalHeader company={company} current="deep-dive" />
     <h1 className="pt-h1">Deep Dive</h1>
     {error && <div className="pt-empty" role="alert"><p>{error}</p><button className="gs-btn primary sm" onClick={load}>Try again</button></div>}
     {snapshot === undefined && !error && <div className="pt-hold" aria-busy="true">Loading…</div>}
