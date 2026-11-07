@@ -72,7 +72,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
       res.end('{}');
       return;
     }
-    if (/^\/api\/v1\/sites\/3b1e97e6-e184-4251-badd-deed532be3ab$/.test(req.url)) {
+    if (/^\/api\/v1\/sites\/(?:3b1e97e6-e184-4251-badd-deed532be3ab|6689e558-855b-40b1-be45-c530531fed45)$/.test(req.url)) {
       res.end(JSON.stringify({ published_deploy: { id: 'live-before' } }));
       return;
     }
@@ -834,4 +834,39 @@ test('an API failing after publish puts the earlier live deploy back at once', a
   assert.equal(result.status, 1);
   assert.match(result.stderr, /\/api\/catalogue failed after publishing draft-1; restored live-before/);
   assert.deepEqual(f.restores, ['draft-1', 'live-before']);
+});
+
+// The rehearsal (7 Nov): the public promote, run on staging with no card, with a failure that can be planted.
+test('a rehearsal runs the checked promote on staging and never touches the public site', async (t) => {
+  const f = await fixture(t);
+  f.serve('gre3833-next-db-staging');
+  git(f.cwd, 'checkout', '-q', 'main');
+  const result = await f.run('rehearse', 'gre3833-next-db-staging');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /^deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:[0-9a-f]{40} --context production --json$/m);
+  assert.doesNotMatch(await readFile(f.log, 'utf8'), /3b1e97e6-e184-4251-badd-deed532be3ab --message/);
+  assert.deepEqual(f.restores, ['draft-1']);
+});
+
+test('a planted API failure in a rehearsal puts the earlier staging deploy back', async (t) => {
+  const f = await fixture(t);
+  f.serve('gre3833-next-db-staging');
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.env.REHEARSE_FAIL_API = '/api/catalogue';
+  const result = await f.run('rehearse', 'gre3833-next-db-staging');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\/api\/catalogue \(planted\) failed after publishing draft-1; restored live-before/);
+  assert.deepEqual(f.restores, ['draft-1', 'live-before']);
+});
+
+test('a rehearsal refuses the public site, and a planted failure is ignored outside a rehearsal', async (t) => {
+  let f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const refused = await f.run('rehearse', 'greatstone-home');
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /rehearse deploys only gre3833-next-db-staging/);
+  f = await weeklyTrain(t);
+  f.env.REHEARSE_FAIL_API = '/api/catalogue';
+  const promoted = await f.run('prod', 'greatstone-home');
+  assert.equal(promoted.status, 0, promoted.stderr);
 });
