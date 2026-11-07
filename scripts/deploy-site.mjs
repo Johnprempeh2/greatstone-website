@@ -1,6 +1,6 @@
 import { spawnSync, spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
@@ -219,6 +219,50 @@ function lockDir() {
   return join(common, 'gsam-deploy-locks', `${site}-${channel}${channel === 'preview' ? `-${prNumber}` : ''}`);
 }
 
+// The lock every machine sees (7 Nov): the local lock above only covers one checkout, and on 7 Nov a PC agent's
+// staging deploy published in the middle of a Mac rehearsal. One key per site and channel in the target site's
+// Blobs, created only if new; a holder is passed over only when it is over an hour old or a dead process on this
+// host. Tests use a file in place of Blobs.
+export const SHARED_LOCK_MAX_MS = 60 * 60 * 1000;
+
+async function sharedLockStore() {
+  if (process.env.NODE_ENV === 'test' && token === 'test-token') {
+    const path = process.env.SHARED_LOCK_FILE;
+    const load = async () => { try { return JSON.parse(await readFile(path, 'utf8')); } catch { return {}; } };
+    const save = (all) => writeFile(path, JSON.stringify(all));
+    return {
+      async create(key, value) { const all = await load(); if (all[key]) return false; all[key] = { value, etag: randomUUID() }; await save(all); return true; },
+      async read(key) { return (await load())[key] || null; },
+      async replace(key, value, etag) { const all = await load(); if (all[key]?.etag !== etag) return false; all[key] = { value, etag: randomUUID() }; await save(all); return true; },
+      async remove(key, own) { const all = await load(); if (all[key]?.value.own === own) { delete all[key]; await save(all); } },
+    };
+  }
+  const { getStore } = await import('@netlify/blobs');
+  const store = getStore({ name: 'gsam-deploy-locks', siteID: sites.get(site), token, consistency: 'strong' });
+  return {
+    async create(key, value) { return (await store.setJSON(key, value, { onlyIfNew: true })).modified; },
+    async read(key) { const found = await store.getWithMetadata(key, { type: 'json' }); return found ? { value: found.data, etag: found.etag } : null; },
+    async replace(key, value, etag) { return (await store.setJSON(key, value, { onlyIfMatch: etag })).modified; },
+    async remove(key, own) { const found = await store.getWithMetadata(key, { type: 'json' }); if (found?.data?.own === own) await store.delete(key); },
+  };
+}
+
+async function takeSharedLock(own) {
+  const store = await sharedLockStore();
+  const key = `${site}-${channel}${channel === 'preview' ? `-${prNumber}` : ''}`;
+  const mine = { own, host: hostname(), pid: process.pid, identity: processIdentity(process.pid), at: new Date().toISOString() };
+  if (!await store.create(key, mine)) {
+    const held = await store.read(key);
+    const holder = held?.value;
+    const stale = !holder || Date.now() - Date.parse(holder.at) > SHARED_LOCK_MAX_MS ||
+      (holder.host === mine.host && processIdentity(holder.pid) !== holder.identity);
+    if (!stale || !await store.replace(key, mine, held.etag))
+      throw new Error(`another deploy of ${site} (${channel}) is running on ${holder?.host || 'another machine'} since ${holder?.at || 'just now'}`);
+    console.log(`Took over a stale deploy lock from ${holder?.host || 'an unknown machine'}`);
+  }
+  return () => store.remove(key, own);
+}
+
 async function lockAndDeploy(sha, cwd) {
   const dir = lockDir();
   const own = randomUUID();
@@ -236,8 +280,10 @@ async function lockAndDeploy(sha, cwd) {
   }
   const controller = new AbortController();
   process.on('SIGTERM', () => controller.abort());
+  let releaseShared = null;
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
+    releaseShared = await takeSharedLock(own);
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
     // The public site (and a rehearsal) is checked live straight after a production upload, and restored on failure.
     const checked = (channel === 'prod' && site === 'greatstone-home') || mode === 'rehearse';
@@ -258,6 +304,7 @@ async function lockAndDeploy(sha, cwd) {
     if (checked) await checkLive(JSON.parse(out.slice(out.indexOf('{'))), before);
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
   } finally {
+    await releaseShared?.().catch(() => { /* an expired lock is passed over after an hour */ });
     try { if (JSON.parse(await readFile(file, 'utf8')).own === own) await rm(file); } catch { /* newer run owns it */ }
   }
 }
