@@ -12,10 +12,14 @@ const sites = new Map([
 ]);
 // Staging sites take a staging card for a prod-mode upload. Greatstone website staging (gre3833) is the one
 // staging site since GRE-4202. Staging holds the edits (John, 7 Nov): every merge to main goes there with no
-// card (deploy:staging), as the same Vite build as the public site on its own Netlify Database, not the Next
-// proof. "Deploy these changes" promotes its commit.
+// card (deploy:staging) on its own Netlify Database. Since the Next cutover decision (7 Nov) it holds the Next
+// build, the site greatstoneint.com moves to, so its upload is the prepared Next copy of the commit.
+// "Deploy these changes" promotes its commit.
 const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
 const stagingSite = 'gre3833-next-db-staging';
+const nextSites = new Set([stagingSite]);
+// The CLI build cannot read the catalogue export as anon, so the staging Next build uses the checked-in fixture.
+const catalogueFixture = 'next-proof/fixtures/public-catalogue-2026-10-22.json';
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
@@ -240,8 +244,9 @@ async function deployInstalled(sha) {
     await mkdir(tree);
     command('git', ['archive', '--format=tar', '-o', join(dir, 'source.tar'), sha]);
     command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
-    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], tree);
-    await lockAndDeploy(sha, tree);
+    const upload = nextSites.has(site) ? await prepareNext(tree, join(dir, 'next')) : tree;
+    command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], upload);
+    await lockAndDeploy(sha, upload);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -256,6 +261,15 @@ async function deployInstalled(sha) {
 // contract, engine commit, links). Any failed step fails the train and names the step.
 // `netlify build` has no --site flag and a fresh clone has no .netlify link, so the site ID
 // goes in NETLIFY_SITE_ID (GRE-4199).
+async function prepareNext(tree, target) {
+  command(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target], tree);
+  const config = join(target, 'netlify.toml');
+  const toml = await readFile(config, 'utf8');
+  if (!toml.includes('NEXT_CATALOGUE_REQUIRED = "1"')) throw new Error('next-proof/netlify.toml has no NEXT_CATALOGUE_REQUIRED line to replace');
+  await writeFile(config, toml.replace('NEXT_CATALOGUE_REQUIRED = "1"', `NEXT_CATALOGUE_FIXTURE = "${catalogueFixture}"`));
+  return target;
+}
+
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
   const home = sites.get('greatstone-home');

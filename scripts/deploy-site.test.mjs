@@ -687,7 +687,7 @@ async function nextStagingFixture(t) {
   return f;
 }
 
-test('Greatstone website staging uploads the same Vite tree as the public site with its own staging card', async (t) => {
+test('Greatstone website staging uploads the prepared Next copy of the commit with its own staging card', async (t) => {
   const f = await nextStagingFixture(t);
   f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
   const result = await f.run('prod', nextStaging);
@@ -695,8 +695,10 @@ test('Greatstone website staging uploads the same Vite tree as the public site w
   assert.equal(await readFile(f.log, 'utf8'),
     `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
-  // Not the Next proof (7 Nov): the upload carries the repo's own config, never the Next fixture rewrite.
-  assert.doesNotMatch(await readFile(f.env.TOML_LOG, 'utf8').catch(() => ''), /NEXT_CATALOGUE_FIXTURE/);
+  // The CLI build cannot read the catalogue as anon, so it uses the checked-in fixture, never the required export.
+  const toml = await readFile(f.env.TOML_LOG, 'utf8');
+  assert.match(toml, /NEXT_CATALOGUE_FIXTURE = "next-proof\/fixtures\/public-catalogue-2026-10-22\.json"/);
+  assert.doesNotMatch(toml, /NEXT_CATALOGUE_REQUIRED/);
   assert.doesNotMatch(result.stdout, /Editor alias step/);
 });
 
@@ -720,7 +722,7 @@ test('a Greatstone website staging card never authorises the public site', async
   await assert.rejects(readFile(f.log));
 });
 
-test('config refresh re-uploads the live tree on Greatstone website staging', async (t) => {
+test('config refresh re-uploads the live Next copy on Greatstone website staging', async (t) => {
   const f = await refreshFixture(t);
   f.serve(nextStaging);
   f.setInteractions([stagingCard(f.base, {}, nextStaging)]);
@@ -733,8 +735,9 @@ test('config refresh re-uploads the live tree on Greatstone website staging', as
 
 // Staging holds the edits (John, 7 Nov): main goes to staging with no card, then the public site
 // takes the exact commit staging holds, behind the weekly-release card.
-test('staging uploads main to the staging site with no card, then the editor alias', async (t) => {
+test('staging uploads the Next copy of main to the staging site with no card, then the editor alias', async (t) => {
   const f = await fixture(t);
+  f.env.TOML_LOG = join(f.cwd, 'bin', 'toml.txt');
   f.serve('gre3833-next-db-staging');
   git(f.cwd, 'checkout', '-q', 'main');
   const result = await f.run('staging', 'gre3833-next-db-staging');
@@ -743,6 +746,7 @@ test('staging uploads main to the staging site with no card, then the editor ali
     `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod\n` +
     'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+  assert.match(await readFile(f.env.TOML_LOG, 'utf8'), /NEXT_CATALOGUE_FIXTURE/);
 });
 
 test('staging refuses a branch that is not main, and any other site', async (t) => {
