@@ -225,6 +225,19 @@
 .gs-interview .privacy-full { font-size: 12.5px; margin-top: 10px; }
 .gs-interview .privacy-full a { color: var(--gs-accent); }
 
+/* GRE-4303: the full notice (#privacy/interviews). Long text, so it reads left-aligned at a reading width. */
+.gs-interview .full-notice { max-width: 720px; }
+.gs-interview .full-notice-body { text-align: left; width: 100%; margin-bottom: 28px; }
+.gs-interview .full-notice-body h2 { font-size: 19px; font-weight: 800; color: var(--gs-text); margin: 30px 0 10px; }
+.gs-interview .full-notice-body p,
+.gs-interview .full-notice-body li { font-size: 15px; color: var(--gs-text-muted); line-height: 1.75; overflow-wrap: anywhere; }
+.gs-interview .full-notice-body p { margin: 0 0 12px; }
+.gs-interview .full-notice-body ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; }
+.gs-interview .full-notice-body li > ul { margin: 6px 0 8px; }
+.gs-interview .full-notice-body li > p { margin: 6px 0 0; }
+.gs-interview .full-notice-body strong { color: var(--gs-text); font-weight: 700; }
+.gs-interview .full-notice-body a { color: var(--gs-accent); }
+
 .gs-interview .welcome-cta { margin-top: 34px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .gs-interview .welcome-cta .btn-primary { padding: 15px 38px; font-size: 13px; border-radius: 10px; }
 .gs-interview .welcome-note { font-size: 12px; color: var(--gs-text-faint); margin-top: 10px; max-width: 380px; line-height: 1.7; }

@@ -18,6 +18,7 @@ import InterviewGoodbye from './InterviewGoodbye.jsx';
 import InterviewDiscarded from './InterviewDiscarded.jsx';
 import InterviewResults from './InterviewResults.jsx';
 import JoinPage from './JoinPage.jsx';
+import InterviewPrivacyNotice from './InterviewPrivacyNotice.jsx';
 import { InterviewSignIn, VerifyEmailNotice } from './InterviewSignIn.jsx';
 import { PageLoading } from './PageStatus.jsx';
 import { GsLogo } from './GsLogo.jsx';
@@ -80,6 +81,8 @@ function SignedIn({ children }) {
 export default function InterviewApp({ route, hash = currentHash() }) {
   let body;
   if (route.view === 'join') body = <JoinPage key={hash} route={route} />;
+  // The full privacy notice is public: it is read before anyone agrees to anything (GRE-4303).
+  else if (route.view === 'privacy') body = <InterviewPrivacyNotice />;
   else {
     const Page = PAGES[route.view];
     body = <SignedIn>{Page ? <Page key={hash} route={route} /> : <NotFound />}</SignedIn>;

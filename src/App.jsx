@@ -243,7 +243,8 @@ function readPortalHash() {
   const h = typeof location !== 'undefined' ? location.hash : '';
   return parseInterviewHash(h) ? null : parsePortalHash(h);
 }
-// #portal/interview[/session|complete|goodbye|discarded|results] and #join/<token> → interview engine (GRE-2612)
+// #portal/interview[/session|complete|goodbye|discarded|results], #join/<token> and #privacy/interviews (the full
+// interview privacy notice, GRE-4303) → interview engine (GRE-2612)
 function readInterviewHash() {
   return parseInterviewHash(typeof location !== 'undefined' ? location.hash : '');
 }
@@ -583,7 +584,7 @@ export default function App() {
     if (invoiceRoute) { utility('Invoice', 'home', 'View and print the details of your Greatstone order.'); return; }
     if (accountRoute || authLanding) { utility('Your account', 'home', 'Manage your Greatstone account, orders and details.'); return; }
     if (orgRoute) { utility('Your organisation', 'home', 'Manage your organisation, team and orders with Greatstone.'); return; }
-    if (interview) { utility(interview.view === 'join' ? 'Join the conversation' : interview.view === 'results' ? 'Discovery read-out' : 'Your conversation', 'home', 'A confidential conversation about how your work really gets done, run independently by Greatstone.'); return; }
+    if (interview) { utility(interview.view === 'join' ? 'Join the conversation' : interview.view === 'results' ? 'Discovery read-out' : interview.view === 'privacy' ? 'Interview privacy notice' : 'Your conversation', 'home', interview.view === 'privacy' ? 'How Greatstone handles your interview answers, and your rights.' : 'A confidential conversation about how your work really gets done, run independently by Greatstone.'); return; }
     if (portalRoute) { utility(portalRoute.view === 'receipt' ? 'Receipt' : portalRoute.view === 'doc' ? 'Document' : 'Client portal', 'home', 'Your Greatstone client portal.'); return; }
     if (confirmRoute) { utility('Order confirmed', 'home', 'Your Greatstone order is confirmed. Review the details.'); return; }
     if (catalogueAdmin) { utility('Catalogue admin', 'home', 'Manage the Greatstone product catalogue.'); return; }

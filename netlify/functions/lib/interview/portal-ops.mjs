@@ -74,6 +74,20 @@ async function interviewPage({ db, sys, ctx, caller, args, env }) {
   };
 }
 
+/**
+ * GRE-4303: the round's values for the full privacy notice (#privacy/interviews). Read only: unlike the welcome
+ * screen it claims no invitation and redirects nowhere, so the notice opens from any screen. No round → no values.
+ */
+async function noticePage({ ctx }) {
+  if (!ctx) return { clientName: null };
+  return {
+    clientName: ctx.engagement.client_name,
+    retentionDays: Number.isInteger(ctx.engagement.retention_days) ? ctx.engagement.retention_days : 90,
+    readoutDate: ctx.engagement.readout_at ? String(ctx.engagement.readout_at).slice(0, 10) : null,
+    deletionDate: deletionDate(ctx.engagement),
+  };
+}
+
 /** session/page.tsx: the open session and its turns, for the chat shell. */
 async function sessionPage({ db, ctx, env }) {
   if (!ctx) return go('');
@@ -376,6 +390,7 @@ async function submitCorrection({ db, sys, ctx, args, log }) {
 
 export const OPS = {
   'interview-page': interviewPage,
+  'notice-page': noticePage,
   'session-page': sessionPage,
   'signoff-page': signOffPage,
   results,

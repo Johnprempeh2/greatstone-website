@@ -23,6 +23,7 @@ import { pageFallback } from './PageStatus.jsx';
 import { InterviewSignIn } from './InterviewSignIn.jsx';
 import { usePageOp, useActionForm } from './usePageOp.mjs';
 import { interviewNotice, whoSeesLine, QUOTE_OPTIONS } from '../interview-notice.mjs';
+import { hrefFor } from './route.mjs';
 
 export default function InterviewHome({ route }) {
   const seats = route.query?.seats ?? null;
@@ -180,7 +181,7 @@ export function WelcomeScreen({ isAdmin, seats, consent, clientName, retentionDa
               </p>
             ) : null}
             <p className="privacy-full">
-              <a href={notice.fullNoticeHref}>{notice.fullNoticeLabel}</a>
+              <a href={hrefFor(notice.fullNoticeHref)}>{notice.fullNoticeLabel}</a>
             </p>
           </GlassCard>
 
