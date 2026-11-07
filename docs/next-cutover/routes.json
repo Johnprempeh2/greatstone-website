@@ -1,0 +1,162 @@
+{
+ "pages": [
+  {
+   "name": "home",
+   "vite": "/",
+   "next": "/"
+  },
+  {
+   "name": "dev-tools",
+   "vite": "/dev-tools",
+   "next": "/dev-tools"
+  },
+  {
+   "name": "how-we-help",
+   "vite": "/#how-we-help",
+   "next": "/how-we-help"
+  },
+  {
+   "name": "services",
+   "vite": "/#services",
+   "next": "/services"
+  },
+  {
+   "name": "industries",
+   "vite": "/#industries",
+   "next": "/industries"
+  },
+  {
+   "name": "proof",
+   "vite": "/#proof",
+   "next": "/proof"
+  },
+  {
+   "name": "about",
+   "vite": "/#about",
+   "next": "/about"
+  },
+  {
+   "name": "insights",
+   "vite": "/#insights",
+   "next": "/insights"
+  },
+  {
+   "name": "ai-market-intelligence",
+   "vite": "/#ai-market-intelligence",
+   "next": "/ai-market-intelligence"
+  },
+  {
+   "name": "climb",
+   "vite": "/#climb",
+   "next": "/climb"
+  },
+  {
+   "name": "shop",
+   "vite": "/#shop",
+   "next": "/shop"
+  },
+  {
+   "name": "shop/aspose",
+   "vite": "/#shop/aspose",
+   "next": "/shop/aspose"
+  },
+  {
+   "name": "account",
+   "vite": "/#account",
+   "next": "/account"
+  },
+  {
+   "name": "org",
+   "vite": "/#org",
+   "next": "/org"
+  },
+  {
+   "name": "portal",
+   "vite": "/#portal",
+   "next": "/portal"
+  },
+  {
+   "name": "catalogue",
+   "vite": "/#catalogue",
+   "next": "/catalogue"
+  },
+  {
+   "name": "order-confirmed",
+   "vite": "/#order-confirmed",
+   "next": "/order-confirmed"
+  },
+  {
+   "name": "privacy/interviews",
+   "vite": "/#privacy/interviews",
+   "next": "/privacy/interviews"
+  },
+  {
+   "name": "join/test-token",
+   "vite": "/#join/test-token",
+   "next": "/join/test-token"
+  },
+  {
+   "name": "invoice/test-order",
+   "vite": "/#invoice/test-order",
+   "next": "/invoice/test-order"
+  },
+  {
+   "name": "product/able2extract-professional",
+   "vite": "/#product/able2extract-professional",
+   "next": "/product/able2extract-professional"
+  },
+  {
+   "name": "service/dx-diagnostic",
+   "vite": "/#service/dx-diagnostic",
+   "next": "/service/dx-diagnostic"
+  },
+  {
+   "name": "contact",
+   "vite": "/#contact",
+   "next": "/contact"
+  },
+  {
+   "name": "intel",
+   "vite": "/#intel",
+   "next": "/intel"
+  },
+  {
+   "name": "PLANTED (must differ): about vs dev-tools",
+   "vite": "/#about",
+   "next": "/dev-tools",
+   "planted": true
+  }
+ ],
+ "apis": [
+  "/api/catalogue",
+  "/api/auth/get-session",
+  "/api/popularity",
+  "/api/compose-problems",
+  "/api/front-door",
+  "/api/customer-store",
+  "/api/staff-store",
+  "/api/portal-store",
+  "/api/deepdive-state",
+  "/api/interview/portal",
+  "/api/interview/my-data",
+  "/api/enquiry",
+  "/api/request-quote",
+  "/api/service-inquiry",
+  "/api/stripe-checkout",
+  "/api/stripe-webhook",
+  "/api/admin/v1/health",
+  "/api/deep-dive-client",
+  "/media/does-not-exist.png",
+  "/_release",
+  "/_islands",
+  "/sitemap.xml",
+  "/robots.txt"
+ ],
+ "redirects": [
+  "/aspose",
+  "/groupdocs/x",
+  "/ironsoftware",
+  "/about-us",
+  "/contact-us"
+ ]
+}
