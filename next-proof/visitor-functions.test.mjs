@@ -57,7 +57,10 @@ test('editor package carries the host guard and builds without database provisio
       assert.equal(lock.packages[''].devDependencies?.[name], undefined);
     }
     assert.deepEqual(await readdir(join(target, 'netlify/functions')), ['lib']);
-    assert.deepEqual(await readdir(join(target, 'netlify/functions/lib')), ['shared']);
+    assert.deepEqual((await readdir(join(target, 'netlify/functions/lib'))).sort(), ['interview', 'shared']);
+    // The voice client imports the barge-in rules (GRE-4282); nothing else from interview ships.
+    assert.deepEqual(await readdir(join(target, 'netlify/functions/lib/interview')), ['voice']);
+    assert.deepEqual(await readdir(join(target, 'netlify/functions/lib/interview/voice')), ['barge-in.mjs']);
     await assert.rejects(stat(join(target, 'netlify/database')));
   } finally {
     await rm(target, { recursive: true, force: true });
