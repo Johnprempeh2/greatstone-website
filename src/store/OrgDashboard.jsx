@@ -65,7 +65,7 @@ const scrollToEl = (el, block = 'center') => el && el.scrollIntoView({ behavior:
 
 export default function OrgDashboard() {
   const [session, setSession] = useState(undefined);
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(undefined); // undefined = not yet fetched (vs null = fetched, no customer row)
   useEffect(() => {
     getSession().then(s => setSession(s || null));
     const { data } = onAuth(s => setSession(s || null));
@@ -75,14 +75,18 @@ export default function OrgDashboard() {
 
   if (session === undefined) return <div className="ca-wrap"><div className="ca-center">Checking…</div></div>;
   if (!session) return <AuthGate />;
-  if (profile && !isCustomer(profile)) return (
+  if (profile === undefined) return <div className="ca-wrap"><div className="ca-center">Loading your organisation…</div></div>;
+  // Resolved with no customer row: a staff member, or someone not linked to a client company yet. Before, a null
+  // profile looked the same as still loading, so the page waited for ever (Next cutover audit, 7 Nov).
+  if (!isCustomer(profile)) return (
     <div className="ca-wrap"><div className="ca-center">
-      <h2>This is a staff account</h2>
-      <p>{session.user?.email} manages the catalogue. The organisation dashboard is for customer companies.</p>
+      <h2>{profile ? 'This is a staff account' : 'No organisation here'}</h2>
+      <p>{profile
+        ? <>{session.user?.email} manages the catalogue. The organisation dashboard is for customer companies.</>
+        : <>{session.user?.email} isn't linked to a client company yet. <a className="ca-link" href="#go/contact">Contact us</a> and we'll get you set up.</>}</p>
       <button className="gs-btn ghost" onClick={() => signOut()}>Sign out</button>
     </div></div>
   );
-  if (!profile) return <div className="ca-wrap"><div className="ca-center">Loading your organisation…</div></div>;
   return <Org profile={profile} session={session} onProfile={setProfile} />;
 }
 

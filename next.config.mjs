@@ -6,7 +6,9 @@ const config = {
   reactStrictMode: true,
   async redirects() {
     // Common guesses at old addresses that the legacy list does not carry (cutover gap 3).
-    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact']].map(([source, destination]) => ({ source, destination, permanent: true }));
+    // /proof is the Case Studies page on the Vite site, and #intel its alias for AI Market Intelligence (gap 1).
+    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/proof', '/case-studies'], ['/intel', '/ai-market-intelligence']]
+      .map(([source, destination]) => ({ source, destination, permanent: true }));
     return [...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
   },
   // GRE-1831 live design renders pages in the browser, where the sanitiser uses the browser's own

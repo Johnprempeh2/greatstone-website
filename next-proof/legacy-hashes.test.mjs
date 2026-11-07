@@ -13,7 +13,7 @@ test('old page hashes reach real routes and retain nested anchors', () => {
   assert.equal(legacyHashDestination('#service', '/', pages), '/services');
   assert.equal(legacyHashDestination('#enquire/digital-office', '/services', pages), '/contact');
   assert.equal(legacyHashDestination('#breakdown', '/method', pages), '/method');
-  assert.equal(legacyHashDestination('#go/ai-market-intelligence', '/insights', pages), '/insights');
+  assert.equal(legacyHashDestination('#go/ai-market-intelligence', '/insights', pages), '/ai-market-intelligence');
 });
 
 test('old store and briefing hashes reach their Next routes', () => {
@@ -21,9 +21,9 @@ test('old store and briefing hashes reach their Next routes', () => {
   assert.equal(legacyHashDestination('#/product/ironpdf', '/', pages), '/product/ironpdf');
   assert.equal(legacyHashDestination('#shop/ironsoftware', '/', pages), '/shop/ironsoftware');
   assert.equal(legacyHashDestination('#shop', '/', pages), '/shop');
-  assert.equal(legacyHashDestination('#intel', '/', pages), '/insights');
+  assert.equal(legacyHashDestination('#intel', '/', pages), '/ai-market-intelligence');
   assert.equal(legacyHashDestination('#intel/weekly-briefing', '/about', pages), '/insights');
-  assert.equal(legacyHashDestination('#intel', '/insights', pages), null);
+  assert.equal(legacyHashDestination('#intel', '/ai-market-intelligence', pages), null);
   assert.equal(legacyHashDestination('#go/proof', '/', ['/', '/case-studies']), '/case-studies');
 });
 
