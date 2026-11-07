@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { allowedHostOrigins, frameCsp, publicFrameAncestors } from './next-proof/frame-protocol.mjs';
 import { frameRouteDecision } from './next-proof/frame-routing.mjs';
+import { publicHeaders } from './next-proof/public-headers.mjs';
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -28,6 +29,8 @@ export function middleware(request) {
   } else {
     response.headers.set('Content-Security-Policy', publicFrameAncestors(process.env.GSAM_EDITOR_ORIGINS || undefined));
     response.headers.delete('X-Frame-Options');
+    for (const [name, value] of Object.entries(publicHeaders({ method: request.method, pathname, search: request.nextUrl.search })))
+      response.headers.set(name, value);
   }
   return response;
 }
