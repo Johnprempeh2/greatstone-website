@@ -91,6 +91,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
     ...parentEnv, PATH: `${join(cwd, 'bin')}:${process.env.PATH}`,
     NODE_ENV: 'test', NETLIFY_AUTH_TOKEN: 'test-token', NETLIFY_TEST_API_URL: url,
     GSAM_API_URL: url, GSAM_API_KEY: 'test-key', GSAM_TASK_ID: 'test-task', DEPLOY_LOG: log,
+    SHARED_LOCK_FILE: join(cwd, 'bin', 'shared-lock.json'),
   };
   function commit(path, content) {
     return mkdir(dirname(join(cwd, path)), { recursive: true })
@@ -869,4 +870,24 @@ test('a rehearsal refuses the public site, and a planted failure is ignored outs
   f.env.REHEARSE_FAIL_API = '/api/catalogue';
   const promoted = await f.run('prod', 'greatstone-home');
   assert.equal(promoted.status, 0, promoted.stderr);
+});
+
+// The deploy lock every machine sees (7 Nov): a holder on another machine stops a second deploy of the same site.
+test('a deploy held on another machine is refused; a stale or finished one is not', async (t) => {
+  const f = await fixture(t);
+  f.serve('gre3833-next-db-staging');
+  git(f.cwd, 'checkout', '-q', 'main');
+  const key = 'gre3833-next-db-staging-staging';
+  const hold = (at) => writeFile(f.env.SHARED_LOCK_FILE, JSON.stringify({ [key]: { etag: 'e1', value: { own: 'other', host: 'gsam-pc', pid: 1, identity: 'x', at } } }));
+  await hold(new Date().toISOString());
+  let result = await f.run('staging', 'gre3833-next-db-staging');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /another deploy of gre3833-next-db-staging \(staging\) is running on gsam-pc/);
+  await assert.rejects(readFile(f.log));
+  await hold(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString());
+  result = await f.run('staging', 'gre3833-next-db-staging');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Took over a stale deploy lock from gsam-pc/);
+  // released after the run, so the next deploy goes straight ahead
+  assert.deepEqual(JSON.parse(await readFile(f.env.SHARED_LOCK_FILE, 'utf8')), {});
 });
