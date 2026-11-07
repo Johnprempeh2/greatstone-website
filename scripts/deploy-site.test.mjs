@@ -891,3 +891,62 @@ test('a deploy held on another machine is refused; a stale or finished one is no
   // released after the run, so the next deploy goes straight ahead
   assert.deepEqual(JSON.parse(await readFile(f.env.SHARED_LOCK_FILE, 'utf8')), {});
 });
+
+// GSAM content releases (Next cutover, content wiring): staging's store holds what Publish wrote; Deploy promotes it.
+async function stageContent(f, number = 4) {
+  const { createHash } = await import('node:crypto');
+  const file = Buffer.from(JSON.stringify({ schema: 2, release: number, pages: [] }));
+  const sha256 = createHash('sha256').update(file).digest('hex');
+  const current = { schema: 1, release: number, key: `releases/${number}.json`, sha256, switchedAt: '2026-11-07T10:00:00.000Z', fence: 3 };
+  f.env.CONTENT_STORE_DIR = join(f.cwd, 'bin');
+  await writeFile(join(f.cwd, 'bin', 'gre3833-next-db-staging.json'), JSON.stringify({
+    current: Buffer.from(JSON.stringify(current)).toString('base64'),
+    [current.key]: file.toString('base64'),
+    'media/abc.png': Buffer.from('png').toString('base64'),
+  }));
+  return { current, line: `Content release ${number} (sha256 ${sha256.slice(0, 12)})` };
+}
+const publicStore = async (f) => { try { return JSON.parse(await readFile(join(f.cwd, 'bin', 'greatstone-home.json'), 'utf8')); } catch { return {}; } };
+
+test('Deploy promotes the staged content release with the commit, only when the card names it', async (t) => {
+  const f = await weeklyTrain(t);
+  const { current, line } = await stageContent(f);
+  let result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /naming "Content release 4/);
+  assert.deepEqual(await publicStore(f), {});
+  f.setInteractions([weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}\n${line}` } })]);
+  result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  const store = await publicStore(f);
+  assert.deepEqual(JSON.parse(Buffer.from(store.current, 'base64')), current);
+  assert.ok(store['releases/4.json'] && store['media/abc.png']);
+  assert.match(result.stdout, /Promoted Content release 4/);
+});
+
+test('a failed promote puts the public content pointer back', async (t) => {
+  const f = await weeklyTrain(t);
+  const { line } = await stageContent(f);
+  f.setInteractions([weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}\n${line}` } })]);
+  f.failing.add('/api/catalogue');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.deepEqual(f.restores, ['live-before']);
+  assert.equal((await publicStore(f)).current, undefined);
+});
+
+test('a staging content task forces the staging upload and must match staging\'s store', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.serve('gre3833-next-db-staging');
+  f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${f.base}` }]);
+  await stageContent(f);
+  f.env.GSAM_CONTENT_RELEASE = '3';
+  let result = await f.run('staging', 'gre3833-next-db-staging');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /holds content release 4, not 3/);
+  f.env.GSAM_CONTENT_RELEASE = '4';
+  result = await f.run('staging', 'gre3833-next-db-staging');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), /--message gsam-source:staging:/);
+});

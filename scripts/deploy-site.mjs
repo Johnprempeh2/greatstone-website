@@ -2,7 +2,7 @@ import { spawnSync, spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 
 const sites = new Map([
@@ -76,7 +76,7 @@ async function comments() {
 
 // The weekly release card (GRE-2641) uses the `weekly-release` key. It covers staging like a
 // staging card does, and it is the only card that can authorise the public site, for its exact SHA.
-async function stagingCardApproved(sha, exact = false) {
+async function stagingCardApproved(sha, exact = false, mustName = null) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
   const kinds = site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
@@ -86,7 +86,8 @@ async function stagingCardApproved(sha, exact = false) {
     if (card.kind !== 'request_confirmation' || card.status !== 'accepted' ||
         card.requestedResolverPolicy !== 'human_only' || card.effectiveResolverPolicy !== 'human_only' ||
         !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||
-        !card.payload?.detailsMarkdown?.includes(`Approve production deploy: ${site} ${approvedSha}`)) continue;
+        !card.payload?.detailsMarkdown?.includes(`Approve production deploy: ${site} ${approvedSha}`) ||
+        (mustName && !card.payload.detailsMarkdown.includes(mustName))) continue;
     if (approvedSha === sha) return true;
     if (exact) continue;
     const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', approvedSha, sha]);
@@ -123,19 +124,21 @@ async function cutoverCardApproved(sha) {
     card.payload?.detailsMarkdown?.includes(`Approve cut-over: greatstone-home ${sha}`));
 }
 
-async function gate(sha) {
+async function gate(sha, content = null) {
   if (mode === 'prod') {
     // The public site takes main, or the exact commit staging holds (a promote while main moved on).
     if (!onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha))
       throw new Error('production requires main (or a detached HEAD at origin main), or the commit on staging');
-    const approval = `Approve production deploy: ${site} ${sha}`;
+    // A content release rides with the commit only when the person's approval names it.
+    const named = content ? contentLine(content) : null;
+    const approval = `Approve production deploy: ${site} ${sha}${named ? ` with ${named}` : ''}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
-    const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home') ||
-      await cutoverCardApproved(sha));
+    const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home', named) ||
+      (!named && await cutoverCardApproved(sha)));
     if (!exactComment && !stagingCard)
       throw new Error(stagingSites.has(site)
         ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
-        : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}, or a person must comment exactly "${approval}" on this task`);
+        : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}${named ? ` naming "${named}"` : ''}, or a person must comment exactly "${approval}" on this task`);
     return null;
   }
   if (!/^\d+$/.test(prNumber || '')) throw new Error('preview requires a PR number');
@@ -205,6 +208,65 @@ async function inspectSite() {
   console.log(`${site}: Netlify lookup succeeded; latest guarded ready deploy: ${ready?.title || 'none'}`);
 }
 
+// GSAM content releases (Next cutover, content wiring, 7 Nov). Publish in GSAM's Website module writes page edits
+// as a release to STAGING's store (`current` plus `releases/<n>.json` and `media/*`), and staging rebuilds from it.
+// Deploy promotes that release with the commit: the files are copied to the public site's store and its `current`
+// is pointed at the same release before the upload builds, and put back if the promote fails.
+const contentStoreName = process.env.GSAM_RELEASE_BLOBS_STORE || 'gsam-content';
+
+async function contentStore(name) {
+  if (process.env.NODE_ENV === 'test' && token === 'test-token') {
+    const dir = process.env.CONTENT_STORE_DIR;
+    const path = dir ? join(dir, `${name}.json`) : null;
+    const load = async () => { try { return path ? JSON.parse(await readFile(path, 'utf8')) : {}; } catch { return {}; } };
+    const edit = async (fn) => { const all = await load(); fn(all); await writeFile(path, JSON.stringify(all)); };
+    return {
+      async get(key) { const all = await load(); return key in all ? Buffer.from(all[key], 'base64') : null; },
+      async set(key, body) { await edit((all) => { all[key] = Buffer.from(body).toString('base64'); }); },
+      async remove(key) { await edit((all) => { delete all[key]; }); },
+      async keys(prefix) { return Object.keys(await load()).filter((key) => key.startsWith(prefix)); },
+    };
+  }
+  const { getStore } = await import('@netlify/blobs');
+  const store = getStore({ name: contentStoreName, siteID: sites.get(name), token, consistency: 'strong' });
+  return {
+    async get(key) { const body = await store.get(key, { type: 'arrayBuffer' }); return body ? Buffer.from(body) : null; },
+    async set(key, body) { await store.set(key, new Blob([body])); },
+    async remove(key) { await store.delete(key); },
+    async keys(prefix) { return (await store.list({ prefix })).blobs.map((blob) => blob.key); },
+  };
+}
+
+/** The content release a site's store points at (`current`), or null. */
+async function contentRelease(name) {
+  const raw = await (await contentStore(name)).get('current');
+  return raw ? JSON.parse(raw.toString('utf8')) : null;
+}
+
+export function contentLine(current) {
+  return `Content release ${current.release} (sha256 ${String(current.sha256).slice(0, 12)})`;
+}
+
+/** Copies staging's release to the public site's store and switches its `current`; returns the undo. */
+async function promoteContent(staged) {
+  const from = await contentStore(stagingSite);
+  const to = await contentStore(site);
+  const file = await from.get(staged.key);
+  if (!file) throw new Error(`staging has no ${staged.key} for content release ${staged.release}`);
+  if (createHash('sha256').update(file).digest('hex') !== staged.sha256)
+    throw new Error(`content release ${staged.release} on staging does not match its sha256`);
+  const have = new Set(await to.keys('media/'));
+  for (const key of await from.keys('media/')) if (!have.has(key)) await to.set(key, await from.get(key));
+  await to.set(staged.key, file);
+  const previous = await to.get('current');
+  await to.set('current', Buffer.from(JSON.stringify(staged)));
+  console.log(`Promoted ${contentLine(staged)} to ${site}`);
+  return async () => {
+    if (previous) await to.set('current', previous); else await to.remove('current');
+    console.log(`Put ${site}'s content pointer back to ${previous ? JSON.parse(previous.toString('utf8')).release : 'none'}`);
+  };
+}
+
 function processIdentity(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) return null;
   const result = spawnSync('ps', ['-p', String(pid), '-o', 'lstart=', '-o', 'command='], { encoding: 'utf8' });
@@ -263,7 +325,7 @@ async function takeSharedLock(own) {
   return () => store.remove(key, own);
 }
 
-async function lockAndDeploy(sha, cwd) {
+async function lockAndDeploy(sha, cwd, content = null) {
   const dir = lockDir();
   const own = randomUUID();
   const identity = processIdentity(process.pid);
@@ -281,6 +343,8 @@ async function lockAndDeploy(sha, cwd) {
   const controller = new AbortController();
   process.on('SIGTERM', () => controller.abort());
   let releaseShared = null;
+  let undoContent = null;
+  let promoted = false;
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
     releaseShared = await takeSharedLock(own);
@@ -295,15 +359,19 @@ async function lockAndDeploy(sha, cwd) {
       before = (await netlifyApi(`/sites/${sites.get(site)}`)).published_deploy?.id;
       console.log(`Fallback: the deploy live before this one is ${before}. Restore it with: netlify api restoreSiteDeploy --data '{"site_id":"${sites.get(site)}","deploy_id":"${before}"}'`);
     }
-    console.log(`Deploying ${site} ${mode} at ${sha}`);
+    console.log(`Deploying ${site} ${mode} at ${sha}${content ? ` with ${contentLine(content)}` : ''}`);
+    // The public build bakes the content release from its own store, so the pointer moves first.
+    if (content) undoContent = await promoteContent(content);
     const child = spawn('netlify', args, { stdio: checked ? ['ignore', 'pipe', 'inherit'] : 'inherit', signal: controller.signal, cwd });
     let out = '';
     child.stdout?.on('data', (part) => { out += part; });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
     if (code !== 0) throw new Error(`netlify deploy exited ${code}`);
     if (checked) await checkLive(JSON.parse(out.slice(out.indexOf('{'))), before);
+    promoted = true;
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
   } finally {
+    if (undoContent && !promoted) await undoContent();
     await releaseShared?.().catch(() => { /* an expired lock is passed over after an hour */ });
     try { if (JSON.parse(await readFile(file, 'utf8')).own === own) await rm(file); } catch { /* newer run owns it */ }
   }
@@ -332,7 +400,7 @@ async function refreshStaging(sha) {
 // node_modules may be missing or stale, and Netlify bundles functions from whatever it
 // finds there: 9376a4e reached staging without @netlify/database and every admin-bridge
 // call gave 502 (GRE-4105).
-async function deployInstalled(sha) {
+async function deployInstalled(sha, content = null) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-deploy-'));
   try {
     const tree = join(dir, 'tree');
@@ -341,7 +409,7 @@ async function deployInstalled(sha) {
     command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
     const upload = nextSites.has(site) ? await prepareNext(tree, join(dir, 'next')) : tree;
     command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], upload);
-    await lockAndDeploy(sha, upload);
+    await lockAndDeploy(sha, upload, content);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -390,7 +458,14 @@ async function deployEditorAlias(sha) {
 
 async function main() {
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
-  if (!['preview', 'prod', 'refresh', 'staging', 'rehearse'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging|deploy:rehearse -- <allowed site> [PR number]');
+  if (mode === 'content') {
+    for (const name of [stagingSite, 'greatstone-home']) {
+      const current = await contentRelease(name);
+      console.log(`${name}: ${current ? contentLine(current) : 'no content release'}`);
+    }
+    return;
+  }
+  if (!['preview', 'prod', 'refresh', 'staging', 'rehearse'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging|deploy:rehearse -- <allowed site> [PR number], or deploy-site.mjs content');
   if ((mode === 'staging' || mode === 'rehearse') && site !== stagingSite) throw new Error(`${mode} deploys only ${stagingSite}`);
   command('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)]);
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
@@ -398,7 +473,22 @@ async function main() {
   if (mode === 'refresh') return refreshStaging(sha);
   // Staging takes main with no card; it never touches the public site or its database.
   if ((mode === 'staging' || mode === 'rehearse') && !onMain(sha)) throw new Error(`${mode} requires main (or a detached HEAD at origin main)`);
-  const fallback = mode === 'staging' || mode === 'rehearse' ? null : await gate(sha);
+  // Content waiting: the staging watch's task names the release GSAM published (GSAM_CONTENT_RELEASE), and the
+  // public promote carries what staging's store holds when the public store points elsewhere.
+  let content = null;
+  let contentChanged = false;
+  if (mode === 'staging' && process.env.GSAM_CONTENT_RELEASE) {
+    const staged = await contentRelease(stagingSite);
+    if (String(staged?.release) !== process.env.GSAM_CONTENT_RELEASE)
+      throw new Error(`staging's store holds content release ${staged?.release ?? 'none'}, not ${process.env.GSAM_CONTENT_RELEASE}`);
+    contentChanged = true;
+  }
+  if (mode === 'prod' && site === 'greatstone-home') {
+    const staged = await contentRelease(stagingSite);
+    const live = await contentRelease(site);
+    if (staged && (staged.release !== live?.release || staged.sha256 !== live?.sha256)) { content = staged; contentChanged = true; }
+  }
+  const fallback = mode === 'staging' || mode === 'rehearse' ? null : await gate(sha, content);
   const baseline = await lastDeployedCommit() || fallback;
   let files = null;
   if (baseline) {
@@ -406,9 +496,9 @@ async function main() {
     files = command('git', ['diff', '--name-only', baseline, sha]).split('\n').filter(Boolean);
   }
   // A rehearsal always uploads: it exists to exercise the promote, not to save a build.
-  if (mode !== 'rehearse' && files && (files.length === 0 || onlyNonSiteFiles(files)))
+  if (mode !== 'rehearse' && !contentChanged && files && (files.length === 0 || onlyNonSiteFiles(files)))
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
-  else await deployInstalled(sha);
+  else await deployInstalled(sha, content);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
   // The editor shows what staging holds, so the alias follows every staging upload (and the public site).
   if ((mode === 'prod' && site === 'greatstone-home') || mode === 'staging') await deployEditorAlias(sha);
