@@ -128,3 +128,16 @@ Every signed-in page renders the same component as the Vite site, so a client ac
 ## Catalogue in the Next build (#247)
 
 A CLI build cannot read the catalogue from the database, so the Next build reads the same public projection from `https://greatstoneint.com/api/catalogue` (`NEXT_CATALOGUE_API`), and `NEXT_CATALOGUE_REQUIRED` still applies. A draft build on staging had all 86 products.
+
+## Page edits reach the website (content wiring plan, 7 Nov)
+
+John's rule: greatstoneint.com moves to the Next build only when everything works, including page edits made in the GSAM Website module. The flow:
+
+1. **Publish** in the Website module, on the public site's record (`b546812d…`), writes its content release to **staging's** store (gre3833, store `gsam-content`: `current`, `releases/<n>.json`, `media/*`). GSAM starts no build there (Git builds are off). The same release checks run as before, against `https://gre3833-next-db-staging.netlify.app`: every check path and `/_release` must report the new release number (GSAM PR #1107).
+2. **Staging rebuilds automatically.** GSAM's staging watch (every 2 minutes) sees the switched release waiting and opens its one task for the website team: `GSAM_CONTENT_RELEASE=<n> npm run deploy:staging`. That flag forces the upload even when the code has not changed, and refuses if staging's store holds a different release. The Next build bakes the release from staging's store; the Publish job, still waiting, then checks staging and marks the release Live (on staging).
+3. **Staging reads published content**, like production: `GSAM_SITE_ID=b546812d-8d25-49dc-94c2-e04a5b31bde4` on gre3833 (and `GSAM_RELEASE_BLOBS_STORE` left at its default, `gsam-content`). The release has `orgId: null`, so `GSAM_ORG_ID` is not needed. This is set only after the first release is in staging's store, because a build with `GSAM_SITE_ID` set fails when `current` is missing.
+4. **John reviews staging**, then presses **Deploy these changes**. The editor's list shows both the commits and "Page edits: content release N (live has M)". The card names the commit and the line `Content release <n> (sha256 <12>)`; `deploy:prod` refuses a card (or approval comment) that does not name the content release staging holds. In the lock, before the upload builds, `deploy:prod` copies the release file and missing media from staging's store to greatstone-home's store, checks the sha256, and points greatstone-home's `current` at that release. If the upload or the live checks fail, the deploy is restored and the content pointer is put back.
+5. **Seed release 1** from today's pages so nothing changes visually: `node next-proof/scripts/plan-gsam-release-1.mjs b546812d…` (read only) shows any page where GSAM differs from what the site shows today; `--apply` saves the live content as drafts; then a person approves and presses Publish.
+6. **Rehearsal** (`npm run deploy:rehearse`, clean and with `REHEARSE_FAIL_API=/api/catalogue`) runs only inside Lintel's or Mica's runs on the PC, under the shared Blobs lock. Nothing deploys from the Mac.
+
+`node scripts/deploy-site.mjs content` prints the content release each store points at.
