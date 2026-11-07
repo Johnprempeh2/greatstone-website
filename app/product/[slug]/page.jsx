@@ -35,3 +35,8 @@ export default async function Product({ params }) {
     offers: { '@type': 'Offer', priceCurrency: item.from_price_currency || 'GBP', availability: 'https://schema.org/InStock', url: 'https://greatstoneint.com/product/' + encodeURIComponent(slug) } };
   return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><CatalogueProductClient item={item} related={related} /></SiteFrame>;
 }
+
+// Rendered on first visit, then kept like the static pages (Next cutover gap 6): no build-time list needed.
+export async function generateStaticParams() {
+  return [];
+}

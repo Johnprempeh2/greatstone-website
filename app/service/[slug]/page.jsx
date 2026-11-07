@@ -28,3 +28,8 @@ export default async function Service({ params }) {
   const { release, catalogue, path, slug } = await serviceFor(params);
   return <SiteFrame release={release}><ServiceDetailClient slug={slug} catalogue={catalogue} listingPath={path} /></SiteFrame>;
 }
+
+// Rendered on first visit, then kept like the static pages (Next cutover gap 6): no build-time list needed.
+export async function generateStaticParams() {
+  return [];
+}
