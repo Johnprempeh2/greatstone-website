@@ -1,0 +1,743 @@
+{
+ "version": 1,
+ "date": "2026-11-04",
+ "headline": "Apple opens Siri AI to all developers; a Postman update quietly added plugins to Claude Code and Codex",
+ "boards": [
+  {
+   "board": "ai_systems",
+   "date": "2026-11-04",
+   "comparedTo": "2026-10-28",
+   "entries": [
+    {
+     "rank": 1,
+     "name": "Le Chat / Vibe",
+     "maker": "Mistral",
+     "score": 100,
+     "url": "https://mistral.ai/pricing/",
+     "domain": "mistral.ai",
+     "verdict": "4 Nov: 100 unchanged. Pricing, Large 4 docs and weights post reopened today; Mistral published no new news or changelog entry in the window, so no component moves.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 2,
+     "name": "Perplexity",
+     "maker": "Perplexity",
+     "score": 100,
+     "url": "https://www.perplexity.ai/hub/blog/perplexity-computer-now-runs-fully-local-on-mac",
+     "domain": "perplexity.ai",
+     "verdict": "4 Nov: 100 unchanged. BrowseSafe++ (2 Nov) and Computer for e-commerce (3 Nov) add security research and a retail package; every component was already at 20.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 3,
+     "name": "Kimi",
+     "maker": "Moonshot AI",
+     "score": 90,
+     "url": "https://www.kimi.ai/blog/kimi-k3-1-pro",
+     "domain": "kimi.com",
+     "verdict": "4 Nov: 90 unchanged. Weights promised by 4 Nov were still absent from Moonshot's Hugging Face page at 06:00 UTC, so deployment stays at 10. Recheck tomorrow.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 4,
+     "name": "Claude",
+     "maker": "Anthropic",
+     "score": 90,
+     "url": "https://claude.com/pricing",
+     "domain": "anthropic.com",
+     "verdict": "4 Nov: 90 unchanged. FlashProve (2 Nov) is open research code, not a product control. Pricing reopened today; deployment stays hosted only.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 5,
+     "name": "Gemini",
+     "maker": "Google",
+     "score": 90,
+     "url": "https://docs.cloud.google.com/gemini/enterprise/docs",
+     "domain": "google.com",
+     "verdict": "4 Nov: 90 unchanged. Enterprise docs and quotas reopened today. Education defaults (3 Nov) apply to K-12 accounts, not enterprise controls; deployment stays hosted only.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 6,
+     "name": "ChatGPT",
+     "maker": "OpenAI",
+     "score": 90,
+     "url": "https://chatgpt.com/business/",
+     "domain": "openai.com",
+     "verdict": "4 Nov: 90 unchanged. Business pages reopened today. Bug bounty and grid news (2 Nov) change no product component; deployment stays hosted only.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 7,
+     "name": "Grok",
+     "maker": "xAI",
+     "score": 90,
+     "url": "https://x.ai/grok/business",
+     "domain": "x.ai",
+     "verdict": "4 Nov: 90 unchanged. Business page reopened today; no new xAI product release in the window. Deployment stays hosted only.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 8,
+     "name": "Copilot",
+     "maker": "Microsoft",
+     "score": 90,
+     "url": "https://www.microsoft.com/en-us/copilot/pricing/business",
+     "domain": "microsoft.com",
+     "verdict": "4 Nov: 90 unchanged. Today's GitHub Copilot updates are a different product from Microsoft 365 Copilot; business pricing reopened with no change.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 9,
+     "name": "DeepSeek",
+     "maker": "DeepSeek",
+     "score": 80,
+     "url": "https://api-docs.deepseek.com/news/news261017/",
+     "domain": "deepseek.com",
+     "verdict": "4 Nov: 80 unchanged. Docs and pricing reopened today. Harness Creator Mode is reported only in press, with no DeepSeek page; member governance still unconfirmed.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 10,
+     "name": "Qwen",
+     "maker": "Alibaba",
+     "score": 80,
+     "url": "https://www.alibabacloud.com/help/en/model-studio/permission-management-overview",
+     "domain": "qwen.ai",
+     "verdict": "4 Nov: 80 unchanged. Model Studio release notes show nothing after 27 Oct and Qwen4 is still only rumoured, so Max 0902 stays the flagship.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 11,
+     "name": "Meta AI",
+     "maker": "Meta",
+     "score": 50,
+     "url": "https://about.fb.com/news/2026/10/introducing-muse-wonder-models/",
+     "domain": "meta.com",
+     "verdict": "4 Nov: 50 unchanged. No Meta AI release in the window; Muse Wonder Full tariff and central member controls are still unpublished.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    }
+   ]
+  },
+  {
+   "board": "frontier_models",
+   "date": "2026-11-04",
+   "comparedTo": "2026-10-28",
+   "entries": [
+    {
+     "rank": 1,
+     "name": "Gemini",
+     "maker": "Google",
+     "flagship": "Gemini 4 Carbon (high)",
+     "score": 60,
+     "url": "https://artificialanalysis.ai/models/gemini-4-carbon",
+     "domain": "google.com",
+     "verdict": "4 Nov: AA v5.0.1 shows Carbon high at 60, up from 59. AA regraded all models on CritPt v2; a method change, not a model gain. Speed 88.2 tokens/s.",
+     "movement": {
+      "rankDelta": 3,
+      "scoreDelta": 10
+     },
+     "specs": {
+      "speed": 88.2,
+      "context": "1M",
+      "priceIn": 4,
+      "priceOut": 20
+     }
+    },
+    {
+     "rank": 2,
+     "name": "Claude",
+     "maker": "Anthropic",
+     "flagship": "Claude Opus 5.5 (max, default fallback)",
+     "score": 59,
+     "url": "https://artificialanalysis.ai/models/claude-opus-5-5",
+     "domain": "anthropic.com",
+     "verdict": "4 Nov: AA v5.0.1 shows Opus 5.5 max at 59, up from 58, after the CritPt v2 regrade of all models. No model change. Speed 94.6 tokens/s.",
+     "movement": {
+      "rankDelta": -1,
+      "scoreDelta": 1
+     },
+     "specs": {
+      "speed": 94.6,
+      "context": "1M",
+      "priceIn": 4,
+      "priceOut": 20
+     }
+    },
+    {
+     "rank": 3,
+     "name": "ChatGPT",
+     "maker": "OpenAI",
+     "flagship": "GPT-6 Astra (max)",
+     "score": 57,
+     "url": "https://artificialanalysis.ai/models/gpt-6-astra",
+     "domain": "openai.com",
+     "verdict": "4 Nov: Astra max holds 57 after the v5.0.1 regrade. Published speed 67.1 tokens/s (71.6 yesterday); price and 1.05M official context unchanged.",
+     "movement": {
+      "rankDelta": -1,
+      "scoreDelta": 0
+     },
+     "specs": {
+      "speed": 67.1,
+      "context": "1.05M",
+      "priceIn": 10,
+      "priceOut": 50
+     }
+    },
+    {
+     "rank": 4,
+     "name": "Meta AI",
+     "maker": "Meta",
+     "flagship": "Muse Wonder Full (max)",
+     "score": 50,
+     "url": "https://artificialanalysis.ai/models/muse-wonder-full",
+     "domain": "meta.com",
+     "verdict": "4 Nov: Muse Wonder Full max holds 50 after the v5.0.1 regrade. Price and speed still unpublished, so both stay null.",
+     "movement": {
+      "rankDelta": -1,
+      "scoreDelta": 0
+     },
+     "specs": {
+      "context": "1M"
+     }
+    },
+    {
+     "rank": 5,
+     "name": "Kimi",
+     "maker": "Moonshot AI",
+     "flagship": "Kimi K3.1 Pro (AA reasoning configuration)",
+     "score": 46,
+     "url": "https://artificialanalysis.ai/models/kimi-k3-1-pro",
+     "domain": "kimi.com",
+     "verdict": "4 Nov: K3.1 Pro holds 46 after the v5.0.1 regrade. Speed 30.6 tokens/s. Promised weights were not on Hugging Face at 06:00 UTC.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     },
+     "specs": {
+      "speed": 30.6,
+      "context": "1M",
+      "priceIn": 2,
+      "priceOut": 10
+     }
+    },
+    {
+     "rank": 6,
+     "name": "Grok",
+     "maker": "xAI",
+     "flagship": "Grok 4.7 (xhigh)",
+     "score": 35,
+     "url": "https://artificialanalysis.ai/models/grok-4-7",
+     "domain": "x.ai",
+     "verdict": "4 Nov: Grok 4.7 xhigh holds 35 on v5.0.1. Speed 75.6 tokens/s (80.5 yesterday), an observation change, not a performance result.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 1
+     },
+     "specs": {
+      "speed": 75.6,
+      "context": "500k",
+      "priceIn": 2,
+      "priceOut": 6
+     }
+    },
+    {
+     "rank": 7,
+     "name": "Qwen",
+     "maker": "Alibaba",
+     "flagship": "Qwen3.8 Max (0902)",
+     "score": 34,
+     "url": "https://artificialanalysis.ai/models/qwen3-8-max",
+     "domain": "qwen.ai",
+     "verdict": "4 Nov: Qwen3.8 Max holds 34 after the v5.0.1 regrade. Speed 37.8 tokens/s. No Qwen4 release yet.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     },
+     "specs": {
+      "speed": 37.8,
+      "context": "984k",
+      "priceIn": 2,
+      "priceOut": 6
+     }
+    },
+    {
+     "rank": 8,
+     "name": "DeepSeek",
+     "maker": "DeepSeek",
+     "flagship": "DeepSeek V4.1 Flash 1017 (max)",
+     "score": 33,
+     "url": "https://artificialanalysis.ai/models/deepseek-v4-1-flash-1017",
+     "domain": "deepseek.com",
+     "verdict": "4 Nov: AA v5.0.1 shows V4.1 Flash 1017 max at 33, up from 32, after the CritPt v2 regrade. No model change. Speed 164.7 tokens/s.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 1
+     },
+     "specs": {
+      "speed": 164.7,
+      "context": "1M",
+      "priceIn": 0.3,
+      "priceOut": 1.2
+     }
+    },
+    {
+     "rank": 9,
+     "name": "Le Chat / Vibe",
+     "maker": "Mistral",
+     "flagship": "Mistral Large 4 (high)",
+     "score": 26,
+     "url": "https://artificialanalysis.ai/models/mistral-large-4",
+     "domain": "mistral.ai",
+     "verdict": "4 Nov: Large 4 high holds 26 after the v5.0.1 regrade. AA still shows speed as N/A, so speed stays null; price unchanged.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 1
+     },
+     "specs": {
+      "context": "1M",
+      "priceIn": 0.7,
+      "priceOut": 2.1
+     }
+    }
+   ]
+  },
+  {
+   "board": "tools_agents",
+   "date": "2026-11-04",
+   "comparedTo": "2026-10-28",
+   "entries": [
+    {
+     "rank": 1,
+     "name": "OpenHands",
+     "maker": "OpenHands",
+     "score": 100,
+     "url": "https://www.openhands.dev/pricing",
+     "domain": "openhands.dev",
+     "verdict": "4 Nov: 100 unchanged. v1.35.0 (3 Nov) is a minor interface release; cloud docs and pricing reopened today show the same controls and session cap.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 2,
+     "name": "Kilo Code",
+     "maker": "Kilo",
+     "score": 100,
+     "url": "https://kilo.ai/pricing",
+     "domain": "kilo.ai",
+     "verdict": "4 Nov: 100 unchanged. Pricing and leaderboard reopened today; latest builds are 28 Oct prereleases, so no component moves.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 3,
+     "name": "Cursor",
+     "maker": "Anysphere",
+     "score": 100,
+     "url": "https://cursor.com/pricing",
+     "domain": "cursor.com",
+     "verdict": "4 Nov: 100 unchanged. No changelog entry after 20 Oct; docs, pricing and evals reopened today with the same controls and rates.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 4,
+     "name": "Devin",
+     "maker": "Cognition",
+     "score": 100,
+     "url": "https://devin.ai/pricing",
+     "domain": "devin.ai",
+     "verdict": "4 Nov: 100 unchanged. Hierarchical budgets (2 Nov) strengthen spend controls, but governance and price clarity were already at 20.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 5,
+     "name": "Manus",
+     "maker": "Manus",
+     "score": 100,
+     "url": "https://manus.im/blog/introducing-manus-2-0",
+     "domain": "manus.im",
+     "verdict": "4 Nov: 100 unchanged. Team plan, API docs and pricing reopened today; no Manus release in the window.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 6,
+     "name": "Replit Agent",
+     "maker": "Replit",
+     "score": 100,
+     "url": "https://replit.com/blog/bring-your-own-cloud",
+     "domain": "replit.com",
+     "verdict": "4 Nov: 100 unchanged. Enterprise and billing pages reopened today; BYOC is still private preview and remains qualified.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 7,
+     "name": "Cline",
+     "maker": "Cline",
+     "score": 90,
+     "url": "https://cline.bot/pricing",
+     "domain": "cline.bot",
+     "verdict": "4 Nov: 90 unchanged. No release in the window; external inference still lacks one complete published cost, so price clarity stays at 10.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 8,
+     "name": "Hermes Agent",
+     "maker": "Nous Research",
+     "score": 90,
+     "url": "https://hermes-agent.nousresearch.com/",
+     "domain": "nousresearch.com",
+     "verdict": "4 Nov: 90 unchanged. v0.22.6 (2 Nov) adds keychain vault storage and skill locks, but no central member administration, so governance stays at 10.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 9,
+     "name": "Lovable",
+     "maker": "Lovable",
+     "score": 90,
+     "url": "https://lovable.dev/pricing",
+     "domain": "lovable.dev",
+     "verdict": "4 Nov: 90 unchanged. Pricing and credits docs reopened today; authoring stays hosted only, so deployment stays at 10.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 10,
+     "name": "OpenClaw",
+     "maker": "OpenClaw",
+     "score": 80,
+     "url": "https://docs.openclaw.ai/start/why-openclaw/identity-and-roles",
+     "domain": "openclaw.ai",
+     "verdict": "4 Nov: 80 unchanged. Roles docs reopened today; the only November build is 2026.11.5-beta.1, and betas are not scored.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    },
+    {
+     "rank": 11,
+     "name": "Bernstein",
+     "maker": "Bernstein",
+     "score": 70,
+     "url": "https://bernstein.run/",
+     "domain": "bernstein.run",
+     "verdict": "4 Nov: 70 unchanged. Site and benchmark docs reopened today; preview benchmark is still simulated and inference costs vary.",
+     "movement": {
+      "rankDelta": 0,
+      "scoreDelta": 0
+     }
+    }
+   ]
+  }
+ ],
+ "news": [
+  {
+   "headline": "Apple opens Siri AI to every developer in the iOS 27.3 betas",
+   "url": "https://developer.apple.com/news/?id=gdk2umrf",
+   "sourceName": "Apple Developer",
+   "domain": "apple.com",
+   "tag": "Apple · Platforms",
+   "date": "2026-11-03",
+   "lead": true,
+   "verdict": "Siri AI becomes a developer platform today, but only as a preview: App Store submission opens in the spring and Apple has not yet published the terms.",
+   "points": [
+    "A Developer Preview in the iOS, iPadOS, macOS and visionOS 27.3 betas lets any developer connect an app to Siri AI.",
+    "Apps plug in through App Intents; new skills let Siri AI combine several app actions into one experience.",
+    "App Store submission opens in the spring, and Apple says terms and usage policies will follow."
+   ],
+   "image": {
+    "src": "/assets/intel/news/7c2f585f4a14a8cf.webp",
+    "alt": "Apple opens Siri AI to every developer in the iOS 27.3 betas"
+   }
+  },
+  {
+   "headline": "Postman desktop installed Claude Code and Codex plugins without asking, issue thread shows",
+   "url": "https://github.com/postmanlabs/postman-app-support/issues/14370",
+   "sourceName": "GitHub (postmanlabs)",
+   "domain": "postman.com",
+   "tag": "Postman · Security",
+   "date": "2026-11-03",
+   "verdict": "A desktop app update can change your coding agents' setup; the report shows Postman adding plugins and a session hook to Claude Code and Codex configs.",
+   "points": [
+    "The report says the installer tries to approve its own Codex hook by writing a trusted hash into the hook state.",
+    "A user log on 3 November shows an existing install upgrading and then adding the CLI plus Claude Code and Codex plugins.",
+    "A reply for Postman says the plugins are bundled for easier setup and that it will make the opt-in clearer."
+   ],
+   "image": {
+    "src": "/assets/intel/news/210b26f029f33a3e.webp",
+    "alt": "Postman desktop installed Claude Code and Codex plugins without asking, issue thread shows"
+   }
+  },
+  {
+   "headline": "Anthropic publishes FlashProve, open-source proofs of which model produced an output",
+   "url": "https://www.anthropic.com/research/provable-inference",
+   "sourceName": "Anthropic",
+   "domain": "anthropic.com",
+   "tag": "Anthropic · Research",
+   "date": "2026-11-02",
+   "verdict": "Proving which model served a response is now possible in research code, but at about 70 to 95 times the GPU time, so it is not a product feature yet.",
+   "points": [
+    "On a 400B mixture-of-experts model, one H100 generates proofs at about 110 tokens per second, with about 19 MB per 1,024-token request.",
+    "The proof costs about 70 to 95 times the GPU time of running the model on vLLM.",
+    "Five artefacts, including a prover and verifiers in C++ and Lean, are released under Apache 2.0."
+   ],
+   "image": {
+    "src": "/assets/intel/news/43862ef771dfba65.webp",
+    "alt": "Anthropic publishes FlashProve, open-source proofs of which model produced an output"
+   }
+  },
+  {
+   "headline": "Perplexity releases BrowseSafe++, an open benchmark and small detectors for prompt injection in web pages",
+   "url": "https://www.perplexity.ai/hub/blog/browsesafe-plus-plus",
+   "sourceName": "Perplexity",
+   "domain": "perplexity.ai",
+   "tag": "Perplexity · Security",
+   "date": "2026-11-02",
+   "verdict": "A cheap, open prompt-injection screen for browsing agents now exists, built from real attacks Perplexity's Comet browser saw over a year.",
+   "points": [
+    "The benchmark has 38,675 attacked and clean page pairs, drawn from 1.15 million injections Comet flagged.",
+    "BrowseSafe-Guard is a pair of 0.8B detectors; Perplexity says screening costs US$0.18 per 1,000 pages.",
+    "24.4% of injections were in a different language from the surrounding page."
+   ],
+   "image": {
+    "src": "/assets/intel/news/1d5d37e09c4bcd89.webp",
+    "alt": "Perplexity releases BrowseSafe++, an open benchmark and small detectors for prompt injection in web pages"
+   }
+  },
+  {
+   "headline": "Apple's annual report warns AI agents may act without authorisation",
+   "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm",
+   "sourceName": "SEC EDGAR",
+   "domain": "apple.com",
+   "tag": "Apple · Risk",
+   "date": "2026-11-03",
+   "verdict": "Apple now tells investors that AI agents can exceed permissions and resist instructions, and that its control over third-party agents may be limited.",
+   "points": [
+    "The 10-K says agents can act autonomously, including on systems they may not be authorised to access.",
+    "It lists exceeding permissions, defying directions and circumventing security measures among the risks.",
+    "It says Apple's ability to oversee and control third-party AI agents may be limited."
+   ]
+  },
+  {
+   "headline": "OpenAI more than quadruples bug bounty midpoints, up to US$172,000 with bonuses",
+   "url": "https://openai.com/index/rewarding-defenders-with-bigger-bug-bounties/",
+   "sourceName": "OpenAI",
+   "domain": "openai.com",
+   "tag": "OpenAI · Security",
+   "date": "2026-11-02",
+   "verdict": "OpenAI is paying far more for security findings, which signals how much attack pressure AI platforms now expect.",
+   "points": [
+    "Midpoints for medium, high and critical rewards rise more than fourfold on average.",
+    "A critical flaw in ChatGPT, Codex or the API Platform now earns up to US$30,000; exceptional findings up to US$172,000 with bonuses.",
+    "OpenAI will top up bounties awarded in the 30 days before the announcement."
+   ]
+  },
+  {
+   "headline": "GitHub's Copilot usage API now separates local BYOK and enterprise custom-model use",
+   "url": "https://github.blog/changelog/2026-11-03-byok-and-enterprise-custom-models-in-the-copilot-usage-api/",
+   "sourceName": "GitHub Changelog",
+   "domain": "github.com",
+   "tag": "GitHub · Copilot",
+   "date": "2026-11-03",
+   "verdict": "Admins can now see how much Copilot work runs on their own keys or local models, which closes a gap in cost and model reporting.",
+   "points": [
+    "New fields include used_local_byok, totals_by_local_byok and is_custom_enterprise_model.",
+    "Local BYOK covers Ollama, Foundry Local, LM Studio and llama-server.",
+    "The data appears in the 1-day and 28-day usage reports."
+   ],
+   "image": {
+    "src": "/assets/intel/news/fea0672800e8769b.webp",
+    "alt": "GitHub's Copilot usage API now separates local BYOK and enterprise custom-model use"
+   }
+  },
+  {
+   "headline": "GitHub Copilot arrives in JetBrains Air through the Agent Client Protocol",
+   "url": "https://github.blog/changelog/2026-11-03-github-copilot-is-now-available-in-jetbrains-air/",
+   "sourceName": "GitHub Changelog",
+   "domain": "github.com",
+   "tag": "GitHub · Agents",
+   "date": "2026-11-03",
+   "verdict": "Another IDE now runs Copilot agents through the open Agent Client Protocol, and cloud tasks use isolated, stateless machines billed to the Copilot plan.",
+   "points": [
+    "The integration uses ACP and supports tasks in the JetBrains IDE or in the cloud.",
+    "Cloud tasks use the Copilot plan rather than JetBrains AI credits.",
+    "Each cloud task runs in a Docker container on a fresh VM, with all traffic through a proxy."
+   ],
+   "image": {
+    "src": "/assets/intel/news/74ce49b66593e769.webp",
+    "alt": "GitHub Copilot arrives in JetBrains Air through the Agent Client Protocol"
+   }
+  },
+  {
+   "headline": "Devin adds hierarchical budgets for Enterprise teams",
+   "url": "https://devin.ai/blog/hierarchical-budgets",
+   "sourceName": "Devin",
+   "domain": "devin.ai",
+   "tag": "Cognition · Agents",
+   "date": "2026-11-02",
+   "verdict": "Devin Enterprise can now split agent spend into a tree of shared pools, so department heads control their own limits.",
+   "points": [
+    "Budgets form a tree of shared ACU pools, with child budgets up to three levels deep.",
+    "Department heads can set limits on their own sub-budgets.",
+    "It is live under Enterprise Settings, Usage Policies, Budgets."
+   ],
+   "image": {
+    "src": "/assets/intel/news/82eab9ff98175301.webp",
+    "alt": "Devin adds hierarchical budgets for Enterprise teams"
+   }
+  },
+  {
+   "headline": "Google turns AI off by default for K-12 student accounts and brings Guided Learning to Classroom",
+   "url": "https://blog.google/products-and-platforms/products/education/ai-learning-era-updates-2026/",
+   "sourceName": "Google",
+   "domain": "google.com",
+   "tag": "Google · Education",
+   "date": "2026-11-03",
+   "verdict": "Google is moving schools to an opt-in model for student AI, a sign that default-off is becoming the expected setting for young users.",
+   "points": [
+    "Guided Learning is globally available in Google Classroom from today.",
+    "Gemini, Gemini in Classroom and Google Search AI will be off for K-12 student accounts until administrators turn them on.",
+    "A Search pilot starts later this month in selected US schools."
+   ],
+   "image": {
+    "src": "/assets/intel/news/8bc47e2b314460fe.webp",
+    "alt": "Google turns AI off by default for K-12 student accounts and brings Guided Learning to Classroom"
+   }
+  },
+  {
+   "headline": "Google DeepMind offers 10,000 scientists free top-tier Antigravity for six months",
+   "url": "https://deepmind.google/blog/agentic-cheminformatics-with-google-antigravity/",
+   "sourceName": "Google DeepMind",
+   "domain": "deepmind.google",
+   "tag": "Google DeepMind · Science",
+   "date": "2026-11-03",
+   "verdict": "DeepMind is packaging chemistry skills for its agent IDE and giving free access to win scientific users.",
+   "points": [
+    "New Cheminformatics Skills in Antigravity are grounded in RDKit, with connectors to ChEMBL and PubChem.",
+    "DeepMind says a drug-discovery workflow that takes multiple days per iteration is accelerated.",
+    "10,000 scientists get the highest usage tier free for six months, subject to eligibility and capacity."
+   ],
+   "image": {
+    "src": "/assets/intel/news/da38bc697163569b.webp",
+    "alt": "Google DeepMind offers 10,000 scientists free top-tier Antigravity for six months"
+   }
+  },
+  {
+   "headline": "Perplexity launches Computer for e-commerce, with Shopify, Meta and Klaviyo",
+   "url": "https://www.perplexity.ai/hub/blog/computer-for-e-commerce-is-built-for-brand-growth",
+   "sourceName": "Perplexity",
+   "domain": "perplexity.ai",
+   "tag": "Perplexity · Agents",
+   "date": "2026-11-03",
+   "verdict": "Perplexity is packaging its agent for online shops, with owner approval before actions; useful to show small retail clients, but pricing is not on the page.",
+   "points": [
+    "It analyses Shopify sales, builds product pages and creates ad and email campaigns.",
+    "It connects to Shopify, Meta and Klaviyo, and the owner approves actions before they run.",
+    "Businesses can create skills with their design guidelines and brand voice."
+   ],
+   "image": {
+    "src": "/assets/intel/news/a51127d8fb03d8c4.webp",
+    "alt": "Perplexity launches Computer for e-commerce, with Shopify, Meta and Klaviyo"
+   }
+  }
+ ],
+ "movers": [
+  {
+   "name": "Gemini 4 Carbon (high)",
+   "tag": "Google",
+   "note": "AA index 59 to 60 after the v5.0.1 CritPt v2 regrade of all models; a method change, not a new model.",
+   "url": "https://artificialanalysis.ai/models/gemini-4-carbon",
+   "domain": "google.com",
+   "direction": "up"
+  },
+  {
+   "name": "Claude Opus 5.5 (max)",
+   "tag": "Anthropic",
+   "note": "AA index 58 to 59 after the same v5.0.1 regrade; no model change.",
+   "url": "https://artificialanalysis.ai/models/claude-opus-5-5",
+   "domain": "anthropic.com",
+   "direction": "up"
+  },
+  {
+   "name": "DeepSeek V4.1 Flash 1017 (max)",
+   "tag": "DeepSeek",
+   "note": "AA index 32 to 33 after the v5.0.1 regrade.",
+   "url": "https://artificialanalysis.ai/models/deepseek-v4-1-flash-1017",
+   "domain": "deepseek.com",
+   "direction": "up"
+  },
+  {
+   "name": "GPT-6 Astra (max)",
+   "tag": "OpenAI",
+   "note": "Published output speed 71.6 to 67.1 tokens/s; index holds at 57.",
+   "url": "https://artificialanalysis.ai/models/gpt-6-astra",
+   "domain": "openai.com",
+   "direction": "down"
+  },
+  {
+   "name": "Grok 4.7 (xhigh)",
+   "tag": "xAI",
+   "note": "Published output speed 80.5 to 75.6 tokens/s; index holds at 35.",
+   "url": "https://artificialanalysis.ai/models/grok-4-7",
+   "domain": "x.ai",
+   "direction": "down"
+  }
+ ]
+}

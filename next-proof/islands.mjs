@@ -52,6 +52,9 @@ export const ISLANDS = {
       'data-speed': enumRule('speed', ['still', 'slow', 'normal']),
       'data-colour': enumRule('colour', COLOURS),
     } },
+  // GRE-1861: the AI intelligence dashboard: overview, leaderboards, compare and news from the public snapshot.
+  'intel-dashboard': { component: 'IntelDashboard', label: 'AI intelligence dashboard', placeholder: 'The AI intelligence dashboard: overview, leaderboards, compare and news.', height: 1400,
+    attributes: { 'data-tab': enumRule('tab', ['overview', 'leaderboards', 'compare', 'news']) } },
   // GRE-3778: the frozen landing (Two Doors, v15) renders its published blocks unchanged.
   'two-doors-landing': { component: 'TwoDoorsLanding', label: 'Two Doors landing', placeholder: 'The frozen Two Doors landing: doors and hero.', height: 900, attributes: {} },
 };
