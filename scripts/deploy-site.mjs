@@ -239,7 +239,7 @@ async function lockAndDeploy(sha, cwd) {
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
-    // The public site is checked before it is published: an unpublished upload built with production settings.
+    // The public site (and a rehearsal) is checked live straight after a production upload, and restored on failure.
     const checked = (channel === 'prod' && site === 'greatstone-home') || mode === 'rehearse';
     // Staging's own production URL is the staging site, so it is a --prod upload to that site.
     if (channel === 'prod' || channel === 'staging') args.push('--prod');
