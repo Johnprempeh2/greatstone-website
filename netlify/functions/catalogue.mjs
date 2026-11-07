@@ -3,7 +3,8 @@ import { asCatalogueAnon, catalogueRead } from './lib/catalogue-store.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
-const SLUG = /^[a-z0-9][a-z0-9+._-]{0,159}$/;
+// Real slugs can carry capitals (devexpress-winForms), so a detail read must accept them (Next cutover).
+const SLUG = /^[A-Za-z0-9][A-Za-z0-9+._-]{0,159}$/;
 const OPS = new Set(['vendors', 'categories', 'list', 'detail', 'related']);
 
 export function makeCatalogueHandler({ pool = getPool, read = catalogueRead, log = console.error } = {}) {

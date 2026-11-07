@@ -18,8 +18,9 @@ const sites = new Map([
 const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
 const stagingSite = 'gre3833-next-db-staging';
 const nextSites = new Set([stagingSite]);
-// The CLI build cannot read the catalogue export as anon, so the staging Next build uses the checked-in fixture.
-const catalogueFixture = 'next-proof/fixtures/public-catalogue-2026-10-22.json';
+// The CLI build cannot read the catalogue as anon, so the Next build reads the live public catalogue over HTTP
+// (the same projection /api/catalogue serves, public data only), and the release build still requires it.
+const catalogueApi = 'https://greatstoneint.com/api/catalogue';
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
@@ -265,8 +266,8 @@ async function prepareNext(tree, target) {
   command(process.execPath, ['next-proof/scripts/prepare-netlify.mjs', target], tree);
   const config = join(target, 'netlify.toml');
   const toml = await readFile(config, 'utf8');
-  if (!toml.includes('NEXT_CATALOGUE_REQUIRED = "1"')) throw new Error('next-proof/netlify.toml has no NEXT_CATALOGUE_REQUIRED line to replace');
-  await writeFile(config, toml.replace('NEXT_CATALOGUE_REQUIRED = "1"', `NEXT_CATALOGUE_FIXTURE = "${catalogueFixture}"`));
+  if (!toml.includes('NEXT_CATALOGUE_REQUIRED = "1"')) throw new Error('next-proof/netlify.toml has no NEXT_CATALOGUE_REQUIRED line to extend');
+  await writeFile(config, toml.replace('NEXT_CATALOGUE_REQUIRED = "1"', `NEXT_CATALOGUE_REQUIRED = "1"\n  NEXT_CATALOGUE_API = "${catalogueApi}"`));
   return target;
 }
 
