@@ -5,7 +5,9 @@ import { nextLegacyRedirects } from './next-proof/legacy-routes.mjs';
 const config = {
   reactStrictMode: true,
   async redirects() {
-    return nextLegacyRedirects(undefined, release.pages.map((page) => page.path));
+    // Common guesses at old addresses that the legacy list does not carry (cutover gap 3).
+    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact']].map(([source, destination]) => ({ source, destination, permanent: true }));
+    return [...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
   },
   // GRE-1831 live design renders pages in the browser, where the sanitiser uses the browser's own
   // inert parser: happy-dom (Node only) is not bundled for the client.
