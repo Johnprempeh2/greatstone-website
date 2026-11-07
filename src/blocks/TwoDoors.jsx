@@ -4,6 +4,7 @@ import { track } from '../lib/analytics.js';
 import { MediaField } from '../cms/MediaField.jsx';
 import { safeHref, safeMailto } from '../lib/safe-url.js';
 import EditableText from './EditableText.jsx';
+import { attachBehaviour } from '../../app/html-behaviours.mjs';
 
 const editText = (props, field, value, as = 'span', className, arrayField, index) => <EditableText editing={props.puck?.isEditing} id={props.id} field={field} value={value} as={as} className={className} arrayField={arrayField} index={index} singleLine={as !== 'p'} />;
 
@@ -34,7 +35,26 @@ const publicClientMarks = [
   { name: 'D.', image: '/assets/two-doors/clients/light/d.png', colour: '/assets/two-doors/clients/01.png' },
   { name: 'Shawbrook Bank', image: '/assets/two-doors/clients/light/shawbrook.png', colour: '/assets/two-doors/clients/shawbrook.svg' },
 ];
-const doorPanels = (node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
+// GRE-4310: the client marks as the site carousel (app/html-behaviours.mjs), four tiles to a slide.
+const clientSlides = publicClientMarks.reduce((slides, mark, i) => (i % 4 ? slides[slides.length - 1].push(mark) : slides.push([mark]), slides), []);
+
+function ClientCarousel() {
+  const root = useRef(null);
+  useEffect(() => attachBehaviour(root.current, window), []);
+  return <section ref={root} className="td-public-clients" data-behaviour="carousel" data-autoplay="6000" aria-roledescription="carousel" aria-label="Clients">
+    <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2>Organisations we have worked with</h2></div>
+    <div className="td-clients-track" data-carousel-track>{clientSlides.map((slide, i) => <ul className="td-clients-slide" key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${clientSlides.length}`}>
+      {slide.map(({ name, image }) => <li key={name}><img src={image} alt={name} loading="lazy" width="240" height="120" /></li>)}
+    </ul>)}</div>
+    <div className="td-clients-controls">
+      <button type="button" data-carousel-pause aria-pressed="false" aria-label="Pause clients"><span aria-hidden="true" /></button>
+      <span className="td-dots">{clientSlides.map((slide, i) => <button key={i} type="button" data-carousel-dot={i} aria-label={`Show clients ${i + 1} of ${clientSlides.length}`} />)}</span>
+      <button type="button" data-carousel-prev aria-label="Previous clients">←</button>
+      <button type="button" data-carousel-next aria-label="Next clients">→</button>
+    </div>
+  </section>;
+}
+const doorPanels =(node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
 const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - node.clientWidth, panel.offsetLeft - (node.clientWidth - panel.offsetWidth) / 2));
 
 function Carousel({ items, label, render, enabled = true }) {
@@ -173,12 +193,7 @@ export function TwoDoorsStory(props) {
   const approvedNumbers = numbers.filter((number) => number?.value && number?.label && number?.verified);
   return <div className="td-segment td-story-segment">
     <TideTail enabled={tide} />
-    <section className="td-public-clients" aria-labelledby="td-public-clients-heading">
-      <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2 id="td-public-clients-heading">Organisations we have worked with</h2></div>
-      <ul className="td-public-clients-grid">{publicClientMarks.map(({ name, image }) => <li key={name}>
-        <img src={image} alt={name} loading="lazy" width="240" height="120" />
-      </li>)}</ul>
-    </section>
+    <ClientCarousel />
     <section className="td-story" id="about"><div>{(REVIEW_CONTENT || !copy.storyKicker?.startsWith('Copy placeholder')) && editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
     {approvedNumbers.length ? <div className="td-review-strip td-numbers" aria-label={copy.numbersLabel}>{approvedNumbers.map((item, i) => <div key={i}><b>{item.value}</b><span>{item.label}</span></div>)}</div> : REVIEW_CONTENT && <div className="td-review-strip" role="note"><b>{copy.draftNumbersHeading}</b><span>{copy.draftNumbersLine}</span></div>}
     <section className="td-range" aria-label={copy.rangeLabel}>{range.map((item, i) => <div key={i}><b>{item.title}</b><p>{item.line}</p>{item.href && <a href={safeHref(item.href)}>{item.linkLabel || `Explore ${item.title} →`}</a>}</div>)}</section>

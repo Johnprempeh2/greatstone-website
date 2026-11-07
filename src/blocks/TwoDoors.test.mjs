@@ -165,3 +165,27 @@ test('placeholder case studies stay hidden without the review flag', async () =>
     globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
   }
 });
+
+test('story: client logos are the site carousel, four dark tiles to a slide', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  try {
+    const { TwoDoorsStory } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const dom = new Window();
+    dom.document.body.innerHTML = renderToStaticMarkup(React.createElement(TwoDoorsStory, { tide: false }));
+    const carousel = dom.document.querySelector('[data-behaviour="carousel"]');
+    assert.equal(carousel.getAttribute('data-autoplay'), '6000');
+    assert.equal(carousel.getAttribute('aria-roledescription'), 'carousel');
+    assert.equal(carousel.getAttribute('aria-label'), 'Clients');
+    const slides = [...carousel.querySelectorAll('[data-carousel-track] > ul')];
+    assert.deepEqual(slides.map((slide) => slide.querySelectorAll('img').length), [4, 4, 3]);
+    assert.ok([...carousel.querySelectorAll('img')].every((img) => img.getAttribute('src').startsWith('/assets/two-doors/clients/light/') && img.getAttribute('alt')));
+    assert.equal(carousel.querySelectorAll('[data-carousel-dot]').length, 3);
+    assert.ok(carousel.querySelector('[data-carousel-prev]').getAttribute('aria-label'));
+    assert.ok(carousel.querySelector('[data-carousel-next]').getAttribute('aria-label'));
+    assert.equal(carousel.querySelector('[data-carousel-pause]').getAttribute('aria-pressed'), 'false');
+    assert.equal(dom.document.querySelector('.td-public-clients-grid'), null, 'the old grid is gone');
+  } finally {
+    await vite.close();
+  }
+});
