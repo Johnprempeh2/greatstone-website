@@ -17,7 +17,11 @@ const sites = new Map([
 // "Deploy these changes" promotes its commit.
 const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
 const stagingSite = 'gre3833-next-db-staging';
-const nextSites = new Set([stagingSite]);
+// The public site runs the same Next build as staging (Next cutover step 4, through John's Deploy card).
+const nextSites = new Set([stagingSite, 'greatstone-home']);
+// The public pages and APIs a promote checks: pages on the unpublished upload, APIs once it is published.
+export const PAGE_CHECKS = ['/', '/dev-tools', '/about', '/contact', '/shop', '/_release'];
+export const API_CHECKS = ['/api/auth/get-session', '/api/catalogue', '/api/popularity', '/api/compose-problems'];
 // The CLI build cannot read the catalogue as anon, so the Next build reads the live public catalogue over HTTP
 // (the same projection /api/catalogue serves, public data only), and the release build still requires it.
 const catalogueApi = 'https://greatstoneint.com/api/catalogue';
@@ -162,6 +166,38 @@ function stagedCommit() {
   return lastDeployedCommit(stagingSite, 'staging');
 }
 
+async function netlifyApi(path, method = 'GET') {
+  const api = process.env.NODE_ENV === 'test' && token === 'test-token' ? process.env.NETLIFY_TEST_API_URL : 'https://api.netlify.com';
+  const response = await fetch(`${api}/api/v1${path}`, { method, headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error(`${method} ${path}: ${response.status}`);
+  return response.json();
+}
+
+async function status(url) {
+  try { return (await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(30_000) })).status; } catch { return 0; }
+}
+
+// Check before publish (Next cutover step 4): the pages on the unpublished upload, then publish it, then the APIs that
+// need the site's database (an unpublished deploy has none), and put the deploy that was live back at once if any
+// check fails. The earlier deploy stays on Netlify, so a person can also restore it by hand: its id is printed.
+async function publishChecked({ deploy_id: deployId, deploy_url: deployUrl }) {
+  const siteId = sites.get(site);
+  const before = (await netlifyApi(`/sites/${siteId}`)).published_deploy?.id;
+  console.log(`Fallback: the deploy live before this one is ${before}. Restore it with: netlify api restoreSiteDeploy --data '{"site_id":"${siteId}","deploy_id":"${before}"}'`);
+  const pageFailures = [];
+  for (const path of PAGE_CHECKS) if (await status(deployUrl + path) !== 200) pageFailures.push(path);
+  if (pageFailures.length) throw new Error(`not published: ${pageFailures.join(', ')} failed on the unpublished upload ${deployId}`);
+  await netlifyApi(`/sites/${siteId}/deploys/${deployId}/restore`, 'POST');
+  const live = process.env.NODE_ENV === 'test' ? deployUrl : 'https://greatstoneint.com';
+  const apiFailures = [];
+  for (const path of API_CHECKS) if (await status(live + path) !== 200) apiFailures.push(path);
+  if (apiFailures.length) {
+    if (before) await netlifyApi(`/sites/${siteId}/deploys/${before}/restore`, 'POST');
+    throw new Error(`${apiFailures.join(', ')} failed after publishing ${deployId}; restored ${before}`);
+  }
+  console.log(`Published ${deployId}: ${PAGE_CHECKS.length} pages and ${API_CHECKS.length} APIs answered 200`);
+}
+
 async function inspectSite() {
   if (!token) throw new Error('NETLIFY_AUTH_TOKEN is required');
   const response = await json(`https://api.netlify.com/api/v1/sites/${site}.netlify.app/deploys?per_page=100`, token);
@@ -203,12 +239,18 @@ async function lockAndDeploy(sha, cwd) {
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
+    // The public site is checked before it is published: an unpublished upload built with production settings.
+    const checked = channel === 'prod' && site === 'greatstone-home';
+    if (checked) args.push('--context', 'production', '--json');
     // Staging's own production URL is the staging site, so it is a --prod upload to that site.
-    if (channel === 'prod' || channel === 'staging') args.push('--prod');
+    else if (channel === 'prod' || channel === 'staging') args.push('--prod');
     console.log(`Deploying ${site} ${mode} at ${sha}`);
-    const child = spawn('netlify', args, { stdio: 'inherit', signal: controller.signal, cwd });
+    const child = spawn('netlify', args, { stdio: checked ? ['ignore', 'pipe', 'inherit'] : 'inherit', signal: controller.signal, cwd });
+    let out = '';
+    child.stdout?.on('data', (part) => { out += part; });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
     if (code !== 0) throw new Error(`netlify deploy exited ${code}`);
+    if (checked) await publishChecked(JSON.parse(out.slice(out.indexOf('{'))));
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
   } finally {
     try { if (JSON.parse(await readFile(file, 'utf8')).own === own) await rm(file); } catch { /* newer run owns it */ }
