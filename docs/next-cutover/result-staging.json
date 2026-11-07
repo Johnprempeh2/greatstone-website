@@ -1,0 +1,1578 @@
+{
+  "vite": "https://greatstoneint.com",
+  "next": "https://gre3833-next-db-staging.netlify.app",
+  "at": "2026-11-07T20:46:41.198Z",
+  "pages": [
+    {
+      "name": "home",
+      "vite": "/",
+      "next": "/",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/",
+        "title": "Greatstone International · Two ways to work with us",
+        "description": "Explore DX Consultancy and DX Dev Tools from Greatstone International.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Transformation and the tools to deliver it."
+        ],
+        "h2": 9,
+        "textLength": 2241,
+        "textHead": "THE FOUNDATION OF DIGITAL EXCELLENCE Transformation and the tools to deliver it. Greatstone International is a transformation and technology firm. Today we brin",
+        "carousel": 1,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/",
+        "title": "Greatstone International · Two ways to work with us",
+        "description": "Explore DX Consultancy and DX Dev Tools from Greatstone International.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Transformation and the tools to deliver it."
+        ],
+        "h2": 9,
+        "textLength": 2241,
+        "textHead": "THE FOUNDATION OF DIGITAL EXCELLENCE Transformation and the tools to deliver it. Greatstone International is a transformation and technology firm. Today we brin",
+        "carousel": 1,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "dev-tools",
+      "vite": "/dev-tools",
+      "next": "/dev-tools",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#dev-tools",
+        "title": "DX Dev Tools · Greatstone International",
+        "description": "Explore developer components and SDKs through Greatstone International.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/dev-tools",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Tools for teams who deliver."
+        ],
+        "h2": 1,
+        "textLength": 827,
+        "textHead": "DX DEV TOOLS Tools for teams who deliver. Developer components and SDKs from the brands you know. Browse the Greatstone Software shop → Browse by brand Aspose C",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/dev-tools",
+        "title": "DX Dev Tools · Greatstone International",
+        "description": "Explore developer components and SDKs through Greatstone International.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/dev-tools",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Tools for teams who deliver."
+        ],
+        "h2": 1,
+        "textLength": 827,
+        "textHead": "DX DEV TOOLS Tools for teams who deliver. Developer components and SDKs from the brands you know. Browse the Greatstone Software shop → Browse by brand Aspose C",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "how-we-help",
+      "vite": "/#how-we-help",
+      "next": "/how-we-help",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#how-we-help",
+        "title": "How We Help · Greatstone International",
+        "description": "Every organisation has the potential to become stronger. Greatstone helps organisations transform with confidence, strengthen organisational capability and invest in technology that matters.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/how-we-help",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Every organisation has the potential to become stronger. The question is where that strength should begin."
+        ],
+        "h2": 3,
+        "textLength": 19704,
+        "textHead": "Every organisation has the potential to become stronger. The question is where that strength should begin. The organisations that realise their potential are th",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/how-we-help",
+        "title": "How We Help · Greatstone International",
+        "description": "Every organisation has the potential to become stronger. Greatstone helps organisations transform with confidence, strengthen organisational capability and invest in technology that matters.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/how-we-help",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Every organisation has the potential to become stronger. The question is where that strength should begin."
+        ],
+        "h2": 3,
+        "textLength": 19646,
+        "textHead": "Every organisation has the potential to become stronger. The question is where that strength should begin. The organisations that realise their potential are th",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "services",
+      "vite": "/#services",
+      "next": "/services",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#services",
+        "title": "GS Agentic Manager · Greatstone International",
+        "description": "A digital office for your organisation: people and AI agents in clear roles on your own instance, set up by Greatstone where it fits, with your people approving what matters.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/services",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "A digital office for the work that comes round every week"
+        ],
+        "h2": 6,
+        "textLength": 5019,
+        "textHead": "GS AGENTIC MANAGER A digital office for the work that comes round every week An AI agent team, set up for one area of your work, in your own hosted instance. Yo",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/services",
+        "title": "GS Agentic Manager · Greatstone International",
+        "description": "A digital office for your organisation: people and AI agents in clear roles on your own instance, set up by Greatstone where it fits, with your people approving what matters.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/services",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "A digital office for the work that comes round every week"
+        ],
+        "h2": 6,
+        "textLength": 5019,
+        "textHead": "GS AGENTIC MANAGER A digital office for the work that comes round every week An AI agent team, set up for one area of your work, in your own hosted instance. Yo",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "industries",
+      "vite": "/#industries",
+      "next": "/industries",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#industries",
+        "title": "Industries · Greatstone International",
+        "description": "Pick your sector and the rest adjusts to your drains and your numbers. The same eight-pillar foundation, shaped to the way your industry actually works.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/industries",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Start with your industry."
+        ],
+        "h2": 3,
+        "textLength": 1814,
+        "textHead": "INDUSTRIES Start with your industry. Pick your sector and the rest adjusts to your drains and your numbers. The same foundation, shaped to the way your industry",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/industries",
+        "title": "Industries · Greatstone International",
+        "description": "Pick your sector and the rest adjusts to your drains and your numbers. The same eight-pillar foundation, shaped to the way your industry actually works.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/industries",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Start with your industry."
+        ],
+        "h2": 3,
+        "textLength": 1814,
+        "textHead": "INDUSTRIES Start with your industry. Pick your sector and the rest adjusts to your drains and your numbers. The same foundation, shaped to the way your industry",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "proof",
+      "vite": "/#proof",
+      "next": "/proof",
+      "verdict": "missing",
+      "notes": [
+        "Next 404, 33 chars"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#proof",
+        "title": "Case Studies · Greatstone International",
+        "description": "How Greatstone runs its own operations as a digital office of people and agents, what a demonstration shows, and how we measure results with each client.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/case-studies",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "We run Greatstone this way. Then we set it up for you."
+        ],
+        "h2": 3,
+        "textLength": 1572,
+        "textHead": "PROOF, NOT PROMISES We run Greatstone this way. Then we set it up for you. We publish a client result only when the client has approved the wording. Until then,",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 404,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 404 ()"
+        ],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/proof",
+        "title": "404: This page could not be found.",
+        "description": null,
+        "robots": "noindex",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "404"
+        ],
+        "h2": 1,
+        "textLength": 33,
+        "textHead": "404 This page could not be found.",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": false
+      }
+    },
+    {
+      "name": "about",
+      "vite": "/#about",
+      "next": "/about",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#about",
+        "title": "About Greatstone · Greatstone International",
+        "description": "Greatstone exists to help organisations become stronger. Our purpose, our philosophy, the character of the institution and the people who do the work.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/about",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Greatstone exists for one reason. To help organisations become stronger."
+        ],
+        "h2": 5,
+        "textLength": 4151,
+        "textHead": "Greatstone exists for one reason. To help organisations become stronger. Everything we do, and everything we decline to do, is measured against that single purp",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/about",
+        "title": "About Greatstone · Greatstone International",
+        "description": "Greatstone exists to help organisations become stronger. Our purpose, our philosophy, the character of the institution and the people who do the work.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/about",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Greatstone exists for one reason. To help organisations become stronger."
+        ],
+        "h2": 5,
+        "textLength": 4151,
+        "textHead": "Greatstone exists for one reason. To help organisations become stronger. Everything we do, and everything we decline to do, is measured against that single purp",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "insights",
+      "vite": "/#insights",
+      "next": "/insights",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#insights",
+        "title": "Executive Intelligence · Greatstone International",
+        "description": "The quality of an organisation’s decisions will never exceed the quality of its thinking. Greatstone’s perspective on organisations, leadership, technology and transformation.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/insights",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "The quality of an organisation’s decisions will never exceed the quality of its thinking."
+        ],
+        "h2": 3,
+        "textLength": 2994,
+        "textHead": "The quality of an organisation’s decisions will never exceed the quality of its thinking. Executive Intelligence is where Greatstone shares the thinking that sh",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/insights",
+        "title": "Executive Intelligence · Greatstone International",
+        "description": "The quality of an organisation’s decisions will never exceed the quality of its thinking. Greatstone’s perspective on organisations, leadership, technology and transformation.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/insights",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "The quality of an organisation’s decisions will never exceed the quality of its thinking."
+        ],
+        "h2": 3,
+        "textLength": 2994,
+        "textHead": "The quality of an organisation’s decisions will never exceed the quality of its thinking. Executive Intelligence is where Greatstone shares the thinking that sh",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "ai-market-intelligence",
+      "vite": "/#ai-market-intelligence",
+      "next": "/ai-market-intelligence",
+      "verdict": "missing",
+      "notes": [
+        "Next 404, 33 chars"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#ai-market-intelligence",
+        "title": "AI Market Intelligence · Greatstone International",
+        "description": "Greatstone’s standing briefing on developments in Artificial Intelligence, interpreted for their organisational implications: what has changed, why it matters and what should be considered next.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/ai-market-intelligence",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "The AI landscape, read for you."
+        ],
+        "h2": 1,
+        "textLength": 3786,
+        "textHead": "GREATSTONE INTELLIGENCE The AI Intelligence Briefing Updated 21 Jun · 8 today Overview Briefing Leaderboards Compare How it is sourced THE BRIEFING ROOM The AI ",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 404,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 404 ()"
+        ],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/ai-market-intelligence",
+        "title": "404: This page could not be found.",
+        "description": null,
+        "robots": "noindex",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "404"
+        ],
+        "h2": 1,
+        "textLength": 33,
+        "textHead": "404 This page could not be found.",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": false
+      }
+    },
+    {
+      "name": "climb",
+      "vite": "/#climb",
+      "next": "/climb",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#climb",
+        "title": "The Climb · Maturity Model · Greatstone International",
+        "description": "Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/climb",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Pebble. Plateau. Peak."
+        ],
+        "h2": 4,
+        "textLength": 2131,
+        "textHead": "THE CLIMB Pebble. Plateau. Peak. Every business sits somewhere on the mountain. We meet you where you are, and we climb. No vanity scores, no theatre. Just a cl",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/climb",
+        "title": "The Climb · Maturity Model · Greatstone International",
+        "description": "Every business sits somewhere on the mountain: pebble, plateau or peak. We meet you where you are, read where you stand, and find the shortest honest route up.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/climb",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Pebble. Plateau. Peak."
+        ],
+        "h2": 4,
+        "textLength": 2131,
+        "textHead": "THE CLIMB Pebble. Plateau. Peak. Every business sits somewhere on the mountain. We meet you where you are, and we climb. No vanity scores, no theatre. Just a cl",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "shop",
+      "vite": "/#shop",
+      "next": "/shop",
+      "verdict": "differs",
+      "notes": [
+        "title \"Products · Greatstone International\" vs \"Software Catalogue · Greatstone International\"",
+        "forms 0 vs 1",
+        "meta description differs"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#shop",
+        "title": "Products · Greatstone International",
+        "description": null,
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/shop",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Developer software, licensed and supported."
+        ],
+        "h2": 4,
+        "textLength": 5237,
+        "textHead": "SOFTWARE CATALOGUE Developer software, licensed and supported. The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the v",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/shop",
+        "title": "Software Catalogue · Greatstone International",
+        "description": "Browse developer software from the vendors Greatstone licenses and supports.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/shop",
+        "ogImage": null,
+        "h1": [
+          "Developer software, licensed and supported."
+        ],
+        "h2": 4,
+        "textLength": 5183,
+        "textHead": "SOFTWARE CATALOGUE Developer software, licensed and supported. The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the v",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "shop/aspose",
+      "vite": "/#shop/aspose",
+      "next": "/shop/aspose",
+      "verdict": "differs",
+      "notes": [
+        "title \"Products · Greatstone International\" vs \"Aspose software · Greatstone International\"",
+        "text 4391 vs 2058 chars",
+        "forms 0 vs 1",
+        "meta description differs"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#shop/aspose",
+        "title": "Products · Greatstone International",
+        "description": null,
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/shop",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Developer software, licensed and supported."
+        ],
+        "h2": 4,
+        "textLength": 4391,
+        "textHead": "SOFTWARE CATALOGUE Developer software, licensed and supported. The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the v",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/shop/aspose",
+        "title": "Aspose software · Greatstone International",
+        "description": "Browse Aspose software.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/shop/aspose",
+        "ogImage": null,
+        "h1": [
+          "Developer software, licensed and supported."
+        ],
+        "h2": 4,
+        "textLength": 2058,
+        "textHead": "SOFTWARE CATALOGUE Developer software, licensed and supported. The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the v",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "account",
+      "vite": "/#account",
+      "next": "/account",
+      "verdict": "differs",
+      "notes": [
+        "title \"Your account · Greatstone International\" vs \"\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#account",
+        "title": "Your account · Greatstone International",
+        "description": "Manage your Greatstone account, orders and details.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 369,
+        "textHead": "YOUR ACCOUNT Sign in Order history, saved cards and faster checkout for the Greatstone software store. Bought from Greatstone before the new store? Create your ",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/account",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 369,
+        "textHead": "YOUR ACCOUNT Sign in Order history, saved cards and faster checkout for the Greatstone software store. Bought from Greatstone before the new store? Create your ",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "org",
+      "vite": "/#org",
+      "next": "/org",
+      "verdict": "differs",
+      "notes": [
+        "title \"Your organisation · Greatstone International\" vs \"\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#org",
+        "title": "Your organisation · Greatstone International",
+        "description": "Manage your organisation, team and orders with Greatstone.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 369,
+        "textHead": "YOUR ACCOUNT Sign in Order history, saved cards and faster checkout for the Greatstone software store. Bought from Greatstone before the new store? Create your ",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/org",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 369,
+        "textHead": "YOUR ACCOUNT Sign in Order history, saved cards and faster checkout for the Greatstone software store. Bought from Greatstone before the new store? Create your ",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "portal",
+      "vite": "/#portal",
+      "next": "/portal",
+      "verdict": "differs",
+      "notes": [
+        "title \"Client portal · Greatstone International\" vs \"\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#portal",
+        "title": "Client portal · Greatstone International",
+        "description": "Your Greatstone client portal.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 369,
+        "textHead": "YOUR ACCOUNT Sign in Order history, saved cards and faster checkout for the Greatstone software store. Bought from Greatstone before the new store? Create your ",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/portal",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 369,
+        "textHead": "YOUR ACCOUNT Sign in Order history, saved cards and faster checkout for the Greatstone software store. Bought from Greatstone before the new store? Create your ",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "catalogue",
+      "vite": "/#catalogue",
+      "next": "/catalogue",
+      "verdict": "differs",
+      "notes": [
+        "title \"Catalogue admin · Greatstone International\" vs \"\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#catalogue",
+        "title": "Catalogue admin · Greatstone International",
+        "description": "Manage the Greatstone product catalogue.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 115,
+        "textHead": "← Back CATALOGUE ADMIN Sign in Manage the Greatstone software catalogue, pricing and quotes. Email Password Sign in",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/catalogue",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "Sign in"
+        ],
+        "h2": 0,
+        "textLength": 115,
+        "textHead": "← Back CATALOGUE ADMIN Sign in Manage the Greatstone software catalogue, pricing and quotes. Email Password Sign in",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "order-confirmed",
+      "vite": "/#order-confirmed",
+      "next": "/order-confirmed",
+      "verdict": "differs",
+      "notes": [
+        "title \"Order confirmed · Greatstone International\" vs \"\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#order-confirmed",
+        "title": "Order confirmed · Greatstone International",
+        "description": "Your Greatstone order is confirmed. Review the details.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "We couldn’t find that order."
+        ],
+        "h2": 0,
+        "textLength": 266,
+        "textHead": "ORDER We couldn’t find that order. This page confirms an order right after checkout. If you just paid and landed here, your order and receipt are in your accoun",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/order-confirmed",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "We couldn’t find that order."
+        ],
+        "h2": 0,
+        "textLength": 266,
+        "textHead": "ORDER We couldn’t find that order. This page confirms an order right after checkout. If you just paid and landed here, your order and receipt are in your accoun",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "privacy/interviews",
+      "vite": "/#privacy/interviews",
+      "next": "/privacy/interviews",
+      "verdict": "differs",
+      "notes": [
+        "title \"Interview privacy notice · Greatstone International\" vs \"Interview privacy notice\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 404 ()"
+        ],
+        "finalUrl": "https://greatstoneint.com/#privacy/interviews",
+        "title": "Interview privacy notice · Greatstone International",
+        "description": "How Greatstone handles your interview answers, and your rights.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Interview privacy notice"
+        ],
+        "h2": 7,
+        "textLength": 3773,
+        "textHead": "PARALLEL DISCOVERY AGENT Interview privacy notice Who is responsible Your organisation is the controller of your interview data: it decided to run this review. ",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 401 ()"
+        ],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/privacy/interviews",
+        "title": "Interview privacy notice",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "Interview privacy notice"
+        ],
+        "h2": 7,
+        "textLength": 3773,
+        "textHead": "PARALLEL DISCOVERY AGENT Interview privacy notice Who is responsible Your organisation is the controller of your interview data: it decided to run this review. ",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "join/test-token",
+      "vite": "/#join/test-token",
+      "next": "/join/test-token",
+      "verdict": "differs",
+      "notes": [
+        "title \"Join the conversation · Greatstone International\" vs \"\"",
+        "h1 \"That did not load just now\" vs \"This invitation link isn’t active\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 404 ()"
+        ],
+        "finalUrl": "https://greatstoneint.com/#join/test-token",
+        "title": "Join the conversation · Greatstone International",
+        "description": "A confidential conversation about how your work really gets done, run independently by Greatstone.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "That did not load just now"
+        ],
+        "h2": 0,
+        "textLength": 294,
+        "textHead": "PARALLEL DISCOVERY AGENT That did not load just now Not found Nothing you said has been lost. TRY AGAIN Still stuck? Email dx@greatstonesoftware.co.uk and we wi",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/join/test-token",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "This invitation link isn’t active"
+        ],
+        "h2": 0,
+        "textLength": 297,
+        "textHead": "PARALLEL DISCOVERY AGENT This invitation link isn’t active We couldn’t find an active conversation for this link. Please double-check the full link, or ask whoe",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "invoice/test-order",
+      "vite": "/#invoice/test-order",
+      "next": "/invoice/test-order",
+      "verdict": "differs",
+      "notes": [
+        "title \"Invoice · Greatstone International\" vs \"\"",
+        "meta description differs",
+        "canonical yes vs no"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#invoice/test-order",
+        "title": "Invoice · Greatstone International",
+        "description": "View and print the details of your Greatstone order.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [],
+        "h2": 1,
+        "textLength": 84,
+        "textHead": "Invoice not found It may not exist, or you may not have access. Back to your account",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/invoice/test-order",
+        "title": "",
+        "description": null,
+        "robots": "noindex, nofollow",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [],
+        "h2": 1,
+        "textLength": 84,
+        "textHead": "Invoice not found It may not exist, or you may not have access. Back to your account",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "product/able2extract-professional",
+      "vite": "/#product/able2extract-professional",
+      "next": "/product/able2extract-professional",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#product/able2extract-professional",
+        "title": "Able2Extract Professional – Perpetual Desktop PDF Converter",
+        "description": "Able2Extract Professional – the leading perpetual PDF converter & editor. Convert, edit & automate PDFs with a one-time purchase from Greatstone.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/product/able2extract-professional",
+        "ogImage": "/catalog/icons/able2extract-logo_1759067929.png",
+        "h1": [
+          "Able2Extract Professional 20"
+        ],
+        "h2": 4,
+        "textLength": 2851,
+        "textHead": "Catalogue › Investintech › Able2Extract Professional 20 INVESTINTECH Able2Extract Professional 20 Able2Extract Professional – the leading perpetual PDF converte",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/product/able2extract-professional",
+        "title": "Able2Extract Professional – Perpetual Desktop PDF Converter",
+        "description": "Able2Extract Professional – the leading perpetual PDF converter & editor. Convert, edit & automate PDFs with a one-time purchase from Greatstone.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/product/able2extract-professional",
+        "ogImage": null,
+        "h1": [
+          "Able2Extract Professional 20"
+        ],
+        "h2": 4,
+        "textLength": 2718,
+        "textHead": "Catalogue › Investintech › Able2Extract Professional 20 INVESTINTECH Able2Extract Professional 20 Able2Extract Professional – the leading perpetual PDF converte",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "service/dx-diagnostic",
+      "vite": "/#service/dx-diagnostic",
+      "next": "/service/dx-diagnostic",
+      "verdict": "missing",
+      "notes": [
+        "Next 404, 33 chars"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#service/dx-diagnostic",
+        "title": "Service · Greatstone International",
+        "description": null,
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/service",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [],
+        "h2": 0,
+        "textLength": 80,
+        "textHead": "Service not found It may have moved or the link is out of date. Back to services",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 404,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 404 ()"
+        ],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/service/dx-diagnostic",
+        "title": "404: This page could not be found.",
+        "description": null,
+        "robots": "noindex",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "404"
+        ],
+        "h2": 1,
+        "textLength": 33,
+        "textHead": "404 This page could not be found.",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": false
+      }
+    },
+    {
+      "name": "contact",
+      "vite": "/#contact",
+      "next": "/contact",
+      "verdict": "matches",
+      "notes": [],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#contact",
+        "title": "Begin the Conversation · Greatstone International",
+        "description": "The journey towards a stronger organisation begins with a conversation. Schedule a conversation, send an enquiry, telephone or email Greatstone International.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/contact",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Begin the Conversation"
+        ],
+        "h2": 2,
+        "textLength": 1745,
+        "textHead": "Begin the Conversation Tell us about your organisation and the work that takes up your people’s time, and we will take it from there. However you would prefer t",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/contact",
+        "title": "Begin the Conversation · Greatstone International",
+        "description": "The journey towards a stronger organisation begins with a conversation. Schedule a conversation, send an enquiry, telephone or email Greatstone International.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/contact",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Begin the Conversation"
+        ],
+        "h2": 2,
+        "textLength": 1745,
+        "textHead": "Begin the Conversation Tell us about your organisation and the work that takes up your people’s time, and we will take it from there. However you would prefer t",
+        "carousel": 0,
+        "forms": 1,
+        "gtm": false,
+        "signIn": true
+      }
+    },
+    {
+      "name": "intel",
+      "vite": "/#intel",
+      "next": "/intel",
+      "verdict": "missing",
+      "notes": [
+        "Next 404, 33 chars"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#ai-market-intelligence",
+        "title": "AI Market Intelligence · Greatstone International",
+        "description": "Greatstone’s standing briefing on developments in Artificial Intelligence, interpreted for their organisational implications: what has changed, why it matters and what should be considered next.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/ai-market-intelligence",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "The AI landscape, read for you."
+        ],
+        "h2": 1,
+        "textLength": 3786,
+        "textHead": "GREATSTONE INTELLIGENCE The AI Intelligence Briefing Updated 21 Jun · 8 today Overview Briefing Leaderboards Compare How it is sourced THE BRIEFING ROOM The AI ",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 404,
+        "errors": [
+          "Failed to load resource: the server responded with a status of 404 ()"
+        ],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/intel",
+        "title": "404: This page could not be found.",
+        "description": null,
+        "robots": "noindex",
+        "canonical": null,
+        "ogImage": null,
+        "h1": [
+          "404"
+        ],
+        "h2": 1,
+        "textLength": 33,
+        "textHead": "404 This page could not be found.",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": false
+      }
+    },
+    {
+      "name": "PLANTED (must differ): about vs dev-tools",
+      "vite": "/#about",
+      "next": "/dev-tools",
+      "planted": true,
+      "verdict": "differs",
+      "notes": [
+        "title \"About Greatstone · Greatstone International\" vs \"DX Dev Tools · Greatstone International\"",
+        "h1 \"Greatstone exists for one reason. To help organisations become stronger.\" vs \"Tools for teams who deliver.\"",
+        "text 4151 vs 827 chars",
+        "meta description differs"
+      ],
+      "v": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://greatstoneint.com/#about",
+        "title": "About Greatstone · Greatstone International",
+        "description": "Greatstone exists to help organisations become stronger. Our purpose, our philosophy, the character of the institution and the people who do the work.",
+        "robots": "noindex",
+        "canonical": "https://greatstoneint.com/about",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Greatstone exists for one reason. To help organisations become stronger."
+        ],
+        "h2": 5,
+        "textLength": 4151,
+        "textHead": "Greatstone exists for one reason. To help organisations become stronger. Everything we do, and everything we decline to do, is measured against that single purp",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      },
+      "n": {
+        "status": 200,
+        "errors": [],
+        "finalUrl": "https://gre3833-next-db-staging.netlify.app/dev-tools",
+        "title": "DX Dev Tools · Greatstone International",
+        "description": "Explore developer components and SDKs through Greatstone International.",
+        "robots": null,
+        "canonical": "https://greatstoneint.com/dev-tools",
+        "ogImage": "https://greatstoneint.com/og-default.png",
+        "h1": [
+          "Tools for teams who deliver."
+        ],
+        "h2": 1,
+        "textLength": 827,
+        "textHead": "DX DEV TOOLS Tools for teams who deliver. Developer components and SDKs from the brands you know. Browse the Greatstone Software shop → Browse by brand Aspose C",
+        "carousel": 0,
+        "forms": 0,
+        "gtm": false,
+        "signIn": true
+      }
+    }
+  ],
+  "apis": [
+    {
+      "path": "/api/catalogue",
+      "v": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/auth/get-session",
+      "v": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/popularity",
+      "v": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/compose-problems",
+      "v": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/front-door",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/customer-store",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/staff-store",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/portal-store",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/deepdive-state",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/interview/portal",
+      "v": {
+        "status": 404,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "differs"
+    },
+    {
+      "path": "/api/interview/my-data",
+      "v": {
+        "status": 404,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "differs"
+    },
+    {
+      "path": "/api/enquiry",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/request-quote",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/service-inquiry",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/stripe-checkout",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/stripe-webhook",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/admin/v1/health",
+      "v": {
+        "status": 401,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 401,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/api/deep-dive-client",
+      "v": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "n": {
+        "status": 405,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/media/does-not-exist.png",
+      "v": {
+        "status": 200,
+        "type": "text/html"
+      },
+      "n": {
+        "status": 404,
+        "type": ""
+      },
+      "verdict": "missing"
+    },
+    {
+      "path": "/_release",
+      "v": {
+        "status": 200,
+        "type": "text/html"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/_islands",
+      "v": {
+        "status": 200,
+        "type": "text/html"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/json"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/sitemap.xml",
+      "v": {
+        "status": 200,
+        "type": "application/xml"
+      },
+      "n": {
+        "status": 200,
+        "type": "application/xml"
+      },
+      "verdict": "matches"
+    },
+    {
+      "path": "/robots.txt",
+      "v": {
+        "status": 200,
+        "type": "text/plain"
+      },
+      "n": {
+        "status": 200,
+        "type": "text/plain"
+      },
+      "verdict": "matches"
+    }
+  ],
+  "headers": {
+    "vite": {
+      "content-security-policy": "frame-ancestors 'self' https://gsam.tail83d26c.ts.net:3100",
+      "x-frame-options": null,
+      "strict-transport-security": "max-age=63072000; includeSubDomains",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "x-content-type-options": "nosniff",
+      "cache-control": "public,max-age=0,must-revalidate",
+      "x-robots-tag": null
+    },
+    "next": {
+      "content-security-policy": "frame-ancestors 'self' https://gsam.tail83d26c.ts.net:3100",
+      "x-frame-options": null,
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+      "referrer-policy": null,
+      "permissions-policy": null,
+      "x-content-type-options": "nosniff",
+      "cache-control": "private,no-cache,no-store,max-age=0,must-revalidate",
+      "x-robots-tag": null
+    }
+  },
+  "redirects": [
+    {
+      "path": "/aspose",
+      "v": "301 /#shop/aspose",
+      "n": "308 /shop/aspose",
+      "verdict": "differs"
+    },
+    {
+      "path": "/groupdocs/x",
+      "v": "301 /#shop/groupdocs",
+      "n": "308 /shop/groupdocs",
+      "verdict": "differs"
+    },
+    {
+      "path": "/ironsoftware",
+      "v": "301 /#shop/iron-software",
+      "n": "308 /shop/ironsoftware",
+      "verdict": "differs"
+    },
+    {
+      "path": "/about-us",
+      "v": "200 ",
+      "n": "404 ",
+      "verdict": "differs"
+    },
+    {
+      "path": "/contact-us",
+      "v": "200 ",
+      "n": "404 ",
+      "verdict": "differs"
+    }
+  ]
+}
