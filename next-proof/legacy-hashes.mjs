@@ -3,7 +3,7 @@ import { interviewPathOf, parseInterviewHash } from '../src/portal/interview/rou
 
 // Renamed pages: used only when the old path is no longer published.
 const renamed = { proof: '/case-studies' };
-const special = { book: '/contact', shop: '/shop', breakdown: '/method', service: '/services', enquire: '/contact', 'ai-market-intelligence': '/ai-market-intelligence', proof: '/case-studies' };
+const special = { book: '/contact', shop: '/shop', breakdown: '/method', service: '/services', enquire: '/contact', 'ai-market-intelligence': '/ai-market-intelligence' };
 
 export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () => false) {
   if (!hash?.startsWith('#')) return null;
