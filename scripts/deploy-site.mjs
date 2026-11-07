@@ -29,7 +29,8 @@ const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
 // A config refresh re-uploads to production, so it shares production's marker and lock.
-const channel = mode === 'refresh' ? 'prod' : mode;
+// A rehearsal runs the public promote on staging, so it shares staging's marker and lock.
+const channel = mode === 'refresh' ? 'prod' : mode === 'rehearse' ? 'staging' : mode;
 const issueId = process.env.GSAM_TASK_ID;
 const token = process.env.NETLIFY_AUTH_TOKEN;
 const base = process.env.GSAM_API_URL?.replace(/\/?api\/?$/, '').replace(/\/$/, '');
@@ -188,9 +189,12 @@ async function publishChecked({ deploy_id: deployId, deploy_url: deployUrl }) {
   for (const path of PAGE_CHECKS) if (await status(deployUrl + path) !== 200) pageFailures.push(path);
   if (pageFailures.length) throw new Error(`not published: ${pageFailures.join(', ')} failed on the unpublished upload ${deployId}`);
   await netlifyApi(`/sites/${siteId}/deploys/${deployId}/restore`, 'POST');
-  const live = process.env.NODE_ENV === 'test' ? deployUrl : 'https://greatstoneint.com';
+  const live = process.env.NODE_ENV === 'test' ? deployUrl : site === 'greatstone-home' ? 'https://greatstoneint.com' : `https://${site}.netlify.app`;
   const apiFailures = [];
   for (const path of API_CHECKS) if (await status(live + path) !== 200) apiFailures.push(path);
+  // A rehearsal can plant one failing API check to prove the restore fires; the public promote never reads this.
+  const planted = mode === 'rehearse' ? process.env.REHEARSE_FAIL_API : null;
+  if (planted && !apiFailures.includes(planted)) apiFailures.push(`${planted} (planted)`);
   if (apiFailures.length) {
     if (before) await netlifyApi(`/sites/${siteId}/deploys/${before}/restore`, 'POST');
     throw new Error(`${apiFailures.join(', ')} failed after publishing ${deployId}; restored ${before}`);
@@ -240,7 +244,7 @@ async function lockAndDeploy(sha, cwd) {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
     // The public site is checked before it is published: an unpublished upload built with production settings.
-    const checked = channel === 'prod' && site === 'greatstone-home';
+    const checked = (channel === 'prod' && site === 'greatstone-home') || mode === 'rehearse';
     if (checked) args.push('--context', 'production', '--json');
     // Staging's own production URL is the staging site, so it is a --prod upload to that site.
     else if (channel === 'prod' || channel === 'staging') args.push('--prod');
@@ -338,22 +342,23 @@ async function deployEditorAlias(sha) {
 
 async function main() {
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
-  if (!['preview', 'prod', 'refresh', 'staging'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging -- <allowed site> [PR number]');
-  if (mode === 'staging' && site !== stagingSite) throw new Error(`staging deploys only ${stagingSite}`);
+  if (!['preview', 'prod', 'refresh', 'staging', 'rehearse'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging|deploy:rehearse -- <allowed site> [PR number]');
+  if ((mode === 'staging' || mode === 'rehearse') && site !== stagingSite) throw new Error(`${mode} deploys only ${stagingSite}`);
   command('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)]);
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
   const sha = command('git', ['rev-parse', 'HEAD']);
   if (mode === 'refresh') return refreshStaging(sha);
   // Staging takes main with no card; it never touches the public site or its database.
-  if (mode === 'staging' && !onMain(sha)) throw new Error('staging requires main (or a detached HEAD at origin main)');
-  const fallback = mode === 'staging' ? null : await gate(sha);
+  if ((mode === 'staging' || mode === 'rehearse') && !onMain(sha)) throw new Error(`${mode} requires main (or a detached HEAD at origin main)`);
+  const fallback = mode === 'staging' || mode === 'rehearse' ? null : await gate(sha);
   const baseline = await lastDeployedCommit() || fallback;
   let files = null;
   if (baseline) {
     command('git', ['cat-file', '-e', `${baseline}^{commit}`]);
     files = command('git', ['diff', '--name-only', baseline, sha]).split('\n').filter(Boolean);
   }
-  if (files && (files.length === 0 || onlyNonSiteFiles(files)))
+  // A rehearsal always uploads: it exists to exercise the promote, not to save a build.
+  if (mode !== 'rehearse' && files && (files.length === 0 || onlyNonSiteFiles(files)))
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
   else await deployInstalled(sha);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
