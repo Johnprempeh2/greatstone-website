@@ -175,17 +175,18 @@ for (const mode of MODES) {
       assert.equal(db.sql(`SELECT count(*) FROM interview.usage_ledger WHERE session_id = '${sessionId}' AND engagement_id <> '${round.id}'`), '0');
     });
 
-    test('sign-off: the read-back pre-selects the answers given in the chat; confirm appends the consent pair and the memory', async () => {
+    test('sign-off: no quote choice is pre-selected (GRE-2653), memory is; confirm appends the consent pair and the memory', async () => {
       const page = await portal(h, dan, 'signoff-page');
-      assert.deepEqual(page.body.data, { sessionId, initialAttribution: 'named', initialMemory: true });
+      assert.deepEqual(page.body.data, { sessionId, initialQuotes: null, initialMemory: true });
       assert.equal((await portal(h, dan, 'interview-page')).body.data.redirect, '#portal/interview/complete');
-      const bad = await portal(h, dan, 'confirm-signoff', { sessionId, attribution: 'maybe', memory: true });
+      const bad = await portal(h, dan, 'confirm-signoff', { sessionId, quotes: 'maybe', memory: true });
       assert.equal(bad.body.data.ok, false);
-      const ok = await portal(h, dan, 'confirm-signoff', { sessionId, attribution: 'named', memory: true });
+      const ok = await portal(h, dan, 'confirm-signoff', { sessionId, quotes: 'named', memory: true });
       assert.deepEqual(ok.body.data, { ok: true });
-      // consent events: participation at start, attribution + memory from the chat, the authoritative pair at confirm
+      // consent events: participation at start, attribution + memory from the chat, the authoritative pair and the
+      // three-way quote choice (062) at confirm
       assert.equal(db.sql(`SELECT string_agg(kind || ':' || value, ',' ORDER BY ts, kind) FROM interview.consent_event
-        WHERE user_id = '${dan.id}'`), 'participation:true,attribution:true,memory_opt_in:true,attribution:true,memory_opt_in:true');
+        WHERE user_id = '${dan.id}'`), 'participation:true,attribution:true,memory_opt_in:true,attribution:true,memory_opt_in:true,quotes:true');
       assert.equal(db.sql(`SELECT count(*) FROM interview.insight WHERE session_id = '${sessionId}' AND attribution_redacted`), '0');
       assert.equal(db.sql(`SELECT opted_in || ' ' || (expires_at > now() + interval '23 months') FROM interview.memory_blob
         WHERE user_id = '${dan.id}' AND customer_id = '${customerId}'`), 'true true');

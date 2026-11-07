@@ -150,6 +150,17 @@ export async function releaseSynthesis(db, engagementId, synthesisId, releasedBy
       };
     }
 
+    // GRE-2653: after a participant deletes their data, only a synthesis generated after that may be released.
+    const { data: stale, error: staleError } = await db.sql(`SELECT 1 FROM synthesis y JOIN engagement g ON g.id = y.engagement_id
+      WHERE y.id = $1 AND g.synthesis_stale_at IS NOT NULL AND y.generated_at < g.synthesis_stale_at`, [synthesisId]);
+    if (staleError) throw new Error(`staleness check failed: ${staleError.message}`);
+    if (stale?.length) {
+      return {
+        ok: false,
+        message: 'A participant has withdrawn since this version was generated. Run the synthesis again, check it, then release the new version.',
+      };
+    }
+
     const { error: updateError } = await db
       .from('engagement')
       .update({

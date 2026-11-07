@@ -288,14 +288,18 @@ function validateQuote(raw, ctx, log, subject) {
   return { insight, quote: q.quote.trim() };
 }
 
+// GRE-2653: a quote from a person who chose 'No quotes' (or never chose) stays in the evidence chain, so the
+// two-voice rule still counts them, but carries no text and no attribution. Renderers skip withheld entries.
 function toEvidenceQuotes(backed, ctx) {
-  return backed.map(({ insight, quote }) => ({
-    insight_id: insight.row.id,
-    quote,
-    attribution: buildAttribution(insight, ctx),
-    // Forced from the insight row, never trusted from the model (invariant 5)
-    second_hand: insight.secondHand,
-  }));
+  return backed.map(({ insight, quote }) => (insight.quotesAllowed === false
+    ? { insight_id: insight.row.id, quote: null, attribution: null, second_hand: insight.secondHand, withheld: true }
+    : {
+      insight_id: insight.row.id,
+      quote,
+      attribution: buildAttribution(insight, ctx),
+      // Forced from the insight row, never trusted from the model (invariant 5)
+      second_hand: insight.secondHand,
+    }));
 }
 
 function voiceStats(insights) {

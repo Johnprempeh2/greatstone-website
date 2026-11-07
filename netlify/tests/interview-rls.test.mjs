@@ -29,7 +29,9 @@ const UA = 'ba-user-alice', UB = 'ba-user-bob', UC = 'ba-user-carol', UD = 'ba-u
 
 const TABLES = ['person', 'engagement', 'org_unit', 'employee', 'session', 'turn', 'insight', 'synthesis',
   'synthesis_cache', 'synthesis_run', 'memory_blob', 'context_pack', 'usage_ledger', 'outbox', 'consent_event', 'seat_request',
-  'seat_purchase', 'rate_event', 'audit_log', 'withdrawal', 'agreement_acceptance'];
+  'seat_purchase', 'rate_event', 'audit_log', 'withdrawal', 'agreement_acceptance',
+  // 062 (GRE-2653)
+  'deletion_record', 'anonymised_themes'];
 // not client data: allow-listed in scripts/org-scope-allow.netlify.json
 const UNSCOPED = ['person', 'rate_event'];
 const SCOPED = TABLES.filter((t) => !UNSCOPED.includes(t));
@@ -531,6 +533,9 @@ test('(5) R11: after a full fake round no interview row has a null or wrong cust
       name, email, role_title, legal_name, read_confirmed, authority_confirmed, ip_address)
       VALUES ($1, 'interview-dpa', $2, $3, 'ba-user-admin', gen_random_uuid(), 'Ada', 'ada@b.test', 'Director', 'B Ltd', true, true, '192.0.2.1')
       ON CONFLICT DO NOTHING`, [CB, AGREEMENT.version, AGREEMENT.sha256]);
+    // 062: what retention and self-service write
+    await c.query(`INSERT INTO interview.deletion_record (engagement_id, kind) VALUES ($1, 'self_service')`, [eng]);
+    await c.query(`INSERT INTO interview.anonymised_themes (engagement_id) VALUES ($1)`, [eng]);
   });
   const withCustomer = sql(`SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.columns
     WHERE table_schema = 'interview' AND column_name = 'customer_id'`).split(',');

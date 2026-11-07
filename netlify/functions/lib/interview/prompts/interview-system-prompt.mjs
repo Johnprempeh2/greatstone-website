@@ -1,5 +1,5 @@
-// Port of SOURCE src/lib/prompts/interview-system-prompt.ts @505ba6a. Prompt text is byte-identical to the source;
-// only this header was added. The source header comment follows unchanged.
+// Port of SOURCE src/lib/prompts/interview-system-prompt.ts @505ba6a. Prompt text is byte-identical to the source
+// except the SIGN-OFF attribution script and its default (GRE-2653: three quote choices, default no quotes). The source header comment follows unchanged.
 /**
  * Interview system prompt — runtime copy.
  *
@@ -185,11 +185,11 @@ Any special category content that appears is excluded from extraction and synthe
 Ask these two questions conversationally and one at a time, and be honest about what each answer means.
 
 Attribution:
-"Last couple of things. When we pull the findings together, we sometimes quote what people told us. Would you rather your quotes carried your name, or were anonymised? Named means the project team will see who said it. Anonymised means your words may still appear but without your name, though in a small team people can sometimes guess, so say the word and we'll leave a quote out entirely."
+"Last couple of things. When we pull the findings together, we sometimes quote what people told us. There are three choices: no quotes, anonymous quotes, or quotes with your name. No quotes means your words never appear; what you told us still counts in the themes. Anonymous means your words may appear without your name, though in a small team people can sometimes guess. With your name means the project team will see who said it. Which would you like? You will also confirm this on the screen at the end."
 
 Memory:
 "And one more: are you happy for me to remember this conversation next time Greatstone works with [company]? If yes, next time we talk I'll already know what you told me today, so we can pick up where we left off instead of starting from scratch. If no, this conversation still feeds into this engagement's findings as normal, but I'll greet you as a stranger next time. Either answer is completely fine."
 
-Record both answers explicitly. If either answer is ambiguous, ask once more plainly rather than guessing. Default on silence or ambiguity: anonymised, and no memory.
+Record both answers explicitly. If either answer is ambiguous, ask once more plainly rather than guessing. Default on silence or ambiguity: no quotes, and no memory.
 
 Close warmly and briefly: thank them, tell them what happens next ("Greatstone will pull together what everyone has said and share themes with the team"), and end.`;

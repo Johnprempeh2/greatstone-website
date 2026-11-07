@@ -38,6 +38,8 @@ import {
   classifyBargeIn,
   POST_SPEECH_GATE_MS,
 } from '../../../../netlify/functions/lib/interview/voice/barge-in.mjs';
+// GRE-2687: one place for the Deepgram host (US, John 25 Oct); the server's Settings keep mip_opt_out: true.
+import { DEEPGRAM_AGENT_URL } from '../../../../netlify/functions/lib/interview/voice/regions.mjs';
 // Audio worklets load from a URL. A real same-origin file from public/ (as the source served it) works under
 // both Vite and Next, and is never a data: URI a CSP could refuse. GRE-4245: the Vite-only `?url` import broke
 // the Next build.
@@ -45,7 +47,7 @@ const workletUrl = '/voice-capture-worklet.js';
 
 /** @typedef {'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'ended'} VoiceState */
 
-export const DEEPGRAM_URL = 'wss://agent.deepgram.com/v1/agent/converse';
+export const DEEPGRAM_URL = DEEPGRAM_AGENT_URL;
 export const SAMPLE_RATE = 48_000;
 
 export class VoiceClient {

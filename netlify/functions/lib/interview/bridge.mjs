@@ -10,6 +10,7 @@ import { randomBytes } from 'node:crypto';
 import { BridgeRequestError } from '../admin-bridge-store.mjs';
 import { interviewDbOnClient } from './db.mjs';
 import { closeOutOpenSessions } from './lifecycle.mjs';
+import { deletionDate } from './retention.mjs';
 import { getLatestSynthesis, getReleasedSynthesis, releaseSynthesis, withdrawRelease } from './synthesis/release.mjs';
 import { getInterview, listInterviews, pushReleasedSynthesis } from './bridge-interviews.mjs';
 import { ensurePersonForUser } from './provision.mjs';
@@ -55,7 +56,7 @@ export const joinUrl = (token, env) => (token ? `${siteOrigin(env)}/#join/${toke
 export function checkRound(body) {
   // the client's name is the organisation's (customers.name), read when the round is saved
   only(body, ['schema', 'sponsor', 'mode', 'targetMinutes', 'status', 'voice', 'seatTotal',
-    'costEnvelopePence', 'endDate', 'retentionDeleteAfter', 'enrol', 'units', 'contextPack'], 'body');
+    'costEnvelopePence', 'endDate', 'retentionDeleteAfter', 'retentionDays', 'readoutAt', 'enrol', 'units', 'contextPack'], 'body');
   if (body.schema !== 'gs-interview-round-v1') bad('schema');
   const enrol = only(body.enrol ?? {}, ['enabled', 'expiresAt', 'allowedEmailDomains', 'defaultUnitId', 'rotateToken'], 'enrol');
   const domains = enrol.allowedEmailDomains ?? [];
@@ -75,6 +76,9 @@ export function checkRound(body) {
     endDate: body.endDate == null ? null : DATE.test(body.endDate) ? body.endDate : bad('endDate'),
     retentionDeleteAfter: body.retentionDeleteAfter == null ? null
       : DATE.test(body.retentionDeleteAfter) ? body.retentionDeleteAfter : bad('retentionDeleteAfter'),
+    // GRE-2653: interview data is deleted retentionDays after the readout (or the close, with no readout)
+    retentionDays: int(body.retentionDays ?? 90, 0, 3650, 'retentionDays'),
+    readoutAt: body.readoutAt == null ? null : !Number.isNaN(Date.parse(body.readoutAt)) ? new Date(body.readoutAt).toISOString() : bad('readoutAt'),
     enrol: {
       enabled: enrol.enabled === true,
       expiresAt: enrol.expiresAt == null ? null : !Number.isNaN(Date.parse(enrol.expiresAt)) ? new Date(enrol.expiresAt).toISOString() : bad('enrol.expiresAt'),
@@ -173,6 +177,8 @@ export async function roundView(db, eng) {
     seatTotal: eng.seat_total, costEnvelopePence: Number(eng.cost_envelope_pence),
     spendPence: Number(spendRow?.total_pence ?? 0),
     endDate: eng.end_date, retentionDeleteAfter: eng.retention_delete_after,
+    retentionDays: eng.retention_days, readoutAt: eng.readout_at ?? null, closedAt: eng.closed_at ?? null,
+    deletionDate: deletionDate(eng),
     joinUrl: agreement.accepted ? joinUrl(eng.enrol_token) : null,
     agreement: { version: agreement.version, contentSha256: agreement.contentSha256, accepted: agreement.accepted,
       acceptedAt: agreement.acceptance?.acceptedAt ?? null },
@@ -257,7 +263,8 @@ export async function saveRound(db, ctx, roundId, body) {
   const fields = {
     client_name: name, sponsor: r.sponsor, mode: r.mode, target_minutes: r.targetMinutes,
     status: r.status, branding_config: { ...(eng?.branding_config ?? {}), voice: r.voice }, seat_total: r.seatTotal, cost_envelope_pence: r.costEnvelopePence, end_date: r.endDate,
-    retention_delete_after: r.retentionDeleteAfter, allowed_email_domains: r.enrol.domains,
+    retention_delete_after: r.retentionDeleteAfter, retention_days: r.retentionDays, readout_at: r.readoutAt,
+    allowed_email_domains: r.enrol.domains,
     enrol_enabled: r.status === 'closed' ? false : r.enrol.enabled, enrol_expires_at: r.enrol.expiresAt,
   };
   const created = !eng;
@@ -429,7 +436,8 @@ export async function withdraw(db, ctx, roundId, body) {
 export async function closeRound(db, ctx, roundId, body) {
   if (Object.keys(body).length) bad('body');
   await ownedRound(db, ctx, roundId);
-  must(await db.from('engagement').update({ status: 'closed', enrol_enabled: false }).eq('id', roundId));
+  must(await db.sql(`UPDATE engagement SET status = 'closed', enrol_enabled = false, closed_at = coalesce(closed_at, now())
+    WHERE id = $1`, [roundId]));
   const closedSessions = await closeOutOpenSessions(db, roundId, ctx.actor);
   await audit(db, roundId, ctx.actor, 'round.closed', `Closed the round through GSAM (${closedSessions} open sessions closed out)`);
   return { status: 200, body: { round: await roundView(db, await ownedRound(db, ctx, roundId)), closedSessions }, rowCount: 1,

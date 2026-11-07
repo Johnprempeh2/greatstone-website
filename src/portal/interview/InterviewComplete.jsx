@@ -9,8 +9,8 @@
  * Port: source app/(portal)/interview/complete/page.tsx (+ signoff.css, now in interview.css). Its loader
  * (getSignOffContext + loadConsentState) is the 'signoff-page' op: data { redirect } when nothing has ended
  * yet (the same '/interview/goodbye' | '/interview/session' | '/interview' choice the page made), else
- * { sessionId, initialAttribution: 'named' | 'anonymised', initialMemory: boolean } (safe defaults: anonymised,
- * false).
+ * { sessionId, initialQuotes: 'none' | 'anonymous' | 'named' | null, initialMemory: boolean } (no quote default;
+ * memory defaults to false).
  */
 
 import { GsLogo } from './GsLogo.jsx';
@@ -25,7 +25,7 @@ export default function InterviewComplete() {
   const page = usePageOp('signoff-page', {});
   const fallback = pageFallback(page, InterviewSignIn);
   if (fallback) return fallback;
-  const { sessionId, initialAttribution, initialMemory } = page.data;
+  const { sessionId, initialQuotes, initialMemory } = page.data;
 
   return (
     <>
@@ -46,7 +46,7 @@ export default function InterviewComplete() {
 
           <SignOffPanel
             sessionId={sessionId}
-            initialAttribution={initialAttribution === 'named' ? 'named' : 'anonymised'}
+            initialQuotes={initialQuotes ?? null}
             initialMemory={initialMemory === true}
           />
 

@@ -27,8 +27,9 @@ test('chat: kickoff on an empty or user-last transcript, last agent turn found',
 });
 
 test('sign-off selection summary', () => {
-  assert.equal(selectionSummary('anonymised', false), 'Anonymised quotes · no memory kept');
-  assert.equal(selectionSummary('named', true), 'Named quotes · conversation remembered');
+  assert.equal(selectionSummary(null, false), 'No quotes · no memory kept');
+  assert.equal(selectionSummary('anonymous', false), 'Anonymous quotes · no memory kept');
+  assert.equal(selectionSummary('named', true), 'Quotes with my name · conversation remembered');
 });
 
 test('join: domain hint and team targeting', () => {

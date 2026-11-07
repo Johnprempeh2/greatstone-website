@@ -139,6 +139,10 @@ Interviewee (Better Auth session cookie; 401 without it):
 - `POST /api/interview/agreement` — `{ op: 'status' }` (any member of the organisation) and `{ op: 'accept', … }`
   (company admin); `GET /api/interview/agreement?copy=<acceptance id>` downloads the accepted copy (company admin).
 
+- `POST /api/interview/my-data` — `{ op: 'see' }` (the person's own rounds, transcripts, insights, consent choices and
+  quotes used; also the download) and `{ op: 'delete', engagementId, confirm: true }` (GRE-2653). Website account
+  only; RLS keeps it to the person's own rows.
+
 Public, for Deepgram only:
 
 - `POST /api/interview/voice/think` — the OpenAI-wire think endpoint Deepgram calls. Authorised by the per-session
@@ -163,6 +167,7 @@ Pages (hash routes, inside the signed-in portal): `#portal/interview`, `#portal/
 | `SYNTHESIS_MODEL` | `claude-opus-4-6` | as the source |
 | `VOICE_INTERVIEW_MODEL` | `claude-haiku-4-5` | as the source: Haiku for voice |
 | `VOICE_ENABLED` | on when `DEEPGRAM_API_KEY` is set | as the source: `0` takes voice away from everyone, typed stays. An env change needs a redeploy (minutes). For a change in seconds, GSAM sends the round with `voice: false` |
+| `INTERVIEW_RETENTION_DRY_RUN` | off | `1`: the daily retention job counts and rolls back |
 | `INTERVIEW_ENABLED` | off | kill switch for the whole engine on a site |
 | `CHAT_RATE_SESSION_PER_MIN`, `CHAT_RATE_EMPLOYEE_PER_MIN`, `CHAT_HARD_BUDGET_RATIO`, `JOIN_RATE_*` | as the source | |
 
@@ -209,3 +214,31 @@ Rollback, in order: set `INTERVIEW_ENABLED` to anything but `1` (every interview
 set `VOICE_ENABLED=0` to take voice away alone; remove the GSAM bridge keys to stop round changes. Code rollback is
 a redeploy of the previous commit. `068_interview_engine/rollback.sql` drops schema `interview` and everything in it:
 run it only after the round's outputs are exported to GSAM and a database snapshot is taken.
+
+## Interview data rights (GRE-2653)
+
+Spec: the `retention-rights-regions` document on GRE-2639. Wording: its `privacy-notice` document. Migration
+`071_interview_data_rights`.
+
+- **Retention per round.** `engagement.retention_days` (default 90), `readout_at`, `closed_at` (set when GSAM closes
+  the round). Deletion date = readout (or close) + `retention_days`, or `retention_delete_after` if earlier
+  (`deletion_due_at()`). `interview-retention` runs daily: anonymised themes copy (`anonymised_themes`: theme labels,
+  counts, confidence, hours, team roll-ups; no statements, quotes, ids or names), then a hard delete of sessions,
+  turns, insights, synthesis, synthesis cache and runs, outbox, per-person memory, invites (employee rows; those a
+  seat request or purchase points at are cleared of name and email), people no other round holds, and the round's
+  activity log. Kept: `consent_event` (it now carries `engagement_id`, keeps the 068 `user_id`, and survives the invite)
+  and `usage_ledger` (session link nulled). Proof: a `deletion_record` row and a `retention_deleted` outbox event.
+- **Self-service.** `lib/interview/self-service.mjs`, served by `/api/interview/my-data` and the "Interview data"
+  card on the account page (`src/portal/InterviewDataCard.jsx`). Participant claims only; RLS matches the
+  person's rows by website user id (068). Delete removes the
+  person's rows for that round, writes a `withdrawal` consent event, takes them out of every synthesis of the round
+  at once (two-voice rule re-applied) and sets `synthesis_stale_at`: a synthesis generated before it cannot be
+  released again. The deletion record and activity log do not say who.
+- **Quote choice.** Sign-off records one of `none`, `anonymous`, `named` (`employee.quote_choice`, consent kind
+  `quotes`). Nothing is pre-selected and `applySignOffConsent` refuses without a choice. No choice (the person left)
+  is read as `none`. A `none` person's insights still count in themes, but their quotes are stored as
+  `{ quote: null, withheld: true }`, their words are scrubbed from model prose and from the brief, and only `named`
+  people are ever named. Declined or withdrawn people are never follow-up targets.
+- **Notice.** `src/portal/interview-notice.mjs` holds the short notice, the consent box, the quote options and the
+  deletion date line for the welcome and sign-off screens.
+- **Voice region.** `lib/interview/voice/regions.mjs`: Deepgram US agent and grant hosts (`agent.deepgram.com`, `api.deepgram.com`; John, 25 Oct: keep US). `mip_opt_out: true` stays.

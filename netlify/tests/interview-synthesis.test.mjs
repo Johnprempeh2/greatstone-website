@@ -137,9 +137,10 @@ function seedEngagement() {
   seed.engagement.push(eng);
   const unit = (id, name, path, parent_id = null) => { seed.org_unit.push({ id, engagement_id: eng.id, parent_id, name, kind: 'team', path }); return id; };
   let n = 0;
-  const person = ({ name, unitId = null, role = 'team member', leader_track = null, phase = 'sign_off', ended = true, is_test = false, turns = [], insights = [] }) => {
+  // GRE-2653: quote_choice defaults to 'named' here, so the source's fixtures keep their meaning; the quote-choice tests set it.
+  const person = ({ name, unitId = null, role = 'team member', leader_track = null, phase = 'sign_off', ended = true, is_test = false, turns = [], insights = [], quote_choice = 'named' }) => {
     n += 1;
-    const emp = { id: `emp-${n}`, engagement_id: eng.id, person_id: null, unit_id: unitId, name, role_title: role, portal_role: 'employee', status: 'completed', leader_track };
+    const emp = { id: `emp-${n}`, engagement_id: eng.id, person_id: null, unit_id: unitId, name, role_title: role, portal_role: 'employee', status: 'completed', leader_track, quote_choice };
     seed.employee.push(emp);
     const sess = { id: `sess-${n}`, employee_id: emp.id, started_at: `2026-06-0${n}T09:00:00.000Z`, ended_at: ended ? `2026-06-0${n}T09:30:00.000Z` : null, phase, completion_score: '0.9', taxonomy_state: {}, is_test };
     seed.session.push(sess);
