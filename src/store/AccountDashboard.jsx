@@ -354,6 +354,7 @@ function Dashboard({ session, profile, onProfile, verified = false }) {
         </div>
         <div className="acct-id-actions">
           {profile?.customer && <a className="gs-btn ghost sm" href="#org">Go to your organisation →</a>}
+          {profile?.customer && <a className="gs-btn ghost sm" href="#portal">Client portal →</a>}
           <a className="gs-btn ghost sm" href="#shop">Continue shopping</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
