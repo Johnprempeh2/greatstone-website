@@ -20,3 +20,8 @@ export default async function PublishedPage({ params }) {
   if (!pageForPath(path, release)) notFound();
   return <ProofPage path={path} release={release} />;
 }
+
+// Rendered on first visit, then kept like the static pages (Next cutover gap 6): no build-time list needed.
+export async function generateStaticParams() {
+  return [];
+}
