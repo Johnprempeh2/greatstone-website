@@ -50,14 +50,32 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   await writeFile(join(cwd, 'bin', 'gh'), '#!/bin/sh\nprintf "%s" "$FAKE_PR_JSON"\n', { mode: 0o755 });
   // TREE_LOG records which source tree npm and the upload ran in (config refresh tests).
   // Like the real CLI, `netlify build` in an unlinked checkout fails unless NETLIFY_SITE_ID names the site (GRE-4199).
-  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -n "$NETLIFY_SITE_ID" ] || [ -f .netlify/state.json ] || { echo "Error: Could not find the project ID" >&2; exit 4; }\n[ "$1" != build ] || printf "build site %s\\n" "$NETLIFY_SITE_ID" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\n[ -z "$TOML_LOG" ] || [ "$1" != deploy ] || cat netlify.toml >> "$TOML_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\n', { mode: 0o755 });
+  await writeFile(join(cwd, 'bin', 'netlify'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -n "$NETLIFY_SITE_ID" ] || [ -f .netlify/state.json ] || { echo "Error: Could not find the project ID" >&2; exit 4; }\n[ "$1" != build ] || printf "build site %s\\n" "$NETLIFY_SITE_ID" >> "$DEPLOY_LOG"\n[ "$1" != build ] || [ -z "$NETLIFY_BUILD_FAIL" ] || exit 9\n[ -z "$TREE_LOG" ] || printf "netlify in %s\\n" "$(cat src/app.js)" >> "$TREE_LOG"\n[ -z "$TOML_LOG" ] || [ "$1" != deploy ] || cat netlify.toml >> "$TOML_LOG"\nsleep "${DEPLOY_SLEEP:-0}"\ncase "$*" in *--json*) printf \'{"deploy_id":"draft-1","deploy_url":"%s/draft"}\\n\' "$NETLIFY_TEST_API_URL";; esac\n', { mode: 0o755 });
   await writeFile(join(cwd, 'bin', 'npm'), '#!/bin/sh\n[ -z "$TREE_LOG" ] || printf "npm %s in %s\\n" "$1" "$(cat src/app.js)" >> "$TREE_LOG"\n', { mode: 0o755 });
   let comments = [];
   let interactions = [];
   let deploys = [];
   const served = [site];
+  const restores = [];
+  const failing = new Set();
   const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
+    // The public promote (Next cutover step 4): the live deploy, publish and restore calls, and the upload's pages.
+    if (req.url.startsWith('/draft')) {
+      res.statusCode = failing.has(req.url.slice('/draft'.length)) ? 500 : 200;
+      res.end('{}');
+      return;
+    }
+    const restore = /^\/api\/v1\/sites\/[^/]+\/deploys\/([^/]+)\/restore$/.exec(req.url);
+    if (restore && req.method === 'POST') {
+      restores.push(restore[1]);
+      res.end('{}');
+      return;
+    }
+    if (/^\/api\/v1\/sites\/3b1e97e6-e184-4251-badd-deed532be3ab$/.test(req.url)) {
+      res.end(JSON.stringify({ published_deploy: { id: 'live-before' } }));
+      return;
+    }
     if (req.url.includes('/api/v1/sites/') && !served.some((name) => req.url.includes(`${name}.netlify.app/deploys`))) {
       res.statusCode = 404;
       res.end('{}');
@@ -93,7 +111,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   return { cwd, base, env, log, commit, run,
     setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
     setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); },
-    serve: (name) => { served.push(name); } };
+    serve: (name) => { served.push(name); }, restores, failing };
 }
 
 function stagingCard(sha, changes = {}, cardSite = site) {
@@ -304,7 +322,8 @@ test('the GRE-2567 cut-over card authorises the public site for its exact SHA', 
   f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /--prod/);
+  assert.match(await readFile(f.log, 'utf8'), /--context production --json/);
+  assert.deepEqual(f.restores, ['draft-1']);
 });
 
 test('the cut-over card never covers staging, another SHA, drift, agent resolution or other text', async (t) => {
@@ -350,7 +369,7 @@ test('the weekly train deploys the public site, then the editor alias from the s
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod\n` +
+    `deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --context production --json\n` +
     'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
   // The public upload installs in an export of the commit; the editor installs and builds in its prepared copy.
@@ -388,7 +407,7 @@ test('a failed editor alias step fails the train and names the step', async (t) 
   let result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /train failed at editor alias step "upload and check" \(exit 1\)/);
-  assert.match(await readFile(f.log, 'utf8'), /--prod\n/);
+  assert.match(await readFile(f.log, 'utf8'), /--context production --json\n/);
 
   f = await weeklyTrain(t);
   f.env.NETLIFY_BUILD_FAIL = '1';
@@ -787,4 +806,32 @@ test('the public site takes the commit on staging once main has moved on, still 
   f.setDeploys([]);
   result = await f.run('prod', 'greatstone-home');
   assert.match(result.stderr, /production requires main .*or the commit on staging/);
+});
+
+// Next cutover step 4: the public site is checked before it is published, and put back if its APIs fail after.
+test('the public promote checks pages on the unpublished upload, then publishes it', async (t) => {
+  const f = await weeklyTrain(t);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(f.restores, ['draft-1']);
+  assert.match(result.stdout, /Fallback: the deploy live before this one is live-before/);
+  assert.match(result.stdout, /Published draft-1: 6 pages and 4 APIs answered 200/);
+});
+
+test('a page failing on the unpublished upload publishes nothing', async (t) => {
+  const f = await weeklyTrain(t);
+  f.failing.add('/shop');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /not published: \/shop failed on the unpublished upload draft-1/);
+  assert.deepEqual(f.restores, []);
+});
+
+test('an API failing after publish puts the earlier live deploy back at once', async (t) => {
+  const f = await weeklyTrain(t);
+  f.failing.add('/api/catalogue');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\/api\/catalogue failed after publishing draft-1; restored live-before/);
+  assert.deepEqual(f.restores, ['draft-1', 'live-before']);
 });
