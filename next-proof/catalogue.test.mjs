@@ -89,3 +89,31 @@ test('empty catalogue text, a deleted category and BIGINT prices from the databa
   assert.equal(release.collections.offerings.entries[0].fields.data.from_price_minor, 120000);
   assert.equal(release.collections.offerings.entries[0].fields.data.variants[0].base_price_minor, 120000);
 });
+
+test('a CLI build reads the published catalogue over a site\'s /api/catalogue with the same operations (Next cutover)', async () => {
+  const { catalogueApiReader, collectPublishedCatalogue } = await import('./catalogue-source.mjs');
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(`${url.searchParams.get('op')}:${url.searchParams.get('slug') ?? url.searchParams.get('page') ?? ''}`);
+    const op = url.searchParams.get('op');
+    const body = op === 'vendors' ? [{ slug: 'v' }] : op === 'categories' ? [{ slug: 'c' }]
+      : op === 'list' ? { items: url.searchParams.get('page') === '1' ? [{ slug: 'p1', pricing: { from: 1 } }] : [], total: 1 }
+        : { slug: url.searchParams.get('slug'), name: 'P1' };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  const catalogue = await collectPublishedCatalogue(catalogueApiReader('https://greatstoneint.com/api/catalogue', fetchImpl));
+  assert.deepEqual(catalogue, { vendors: [{ slug: 'v' }], categories: [{ slug: 'c' }], offerings: [{ slug: 'p1', name: 'P1', pricing: { from: 1 } }] });
+  assert.ok(calls.includes('detail:p1'));
+  assert.throws(() => catalogueApiReader('http://greatstoneint.com/api/catalogue'), /https \/api\/catalogue/);
+  const failing = catalogueApiReader('https://greatstoneint.com/api/catalogue', async () => new Response('', { status: 503 }));
+  await assert.rejects(failing('vendors'), /answered 503/);
+  // A slug with capitals that the older live API refuses keeps its list card; any other 400 still fails the build.
+  const strict = catalogueApiReader('https://greatstoneint.com/api/catalogue', async () => new Response('', { status: 400 }));
+  await assert.rejects(strict('detail', { slug: 'lower-only' }), /answered 400/);
+  const read = catalogueApiReader('https://greatstoneint.com/api/catalogue', async (url) => {
+    const op = url.searchParams.get('op');
+    if (op === 'detail') return new Response('', { status: 400 });
+    return new Response(JSON.stringify(op === 'list' ? { items: url.searchParams.get('page') === '1' ? [{ slug: 'devexpress-winForms', name: 'WinForms' }] : [], total: 1 } : []), { status: 200 });
+  });
+  assert.deepEqual((await collectPublishedCatalogue(read)).offerings, [{ slug: 'devexpress-winForms', name: 'WinForms' }]);
+});

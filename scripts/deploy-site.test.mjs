@@ -695,10 +695,10 @@ test('Greatstone website staging uploads the prepared Next copy of the commit wi
   assert.equal(await readFile(f.log, 'utf8'),
     `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
-  // The CLI build cannot read the catalogue as anon, so it uses the checked-in fixture, never the required export.
+  // The CLI build cannot read the catalogue as anon, so it reads the live public catalogue over HTTP, still required.
   const toml = await readFile(f.env.TOML_LOG, 'utf8');
-  assert.match(toml, /NEXT_CATALOGUE_FIXTURE = "next-proof\/fixtures\/public-catalogue-2026-10-22\.json"/);
-  assert.doesNotMatch(toml, /NEXT_CATALOGUE_REQUIRED/);
+  assert.match(toml, /NEXT_CATALOGUE_REQUIRED = "1"\n  NEXT_CATALOGUE_API = "https:\/\/greatstoneint\.com\/api\/catalogue"/);
+  assert.doesNotMatch(toml, /NEXT_CATALOGUE_FIXTURE/);
   assert.doesNotMatch(result.stdout, /Editor alias step/);
 });
 
@@ -746,7 +746,7 @@ test('staging uploads the Next copy of main to the staging site with no card, th
     `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod\n` +
     'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
     `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
-  assert.match(await readFile(f.env.TOML_LOG, 'utf8'), /NEXT_CATALOGUE_FIXTURE/);
+  assert.match(await readFile(f.env.TOML_LOG, 'utf8'), /NEXT_CATALOGUE_API/);
 });
 
 test('staging refuses a branch that is not main, and any other site', async (t) => {
