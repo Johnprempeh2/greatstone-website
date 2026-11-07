@@ -183,6 +183,7 @@ function Org({ profile, session, onProfile }) {
         <div className="acct-id-actions">
           <button className="gs-btn ghost sm" onClick={() => window.print()}>Download a summary</button>
           <a className="gs-btn ghost sm" href="#account">← Your account</a>
+          <a className="gs-btn ghost sm" href="#portal">Client portal →</a>
           <a className="gs-btn ghost sm" href="#shop">Continue shopping</a>
           <button className="gs-btn ghost sm" onClick={() => signOut()}>Sign out</button>
         </div>
