@@ -732,3 +732,53 @@ test('config refresh re-uploads the live Next copy on Greatstone website staging
     `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
 });
+
+// Staging holds the edits (John, 7 Nov): main goes to staging with no card, then the public site
+// takes the exact commit staging holds, behind the weekly-release card.
+test('staging uploads main to the staging site with no card, then the editor alias', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const result = await f.run('staging');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await readFile(f.log, 'utf8'),
+    `deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:staging:${f.base} --prod\n` +
+    'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
+    `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+});
+
+test('staging refuses a branch that is not main, and any other site', async (t) => {
+  const f = await fixture(t);
+  await f.commit('src/app.js', 'pr code');
+  let result = await f.run('staging');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /staging requires main/);
+  git(f.cwd, 'checkout', '-q', 'main');
+  result = await f.run('staging', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /staging deploys only gre1795-website-db-staging/);
+  await assert.rejects(readFile(f.log));
+});
+
+test('the public site takes the commit on staging once main has moved on, still behind the card', async (t) => {
+  const f = await fixture(t);
+  git(f.cwd, 'checkout', '-q', 'main');
+  const staged = f.base;
+  const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
+  t.after(() => rm(remote, { recursive: true, force: true }));
+  git(f.cwd, 'init', '-q', '--bare', remote);
+  git(f.cwd, 'remote', 'add', 'origin', remote);
+  await f.commit('src/app.js', 'newer main code');
+  git(f.cwd, 'push', '-q', 'origin', 'main');
+  git(f.cwd, 'checkout', '-q', '--detach', staged);
+  f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${staged}` }]);
+  let result = await f.run('prod', 'greatstone-home');
+  assert.match(result.stderr, /production refused/);
+  f.setInteractions([weeklyCard(staged)]);
+  // Past the gate, the fake API stops it at the public site's deploy lookup.
+  result = await f.run('prod', 'greatstone-home');
+  assert.doesNotMatch(result.stderr, /production refused|production requires/);
+  assert.match(result.stderr, /greatstone-home\.netlify\.app\/deploys: 404/);
+  f.setDeploys([]);
+  result = await f.run('prod', 'greatstone-home');
+  assert.match(result.stderr, /production requires main .*or the commit on staging/);
+});

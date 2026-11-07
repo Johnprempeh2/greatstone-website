@@ -14,6 +14,9 @@ const sites = new Map([
 // GRE-4202 and serves the Next copy, so its upload is the prepared Next proof, not the Vite build.
 const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
 const nextSites = new Set(['gre3833-next-db-staging']);
+// Staging holds the edits (John, 7 Nov): every merge to main goes here with no card, as the same Vite
+// build as the public site, on its own Netlify Database. "Deploy these changes" promotes its commit.
+const stagingSite = 'gre1795-website-db-staging';
 const catalogueFixture = 'next-proof/fixtures/public-catalogue-2026-10-22.json';
 const mikeyId = '8950d7f0-4d3b-40b0-93d8-b67aead0a2f7';
 const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
@@ -114,7 +117,9 @@ async function cutoverCardApproved(sha) {
 
 async function gate(sha) {
   if (mode === 'prod') {
-    if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
+    // The public site takes main, or the exact commit staging holds (a promote while main moved on).
+    if (!onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha))
+      throw new Error('production requires main (or a detached HEAD at origin main), or the commit on staging');
     const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
     const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home') ||
@@ -136,17 +141,22 @@ async function gate(sha) {
   return pr.baseRefOid;
 }
 
-async function lastDeployedCommit() {
+async function lastDeployedCommit(name = site, from = channel) {
   if (!token) throw new Error('NETLIFY_AUTH_TOKEN is required');
   const api = process.env.NODE_ENV === 'test' && token === 'test-token'
     ? process.env.NETLIFY_TEST_API_URL : 'https://api.netlify.com';
-  const deploys = await json(`${api}/api/v1/sites/${site}.netlify.app/deploys?per_page=100`, token);
-  const marker = new RegExp(`^gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}([0-9a-f]{40})$`);
+  const deploys = await json(`${api}/api/v1/sites/${name}.netlify.app/deploys?per_page=100`, token);
+  const marker = new RegExp(`^gsam-source:${from}:${from === 'preview' ? `${prNumber}:` : ''}([0-9a-f]{40})$`);
   for (const deploy of deploys) {
     const match = marker.exec(deploy.title || '');
     if (deploy.state === 'ready' && match) return match[1];
   }
   return null;
+}
+
+/** The commit staging serves now: its newest ready upload. */
+function stagedCommit() {
+  return lastDeployedCommit(stagingSite, 'staging');
 }
 
 async function inspectSite() {
@@ -190,7 +200,8 @@ async function lockAndDeploy(sha, cwd) {
   try {
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
-    if (channel === 'prod') args.push('--prod');
+    // Staging's own production URL is the staging site, so it is a --prod upload to that site.
+    if (channel === 'prod' || channel === 'staging') args.push('--prod');
     console.log(`Deploying ${site} ${mode} at ${sha}`);
     const child = spawn('netlify', args, { stdio: 'inherit', signal: controller.signal, cwd });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
@@ -259,12 +270,13 @@ async function prepareNext(tree, target) {
 // goes in NETLIFY_SITE_ID (GRE-4199).
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
-  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha, NETLIFY_SITE_ID: sites.get(site) };
+  const home = sites.get('greatstone-home');
+  const env = { ...process.env, GSAM_ENGINE_COMMIT: sha, NETLIFY_SITE_ID: home };
   const steps = [
     ['prepare', process.execPath, ['next-proof/scripts/prepare-netlify.mjs', join(dir, 'editor'), '--editor'], process.cwd()],
     ['install', 'npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], join(dir, 'editor')],
     ['build', 'netlify', ['build', '--context', 'branch:gsam-editor'], join(dir, 'editor')],
-    ['upload and check', process.execPath, ['scripts/deploy-editor-alias.mjs', sites.get(site)], join(dir, 'editor')],
+    ['upload and check', process.execPath, ['scripts/deploy-editor-alias.mjs', home], join(dir, 'editor')],
   ];
   try {
     for (const [name, bin, args, cwd] of steps) {
@@ -281,12 +293,15 @@ async function deployEditorAlias(sha) {
 
 async function main() {
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
-  if (!['preview', 'prod', 'refresh'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod -- <allowed site> [PR number]');
+  if (!['preview', 'prod', 'refresh', 'staging'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging -- <allowed site> [PR number]');
+  if (mode === 'staging' && site !== stagingSite) throw new Error(`staging deploys only ${stagingSite}`);
   command('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)]);
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
   const sha = command('git', ['rev-parse', 'HEAD']);
   if (mode === 'refresh') return refreshStaging(sha);
-  const fallback = await gate(sha);
+  // Staging takes main with no card; it never touches the public site or its database.
+  if (mode === 'staging' && !onMain(sha)) throw new Error('staging requires main (or a detached HEAD at origin main)');
+  const fallback = mode === 'staging' ? null : await gate(sha);
   const baseline = await lastDeployedCommit() || fallback;
   let files = null;
   if (baseline) {
@@ -297,7 +312,8 @@ async function main() {
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
   else await deployInstalled(sha);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
-  if (mode === 'prod' && site === 'greatstone-home') await deployEditorAlias(sha);
+  // The editor shows what staging holds, so the alias follows every staging upload (and the public site).
+  if ((mode === 'prod' && site === 'greatstone-home') || mode === 'staging') await deployEditorAlias(sha);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
