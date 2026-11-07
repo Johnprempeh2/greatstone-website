@@ -8,6 +8,7 @@
  */
 
 import { PORTAL_HOME_HASH, hrefFor } from './route.mjs';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 export function CompletionCard() {
   return (
@@ -55,8 +56,8 @@ export function CompletionCard() {
           </svg>
           <p>
             Change your mind about anything above? Email{' '}
-            <a href="mailto:DX@greatstoneinternational.co.uk">
-              DX@greatstoneinternational.co.uk
+            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
+              {LEGAL_CONTACT_EMAIL}
             </a>{' '}
             and we will sort it.
           </p>

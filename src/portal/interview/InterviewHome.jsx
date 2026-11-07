@@ -23,6 +23,8 @@ import { pageFallback } from './PageStatus.jsx';
 import { InterviewSignIn } from './InterviewSignIn.jsx';
 import { usePageOp, useActionForm } from './usePageOp.mjs';
 import { interviewNotice, whoSeesLine, QUOTE_OPTIONS } from '../interview-notice.mjs';
+import { hrefFor } from './route.mjs';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 export default function InterviewHome({ route }) {
   const seats = route.query?.seats ?? null;
@@ -180,7 +182,7 @@ export function WelcomeScreen({ isAdmin, seats, consent, clientName, retentionDa
               </p>
             ) : null}
             <p className="privacy-full">
-              <a href={notice.fullNoticeHref}>{notice.fullNoticeLabel}</a>
+              <a href={hrefFor(notice.fullNoticeHref)}>{notice.fullNoticeLabel}</a>
             </p>
           </GlassCard>
 
@@ -307,7 +309,7 @@ function NoMatchScreen({ email }) {
             </Button>
             <p className="welcome-note">
               Think this is wrong? Email{' '}
-              <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>{' '}
+              <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>{' '}
               and we will sort it.
             </p>
           </div>

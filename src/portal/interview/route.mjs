@@ -10,6 +10,7 @@
 //   /interview/discarded  → #portal/interview/discarded  (view 'discarded')
 //   /deliverable/<id>     → #portal/interview/results[/<engagementId>]  (view 'results', released synthesis only)
 //   /join/<token>?team=   → #join/<token>[?team=<unitId>]               (view 'join')
+//   /privacy/interviews   → #privacy/interviews (view 'privacy', the full privacy notice; public, GRE-4303)
 // The source's searchParams (?seats=exhausted, ?consent=required, ?team=) ride after a '?' in the hash.
 
 export const INTERVIEW_BASE = '#portal/interview';
@@ -29,6 +30,7 @@ function parseQuery(q) {
 /**
  * '#portal/interview[/<view>][?query]' → { view, query, engagementId? };
  * '#join/<token>[?team=<unitId>]' → { view: 'join', token, unitId, query };
+ * '#privacy/interviews' → { view: 'privacy', query } (the full interview privacy notice);
  * anything else → null (not an interview route).
  * An unknown sub-path under #portal/interview is { view: 'notfound' }, never the portal.
  */
@@ -40,6 +42,7 @@ export function parseInterviewHash(hash) {
 
   const join = /^#\/?join\/([\w-]+)\/?$/i.exec(path);
   if (join) return { view: 'join', token: join[1], unitId: query.team || null, query };
+  if (/^#\/?privacy\/interviews\/?$/i.test(path)) return { view: 'privacy', query };
 
   if (!/^#\/?portal\/interview(\/|$)/i.test(path)) return null;
   const rest = path.replace(/^#\/?portal\/interview\/?/i, '').replace(/\/+$/, '');
@@ -82,16 +85,19 @@ export function enablePathRoutes(push) {
   if (push) pushPath = push;
 }
 
-/** '#portal/interview/x?q' → '/portal/interview/x?q', '#join/t?team=u' → '/join/t?team=u', '#portal' → '/portal'. */
+/**
+ * '#portal/interview/x?q' → '/portal/interview/x?q', '#join/t?team=u' → '/join/t?team=u', '#portal' → '/portal',
+ * '#privacy/interviews' → '/privacy/interviews'.
+ */
 export function interviewPathOf(hash) {
-  const m = /^#\/?((?:portal|join)(?:[/?].*)?)$/i.exec(String(hash || ''));
+  const m = /^#\/?((?:portal|join)(?:[/?].*)?|privacy\/interviews\/?)$/i.exec(String(hash || ''));
   return m ? '/' + m[1] : null;
 }
 
 /** A Next path read back as its hash: ('/join/t', '?team=u') → '#join/t?team=u'. Not an interview path → null. */
 export function interviewHashOf(pathname, search) {
   const path = String(pathname || '').replace(/\/+$/, '');
-  if (!/^\/(portal\/interview|join)(\/|$)/i.test(path)) return null;
+  if (!/^\/(portal\/interview|join|privacy\/interviews$)(\/|$)/i.test(path)) return null;
   const qs = String(search || '').replace(/^\?/, '');
   return '#' + path.slice(1) + (qs ? '?' + qs : '');
 }

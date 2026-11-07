@@ -7,6 +7,7 @@
 import { GsLogo } from './GsLogo.jsx';
 import { Button } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 export function PageLoading({ label = 'Loading' }) {
   return (
@@ -30,7 +31,7 @@ export function PageError({ error, onRetry }) {
           {onRetry ? <Button onClick={onRetry}>Try again</Button> : null}
           <p className="welcome-note">
             Still stuck? Email{' '}
-            <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a> and we will
+            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a> and we will
             sort it.
           </p>
         </div>

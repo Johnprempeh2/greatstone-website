@@ -17,6 +17,7 @@ import { InterviewFooter } from './Footer.jsx';
 import { Button } from './Button.jsx';
 import { isUnverifiedError, signInErrorMessage, verifyCallbackURL } from './auth-model.mjs';
 import { currentHash } from './route.mjs';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 
 /** Send a fresh verification link that returns to this page. */
@@ -116,7 +117,7 @@ export function SignInForm({ onSignedIn, hint }) {
           <>
             Invited to a conversation? Open the link you were sent to create your account first. Lost it? Ask
             whoever invited you, or email{' '}
-            <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>.
+            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>.
           </>
         )}
       </p>

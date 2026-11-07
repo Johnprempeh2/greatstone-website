@@ -11,6 +11,7 @@ import { WaveDecoration } from './WaveDecoration.jsx';
 import { ButtonLink } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { INTERVIEW_BASE, hrefFor } from './route.mjs';
+import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 
 export default function InterviewDiscarded() {
   return (
@@ -39,7 +40,7 @@ export default function InterviewDiscarded() {
             </ButtonLink>
             <p className="welcome-note">
               Questions about any of this? Email{' '}
-              <a href="mailto:DX@greatstoneinternational.co.uk">DX@greatstoneinternational.co.uk</a>{' '}
+              <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>{' '}
               and we will sort it.
             </p>
           </div>
