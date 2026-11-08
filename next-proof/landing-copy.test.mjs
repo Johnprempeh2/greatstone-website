@@ -9,8 +9,9 @@ test('with no copy the landing renders the frozen blocks exactly (pixel parity),
   const frozen = landing.data.content.filter((block) => block.type !== 'TwoDoorsProof');
   for (const copy of [undefined, '{}', 'not json']) {
     assert.equal(landingData(copy), landingData(undefined));
-    assert.deepEqual(landingData(copy).content, frozen);
-    assert.ok(landingData(copy).content.every((block, i) => block === frozen[i]));
+    assert.deepEqual(landingData(copy).content.slice(1), frozen.slice(1));
+    assert.deepEqual({ ...landingData(copy).content[0].props, proofHref: frozen[0].props.proofHref }, frozen[0].props);
+    assert.ok(landingData(copy).content.slice(1).every((block, i) => block === frozen[i + 1]));
   }
   assert.match(readFileSync(new URL('../src/blocks/TwoDoors.jsx', import.meta.url), 'utf8'), /showCue: true/);
 });
@@ -40,4 +41,9 @@ test('only the live-design render names the fields', () => {
 test('the landing leaves out the case-study section until a verified case exists', () => {
   assert.equal(landingData().content.some((block) => block.type === 'TwoDoorsProof'), false);
   assert.equal(landingData('{"cueText":"x"}').content.some((block) => block.type === 'TwoDoorsProof'), false);
+});
+
+test('no landing link points at a hidden page; the door proof link goes to How we work', () => {
+  assert.ok(!JSON.stringify(landingData().content).match(/"[a-zA-Z]*Href":"\/(case-studies|proof)/));
+  assert.equal(landingData().content[0].props.proofHref, '/consultancy/how-we-work');
 });
