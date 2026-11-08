@@ -177,7 +177,8 @@ test('story: client logos are the site carousel, four dark tiles to a slide', as
     assert.equal(carousel.getAttribute('data-autoplay'), '6000');
     assert.equal(carousel.getAttribute('aria-roledescription'), 'carousel');
     assert.equal(carousel.getAttribute('aria-label'), 'Clients');
-    const slides = [...carousel.querySelectorAll('[data-carousel-track] > ul')];
+    const slides = [...carousel.querySelectorAll('[data-carousel-track] > [role="group"]')];
+    assert.equal(carousel.querySelectorAll('[role="group"] li').length, 0, 'a group slide holds no orphan list items (axe listitem)');
     assert.deepEqual(slides.map((slide) => slide.querySelectorAll('img').length), [4, 4, 3]);
     assert.ok([...carousel.querySelectorAll('img')].every((img) => img.getAttribute('src').startsWith('/assets/two-doors/clients/light/') && img.getAttribute('alt')));
     assert.equal(carousel.querySelectorAll('[data-carousel-dot]').length, 3);

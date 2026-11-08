@@ -43,9 +43,9 @@ function ClientCarousel() {
   useEffect(() => attachBehaviour(root.current, window), []);
   return <section ref={root} className="td-public-clients" data-behaviour="carousel" data-autoplay="6000" aria-roledescription="carousel" aria-label="Clients">
     <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2>Organisations we have worked with</h2></div>
-    <div className="td-clients-track" data-carousel-track>{clientSlides.map((slide, i) => <ul className="td-clients-slide" key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${clientSlides.length}`}>
-      {slide.map(({ name, image }) => <li key={name}><img src={image} alt={name} loading="lazy" width="240" height="120" /></li>)}
-    </ul>)}</div>
+    <div className="td-clients-track" data-carousel-track tabIndex={0} aria-label="Client logos">{clientSlides.map((slide, i) => <div className="td-clients-slide" key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${clientSlides.length}`}>
+      {slide.map(({ name, image }) => <div key={name}><img src={image} alt={name} loading="lazy" width="240" height="120" /></div>)}
+    </div>)}</div>
     <div className="td-clients-controls">
       <button type="button" data-carousel-pause aria-pressed="false" aria-label="Pause clients"><span aria-hidden="true" /></button>
       <span className="td-dots">{clientSlides.map((slide, i) => <button key={i} type="button" data-carousel-dot={i} aria-label={`Show clients ${i + 1} of ${clientSlides.length}`} />)}</span>
