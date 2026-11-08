@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import CatalogueProductClient from '../../CatalogueProductClient.jsx';
 import { SiteFrame } from '../../ProofPage.jsx';
-import { catalogueFromRelease } from '../../catalogue-data.js';
+import { pricedCatalogue } from '../../catalogue-pricing.js';
 import { activeRelease } from '../../release-source.js';
 import { offeringBySlug } from '../../../next-proof/catalogue-data.mjs';
 
@@ -13,7 +13,7 @@ function catalogueSlug(value) {
 
 export async function generateMetadata({ params }) {
   const { release } = await activeRelease();
-  const catalogue = catalogueFromRelease(release);
+  const catalogue = await pricedCatalogue(release);
   const slug = catalogueSlug((await params).slug);
   const item = offeringBySlug(catalogue, slug);
   if (!item) notFound();
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
 
 export default async function Product({ params }) {
   const { release } = await activeRelease();
-  const catalogue = catalogueFromRelease(release);
+  const catalogue = await pricedCatalogue(release);
   const slug = catalogueSlug((await params).slug);
   const item = offeringBySlug(catalogue, slug);
   if (!item) notFound();

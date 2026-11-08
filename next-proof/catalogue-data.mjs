@@ -1,3 +1,4 @@
+import { decorateOffering, priceCard } from '../src/data/catalog.mjs';
 import { resolveMediaRefs } from './release-media.mjs';
 
 export function catalogueFromRelease(release) {
@@ -5,6 +6,17 @@ export function catalogueFromRelease(release) {
     .filter((entry) => release.gsamSnapshot || entry.orgId === release.orgId)
     .map((entry) => resolveMediaRefs(entry.fields.data, release.media));
   return { vendors: rows('vendors'), categories: rows('categories'), offerings: rows('offerings') };
+}
+
+// Prices are not in the release: they come from the live rules and display rate, through the old
+// site's own price path, so a card and a product page show what /api/catalogue shows.
+export function priceCatalogue(catalogue, price) {
+  if (!price) return catalogue;
+  const offerings = catalogue.offerings.map((item) => ({
+    ...decorateOffering(item, price.rules, price.rate),
+    pricing: priceCard(item, price.rules, null, price.rate),
+  }));
+  return { ...catalogue, offerings };
 }
 
 export function browseOfferings(catalogue, { vendor = '', category = '', platform = '', q = '', sort = 'featured' } = {}) {
