@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import pg from 'pg';
 import { makeStaffStoreHandler } from '../functions/staff-store.mjs';
-import { asStaff, staffStore } from '../functions/lib/staff-store.mjs';
+import { STAFF_TABLES, asStaff, staffStore } from '../functions/lib/staff-store.mjs';
 import { startPostgres, skip, OWNER } from './lib/postgres.mjs';
 
 const ORG_A = '11111111-1111-4111-8111-111111111111';
@@ -118,5 +118,57 @@ test('staff catalogue, client and order requests obey migrated RLS', { skip }, a
       const { rows } = await connection.query('SELECT current_user AS role, auth.uid() AS subject');
       assert.deepEqual(rows[0], { role: OWNER, subject: null });
     } finally { connection.release(); }
+  } finally { await pool?.end(); db.stop(); }
+});
+
+test('staff portal documents save jsonb arrays as JSON, not Postgres array literals', { skip }, async () => {
+  const db = startPostgres('staff-store-jsonb');
+  let pool;
+  try {
+    await db.migrate();
+    const seed = db.psql(`INSERT INTO organisations(id,slug,name) VALUES ('${ORG_A}','test-a','Test A');
+      INSERT INTO users(org_id,email,role,auth_subject) VALUES ('${ORG_A}','${WHO.email}','admin','${WHO.id}');
+      INSERT INTO customers(org_id,slug,name) VALUES ('${ORG_A}','test-customer-a','Customer A');`);
+    assert.equal(seed.status, 0, seed.stderr);
+    pool = new pg.Pool({ connectionString: db.url, max: 1 });
+    const handler = makeStaffStoreHandler({ pool: () => pool, verify: async () => WHO });
+    const call = async (body) => {
+      const response = await handler(request({ ...body, filters: body.filters || [] }));
+      return { status: response.status, ...await response.json() };
+    };
+    const customer = (await call({ kind: 'select', table: 'customers', columns: 'id', single: true })).data;
+    const demo = { label: 'Walkthrough', url: 'https://example.test/demo' };
+    const row = (demos) => ({ kind: 'pre_read', title: 'Pre-read', summary: '', action: 'none',
+      body: { sections: [{ id: 's1', title: 'One', html: '<p>Hi</p>' }] }, demos, signatory_email: null,
+      customer_id: customer.id, created_by_kind: 'staff' });
+    const read = async (docId) => (await call({ kind: 'select', table: 'portal_documents', columns: 'demos,body',
+      filters: [{ column: 'id', op: 'eq', value: docId }], single: true })).data;
+
+    const empty = await call({ kind: 'insert', table: 'portal_documents', values: row([]), columns: 'id,version', single: true });
+    assert.equal(empty.status, 200, empty.error);
+    assert.deepEqual((await read(empty.data.id)).demos, []);
+    const one = await call({ kind: 'insert', table: 'portal_documents', values: row([demo]), columns: 'id', single: true });
+    assert.equal(one.status, 200, one.error);
+    assert.deepEqual((await read(one.data.id)).demos, [demo]);
+    const both = await call({ kind: 'insert', table: 'portal_documents', values: [row([]), row([demo])], columns: 'id' });
+    assert.equal(both.status, 200, both.error);
+    assert.equal(both.data.length, 2);
+
+    const update = (docId, values) => call({ kind: 'update', table: 'portal_documents', values,
+      filters: [{ column: 'id', op: 'eq', value: docId }, { column: 'status', op: 'eq', value: 'draft' }], columns: 'id' });
+    assert.equal((await update(empty.data.id, { demos: [demo], body: { sections: [] } })).status, 200);
+    assert.deepEqual(await read(empty.data.id), { demos: [demo], body: { sections: [] } });
+    assert.equal((await update(one.data.id, { demos: [] })).status, 200);
+    assert.deepEqual((await read(one.data.id)).demos, []);
+    // the check constraint still rejects what it should
+    assert.equal((await update(one.data.id, { demos: {} })).status, 400);
+    assert.equal((await update(one.data.id, { demos: [{ label: 'x', url: 'http://insecure.test' }] })).status, 400);
+
+    // the fix is per column type, not per table: another jsonb column takes an array too
+    const job = await call({ kind: 'insert', table: 'import_jobs', columns: 'diff_summary,error_summary', single: true,
+      values: { org_id: ORG_A, filename: 'skus.csv', type: 'variants', status: 'applied', dry_run: false, total_rows: 0,
+        diff_summary: { created: 0, updated: 0 }, error_summary: [] } });
+    assert.equal(job.status, 200, job.error);
+    assert.deepEqual(job.data, { diff_summary: { created: 0, updated: 0 }, error_summary: [] });
   } finally { await pool?.end(); db.stop(); }
 });
