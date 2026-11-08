@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { mkdtemp, readdir, readFile, stat, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 
 const exec = promisify(execFile);
@@ -57,7 +58,10 @@ test('editor package carries the host guard and builds without database provisio
       assert.equal(lock.packages[''].devDependencies?.[name], undefined);
     }
     assert.deepEqual(await readdir(join(target, 'netlify/functions')), ['lib']);
-    assert.deepEqual((await readdir(join(target, 'netlify/functions/lib'))).sort(), ['interview', 'shared']);
+    assert.deepEqual((await readdir(join(target, 'netlify/functions/lib'))).sort(), ['catalogue-store.mjs', 'db.mjs', 'interview', 'shared']);
+    // The shop's pricing imports the pool (GRE-4714); the editor's has no database behind it.
+    const { getPool } = await import(pathToFileURL(join(target, 'netlify/functions/lib/db.mjs')).href);
+    assert.equal(getPool(), null);
     // The voice client imports the barge-in rules (GRE-4282) and the region map (GRE-2687); nothing else from interview ships.
     assert.deepEqual(await readdir(join(target, 'netlify/functions/lib/interview')), ['voice']);
     assert.deepEqual((await readdir(join(target, 'netlify/functions/lib/interview/voice'))).sort(), ['barge-in.mjs', 'regions.mjs']);
