@@ -19,6 +19,8 @@ export const BLOCK_ISLANDS = {
   // GRE-3789: the catalogue is an app over the service data (search, category filter, featured tabs,
   // popularity and the inquiry basket), not page copy, so it stays code and keeps its published props.
   ServiceCatalog: { name: 'service-catalog', attributes: (props) => ({ 'data-block': props.id }) },
+  // The Climb chart draws its trail glow with an SVG filter, which the sanitiser refuses, so it stays code.
+  MaturityMap: { name: 'maturity-map', attributes: (props) => ({ 'data-block': props.id }) },
 };
 // The frozen landing (Two Doors, v15) moves as it is: one island renders its published blocks unchanged.
 export const FROZEN_LANDING = { path: '/', island: 'two-doors-landing' };
