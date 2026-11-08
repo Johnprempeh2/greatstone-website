@@ -55,6 +55,51 @@ export function validateGsamRelease(value, { siteId, orgId, number }) {
   return null;
 }
 
+// On-page sections a header page shows as its dropdown. GSAM's sitemap holds pages only, not anchors.
+// ponytail: one hand-kept list; move it into GSAM when the sitemap can hold on-page sections.
+const TS = '/consultancy/transformation-services';
+export const NAV_SECTIONS = Object.freeze({
+  [TS]: {
+    overview: { label: 'The full transformation', subtext: 'Every step, planned together' },
+    links: [
+      ['websites', 'Websites & Web Apps', 'Sites and apps built around your work'],
+      ['commerce', 'Commerce & Storefronts', 'Sell your products and services online'],
+      ['ai-assistants', 'AI Agents & Assistants', 'AI set up for one clear job'],
+      ['automation', 'Automation & Integration', 'Connect your tools, remove manual steps'],
+      ['comms', 'Comms Channels', 'Reach people where they already are'],
+      ['knowledge', 'Meetings & Knowledge', 'Keep what your company knows'],
+      ['reporting', 'Intelligence & Reporting', 'See the business as it is now'],
+      ['brand', 'Brand, Content & Media', 'Look and sound like who you are'],
+    ],
+  },
+});
+
+// GSAM header pages as the studio's nav tree: top-level pages are tabs, header pages under a tab are its
+// dropdown (the tab's own page first), and a page with on-page sections is its own dropdown tab straight
+// after its parent. Before this every header page sat in one flat bar sorted by menuOrder alone.
+export function gsamNavigation(pages) {
+  const header = pages.filter((page) => page.menu === 'header');
+  const ids = new Set(header.map((page) => page.id));
+  const byOrder = (a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0);
+  const link = (page, label = page.title, subtext) => ({ id: page.id, label, visible: true, ...(subtext ? { subtext } : {}), target: { kind: 'page', pageId: page.id } });
+  const sectionTab = (page) => {
+    const { overview, links } = NAV_SECTIONS[page.slug];
+    return { ...link(page), children: [
+      { ...link(page, overview.label, overview.subtext), id: page.id + '-overview' },
+      ...links.map(([anchor, label, subtext]) => ({ id: page.id + '-' + anchor, label, visible: true, subtext, target: { kind: 'link', href: page.slug + '#' + anchor } })),
+    ] };
+  };
+  return header.filter((page) => !ids.has(page.parentPageId)).sort(byOrder).flatMap((tab) => {
+    const kids = header.filter((page) => page.parentPageId === tab.id).sort(byOrder);
+    const own = kids.filter((page) => !NAV_SECTIONS[page.slug]);
+    const lifted = kids.filter((page) => NAV_SECTIONS[page.slug]).map(sectionTab);
+    const item = NAV_SECTIONS[tab.slug] ? sectionTab(tab)
+      : own.length ? { ...link(tab), children: [{ ...link(tab), id: tab.id + '-overview' }, ...own.map((page) => link(page))] }
+      : link(tab);
+    return [item, ...lifted];
+  });
+}
+
 export function readGsamRelease(raw, current, identity, baked) {
   if (typeof raw !== 'string' || Buffer.byteLength(raw) > 10 * 1024 * 1024) return { refused: problem('release', 'Release file is missing or too large') };
   if (createHash('sha256').update(raw).digest('hex') !== current.sha256) return { refused: problem('sha256', 'Release digest does not match current') };
@@ -75,9 +120,7 @@ export function readGsamRelease(raw, current, identity, baked) {
       ...(html ? { format: 'html', html: page.html, css: page.css } : { data: page.content }),
     }));
     if (!pages.some((page) => page.path === '/')) return { refused: problem('pages', 'Release has no home page') };
-    const navigation = published.pages.filter((page) => page.menu === 'header')
-      .sort((a, b) => (a.menuOrder ?? 0) - (b.menuOrder ?? 0))
-      .map((page) => ({ id: page.id, label: page.title, visible: true, target: { kind: 'page', pageId: page.id } }));
+    const navigation = gsamNavigation(published.pages);
     const collections = Object.fromEntries(Object.entries(published.collections).map(([key, entries]) => [key, {
       fieldsVersion: 1,
       entries: entries.map((entry) => ({ ...entry })),
