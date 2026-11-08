@@ -10,13 +10,16 @@ export { catalogueFromRelease };
 // The release carries the stored USD prices; the GBP price is computed here, server-side, with the same
 // rules and display rate /api/catalogue reads from the site database, so /shop and /product match it.
 // Kept five minutes, like the pages (layout revalidate), so a rate or rule change shows within that.
-const livePricing = unstable_cache(async () => {
-  const pool = getPool();
-  if (!pool) throw new Error('Catalogue pricing needs the site database (NETLIFY_DB_URL or DATABASE_URL).');
-  return asCatalogueAnon(pool, cataloguePricing);
-}, ['catalogue-pricing'], { revalidate: 300 });
+const livePricing = unstable_cache(async () => asCatalogueAnon(getPool(), cataloguePricing), ['catalogue-pricing'], { revalidate: 300 });
 
 export async function pricedCatalogueFromRelease(release) {
+  const catalogue = catalogueFromRelease(release);
+  // No database (CI's link check, a local build): the pages still render, unpriced. GSAM's pre-Deploy
+  // check refuses a Deploy when staging's /shop shows no price, so this never reaches greatstoneint.com.
+  if (!getPool()) {
+    console.error('Catalogue pricing: no site database (NETLIFY_DB_URL or DATABASE_URL); prices not shown.');
+    return catalogue;
+  }
   const { rules, rate } = await livePricing();
-  return priceCatalogue(catalogueFromRelease(release), rules, rate);
+  return priceCatalogue(catalogue, rules, rate);
 }
