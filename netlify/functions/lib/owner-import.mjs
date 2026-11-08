@@ -501,9 +501,10 @@ export async function registerStagingApprover(pool, data, apply) {
 // The bridge approver above cannot sign in, so a signed-in approve, accept and receipt check needs a real sign-in.
 // This mode takes the one verified staging audit account (STAGING_AUDIT_EMAIL, made by verify-test-account) and makes
 // it an active owner of the Greatstone org and a portal approver. It refuses any other address, an unverified or
-// missing account, and any run while a staging audit address is already Greatstone staff: one test approver per
-// database. staging-test-approver-off removes its approver row and marks the staff row inactive; nothing else is
-// deleted, so approvals it made keep their history. Allowed on gre3833 only.
+// missing account, an address that was ever Greatstone staff, and any run while an active staging audit address is
+// Greatstone staff: one active test approver at a time. staging-test-approver-off removes its approver row and marks
+// the staff row inactive; nothing else is deleted, so approvals it made keep their history, and a later run needs a
+// new audit address. Allowed on gre3833 only.
 
 export function validateTestApprover(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) refuse('test-approver-shape');
@@ -528,8 +529,9 @@ export async function registerTestApprover(pool, data, apply) {
     const n = async (sql, params) => (await client.query(sql, params)).rows[0].n;
     if (await n('SELECT count(*)::int AS n FROM public.organisations WHERE id = $1', [GREATSTONE_ORG_ID]) !== 1)
       refuse('test-approver-no-org');
-    if (await n('SELECT count(*)::int AS n FROM public.users WHERE org_id = $1 AND email ~ $2', [GREATSTONE_ORG_ID, AUDIT_EMAIL_SQL]))
-      refuse('test-approver-exists');
+    if (await n(`SELECT count(*)::int AS n FROM public.users WHERE org_id = $1 AND email ~ $2 AND is_active AND deleted_at IS NULL`,
+      [GREATSTONE_ORG_ID, AUDIT_EMAIL_SQL])) refuse('test-approver-exists');
+    if (await n('SELECT count(*)::int AS n FROM public.users WHERE email = $1', [email])) refuse('test-approver-used');
     const { rows } = await client.query(`SELECT u."id" AS id FROM better_auth."user" u
       JOIN auth.users a ON a.id::text = u."id" WHERE u."email" = $1 AND u."emailVerified"`, [email]);
     if (rows.length !== 1) refuse('test-approver-no-sign-in');
