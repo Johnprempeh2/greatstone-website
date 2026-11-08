@@ -76,6 +76,13 @@ export const CHILD_COLUMNS = {
   pricing_rule_targets: ['id', 'rule_id', 'vendor_id', 'category_id', 'offering_id', 'tier_id'],
 };
 
+// What an order bought (GSAM shows names first, the code as small print): orders, invoices and the payment report.
+const ORDER_ITEMS_SQL = `(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',i.id,'offering_id',i.offering_id,'variant_id',i.variant_id,
+  'offering_name',i.offering_name,'variant_name',i.variant_name,'qty',i.qty,'unit_price_minor',i.unit_price_minor,
+  'line_total_minor',i.line_total_minor,'currency',i.currency,
+  'sku',(SELECT v.sku FROM offering_variants v WHERE v.id = i.variant_id)) ORDER BY i.created_at, i.id), '[]'::jsonb)
+  FROM order_items i WHERE i.order_id = x.id)`;
+
 const RESOURCES = {
   customers: {
     table: 'customers', time: 'created_at', updated: 'updated_at', customer: 'id', live: 'x.deleted_at IS NULL',
@@ -97,8 +104,7 @@ const RESOURCES = {
     columns: ['id', 'reference', 'quote_id', 'customer_id', 'customer_user_id', 'customer_email', 'status', 'currency',
       'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'invoice_number', 'placed_at', 'created_at',
       'updated_at', 'row_version'],
-    extra: { items: items('order_items', 'order_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
-      'qty', 'unit_price_minor', 'line_total_minor', 'currency']) },
+    extra: { items: ORDER_ITEMS_SQL },
   },
   'billing-lines': {
     table: 'billing_lines', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
@@ -113,6 +119,7 @@ const RESOURCES = {
     columns: ['id', 'invoice_number', 'reference', 'customer_id', 'customer_email', 'status', 'currency',
       'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'placed_at', 'created_at', 'updated_at',
       'row_version'],
+    extra: { items: ORDER_ITEMS_SQL },
   },
   licences: {
     table: 'licence_keys', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
@@ -397,6 +404,7 @@ export async function bridgePayments(client, searchParams, stripeMode) {
          'created_at', r.created_at,
          'waiting_on_stripe', r.status = 'approved' AND r.decided_at < now() - interval '7 days')
          ORDER BY r.created_at, r.id), '[]'::jsonb) FROM refund_requests r WHERE r.order_id = x.id) AS refund_requests,
+      ${ORDER_ITEMS_SQL} AS items,
       x.created_at::text AS _t
     FROM orders x WHERE ${where.join(' AND ')} ORDER BY x.created_at, x.id LIMIT ${p(opts.limit + 1)}`, params);
   const orders = page(rows, opts.limit, (r) => r.id);
