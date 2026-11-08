@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { exportRenderedPage, releasePage, stageDraftPages, stripCssComments, withoutDraftLinks } from './html-export.mjs';
+import { chromeFile, exportRenderedPage, releasePage, stageDraftPages, stripCssComments, withoutDraftLinks } from './html-export.mjs';
 import { sanitiseHtml } from './html-sanitiser.mjs';
 import { sanitiseCss } from './css-sanitiser.mjs';
 
@@ -129,4 +129,9 @@ test('the shared chrome drops the footer links staged drafts add, and nothing el
   assert.deepEqual(withoutDraftLinks(chrome, [draft]).footer, { html: '<nav class="foot-links"><a href="/about">About</a></nav>', css: '.x{}' });
   assert.throws(() => withoutDraftLinks({ ...chrome, footer: { html: '', css: '' } }, [draft]), /one footer link/);
   assert.throws(() => withoutDraftLinks({ ...chrome, header: { html: '<a href="/support">Help</a>', css: '' } }, [draft]), /outside the footer/);
+});
+
+test('the chrome file GSAM refreshes from holds the stylesheet and the footer only', () => {
+  const release = { stylesheet: '.a{color:red}', chrome: { header: { html: '<header></header>', css: '' }, nav: { html: '', css: '' }, footer: { html: '<footer>F</footer>', css: '.f{}' } } };
+  assert.deepEqual(chromeFile(release), { version: 1, stylesheet: '.a{color:red}', footer: { html: '<footer>F</footer>', css: '.f{}' } });
 });

@@ -286,3 +286,9 @@ export function withoutDraftLinks(chrome, drafts) {
   }
   return { ...chrome, footer: { ...chrome.footer, html: footer } };
 }
+
+// The shared parts GSAM refreshes at Publish (public/_chrome.json): the site stylesheet and the footer.
+export const CHROME_FILE_VERSION = 1;
+export function chromeFile(release) {
+  return { version: CHROME_FILE_VERSION, stylesheet: release.stylesheet, footer: { html: release.chrome.footer.html, css: release.chrome.footer.css } };
+}
