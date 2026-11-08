@@ -4,6 +4,7 @@ import { hostname, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
+import { readGsamRelease } from '../next-proof/gsam-release.mjs';
 
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
@@ -503,14 +504,25 @@ async function prepareNext(tree, target) {
 // GSAM's editor overlays its draft on the release it is built with. That was the checked-in proof release (1),
 // so the alias showed old words under the draft (8 Nov). It now bakes staging's current content release in,
 // checked against its sha256, so the editor shows what staging serves. Media still come from greatstone-home's store.
+// GSAM publishes its own release shape, so it is converted to the baked shape exactly as a staging build does
+// (export-gsam-release.mjs); the editor reads its identity from the baked file, so it takes the release's own ids.
+export function editorRelease(file, staged, baked) {
+  const raw = file.toString('utf8');
+  let published;
+  try { published = JSON.parse(raw); } catch { published = {}; }
+  const { release, refused } = readGsamRelease(raw, staged, { siteId: published.siteId, orgId: published.orgId ?? baked.orgId }, baked);
+  if (refused) throw new Error(`editor alias: staging's ${contentLine(staged)} is refused: ${refused.rule} ${refused.message}`);
+  return `${JSON.stringify(release, null, 2)}\n`;
+}
+
 async function bakeStagingContent(target) {
   const staged = await contentRelease(stagingSite);
   if (!staged) { console.log('Editor alias: staging has no content release, keeping the checked-in proof release'); return; }
   const file = await (await contentStore(stagingSite)).get(staged.key);
   if (!file || createHash('sha256').update(file).digest('hex') !== staged.sha256)
     throw new Error(`editor alias: staging's ${contentLine(staged)} is missing or does not match its sha256`);
-  await mkdir(join(target, 'next-proof/data'), { recursive: true });
-  await writeFile(join(target, 'next-proof/data/release.json'), file);
+  const path = join(target, 'next-proof/data/release.json');
+  await writeFile(path, editorRelease(file, staged, JSON.parse(await readFile(path, 'utf8'))));
   console.log(`Editor alias bakes staging's ${contentLine(staged)}`);
 }
 

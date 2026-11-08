@@ -7,6 +7,7 @@ import { spawnSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 
 const script = new URL('./deploy-site.mjs', import.meta.url).pathname;
+const bakedProof = { schema: 1, siteId: 'proof-site', orgId: 'org-greatstone', release: { number: 1 }, site: {}, theme: { tokens: {} } };
 const site = 'gre1795-website-db-staging';
 
 function git(cwd, ...args) {
@@ -34,15 +35,19 @@ async function fixture(t) {
   await writeFile(join(cwd, 'next-proof', 'scripts', 'prepare-netlify.mjs'), `import { cpSync } from 'node:fs';
 import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '../..');
-for (const name of ['src', 'scripts']) cpSync(resolve(root, name), resolve(process.argv[2], name), { recursive: true });
+for (const name of ['src', 'scripts', 'next-proof/data']) cpSync(resolve(root, name), resolve(process.argv[2], name), { recursive: true });
 if (!process.argv[3]) cpSync(resolve(root, 'next-proof/netlify.toml'), resolve(process.argv[2], 'netlify.toml'));
 `);
   await writeFile(join(cwd, 'next-proof', 'netlify.toml'), '[build.environment]\n  NEXT_CATALOGUE_REQUIRED = "1"\n');
-  await writeFile(join(cwd, 'scripts', 'deploy-editor-alias.mjs'), `import { appendFileSync } from 'node:fs';
+  // The checked-in proof release the editor alias replaces with staging's content.
+  await mkdir(join(cwd, 'next-proof', 'data'), { recursive: true });
+  await writeFile(join(cwd, 'next-proof', 'data', 'release.json'), JSON.stringify(bakedProof));
+  await writeFile(join(cwd, 'scripts', 'deploy-editor-alias.mjs'), `import { appendFileSync, readFileSync } from 'node:fs';
 appendFileSync(process.env.DEPLOY_LOG, \`alias \${process.argv[2]} \${process.env.GSAM_ENGINE_COMMIT}\\n\`);
+appendFileSync(\`\${process.env.DEPLOY_LOG}.baked\`, readFileSync('next-proof/data/release.json'));
 if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
 `);
-  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs', 'next-proof/scripts/prepare-netlify.mjs', 'next-proof/netlify.toml', 'scripts/deploy-editor-alias.mjs');
+  git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs', 'next-proof/scripts/prepare-netlify.mjs', 'next-proof/netlify.toml', 'next-proof/data/release.json', 'scripts/deploy-editor-alias.mjs');
   git(cwd, 'commit', '-qm', 'base');
   const base = git(cwd, 'rev-parse', 'HEAD');
   git(cwd, 'checkout', '-qb', 'test-pr');
@@ -915,7 +920,9 @@ const goodCatalogue = { offerings: [entry('sample-product')], categories: [entry
 // `live` also points the public store at the same release, so a Deploy carries the commit only.
 async function stageContent(f, number = 4, { collections = goodCatalogue, live = false } = {}) {
   const { createHash } = await import('node:crypto');
-  const file = Buffer.from(JSON.stringify({ schema: 2, release: number, pages: [], collections }));
+  const file = Buffer.from(JSON.stringify({ schema: 2, siteId: 'gsam-site', orgId: null, release: number, theme: {},
+    pages: [{ id: 'home', slug: '/', title: 'Home', seo: {}, html: '<p>Home</p>', css: '' }],
+    collections, redirects: [], media: {}, stylesheet: '', chrome: {} }));
   const sha256 = createHash('sha256').update(file).digest('hex');
   const current = { schema: 1, release: number, key: `releases/${number}.json`, sha256, switchedAt: '2026-11-07T10:00:00.000Z', fence: 3 };
   f.env.CONTENT_STORE_DIR = join(f.cwd, 'bin');
@@ -974,6 +981,11 @@ test('a staging content task forces the staging upload and must match staging\'s
   assert.match(await readFile(f.log, 'utf8'), /--message gsam-source:staging:/);
   // The editor alias follows: it bakes the same release, so GSAM's draft overlays what staging serves (8 Nov).
   assert.match(result.stdout, /Editor alias bakes staging's Content release 4/);
+  // It is converted to the baked shape the editor reads, as a staging build converts it.
+  const baked = JSON.parse(await readFile(`${f.log}.baked`, 'utf8'));
+  assert.equal(baked.schema, 1);
+  assert.equal(baked.release.number, 4);
+  assert.equal(baked.gsamSnapshot, true);
 });
 
 // GRE-4707: on 8 Nov a Deploy put content release 1 (no /consultancy, 0 products) on the public site.
