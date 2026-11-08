@@ -159,8 +159,10 @@ export default function Header({ order, pages, navigation, current, query, onSea
     const wrap = wrapRef.current; const row = measureRef.current; if (!wrap || !row) return;
     const measure = () => {
       const kids = Array.from(row.children);
-      const widths = kids.slice(0, -1).map((k) => k.getBoundingClientRect().width);
-      const moreW = kids.length ? kids[kids.length - 1].getBoundingClientRect().width : 0;
+      // Rects are zoomed (the wide-screen landing zooms the page, 8 Nov); clientWidth is not.
+      const unzoomed = (k) => k.getBoundingClientRect().width / (k.currentCSSZoom || 1);
+      const widths = kids.slice(0, -1).map(unzoomed);
+      const moreW = kids.length ? unzoomed(kids[kids.length - 1]) : 0;
       const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
       const avail = wrap.clientWidth;
       const total = widths.reduce((a, w) => a + w, 0) + gap * Math.max(0, widths.length - 1);
