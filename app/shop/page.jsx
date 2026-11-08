@@ -8,6 +8,9 @@ const seo = {
   title: 'Software Catalogue · Greatstone International',
   description: 'Browse developer software from the vendors Greatstone licenses and supports.',
 };
+// Priced from the site database at request time, never baked in at build (the build has no database).
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() { const { release } = await activeRelease(); return pageMetadata({ path: '/shop', seo }, release.release.number); }
 
 export default async function Shop({ searchParams }) {

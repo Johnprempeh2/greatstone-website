@@ -1,5 +1,5 @@
 import 'server-only';
-import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { catalogueFromRelease } from '../next-proof/catalogue-data.mjs';
 import { getPool } from '../netlify/functions/lib/db.mjs';
 import { asCatalogueAnon, cataloguePricing } from '../netlify/functions/lib/catalogue-store.mjs';
@@ -9,11 +9,12 @@ export { catalogueFromRelease };
 
 // The release carries the stored USD prices; the GBP price is computed here, server-side, with the same
 // rules and display rate /api/catalogue reads from the site database, so /shop and /product match it.
-const livePricing = cache(async () => {
+// Kept five minutes, like the pages (layout revalidate), so a rate or rule change shows within that.
+const livePricing = unstable_cache(async () => {
   const pool = getPool();
   if (!pool) throw new Error('Catalogue pricing needs the site database (NETLIFY_DB_URL or DATABASE_URL).');
   return asCatalogueAnon(pool, cataloguePricing);
-});
+}, ['catalogue-pricing'], { revalidate: 300 });
 
 export async function pricedCatalogueFromRelease(release) {
   const { rules, rate } = await livePricing();

@@ -4,6 +4,9 @@ import { catalogueFromRelease, pricedCatalogueFromRelease } from '../../catalogu
 import { activeRelease } from '../../release-source.js';
 import { browseOfferings } from '../../../next-proof/catalogue-data.mjs';
 
+// Priced from the site database at request time, never baked in at build (the build has no database).
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }) {
   const { release } = await activeRelease();
   const catalogue = catalogueFromRelease(release);
