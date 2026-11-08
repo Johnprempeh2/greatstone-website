@@ -91,3 +91,11 @@ test('a live path and its GSAM slug land on whichever one the release publishes'
   assert.equal(publishedAlias('/method', gsam), null);
   assert.equal(publishedAlias('/nowhere', gsam), null);
 });
+
+test('the digital office address moves to GS Agentic Manager, else Transformation Services', () => {
+  assert.equal(publishedAlias('/consultancy/digital-office', ['/', '/gs-agentic-manager', '/consultancy/transformation-services']), '/gs-agentic-manager');
+  assert.equal(publishedAlias('/consultancy/digital-office', ['/', '/consultancy/transformation-services']), '/consultancy/transformation-services');
+  assert.equal(publishedAlias('/consultancy/digital-office', ['/']), null);
+  assert.equal(publishedAlias('/transformation-services', ['/', '/consultancy/transformation-services']), '/consultancy/transformation-services');
+  assert.equal(publishedAlias('/transformation-services', ['/', '/consultancy/digital-office']), '/consultancy/digital-office');
+});

@@ -6,7 +6,7 @@
 // Live path -> GSAM sitemap slug, as GRE-2389 imported them. Same-path pages are implicit.
 export const RELEASE_1_PATHS = Object.freeze({
   '/dx-consultancy': '/consultancy',
-  '/transformation-services': '/consultancy/digital-office',
+  '/transformation-services': '/consultancy/transformation-services',
   '/how-we-help': '/consultancy/how-we-help',
   '/method': '/consultancy/how-we-work',
   '/industries': '/consultancy/industries',
@@ -24,8 +24,19 @@ export const gsamSlugFor =(livePath) => RELEASE_1_PATHS[livePath] || livePath;
 
 // One page, two addresses: the live path and its GSAM slug. When the release publishes only one,
 // the other is where an old link or a nav item still points, so it lands there instead of a 404.
+// Pages that moved after release 1, tried in order: the first published one wins. John, 8 Nov: the digital
+// office is GS Agentic Manager, its own tab; until that page is published the old address shows the
+// Transformation Services page it served before.
+export const MOVED_PATHS = Object.freeze({
+  '/consultancy/digital-office': ['/gs-agentic-manager', '/consultancy/transformation-services'],
+  // Release 2 still serves Transformation Services at the old digital office address until John republishes.
+  '/transformation-services': ['/consultancy/transformation-services', '/consultancy/digital-office'],
+});
+
 export function publishedAlias(path, pagePaths) {
   if (pagePaths.includes(path)) return null;
+  const moved = MOVED_PATHS[path]?.find((to) => pagePaths.includes(to));
+  if (moved) return moved;
   for (const [live, gsam] of Object.entries(RELEASE_1_PATHS)) {
     if (path === live && pagePaths.includes(gsam)) return gsam;
     if (path === gsam && pagePaths.includes(live)) return live;
