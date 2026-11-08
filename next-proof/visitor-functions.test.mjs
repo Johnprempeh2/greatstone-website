@@ -62,6 +62,10 @@ test('editor package carries the host guard and builds without database provisio
     assert.deepEqual(await readdir(join(target, 'netlify/functions/lib/interview')), ['voice']);
     assert.deepEqual((await readdir(join(target, 'netlify/functions/lib/interview/voice'))).sort(), ['barge-in.mjs', 'regions.mjs']);
     await assert.rejects(stat(join(target, 'netlify/database')));
+    // The live price read needs the database, so the editor gets a reader with no prices (GRE-4714).
+    const livePricing = await readFile(join(target, 'app/live-pricing.js'), 'utf8');
+    assert.doesNotMatch(livePricing, /import/);
+    assert.match(livePricing, /export async function readLivePricing\(\) \{\n {2}return null;/);
   } finally {
     await rm(target, { recursive: true, force: true });
   }

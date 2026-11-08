@@ -32,6 +32,8 @@ if (editor) {
     delete lock.packages[''].dependencies?.[name];
     delete lock.packages[''].devDependencies?.[name];
   }
+  // No database in the editor: catalogue pages show "Price on application" (GRE-4714).
+  await writeFile(resolve(target, 'app/live-pricing.js'), 'export async function readLivePricing() {\n  return null;\n}\n');
   pkg.scripts['build:next:editor'] = 'node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs && node scripts/prepare-puck-css.mjs && next build';
   await writeFile(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
   await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
