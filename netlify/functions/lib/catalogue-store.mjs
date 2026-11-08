@@ -29,7 +29,7 @@ export async function asCatalogueAnon(pool, work) {
   }
 }
 
-async function pricing(client) {
+export async function cataloguePricing(client) {
   const { rows: ruleRows } = await client.query("SELECT * FROM pricing_rules WHERE active = true AND status = 'published' AND deleted_at IS NULL");
   const { rows: targets } = await client.query('SELECT rule_id, vendor_id, category_id, offering_id, tier_id FROM pricing_rule_targets');
   const { rows: rates } = await client.query('SELECT usd_to_gbp_display_rate FROM org_settings LIMIT 1');
@@ -76,7 +76,7 @@ export async function catalogueRead(client, op, params = {}) {
     const { rows: counts } = await client.query(`SELECT count(*)::int AS total ${filter}`, values);
     const { rows } = await client.query(`SELECT ${CARD} ${filter} ORDER BY ${order}, o.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
       [...values, pageSize, (page - 1) * pageSize]);
-    const price = await pricing(client);
+    const price = await cataloguePricing(client);
     return { items: pricedCards(rows, price.rules, price.rate), total: counts[0].total, page, pageSize };
   }
   if (op === 'detail') {
@@ -85,7 +85,7 @@ export async function catalogueRead(client, op, params = {}) {
     const o = rows[0];
     const { rows: variants } = await client.query('SELECT id,sku,name,license_type,platform,billing_period,base_price_minor,currency,min_order_qty,sort_order FROM offering_variants WHERE offering_id = $1 AND deleted_at IS NULL ORDER BY sort_order', [o.id]);
     const { rows: specs } = await client.query('SELECT label,value,sort_order FROM offering_specs WHERE offering_id = $1 ORDER BY sort_order', [o.id]);
-    const price = await pricing(client);
+    const price = await cataloguePricing(client);
     return decorateOffering({ ...o, offering_variants: variants, offering_specs: specs }, price.rules, price.rate);
   }
   if (op === 'related') {
@@ -95,7 +95,7 @@ export async function catalogueRead(client, op, params = {}) {
     const { rows } = await client.query(`SELECT ${CARD} ${JOINS} WHERE ${PUBLISHED} AND o.id <> $1 AND
         (o.category_id = $2 OR o.vendor_id = $3) ORDER BY o.featured DESC, o.name ASC LIMIT $4`,
       [o.id, o.category_id, o.vendor_id, params.limit || 4]);
-    const price = await pricing(client);
+    const price = await cataloguePricing(client);
     return pricedCards(rows, price.rules, price.rate);
   }
   throw new RangeError('Unknown catalogue operation');

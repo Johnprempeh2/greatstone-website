@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { CatalogueBrowse } from '../../catalogue.jsx';
-import { catalogueFromRelease } from '../../catalogue-data.js';
+import { catalogueFromRelease, pricedCatalogueFromRelease } from '../../catalogue-data.js';
 import { activeRelease } from '../../release-source.js';
 import { browseOfferings } from '../../../next-proof/catalogue-data.mjs';
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
 
 export default async function VendorShop({ params, searchParams }) {
   const { release } = await activeRelease();
-  const catalogue = catalogueFromRelease(release);
+  const catalogue = await pricedCatalogueFromRelease(release);
   const { vendor } = await params;
   if (!catalogue.vendors.some((item) => item.slug === vendor)) notFound();
   const filters = { vendor };
