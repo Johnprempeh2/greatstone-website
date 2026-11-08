@@ -1,5 +1,6 @@
 // Old Vite links used hashes as page routes. Keep them usable on the Next site.
 import { interviewPathOf, parseInterviewHash } from '../src/portal/interview/route.mjs';
+import { publishedAlias } from './release-1-sync.mjs';
 
 // Renamed pages: used only when the old path is no longer published.
 const renamed = { proof: '/case-studies' };
@@ -33,6 +34,7 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   if (!parts.length) return null;
   if (parts[0] === 'service' || parts[0] === 'enquire') return special[parts[0]];
   let page = special[parts[0]] || `/${parts[0]}`;
+  page = publishedAlias(page, pagePaths) || page;
   if (!pagePaths.includes(page) && renamed[parts[0]]) page = renamed[parts[0]];
   if (!go && parts.length > 1) return null;
   // Code pages the Next app serves outside the release pages.
