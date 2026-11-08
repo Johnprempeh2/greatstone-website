@@ -28,3 +28,8 @@ test('the island accepts data-copy as its copy prop', () => {
   assert.deepEqual(islandProps('two-doors-landing', [['data-style', 'x']], removed).props, {});
   assert.equal(removed.length, 1);
 });
+
+test('only the live-design render names the fields', () => {
+  assert.ok(landingData(undefined, true).content.every((block) => block.props.gsMarkFields === true));
+  assert.ok(landingData('{"cueText":"x"}').content.every((block) => block.props.gsMarkFields === undefined));
+});

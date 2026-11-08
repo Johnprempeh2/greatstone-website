@@ -6,7 +6,7 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 import EditableText from './EditableText.jsx';
 import { attachBehaviour } from '../../app/html-behaviours.mjs';
 
-const editText = (props, field, value, as = 'span', className, arrayField, index) => <EditableText editing={props.puck?.isEditing} id={props.id} field={field} value={value} as={as} className={className} arrayField={arrayField} index={index} singleLine={as !== 'p'} />;
+const editText = (props, field, value, as = 'span', className, arrayField, index) => <EditableText editing={props.puck?.isEditing} id={props.id} field={field} value={value} as={as} className={className} arrayField={arrayField} index={index} singleLine={as !== 'p'} markField={props.gsMarkFields === true} />;
 
 // The unconfirmed claims in v15 are review material only. A production build has no
 // switch in the browser that can reveal them.

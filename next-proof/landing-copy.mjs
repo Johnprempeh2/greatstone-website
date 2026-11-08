@@ -17,12 +17,15 @@ export function landingCopy(raw) {
     (LANDING_TEXT_FIELDS.has(key) && typeof value === 'string' && value.length <= 600) || (LANDING_TOGGLES.has(key) && typeof value === 'boolean')));
 }
 
-/** The frozen blocks with the overrides applied: each field only where that block already has it (showCue on the hero). */
-export function landingData(copy) {
-  const overrides = landingCopy(copy);
+/**
+ * The frozen blocks with the overrides applied: each field only where that block already has it (showCue on the hero).
+ * `markFields` (GSAM live design only) has each block name its text fields on the page.
+ */
+export function landingData(copy, markFields = false) {
+  const overrides = { ...landingCopy(copy), ...(markFields ? { gsMarkFields: true } : {}) };
   if (!Object.keys(overrides).length) return landing.data;
   return { ...landing.data, content: landing.data.content.map((block) => {
-    const own = Object.entries(overrides).filter(([key]) => Object.hasOwn(block.props, key) || (key === 'showCue' && block.type === 'TwoDoors'));
+    const own = Object.entries(overrides).filter(([key]) => Object.hasOwn(block.props, key) || key === 'gsMarkFields' || (key === 'showCue' && block.type === 'TwoDoors'));
     return own.length ? { ...block, props: { ...block.props, ...Object.fromEntries(own) } } : block;
   }) };
 }
