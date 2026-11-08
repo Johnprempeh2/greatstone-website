@@ -22,6 +22,17 @@ export const RELEASE_1_HELD = Object.freeze(['/consultancy']);
 
 export const gsamSlugFor =(livePath) => RELEASE_1_PATHS[livePath] || livePath;
 
+// One page, two addresses: the live path and its GSAM slug. When the release publishes only one,
+// the other is where an old link or a nav item still points, so it lands there instead of a 404.
+export function publishedAlias(path, pagePaths) {
+  if (pagePaths.includes(path)) return null;
+  for (const [live, gsam] of Object.entries(RELEASE_1_PATHS)) {
+    if (path === live && pagePaths.includes(gsam)) return gsam;
+    if (path === gsam && pagePaths.includes(live)) return live;
+  }
+  return null;
+}
+
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 // The k-th block of a type keeps the id of GSAM's k-th block of that type.

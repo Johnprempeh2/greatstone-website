@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import release from './data/release.json' with { type: 'json' };
-import { RELEASE_1_HELD, applyPlan, describePlan, gsamSlugFor, planPage, planRelease1, stableBlockIds } from './release-1-sync.mjs';
+import { RELEASE_1_HELD, applyPlan, describePlan, gsamSlugFor, planPage, planRelease1, publishedAlias, stableBlockIds } from './release-1-sync.mjs';
 
 const block = (type, id, extra = {}) => ({ type, props: { id, ...extra } });
 const gsamPage = (slug, content, root = { props: { title: 'T' } }) => ({
@@ -80,4 +80,14 @@ test('apply leaves a held page alone and records it as held', async () => {
   assert.equal(ok, true);
   assert.deepEqual(calls, []);
   assert.deepEqual(record, [{ path: '/dx-consultancy', gsamSlug: '/consultancy', pageId: 'p1', action: 'held', revisionId: 'r16' }]);
+});
+
+test('a live path and its GSAM slug land on whichever one the release publishes', () => {
+  const gsam = ['/', '/proof', '/consultancy/how-we-help'];
+  assert.equal(publishedAlias('/how-we-help', gsam), '/consultancy/how-we-help');
+  assert.equal(publishedAlias('/case-studies', gsam), '/proof');
+  assert.equal(publishedAlias('/proof', ['/', '/case-studies']), '/case-studies');
+  assert.equal(publishedAlias('/proof', gsam), null);
+  assert.equal(publishedAlias('/method', gsam), null);
+  assert.equal(publishedAlias('/nowhere', gsam), null);
 });

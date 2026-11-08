@@ -68,3 +68,10 @@ test('interview invite and view hashes reach their Next paths with the query (GR
   assert.equal(legacyHashDestination('#portal/interview?seats=exhausted', '/portal', pages), '/portal/interview?seats=exhausted');
   assert.equal(legacyHashDestination('#portal/interview/complete', '/portal/interview', pages), '/portal/interview/complete');
 });
+
+test('old Vite hashes reach the GSAM slug of the same page', () => {
+  const gsam = ['/', '/proof', '/consultancy/how-we-help', '/consultancy/the-climb'];
+  assert.equal(legacyHashDestination('#how-we-help', '/', gsam), '/consultancy/how-we-help');
+  assert.equal(legacyHashDestination('#climb', '/', gsam), '/consultancy/the-climb');
+  assert.equal(legacyHashDestination('#proof', '/', gsam), '/proof');
+});
