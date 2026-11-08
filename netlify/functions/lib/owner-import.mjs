@@ -12,6 +12,8 @@
 //                     (067's portal_bridge_approvers), so the bridge's approve and publish can be proved (GRE-4081)
 //   verify-test-account  staging only: marks the one throwaway audit account verified (staging sends no email), so
 //                     the Next cutover can prove the signed-in pages; it takes an email of a fixed shape and nothing else
+//   staging-test-approver(-off)  staging only: makes that verified audit account an active Greatstone owner and portal
+//                     approver, or switches it off again, for the signed-in approve, accept and receipt check (GRE-2621)
 //
 // Guards, in order. Until the first three pass it reads nothing and writes nothing:
 //   1. OWNER_IMPORT_UNTIL is set, in the future and at most 60 minutes away
@@ -37,8 +39,9 @@ export const SITES = Object.freeze({
   'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver'], identityCount: 10 },
   'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
   // The Next staging site's database starts empty (GRE-4222): the fake GRE-4103 org and test client, and the fake
-  // approver for the bridge's approve and publish check (GRE-4081).
-  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production', modes: ['tables', 'staging-approver', 'verify-test-account'], identityCount: 0 },
+  // approver for the bridge's approve and publish check (GRE-4081), and the signed-in test approver (GRE-2621).
+  'gre3833-next-db-staging': { id: '6689e558-855b-40b1-be45-c530531fed45', context: 'production',
+    modes: ['tables', 'staging-approver', 'verify-test-account', 'staging-test-approver', 'staging-test-approver-off'], identityCount: 0 },
 });
 
 // The Supabase tables with rows (cut-over plan, section 1), parents before children. The order is checked against the
@@ -494,6 +497,70 @@ export async function registerStagingApprover(pool, data, apply) {
   });
 }
 
+// --- the staging test approver (GRE-2621) ---
+// The bridge approver above cannot sign in, so a signed-in approve, accept and receipt check needs a real sign-in.
+// This mode takes the one verified staging audit account (STAGING_AUDIT_EMAIL, made by verify-test-account) and makes
+// it an active owner of the Greatstone org and a portal approver. It refuses any other address, an unverified or
+// missing account, and any run while a staging audit address is already Greatstone staff: one test approver per
+// database. staging-test-approver-off removes its approver row and marks the staff row inactive; nothing else is
+// deleted, so approvals it made keep their history. Allowed on gre3833 only.
+
+export function validateTestApprover(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) refuse('test-approver-shape');
+  if (Object.keys(data).sort().join(',') !== 'email,label') refuse('test-approver-fields');
+  if (typeof data.email !== 'string' || !STAGING_AUDIT_EMAIL.test(data.email)) refuse('test-approver-email');
+  if (typeof data.label !== 'string' || !data.label.trim() || data.label.trim().length > 100) refuse('test-approver-label');
+  return data;
+}
+
+export function validateTestApproverOff(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).join(',') !== 'email') refuse('test-approver-off-fields');
+  if (typeof data.email !== 'string' || !STAGING_AUDIT_EMAIL.test(data.email)) refuse('test-approver-off-email');
+  return data;
+}
+
+const AUDIT_EMAIL_SQL = '^staging-audit\\+[0-9]{1,13}@example\\.com$';
+
+export async function registerTestApprover(pool, data, apply) {
+  const { email, label } = validateTestApprover(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    await client.query('LOCK TABLE public.portal_approvers, public.users IN SHARE ROW EXCLUSIVE MODE');
+    const n = async (sql, params) => (await client.query(sql, params)).rows[0].n;
+    if (await n('SELECT count(*)::int AS n FROM public.organisations WHERE id = $1', [GREATSTONE_ORG_ID]) !== 1)
+      refuse('test-approver-no-org');
+    if (await n('SELECT count(*)::int AS n FROM public.users WHERE org_id = $1 AND email ~ $2', [GREATSTONE_ORG_ID, AUDIT_EMAIL_SQL]))
+      refuse('test-approver-exists');
+    const { rows } = await client.query(`SELECT u."id" AS id FROM better_auth."user" u
+      JOIN auth.users a ON a.id::text = u."id" WHERE u."email" = $1 AND u."emailVerified"`, [email]);
+    if (rows.length !== 1) refuse('test-approver-no-sign-in');
+    const [{ id }] = rows;
+    if (await n('SELECT count(*)::int AS n FROM public.users WHERE auth_subject = $1', [id])) refuse('test-approver-sign-in-in-use');
+    await client.query(`INSERT INTO public.users (org_id, email, full_name, role, auth_subject, is_active)
+      VALUES ($1, $2, $3, 'owner', $4, true)`, [GREATSTONE_ORG_ID, email, `${label.trim()} (staging test approver)`, id]);
+    await client.query('INSERT INTO public.portal_approvers (auth_user_id, label) VALUES ($1, $2)', [id, label.trim()]);
+    // the two checks portal_approve_and_publish makes: a registered approver who is active staff of the org
+    const ready = await n(`SELECT count(*)::int AS n FROM public.portal_approvers r JOIN public.users u
+        ON u.auth_subject = r.auth_user_id::text AND u.org_id = $1 AND u.role = 'owner' AND u.is_active AND u.deleted_at IS NULL
+       WHERE r.auth_user_id = $2`, [GREATSTONE_ORG_ID, id]);
+    if (ready !== 1) refuse('test-approver-differs');
+    return { testApprover: { staff: 1, approvers: 1 } };
+  });
+}
+
+export async function removeTestApprover(pool, data, apply) {
+  const { email } = validateTestApproverOff(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    await client.query('LOCK TABLE public.portal_approvers, public.users IN SHARE ROW EXCLUSIVE MODE');
+    const { rows } = await client.query(`SELECT id, auth_subject, is_active FROM public.users
+      WHERE org_id = $1 AND email = $2 FOR UPDATE`, [GREATSTONE_ORG_ID, email]);
+    if (rows.length !== 1 || !rows[0].auth_subject) refuse('test-approver-not-found');
+    const [user] = rows;
+    const removed = await client.query('DELETE FROM public.portal_approvers WHERE auth_user_id::text = $1', [user.auth_subject]);
+    await client.query('UPDATE public.users SET is_active = false WHERE id = $1', [user.id]);
+    return { testApproverOff: { approvers: removed.rowCount, deactivated: user.is_active ? 1 : 0 } };
+  });
+}
+
 // Counts and fixed reasons only: a pg error's message and detail can carry row values.
 function safeError(error) {
   if (error instanceof Refusal) return { reason: error.message };
@@ -539,7 +606,9 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
                 : mode === 'approver' ? await registerApprover(pool, data, action === 'apply')
                   : mode === 'staging-approver' ? await registerStagingApprover(pool, data, action === 'apply')
                     : mode === 'verify-test-account' ? await verifyTestAccount(pool, data, action === 'apply')
-                    : await moveTables(pool, data, action === 'apply');
+                      : mode === 'staging-test-approver' ? await registerTestApprover(pool, data, action === 'apply')
+                        : mode === 'staging-test-approver-off' ? await removeTestApprover(pool, data, action === 'apply')
+                          : await moveTables(pool, data, action === 'apply');
       } finally { await pool.end(); }
       const at = new Date(now).toISOString();
       if (action === 'apply') Object.assign(ledger, { appliedAt: at, counts });
