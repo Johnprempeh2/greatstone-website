@@ -149,7 +149,6 @@ export function TwoDoors(props) {
       {editText(props, 'kicker', kicker, 'p', 'td-kicker')}
       <h1 id="td-heading">{editText(props, 'heading', heading)} {editText(props, 'headlineSuffix', copy.headlineSuffix, 'span', 'td-heading-suffix')}</h1>
       {editText(props, 'intro', intro, 'p', 'td-lede')}
-      <a className="td-cue" href={safeHref(copy.chooseHref)}>↓ &nbsp; {editText(props, 'cueText', copy.cueText)} <small>· {editText(props, 'cueSubtext', copy.cueSubtext)}</small></a>
     </section>
 
     <section className="td-door-section" id="choose" aria-label={copy.chooserHeading}>
