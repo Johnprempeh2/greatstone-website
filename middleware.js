@@ -25,7 +25,7 @@ export function middleware(request) {
     response.headers.set('Referrer-Policy', 'no-referrer');
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('Origin-Agent-Cluster', '?1');
-    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-read=()');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=(), usb=(), clipboard-read=()');
   } else {
     response.headers.set('Content-Security-Policy', publicFrameAncestors(process.env.GSAM_EDITOR_ORIGINS || undefined));
     response.headers.delete('X-Frame-Options');

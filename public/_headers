@@ -2,7 +2,7 @@
   X-Content-Type-Options: nosniff
   Content-Security-Policy: frame-ancestors 'self' https://gsam.tail83d26c.ts.net:3100
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
   Strict-Transport-Security: max-age=63072000; includeSubDomains
 
 # Vite build output is content-hashed (/assets/index-<hash>.js), so a given URL never changes content

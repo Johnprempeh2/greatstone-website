@@ -9,7 +9,7 @@ export function publicHeaders({ method, pathname, search }) {
   // The same security headers the Vite site sends from public/_headers, which Next does not apply.
   const headers = {
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
     'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
   };
   if (['GET', 'HEAD'].includes(method) && !uncachedPath.test(pathname) && !search) headers['Netlify-CDN-Cache-Control'] = PUBLIC_CDN_CACHE;
