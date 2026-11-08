@@ -13,3 +13,12 @@ test('agent CSS written for #gs-page matches the rendered page', () => {
   const selector = sanitiseCss('#gs-page .track{display:flex}', { scope: 'page' }).css.split('{')[0];
   assert.ok(document.querySelector(selector), selector);
 });
+
+// GSAM's Pick reads [data-gs-island] to say "this part is locked" before it offers a removal that could
+// never save (the Two Doors landing on /, 8 Nov). Only the live-design render carries the marker.
+test('the live-design render marks what each island renders; the public render does not', () => {
+  const page = readFileSync(new URL('./HtmlPage.jsx', import.meta.url), 'utf8');
+  assert.match(page, /context\.markIslands && !context\.placeholders[\s\S]{0,120}'data-gs-island': node\.name, 'data-gs-island-label': island\.label, style: \{ display: 'contents' \}/);
+  assert.match(page, /markIslands = false/);
+  assert.match(readFileSync(new URL('./live-design/LiveDraft.jsx', import.meta.url), 'utf8'), /<HtmlPage page=\{draft\.page\} release=\{release\} markIslands \/>/);
+});

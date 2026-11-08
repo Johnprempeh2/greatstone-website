@@ -6,7 +6,7 @@ import { safeHref, safeMailto } from '../lib/safe-url.js';
 import EditableText from './EditableText.jsx';
 import { attachBehaviour } from '../../app/html-behaviours.mjs';
 
-const editText = (props, field, value, as = 'span', className, arrayField, index) => <EditableText editing={props.puck?.isEditing} id={props.id} field={field} value={value} as={as} className={className} arrayField={arrayField} index={index} singleLine={as !== 'p'} />;
+const editText = (props, field, value, as = 'span', className, arrayField, index) => <EditableText editing={props.puck?.isEditing} id={props.id} field={field} value={value} as={as} className={className} arrayField={arrayField} index={index} singleLine={as !== 'p'} markField={props.gsMarkFields === true} />;
 
 // The unconfirmed claims in v15 are review material only. A production build has no
 // switch in the browser that can reveal them.
@@ -149,7 +149,7 @@ export function TwoDoors(props) {
       {editText(props, 'kicker', kicker, 'p', 'td-kicker')}
       <h1 id="td-heading">{editText(props, 'heading', heading)} {editText(props, 'headlineSuffix', copy.headlineSuffix, 'span', 'td-heading-suffix')}</h1>
       {editText(props, 'intro', intro, 'p', 'td-lede')}
-      <a className="td-cue" href={safeHref(copy.chooseHref)}>↓ &nbsp; {editText(props, 'cueText', copy.cueText)} <small>· {editText(props, 'cueSubtext', copy.cueSubtext)}</small></a>
+      {copy.showCue !== false && <a className="td-cue" data-gs-toggle="showCue" href={safeHref(copy.chooseHref)}>↓ &nbsp; {editText(props, 'cueText', copy.cueText)} <small>· {editText(props, 'cueSubtext', copy.cueSubtext)}</small></a>}
     </section>
 
     <section className="td-door-section" id="choose" aria-label={copy.chooserHeading}>
@@ -255,7 +255,7 @@ export const puck = {
     }, defaultItemProps: { image: '', alt: '', permission: 'pending' }, getItemSummary: (item) => item.alt || 'Logo' },
     toolBrands: { type: 'array', label: 'DX Dev Tools brands', arrayFields: { name: { type: 'text', label: 'Brand' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> } }, defaultItemProps: { name: '', image: '' }, getItemSummary: (item) => item.name || 'Brand' },
   },
-  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, clientLogos: [], toolBrands: [] },
+  defaultProps: { ...textDefaults(homeFields), kicker: '', heading: '', intro: '', consultancyLine: '', toolsLine: '', consultancyImage: '', toolsImage: '', tide: true, showCue: true, clientLogos: [], toolBrands: [] },
   render: (props) => <TwoDoors {...props} />,
 };
 
