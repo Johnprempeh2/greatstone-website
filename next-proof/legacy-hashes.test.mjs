@@ -75,3 +75,11 @@ test('old Vite hashes reach the GSAM slug of the same page', () => {
   assert.equal(legacyHashDestination('#climb', '/', gsam), '/consultancy/the-climb');
   assert.equal(legacyHashDestination('#proof', '/', gsam), '/proof');
 });
+
+test('a page hash on the home page opens the page even when the landing has a section of that id', () => {
+  const has = () => true;
+  assert.equal(legacyHashDestination('#about', '/', ['/', '/about'], has), '/about');
+  assert.equal(legacyHashDestination('#how-we-help', '/', ['/', '/consultancy/how-we-help'], has), '/consultancy/how-we-help');
+  assert.equal(legacyHashDestination('#choose', '/', ['/', '/about'], has), null);
+  assert.equal(legacyHashDestination('#about', '/contact', ['/', '/about'], has), null);
+});

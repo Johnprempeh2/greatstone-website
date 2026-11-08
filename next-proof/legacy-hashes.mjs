@@ -11,7 +11,9 @@ export function legacyHashDestination(hash, pathname, pagePaths, hasAnchor = () 
   let fragment;
   try { fragment = decodeURIComponent(hash.slice(1)); }
   catch { return null; }
-  if (hasAnchor(fragment)) return null;
+  // On the home page an old Vite page hash (#about) is the page, even when the landing has a section of that id.
+  const homePage = pathname === '/' && (pagePaths.includes('/' + fragment) || publishedAlias('/' + fragment, pagePaths));
+  if (hasAnchor(fragment) && !homePage) return null;
   // GRE-4245: interview links (#join/<token>, #portal/interview…?seats=…) keep their query on the way to the path.
   if (parseInterviewHash(hash)) return interviewPathOf(hash);
   const checkout = /^order-confirmed\?session=(cs_test_[A-Za-z0-9]+)$/i.exec(fragment);
