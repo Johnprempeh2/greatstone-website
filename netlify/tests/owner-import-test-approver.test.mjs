@@ -3,8 +3,9 @@
 // allow-list entry.
 // Proves: an unverified or missing audit account is refused; the dry run rolls back; apply makes the verified audit
 // sign-in an active Greatstone owner and portal approver, and portal_approve_and_publish accepts it; a second run is
-// refused; any other address or field is refused; off removes the approver row and deactivates the staff row; both
-// modes are refused on every other site (greatstone-home included) before the pool opens.
+// refused while it is active; any other address or field is refused; off removes the approver row and deactivates the
+// staff row; after off a new audit address is accepted but the old one is not (GRE-4517); both modes are refused on
+// every other site (greatstone-home included) before the pool opens.
 // Without the Postgres server binaries the database tests are skipped, and say so.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -92,7 +93,7 @@ test('dry run rolls back; apply makes the sign-in an approver that portal_approv
   assert.match(r.stderr, /document not found/);
 });
 
-test('while a staging audit address is Greatstone staff, another run is refused', { skip }, async () => {
+test('while a staging audit address is active Greatstone staff, another run is refused', { skip }, async () => {
   for (const data of [AUDIT, { ...AUDIT, email: 'staging-audit+2622@example.com' }]) {
     const { result } = await tick(memoryStore({ payload: envelope('staging-test-approver', 'dry-run', data) }));
     assert.deepEqual([result.status, result.reason], ['failed', 'test-approver-exists'], data.email);
@@ -125,6 +126,22 @@ test('off removes the approver row and deactivates the staff row; the sign-in st
   assert.equal(owner(`SELECT count(*) FROM auth.users WHERE id = '${SIGN_IN}'`), '1');
   const { result } = await tick(memoryStore({ payload: envelope('staging-test-approver-off', 'dry-run', { email: 'staging-audit+9@example.com' }) }));
   assert.equal(result.reason, 'test-approver-not-found');
+});
+
+test('after off, a new audit address is accepted; the old one is not, and only one is active at a time', { skip }, async () => {
+  const NEXT_SIGN_IN = '45170000-0000-4000-8000-0000000000b1';
+  const NEXT = { email: 'staging-audit+4517@example.com', label: 'GRE-4517 test approver' };
+  owner(`INSERT INTO better_auth."user" ("id","name","email","emailVerified") VALUES ('${NEXT_SIGN_IN}','Audit','${NEXT.email}',true)`);
+  const refused = async (data) => (await tick(memoryStore({ payload: envelope('staging-test-approver', 'dry-run', data) }))).result.reason;
+  assert.equal(await refused(AUDIT), 'test-approver-used', 'the switched-off address');
+  assert.equal(rows(), '0 0');
+  const { applied } = await dryThenApply('staging-test-approver', NEXT);
+  assert.equal(applied.result.status, 'applied', JSON.stringify(applied.result));
+  assert.equal(rows(), '1 1');
+  assert.equal(await refused({ ...NEXT, email: 'staging-audit+4518@example.com' }), 'test-approver-exists');
+  const off = await dryThenApply('staging-test-approver-off', { email: NEXT.email });
+  assert.equal(off.applied.result.status, 'applied', JSON.stringify(off.applied.result));
+  assert.equal(rows(), '0 0');
 });
 
 test('both modes are refused on production and every other site, before the pool opens', { skip }, async () => {
