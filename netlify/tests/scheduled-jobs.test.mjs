@@ -27,7 +27,7 @@ test('scheduled IP purge runs only after a transaction-scoped worker role', asyn
 test('receipt worker claims due jobs through the scoped worker role', async () => {
   const { pool, calls } = database();
   const result = await makePortalReceiptWorker({ pool: () => pool, env: {}, log: () => {} })();
-  assert.deepEqual(result, { claimed: 0, sent: 0, retry: 0, failed: 0, alertFailed: 0 });
+  assert.deepEqual(result, { claimed: 0, sent: 0, retry: 0, failed: 0, signerFailed: 0, alertFailed: 0 });
   assert.deepEqual(calls.map(([sql]) => sql), ['BEGIN', 'SET LOCAL ROLE service_role',
     "SELECT set_config('request.jwt.claims', $1, true)", 'SELECT * FROM portal_claim_receipt_jobs($1)', 'COMMIT', 'release']);
   assert.deepEqual(calls[3][1], [25]);
@@ -57,7 +57,7 @@ test('both schedules run against the migrated schema as the worker role', { skip
     assert.equal(db.psql(`SELECT string_agg(coalesce(ip::text,'none'), ',' ORDER BY created_at) FROM service_inquiries`).stdout.trim(),
       'none,192.0.2.2');
     assert.deepEqual(await makePortalReceiptWorker({ pool: () => pool, env: {}, log: () => {} })(),
-      { claimed: 0, sent: 0, retry: 0, failed: 0, alertFailed: 0 });
+      { claimed: 0, sent: 0, retry: 0, failed: 0, signerFailed: 0, alertFailed: 0 });
     // Netlify fails (and retries) a run whose function returns anything but a Response or undefined.
     process.env.DATABASE_URL = db.url;
     assert.equal(await purgeSchedule(), undefined);

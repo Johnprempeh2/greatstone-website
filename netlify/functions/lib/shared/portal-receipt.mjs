@@ -3,7 +3,8 @@
 //     signer); the receipt page (src/portal/PortalReceipt.jsx) and the email both use receiptRecord()
 //   - the receipt email, built from the database record only, with a self-contained HTML copy of the version
 //   - the retry schedule (1, 5, 15, 60 minutes, then every 6 hours; failed after 8 attempts)
-//   - runWorker(): claim, send with the idempotency key, mark sent / retry / failed, alert on the last failure
+//   - runWorker(): claim, send the owner copy and the signer copy separately (GRE-4531), mark sent / retry / failed,
+//     alert the owner when the signer copy is refused
 // Pure apart from the injected db and fetch, so `node --test` covers it and the edge function
 // (supabase/functions/portal-receipt-worker) runs the same code.
 
@@ -21,6 +22,9 @@ export function nextAttemptAt(attempts, now = new Date()) {
 }
 
 export const idempotencyKey = (acceptanceId) => 'portal-receipt-' + acceptanceId;
+// Each copy has its own key, so a retry never sends either copy twice and one refused address cannot stop the other.
+export const ownerKey = (acceptanceId) => idempotencyKey(acceptanceId) + '-owner';
+export const signerKey = (acceptanceId) => idempotencyKey(acceptanceId) + '-signer';
 
 const ACTION_LABEL = { accept: 'Accepted', agree_in_principle: 'Agreed in principle' };
 export const actionLabel = (a) => ACTION_LABEL[a] || 'Accepted';
@@ -173,11 +177,11 @@ export function buildReceiptEmail({ acceptance, document, siteOrigin = 'https://
   return { subject, html, text, attachment };
 }
 
-/** The alert to Greatstone when a receipt could not be sent after the last attempt. No personal data. */
+/** The alert to Greatstone when the signer's copy was refused but the owner copy went. No personal data. */
 export function buildFailedAlert({ acceptance, studioUrl }) {
-  const subject = 'Portal receipt not sent after ' + MAX_ATTEMPTS + ' attempts';
-  const text = `The email copy of acceptance ${acceptance.id} could not be sent. The acceptance is recorded and stands. `
-    + `Open Clients & DX → Portal to see it and press Send again: ${studioUrl}`;
+  const subject = 'Portal receipt: signer copy not sent';
+  const text = `The signer's email copy of acceptance ${acceptance.id} could not be sent. The acceptance is recorded and stands, `
+    + `and your copy was sent. Open Clients & DX → Portal to see it and press Send again: ${studioUrl}`;
   return { subject, text, html: `<p>${esc(text)}</p>` };
 }
 
@@ -206,14 +210,17 @@ export async function resendSend({ apiKey, from, to, subject, html, text, attach
  * One worker run. `db` is { claim(limit) → jobs, load(acceptanceId) → { acceptance, document },
  * sent(job, providerId), retry(job, nextAt, error), failed(job, error) }. `send(message)` is resendSend bound to
  * the config. Jobs come from claim() already in 'sending' with attempts counted, so a job is in one run only.
- * Returns a summary for the log (counts, no personal data).
+ * The owner copy (ownerTo) and the signer copy go as two sends. The job is sent when the owner copy is sent (or,
+ * with no ownerTo, the signer copy); otherwise it retries. A refused signer copy does not hold the job: the owner is
+ * told once, and the studio's Send again covers it. Returns a summary for the log (counts, no personal data).
  */
 export async function runWorker({ db, send, ownerTo = [], siteOrigin, studioUrl, limit = 10, now = () => new Date() }) {
-  const out = { claimed: 0, sent: 0, retry: 0, failed: 0, alertFailed: 0 };
+  const out = { claimed: 0, sent: 0, retry: 0, failed: 0, signerFailed: 0, alertFailed: 0 };
   const jobs = await db.claim(limit);
   out.claimed = jobs.length;
   for (const job of jobs) {
     let res;
+    let signer = null;
     let rec = null;
     try {
       rec = await db.load(job.acceptance_id);
@@ -222,12 +229,22 @@ export async function runWorker({ db, send, ownerTo = [], siteOrigin, studioUrl,
     }
     if (rec && !res) {
       const msg = buildReceiptEmail({ acceptance: rec.acceptance, document: rec.document, siteOrigin });
-      const to = [rec.acceptance.signer_email, ...ownerTo].filter(Boolean);
-      res = await send({ to, subject: msg.subject, html: msg.html, text: msg.text, attachments: [msg.attachment], idempotency: idempotencyKey(job.acceptance_id) });
+      const copy = { subject: msg.subject, html: msg.html, text: msg.text, attachments: [msg.attachment] };
+      const owner = ownerTo.length ? await send({ ...copy, to: ownerTo, idempotency: ownerKey(job.acceptance_id) }) : null;
+      const signerTo = rec.acceptance.signer_email;
+      signer = signerTo ? await send({ ...copy, to: [signerTo], idempotency: signerKey(job.acceptance_id) })
+        : { ok: false, error: 'no signer address' };
+      res = owner || signer;
     }
     if (res.ok) {
       await db.sent(job, res.id);
       out.sent++;
+      if (ownerTo.length && !signer.ok) {
+        out.signerFailed++;
+        const alert = buildFailedAlert({ acceptance: { id: job.acceptance_id }, studioUrl });
+        const a = await send({ to: ownerTo, ...alert, idempotency: signerKey(job.acceptance_id) + '-failed' });
+        if (!a.ok) out.alertFailed++; // the studio still shows the acceptance and Send again
+      }
       continue;
     }
     const next = nextAttemptAt(job.attempts, now());
@@ -236,13 +253,10 @@ export async function runWorker({ db, send, ownerTo = [], siteOrigin, studioUrl,
       out.retry++;
       continue;
     }
+    // The owner copy itself was refused every time, so an alert to the same address would not arrive either;
+    // the failed job shows in the studio.
     await db.failed(job, res.error);
     out.failed++;
-    if (ownerTo.length) {
-      const alert = buildFailedAlert({ acceptance: { id: job.acceptance_id }, studioUrl });
-      const a = await send({ to: ownerTo, ...alert, idempotency: idempotencyKey(job.acceptance_id) + '-failed' });
-      if (!a.ok) out.alertFailed++; // the failed job still shows in the studio
-    }
   }
   return out;
 }

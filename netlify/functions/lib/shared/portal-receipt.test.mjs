@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAX_ATTEMPTS, nextAttemptAt, idempotencyKey, receiptRecord, emailStateLabel, sanitizeForEmail,
-  buildReceiptEmail, documentCopyHtml, cleanError, resendSend, runWorker, fmtUtc,
+  buildReceiptEmail, documentCopyHtml, cleanError, resendSend, runWorker, fmtUtc, ownerKey, signerKey,
 } from './portal-receipt.mjs';
 
 const SHA = 'ab'.repeat(32);
@@ -135,7 +135,7 @@ test('the worker sends a Deep Dive acceptance receipt with the immutable copy', 
   const result = await runWorker({ db, ownerTo: ['owner@example.test'], siteOrigin: 'https://site.example.test',
     send: async (message) => { sends.push(message); return { ok: true, id: 'synthetic-message' }; } });
   assert.deepEqual([result.claimed, result.sent], [1, 1]);
-  assert.deepEqual(sends[0].to, [ACC.signer_email, 'owner@example.test']);
+  assert.deepEqual(sends.map((m) => m.to), [['owner@example.test'], [ACC.signer_email]]);
   assert.match(sends[0].text, /Synthetic Deep Dive report/);
   assert.match(Buffer.from(sends[0].attachments[0].content, 'base64').toString('utf8'), new RegExp(SHA));
   assert.equal(db.jobs[0].status, 'sent');
@@ -148,34 +148,90 @@ test('two workers at once: each job is claimed and sent once, with its idempoten
   const cfg = { db, send, ownerTo: ['owner@example.test'], siteOrigin: 'https://site.example.test' };
   const [a, b] = await Promise.all([runWorker(cfg), runWorker(cfg)]);
   assert.equal(a.claimed + b.claimed, 3);
-  assert.equal(sends.length, 3);
-  assert.deepEqual(sends.map((m) => m.idempotency).sort(), ['portal-receipt-acc-1', 'portal-receipt-acc-2', 'portal-receipt-acc-3']);
-  assert.deepEqual(sends[0].to, ['person.one@client-a.example.test', 'owner@example.test']);
-  assert.equal(sends[0].attachments.length, 1);
+  assert.equal(sends.length, 6);
+  assert.deepEqual(sends.map((m) => m.idempotency).sort(), ['1', '2', '3'].flatMap((n) => [ownerKey('acc-' + n), signerKey('acc-' + n)]).sort());
+  assert.deepEqual(sends[0].to, ['owner@example.test']);
+  assert.deepEqual(sends[1].to, ['person.one@client-a.example.test']);
+  assert.ok(sends.every((m) => m.attachments.length === 1));
   assert.ok(db.jobs.every((j) => j.status === 'sent'));
   // a later run finds nothing: a sent job is never sent again
   assert.equal((await runWorker(cfg)).claimed, 0);
+  assert.equal(sends.length, 6);
+});
+
+// GRE-4531: the owner copy and the signer copy are two sends, so a refused signer address cannot lose the owner copy.
+const OWNER = 'owner@example.test';
+const refuse = (who) => (m) => m.to.includes(who) && !m.idempotency.endsWith('-failed');
+
+test('both copies sent: two sends with their own keys, the job is sent, no alert', async () => {
+  const db = fakeDb([job(1)]);
+  const sends = [];
+  const r = await runWorker({ db, ownerTo: [OWNER], send: async (m) => { sends.push(m); return { ok: true, id: 'msg-' + sends.length }; } });
+  assert.deepEqual([r.sent, r.signerFailed, r.retry], [1, 0, 0]);
+  assert.deepEqual(sends.map((m) => [m.to, m.idempotency]), [[[OWNER], ownerKey('acc-1')], [[ACC.signer_email], signerKey('acc-1')]]);
+  assert.equal(db.jobs[0].status, 'sent');
+  assert.equal(db.jobs[0].pid, 'msg-1'); // the owner copy's message id
+});
+
+test('signer refused, owner sent: the job is sent and the owner is told about the signer copy only', async () => {
+  const db = fakeDb([job(1)]);
+  const sends = [];
+  const bad = refuse(ACC.signer_email);
+  const r = await runWorker({ db, ownerTo: [OWNER], studioUrl: 'https://site.example.test/#catalogue/clients',
+    send: async (m) => { sends.push(m); return bad(m) ? { ok: false, error: 'resend 422: invalid to' } : { ok: true, id: 'msg-' + sends.length }; } });
+  assert.deepEqual([r.sent, r.signerFailed, r.retry, r.failed, r.alertFailed], [1, 1, 0, 0, 0]);
+  assert.equal(db.jobs[0].status, 'sent');
+  const alert = sends.at(-1);
+  assert.deepEqual(alert.to, [OWNER]);
+  assert.equal(alert.idempotency, signerKey('acc-1') + '-failed');
+  assert.match(alert.subject, /signer copy/);
+  assert.match(alert.text, /acc-1/);
+  assert.doesNotMatch(alert.text, /@/);
   assert.equal(sends.length, 3);
 });
 
-test('a provider error queues a retry with backoff; the last attempt marks failed and alerts the owner', async () => {
+test('owner refused: the job retries with backoff, then fails with no alert; the signer still gets a copy', async () => {
   const db = fakeDb([job(1)]);
   const sends = [];
-  const send = async (m) => { sends.push(m); return m.idempotency.endsWith('-failed') ? { ok: true } : { ok: false, error: 'resend 500' }; };
+  const bad = refuse(OWNER);
+  const send = async (m) => { sends.push(m); return bad(m) ? { ok: false, error: 'resend 500' } : { ok: true, id: 's' }; };
   let clock = Date.parse('2026-10-10T00:00:00Z');
-  const cfg = { db, send, ownerTo: ['owner@example.test'], studioUrl: 'https://site.example.test/#catalogue/clients', now: () => new Date(clock) };
+  const cfg = { db, send, ownerTo: [OWNER], studioUrl: 'https://site.example.test/#catalogue/clients', now: () => new Date(clock) };
   const r1 = await runWorker(cfg);
-  assert.deepEqual([r1.claimed, r1.retry], [1, 1]);
+  assert.deepEqual([r1.claimed, r1.sent, r1.retry, r1.signerFailed], [1, 0, 1, 0]);
   assert.equal(db.jobs[0].next_attempt_at - clock, 60000);
+  assert.equal(db.jobs[0].err, 'resend 500');
   for (let i = 2; i <= MAX_ATTEMPTS; i++) { db.jobs[0].next_attempt_at = 0; await runWorker(cfg); }
   assert.equal(db.jobs[0].status, 'failed');
   assert.equal(db.jobs[0].attempts, MAX_ATTEMPTS);
   assert.deepEqual(db.log.map((l) => l[0]), [...Array(MAX_ATTEMPTS - 1).fill('retry'), 'failed']);
-  const alert = sends.at(-1);
-  assert.deepEqual(alert.to, ['owner@example.test']);
-  assert.match(alert.text, /acc-1/);
-  assert.doesNotMatch(alert.text, /@/);
-  assert.equal(sends.length, MAX_ATTEMPTS + 1);
+  assert.equal(sends.length, MAX_ATTEMPTS * 2); // owner + signer each attempt, no alert
+  assert.ok(sends.every((m) => !m.idempotency.endsWith('-failed')));
+});
+
+test('a retry keeps both keys, so a copy that already went is not sent twice', async () => {
+  const db = fakeDb([job(1)]);
+  const sends = [];
+  let ownerUp = false;
+  const send = async (m) => { sends.push(m); return m.to.includes(OWNER) && !ownerUp ? { ok: false, error: 'resend 500' } : { ok: true, id: 'x' }; };
+  await runWorker({ db, send, ownerTo: [OWNER] });
+  assert.equal(db.jobs[0].status, 'queued');
+  ownerUp = true;
+  db.jobs[0].next_attempt_at = 0;
+  await runWorker({ db, send, ownerTo: [OWNER] });
+  assert.equal(db.jobs[0].status, 'sent');
+  const keys = sends.map((m) => m.idempotency);
+  assert.deepEqual(keys, [ownerKey('acc-1'), signerKey('acc-1'), ownerKey('acc-1'), signerKey('acc-1')]);
+  // each copy's payload is identical across attempts, as the provider's idempotency check needs
+  assert.deepEqual(sends[2], sends[0]);
+  assert.deepEqual(sends[3], sends[1]);
+});
+
+test('with no owner address the signer copy decides: refused means retry', async () => {
+  const db = fakeDb([job(1)]);
+  const r = await runWorker({ db, send: async () => ({ ok: false, error: 'resend 422' }) });
+  assert.deepEqual([r.sent, r.retry, r.signerFailed], [0, 1, 0]);
+  assert.equal(db.jobs[0].status, 'queued');
 });
 
 test('a job whose record cannot be read is retried, not lost', async () => {
