@@ -1,7 +1,7 @@
 import { asCustomer } from './customer-store.mjs';
 
 export const asStaff = asCustomer;
-const TABLES = new Set([
+export const STAFF_TABLES = new Set([
   'users', 'org_settings', 'offerings', 'offering_variants', 'vendors', 'categories',
   'pricing_rules', 'pricing_rule_targets', 'fx_rate_history', 'import_jobs',
   'customers', 'customer_users', 'customer_tiers', 'engagements', 'member_invite_requests',
@@ -72,6 +72,17 @@ function filters(body, values) {
   });
 }
 
+// node-postgres sends a JS array as a Postgres array literal, so [] reaches a jsonb column as '{}' (an object).
+// Arrays and objects bound to json/jsonb columns go as JSON text; text[] and other array columns keep pg's literal.
+const structured = (value) => value !== null && typeof value === 'object' && !(value instanceof Date) && !ArrayBuffer.isView(value);
+async function jsonColumns(client, table, rows) {
+  if (!rows.some((row) => Object.values(row).some(structured))) return new Set();
+  const { rows: found } = await client.query(`SELECT attname FROM pg_attribute WHERE attrelid = $1::regclass
+    AND atttypid IN ('json'::regtype, 'jsonb'::regtype) AND attnum > 0 AND NOT attisdropped`, ['public.' + table]);
+  return new Set(found.map((row) => row.attname));
+}
+const bind = (json, key, value) => json.has(key) && structured(value) ? JSON.stringify(value) : value;
+
 export async function staffStore(client, body) {
   const { table, kind, columns = '*', values: payload } = body;
   if (kind === 'rpc') {
@@ -99,7 +110,7 @@ export async function staffStore(client, body) {
     }
     throw new RangeError('Invalid operation');
   }
-  if (!TABLES.has(table) || !['select', 'insert', 'update', 'delete'].includes(kind)) throw new RangeError('Invalid operation');
+  if (!STAFF_TABLES.has(table) || !['select', 'insert', 'update', 'delete'].includes(kind)) throw new RangeError('Invalid operation');
   if (kind === 'delete' && table !== 'front_door_leads') throw new RangeError('Invalid operation');
   if (['front_door_leads', 'service_inquiries'].includes(table)) {
     if (kind === 'insert') throw new RangeError('Invalid operation');
@@ -139,14 +150,16 @@ export async function staffStore(client, body) {
     if (!body.filters.length || !payload || Array.isArray(payload) || typeof payload !== 'object') throw new RangeError('Invalid update');
     const entries = Object.entries(payload);
     if (!entries.length || entries.length > 40) throw new RangeError('Invalid update');
-    const set = entries.map(([key, value]) => { params.push(value); return `${id(key)} = $${params.length}`; }).join(', ');
+    const json = await jsonColumns(client, table, [payload]);
+    const set = entries.map(([key, value]) => { id(key); params.push(bind(json, key, value)); return `${id(key)} = $${params.length}`; }).join(', ');
     sql = `UPDATE ${id(table)} t SET ${set}${where}${returning}`;
   } else {
     const rows = Array.isArray(payload) ? payload : [payload];
     if (!rows.length || rows.length > 1000 || rows.some((row) => !row || typeof row !== 'object' || Array.isArray(row))) throw new RangeError('Invalid insert');
     const keys = Object.keys(rows[0]);
     if (!keys.length || keys.length > 40 || rows.some((row) => Object.keys(row).sort().join() !== [...keys].sort().join())) throw new RangeError('Invalid insert');
-    const tuples = rows.map((row) => '(' + keys.map((key) => { id(key); params.push(row[key]); return '$' + params.length; }).join(', ') + ')');
+    const json = await jsonColumns(client, table, rows);
+    const tuples = rows.map((row) => '(' + keys.map((key) => { id(key); params.push(bind(json, key, row[key])); return '$' + params.length; }).join(', ') + ')');
     sql = `INSERT INTO ${id(table)} AS t (${keys.map(id).join(', ')}) VALUES ${tuples.join(', ')}${returning}`;
   }
   const { rows } = await client.query(sql, params);
