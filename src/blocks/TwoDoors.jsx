@@ -14,7 +14,7 @@ const REVIEW_CONTENT = import.meta.env?.VITE_TWO_DOORS_DRAFT_CONTENT === 'true';
 const copyFields = (keys) => Object.fromEntries(keys.map((key) => [key, { type: 'text', label: key.replace(/([A-Z])/g, ' $1') }]));
 const textDefaults = (keys) => Object.fromEntries(keys.map((key) => [key, '']));
 const homeFields = 'headlineSuffix cueText cueSubtext consultancyName toolsName chooseLabel consultancyTag toolsTag moreClosed moreOpen logoLabel logoDraft consultancyPoint1 consultancyPoint1Text consultancyPoint2 consultancyPoint2Text consultancyPoint3 consultancyPoint3Text consultancyCta proofLink toolsCta chooserHeading chooserLine consultancyChooserLine toolsChooserLine orLabel swipeHint toolsPoint1 toolsPoint1Text toolsPoint2 toolsPoint2Text toolsPoint3 toolsPoint3Text chooseHref contactHref proofHref toolsHref'.split(' ');
-const storyFields = 'storyKicker numbersLabel draftNumbersHeading draftNumbersLine rangeLabel'.split(' ');
+const storyFields = 'storyKicker clientsKicker clientsHeading numbersLabel draftNumbersHeading draftNumbersLine rangeLabel'.split(' ');
 const proofFields = 'proofKicker proofHeading draftBadge draftCaseLine pendingLine pendingLink proofHref'.split(' ');
 const devFields = 'devKicker shopCta brandHeading brandCta helpLine helpEmail shopHref'.split(' ');
 const toolFields = { type: 'array', label: 'Tool brands and approved lines', arrayFields: { name: { type: 'text', label: 'Brand' }, line: { type: 'textarea', label: 'Approved line' }, image: { type: 'custom', label: 'Brand image', render: (props) => <MediaField {...props} /> }, href: { type: 'text', label: 'Link' } }, defaultItemProps: { name: '', line: '', image: '', href: '' }, getItemSummary: (item) => item.name || 'Brand' };
@@ -38,11 +38,11 @@ const publicClientMarks = [
 // GRE-4310: the client marks as the site carousel (app/html-behaviours.mjs), four tiles to a slide.
 const clientSlides = publicClientMarks.reduce((slides, mark, i) => (i % 4 ? slides[slides.length - 1].push(mark) : slides.push([mark]), slides), []);
 
-function ClientCarousel() {
+function ClientCarousel({ props }) {
   const root = useRef(null);
   useEffect(() => attachBehaviour(root.current, window), []);
   return <section ref={root} className="td-public-clients" data-behaviour="carousel" data-autoplay="6000" aria-roledescription="carousel" aria-label="Clients">
-    <div className="td-public-clients-heading"><p className="td-kicker">COPY PLACEHOLDER · DX CONSULTANCY</p><h2>Organisations we have worked with</h2></div>
+    <div className="td-public-clients-heading">{props.clientsKicker && editText(props, 'clientsKicker', props.clientsKicker, 'p', 'td-kicker')}<h2>{editText(props, 'clientsHeading', props.clientsHeading || "Organisations we've delivered for")}</h2></div>
     <div className="td-clients-track" data-carousel-track tabIndex={0} aria-label="Client logos">{clientSlides.map((slide, i) => <div className="td-clients-slide" key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${clientSlides.length}`}>
       {slide.map(({ name, image }) => <div key={name}><img src={image} alt={name} loading="lazy" width="240" height="120" /></div>)}
     </div>)}</div>
@@ -193,7 +193,7 @@ export function TwoDoorsStory(props) {
   const approvedNumbers = numbers.filter((number) => number?.value && number?.label && number?.verified);
   return <div className="td-segment td-story-segment">
     <TideTail enabled={tide} />
-    <ClientCarousel />
+    <ClientCarousel props={props} />
     <section className="td-story" id="about"><div>{(REVIEW_CONTENT || !copy.storyKicker?.startsWith('Copy placeholder')) && editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
     {approvedNumbers.length ? <div className="td-review-strip td-numbers" aria-label={copy.numbersLabel}>{approvedNumbers.map((item, i) => <div key={i}><b>{item.value}</b><span>{item.label}</span></div>)}</div> : REVIEW_CONTENT && <div className="td-review-strip" role="note"><b>{copy.draftNumbersHeading}</b><span>{copy.draftNumbersLine}</span></div>}
     <section className="td-range" aria-label={copy.rangeLabel}>{range.map((item, i) => <div key={i}><b>{item.title}</b><p>{item.line}</p>{item.href && <a href={safeHref(item.href)}>{item.linkLabel || `Explore ${item.title} →`}</a>}</div>)}</section>
