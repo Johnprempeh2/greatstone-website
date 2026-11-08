@@ -114,3 +114,22 @@
 .td-public-clients li{transition:transform 150ms ease-out}@media(hover:hover){.td-public-clients li:hover{transform:translateY(-2px)}}
 @media(prefers-reduced-motion:reduce){.td-public-clients li,.td-public-clients li:hover{transition:none;transform:none}}
 @media(prefers-reduced-motion:reduce){.td-home *, .td-home *:before,.td-home *:after,.td-segment *, .td-segment *:before,.td-segment *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* John, 8 Nov: above 1440px the landing scales like his laptop view instead of sitting in a fixed
+   1160/1240px column. The whole page (header and footer too) zooms by viewport/1440, so 1920 and 2560
+   lay out exactly as 1440 does, only larger. At 1440 and below nothing changes. A browser without
+   typed calc() division ignores the zoom and keeps today's layout. Inside the zoom, vw is scaled as
+   well, so each vw rule below is pinned to the value it has at 1440. */
+@media (min-width:1441px){
+  html:has(.td-home:not(.td-dev-page)){zoom:calc(100vw / 1440px)}
+  html:has(.td-home:not(.td-dev-page)) .td-intro>.td-tide,html:has(.td-home:not(.td-dev-page)) .td-story-segment>.td-tide{left:calc(50% - 720px);width:1440px}
+  html:has(.td-home:not(.td-dev-page)) .td-consultancy .td-door-copy{padding-left:140px}
+  html:has(.td-home:not(.td-dev-page)) .td-tools .td-door-copy{padding-right:140px}
+  html:has(.td-home:not(.td-dev-page)) .td-public-clients h2{font-size:42px}
+  html:has(.td-home:not(.td-dev-page)) :is(.td-story,.td-section,.td-close) h2{font-size:48.96px}
+  html:has(.td-home:not(.td-dev-page)) .td-range:has(>div:nth-child(2):last-child){gap:72px}
+  html:has(.td-home:not(.td-dev-page)) .td-range:has(>div:nth-child(2):last-child) b{font-size:34px}
+  html:has(.td-home:not(.td-dev-page)) .td-proof-awaiting{gap:100px}
+  html:has(.td-home:not(.td-dev-page)) .td-case-placeholder{font-size:144px}
+  html:has(.td-home:not(.td-dev-page)) .td-case-draft .td-case-copy strong{font-size:36px}
+}
