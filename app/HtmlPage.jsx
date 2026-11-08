@@ -46,20 +46,29 @@ function toReact(nodes, context, path = 'n') {
     if (node.type === 'text') return node.value;
     if (node.type === 'island') {
       const island = ISLANDS[node.name];
-      // GRE-3777: the placeholder view shows the tag as GSAM live design does, with islandPlaceholderCss.
-      if (context.placeholders) return createElement('gs-island', { key, name: node.name, ...node.attributes });
-      if (island.component) return createElement(COMPONENTS[island.component],
-        { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
-          ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}),
-          ...(island.component === 'SiteSearch' ? { links: context.searchLinks ||= searchLinks(context.release) } : {}) });
-      // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
-      const { blockId, ...props } = node.props;
-      const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
-      return <IslandBlock key={key} type={island.block} props={{ ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }}
-        pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
+      const rendered = islandElement(node, island, context, key);
+      // GSAM live design: mark what an island renders, so the editor's Pick can say it is built in code
+      // (locked) instead of offering a removal that could never save. display: contents keeps the layout.
+      return context.markIslands && !context.placeholders
+        ? createElement('div', { key, 'data-gs-island': node.name, 'data-gs-island-label': island.label, style: { display: 'contents' } }, rendered)
+        : rendered;
     }
     return createElement(node.tag, { key, ...reactProps(node.attributes) }, node.children.length ? toReact(node.children, context, key) : undefined);
   });
+}
+
+function islandElement(node, island, context, key) {
+  // GRE-3777: the placeholder view shows the tag as GSAM live design does, with islandPlaceholderCss.
+  if (context.placeholders) return createElement('gs-island', { key, name: node.name, ...node.attributes });
+  if (island.component) return createElement(COMPONENTS[island.component],
+    { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
+      ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}),
+      ...(island.component === 'SiteSearch' ? { links: context.searchLinks ||= searchLinks(context.release) } : {}) });
+  // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
+  const { blockId, ...props } = node.props;
+  const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
+  return <IslandBlock key={key} type={island.block} props={{ ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }}
+    pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
 }
 
 function region(document, scope, context) {
@@ -69,9 +78,9 @@ function region(document, scope, context) {
   return { children: toReact(nodes, context, scope), css: css.css };
 }
 
-export default function HtmlPage({ page, release, placeholders = false }) {
+export default function HtmlPage({ page, release, placeholders = false, markIslands = false }) {
   const context = { media: release.media, forms: release.collections?.forms, pageSlug: page.slug,
-    pagePaths: release.pages.map((item) => item.path), removed: [], release, placeholders };
+    pagePaths: release.pages.map((item) => item.path), removed: [], release, placeholders, markIslands };
   const site = sanitiseCss(release.stylesheet, { media: release.media, fontFace: true });
   context.removed.push(...site.removed.map((item) => `stylesheet: ${item}`));
   const chrome = Object.fromEntries(CHROME_KEYS.map((key) => [key, region(release.chrome?.[key], key, context)]));

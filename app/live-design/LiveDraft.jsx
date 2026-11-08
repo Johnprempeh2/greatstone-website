@@ -45,5 +45,5 @@ export default function LiveDraft({ base, siteId, origins }) {
 
   if (!draft) return <p style={{ padding: 24, fontFamily: 'system-ui', color: '#9ca29b' }}>Waiting for GSAM to send the page…</p>;
   const release = { ...base, chrome: draft.chrome ?? base.chrome, stylesheet: draft.stylesheet ?? base.stylesheet, pages: base.pages };
-  return <RedrawBoundary><HtmlPage page={draft.page} release={release} /></RedrawBoundary>;
+  return <RedrawBoundary><HtmlPage page={draft.page} release={release} markIslands /></RedrawBoundary>;
 }
