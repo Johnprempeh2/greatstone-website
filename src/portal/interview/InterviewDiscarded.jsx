@@ -7,7 +7,6 @@
  */
 
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { ButtonLink } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { INTERVIEW_BASE, hrefFor } from './route.mjs';
@@ -16,7 +15,6 @@ import { LEGAL_CONTACT_EMAIL } from '../../lib/legal-facts.mjs';
 export default function InterviewDiscarded() {
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Conversation discarded">
         <div className="welcome-wrap">
           <GsLogo className="welcome-logo anim-up" />

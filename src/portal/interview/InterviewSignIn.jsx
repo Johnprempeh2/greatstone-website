@@ -12,7 +12,6 @@
 import { useState } from 'react';
 import { authClient, signIn, signOut } from '../../lib/better-auth-client.mjs';
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { Button } from './Button.jsx';
 import { isUnverifiedError, signInErrorMessage, verifyCallbackURL } from './auth-model.mjs';
@@ -128,7 +127,6 @@ export function SignInForm({ onSignedIn, hint }) {
 export function InterviewSignIn({ onSignedIn }) {
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Sign in">
         <div className="welcome-wrap signin-wrap">
           <GsLogo className="welcome-logo anim-up" />
@@ -166,7 +164,6 @@ export function VerifyEmailNotice({ email }) {
 
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Confirm your email">
         <div className="welcome-wrap signin-wrap">
           <GsLogo className="welcome-logo anim-up" />

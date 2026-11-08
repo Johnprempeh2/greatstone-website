@@ -9,7 +9,6 @@
 
 import { useState } from 'react';
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { Button } from './Button.jsx';
 import { InterviewFooter, DotDivider } from './Footer.jsx';
 import { useActionForm } from './usePageOp.mjs';
@@ -21,7 +20,6 @@ export default function InterviewGoodbye() {
 
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Thanks all the same">
         <div className="welcome-wrap">
           <GsLogo className="welcome-logo anim-up" />

@@ -268,7 +268,6 @@ body.nav-locked { overflow:hidden; }
 
 /* ---- footer ---- */
 .site-footer { position:relative; padding:clamp(64px,9vh,120px) var(--gs-gutter) 48px; text-align:center; overflow:hidden; border-top:1px solid var(--gs-border-soft); }
-.site-footer .foot-wave { position:absolute; right:-40px; bottom:-40px; width:min(440px,60vw); opacity:.5; pointer-events:none; }
 .site-footer .logo { max-width:130px; margin:0 auto 14px; opacity:.8; }
 .site-footer .logo img { width:100%; height:auto; display:block; }
 .site-footer .tagline { font-weight:700; letter-spacing:.04em; }
@@ -330,7 +329,7 @@ body.nav-locked { overflow:hidden; }
   /* 3. Chrome and decoration. The header is fixed, so without this it reprints on
         every page. The scrims and the aurora would render as grey blocks. */
   .gs-header, .gs-tools, .gs-cmdbtn, .gs-accountbtn, .gs-search, .gs-navmenu,
-  .foot-wave, .b-invite-aurora, .gs-tour, .gs-ctx-pill { display: none !important; }
+  .b-invite-aurora, .gs-tour, .gs-ctx-pill { display: none !important; }
   .b-chapter-inner::before, .b-invite-card::before { display: none !important; }
   .b-chapter-inner { text-shadow: none !important; }
 
