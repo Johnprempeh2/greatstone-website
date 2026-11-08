@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { exportRenderedPage, releasePage, stageDraftPages, stripCssComments, withoutDraftLinks } from './html-export.mjs';
+import { chromeFile, exportRenderedPage, releasePage, stageDraftPages, stripCssComments, withoutDraftLinks } from './html-export.mjs';
 import { sanitiseHtml } from './html-sanitiser.mjs';
 import { sanitiseCss } from './css-sanitiser.mjs';
 
@@ -97,15 +97,16 @@ test('IndustryPicker writes out every industry as tab parts, the first shown', (
   assert.deepEqual(sanitiseHtml(out.html).removed, []);
 });
 
-test('the maturity map names the climb behaviour; the catalogue becomes an island with its props', () => {
+test('the maturity map and the catalogue become islands with their props', () => {
   const page = { path: '/how-we-help', data: { content: [{ type: 'MaturityMap', props: { id: 'map-1' } }, { type: 'ServiceCatalog', props: { id: 'servicecatalog-1', services: [] } }] } };
   const out = exportRenderedPage(render(block('MaturityMap', 'map-1', '<section class="b-map map-stage"></section>') + block('ServiceCatalog', 'servicecatalog-1', '<section class="b-cat"><input type="search"></section>')), page);
-  assert.match(out.html, /<section class="b-map map-stage" data-behaviour="climb">/);
+  // The Climb chart keeps its React render (its trail glow is an SVG filter the sanitiser refuses).
+  assert.match(out.html, /<gs-island name="maturity-map" data-block="map-1"><\/gs-island>/);
   const tiein = exportRenderedPage(render(block('MethodTieIn', 't1', '<section class="b-tiein-section"><div class="b-tiein-chart" aria-hidden="true"></div></section>')),
     { path: '/climb', data: { content: [{ type: 'MethodTieIn', props: { id: 't1' } }] } });
   assert.match(tiein.html, /<div class="b-tiein-chart" aria-hidden="true" data-behaviour="grow">/);
   assert.match(out.html, /<gs-island name="service-catalog" data-block="servicecatalog-1"><\/gs-island>/);
-  assert.deepEqual(out.formBlocks, { 'servicecatalog-1': { id: 'servicecatalog-1', services: [] } });
+  assert.deepEqual(out.formBlocks, { 'map-1': { id: 'map-1' }, 'servicecatalog-1': { id: 'servicecatalog-1', services: [] } });
   assert.deepEqual(sanitiseHtml(out.html).removed, []);
 });
 
@@ -128,4 +129,9 @@ test('the shared chrome drops the footer links staged drafts add, and nothing el
   assert.deepEqual(withoutDraftLinks(chrome, [draft]).footer, { html: '<nav class="foot-links"><a href="/about">About</a></nav>', css: '.x{}' });
   assert.throws(() => withoutDraftLinks({ ...chrome, footer: { html: '', css: '' } }, [draft]), /one footer link/);
   assert.throws(() => withoutDraftLinks({ ...chrome, header: { html: '<a href="/support">Help</a>', css: '' } }, [draft]), /outside the footer/);
+});
+
+test('the chrome file GSAM refreshes from holds the stylesheet and the footer only', () => {
+  const release = { stylesheet: '.a{color:red}', chrome: { header: { html: '<header></header>', css: '' }, nav: { html: '', css: '' }, footer: { html: '<footer>F</footer>', css: '.f{}' } } };
+  assert.deepEqual(chromeFile(release), { version: 1, stylesheet: '.a{color:red}', footer: { html: '<footer>F</footer>', css: '.f{}' } });
 });

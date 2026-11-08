@@ -2244,6 +2244,39 @@
     },
     "_note": ""
   },
+  "maturitymap-1d36xa": {
+    "id": "maturitymap-1d36xa",
+    "tiers": [
+      {
+        "tag": "Pebble",
+        "range": "1–4",
+        "title": "Surviving.",
+        "desc": "Manual, reactive, held together by heroics. The work gets done, but it costs hours nobody is counting.",
+        "traits": "Manual, Reactive, Siloed"
+      },
+      {
+        "tag": "Plateau",
+        "range": "5–7",
+        "title": "Organised.",
+        "desc": "Process exists, some automation has landed, things are improving. But momentum stalls without a clear next move.",
+        "traits": "Structured, Automating, Improving"
+      },
+      {
+        "tag": "Peak",
+        "range": "8–10",
+        "title": "Compounding.",
+        "desc": "Intelligent, integrated, ahead of the curve. Every system feeds the next and the gains stack on themselves.",
+        "traits": "Intelligent, Compounding, Ahead"
+      }
+    ],
+    "_section": {
+      "surface": "none",
+      "accent": "default",
+      "spaceTop": "default",
+      "spaceBottom": "default"
+    },
+    "_note": ""
+  },
   "bookdeepdive-de8ak": {
     "id": "bookdeepdive-de8ak",
     "eyebrow": "",
