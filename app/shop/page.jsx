@@ -1,14 +1,14 @@
 import { CatalogueBrowse } from '../catalogue.jsx';
 import { catalogueFromRelease } from '../catalogue-data.js';
 import { activeRelease } from '../release-source.js';
+import { pageMetadata } from '../page-metadata.mjs';
 import { browseOfferings } from '../../next-proof/catalogue-data.mjs';
 
-const baseMetadata = {
+const seo = {
   title: 'Software Catalogue · Greatstone International',
   description: 'Browse developer software from the vendors Greatstone licenses and supports.',
-  alternates: { canonical: 'https://greatstoneint.com/shop' },
 };
-export async function generateMetadata() { const { release } = await activeRelease(); return { ...baseMetadata, other: { 'gsam-release': String(release.release.number) } }; }
+export async function generateMetadata() { const { release } = await activeRelease(); return pageMetadata({ path: '/shop', seo }, release.release.number); }
 
 export default async function Shop({ searchParams }) {
   const { release } = await activeRelease();

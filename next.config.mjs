@@ -8,7 +8,7 @@ const config = {
     // Common guesses at old addresses that the legacy list does not carry (cutover gap 3).
     // /intel is the old alias for AI Market Intelligence (gap 1). /proof is not here: it is GSAM's Case Studies
     // path, and the catch-all page sends it to /case-studies only when the release publishes that instead.
-    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/intel', '/ai-market-intelligence']]
+    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/intel', '/ai-market-intelligence'], ['/sign-in', '/account'], ['/signin', '/account']]
       .map(([source, destination]) => ({ source, destination, permanent: true }));
     return [...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
   },
