@@ -2,6 +2,7 @@ import { Window } from 'happy-dom';
 import { pathToFileURL } from 'node:url';
 import release from '../data/release.json' with { type: 'json' };
 import { legacyHashDestination } from '../legacy-hashes.mjs';
+import { isHidden } from '../hidden-routes.mjs';
 
 export async function checkBuiltLinks(base, paths, fetchPage = fetch) {
   const failures = [];
@@ -57,7 +58,7 @@ export async function checkBuiltLinks(base, paths, fetchPage = fetch) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const base = process.env.PROOF_BASE || 'http://127.0.0.1:5181';
-  const result = await checkBuiltLinks(base, release.pages.map((page) => page.path));
+  const result = await checkBuiltLinks(base, release.pages.map((page) => page.path).filter((path) => !isHidden(path)));
   console.log(`Checked ${result.pages} built pages, ${result.checkedLinks} internal/link candidates, ${result.mappedLegacy} legacy hashes: ${result.failures.length} failure(s)`);
   for (const failure of result.failures) console.error(failure);
   if (result.failures.length) process.exitCode = 1;

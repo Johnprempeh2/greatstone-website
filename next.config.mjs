@@ -12,7 +12,7 @@ const config = {
     const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/intel', '/ai-market-intelligence'], ['/sign-in', '/account'], ['/signin', '/account']]
       .map(([source, destination]) => ({ source, destination, permanent: true }));
     // Hidden pages first, so a permanent legacy alias (/proof to /case-studies) never answers before them.
-    return [...hiddenRedirects(), ...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
+    return [...hiddenRedirects(release.pages.map((page) => page.path)), ...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
   },
   // GRE-1831 live design renders pages in the browser, where the sanitiser uses the browser's own
   // inert parser: happy-dom (Node only) is not bundled for the client.
