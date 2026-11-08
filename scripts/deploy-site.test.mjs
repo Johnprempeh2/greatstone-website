@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawnSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
+import htmlSample from '../next-proof/fixtures/html-release-sample.json' with { type: 'json' };
 
 const script = new URL('./deploy-site.mjs', import.meta.url).pathname;
 const site = 'gre1795-website-db-staging';
@@ -38,8 +39,9 @@ for (const name of ['src', 'scripts']) cpSync(resolve(root, name), resolve(proce
 if (!process.argv[3]) cpSync(resolve(root, 'next-proof/netlify.toml'), resolve(process.argv[2], 'netlify.toml'));
 `);
   await writeFile(join(cwd, 'next-proof', 'netlify.toml'), '[build.environment]\n  NEXT_CATALOGUE_REQUIRED = "1"\n');
-  await writeFile(join(cwd, 'scripts', 'deploy-editor-alias.mjs'), `import { appendFileSync } from 'node:fs';
+  await writeFile(join(cwd, 'scripts', 'deploy-editor-alias.mjs'), `import { appendFileSync, copyFileSync, existsSync } from 'node:fs';
 appendFileSync(process.env.DEPLOY_LOG, \`alias \${process.argv[2]} \${process.env.GSAM_ENGINE_COMMIT}\\n\`);
+if (existsSync('next-proof/data/release.json')) copyFileSync('next-proof/data/release.json', process.env.DEPLOY_LOG + '.baked.json');
 if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
 `);
   git(cwd, 'add', '.gitignore', 'src/app.js', 'contracts/check.mjs', 'next-proof/scripts/prepare-netlify.mjs', 'next-proof/netlify.toml', 'scripts/deploy-editor-alias.mjs');
@@ -915,7 +917,7 @@ const goodCatalogue = { offerings: [entry('sample-product')], categories: [entry
 // `live` also points the public store at the same release, so a Deploy carries the commit only.
 async function stageContent(f, number = 4, { collections = goodCatalogue, live = false } = {}) {
   const { createHash } = await import('node:crypto');
-  const file = Buffer.from(JSON.stringify({ schema: 2, release: number, pages: [], collections }));
+  const file = Buffer.from(JSON.stringify({ ...htmlSample, release: number, collections }));
   const sha256 = createHash('sha256').update(file).digest('hex');
   const current = { schema: 1, release: number, key: `releases/${number}.json`, sha256, switchedAt: '2026-11-07T10:00:00.000Z', fence: 3 };
   f.env.CONTENT_STORE_DIR = join(f.cwd, 'bin');
@@ -974,6 +976,9 @@ test('a staging content task forces the staging upload and must match staging\'s
   assert.match(await readFile(f.log, 'utf8'), /--message gsam-source:staging:/);
   // The editor alias follows: it bakes the same release, so GSAM's draft overlays what staging serves (8 Nov).
   assert.match(result.stdout, /Editor alias bakes staging's Content release 4/);
+  // GRE-4720: it bakes the parsed snapshot, not the raw schema 2 file the editor build refuses.
+  const baked = JSON.parse(await readFile(`${f.log}.baked.json`, 'utf8'));
+  assert.deepEqual([baked.release.number, baked.releaseSchema, baked.gsamSnapshot], [4, 2, true]);
 });
 
 // GRE-4707: on 8 Nov a Deploy put content release 1 (no /consultancy, 0 products) on the public site.

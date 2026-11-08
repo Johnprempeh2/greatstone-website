@@ -4,6 +4,8 @@ import { hostname, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
+import { readGsamRelease } from '../next-proof/gsam-release.mjs';
+import provenRelease from '../next-proof/data/release.json' with { type: 'json' };
 
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
@@ -509,8 +511,14 @@ async function bakeStagingContent(target) {
   const file = await (await contentStore(stagingSite)).get(staged.key);
   if (!file || createHash('sha256').update(file).digest('hex') !== staged.sha256)
     throw new Error(`editor alias: staging's ${contentLine(staged)} is missing or does not match its sha256`);
+  // The engine bakes only schema 1 or a parsed snapshot: the raw schema 2 file failed the editor build
+  // with "Invalid baked release: R2 Unsupported schema 2" (GRE-4720), so it is parsed as staging reads it.
+  const published = JSON.parse(file.toString('utf8'));
+  const parsed = readGsamRelease(file.toString('utf8'), staged,
+    { siteId: published.siteId, orgId: published.orgId ?? provenRelease.orgId }, provenRelease);
+  if (parsed.refused) throw new Error(`editor alias: staging's ${contentLine(staged)} is refused: ${parsed.refused.message}`);
   await mkdir(join(target, 'next-proof/data'), { recursive: true });
-  await writeFile(join(target, 'next-proof/data/release.json'), file);
+  await writeFile(join(target, 'next-proof/data/release.json'), JSON.stringify(parsed.release));
   console.log(`Editor alias bakes staging's ${contentLine(staged)}`);
 }
 
