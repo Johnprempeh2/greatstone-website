@@ -5,7 +5,13 @@ import { writeFile } from 'node:fs/promises';
 
 const siteId = process.env.GSAM_SITE_ID;
 if (!siteId) throw new Error('GSAM_SITE_ID is required for a GSAM release build');
-const store = getStore({ name: process.env.GSAM_RELEASE_BLOBS_STORE || 'gsam-content', siteID: process.env.NETLIFY_SITE_ID });
+// deploy-site.mjs builds locally (`netlify deploy`), which gives the build no Blobs context, so the store is
+// opened with the site ID and the deploy's token; a build on Netlify falls back to its own context.
+const store = getStore({
+  name: process.env.GSAM_RELEASE_BLOBS_STORE || 'gsam-content',
+  siteID: process.env.NETLIFY_SITE_ID || process.env.SITE_ID,
+  token: process.env.NETLIFY_AUTH_TOKEN,
+});
 const current = await store.get('current', { type: 'json', consistency: 'strong' });
 if (!current) throw new Error('Current GSAM release is missing');
 const pointerProblem = validateCurrent(current);
