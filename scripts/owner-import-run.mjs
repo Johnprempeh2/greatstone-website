@@ -5,7 +5,7 @@
 //                                          snapshot the database, set OWNER_IMPORT_SITE and OWNER_IMPORT_UNTIL
 //                                          (at most 60 minutes). Netlify bakes env values into a deploy, so deploy
 //                                          and publish the site next.
-//   submit --site <name> --mode identities|tables|proof|mcp-token|mcp-token-revoke|approver|staging-approver --action dry-run|apply --input <file.json>
+//   submit --site <name> --mode identities|tables|proof|mcp-token|mcp-token-revoke|approver|staging-approver|verify-test-account|staging-test-approver|staging-test-approver-off --action dry-run|apply --input <file.json>
 //                                          write the payload, then wait for the scheduled tick's result (every
 //                                          five minutes; Netlify picks the minute) until the window ends. If no tick
 //                                          ran, it removes the payload: nothing was applied. A table apply is
@@ -16,6 +16,8 @@
 // itself never goes in it. mcp-token-revoke takes { "tokenId": "<uuid>" } from the register result. approver takes
 // { "email": "<staff sign-in email, lower case>", "label": "John" }, only as John names himself on the card (GRE-3964).
 // staging-approver takes { "gsamActor": "user:<GSAM user id>", "label": "John" } on a staging site (GRE-4081).
+// verify-test-account and staging-test-approver-off take { "email": "staging-audit+<n>@example.com" };
+// staging-test-approver takes that email and a label (GRE-2621). All three run on gre3833 only.
 //
 // Order: prepare, deploy, submit dry-run, submit apply, clear. A window that ends unused leaves the function inert;
 // run clear, then prepare and deploy again.
@@ -29,11 +31,17 @@ import { claimProofHash, clearProofRecords } from './owner-proof-state.mjs';
 import {
   SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, recountTables, targetColumns, validateProof,
   validateMcpToken, validateMcpTokenRevoke, validateApprover, validateStagingApprover,
+  validateTestAccount, validateTestApprover, validateTestApproverOff,
 } from '../netlify/functions/lib/owner-import.mjs';
 
 const API = 'https://api.netlify.com/api/v1';
 const KEYS = ['OWNER_IMPORT_SITE', 'OWNER_IMPORT_UNTIL'];
 const POLL_MS = 20_000;
+const VALIDATORS = Object.freeze({
+  'mcp-token': validateMcpToken, 'mcp-token-revoke': validateMcpTokenRevoke, approver: validateApprover,
+  'staging-approver': validateStagingApprover, 'verify-test-account': validateTestAccount,
+  'staging-test-approver': validateTestApprover, 'staging-test-approver-off': validateTestApproverOff,
+});
 
 async function netlify(method, path, body) {
   const response = await fetch(`${API}${path}`, {
@@ -108,13 +116,12 @@ async function submit(site, mode, action, input) {
     const built = buildTablesData(source, readonly.columns);
     for (const [table, cols] of Object.entries(built.dropped)) console.log(`Not imported (not insertable on the target): ${table}: ${cols.join(', ')}`);
     data = built.data;
-  } else if (mode === 'mcp-token' || mode === 'mcp-token-revoke' || mode === 'approver' || mode === 'staging-approver') {
+  } else if (Object.hasOwn(VALIDATORS, mode || '')) {
     if (!SITES[site.name].modes.includes(mode)) throw new Error(`${mode} is not allowed on ${site.name}`);
-    const validate = { 'mcp-token': validateMcpToken, 'mcp-token-revoke': validateMcpTokenRevoke, approver: validateApprover,
-      'staging-approver': validateStagingApprover }[mode];
+    const validate = VALIDATORS[mode];
     try { data = validate(source); }
     catch (error) { throw new Error(`Payload refused: ${error.message}`); } // fixed reasons only, never a value
-  } else throw new Error('--mode must be identities, tables, proof, mcp-token, mcp-token-revoke, approver or staging-approver');
+  } else throw new Error(`--mode must be identities, tables, proof or ${Object.keys(VALIDATORS).join(', ')}`);
   if (action !== 'dry-run' && action !== 'apply') throw new Error('--action must be dry-run or apply');
 
   try {
