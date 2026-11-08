@@ -63,7 +63,8 @@ function islandElement(node, island, context, key) {
   if (island.component) return createElement(COMPONENTS[island.component],
     { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
       ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}),
-      ...(island.component === 'SiteSearch' ? { links: context.searchLinks ||= searchLinks(context.release) } : {}) });
+      ...(island.component === 'SiteSearch' ? { links: context.searchLinks ||= searchLinks(context.release) } : {}),
+      ...(island.component === 'TwoDoorsLanding' && context.markIslands ? { markFields: true } : {}) });
   // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
   const { blockId, ...props } = node.props;
   const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};

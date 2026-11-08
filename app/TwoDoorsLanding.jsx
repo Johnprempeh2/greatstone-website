@@ -1,8 +1,10 @@
-// GRE-3778: the frozen landing (Two Doors doors and hero, v15). John froze it, so it moves to the HTML
-// engine exactly as it is: this island renders its published blocks from the frozen copy, unchanged.
+// GRE-3778: the frozen landing (Two Doors doors and hero, v15). John froze its layout, images, motion and
+// styling; its words are his to change from GSAM's Website module (8 Nov, next-proof/landing-copy.mjs).
 import { ProofBlocks } from './ProofBlocks.jsx';
-import landing from '../next-proof/frozen/two-doors-landing.json';
+import { MarkFields } from '../src/blocks/EditableText.jsx';
+import { landingData } from '../next-proof/landing-copy.mjs';
 
-export default function TwoDoorsLanding({ forms, pagePaths }) {
-  return <ProofBlocks data={landing.data} pageSlug="home" pagePaths={pagePaths} forms={forms} />;
+export default function TwoDoorsLanding({ forms, pagePaths, copy, markFields = false }) {
+  const blocks = <ProofBlocks data={landingData(copy)} pageSlug="home" pagePaths={pagePaths} forms={forms} />;
+  return markFields ? <MarkFields.Provider value>{blocks}</MarkFields.Provider> : blocks;
 }

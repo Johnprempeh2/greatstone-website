@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { createContext, lazy, Suspense, useContext } from 'react';
 import RichText from './RichText.jsx';
 import { useFrameEditing } from '../../app/editor/frame-context.jsx';
 
@@ -10,9 +10,12 @@ import { useFrameEditing } from '../../app/editor/frame-context.jsx';
 // reaches the public bundle and usePuck() is never called outside the Puck provider. `editing` = props.puck?.isEditing.
 const InlineRichText = lazy(() => import('../cms/InlineRichText.jsx'));
 const FrameRichText = lazy(() => import('../cms/InlineRichTextCore.jsx'));
+// GSAM live design: name each text field on the page (data-gs-field), so Pick can edit an island's copy.
+export const MarkFields = createContext(false);
 
 export default function EditableText({ editing, id, field, value, as = 'span', className, singleLine = false, placeholder, arrayField, index, path, ...rest }) {
   const frameEditing = useFrameEditing();
+  const marked = useContext(MarkFields);
   if (editing) {
     const Editor = frameEditing ? FrameRichText : InlineRichText;
     return (
@@ -22,6 +25,6 @@ export default function EditableText({ editing, id, field, value, as = 'span', c
     );
   }
   return (value || value === 0)
-    ? <RichText as={as} className={className} singleLine={singleLine} html={value} {...rest} />
+    ? <RichText as={as} className={className} singleLine={singleLine} html={value} {...rest} {...(marked && field && arrayField === undefined ? { 'data-gs-field': field } : {})} />
     : null;
 }
