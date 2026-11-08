@@ -7,6 +7,11 @@ const editor = process.argv[3] === '--editor';
 if (!target) throw new Error('Pass a new scratch directory for the proof deploy.');
 if (process.argv[3] && !editor) throw new Error('Only --editor is supported as a preparation mode.');
 await mkdir(target, { recursive: true });
+const EDITOR_PRICING = `// Editor build: no database, so no live prices (written by next-proof/scripts/prepare-netlify.mjs).
+export async function readLivePricing() {
+  return null;
+}
+`;
 const files = ['src', 'app', 'next-proof', 'public', 'scripts', 'contracts', 'package.json', 'package-lock.json', 'next.config.mjs', 'middleware.js'];
 // The functions import netlify/database (owner-import); the Vite deploy carries both, so the Next deploy does too.
 if (!editor) files.push('netlify/functions', 'netlify/database');
@@ -35,5 +40,7 @@ if (editor) {
   pkg.scripts['build:next:editor'] = 'node scripts/gen-seo-files.mjs && node scripts/gen-contract-file.mjs && node scripts/prepare-puck-css.mjs && next build';
   await writeFile(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
   await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+  // The editor has no database: shop pages read "Price on application" (GRE-4720).
+  await writeFile(resolve(target, 'app/catalogue-pricing-live.js'), EDITOR_PRICING);
 }
 console.log(`Prepared isolated Next ${editor ? 'editor' : 'proof'} at ${target}`);
