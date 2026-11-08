@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { toProofRelease } from './release-adapter.mjs';
-import { browseOfferings, catalogueFromRelease, offeringBySlug } from './catalogue-data.mjs';
+import { browseOfferings, catalogueFromRelease, offeringBySlug, priceCatalogue } from './catalogue-data.mjs';
+import { decorateOffering, priceCard } from '../src/data/catalog.mjs';
 import { publishedCatalogue } from './catalogue-source.mjs';
 import { validateRelease } from './release-validator.mjs';
 
@@ -116,4 +117,43 @@ test('a CLI build reads the published catalogue over a site\'s /api/catalogue wi
     return new Response(JSON.stringify(op === 'list' ? { items: url.searchParams.get('page') === '1' ? [{ slug: 'devexpress-winForms', name: 'WinForms' }] : [], total: 1 } : []), { status: 200 });
   });
   assert.deepEqual((await collectPublishedCatalogue(read)).offerings, [{ slug: 'devexpress-winForms', name: 'WinForms' }]);
+});
+
+test('Next pages price release products with the live rules and rate, as /api/catalogue does (GRE-4714)', () => {
+  // Made-up figures. Rows are shaped as the public catalogue read returns them.
+  const vendor = { id: 'vendor-1', slug: 'sample-vendor', name: 'Sample Vendor', logo_url: null };
+  const category = { id: 'category-1', slug: 'documents', name: 'Documents' };
+  const variant = (id, base, currency, sort) => ({ id, sku: id, name: id, currency, platform: null, sort_order: sort, license_type: null, min_order_qty: 1, billing_period: null, base_price_minor: base });
+  const priced = { id: 'offering-1', slug: 'sample-priced', name: 'Sample Priced', type: 'product', status: 'published', vendor, category, vendor_id: vendor.id, category_id: category.id,
+    from_price_minor: '50000', from_price_currency: 'USD', platforms: ['.NET'], short_description: null, description: null, featured: false, attributes: {},
+    offering_variants: [variant('edition-usd', '50000', 'USD', 1), variant('edition-gbp', '80000', 'GBP', 2)], offering_specs: [] };
+  const cheaper = { ...priced, id: 'offering-2', slug: 'sample-cheaper', name: 'Sample Cheaper', from_price_minor: '20000', offering_variants: [variant('edition-low', '20000', 'USD', 1)] };
+  const poa = { ...priced, id: 'offering-3', slug: 'sample-poa', name: 'Sample POA', from_price_minor: null, offering_variants: [variant('edition-poa', null, 'USD', 1)] };
+  const source = structuredClone(snapshot);
+  for (const key of Object.keys(source.pages)) source.pages[key].data.root = { props: {} };
+  const release = toProofRelease({ ...source, catalogue: { vendors: [{ ...vendor, description: null }], categories: [{ ...category, description: null }], offerings: [poa, priced, cheaper] } });
+  assert.equal(validateRelease(release, { siteId: release.siteId, orgId: release.orgId }), null);
+  const rule = { id: 'rule-1', active: true, status: 'published', scopeType: 'vendor', targets: { vendorIds: ['vendor-1'] }, adjustmentType: 'percentage', adjustmentValuePct: 10, priority: 1, floorFraction: 0 };
+  const price = { rules: [rule], rate: 1.25 };
+
+  const catalogue = priceCatalogue(catalogueFromRelease(release), price);
+  const item = offeringBySlug(catalogue, 'sample-priced');
+  assert.equal(item.pricing.final, 36000); // $500 at 1.25 is £400, less 10%
+  assert.deepEqual(item.variants.map((v) => v.pricing.final), [36000, 57600]);
+  assert.equal(item.from.final, 36000);
+  // Same figures as the old site's read of the same database rows.
+  const old = { ...priced, from_price_minor: 50000, offering_variants: priced.offering_variants.map((v) => ({ ...v, base_price_minor: Number(v.base_price_minor) })) };
+  assert.deepEqual(item.pricing, priceCard(old, price.rules, null, price.rate));
+  const oldDetail = decorateOffering(old, price.rules, price.rate);
+  assert.deepEqual(item.variants.map((v) => v.pricing), oldDetail.variants.map((v) => v.pricing));
+  assert.deepEqual(item.from, oldDetail.from);
+
+  assert.equal(offeringBySlug(catalogue, 'sample-poa').pricing.final, null);
+  assert.equal(offeringBySlug(catalogue, 'sample-poa').from, null);
+  assert.deepEqual(browseOfferings(catalogue, { sort: 'price' }).map((row) => row.slug), ['sample-cheaper', 'sample-priced', 'sample-poa']);
+  assert.deepEqual(browseOfferings(catalogue, { sort: 'price-desc' }).map((row) => row.slug), ['sample-priced', 'sample-cheaper', 'sample-poa']);
+
+  // No live price inputs (no database): products keep no price, so the cards read "Price on application".
+  const unpriced = priceCatalogue(catalogueFromRelease(release), null);
+  assert.equal(offeringBySlug(unpriced, 'sample-priced').pricing, undefined);
 });

@@ -29,7 +29,8 @@ export async function asCatalogueAnon(pool, work) {
   }
 }
 
-async function pricing(client) {
+// The live price inputs: published rules and the USD to GBP display rate. The Next pages read these too.
+export async function pricing(client) {
   const { rows: ruleRows } = await client.query("SELECT * FROM pricing_rules WHERE active = true AND status = 'published' AND deleted_at IS NULL");
   const { rows: targets } = await client.query('SELECT rule_id, vendor_id, category_id, offering_id, tier_id FROM pricing_rule_targets');
   const { rows: rates } = await client.query('SELECT usd_to_gbp_display_rate FROM org_settings LIMIT 1');
