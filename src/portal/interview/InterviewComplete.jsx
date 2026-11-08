@@ -14,7 +14,6 @@
  */
 
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { SignOffPanel } from './SignOffPanel.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { pageFallback } from './PageStatus.jsx';
@@ -29,7 +28,6 @@ export default function InterviewComplete() {
 
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Sign-off">
         <div className="signoff-wrap">
           <GsLogo className="signoff-logo anim-up" />

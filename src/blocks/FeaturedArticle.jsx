@@ -7,7 +7,7 @@ import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 
 // The insights hero post: a two-up card. A real hero image if one is set, otherwise the
-// stone-echo media panel (giant glyph + ridges + corner wave). Editable meta + read time.
+// stone-echo media panel (giant glyph + ridges). Editable meta + read time.
 const hideOnError = (e) => { e.currentTarget.style.display = 'none'; };
 
 export function FeaturedArticle({ id, puck, label, title, excerpt, meta, glyph = 'G', readTime, image, alt, ctaLabel, ctaHref = '#' }) {
@@ -17,10 +17,6 @@ export function FeaturedArticle({ id, puck, label, title, excerpt, meta, glyph =
     <section ref={ref} className="b-featured-sec">
       <div className="wrap">
         <article className="featured" data-reveal>
-          <svg className="corner-wave" viewBox="0 0 170 170" aria-hidden="true">
-            <path d="M170 30 A140 140 0 0 0 30 170" /><path d="M170 62 A108 108 0 0 0 62 170" />
-            <path d="M170 94 A76 76 0 0 0 94 170" /><path d="M170 126 A44 44 0 0 0 126 170" />
-          </svg>
           <div className="featured__media" aria-hidden={image ? undefined : 'true'}>
             {image ? <img className="featured__img" src={image} alt={alt || ''} loading="lazy" decoding="async" onError={hideOnError} /> : <span className="featured__glyph">{glyph}</span>}
           </div>
@@ -60,16 +56,6 @@ export const css = `
 .featured__body .h3{max-width:18ch}
 .featured__meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.78rem}
 .featured__cta{margin-top:6px}
-/* animated lime corner-wave (faithful to the live insights .featured): four arcs emit outward, staggered */
-.corner-wave{position:absolute;top:-2px;right:-2px;width:170px;height:170px;z-index:2;pointer-events:none}
-.corner-wave path{fill:none;stroke:var(--gs-accent);stroke-width:1;opacity:0;transform-origin:100% 0%;
-  animation:gsWaveEmit 4.6s var(--gs-ease-inout) infinite}
-.corner-wave path:nth-child(1){animation-delay:0s}
-.corner-wave path:nth-child(2){animation-delay:.7s}
-.corner-wave path:nth-child(3){animation-delay:1.4s}
-.corner-wave path:nth-child(4){animation-delay:2.1s}
-@keyframes gsWaveEmit{0%{opacity:0;transform:scale(.35)}18%{opacity:.55}70%{opacity:.12}100%{opacity:0;transform:scale(1.1)}}
-@media(prefers-reduced-motion:reduce){.corner-wave path{animation:none;opacity:.3}}
 `;
 
 export const puck = {

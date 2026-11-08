@@ -62,10 +62,6 @@
 .gs-interview .gs-logo img { max-width: 100%; height: auto; display: block; }
 
 /* ===== SIGNATURE DECORATIONS ===== */
-.gs-interview .wave-decoration { position: fixed; width: 500px; height: 500px; opacity: 0.35; pointer-events: none; z-index: 0; }
-.gs-interview .wave-decoration.top-right { top: -80px; right: -80px; }
-.gs-interview .wave-decoration.bottom-left { bottom: -80px; left: -80px; transform: rotate(180deg); }
-.gs-interview .gs-wave path { stroke: var(--gs-accent); }
 
 .gs-interview .dot-divider { display: flex; gap: 6px; justify-content: center; padding: 16px 0; }
 .gs-interview .dot-divider span { width: 5px; height: 5px; border-radius: 50%; background: var(--gs-accent); opacity: 0.6; }
@@ -1302,7 +1298,6 @@
   }
   .gs-interview { color-scheme: light; }
   .gs-interview { background: #ffffff !important; color: #1c1c1c; font-size: 12px; }
-  .gs-interview .wave-decoration { display: none !important; }
   .gs-interview .dx-wrap { max-width: none; padding: 0; }
   .gs-interview .glass-card, .gs-interview .card {
     background: #ffffff !important;

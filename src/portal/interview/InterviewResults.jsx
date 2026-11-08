@@ -16,7 +16,6 @@
  */
 
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { pageFallback } from './PageStatus.jsx';
 import { InterviewSignIn } from './InterviewSignIn.jsx';
@@ -209,7 +208,6 @@ function ReleasedReadout({ clientName, synthesis, failed }) {
 
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen dx-screen" aria-label="Discovery read-out">
         <div className="dx-wrap">
           <header className="dx-top">
