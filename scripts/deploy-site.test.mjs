@@ -972,6 +972,8 @@ test('a staging content task forces the staging upload and must match staging\'s
   result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
   assert.match(await readFile(f.log, 'utf8'), /--message gsam-source:staging:/);
+  // The editor alias follows: it bakes the same release, so GSAM's draft overlays what staging serves (8 Nov).
+  assert.match(result.stdout, /Editor alias bakes staging's Content release 4/);
 });
 
 // GRE-4707: on 8 Nov a Deploy put content release 1 (no /consultancy, 0 products) on the public site.

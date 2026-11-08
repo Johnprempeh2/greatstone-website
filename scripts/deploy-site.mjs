@@ -500,6 +500,20 @@ async function prepareNext(tree, target) {
   return target;
 }
 
+// GSAM's editor overlays its draft on the release it is built with. That was the checked-in proof release (1),
+// so the alias showed old words under the draft (8 Nov). It now bakes staging's current content release in,
+// checked against its sha256, so the editor shows what staging serves. Media still come from greatstone-home's store.
+async function bakeStagingContent(target) {
+  const staged = await contentRelease(stagingSite);
+  if (!staged) { console.log('Editor alias: staging has no content release, keeping the checked-in proof release'); return; }
+  const file = await (await contentStore(stagingSite)).get(staged.key);
+  if (!file || createHash('sha256').update(file).digest('hex') !== staged.sha256)
+    throw new Error(`editor alias: staging's ${contentLine(staged)} is missing or does not match its sha256`);
+  await mkdir(join(target, 'next-proof/data'), { recursive: true });
+  await writeFile(join(target, 'next-proof/data/release.json'), file);
+  console.log(`Editor alias bakes staging's ${contentLine(staged)}`);
+}
+
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
   const home = sites.get('greatstone-home');
@@ -513,6 +527,7 @@ async function deployEditorAlias(sha) {
   try {
     for (const [name, bin, args, cwd] of steps) {
       console.log(`Editor alias step "${name}" at ${sha}`);
+      if (name === 'install') await bakeStagingContent(join(dir, 'editor'));
       const result = spawnSync(bin, args, { stdio: 'inherit', cwd, env });
       if (result.error || result.status !== 0)
         throw new Error(`train failed at editor alias step "${name}" (${result.error?.message || `exit ${result.status}`}); ` +
