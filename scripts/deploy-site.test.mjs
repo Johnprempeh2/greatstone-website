@@ -58,12 +58,24 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   const served = [site];
   const restores = [];
   const failing = new Set();
+  // Staging as the pre-Deploy gate sees it (GRE-4707): the pages it answers, the release it serves, its shop.
+  const staging = { failing: new Map(), redirects: new Set(), release: '4', emptyShop: false };
+  const shopPage = (empty) => empty ? '<h3>Catalogue unavailable</h3>' : '<a class="st-card" href="/product/sample-product">';
   const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
     // The public promote (Next cutover step 4): the live deploy, publish and restore calls, and the upload's pages.
     if (req.url.startsWith('/draft')) {
-      res.statusCode = failing.has(req.url.slice('/draft'.length)) ? 500 : 200;
-      res.end('{}');
+      const path = req.url.slice('/draft'.length);
+      res.statusCode = failing.has(path) ? 500 : 200;
+      res.end(path === '/shop' ? shopPage(failing.has('/shop (empty)')) : '{}');
+      return;
+    }
+    if (req.url.startsWith('/staging/')) {
+      const path = req.url.slice('/staging'.length);
+      if (staging.redirects.has(path)) { res.statusCode = 308; res.setHeader('Location', `/staging${path}/`); res.end(); return; }
+      res.statusCode = staging.failing.get(path) || 200;
+      if (path === '/_release') res.setHeader('x-gsam-release', staging.release);
+      res.end(path === '/shop' ? shopPage(staging.emptyShop) : '{}');
       return;
     }
     const restore = /^\/api\/v1\/sites\/[^/]+\/deploys\/([^/]+)\/restore$/.exec(req.url);
@@ -112,7 +124,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   return { cwd, base, env, log, commit, run,
     setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
     setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); },
-    serve: (name) => { served.push(name); }, restores, failing };
+    serve: (name) => { served.push(name); }, restores, failing, staging };
 }
 
 function stagingCard(sha, changes = {}, cardSite = site) {
@@ -279,6 +291,7 @@ test('a weekly release card authorises both sites for its exact SHA', async (t) 
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
   f.setInteractions([weeklyCard(f.base)]);
+  await stageContent(f, 4, { live: true });
   // The fake Netlify API only serves the staging site, so the public run passes the gate
   // and then stops at the deploy lookup.
   let result = await f.run('prod', 'greatstone-home');
@@ -320,6 +333,7 @@ test('the GRE-2567 cut-over card authorises the public site for its exact SHA', 
   git(f.cwd, 'checkout', '-q', 'main');
   f.servePublicSite();
   f.setInteractions([cutoverCard(f.base)]);
+  await stageContent(f, 4, { live: true });
   f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
@@ -362,6 +376,7 @@ async function weeklyTrain(t) {
   f.servePublicSite();
   f.setInteractions([weeklyCard(f.base)]);
   f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
+  await stageContent(f, 4, { live: true });
   return f;
 }
 
@@ -800,6 +815,7 @@ test('the public site takes the commit on staging once main has moved on, still 
   let result = await f.run('prod', 'greatstone-home');
   assert.match(result.stderr, /production refused/);
   f.setInteractions([weeklyCard(staged)]);
+  await stageContent(f, 4, { live: true });
   // Past the gate, the fake API stops it at the public site's deploy lookup.
   result = await f.run('prod', 'greatstone-home');
   assert.doesNotMatch(result.stderr, /production refused|production requires/);
@@ -816,7 +832,7 @@ test('the public promote uploads as production, then checks the live site', asyn
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(f.restores, []);
   assert.match(result.stdout, /Fallback: the deploy live before this one is live-before/);
-  assert.match(result.stdout, /Published draft-1: 6 pages and 4 APIs answered 200/);
+  assert.match(result.stdout, /Published draft-1: 9 pages and 4 APIs answered 200/);
 });
 
 test('a page failing on the live site after the upload puts the earlier deploy back', async (t) => {
@@ -893,9 +909,13 @@ test('a deploy held on another machine is refused; a stale or finished one is no
 });
 
 // GSAM content releases (Next cutover, content wiring): staging's store holds what Publish wrote; Deploy promotes it.
-async function stageContent(f, number = 4) {
+const entry = (slug) => ({ id: slug, slug, fields: { data: { id: slug, slug } } });
+const goodCatalogue = { offerings: [entry('sample-product')], categories: [entry('documents')], vendors: [entry('sample-vendor')] };
+
+// `live` also points the public store at the same release, so a Deploy carries the commit only.
+async function stageContent(f, number = 4, { collections = goodCatalogue, live = false } = {}) {
   const { createHash } = await import('node:crypto');
-  const file = Buffer.from(JSON.stringify({ schema: 2, release: number, pages: [] }));
+  const file = Buffer.from(JSON.stringify({ schema: 2, release: number, pages: [], collections }));
   const sha256 = createHash('sha256').update(file).digest('hex');
   const current = { schema: 1, release: number, key: `releases/${number}.json`, sha256, switchedAt: '2026-11-07T10:00:00.000Z', fence: 3 };
   f.env.CONTENT_STORE_DIR = join(f.cwd, 'bin');
@@ -904,6 +924,9 @@ async function stageContent(f, number = 4) {
     [current.key]: file.toString('base64'),
     'media/abc.png': Buffer.from('png').toString('base64'),
   }));
+  const publicFile = join(f.cwd, 'bin', 'greatstone-home.json');
+  if (live) await writeFile(publicFile, JSON.stringify({ current: Buffer.from(JSON.stringify(current)).toString('base64') }));
+  else await rm(publicFile, { force: true });
   return { current, line: `Content release ${number} (sha256 ${sha256.slice(0, 12)})` };
 }
 const publicStore = async (f) => { try { return JSON.parse(await readFile(join(f.cwd, 'bin', 'greatstone-home.json'), 'utf8')); } catch { return {}; } };
@@ -949,4 +972,79 @@ test('a staging content task forces the staging upload and must match staging\'s
   result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
   assert.match(await readFile(f.log, 'utf8'), /--message gsam-source:staging:/);
+});
+
+// GRE-4707: on 8 Nov a Deploy put content release 1 (no /consultancy, 0 products) on the public site.
+// The pre-Deploy gate reads staging's release and pages before any upload or content move.
+async function assertRefusedBeforeUpload(f, result, reason) {
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Deploy refused before upload: /);
+  assert.match(result.stderr, reason);
+  assert.match(result.stderr, /Nothing changed on greatstone-home/);
+  await assert.rejects(readFile(f.log));
+  assert.deepEqual(f.restores, []);
+}
+
+test('a staged release with 0 products, categories or vendors is refused before upload', async (t) => {
+  for (const empty of ['offerings', 'categories', 'vendors']) {
+    const f = await weeklyTrain(t);
+    const { line } = await stageContent(f, 4, { collections: { ...goodCatalogue, [empty]: [] } });
+    f.setInteractions([weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}\n${line}` } })]);
+    const result = await f.run('prod', 'greatstone-home');
+    const named = empty === 'offerings' ? 'products' : empty;
+    await assertRefusedBeforeUpload(f, result, new RegExp(`staging's Content release 4 \\(sha256 [0-9a-f]{12}\\) has 0 ${named}`));
+    // The public content pointer never moved.
+    assert.deepEqual(await publicStore(f), {});
+  }
+});
+
+test('a key page that fails on staging is refused before upload', async (t) => {
+  for (const path of ['/consultancy', '/consultancy/transformation-services', '/product/sample-product', '/shop/sample-vendor']) {
+    const f = await weeklyTrain(t);
+    f.staging.failing.set(path, 404);
+    const result = await f.run('prod', 'greatstone-home');
+    await assertRefusedBeforeUpload(f, result, new RegExp(`${path} answered 404 on gre3833-next-db-staging`));
+  }
+  let f = await weeklyTrain(t);
+  f.staging.emptyShop = true;
+  await assertRefusedBeforeUpload(f, await f.run('prod', 'greatstone-home'), /\/shop lists 0 products on gre3833-next-db-staging/);
+  f = await weeklyTrain(t);
+  f.staging.release = '3';
+  await assertRefusedBeforeUpload(f, await f.run('prod', 'greatstone-home'), /serves content release 3, not 4/);
+});
+
+test('staging with no content release is refused before upload', async (t) => {
+  const f = await weeklyTrain(t);
+  await rm(join(f.cwd, 'bin', 'gre3833-next-db-staging.json'));
+  await assertRefusedBeforeUpload(f, await f.run('prod', 'greatstone-home'), /staging's store has no content release/);
+});
+
+test('a good staged release passes the gate (redirects followed) and its product page is checked live', async (t) => {
+  const f = await weeklyTrain(t);
+  f.staging.redirects.add('/about');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Pre-Deploy gate passed: staging's Content release 4 \(sha256 [0-9a-f]{12}\) has 1 products, 1 categories, 1 vendors; 8 key pages answered 200/);
+  assert.match(await readFile(f.log, 'utf8'), /--prod --json/);
+});
+
+test('the live check fails and restores when /shop lists 0 products or the product page fails', async (t) => {
+  for (const failure of ['/shop (empty)', '/product/sample-product', '/consultancy']) {
+    const f = await weeklyTrain(t);
+    f.failing.add(failure);
+    const result = await f.run('prod', 'greatstone-home');
+    assert.equal(result.status, 1);
+    const shown = failure === '/shop (empty)' ? '/shop (0 products)' : failure;
+    assert.match(result.stderr, new RegExp(`${shown.replace(/[()]/g, '\\$&')} failed after publishing draft-1; restored live-before`));
+    assert.deepEqual(f.restores, ['live-before']);
+  }
+});
+
+test('the gate dry run reads staging only and prints the reason', async (t) => {
+  const f = await fixture(t);
+  await stageContent(f, 4, { collections: { ...goodCatalogue, offerings: [] } });
+  const result = await runIn(f, ['check', 'greatstone-home']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Deploy refused before upload: staging's Content release 4 .* has 0 products/);
+  await assert.rejects(readFile(f.log));
 });
