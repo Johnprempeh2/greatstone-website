@@ -148,9 +148,9 @@ not technically blocked.
 
 ## Editing
 
-Visit `/#admin` to sign in. Editing only appears once signed in; the public site is read-only.
-The sign-in here is a **prototype gate**, not real security. Real deployments enforce editing
-rights on the server (see HANDOVER.md → Security).
+Pages, media, redirects and people are edited in the GSAM Website module. The old `/#admin`
+console, its sign-in and the Team screen saved only to the visitor's own browser, so they were
+retired (GRE-4786); an old `/#admin` link now opens the homepage. The public site is read-only.
 
 ## Adding a block
 

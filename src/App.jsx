@@ -95,7 +95,6 @@ const VersionHistory = lazy(() => import('./cms/VersionHistory.jsx'));
 const ActivityPanel = lazy(() => import('./cms/ActivityPanel.jsx'));
 const OverviewPanel = lazy(() => import('./cms/OverviewPanel.jsx'));
 const ReleaseBoard = lazy(() => import('./cms/ReleaseBoard.jsx'));
-const TeamPanel = lazy(() => import('./cms/TeamPanel.jsx'));
 const PagesPanel = lazy(() => import('./cms/PagesPanel.jsx'));
 const NavigationPanel = lazy(() => import('./cms/NavigationPanel.jsx'));
 const LinkAuditPanel = lazy(() => import('./cms/LinkAuditPanel.jsx'));
@@ -138,16 +137,14 @@ import { bulkSetStatus } from './lib/bulk-status.mjs';
 import { bulkSetSchedule, bulkClearSchedule, bulkSetNote, bulkClearNote, bulkSetAssignee, bulkClearAssignee } from './lib/bulk-meta.mjs';
 const BackgroundPanel = lazy(() => import('./cms/BackgroundPanel.jsx'));
 const StudioPanel = lazy(() => import('./cms/StudioPanel.jsx'));
-const AdminConsole = lazy(() => import('./cms/AdminConsole.jsx'));
 const SiteSettingsPanel = lazy(() => import('./cms/SiteSettingsPanel.jsx'));
 const MediaLibraryPanel = lazy(() => import('./cms/MediaLibraryPanel.jsx'));
-import SignIn from './cms/SignIn.jsx';
 import EditorTopMenu from './cms/EditorTopMenu.jsx';
 import Tour from './cms/Tour.jsx';
 import { useTour } from './cms/useTour.mjs';
 import Modal from './cms/Modal.jsx';
 import { ROLES } from './cms/auth.js'; // prototype roster roles (the Team panel is still a prototype)
-import { staffCan, ROLE_LABEL, roleNotice } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
+import { staffCan, ROLE_LABEL } from './cms/staffRoles.mjs'; // the signed-in user's Supabase role → capabilities
 import { parseAdminHash, PER_PAGE_SECTIONS } from './cms/adminRoute.mjs';
 import { load, persist, addPageTo, pushVersion, TRANSITIONS, canTransition, removePage, duplicatePage, renamePage, movePage, setSlug, addAsset, listAssets, rid, RESERVED_SLUGS, addProduct, updateProduct, removeProduct, addCategory, removeCategory, inviteTeamMember, updateTeamMember, removeTeamMember, logActivity, findProductBySlug, catalogHasDrift, publishCatalog, discardCatalogDraft, inviteStatus, acceptInvite, resendInvite, updateSettings, setNavigation, removeAsset, updateAsset, auditLinks, resolveRedirect, addRedirect, removeRedirect, setRedirect, listRedirects, validateRedirect, addSection, removeSection, renameSection, listSections, buildInsertBlock, addPageFromStarter, listStarters } from './store.js';
 import AcceptInvite from './cms/AcceptInvite.jsx';
@@ -192,11 +189,11 @@ function readJoinHash() {
   const m = (typeof location !== 'undefined' ? location.hash : '').match(/^#\/?join\/([\w-]+)/i);
   return m ? m[1] : null;
 }
-// #admin[/<section>[/<slug>]] → the admin console (or the editor when section==='editor'). Defers to
-// the pure, unit-tested parseAdminHash so the URL, the rendered destination and the active rail item
-// can never disagree. Sections: overview|pages|releases|seo|background|history|activity|team|editor.
-function readAdminHash() {
-  return parseAdminHash(typeof location !== 'undefined' ? location.hash : '');
+// #admin[/<section>[/<slug>]] was the browser-only CMS console, sign-in and Team screen. They saved only to
+// the visitor's own browser, so they are retired (GRE-4786): pages, media, redirects and people are managed in
+// GSAM. An old #admin link or bookmark now lands on the homepage (see the effect below).
+function readRetiredAdminHash() {
+  return !!parseAdminHash(typeof location !== 'undefined' ? location.hash : '');
 }
 // #breakdown → the full-screen interactive methodology explorer (the method Hero's "interactive breakdown")
 function readBreakdownHash() {
@@ -371,11 +368,8 @@ export default function App() {
   const [catalogueStaff, setCatalogueStaff] = useState(null); // the catalogue console reports its own staff up (it owns its auth)
   const tourEmail = (user && user.email) || (catalogueStaff && catalogueStaff.email) || ''; // whoever we know is signed in
   const tour = useTour(tourEmail);                  // guided onboarding tours (active id + per-user seen-state)
-  const [authChecked, setAuthChecked] = useState(false); // resolved the Supabase session yet (lazy, on #admin)
-  const [authNotice, setAuthNotice] = useState(null); // why an authenticated session can't use the CMS (no/read-only role)
-  const authSubRef = useRef(null);                  // the onAuthStateChange subscription (set up once)
-  const mountedRef = useRef(true);                  // App lifetime — the long-lived auth subscription guards on this, not a per-run flag
-  const [adminNav, setAdminNav] = useState(readAdminHash); // { section, slug } | null — the one admin-route source
+  const [adminNav, setAdminNav] = useState(null);   // { section, slug } | null — no URL opens it since #admin was retired
+  const [retiredAdmin, setRetiredAdmin] = useState(readRetiredAdminHash); // an old #admin link → send it to the homepage
   const [productSlug, setProductSlug] = useState(readProductHash); // #product/<slug> → public detail view
   const [svcSlug, setSvcSlug] = useState(readServiceHash); // #service/<slug> → public service detail view
   const [joinToken, setJoinToken] = useState(readJoinHash);        // #join/<token> → invite-accept screen
@@ -462,7 +456,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => { setPageHash(location.hash); setAdminNav(readAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInterviewRoute(readInterviewHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) { setAuthError(null); setVerifiedLanding(false); }
+    const onHash = () => { setPageHash(location.hash); setRetiredAdmin(readRetiredAdminHash()); setProductSlug(readProductHash()); setSvcSlug(readServiceHash()); setJoinToken(readJoinHash()); setShopRoute(readShopHash()); setCatalogueAdmin(readCatalogueHash()); setConfirmRoute(readConfirmHash()); setAccountRoute(readAccountHash()); setOrgRoute(readOrgHash()); setPortalRoute(readPortalHash()); setInterviewRoute(readInterviewHash()); setInvoiceRoute(readInvoiceHash()); setBreakdownRoute(readBreakdownHash()); setIntelRoute(readIntelHash()); setIntelArticle(readIntelArticle()); setAuthLanding(false); if (!readAccountHash()) { setAuthError(null); setVerifiedLanding(false); }
       // Back, Forward, a pasted link and a reload all land on the right page.
       const page = readPageHash();
       if (page) setCurrent(page);
@@ -509,6 +503,11 @@ export default function App() {
     setIntelRoute(false);
     navigate(state.pages['ai-market-intelligence'] ? 'ai-market-intelligence' : state.order[0]);
   }, [intelRoute]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!retiredAdmin) return;
+    setRetiredAdmin(false);
+    navigate(state.order[0]);
+  }, [retiredAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
   // Editing is URL-addressable. (A) A #admin/editor/<slug> URL — refresh, a shared link, Back/Forward
   // — restores the editor on the right page. (B) While editing under the admin area, mirror the page
   // in the hash so a refresh keeps you in the editor and Back leaves it cleanly. (C) Per-page console
@@ -540,37 +539,6 @@ export default function App() {
       setCurrent(adminNav.slug);
     }
   }, [adminNav]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Resolve the signed-in Greatstone staff user LAZILY — only once you enter the admin area (#admin),
-  // so a public visitor never loads the Supabase client (it stays out of the eager bundle). The same
-  // account controls the console, the editor and the catalogue. We resolve once, then stay subscribed
-  // to sign-in/out so the chrome updates live. (The catalogue owns its own auth and reports its staff up
-  // via onStaff → catalogueStaff, so the catalogue tour has an identity without loading auth twice here.)
-  useEffect(() => {
-    if (!onAdmin || authChecked) return;
-    let alive = true;
-    import('./store/adminAuth.mjs').then(async (m) => {
-      // guard on mountedRef (App lifetime), NOT the per-run `alive`: the onAuth subscription below is
-      // long-lived, and `alive` flips false as soon as setAuthChecked(true) re-runs this effect — which
-      // would otherwise leave every later sign-in/out/expiry event unable to update the chrome.
-      const resolve = async () => {
-        const s = await m.getSession().catch(() => null);
-        if (!s) { if (mountedRef.current) { setUser(null); setAuthNotice(null); } return; }
-        const staff = await m.getStaffUser().catch(() => null);
-        if (!mountedRef.current) return;
-        if (staff && m.isStaff(staff)) { setUser({ email: staff.email, name: staff.full_name || staff.email, role: staff.role }); setAuthNotice(null); }
-        else {
-          // authenticated, but no usable CMS role — surface why instead of a blank sign-in form
-          setUser(null);
-          setAuthNotice(staff ? roleNotice(staff.role) : 'You’re signed in, but this account isn’t set up for the Greatstone admin. Ask an owner or admin to add you.');
-        }
-      };
-      await resolve();
-      if (alive) setAuthChecked(true);
-      if (!authSubRef.current) { const { data } = m.onAuth(() => resolve()); authSubRef.current = data ? data.subscription : null; }
-    }).catch(() => { if (alive) setAuthChecked(true); });
-    return () => { alive = false; };
-  }, [onAdmin, authChecked]);
-  useEffect(() => () => { mountedRef.current = false; if (authSubRef.current) try { authSubRef.current.unsubscribe(); } catch { /* noop */ } }, []);
   // keep the document <head> in sync — a product detail route gets its own per-product SEO
   // (name/summary/image), otherwise the current page's SEO. applyHead handles canonical + og/twitter.
   useEffect(() => {
@@ -1157,7 +1125,6 @@ export default function App() {
     setAdminNav({ section: 'editor', slug: target });
   }
   function switchPage(slug) { setCurrent(slug); setPuckKey((k) => k + 1); setPanel(null); } // jump pages while staying in the editor
-  function goSignIn() { location.hash = 'admin'; }
   // await the sign-out before clearing local state: if it fails, keep the signed-in chrome so it can't
   // desync from a still-active Supabase/catalogue session (the user stays signed in, with a clear notice).
   async function doSignOut() {
@@ -1382,7 +1349,6 @@ export default function App() {
     </>
   );
 
-  // the separate admin entry (#admin): sign in before any editing is possible
   // #join/<token>: the public invite-accept screen — renders regardless of sign-in or mode
   if (joinToken && !(interview && interview.view === 'join')) {
     const exitJoin = () => { if (location.hash) location.hash = ''; setJoinToken(null); };
@@ -1391,17 +1357,6 @@ export default function App() {
         {styleTag}
         <Stage background={bg} />
         <AcceptInvite key={joinToken} status={inviteStatus(state, joinToken)} org={state.org} onAccept={() => acceptInviteToken(joinToken)} onBack={exitJoin} />
-      </div>
-    );
-  }
-
-  // resolving the Supabase session on first #admin entry — avoid flashing the sign-in over a live session
-  if (onAdmin && !authChecked) {
-    return (
-      <div className="is-view">
-        {styleTag}
-        <Stage background={bg} />
-        <div className="gs-editor-loading" role="status" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Checking your session…</div>
       </div>
     );
   }
@@ -1424,89 +1379,6 @@ export default function App() {
     );
   }
 
-  if (onAdmin && !authed) {
-    return (
-      <div className="is-view">
-        {styleTag}
-        <Stage background={bg} />
-        <SignIn
-          notice={authNotice}
-          onAuthed={(u) => { setUser(u); setAuthNotice(null); setAuthChecked(true); flash(staffCan(u, 'edit') ? ('Signed in as ' + u.name + '. Choose what to manage.') : ('Signed in as ' + u.name + ' (read-only).')); }}
-          onCancel={() => { location.hash = ''; setAdminNav(null); setAuthNotice(null); }} />
-      </div>
-    );
-  }
-
-  // Central admin CONSOLE — the full-screen shell you land on after signing in (mode!=='edit' so the
-  // 'Page editor' destination falls through to the editor branch below). Every destination renders
-  // here WITHOUT mounting the Puck editor; only the 3D background view mounts the Stage so its live
-  // preview works. The panels are rendered embedded (no dialog chrome) straight into the console body.
-  if (onAdmin && authed && adminSection !== 'editor' && mode !== 'edit') {
-    const section = adminSection || 'overview';
-    const onConsoleClose = () => {}; // embedded panels have no close ×; the rail/Back owns navigation
-    const consolePanels = {
-      overview: <OverviewPanel embedded onSection={goAdmin} onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} />,
-      pages: <PagesPanel embedded order={state.order} pages={state.pages} current={current} onOpen={openPageInEditor} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={onConsoleClose} onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
-      ...(canEdit ? { navigation: <NavigationPanel embedded navigation={state.navigation} pages={state.pages} order={state.order} onChange={setNav} onClose={onConsoleClose} /> } : {}),
-      releases: <ReleaseBoard embedded order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onApproveMany={approveAll} onDiscardMany={discardAll} onOpen={openPageInEditor} onClose={onConsoleClose} />,
-      ...(canEdit ? { links: <LinkAuditPanel embedded audit={auditLinks(state)} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { copy: <CopyCoachPanel embedded report={voiceReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { access: <A11yPanel embedded report={a11yReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { outline: <OutlinePanel embedded report={outlineReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { conversion: <CtaConsistencyPanel embedded report={ctaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { services: <ServicesManagerPanel embedded catalog={serviceCatalog} onChange={setCatalog} onNotify={(n) => flash(n.message, { label: 'Undo', onAction: n.undo })} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { seohealth: <SeoHealthPanel embedded report={seoReport} pages={state.pages} onFix={(slug) => goAdmin('seo', slug)} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { navcheck: <NavCoveragePanel embedded report={navCoverageReport} pages={state.pages} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { mediausage: <MediaUsagePanel embedded report={mediaReport} pages={state.pages} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { inventory: <ContentInventoryPanel embedded report={contentReport} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { blocks: <BlockUsagePanel embedded report={blockReport} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { templates: <StartersPanel embedded starters={listStarters()} onPick={startFromTemplate} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { sitehealth: <SiteHealthPanel embedded report={healthReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
-      ...(canManageUsers ? { gettingstarted: <GettingStartedPanel embedded report={onboardingReport} onFix={(section) => goAdmin(section)} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { schedule: <SchedulePanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSchedule={onSchedule} onClear={onClear} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { notes: <NotesPanel embedded order={state.order} pages={state.pages} onOpen={openPageInEditor} onSetNote={onSetNote} onClearNote={onClearNote} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { search: <ContentSearchPanel embedded state={state} onOpen={openPageInEditor} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { redirects: <RedirectsPanel embedded rows={listRedirects(state)} pages={state.pages} order={state.order} error={state._redirectError} onAdd={addRedirectMut} onRepoint={repointRedirect} onRemove={dropRedirect} onClose={onConsoleClose} /> } : {}),
-      ...(canEdit ? { sections: <SavedSectionsPanel embedded sections={listSections(state)} pages={state.pages} order={state.order} current={current} browseSlug={browseSlug} browseBlocks={sectionBrowseBlocks} labelFor={labelFor} onBrowse={setSectionBrowse} onSave={saveSection} onInsert={insertSection} onRename={renameSavedSection} onRemove={removeSavedSection} onClose={onConsoleClose} /> } : {}),
-      seo: <SeoPanel embedded seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={onConsoleClose} />,
-      background: <BackgroundPanel embedded value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} blocks={(page.data && page.data.content) || []} onClose={onConsoleClose} />,
-      history: <VersionHistory embedded versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={onConsoleClose} />,
-      activity: <ActivityPanel embedded statusHistory={page.statusHistory} status={page.status} approvedBy={page.approvedBy} activity={state.activity} pageTitle={page.title} onClose={onConsoleClose} />,
-      ...(canManageUsers ? { team: <TeamPanel embedded team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={onConsoleClose} /> } : {}),
-      ...(canManageUsers ? { settings: <SiteSettingsPanel embedded settings={state.settings} onChange={setSettings} onClose={onConsoleClose} /> } : {}),
-      media: <MediaLibraryPanel embedded assets={listAssets(state)} onAdd={registerAsset} onUpdateAlt={editAssetAlt} onRemove={deleteAsset} onClose={onConsoleClose} />,
-    };
-    return (
-      <CatalogContext.Provider value={draftCatalog}>
-      <MediaContext.Provider value={mediaCtxValue}>
-      <LinkContext.Provider value={linkCtxValue}>
-      <div className={'is-view ac-root' + (section === 'background' ? ' ac-has-stage' : '')}>
-        {overlays}
-        <a className="gs-skip" href="#admin-main">Skip to content</a>
-        {section === 'background' && <Stage background={page.background || state.settings.background} previewP={previewP} />}
-        <Suspense fallback={<div className="gs-editor-loading" role="status">Opening the studio…</div>}>
-        <AdminConsole
-          user={user} canEdit={canEdit} canManageUsers={canManageUsers} attention={studioAttention}
-          section={section} panels={consolePanels}
-          order={state.order} pages={state.pages} current={current}
-          onSection={goAdmin} onEditor={() => openPageInEditor(current)} onEditPage={openPageInEditor}
-          onSelectPage={(slug) => { setPreviewP(null); goAdmin(section, slug); }}
-          onCommerce={(tab) => { if (typeof location !== 'undefined') location.hash = 'catalogue' + (tab && tab !== 'offerings' ? '/' + tab : ''); }}
-          onStore={goShop}
-          onAccount={() => { if (typeof location !== 'undefined') location.hash = 'account'; }}
-          onExport={exportSiteJson}
-          onSignOut={doSignOut}
-          onSite={() => navigate(current)}
-          logo={state.settings.logo} siteName={state.settings.siteName}
-        />
-        </Suspense>
-      </div>
-      </LinkContext.Provider>
-      </MediaContext.Provider>
-      </CatalogContext.Provider>
-    );
-  }
-
   if (canEdit && (mode === 'edit' || (onAdmin && adminSection === 'editor'))) {
     return (
       <CatalogContext.Provider value={draftCatalog}>
@@ -1521,7 +1393,6 @@ export default function App() {
             home: <OverviewPanel embedded onCatalogue={() => { if (typeof location !== 'undefined') location.hash = 'catalogue'; }} order={state.order} pages={state.pages} team={state.team} activity={state.activity} org={state.org} onClose={() => setPanel(null)} />,
             pages: <PagesPanel order={state.order} pages={state.pages} current={current} onOpen={switchPage} onNew={newPage} onDelete={deletePage} onDuplicate={clonePage} onRename={retitlePage} onMove={reorderPage} onClose={() => setPanel(null)} embedded onBulkStatus={bulkStatusMut} onBulkSchedule={bulkScheduleMut} onBulkClearSchedule={bulkClearScheduleMut} onBulkNote={bulkNoteMut} onBulkClearNote={bulkClearNoteMut} onBulkAssign={bulkAssignMut} onBulkClearAssign={bulkClearAssignMut} canEdit={canEdit} />,
             releases: <ReleaseBoard order={state.order} pages={state.pages} current={current} review={reviewReport} canPublish={canPublish} onApprove={approvePage} onDiscard={discardPage} onApproveMany={approveAll} onDiscardMany={discardAll} onOpen={switchPage} onClose={() => setPanel(null)} embedded />,
-            ...(canManageUsers ? { team: <TeamPanel team={state.team} org={state.org} currentEmail={user && user.email} onInvite={inviteTeammate} onUpdate={editTeammate} onRemove={removeTeammate} onResend={resendTeammateInvite} onClose={() => setPanel(null)} embedded /> } : {}),
             background: <BackgroundPanel value={page.background || state.settings.background} onChange={setBgModel} onPreview={setPreviewP} onClose={() => setPanel(null)} blocks={(page.data && page.data.content) || []} embedded />,
             seo: <SeoPanel seo={page.seo} pageTitle={page.title} slug={current} onChange={setSeo} onSlug={(next) => renameSlug(current, next)} slugLocked={RESERVED_SLUGS.includes(current)} onClose={() => setPanel(null)} embedded />,
             history: <VersionHistory versions={page.versions} current={page.data} labelFor={labelFor} onRestore={restoreVersion} onClose={() => setPanel(null)} embedded />,
@@ -1611,7 +1482,7 @@ export default function App() {
         onSearch={setQuery} onNavigate={navigate} onNewPage={newPage} onShop={goShop} shopActive={!!shopRoute}
         onAccount={() => { if (typeof location !== 'undefined') location.hash = 'portal'; }} accountActive={!!(portalRoute || interview || accountRoute)}
         onEdit={() => canEdit && setMode('edit')} bg={bg} onSetBg={setBg} onCommand={() => setCmdOpen(true)}
-        user={user} canEdit={canEdit} onSignIn={goSignIn} onSignOut={doSignOut}
+        user={user} canEdit={canEdit} onSignOut={doSignOut}
         logo={state.settings.logo} ctaLabel={state.settings.headerCtaLabel} siteName={state.settings.siteName}
       />
       <main className="gs-public" id="gs-main" tabIndex={-1} key={intelArticle ? 'intel:' + intelArticle : invoiceRoute ? 'invoice' : accountRoute ? 'account' : orgRoute ? 'org' : interview ? 'interview' : portalRoute ? 'portal' : confirmRoute ? 'confirm' : catalogueAdmin ? 'catalogue' : shopRoute ? 'shop' : productSlug ? 'product:' + productSlug : svcSlug ? 'service:' + svcSlug : current}>
