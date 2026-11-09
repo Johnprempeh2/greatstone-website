@@ -86,7 +86,7 @@ const ORDER_ITEMS_SQL = `(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',i.id
 const RESOURCES = {
   customers: {
     table: 'customers', time: 'created_at', updated: 'updated_at', customer: 'id', live: 'x.deleted_at IS NULL',
-    columns: ['id', 'slug', 'name', 'tier_id', 'domain', 'billing_currency', 'notes', 'created_at', 'updated_at'],
+    columns: ['id', 'slug', 'name', 'tier_id', 'domain', 'billing_currency', 'notes', 'created_at', 'updated_at', 'row_version'],
     extra: { users: `(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',u.id,'email',u.email,'full_name',u.full_name,
       'phone',u.phone,'is_primary',u.is_primary,'role',u.role,'created_at',u.created_at) ORDER BY u.is_primary DESC, u.created_at, u.id),
       '[]'::jsonb) FROM customer_users u WHERE u.customer_id = x.id AND u.deleted_at IS NULL)` },
@@ -124,7 +124,13 @@ const RESOURCES = {
   licences: {
     table: 'licence_keys', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
     columns: ['id', 'customer_id', 'order_id', 'offering_name', 'variant_name', 'licence_key_last4', 'seats', 'status',
-      'delivered_at', 'expires_at', 'file_name', 'created_at', 'updated_at'],
+      'delivered_at', 'expires_at', 'file_name', 'created_at', 'updated_at', 'row_version'],
+  },
+  // The client timeline (GRE-4782): a shared item is what the client sees.
+  engagements: {
+    table: 'engagements', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
+    columns: ['id', 'customer_id', 'kind', 'status', 'title', 'summary', 'body_html', 'external_url', 'occurred_on', 'phase',
+      'owner_name', 'attendees', 'tags', 'pinned', 'created_at', 'updated_at', 'row_version'],
   },
   'portal-documents': {
     table: 'portal_documents', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'true',
