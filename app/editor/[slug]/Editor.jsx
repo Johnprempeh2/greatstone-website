@@ -8,7 +8,7 @@ import { blockRef, envelope, findBlock, mapMediaRefs, validHello, validMessage, 
 import { insertMedia, insertMediaResult } from '../../../next-proof/frame-insert-media.mjs';
 import { motionHello, setMotion, setMotionResult } from '../../../next-proof/frame-set-motion.mjs';
 import { useInsertedMediaUrl } from '../../../next-proof/frame-media-urls.mjs';
-import { saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
+import { conflictMessage, saveDecision, saveRequest } from '../../../next-proof/frame-save.mjs';
 import { validPageScene } from '../../../next-proof/page-scene.mjs';
 import { changedBlockText } from '../../../next-proof/frame-conflict.mjs';
 import { MediaField } from '../../../src/cms/MediaField.jsx';
@@ -186,7 +186,7 @@ const isMediaField = (field) => field.type === 'image' || field.type === 'video'
 export default function Editor({ page, liveData = null, forms, siteId, engine, origins, mode }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('waiting');
-  const [message, setMessage] = useState('Waiting for the website builder');
+  const [message, setMessage] = useState('Opening the editor');
   const [conflict, setConflict] = useState(null);
   const [highlight, setHighlight] = useState(null);
   const [generation, setGeneration] = useState(0);
@@ -236,9 +236,9 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
     } catch (error) {
       setStatus('failed'); setMessage(error.message); return;
     }
-    pending.current = request; setStatus('saving'); setMessage('Saving draft'); send('save', request);
+    pending.current = request; setStatus('saving'); setMessage('Saving'); send('save', request);
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => { setStatus('failed'); setMessage('Save did not finish. Your changes are still here.'); }, 30000);
+    timer.current = setTimeout(() => { setStatus('failed'); setMessage('Not saved. Your changes are still here. GSAM could not store them.'); }, 30000);
   }
   useEffect(() => {
     function onMessage(event) {
@@ -320,7 +320,7 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
           setStatus(decision.dirty ? 'ready' : 'saved');
           setMessage(decision.dirty ? 'Saved earlier changes. New changes still need saving.' : `Saved ${new Date(p.savedAt || Date.now()).toLocaleTimeString()}`);
         } else if (decision?.kind === 'conflict') {
-          pending.current = null; setConflict(p); setStatus('conflict'); setMessage('Someone saved this page first. Choose which version to keep.');
+          pending.current = null; setConflict(p); setStatus('conflict'); setMessage(conflictMessage(p.savedBy));
         } else if (decision?.kind === 'failed') {
           setStatus('failed'); setMessage(decision.message);
           if (!decision.retryable) pending.current = null;
@@ -369,9 +369,9 @@ export default function Editor({ page, liveData = null, forms, siteId, engine, o
     const r = el.getBoundingClientRect();
     send('block-picked', { ref: blockRef(item, { ...page, revisionId: baseRevision.current }, siteId, engine), label: item.type, rect: { x: r.x, y: r.y, width: r.width, height: r.height } });
   }
-  if (!data) return <main className="gs-frame-empty" role="status"><span className="gs-frame-kicker">Greatstone Studio</span><h1>{mode === 'editor' ? 'Page editor' : 'Page preview'}</h1><p>{message}</p></main>;
+  if (!data) return <main className="gs-frame-empty" role="status"><span className="gs-frame-kicker">Website editor</span><h1>{mode === 'editor' ? 'Page editor' : 'Page preview'}</h1><p>{message}</p></main>;
   return <main className={`gs-frame gs-frame-${mode}`}>
-    {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Greatstone Studio</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
+    {mode !== 'editor' && <header className="gs-frame-bar"><div><span className="gs-frame-kicker">Website editor</span><strong>{page.title}</strong></div><div className="gs-frame-actions"><span role="status" aria-live="polite">{message}</span></div></header>}
     {conflict && <section className="gs-frame-notice" role="alert"><h2>Someone saved this page first</h2><p>Review the differences below. Keep mine preserves this canvas and lets you save it over their draft. Take theirs replaces this canvas with their saved draft and discards your unsaved changes.</p><div className="gs-frame-versions">{changes.length ? changes.map((block) => <section key={block.id}><h3>{block.name}</h3>{block.fields.map((field) => <div className="gs-frame-change" key={field.label}><strong>{field.label}</strong><div><p><b>Mine</b><span>{field.mine || 'No text'}</span></p><p><b>Theirs</b><span>{field.theirs || 'No text'}</span></p></div></div>)}</section>) : <p>No wording changes. The page layout or other block settings differ.</p>}</div><div className="gs-frame-conflict-actions"><button type="button" onClick={keepMine}>Keep mine and review save</button><button type="button" onClick={takeTheirs}>Take theirs, discard mine</button></div></section>}
     {status === 'failed' && <div className="gs-frame-notice" role="alert"><p>{message}</p>{pending.current && <button type="button" onClick={() => save(undefined, true)}>Retry save</button>}</div>}
     {mode === 'editor' ? <FrameEditingContext.Provider value={true}><FrameCopyContext.Provider value={copy}><Puck key={generation} config={proofConfig} data={data} {...(copy ? { permissions: COPY_PERMISSIONS } : {})} ui={EDITOR_UI} headerTitle={page.title} headerPath={page.path} dictionary={{ 'header-publish': 'Save draft' }} iframe={{ enabled: true, syncHostStyles: true }} overrides={{ headerActions: () => <FrameControls send={send} save={save} commands={commands} copy={copy} pins={pins} onLayout={switchEditMode} onImport={importLive} pageSettingsRef={pageSettingsRef} viewportRef={viewportRef} /> }} viewports={[{ width: '100%', label: 'Full width', icon: 'FullWidth' }]} onChange={onChange} onPublish={(nextData) => { draft.current = rawData(nextData); save(draft.current); }} /></FrameCopyContext.Provider></FrameEditingContext.Provider>

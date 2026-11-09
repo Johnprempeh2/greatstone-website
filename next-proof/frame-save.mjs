@@ -11,6 +11,11 @@ export function saveRequest({ pending, retry, pageId, baseRevisionId, data, crea
   return { requestId: createId(), pageId, baseRevisionId, data: safeData };
 }
 
+export function conflictMessage(person) {
+  const name = typeof person === 'string' && person.trim() ? person.trim() : 'Someone';
+  return `${name} saved this page while you were editing. Choose which version to keep. Nothing is lost until you choose.`;
+}
+
 export function saveDecision(pending, draft, result) {
   if (!pending || result?.requestId !== pending.requestId) return null;
   if (result.outcome === 'saved' && typeof result.revisionId === 'string') {
