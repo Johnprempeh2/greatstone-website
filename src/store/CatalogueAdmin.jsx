@@ -83,7 +83,7 @@ function SignInGate() {
   };
   return (
     <div className="ca-wrap"><div className="ca-signin">
-      <button type="button" className="ca-link" style={{ display: 'block', marginBottom: 12 }} onClick={() => { if (typeof history !== 'undefined' && history.length > 1) history.back(); else location.hash = 'admin'; }}>← Back</button>
+      <button type="button" className="ca-link" style={{ display: 'block', marginBottom: 12 }} onClick={() => { if (typeof history !== 'undefined' && history.length > 1) history.back(); else location.hash = ''; }}>← Back</button>
       <span className="st-kicker">Catalogue admin</span>
       <h1>Sign in</h1>
       <p className="ca-sub">Manage the Greatstone software catalogue, pricing and quotes.</p>
