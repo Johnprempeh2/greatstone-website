@@ -82,10 +82,10 @@ async function comments() {
 
 // The weekly release card (GRE-2641) uses the `weekly-release` key. It covers staging like a
 // staging card does, and it is the only card that can authorise the public site, for its exact SHA.
-async function stagingCardApproved(sha, exact = false, mustName = null) {
+async function stagingCardApproved(sha, exact = false, mustName = null, weeklyOnly = false) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
-  const kinds = site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
+  const kinds = weeklyOnly || site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
   const key = new RegExp(`^confirmation:GRE-\\d+:(?:${kinds}):([0-9a-f]{40})(?::v[1-9]\\d*)?$`);
   for (const card of cards) {
     const approvedSha = key.exec(card.idempotencyKey || '')?.[1];
@@ -118,6 +118,16 @@ function onMain(sha) {
   return command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] === sha;
 }
 
+// The weekly train ships its tag even after main moves on (GRE-4815): a detached HEAD at a `web-rc-*` tag
+// on origin whose commit main still contains. gate() then takes only an exact weekly card for that commit.
+function onWeeklyTag(sha) {
+  if (command('git', ['branch', '--show-current'])) return false;
+  const tags = command('git', ['ls-remote', '--tags', 'origin', 'refs/tags/web-rc-*']).split('\n');
+  if (!tags.some((line) => line.split(/\s/)[0] === sha)) return false;
+  const main = command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0];
+  return Boolean(main) && spawnSync('git', ['merge-base', '--is-ancestor', sha, main]).status === 0;
+}
+
 // John's single cut-over card on GRE-2567 (plan step J) also covers the switch (step 6): the public site only, and
 // only its exact SHA. It is the same card carrier-deploy.mjs publish checks, so the cut-over needs one approval.
 async function cutoverCardApproved(sha) {
@@ -133,10 +143,16 @@ async function cutoverCardApproved(sha) {
 async function gate(sha, content = null) {
   if (mode === 'prod') {
     // The public site takes main, or the exact commit staging holds (a promote while main moved on).
-    if (!onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha))
-      throw new Error('production requires main (or a detached HEAD at origin main), or the commit on staging');
+    const tagged = !onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha);
+    if (tagged && !onWeeklyTag(sha))
+      throw new Error('production requires main (or a detached HEAD at origin main), a web-rc tag main contains, or the commit on staging');
     // A content release rides with the commit only when the person's approval names it.
     const named = content ? contentLine(content) : null;
+    if (tagged) {
+      if (!await stagingCardApproved(sha, true, named, true))
+        throw new Error(`production refused: a web-rc tag behind main needs an accepted human-only weekly release card for ${site} and ${sha}`);
+      return null;
+    }
     const approval = `Approve production deploy: ${site} ${sha}${named ? ` with ${named}` : ''}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
     const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home', named) ||

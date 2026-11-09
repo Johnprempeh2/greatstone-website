@@ -620,6 +620,39 @@ test('production from a detached HEAD needs exactly origin main', async (t) => {
   assert.match(refused.stderr, /production requires main/);
 });
 
+test('a web-rc tag behind main ships only with the exact weekly card (GRE-4815)', async (t) => {
+  const f = await fixture(t);
+  const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
+  t.after(() => rm(remote, { recursive: true, force: true }));
+  git(f.cwd, 'init', '-q', '--bare', remote);
+  git(f.cwd, 'remote', 'add', 'origin', remote);
+  git(f.cwd, 'checkout', '-q', 'main');
+  git(f.cwd, 'tag', '-a', 'web-rc-2026-11-09', '-m', 'candidate');
+  await f.commit('netlify/database/migrations/072_x/migration.sql', 'protected');
+  git(f.cwd, 'push', '-q', 'origin', 'main', 'web-rc-2026-11-09');
+  git(f.cwd, 'checkout', '-q', '--detach', 'web-rc-2026-11-09');
+  const cases = [
+    [[weeklyCard(f.base)], 0],
+    [[stagingCard(f.base)], 1],
+    [[], 1],
+    [[weeklyCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' })], 1],
+  ];
+  for (const [cards, status] of cases) {
+    f.setInteractions(cards);
+    const result = await f.run('prod');
+    assert.equal(result.status, status, `${JSON.stringify(cards)}\n${result.stderr}`);
+    if (status) assert.match(result.stderr, /production refused: a web-rc tag behind main/);
+  }
+  // A web-rc tag main does not contain is not a release candidate.
+  await f.commit('src/app.js', 'side');
+  git(f.cwd, 'tag', 'web-rc-2026-11-10');
+  git(f.cwd, 'push', '-q', 'origin', 'web-rc-2026-11-10');
+  f.setInteractions([weeklyCard(git(f.cwd, 'rev-parse', 'HEAD'))]);
+  const side = await f.run('prod');
+  assert.equal(side.status, 1);
+  assert.match(side.stderr, /production requires main/);
+});
+
 async function refreshFixture(t) {
   const f = await fixture(t);
   const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
