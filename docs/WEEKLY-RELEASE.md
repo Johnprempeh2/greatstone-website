@@ -14,6 +14,7 @@ card. Keystone runs the train; Flint checks it. Urgent fixes can still go out al
 | After the card is accepted | Keystone | Run the guarded production deploy from a detached checkout at the tag (see "Deploy prerequisites"). Flint checks live. |
 
 A new commit after the tag means a new check. Do not move the tag.
+If `main` moves after the tag, the guard still ships a detached checkout at the `web-rc-*` tag, but only with an accepted `weekly-release` card for that exact SHA and only while `origin/main` contains it (GRE-4815).
 
 ## Checklist (every item needs evidence on the release issue)
 
