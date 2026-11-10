@@ -2,6 +2,8 @@
    It sits under the header (50), the phone menu (55) and the cookie banner (60), so it never covers them. */
 .gsvg { position: fixed; z-index: 45; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); font-family: inherit; }
 .gsvg *, .gsvg *::before { box-sizing: border-box; }
+/* During a call with the panel closed: the state, and Stop beside it. */
+.gsvg-mini { display: flex; align-items: center; gap: 8px; }
 /* The cookie banner fills the bottom of the screen: the button waits until it has been answered. */
 body:has(.gs-consent) .gsvg-launcher { visibility: hidden; }
 

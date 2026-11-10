@@ -47,6 +47,23 @@ export function attachAction(messages, action) {
   return messages.map((message, i) => (i === index ? { ...message, action } : message));
 }
 
+/**
+ * The conversation as the browser tab kept it, so it survives a full page load. Checked again on the way back in:
+ * only the three kinds of line, text only, and every page link through the same lock as a fresh one.
+ */
+export function restore(raw, now = Date.now()) {
+  let kept = null;
+  try { kept = JSON.parse(raw); } catch { return null; }
+  if (!Array.isArray(kept?.messages)) return null;
+  const messages = kept.messages.filter((message) => ['you', 'guide', 'note'].includes(message?.role) && typeof message.text === 'string' && message.text.trim())
+    .slice(-KEPT).map((message, index) => {
+      const action = cleanAction(message.action);
+      return { id: index + 1, role: message.role, text: message.text.slice(0, 4000), ...(action ? { action } : {}) };
+    });
+  const session = typeof kept.session?.token === 'string' && Number(kept.session.expiresAt) > now ? { token: kept.session.token, expiresAt: Number(kept.session.expiresAt) } : null;
+  return { messages, session, open: kept.open === true, calling: kept.calling === true };
+}
+
 /** What the server is sent as the conversation so far: the two speakers only, most recent last. */
 export const historyFor = (messages) => messages.filter((message) => message.role === 'you' || message.role === 'guide').slice(-12)
   .map((message) => ({ role: message.role === 'you' ? 'user' : 'assistant', content: message.text }));
