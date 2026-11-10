@@ -60,7 +60,11 @@ html:root{
   :root .b-steps-head{max-width:24ch}
 }
 
-/* 5. Home page (Two Doors). Phone and tablet layout (below 1024px) is untouched. */
+/* 5. Home page (Two Doors). Below 1024px the phone and tablet layout stays as designed; only its side gutter
+ *    changes (it was 16 to 24px) so the page starts on the same edge as the header, footer and every other page. */
+@media (max-width:1023px){
+  html:root :is(.td-home,.td-segment) :is(.td-intro,.td-story,.td-range,.td-section,.td-close,.td-review-strip,.td-public-clients){width:calc(100% - 2 * var(--gs-gutter))}
+}
 @media (min-width:1024px){
   /* Hero, door copy and every section share the page column and its left edge. */
   :root :is(.td-home,.td-segment){--td-page-width:var(--gs-content);--td-page-gutter:calc(2 * var(--gs-gutter))}
@@ -85,6 +89,28 @@ html:root{
   :root .td-home .td-door h2{font-size:clamp(46px,3.2vw,58px)}
   :root .td-home .td-doors,:root .td-home .td-door{min-height:clamp(620px,43vw,800px)}
 }
+
+/* 6. Header and footer sit on the page column: logo and footer on its left edge, header buttons on its right. */
+:root .gs-header{padding-inline:max(var(--gs-gutter),calc((100% - var(--gs-content)) / 2))}
+@media (max-width:420px){:root .gs-header{padding-right:12px}}
+/* Footer: left-aligned. One column on a phone; from tablet up, brand on the left and links on the right. */
+:root .site-footer{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;text-align:left;row-gap:8px;
+  padding-inline:max(var(--gs-gutter),calc((100% - var(--gs-content)) / 2))}
+:root .site-footer .logo{margin:0}
+:root .site-footer .logo a{display:flex;align-items:center;min-height:44px}
+:root .site-footer .foot-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;width:100%;margin:12px 0}
+:root .site-footer .foot-legal{justify-content:flex-start;gap:0 24px;margin:0}
+:root .site-footer .legal{margin:0}
+:root .site-footer :is(.foot-links a,.foot-legal a,.foot-cookie-settings,.legal){font-size:.875rem}
+:root .site-footer :is(.foot-links a,.foot-legal a,.foot-cookie-settings,a.mail){display:inline-flex;align-items:center;min-height:44px;padding-inline:0}
+@media (min-width:820px){
+  :root .site-footer{grid-template-columns:minmax(0,4fr) minmax(0,8fr);grid-template-rows:auto auto 1fr auto;column-gap:clamp(32px,5vw,96px)}
+  :root .site-footer :is(.logo,.tagline,.mail){grid-column:1}
+  :root .site-footer .foot-links{grid-column:2;grid-row:1 / span 3;margin:0;align-content:start}
+  :root .site-footer :is(.legal,.foot-legal){grid-row:4;margin-top:24px}
+  :root .site-footer .foot-legal{grid-column:2}
+}
+@media (min-width:1100px){:root .site-footer .foot-links{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 /* 7. Retired things stay retired on pages published before they were taken out, with no Publish needed:
  *    the footer ornament (John, 8 Nov) and the unnamed team seats (John, 10 Nov: no placeholders). */
