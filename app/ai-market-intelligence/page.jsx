@@ -17,7 +17,7 @@ export async function generateMetadata() {
 export default async function AiMarketIntelligencePage() {
   const { release } = await activeRelease();
   return <SiteFrame release={release}>
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '128px clamp(16px, 4vw, 48px) 72px' }}>
+    <div style={{ maxWidth: 'var(--gs-maxw)', margin: '0 auto', padding: '128px var(--gs-gutter) 72px' }}>
       <h1 style={{ margin: '0 0 24px' }}>The AI landscape, read for you.</h1>
       <IntelDashboardIsland />
     </div>
