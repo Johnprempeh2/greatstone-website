@@ -258,7 +258,7 @@ export default function VoiceGuide() {
   if (!open) {
     return (
       <div className="gsvg gsvg-mini">
-        <button type="button" className="gsvg-launcher" ref={launcher} onClick={() => setOpen(true)}>{calling ? `Guide: ${STATUS_LABEL[status] || 'on a call'}` : 'Talk to us'}</button>
+        <button type="button" className="gsvg-launcher" aria-haspopup="dialog" ref={launcher} onClick={() => setOpen(true)}>{calling ? `Guide: ${STATUS_LABEL[status] || 'on a call'}` : 'Talk to us'}</button>
         {calling && <button type="button" className="gsvg-button gsvg-stop" onClick={() => endCall('The call has ended.')}>Stop</button>}
       </div>
     );
