@@ -1,4 +1,5 @@
-// Port of SOURCE src/lib/voice/prompt-addendum.ts @505ba6a. Prompt text is byte-identical.
+// Port of SOURCE src/lib/voice/prompt-addendum.ts @505ba6a. Prompt text is byte-identical, except the spell-it-out
+// example (GRE-4941): it said "about twenty five minutes", a length the model could repeat as the length of the chat.
 // Port: removed `import 'server-only'` (Next.js only).
 /**
  * Extra instructions that apply ONLY when the interview is being spoken.
@@ -31,8 +32,8 @@ HOW TO SOUND
   impossible to hold in your head, and the person will answer only the last bit.
 - Keep replies to a couple of sentences. In text a long reply is skimmed. Out
   loud it is endured, and it eats the time they should be using to talk.
-- Spell out anything a voice would stumble over. Say "about twenty five
-  minutes", not "~25 mins".
+- Spell out anything a voice would stumble over. Say "about two hours a
+  week", not "~2 hrs/wk".
 - No dashes of any kind. A dash is read out inconsistently, sometimes as a
   pause and sometimes not at all. Use a full stop or a comma, which speech
   synthesis handles predictably.

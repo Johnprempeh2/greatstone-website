@@ -16,8 +16,9 @@ import { interviewDb } from './lib/interview/db.mjs';
 import { interviewEnabled, voiceEnabled, roundVoiceEnabled } from './lib/interview/caller.mjs';
 import { getEmployeeContextById } from './lib/interview/employee.mjs';
 import {
-  advancePhase, applySlotUpdates, buildSystemPrompt, computeCompletionScore, deriveNextAction, KICKOFF_NUDGE,
-  normaliseTaxonomyState, RECOVERY_NUDGE, signOffComplete, TAXONOMY_TO_DB_PHASE, turnsToMessages, updatePaceFields,
+  applySlotUpdates, buildSystemPrompt, computeCompletionScore, deriveNextAction, KICKOFF_NUDGE, markParticipantEngaged,
+  normaliseTaxonomyState, RECOVERY_NUDGE, signOffComplete, stepPhase, TAXONOMY_TO_DB_PHASE, targetMinutesOf, turnsToMessages,
+  updatePaceFields,
 } from './lib/interview/interview.mjs';
 import { runExtraction, persistableInsights, EXTRACTION_MODEL } from './lib/interview/extraction.mjs';
 import { loadActiveMemoryBlob, renderMemoryBlob } from './lib/interview/memory.mjs';
@@ -108,7 +109,8 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
 
     // ── State hydration (identical to the typed path) ──
     const state = normaliseTaxonomyState(session.taxonomy_state);
-    updatePaceFields(state, session.started_at);
+    const targetMinutes = targetMinutesOf(ctx.engagement);
+    updatePaceFields(state, session.started_at, targetMinutes);
     let contextPack = null;
     if (ctx.engagement.context_pack_id) {
       const { data: packs } = await db.from('context_pack').select('content, version').eq('id', ctx.engagement.context_pack_id).limit(1);
@@ -147,9 +149,10 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
           inputTokens: extraction.usage.inputTokens, outputTokens: extraction.usage.outputTokens,
         }).catch(() => {});
       }
-      const newPhase = advancePhase(state.slots, state.phase);
-      phaseChanged = newPhase !== state.phase;
-      state.phase = newPhase;
+      // as on the typed path: slot fill, then the turn-limit and repeat backstops (GRE-4941)
+      state.slots = markParticipantEngaged(state.slots);
+      state.completion_score = computeCompletionScore(state.slots);
+      phaseChanged = stepPhase(state, { turns, targetMinutes });
       state.next_action = deriveNextAction(state);
     }
     const closing = signOffComplete(state);
@@ -163,6 +166,7 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
     const { stable, volatile } = buildSystemPrompt({
       engagement: ctx.engagement, contextPack, orgUnit: ctx.orgUnit, employeeName: ctx.employee.name,
       employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, employeeUserId: ctx.employee.user_id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
+      turns,
     });
     const system = [
       { type: 'text', text: stable, cache_control: { type: 'ephemeral' } },

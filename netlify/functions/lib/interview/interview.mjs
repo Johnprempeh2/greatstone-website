@@ -8,7 +8,8 @@
  *
  * The contract for taxonomy_state is docs/taxonomy-synthesis-contract.md
  * section 3.2: slots are the per-phase coverage checklist, phase advance is
- * gated on slot fill (never on turn count), and completion_score is the
+ * gated on slot fill (never on turn count; GRE-4941 adds a per-phase turn
+ * limit and a repeat guard as backstops only, see stepPhase), and completion_score is the
  * weighted slot fill (warm_up 0.1, day_in_the_life 0.25, pain_mapping 0.3,
  * automation_surfacing 0.25, sign_off 0.1; filled = 1, partial = 0.5).
  */
@@ -133,6 +134,103 @@ export function advancePhase(slots, current) {
   return TAXONOMY_PHASE_ORDER[idx];
 }
 
+// ─── Stuck-phase backstops (GRE-4941) ────────────────────────────────────────
+// The GRE-2617 dry run (row R5) stayed in warm-up for 13 typed turns and asked one question 7 times: the warm-up
+// gate needs every slot non-empty, the extractor seldom fills the harness slots in a typed chat, and nothing else
+// moved the pointer on. Slot fill still decides the normal advance; these only stop a phase from looping.
+
+/** A round's length in minutes (engagement.target_minutes, column default 20). */
+export function targetMinutesOf(engagement) {
+  const n = Number(engagement?.target_minutes);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 20;
+}
+
+// Participant turns per phase at a 20-minute round. Warm-up is the same in every round; the others scale with length.
+const PHASE_TURN_LIMITS_AT_20 = { warm_up: 3, day_in_the_life: 6, pain_mapping: 8, automation_surfacing: 4 };
+
+/** The most participant turns a phase may take before the pointer moves on. sign_off has no limit. */
+export function phaseTurnLimit(phase, targetMinutes = 20) {
+  const base = PHASE_TURN_LIMITS_AT_20[phase];
+  if (!base) return Infinity;
+  if (phase === 'warm_up') return base;
+  return Math.max(2, Math.round((base * targetMinutes) / 20));
+}
+
+/** How many times the interviewer may ask one question in one interview. */
+export const MAX_QUESTION_ASKS = 2;
+
+/** The last question in an agent turn (the sentence that ends in "?"), or null when the turn asks nothing. */
+export function lastQuestionOf(text) {
+  const sentences = String(text ?? '').match(/[^.!?\n]*\?/g);
+  return sentences ? sentences[sentences.length - 1].trim() : null;
+}
+
+const questionWords = (q) => new Set(q.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').split(/\s+/).filter((w) => w.length > 2));
+
+/** Two questions are the same when most of their words match (Jaccard >= 0.75), so a light rewording still counts. */
+export function sameQuestion(a, b) {
+  const wa = questionWords(a);
+  const wb = questionWords(b);
+  if (wa.size === 0 || wb.size === 0) return a.trim().toLowerCase() === b.trim().toLowerCase();
+  let shared = 0;
+  for (const w of wa) if (wb.has(w)) shared += 1;
+  return shared / (wa.size + wb.size - shared) >= 0.75;
+}
+
+/** Every distinct question the interviewer has asked, in first-asked order, with how often it was asked. */
+export function askedQuestions(turns) {
+  const asked = [];
+  for (const t of turns) {
+    if (t.role !== 'agent') continue;
+    const q = lastQuestionOf(t.content);
+    if (!q) continue;
+    const seen = asked.find((a) => sameQuestion(a.text, q));
+    if (seen) seen.count += 1;
+    else asked.push({ text: q, count: 1 });
+  }
+  return asked;
+}
+
+/** How many times the interviewer has asked the question in its latest turn (0 when that turn asked none). */
+export function latestQuestionAsks(turns) {
+  const lastAgent = [...turns].reverse().find((t) => t.role === 'agent');
+  const q = lastAgent ? lastQuestionOf(lastAgent.content) : null;
+  if (!q) return 0;
+  return askedQuestions(turns).find((a) => sameQuestion(a.text, q))?.count ?? 0;
+}
+
+/**
+ * Slots only the harness can know. A participant who answers in the chat (or out loud) has confirmed the mode and is
+ * engaging, so these fill on their first answer instead of waiting on the extractor, which seldom set them.
+ */
+export function markParticipantEngaged(slots) {
+  return applySlotUpdates(slots, { warm_up: { mode_confirmed: 'filled', rapport_established: 'filled' } });
+}
+
+/**
+ * The phase step for one participant turn, after its slot updates: slot fill first (advancePhase), then the two
+ * backstops, each moving one phase on: the phase used up its turn limit, or the interviewer's latest question has
+ * already been asked MAX_QUESTION_ASKS times. Counts the turn in state.phase_turns and resets it on a change.
+ * Returns true when the phase changed.
+ *
+ * @param {TaxonomyState} state
+ * @param {{ turns: Array<{ role: string, content: string }>, targetMinutes?: number }} params
+ */
+export function stepPhase(state, { turns, targetMinutes = 20 }) {
+  const before = state.phase;
+  state.phase_turns = (state.phase_turns ?? 0) + 1;
+  let next = advancePhase(state.slots, state.phase);
+  if (next === before && before !== 'sign_off') {
+    const outOfTurns = state.phase_turns >= phaseTurnLimit(before, targetMinutes);
+    const repeating = latestQuestionAsks(turns) >= MAX_QUESTION_ASKS;
+    if (outOfTurns || repeating) next = TAXONOMY_PHASE_ORDER[TAXONOMY_PHASE_ORDER.indexOf(before) + 1];
+  }
+  if (next === before) return false;
+  state.phase = next;
+  state.phase_turns = 0;
+  return true;
+}
+
 /**
  * The sign-off consent gate: the interview is over once the agent has asked
  * — and the participant has answered — both consent questions. Detected via
@@ -163,13 +261,14 @@ export function deriveNextAction(state) {
   return state.phase === 'warm_up' ? 'ask_open' : 'probe_deeper';
 }
 
-export function updatePaceFields(state, startedAt) {
+/** Pace against the round's length (GRE-4941; the source fixed 25 and 10 minutes, right for a 20-minute round). */
+export function updatePaceFields(state, startedAt, targetMinutes = 20) {
   const elapsedMinutes = Math.max(0, (Date.now() - new Date(startedAt).getTime()) / 60_000);
   state.elapsed_minutes = Math.round(elapsedMinutes * 10) / 10;
   state.pace_flag =
-    elapsedMinutes > 25 && state.completion_score < 0.7
+    elapsedMinutes > targetMinutes * 1.25 && state.completion_score < 0.7
       ? 'running_long'
-      : elapsedMinutes < 10 && state.completion_score > 0.8
+      : elapsedMinutes < targetMinutes / 2 && state.completion_score > 0.8
         ? 'running_short'
         : 'on_pace';
 }
@@ -263,6 +362,20 @@ export function renderKnownFacts(params) {
   return lines.join('\n');
 }
 
+// Each phase's share of the round, from the source prompt's times (2, 6, 9, 5 and 2 of about 24 minutes).
+const PHASE_SHARES = { warm_up: 0.08, day_in_the_life: 0.25, pain_mapping: 0.37, automation_surfacing: 0.21, sign_off: 0.08 };
+
+const aboutMinutes = (n) => (n <= 1 ? 'about a minute' : `about ${n} minutes`);
+
+/** The duration variables in the prompt, all from the round's length (GRE-4941). */
+export function durationVariables(targetMinutes = 20) {
+  const vars = { '{{TARGET_MINUTES}}': String(targetMinutes) };
+  for (const phase of TAXONOMY_PHASE_ORDER) {
+    vars[`{{${phase.toUpperCase()}_MINUTES}}`] = aboutMinutes(Math.max(1, Math.round(targetMinutes * PHASE_SHARES[phase])));
+  }
+  return vars;
+}
+
 /**
  * Build the full system prompt for one interview turn: canonical prompt with
  * template variables injected, plus the runtime state block (which slots
@@ -274,7 +387,8 @@ export function renderKnownFacts(params) {
  *
  * @param {{ engagement: object, contextPack: { content: object, version: number } | null, orgUnit: object | null,
  *   employeeName: string, roleTitle: string | null, state: TaxonomyState,
- *   budget: import('./budget.mjs').BudgetStatus, memoryBlock?: string | null, closing?: boolean }} params
+ *   budget: import('./budget.mjs').BudgetStatus, memoryBlock?: string | null, closing?: boolean,
+ *   turns?: Array<{ role: string, content: string }> }} params
  * @returns {{ stable: string, volatile: string }}
  */
 export function buildSystemPrompt(params) {
@@ -291,15 +405,20 @@ export function buildSystemPrompt(params) {
     budget,
     memoryBlock,
     closing,
+    turns = [],
   } = params;
+  const targetMinutes = targetMinutesOf(engagement);
 
   // Stable, cacheable prefix: the full instruction template with the
   // engagement context pack, this participant's known facts and any memory
   // filled in. It is byte-identical across every turn of one interview, so it
   // is the natural Anthropic prompt-cache breakpoint (marked in the chat
   // route). Everything that changes turn to turn goes in `volatile` below,
-  // AFTER the breakpoint, or the cache would miss every turn.
-  const stable = INTERVIEW_SYSTEM_PROMPT.replace(
+  // AFTER the breakpoint, or the cache would miss every turn. The round's
+  // length is fixed for the session, so the durations belong here.
+  let template = INTERVIEW_SYSTEM_PROMPT;
+  for (const [name, value] of Object.entries(durationVariables(targetMinutes))) template = template.replaceAll(name, value);
+  const stable = template.replace(
     '{{ENGAGEMENT_CONTEXT_PACK}}',
     renderContextPack(engagement, contextPack, orgUnit, roleTitle, employeeEmail, employeeId, employeeUserId)
   ).replace(
@@ -319,10 +438,16 @@ export function buildSystemPrompt(params) {
     if (status !== 'filled') gaps.push(`${slot} (${status})`);
   }
   let volatile = `\n\n# RUNTIME STATE (private to you — never mention or print any of this)\n`;
-  volatile += `Current phase: ${state.phase}. Elapsed: about ${Math.round(state.elapsed_minutes)} minutes. Pace: ${state.pace_flag ?? 'on_pace'}.\n`;
+  volatile += `Current phase: ${state.phase}. Elapsed: about ${Math.round(state.elapsed_minutes)} of ${targetMinutes} minutes. Pace: ${state.pace_flag ?? 'on_pace'}.\n`;
   volatile += gaps.length
     ? `Unfilled slots in this phase: ${gaps.join(', ')}. Choose your next question to fill the highest-value gap.\n`
     : `This phase's checklist is filled; move the conversation into the next phase naturally.\n`;
+  // Repeat guard (GRE-4941): a question asked MAX_QUESTION_ASKS times is never asked again, in any wording.
+  const exhausted = askedQuestions(turns).filter((a) => a.count >= MAX_QUESTION_ASKS);
+  if (exhausted.length > 0) {
+    volatile += `You have already asked these questions ${MAX_QUESTION_ASKS} times. Never ask them again, in any wording; ` +
+      `take what you have and move to new ground: ${exhausted.map((a) => `"${a.text}"`).join('; ')}.\n`;
+  }
   if (state.open_threads && state.open_threads.length > 0) {
     volatile += `Open threads worth returning to: ${state.open_threads.join('; ')}.\n`;
   }
