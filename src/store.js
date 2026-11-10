@@ -127,13 +127,13 @@ const TOOLS = [
   { name: 'Conholdate', image: '/assets/two-doors/brands/conholdate.png', line: 'Aspose and GroupDocs APIs together, under one licence.' },
 ];
 const homeCopy = {
-  headlineSuffix: 'and the tools to deliver it.', cueText: 'Choose your side', cueSubtext: 'DX Consultancy or DX Dev Tools',
+  headlineSuffix: 'and the tools to deliver it.', cueText: 'Two ways to work with Greatstone', cueSubtext: 'DX Consultancy or DX Dev Tools',
   consultancyName: 'DX Consultancy', toolsName: 'DX Dev Tools', chooseLabel: 'Choose',
   consultancyTag: 'For leaders who transform', toolsTag: 'For teams who deliver',
   moreClosed: 'What’s inside ↓', moreOpen: 'Less ↑', logoLabel: 'Our team has delivered for', logoDraft: 'Client logos await written permission.',
   consultancyPoint1: 'Diagnose', consultancyPoint1Text: 'Find the work worth changing first.', consultancyPoint2: 'Deliver', consultancyPoint2Text: 'Build it with specialists and reviewers.', consultancyPoint3: 'Run', consultancyPoint3Text: 'Keep a managed team on it, with a person approving.',
   consultancyCta: 'Browse DX Consultancy →', proofLink: 'See our work', toolsCta: 'Browse DX Dev Tools →',
-  chooserHeading: 'Choose your side', chooserLine: 'Two ways to work with Greatstone.', consultancyChooserLine: 'Transform with AI', toolsChooserLine: 'Proven developer tools', orLabel: 'OR', swipeHint: '← Swipe or tap a side →',
+  chooserHeading: 'DX Consultancy or DX Dev Tools', chooserLine: 'Two ways to work with Greatstone.', consultancyChooserLine: 'Transform with AI', toolsChooserLine: 'Proven developer tools', orLabel: 'OR', swipeHint: '← Swipe or tap a side →',
   toolsPoint1: 'Browse by brand', toolsPoint1Text: 'Start with the platform you know.', toolsPoint2: 'Find the fit', toolsPoint2Text: 'Compare product capabilities.', toolsPoint3: 'Buy or renew', toolsPoint3Text: 'Keep the route direct.',
   chooseHref: '#choose', contactHref: '/contact', proofHref: '/proof', toolsHref: '/dev-tools',
 };
@@ -147,7 +147,7 @@ const defaultRange = [
 ];
 const proofCopy = { proofKicker: 'Case studies', proofHeading: 'Work we will show here', draftBadge: 'PLACEHOLDER', draftCaseLine: 'Client story, evidence and permission are pending. No result is claimed here.', pendingLine: 'Verified case studies are being prepared.', pendingLink: 'See our current proof', proofHref: '/proof' };
 const draftCases = [{ headline: 'Case study placeholder 01' }, { headline: 'Case study placeholder 02' }, { headline: 'Case study placeholder 03' }];
-const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'Choose your side', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '/dev-tools', contactHref: '/contact', consultancyHref: '/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
+const toolsCopy = { toolsKicker: 'DX Dev Tools', toolsHeading: 'The tools we supply', toolsIntro: 'Developer components and SDKs from the brands you know.', toolLinkPrefix: 'Browse', toolLinkSuffix: '→', closeHeading: 'Begin the conversation', closeLine: 'Tell us what you are working on. We will suggest a next step.', closeCta: 'Begin the conversation →', bottomKicker: 'Two ways to work with Greatstone', bottomHeading: 'DX Consultancy or DX Dev Tools', bottomConsultancy: 'DX Consultancy →', bottomTools: 'DX Dev Tools →', toolsHref: '/dev-tools', contactHref: '/contact', consultancyHref: '/dx-consultancy', consultancyImage: '/assets/two-doors/consultancy-hero.webp', toolsImage: '/assets/two-doors/tools-hero.webp' };
 const devCopy = { devKicker: 'DX Dev Tools', shopCta: 'Browse the Greatstone Software shop →', brandHeading: 'Browse by brand', brandCta: 'Browse in the shop →', helpLine: 'Need help choosing?', helpEmail: 'DX@greatstonesoftware.co.uk', shopHref: '#shop' };
 function twoDoorsHomePage() {
   const { closeHeading, closeLine, closeCta, contactHref, bottomKicker, bottomHeading, bottomConsultancy, bottomTools, consultancyHref, consultancyImage, toolsImage, ...toolProps } = toolsCopy;

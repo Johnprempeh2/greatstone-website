@@ -12,7 +12,8 @@ const BANNED = [
   /M500 40 Q392 72/, // footer + interview ornament path signature
   /M170 30 A140 140/, // Featured Article corner arcs
 ];
-const roots = ['src', 'public', 'index.html'];
+// 10 Nov: stored page content counts too. A stale export in next-proof/data still carried the footer ornament.
+const roots = ['src', 'public', 'index.html', 'app', 'next-proof'];
 const files = (p) => (statSync(p).isDirectory() ? readdirSync(p).flatMap((n) => files(join(p, n))) : [p]);
 
 test('the retired corner-wave ornament is not reintroduced', () => {
@@ -21,7 +22,7 @@ test('the retired corner-wave ornament is not reintroduced', () => {
   for (const root of roots) {
     let list; try { list = files(root); } catch { continue; }
     for (const f of list) {
-      if (!/\.(jsx?|mjs|css|html|svg)$/.test(f) || self.endsWith(f)) continue;
+      if (!/\.(jsx?|mjs|css|html|svg|json)$/.test(f) || /node_modules|\.next/.test(f) || self.endsWith(f)) continue;
       const s = readFileSync(f, 'utf8');
       for (const re of BANNED) if (re.test(s)) hits.push(`${f}: ${re}`);
     }

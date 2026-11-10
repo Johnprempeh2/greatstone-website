@@ -28,7 +28,8 @@ const header = '<header class="gs-header"><a class="gs-logo" href="/" aria-label
   + '<div class="gs-tools"><button class="gs-btn primary gs-book">Begin the Conversation</button><button class="gs-accountbtn" aria-label="Sign in"><span class="gs-accountlabel">Sign in</span></button>'
   + '<button class="gs-cmdbtn" aria-label="Search and commands"><kbd>⌘K</kbd></button></div></header>';
 const footer = '<footer class="site-footer"><style>@media(pointer:coarse){.site-footer .foot-links a{min-height:44px}}</style>'
-  + '<svg class="foot-wave" viewBox="0 0 500 500" fill="none" aria-hidden="true"><g stroke="var(--gs-accent)" stroke-width="0.8" fill="none"><path d="M500 40 Q392 72 344 154"></path></g></svg>'
+  // A plain rule stands in for any drawing whose paint is a var(): the old footer ornament is retired and must not come back.
+  + '<svg viewBox="0 0 10 1" fill="none" aria-hidden="true"><g stroke="var(--gs-accent)" stroke-width="0.8" fill="none"><path d="M0 0 H10"></path></g></svg>'
   + '<nav class="foot-links" aria-label="Footer"><a href="/">Home</a></nav><nav class="foot-legal" aria-label="Legal"><a href="/privacy">Privacy</a></nav>'
   + '<div class="legal">© <!-- -->2026<!-- --> Greatstone. All rights reserved.</div></footer>';
 

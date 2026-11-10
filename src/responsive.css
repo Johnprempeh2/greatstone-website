@@ -85,3 +85,8 @@ html:root{
   :root .td-home .td-door h2{font-size:clamp(46px,3.2vw,58px)}
   :root .td-home .td-doors,:root .td-home .td-door{min-height:clamp(620px,43vw,800px)}
 }
+
+/* 7. Retired things stay retired on pages published before they were taken out, with no Publish needed:
+ *    the footer ornament (John, 8 Nov) and the unnamed team seats (John, 10 Nov: no placeholders). */
+:root .site-footer>svg,
+:root .team-card.is-slot{display:none}

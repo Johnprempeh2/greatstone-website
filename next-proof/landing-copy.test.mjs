@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import landing from './frozen/two-doors-landing.json' with { type: 'json' };
-import { LANDING_TEXT_FIELDS, landingCopy, landingData } from './landing-copy.mjs';
+import { LANDING_TEXT_FIELDS, RETIRED_WORDING, landingCopy, landingData } from './landing-copy.mjs';
 import { islandProps } from './islands.mjs';
 
 test('with no copy the landing renders the frozen blocks exactly (pixel parity), less the unverified case studies', () => {
-  const frozen = landing.data.content.filter((block) => block.type !== 'TwoDoorsProof');
+  const frozen = landing.data.content.filter((block) => !['TwoDoorsProof', 'TwoDoorsBottom'].includes(block.type));
   for (const copy of [undefined, '{}', 'not json']) {
     assert.equal(landingData(copy), landingData(undefined));
     assert.deepEqual(landingData(copy).content.slice(1), frozen.slice(1));
-    assert.deepEqual({ ...landingData(copy).content[0].props, proofHref: frozen[0].props.proofHref }, frozen[0].props);
+    assert.deepEqual({ ...landingData(copy).content[0].props, ...Object.fromEntries(['proofHref', 'cueText', 'chooserHeading'].map((key) => [key, frozen[0].props[key]])) }, frozen[0].props);
     assert.ok(landingData(copy).content.slice(1).every((block, i) => block === frozen[i + 1]));
   }
   assert.match(readFileSync(new URL('../src/blocks/TwoDoors.jsx', import.meta.url), 'utf8'), /showCue: true/);
@@ -46,4 +46,11 @@ test('the landing leaves out the case-study section until a verified case exists
 test('no landing link points at a hidden page; the door proof link goes to How we work', () => {
   assert.ok(!JSON.stringify(landingData().content).match(/"[a-zA-Z]*Href":"\/(case-studies|proof)/));
   assert.equal(landingData().content[0].props.proofHref, '/consultancy/how-we-work');
+});
+
+test('"Choose your side" and the closing repeat of the doors are gone; an edit from GSAM still wins', () => {
+  assert.match(JSON.stringify(landing.data), RETIRED_WORDING); // the frozen file still says it, so this test can fail
+  assert.doesNotMatch(JSON.stringify(landingData()), RETIRED_WORDING);
+  assert.equal(landingData().content.some((block) => block.type === 'TwoDoorsBottom'), false);
+  assert.equal(landingData('{"cueText":"Pick a door"}').content[0].props.cueText, 'Pick a door');
 });
