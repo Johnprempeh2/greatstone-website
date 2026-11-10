@@ -69,6 +69,10 @@ const exportUrl = new URL('../data/html-export-release.json', import.meta.url);
 const draftIds = new Set(JSON.parse(await readFile(new URL('../frozen/gre-1822-drafts.json', import.meta.url), 'utf8')).pages.map((page) => page.id));
 const drafts = baked.pages.filter((page) => draftIds.has(page.id));
 if (drafts.length && process.env.PARITY_CHROME !== '1') chrome = withoutDraftLinks(chrome, drafts);
+// John, 10 Nov: the footer's GS Agentic Manager link goes to the product page in app/gs-agentic-manager, not the
+// old services page that still carries that title in the baked release.
+// ponytail: string swap on the rendered footer; retitle the baked /services page if the export is rebuilt for good.
+chrome = { ...chrome, footer: { ...chrome.footer, html: chrome.footer.html.replace('href="/services">GS Agentic Manager<', 'href="/gs-agentic-manager">GS Agentic Manager<') } };
 else if (drafts.length) console.log('PARITY_CHROME=1: the chrome links to staged drafts; for parity only, do not commit this export');
 
 const release = {

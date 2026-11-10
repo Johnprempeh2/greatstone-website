@@ -6,7 +6,6 @@ import './gsam-page.css';
 // GS Agentic Manager product page (10 Nov 2026), in code like AI Market Intelligence, so it can show real
 // screenshots of GSAM. Copy follows the GSAM draft page of the same name. The pictures are GSAM's own screens
 // with example data (its Storybook fixtures and the overnight shots), never a client's instance.
-// Hidden from search until John approves it: drop `robots` below and add the path to CODE_PAGES in sitemap-urls.mjs.
 const seo = {
   title: 'GS Agentic Manager · Greatstone International',
   description: 'A digital office for the work that comes round every week: AI agents in clear roles, with your people approving what matters.',
@@ -14,7 +13,7 @@ const seo = {
 
 export async function generateMetadata() {
   const { release } = await activeRelease();
-  return { ...pageMetadata({ path: '/gs-agentic-manager', seo }, release.release.number), robots: { index: false, follow: true } };
+  return { ...pageMetadata({ path: '/gs-agentic-manager', seo }, release.release.number) };
 }
 
 const shot = (name, width, height) => ({ src: `/assets/gsam/${name}.webp`, width, height });
@@ -53,8 +52,8 @@ const FEATURES = [
     title: 'Your website’s admin, in the same office',
     text: 'Pick a part of a page, describe or draw the change you want, and the website agent drafts it. Nothing goes live until a person approves it and starts a publish. The site’s pages sit in one list, with what is approved, what is a draft and where the plan and the real site disagree.',
     points: ['Changes drafted by an agent, approved by a person', 'Every page and its state in one place', 'Older versions kept, so a change can be undone'],
-    img: shot('ask-agent', 1600, 1000),
-    alt: 'The website editor with the Ask an agent panel open beside a page, ready to describe a change.',
+    img: shot('editor', 1600, 1000),
+    alt: 'The website editor showing the Greatstone home page, with the Ask an agent panel open beside it, ready to describe a change.',
     extra: { ...shot('sitemap', 1600, 711), alt: 'The list of the website’s built pages, each with its approval state, menu and last change.' },
   },
   {

@@ -1,7 +1,7 @@
 import { isHidden } from '../next-proof/hidden-routes.mjs';
 
 // Every public page of the release, plus the pages the Next app serves itself, for /sitemap.xml.
-const CODE_PAGES = ['/shop', '/ai-market-intelligence'];
+const CODE_PAGES = ['/shop', '/ai-market-intelligence', '/gs-agentic-manager'];
 
 export function sitemapUrls(release, origin = 'https://greatstoneint.com') {
   const paths = [...new Set([...release.pages.map((page) => page.path), ...CODE_PAGES])].filter((path) => !isHidden(path));

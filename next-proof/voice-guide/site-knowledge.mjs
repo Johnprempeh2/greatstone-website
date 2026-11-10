@@ -11,7 +11,7 @@ import { serviceSlug } from '../../src/store/service-lookup.mjs';
 import { fmtMoney } from '../../src/lib/pricing.mjs';
 
 // The two pages built in code rather than in the release, named as their own <title> names them.
-const CODE_PAGE_TITLES = { '/shop': 'Software Catalogue', '/ai-market-intelligence': 'AI Market Intelligence' };
+const CODE_PAGE_TITLES = { '/shop': 'Software Catalogue', '/ai-market-intelligence': 'AI Market Intelligence', '/gs-agentic-manager': 'GS Agentic Manager' };
 const PAGE_CHARS = 2500;
 // ponytail: the whole catalogue goes in the prompt. Past this many products the rest are left to the shop page;
 // move to a search tool if the catalogue outgrows it.

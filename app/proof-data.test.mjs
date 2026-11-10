@@ -42,8 +42,18 @@ test('site chrome gives the studio header and footer the release navigation, pag
     ] },
   ]);
   const chrome = siteChrome(release);
-  assert.deepEqual(chrome.order, ['home', 'method', 'privacy']);
-  assert.deepEqual(chrome.paths, { home: '/', method: '/method', privacy: '/privacy' });
+  // GS Agentic Manager is a code page: the chrome adds it to the footer list and as a header tab once.
+  assert.deepEqual(chrome.order, ['home', 'method', 'privacy', 'gs-agentic-manager']);
+  assert.deepEqual(chrome.paths, { home: '/', method: '/method', privacy: '/privacy', 'gs-agentic-manager': '/gs-agentic-manager' });
+  assert.deepEqual(chrome.navigation.map((item) => item.label), ['How We Work', 'Services', 'GS Agentic Manager']);
+  assert.equal(chrome.navigation[2].pageSlug, 'gs-agentic-manager');
+  const withAbout = siteChrome({ ...release, pages: [...release.pages, { id: 'p-about', slug: 'about', path: '/about', title: 'About' }],
+    site: { ...release.site, navigation: [...release.site.navigation, { id: 'n5', label: 'About', visible: true, target: { kind: 'page', pageId: 'p-about' } }] } });
+  assert.deepEqual(withAbout.navigation.map((item) => item.label), ['How We Work', 'Services', 'GS Agentic Manager', 'About']);
+  const published = siteChrome({ ...release, pages: [...release.pages, { id: 'p-gsam', slug: 'gs-agentic-manager', path: '/gs-agentic-manager', title: 'GS Agentic Manager' }],
+    site: { ...release.site, navigation: [...release.site.navigation, { id: 'n6', label: 'GS Agentic Manager', visible: true, target: { kind: 'page', pageId: 'p-gsam' } }] } });
+  assert.equal(published.order.filter((slug) => slug === 'gs-agentic-manager').length, 1);
+  assert.equal(published.navigation.filter((item) => item.label === 'GS Agentic Manager').length, 1);
   assert.equal(chrome.pages.privacy.footerOnly, true);
   assert.equal(chrome.pages.method.footerOnly, undefined);
   assert.equal(chrome.pages.proof, undefined, 'a hidden page is not offered in the header, footer or search');
