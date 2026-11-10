@@ -1,16 +1,21 @@
 'use client';
 
 // The website guide: a small "Talk to us" button on public pages that opens a panel where a visitor can speak or
-// type, read both sides of the conversation, and tap the pages the guide suggests.
+// type, read both sides of the conversation, and be taken to the pages the guide suggests.
 // It is mounted once, in the root layout, and only when VOICE_GUIDE_ENABLED is 1. The microphone is never opened
 // without a press on Speak. The voice call reuses the interview's browser engine; nothing here knows a key.
+// The layout stays mounted when the site moves between pages, so a conversation (and a call) carries on. A full
+// page load ends a call; the words come back from the browser tab's own storage.
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import './voice-guide.css';
-import { addMessage, cleanAction, displayText, historyFor, isPublicPath, micMessage, safePath, STATUS_LABEL, statusFromVoice, voiceSupported } from './guide-client.mjs';
+import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micMessage, restore, safePath, STATUS_LABEL, statusFromVoice, voiceSupported } from './guide-client.mjs';
 
 const WHO = { you: 'You', guide: 'Guide' };
+const STORE = 'gs-voice-guide';
+const PAGE_CHANGED = 'The call ended when the page changed. Press Speak to carry on.';
+const phone = () => window.matchMedia('(max-width: 640px)').matches;
 const UNREACHABLE = 'Sorry, the guide could not be reached. Please check your connection and try again.';
 
 // What went wrong, in plain words that are safe to show as they are (the server's own, or ours).
@@ -25,6 +30,7 @@ async function post(route, body) {
 
 export default function VoiceGuide() {
   const pathname = usePathname();
+  const router = useRouter();
   const shown = isPublicPath(pathname);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -39,9 +45,13 @@ export default function VoiceGuide() {
   const call = useRef(null); // the voice engine while a call is on
   const run = useRef(0); // goes up whenever a call starts or ends, so a slow step from an old call does nothing
   const limit = useRef(null);
+  const moving = useRef(null);
+  const ready = useRef(false); // the tab's kept conversation has been read back
+  const lastPath = useRef(pathname);
   const latest = useRef(messages);
   latest.current = messages;
   const wasOpen = useRef(false);
+  const quiet = useRef(false); // the panel is coming back after a page load: do not pull the keyboard focus into it
   const launcher = useRef(null);
   const heading = useRef(null);
   const log = useRef(null);
@@ -61,6 +71,14 @@ export default function VoiceGuide() {
   }
   const end = useRef(endCall);
   end.current = endCall;
+
+  // Opens a page the guide chose, without a page load, so the conversation (and a call) carries on.
+  // The guide has already said where it is going: `wait` leaves time for a typed reply to be read.
+  function move(action, wait) {
+    if (action?.type !== 'go' || action.path === window.location.pathname) return;
+    clearTimeout(moving.current);
+    moving.current = setTimeout(() => router.push(action.path), wait);
+  }
 
   async function startSession(voice) {
     const { ok, data } = await post('start', { voice });
@@ -102,11 +120,31 @@ export default function VoiceGuide() {
       if (stale()) return;
       const engine = new VoiceClient();
       call.current = engine;
+      let before = '';
+      let interrupted = false;
+      // A spoken reply's page waits on the server until the guide has finished saying where it is going.
+      const collect = async () => {
+        // Only between turns: if the guide is already thinking or speaking again, the next pause collects.
+        if (stale() || engine.state !== 'listening') return;
+        const { ok, data } = await post('action', { token: session.current.token }).catch(() => ({}));
+        const action = ok ? cleanAction(data.action) : null;
+        if (stale() || !action) return;
+        setMessages((list) => attachAction(list, action));
+        // A visitor who talked over "Taking you to..." may have been saying no: they get the link, not the move.
+        if (!interrupted) move(action, 0);
+      };
       await engine.start({
         deepgramToken: started.voice.deepgramToken,
         settings: started.voice.settings,
         handlers: {
-          onState: (state) => { if (!stale()) setStatus(statusFromVoice(state)); },
+          onState: (state) => {
+            if (stale()) return;
+            setStatus(statusFromVoice(state));
+            if (state === 'speaking') interrupted = false;
+            if (state === 'listening' && before === 'speaking') setTimeout(collect, Math.max(0, engine.agentAudioEndsAt - Date.now()) + 200);
+            before = state;
+          },
+          onBargeIn: (verdict) => { if (verdict === 'interrupt') interrupted = true; },
           onAgentText: (text) => { if (!stale()) say('guide', displayText(text), { spoken: true }); },
           onUserText: (text) => { if (!stale()) say('you', text, { spoken: true }); },
           onError: () => { if (!stale()) setProblem({ text: 'The call ran into a problem. You can try again, or type below.' }); },
@@ -150,7 +188,9 @@ export default function VoiceGuide() {
         else if (code === 401 && attempt === 0) session.current = null; // the chat ran out: start a new one, once
         else throw told(data);
       }
-      say('guide', typeof reply.reply === 'string' ? reply.reply : '', { action: cleanAction(reply.action) });
+      const action = cleanAction(reply.action);
+      say('guide', typeof reply.reply === 'string' ? reply.reply : '', { action });
+      move(action, 900);
     } catch (error) {
       setProblem(error?.told ? { text: error.message, contactPath: error.contactPath } : { text: 'Sorry, something went wrong. Please try again.' });
     } finally {
@@ -159,18 +199,42 @@ export default function VoiceGuide() {
     }
   }
 
-  const close = () => {
-    endCall('The call has ended.');
-    setOpen(false);
-  };
+  // Closing the panel does not end a call: it shrinks to the button, which shows the state and its own Stop.
+  const close = () => setOpen(false);
+
+  // The conversation is kept in this browser tab only (never on the server), so it survives a full page load.
+  useEffect(() => {
+    if (!ready.current) return;
+    try { sessionStorage.setItem(STORE, JSON.stringify({ messages, session: session.current, open, calling })); } catch { /* storage is blocked: nothing is kept */ }
+  }, [messages, open, calling]);
+  useEffect(() => {
+    if (ready.current) return; // development runs effects twice: read the tab's copy once
+    let kept = null;
+    try { kept = restore(sessionStorage.getItem(STORE)); } catch { /* storage is blocked: start fresh */ }
+    if (kept) {
+      session.current = kept.session;
+      setMessages(kept.calling ? addMessage(kept.messages, 'note', PAGE_CHANGED) : kept.messages);
+      const reopen = kept.open && !phone(); // on a phone the panel would cover the page that was just opened
+      quiet.current = reopen;
+      setOpen(reopen);
+    }
+    ready.current = true;
+  }, []);
+
+  // On a phone the panel covers most of the screen, so after a move it steps aside for the new page.
+  useEffect(() => {
+    if (lastPath.current !== pathname && phone()) setOpen(false);
+    lastPath.current = pathname;
+  }, [pathname]);
 
   // The call never outlives the page, the component, or a move into a signed-in area.
   useEffect(() => {
-    const stop = () => end.current();
+    const stop = () => end.current(PAGE_CHANGED);
     window.addEventListener('pagehide', stop);
     return () => {
       window.removeEventListener('pagehide', stop);
-      stop();
+      clearTimeout(moving.current);
+      end.current();
     };
   }, []);
   useEffect(() => {
@@ -180,8 +244,9 @@ export default function VoiceGuide() {
   // Opening moves focus to the panel's heading (not the text box, so a phone keyboard does not jump up);
   // closing hands it back to the button that opened it.
   useEffect(() => {
-    if (open) heading.current?.focus();
-    else if (wasOpen.current) launcher.current?.focus();
+    if (open && !quiet.current) heading.current?.focus();
+    else if (!open && wasOpen.current) launcher.current?.focus();
+    if (open) quiet.current = false; // a panel that came back after a page load opens without taking the focus, once
     wasOpen.current = open;
   }, [open]);
 
@@ -190,7 +255,14 @@ export default function VoiceGuide() {
   }, [messages, problem, open]);
 
   if (!shown) return null;
-  if (!open) return <div className="gsvg"><button type="button" className="gsvg-launcher" ref={launcher} onClick={() => setOpen(true)}>Talk to us</button></div>;
+  if (!open) {
+    return (
+      <div className="gsvg gsvg-mini">
+        <button type="button" className="gsvg-launcher" ref={launcher} onClick={() => setOpen(true)}>{calling ? `Guide: ${STATUS_LABEL[status] || 'on a call'}` : 'Talk to us'}</button>
+        {calling && <button type="button" className="gsvg-button gsvg-stop" onClick={() => endCall('The call has ended.')}>Stop</button>}
+      </div>
+    );
+  }
 
   return (
     <div className="gsvg">

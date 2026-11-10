@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micMessage, safePath, statusFromVoice, voiceSupported } from './guide-client.mjs';
+import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micMessage, restore, safePath, statusFromVoice, voiceSupported } from './guide-client.mjs';
 
 test('the guide shows on public pages and not in signed-in areas, the editor or internal tools', () => {
   for (const path of ['/', '/about', '/services', '/service/ai-readiness', '/product/acrobat', '/shop', '/shop/adobe', '/privacy', '/contact', '/dev-tools', '/portalsomething']) assert.equal(isPublicPath(path), true, path);
@@ -90,4 +90,33 @@ test('every page the guide can open is one the guide shows on, and a path the br
     assert.equal(safePath(path), path, path);
     assert.equal(isPublicPath(path), true, path);
   }
+});
+
+test('a conversation kept by the browser tab comes back checked: text only, real page links only, no dead session', () => {
+  const now = 1_000_000;
+  const kept = JSON.stringify({
+    open: true, calling: true, session: { token: 'abc', expiresAt: now + 5000 },
+    messages: [
+      { id: 7, role: 'you', text: 'Where are your services?', spoken: true },
+      { id: 8, role: 'guide', text: 'Here they are.', action: { type: 'options', options: [{ path: '/services', title: 'Services' }, { path: 'https://evil.example/', title: 'Prize' }] } },
+      { id: 9, role: 'guide', text: 'Taking you there.', action: { type: 'go', path: '//evil.example', title: 'Contact' } },
+      { id: 10, role: 'system', text: 'not a real line' },
+      { id: 11, role: 'note', text: { html: '<b>x</b>' } },
+      { id: 12, role: 'note', text: 'The call has ended.' },
+    ],
+  });
+  const back = restore(kept, now);
+  assert.deepEqual(back.messages, [
+    { id: 1, role: 'you', text: 'Where are your services?' },
+    { id: 2, role: 'guide', text: 'Here they are.', action: { type: 'options', options: [{ path: '/services', title: 'Services' }] } },
+    { id: 3, role: 'guide', text: 'Taking you there.' },
+    { id: 4, role: 'note', text: 'The call has ended.' },
+  ]);
+  assert.deepEqual(back.session, { token: 'abc', expiresAt: now + 5000 });
+  assert.equal(back.open, true);
+  assert.equal(back.calling, true);
+  assert.equal(restore(kept, now + 5000).session, null, 'a session that has run out is not reused');
+  assert.equal(restore(JSON.stringify({ messages: [], open: 'yes', session: { token: 5, expiresAt: now * 2 } }), now).open, false);
+  assert.equal(restore(JSON.stringify({ messages: [], session: { token: 5, expiresAt: now * 2 } }), now).session, null);
+  for (const junk of [null, '', 'not json', '{}', '[]', '{"messages":"x"}']) assert.equal(restore(junk, now), null, String(junk));
 });
