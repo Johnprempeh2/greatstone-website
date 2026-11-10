@@ -17,6 +17,8 @@ const WHO = { you: 'You', guide: 'Guide' };
 const STORE = 'gs-voice-guide';
 const PAGE_CHANGED = 'The call ended when the page changed. Press Speak to carry on.';
 const phone = () => window.matchMedia('(max-width: 640px)').matches;
+// Said by the guide when a call reaches its time limit. The day's voice limit has its own line from the server.
+const CALL_TIME_UP = "That is the end of the voice call. You can keep typing and I'll answer.";
 const UNREACHABLE = 'Sorry, the guide could not be reached. Please check your connection and try again.';
 
 // What went wrong, in plain words that are safe to show as they are (the server's own, or ours).
@@ -120,7 +122,9 @@ export default function VoiceGuide() {
         setCalling(false);
         setStatus('idle');
         setVoiceOff(true);
-        setProblem({ text: 'Speaking is not available right now. You can type below instead.' });
+        // Voice is busy for the day: the guide says so, and the typed session it was given carries on.
+        if (typeof started.voiceNote === 'string') say('guide', started.voiceNote);
+        else setProblem({ text: 'Speaking is not available right now. You can type below instead.' });
         return;
       }
       const { VoiceClient } = await import('../../src/portal/interview/voice/browser-client.mjs');
@@ -162,7 +166,10 @@ export default function VoiceGuide() {
         engine.stop();
         return;
       }
-      limit.current = setTimeout(() => end.current('The call reached its time limit. You can start another, or type below.'), Math.max(0, session.current.expiresAt - Date.now()));
+      limit.current = setTimeout(() => {
+        end.current();
+        say('guide', CALL_TIME_UP);
+      }, Math.max(0, session.current.expiresAt - Date.now()));
     } catch (error) {
       if (stale()) return;
       const engine = call.current === true ? null : call.current;
