@@ -24,7 +24,12 @@ html:root{
 /* Centred on purpose: the short closing invitation. */
 :root .wrap.b-invite-inner{margin-inline:auto}
 /* Shop and product pages use their own box: same column, same edge. */
-:root .st-wrap{max-width:var(--gs-maxw);padding-inline:var(--gs-gutter)}
+:root :is(.st-wrap,.sp-wrap){max-width:var(--gs-maxw);padding-inline:var(--gs-gutter)}
+/* Reading text keeps a readable line inside the wide column. */
+:root :is(.sp-note,.b-abs-fine,.b-book-aside-body,.b-transform-close p){max-width:var(--gs-measure)}
+:root .b-transform-close p{margin-inline:auto}
+/* The licence table scrolls inside its own frame; its hidden label must not widen the page. */
+:root .sp-table-wrap{position:relative}
 
 /* 3. Section heads sit on the left edge with their section, not centred above it. */
 :root .b-panels.head-center .b-panels-head,
@@ -116,3 +121,27 @@ html:root{
  *    the footer ornament (John, 8 Nov) and the unnamed team seats (John, 10 Nov: no placeholders). */
 :root .site-footer>svg,
 :root .team-card.is-slot{display:none}
+
+/* 8. Phone. No text under 14px, and everything you tap is at least 44px tall.
+ *    The home page hero and doors keep their own type sizes (settled design); only their tap areas grow. */
+@media (max-width:819px){
+  html:root :is(.kicker,.b-prose-kicker,.b-cta,.b-panel-more,.inq-toggle,.b-cat-fmt,.b-cat-reason,.b-cat-navtile-n,.b-cat-chip,.b-cat-chip-n,.b-cat-feat-tab,
+    .b-ind-chip,.b-step-n.is-text,.b-book-ad,.b-acc-flabel,.b-acc-gfield label,.b-abs-fine,.b-acc-foot,.b-dx-method-title span,.field label,.t-role,.traits span,
+    .phase :is(.rank,.range,p),.gs-navmenu-btn span,.st-pill,.st-go,.st-badge,.st-clear,.st-stat,.st-card :is(.desc,.vendor span),.st-price :is(.lbl,.st-vat,.poa),
+    .sp-add,.sp-note,.sp-crumb,.sp-rel :is(.rv,.rp),.sp-pricebox .sub,.sp-wrap th,.gi :is(small,time,.gi-tag,.gi-tab,.gi-stat-label,.gi-stat-sub,.gi-board-head p,.gi-updated,.gi-head h3,.gi-kicker,.gi-step-maker,.gi-source-name),
+    .b-ind-head,.tier-card :is(.score,p),.b-cat-count,.b-chapter-name,.b-invite-inner .pill,.b-book-or,.b-book-consent,.b-intel-live span,.b-acc-notice,.b-acc-gate-b,
+    .st-facet h2,.st-facet-head h2,.st-kicker,.st-more,.st-count,.st-filterbtn,.sp-vendor span,.sp-pricebox .lbl,.sp-pricebox small,.gs-btn,.ca-note,.ca-tabs button,.ca-signin label,.ca-trust,.b-dx-method-overview span){font-size:max(14px,.875rem)}
+  /* Labels in capitals were spaced for 10px type; at 14px they need less. */
+  html:root :is(.b-cat-fmt,.b-cat-reason,.b-prose-kicker,.st-badge){letter-spacing:.04em}
+  html:root .b-cat-card-top{flex-wrap:wrap}
+  /* The eight pillar tiles go two across so each name fits on one line. */
+  html:root .b-tiein-chart{grid-template-columns:repeat(2,1fr)}
+  html:root .b-tiein-pm{aspect-ratio:2.4;font-size:max(14px,.875rem)}
+}
+@media (pointer:coarse){
+  /* Buttons and pills grow to 44px. */
+  :root :is(.inq-toggle,.sp-add,.b-cat-chip,.b-cat-feat-tab,.b-ind-chip,.st-more,.gi-tab,.td-stepbar button,.b-acc-gfield input,.b-cat-input){min-height:44px}
+  /* Text links keep their look; an unseen pad around them takes the tap. */
+  :root :is(.gs-logo,.b-panel-more,.b-transform-card a,.b-transform-actions a,.td-tool-card a,.td-more,.td-text-link,.st-clear,.gi-link,.gi-row-name a,.sp-crumb a,.ca-link,.b-invite-routes a,.td-range a){position:relative}
+  :root :is(.gs-logo,.b-panel-more,.b-transform-card a,.b-transform-actions a,.td-tool-card a,.td-more,.td-text-link,.st-clear,.gi-link,.gi-row-name a,.sp-crumb a,.ca-link,.b-invite-routes a,.td-range a)::after{content:"";position:absolute;inset:-13px 0}
+}
