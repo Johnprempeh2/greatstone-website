@@ -10,7 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import './voice-guide.css';
-import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micMessage, restore, safePath, STATUS_LABEL, statusFromVoice, voiceSupported } from './guide-client.mjs';
+import GuideStone from './GuideStone.jsx';
+import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micLevel, micMessage, restore, safePath, STATUS_LABEL, statusFromVoice, voiceSupported } from './guide-client.mjs';
 
 const WHO = { you: 'You', guide: 'Guide' };
 const STORE = 'gs-voice-guide';
@@ -55,6 +56,12 @@ export default function VoiceGuide() {
   const launcher = useRef(null);
   const heading = useRef(null);
   const log = useRef(null);
+
+  // How loud the guide and the visitor are right now, for the stone. Silence when there is no call.
+  const levels = () => {
+    const engine = call.current;
+    return engine && engine !== true ? { speak: engine.outputLevel?.() ?? 0, mic: engine.state === 'listening' ? micLevel(engine.rmsDb) : 0 } : { speak: 0, mic: 0 };
+  };
 
   const say = (role, text, options) => setMessages((list) => addMessage(list, role, text, options));
 
@@ -258,7 +265,10 @@ export default function VoiceGuide() {
   if (!open) {
     return (
       <div className="gsvg gsvg-mini">
-        <button type="button" className="gsvg-launcher" aria-haspopup="dialog" ref={launcher} onClick={() => setOpen(true)}>{calling ? `Guide: ${STATUS_LABEL[status] || 'on a call'}` : 'Talk to us'}</button>
+        <button type="button" className="gsvg-launcher" aria-haspopup="dialog" ref={launcher} onClick={() => setOpen(true)}>
+          <GuideStone status={status} levels={levels} className="gsvg-stone--pill" />
+          <span>{calling ? `Guide: ${STATUS_LABEL[status] || 'on a call'}` : 'Talk to us'}</span>
+        </button>
         {calling && <button type="button" className="gsvg-button gsvg-stop" onClick={() => endCall('The call has ended.')}>Stop</button>}
       </div>
     );
@@ -270,6 +280,9 @@ export default function VoiceGuide() {
         <div className="gsvg-head">
           <h2 id="gsvg-title" className="gsvg-title" tabIndex={-1} ref={heading}>Ask about Greatstone</h2>
           <button type="button" className="gsvg-button gsvg-quiet" onClick={close}>Close</button>
+        </div>
+        <div className="gsvg-stage" data-calling={calling ? 'yes' : 'no'}>
+          <GuideStone status={status} levels={levels} className="gsvg-stone--stage" />
         </div>
         {/* While the guide is speaking aloud, a screen reader is not also made to read every word out. */}
         <div className="gsvg-log" role="log" aria-label="Conversation" aria-live={calling ? 'off' : 'polite'} tabIndex={0} ref={log}>

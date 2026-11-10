@@ -114,6 +114,11 @@ export class VoiceClient {
     this.ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
     if (this.ctx.state === 'suspended') await this.ctx.resume();
 
+    // Everything the agent says passes through one analyser on its way out, so a page can show how loud it is.
+    this.output = this.ctx.createAnalyser();
+    this.output.fftSize = 512;
+    this.output.connect(this.ctx.destination);
+
     await this.ctx.audioWorklet.addModule(workletUrl);
     this.micSource = this.ctx.createMediaStreamSource(this.stream);
     this.node = new AudioWorkletNode(this.ctx, 'voice-capture', {
@@ -279,7 +284,7 @@ export class VoiceClient {
 
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.connect(ctx.destination);
+    src.connect(this.output ?? ctx.destination);
 
     // Schedule back to back. Falling behind means the queue drained while we
     // were waiting on the network, so restart from now rather than in the past,
@@ -323,6 +328,17 @@ export class VoiceClient {
     }
   }
 
+  /** How loud the agent's voice is right now, 0 to 1 (the RMS of what is playing). 0 when nothing is. */
+  outputLevel() {
+    const analyser = this.output;
+    if (!analyser) return 0;
+    this.levelBuffer ??= new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(this.levelBuffer);
+    let sum = 0;
+    for (const sample of this.levelBuffer) sum += sample * sample;
+    return Math.min(1, Math.sqrt(sum / this.levelBuffer.length) * 4);
+  }
+
   /** Mute the microphone without tearing the session down. */
   setMuted(muted) {
     this.node?.port.postMessage({ type: 'mute', value: muted });
@@ -350,6 +366,8 @@ export class VoiceClient {
 
     this.micSource?.disconnect();
     this.node?.disconnect();
+    this.output?.disconnect();
+    this.output = null;
     this.micSource = null;
     this.node = null;
 

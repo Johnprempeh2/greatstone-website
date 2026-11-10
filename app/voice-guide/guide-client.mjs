@@ -80,3 +80,20 @@ export function micMessage(error) {
   if (/NotFound|Overconstrained|NotReadable/i.test(reason)) return 'No working microphone was found. You can type below instead.';
   return 'The call could not start. You can try again, or type below.';
 }
+
+/** A microphone level in decibels (the voice engine's -60 to 0) as 0 to 1. */
+export const micLevel = (db) => (Number.isFinite(db) ? Math.max(0, Math.min(1, (db + 55) / 40)) : 0);
+
+/**
+ * How the stone sits at time `t` (seconds) in each state. `speak` and `mic` are levels from 0 to 1.
+ * idle: a gentle float. listening: a slower breath that swells a little with the visitor's voice.
+ * thinking (and asking): a slow turn. speaking: the slabs open, the stone grows and glows with the guide's voice.
+ * `turn` is the stone's turn about its upright, `lift` its float, `spread` how far each slab moves out.
+ */
+export function stonePose(status, { speak = 0, mic = 0 } = {}, t = 0) {
+  const sway = Math.sin(t * 0.5) * 0.22;
+  if (status === 'speaking') return { scale: 1 + speak * 0.16, spread: 0.03 + speak * 0.3, glow: 0.45 + speak * 1.4, turn: sway * 0.6, lift: Math.sin(t * 1.4) * 0.04 };
+  if (status === 'listening') return { scale: 1 + Math.sin(t * 1.3) * 0.025 + mic * 0.06, spread: mic * 0.14, glow: 0.35 + mic * 0.5, turn: sway * 0.5, lift: Math.sin(t * 0.9) * 0.04 };
+  if (status === 'thinking' || status === 'asking') return { scale: 1, spread: 0.06, glow: 0.4, turn: t * 0.7, lift: 0 };
+  return { scale: 1, spread: 0, glow: 0.3, turn: sway, lift: Math.sin(t * 1.1) * 0.08 };
+}
