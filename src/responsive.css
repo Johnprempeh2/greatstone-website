@@ -1,0 +1,87 @@
+/* Responsive layer: one page box, one left edge, on every public page.
+ *
+ * Imported LAST in app/layout.jsx. Every selector starts with `:root` on purpose: published pages print a copy
+ * of the site stylesheet inline in the body (taken at the last Publish), after the repo's linked CSS, so a plain
+ * rule here would lose to that stale copy. The extra `:root` wins on every route without a Publish, while a
+ * page's own CSS (`[data-gs-scope="page"] .x`) still wins over this file.
+ *
+ * How to add a section that behaves: overnight-2026-11-10/tutorials/website-responsive-system.md
+ */
+
+/* 1. Tokens. Gutter grows with the screen; the content column is 1160px on a laptop and widens to 1440px.
+ *    `html:root` (not `:root`) so it beats the inline copy's own `:root{--gs-maxw:1180px}`. */
+html:root{
+  --gs-gutter:clamp(20px,5vw,80px);
+  --gs-content:clamp(1160px,72vw,1440px);
+  --gs-maxw:calc(var(--gs-content) + 2 * var(--gs-gutter));
+  --gs-measure:68ch;
+}
+
+/* 2. The page box. A `.wrap` that also carries a reading limit (`class="wrap b-prose-inner"`, 760px) used to
+ *    centre itself as a narrow band. Now every `.wrap` starts at the shared left edge, whatever its own width. */
+:root .wrap{margin-inline:max(0px,calc((100% - var(--gs-maxw)) / 2)) auto}
+:root .b-panels>.wrap{max-width:var(--gs-maxw)}
+/* Centred on purpose: the short closing invitation. */
+:root .wrap.b-invite-inner{margin-inline:auto}
+/* Shop and product pages use their own box: same column, same edge. */
+:root .st-wrap{max-width:var(--gs-maxw);padding-inline:var(--gs-gutter)}
+
+/* 3. Section heads sit on the left edge with their section, not centred above it. */
+:root .b-panels.head-center .b-panels-head,
+:root .b-features-center .b-features-head,
+:root .b-features-center .b-features-intro,
+:root .b-steps[data-align=center] .b-steps-head,
+:root .b-steps[data-align=center] .b-steps-body,
+:root .b-cat-head{margin-inline:0;text-align:left}
+:root .b-panels.head-center .b-panels-intro{margin-inline:0}
+:root .b-cat-foot{text-align:left;align-items:flex-start}
+:root .b-features-center{text-align:left}
+
+/* 4. Laptop and wider: a heading with running text becomes two columns (heading left, text right), the same
+ *    shape as the home page story sections, so the wide column is used and lines stay readable. */
+@media (min-width:1024px){
+  :root .b-chapter.align-left .wrap.b-chapter-inner,
+  :root .b-prose.align-left .wrap.b-prose-inner:has(>.b-prose-kicker),
+  :root .wrap.b-faq-wrap,
+  :root .wrap.b-abs-wrap{max-width:var(--gs-maxw);display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:clamp(32px,5vw,96px);align-items:start}
+  :root .b-chapter.align-left .b-chapter-inner>*{grid-column:2}
+  :root .b-chapter.align-left .b-chapter-inner>.b-chapter-eyebrow{grid-column:1 / -1}
+  :root .b-chapter.align-left .b-chapter-inner>.b-chapter-h{grid-column:1;grid-row:2 / span 6}
+  :root .b-chapter.align-left .b-chapter-inner>.b-chapter-h+*{margin-top:0}
+  :root .b-prose.align-left .b-prose-inner>.b-prose-kicker{grid-column:1}
+  :root .b-prose.align-left .b-prose-inner>.b-prose-body{grid-column:2;margin-top:0}
+  /* Calculator: heading and inputs on the left, the result card on the right, note underneath. */
+  :root .wrap.b-acc-wrap{max-width:var(--gs-maxw);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr auto;column-gap:clamp(32px,5vw,96px);align-items:start}
+  :root .b-acc-wrap>.b-acc-grid{display:contents}
+  :root .b-acc-wrap>.b-acc-head,:root .b-acc-wrap .b-acc-inputs{grid-column:1}
+  :root .b-acc-wrap .b-acc-result{grid-column:2;grid-row:1 / span 2;align-self:center}
+  :root .b-acc-wrap>.b-acc-foot{grid-column:1 / -1}
+  /* Section headings may run wider than their phone-first limit once the column is wide. */
+  :root .b-steps-head{max-width:24ch}
+}
+
+/* 5. Home page (Two Doors). Phone and tablet layout (below 1024px) is untouched. */
+@media (min-width:1024px){
+  /* Hero, door copy and every section share the page column and its left edge. */
+  :root :is(.td-home,.td-segment){--td-page-width:var(--gs-content);--td-page-gutter:calc(2 * var(--gs-gutter))}
+  :root .td-home:not(.td-dev-page) .td-intro{width:min(var(--td-page-width),calc(100% - var(--td-page-gutter)))}
+  :root .td-home .td-consultancy .td-door-copy{padding-left:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+  :root .td-home .td-tools .td-door-copy{padding-right:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+}
+@media (min-width:1441px){
+  /* Bigger screens get a wider column and slightly larger, capped type. The page is never zoomed
+   * (published pages still carry the old zoom rule in their inline copy until the next Publish). */
+  :root:has(.td-home:not(.td-dev-page)){zoom:1}
+  :root:has(.td-home:not(.td-dev-page)) .td-intro>.td-tide,
+  :root:has(.td-home:not(.td-dev-page)) .td-story-segment>.td-tide{left:calc(50% - 50vw);width:100vw}
+  :root:has(.td-home:not(.td-dev-page)) .td-consultancy .td-door-copy{padding-left:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+  :root:has(.td-home:not(.td-dev-page)) .td-tools .td-door-copy{padding-right:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+  :root:has(.td-home:not(.td-dev-page)) :is(.td-story,.td-section) h2{font-size:clamp(var(--td-size-34),3.4vw,var(--td-size-50))}
+  :root:has(.td-home:not(.td-dev-page)) .td-close h2{font-size:var(--td-size-30)}
+  :root:has(.td-home:not(.td-dev-page)) .td-case-placeholder{font-size:clamp(72px,10vw,150px)}
+  :root:has(.td-home:not(.td-dev-page)) .td-case-draft .td-case-copy strong{font-size:clamp(24px,2.5vw,38px)}
+  :root .td-home .td-intro h1{font-size:clamp(60px,4.17vw,76px)}
+  :root .td-home .td-lede{font-size:clamp(18px,1.25vw,21px)}
+  :root .td-home .td-door h2{font-size:clamp(46px,3.2vw,58px)}
+  :root .td-home .td-doors,:root .td-home .td-door{min-height:clamp(620px,43vw,800px)}
+}

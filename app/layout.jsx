@@ -5,6 +5,7 @@ import '../src/studio.css';
 import '../src/two-doors.css';
 import '../src/store/store.css';
 import './proof.css';
+import '../src/responsive.css'; // keep last: the shared page box and left edge (see the file header)
 import { Window } from 'happy-dom';
 import { activeRelease } from './release-source.js';
 import { themeStyle } from './theme-style.mjs';
