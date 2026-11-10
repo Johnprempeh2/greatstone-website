@@ -41,27 +41,9 @@ export function stoneViewport(box, width, height, exitRoom) {
   };
 }
 
-let shared;
-
-function makeShared() {
-  const canvas = document.createElement('canvas');
-  canvas.className = 'gs-stone-layer';
-  canvas.setAttribute('aria-hidden', 'true');
-  // Keep the canvas in the public page's stacking context. The following block's
-  // z-index can then cover slabs as they pass beneath its cards.
-  (document.querySelector('.gs-public') || document.body).appendChild(canvas);
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
-  } catch (error) {
-    canvas.remove();
-    throw error;
-  }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-  renderer.setClearColor(0x000000, 0);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.4;
-  renderer.autoClear = false;
+// The stone itself (lights, camera, the five terraced slabs), shared with the website guide's small stone so the
+// mark is defined once. Each slab is a group at the origin; its outline already sits at its place in the mark.
+export function createStoneScene(renderer) {
   const scene = new THREE.Scene();
   // One environment map gives the cut faces the old emerald depth without a bloom pass.
   const environmentCanvas = document.createElement('canvas');
@@ -141,6 +123,34 @@ function makeShared() {
     stone.add(group);
     return group;
   });
+  return {
+    scene, camera, stone, slabs, materials, edgeMaterial, rim,
+    dispose() { geometries.forEach((geometry) => geometry.dispose()); materials.forEach((material) => material.dispose()); environment.dispose(); },
+  };
+}
+
+let shared;
+
+function makeShared() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'gs-stone-layer';
+  canvas.setAttribute('aria-hidden', 'true');
+  // Keep the canvas in the public page's stacking context. The following block's
+  // z-index can then cover slabs as they pass beneath its cards.
+  (document.querySelector('.gs-public') || document.body).appendChild(canvas);
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
+  } catch (error) {
+    canvas.remove();
+    throw error;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setClearColor(0x000000, 0);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.4;
+  renderer.autoClear = false;
+  const { scene, camera, stone, slabs, materials, edgeMaterial, dispose: disposeScene } = createStoneScene(renderer);
   const entries = new Set();
   let settlingUntil = 0;
   let frameCount = 0;
@@ -229,9 +239,7 @@ function makeShared() {
         phone.removeEventListener('change', onVisible);
         observer.disconnect();
         resize.disconnect();
-        geometries.forEach((geometry) => geometry.dispose());
-        materials.forEach((material) => material.dispose());
-        environment.dispose();
+        disposeScene();
         renderer.dispose();
         renderer.forceContextLoss();
         canvas.remove();

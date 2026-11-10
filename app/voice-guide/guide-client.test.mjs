@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micMessage, restore, safePath, statusFromVoice, voiceSupported } from './guide-client.mjs';
+import { addMessage, attachAction, cleanAction, displayText, historyFor, isPublicPath, micLevel, micMessage, restore, safePath, statusFromVoice, stonePose, voiceSupported } from './guide-client.mjs';
 
 test('the guide shows on public pages and not in signed-in areas, the editor or internal tools', () => {
   for (const path of ['/', '/about', '/services', '/service/ai-readiness', '/product/acrobat', '/shop', '/shop/adobe', '/privacy', '/contact', '/dev-tools', '/portalsomething']) assert.equal(isPublicPath(path), true, path);
@@ -119,4 +119,29 @@ test('a conversation kept by the browser tab comes back checked: text only, real
   assert.equal(restore(JSON.stringify({ messages: [], open: 'yes', session: { token: 5, expiresAt: now * 2 } }), now).open, false);
   assert.equal(restore(JSON.stringify({ messages: [], session: { token: 5, expiresAt: now * 2 } }), now).session, null);
   for (const junk of [null, '', 'not json', '{}', '[]', '{"messages":"x"}']) assert.equal(restore(junk, now), null, String(junk));
+});
+
+test('the stone floats at rest, turns while thinking, and opens with the guide\'s voice', () => {
+  const at = (status, levels, t) => stonePose(status, levels, t);
+  // At rest it floats: the lift changes over time, the slabs stay closed.
+  assert.notEqual(at('idle', {}, 0).lift, at('idle', {}, 1.4).lift);
+  assert.equal(at('idle', {}, 1).spread, 0);
+  // Thinking: a slow, steady turn.
+  assert.ok(at('thinking', {}, 4).turn > at('thinking', {}, 2).turn);
+  assert.deepEqual(at('asking', {}, 3), at('thinking', {}, 3));
+  // Speaking: louder means bigger, wider and brighter. Silence while speaking is calmer than any sound.
+  const quiet = at('speaking', { speak: 0 }, 1), loud = at('speaking', { speak: 1 }, 1);
+  for (const key of ['scale', 'spread', 'glow']) assert.ok(loud[key] > quiet[key], key);
+  // Listening reacts to the visitor's microphone, less than speaking does to the guide.
+  assert.ok(at('listening', { mic: 1 }, 0).spread > at('listening', { mic: 0 }, 0).spread);
+  assert.ok(at('listening', { mic: 1 }, 0).spread < loud.spread);
+  // An unknown state is treated as rest.
+  assert.deepEqual(at('error', {}, 2), at('idle', {}, 2));
+});
+
+test('a microphone level in decibels becomes 0 to 1', () => {
+  assert.equal(micLevel(-60), 0);
+  assert.equal(micLevel(0), 1);
+  assert.ok(micLevel(-30) > 0 && micLevel(-30) < 1);
+  for (const odd of [undefined, NaN, null, 'x']) assert.equal(micLevel(odd), 0);
 });
