@@ -8,7 +8,6 @@ const GROUPS = [
   { label: 'Content', tabs: [['pages', 'Pages']] },
   { label: 'Page', tabs: [['background', 'Background'], ['seo', 'SEO'], ['history', 'History']] },
   { label: 'Governance', tabs: [['releases', 'Releases'], ['activity', 'Activity']] },
-  { label: 'Org', tabs: [['team', 'Team']] },
 ];
 
 export default function StudioPanel({ tab, onTab, onClose, panels, badges = {} }) {
@@ -19,7 +18,7 @@ export default function StudioPanel({ tab, onTab, onClose, panels, badges = {} }
             tabs keyboard contract (arrow keys / roving tabindex), so we don't claim it. */}
         <div className="gs-studio-tablist">
           {GROUPS.map((g, gi) => {
-            const tabs = g.tabs.filter(([id]) => panels[id]); // only tabs whose panel is provided (Team is admin-only)
+            const tabs = g.tabs.filter(([id]) => panels[id]); // only tabs whose panel is provided
             if (!tabs.length) return null;
             return (
               <div className="gs-studio-group" key={gi}>

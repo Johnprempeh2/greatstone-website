@@ -23,7 +23,6 @@
 import { useEffect, useState } from 'react';
 import { authClient, getSession, onAuth, signIn, signOut, notifyAuthChange } from '../../lib/better-auth-client.mjs';
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { Button } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { PageLoading, PageError } from './PageStatus.jsx';
@@ -68,7 +67,6 @@ export default function JoinPage({ route }) {
   if (!eng.valid) {
     return (
       <>
-        <WaveDecoration position="top-right" />
         <main className="screen" aria-label="Invitation link not active">
           <div className="welcome-wrap signin-wrap">
             <GsLogo className="welcome-logo anim-up" />
@@ -88,7 +86,6 @@ export default function JoinPage({ route }) {
 
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Join the conversation">
         <div className="welcome-wrap signin-wrap">
           <GsLogo className="welcome-logo anim-up" />

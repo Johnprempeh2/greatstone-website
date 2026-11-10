@@ -67,7 +67,7 @@ Editing must be admin-only, and the only enforcement that counts is server-side.
   server, per request, with CSRF and an audit trail. The public site ships no editor code, so
   there is nothing to bypass. Tie sign-in to Greatstone accounts (SSO) so access follows the
   same joiners-and-leavers process as everything else.
-- **Prototype gate (this repo, today).** A separate entry at `/#admin` shows a sign-in screen;
+- **Prototype gate (retired, GRE-4786).** A separate entry at `/#admin` showed a sign-in screen;
   editing only appears once signed in, and the public URL is read-only. This is a UX model, not
   security: a client-side check can be bypassed in dev tools, and the demo password is in the
   bundle. It exists so the experience behaves correctly before the Laravel layer is wired in.

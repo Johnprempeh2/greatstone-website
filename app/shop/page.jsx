@@ -1,5 +1,5 @@
 import { CatalogueBrowse } from '../catalogue.jsx';
-import { catalogueFromRelease } from '../catalogue-data.js';
+import { pricedCatalogue } from '../catalogue-pricing.js';
 import { activeRelease } from '../release-source.js';
 import { pageMetadata } from '../page-metadata.mjs';
 import { browseOfferings } from '../../next-proof/catalogue-data.mjs';
@@ -12,7 +12,7 @@ export async function generateMetadata() { const { release } = await activeRelea
 
 export default async function Shop({ searchParams }) {
   const { release } = await activeRelease();
-  const catalogue = catalogueFromRelease(release);
+  const catalogue = await pricedCatalogue(release);
   const params = await searchParams;
   const filters = Object.fromEntries(['vendor', 'category', 'platform', 'q', 'sort'].map((key) => [key, typeof params?.[key] === 'string' ? params[key] : '']));
   const rows = browseOfferings(catalogue, filters);

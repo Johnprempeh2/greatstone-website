@@ -6,7 +6,7 @@
 // Live path -> GSAM sitemap slug, as GRE-2389 imported them. Same-path pages are implicit.
 export const RELEASE_1_PATHS = Object.freeze({
   '/dx-consultancy': '/consultancy',
-  '/transformation-services': '/consultancy/digital-office',
+  '/transformation-services': '/consultancy/transformation-services',
   '/how-we-help': '/consultancy/how-we-help',
   '/method': '/consultancy/how-we-work',
   '/industries': '/consultancy/industries',
@@ -24,8 +24,19 @@ export const gsamSlugFor =(livePath) => RELEASE_1_PATHS[livePath] || livePath;
 
 // One page, two addresses: the live path and its GSAM slug. When the release publishes only one,
 // the other is where an old link or a nav item still points, so it lands there instead of a 404.
+// Pages that moved after release 1, tried in order: the first published one wins. John, 8 Nov: the digital
+// office is GS Agentic Manager, its own tab; until that page is published the old address shows the
+// Transformation Services page it served before.
+export const MOVED_PATHS = Object.freeze({
+  '/consultancy/digital-office': ['/gs-agentic-manager', '/consultancy/transformation-services'],
+  // Release 2 still serves Transformation Services at the old digital office address until John republishes.
+  '/transformation-services': ['/consultancy/transformation-services', '/consultancy/digital-office'],
+});
+
 export function publishedAlias(path, pagePaths) {
   if (pagePaths.includes(path)) return null;
+  const moved = MOVED_PATHS[path]?.find((to) => pagePaths.includes(to));
+  if (moved) return moved;
   for (const [live, gsam] of Object.entries(RELEASE_1_PATHS)) {
     if (path === live && pagePaths.includes(gsam)) return gsam;
     if (path === gsam && pagePaths.includes(live)) return live;
@@ -55,6 +66,8 @@ export function stableBlockIds(liveContent, gsamContent = []) {
 export function planPage(livePage, gsamPage) {
   const gsamSlug = gsamSlugFor(livePage.path);
   if (!gsamPage) return { path: livePage.path, gsamSlug, action: 'missing' };
+  // John, 8 Nov: a page already in the HTML format (gs-html) was converted on purpose; block content never overwrites it.
+  if (gsamPage.content?.format === 'gs-html') return { path: livePage.path, gsamSlug, pageId: gsamPage.id, baseRevisionId: gsamPage.latestRevisionId, action: 'html' };
   const gsamContent = gsamPage.content?.content || [];
   const content = stableBlockIds(livePage.data.content, gsamContent);
   // Release 1 is the live page as published; GSAM-only settings stay in GSAM's history.
@@ -83,8 +96,8 @@ export function planRelease1(release, gsamPages) {
 
 // Text summary: one line per page, never the content itself.
 export function describePlan(plan) {
-  return plan.map((entry) => entry.action === 'missing'
-    ? `${entry.path} -> ${entry.gsamSlug}: missing in GSAM`
+  return plan.map((entry) => entry.action === 'missing' || entry.action === 'html'
+    ? `${entry.path} -> ${entry.gsamSlug}: ${entry.action === 'html' ? 'already HTML, skipped' : 'missing in GSAM'}`
     : `${entry.path} -> ${entry.gsamSlug}: ${entry.action}, ${entry.blocks} blocks, ${entry.changedBlocks} changed, `
       + `${entry.reusedIds} GSAM ids kept${entry.rootChanged ? ', page settings changed' : ''}`
       + `${entry.gsamOnlyBlocks.length ? `, GSAM-only blocks: ${entry.gsamOnlyBlocks.join(' ')}` : ''}`).join('\n');
@@ -97,8 +110,8 @@ export async function applyPlan(plan, save, { hold = [] } = {}) {
   const record = [];
   for (const entry of plan) {
     if (entry.action === 'missing') throw new Error(`${entry.path} has no GSAM page at ${entry.gsamSlug}`);
-    if (entry.action === 'unchanged' || hold.includes(entry.gsamSlug)) {
-      const action = entry.action === 'unchanged' ? 'unchanged' : 'held';
+    if (entry.action === 'unchanged' || entry.action === 'html' || hold.includes(entry.gsamSlug)) {
+      const action = entry.action === 'update' ? 'held' : entry.action;
       record.push({ path: entry.path, gsamSlug: entry.gsamSlug, pageId: entry.pageId, action, revisionId: entry.baseRevisionId });
       continue;
     }

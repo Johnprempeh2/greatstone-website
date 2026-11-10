@@ -8,6 +8,9 @@
 // idempotency key, so a retry with the same key and body gets the same answer and writes nothing.
 import { BridgeRequestError, CHILD_COLUMNS, bridgeFx, bridgeRow } from './admin-bridge-store.mjs';
 import { checkDocumentFields } from './shared/portal-mcp.mjs';
+import { sendEmail } from './shared/front-door-leads.mjs';
+import { buildLicenceEmail } from '../../../src/lib/licence-email.mjs';
+import { activationInstructionsFor } from '../../../src/lib/activation-match.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const ROLE = { write: 'gsam_bridge_write', refund_request: 'gsam_bridge_refund' };
@@ -636,6 +639,169 @@ function accessRoute(method, parts) {
   return null;
 }
 
+// Commerce settings (GRE-4782, migration 072): order status and the licence-issued email, enquiry and lead status and
+// lead delete, client companies, the client timeline, licence keys, customer tiers and a portal receipt "send again".
+// Each runs one bridge_* function; 072 holds every rule again. People only (John, 5 Nov): what emails a client,
+// issues, re-keys or revokes a licence, sets a client's tier (their prices), shares or unshares a timeline item, or
+// deletes a lead. The licence email is sent after the commit, never on a replay, and the answer says how it went.
+const CUSTOMER = {
+  name: ['name', text(200, { required: true })], slug: ['slug', token], domain: ['domain', text(200)],
+  billingCurrency: ['billing_currency', currency], notes: ['notes', text(20000)], tierId: ['tier_id', id()],
+};
+const ENGAGEMENT = {
+  kind: ['kind', oneOf(['recap', 'milestone', 'deliverable', 'kickoff', 'review', 'note'])],
+  title: ['title', text(300, { required: true })], summary: ['summary', text(5000)], bodyHtml: ['body_html', text(50000)],
+  externalUrl: ['external_url', text(2000)], occurredOn: ['occurred_on', date], phase: ['phase', text(200)],
+  ownerName: ['owner_name', text(200)], attendees: ['attendees', words], tags: ['tags', words], pinned: ['pinned', bool],
+};
+const LICENCE = {
+  orderId: ['order_id', id()], offeringName: ['offering_name', text(300, { required: true })],
+  variantName: ['variant_name', text(300)], licenceKey: ['licence_key', text(5000)], downloadUrl: ['download_url', text(2000)],
+  seats: ['seats', int(1, 1e6, { nullable: true })], expiresAt: ['expires_at', time], notes: ['notes', text(10000)],
+};
+const TIER = { slug: ['slug', token], name: ['name', text(200, { required: true })], rank: ['rank', int(-1e6, 1e6)],
+  description: ['description', text(2000)] };
+const LICENCE_PEOPLE = ['licenceKey', 'downloadUrl'];
+const ENQUIRY_ID = /^(si|fd)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const optionalVersion = (body) => (body.expectedRowVersion === undefined ? null : expectedRowVersion(body));
+
+/** Sends the licence-issued email (no key in it, src/lib/licence-email.mjs). Resolves to sent, not_sent or not_configured. */
+export function licenceMailer(env = process.env, send = sendEmail) {
+  return async ({ to, reference, items, vendors }) => {
+    if (!env.RESEND_API_KEY || !env.RESEND_FROM) return 'not_configured';
+    const message = buildLicenceEmail({ orderRef: reference || '',
+      items: items.map((item) => ({ ...item, activation: activationInstructionsFor(item.offering_name, vendors) })),
+      accountUrl: String(env.APP_SITE_ORIGIN || 'https://greatstoneint.com').replace(/\/+$/, '') + '/#account' });
+    const result = await send({ apiKey: env.RESEND_API_KEY, from: env.RESEND_FROM, to, ...message });
+    return result.sent === true ? 'sent' : 'not_sent';
+  };
+}
+
+function settingsRoute(method, parts) {
+  const [res, rowId, sub, extra] = parts;
+  if (extra !== undefined) return null;
+  // fn(client, ctx, body) returns the answer's body; status 200 unless given
+  const route = (resource, resourceId, fn, { status = 200, people: only = false, ...more } = {}) => ({
+    resource, resourceId, ...(only ? { people: true } : {}), ...more, run: async (client, ctx, body) => {
+      if (only) people(ctx.actor);
+      const out = await fn(client, ctx, body);
+      return { status, body: out, rowCount: 1, resourceId: resourceId ?? out.item?.id };
+    } });
+  const one = async (client, sql, params) => (await client.query(`SELECT ${sql} AS out`, params)).rows[0].out;
+  const empty = (body, allow = []) => pick(body, {}, { allow });
+
+  if (res === 'orders' && rowId !== undefined && UUID.test(rowId)) {
+    const current = (client) => bridgeRow(client, 'orders', rowId);
+    if (sub === undefined && method === 'PATCH') return route('orders', rowId, async (client, ctx, body) => {
+      const { status } = pick(body, { status: ['status', oneOf(['pending', 'confirmed', 'fulfilled', 'cancelled'])] },
+        { required: ['status'], allow: ['expectedRowVersion'] });
+      await client.query('SELECT bridge_order_set_status($1::uuid, $2, $3)', [rowId, status, optionalVersion(body)]);
+      return { item: await current(client) };
+    }, { current });
+    if (sub === 'notify-licence' && method === 'POST') {
+      const after = [];
+      return route('orders', rowId, async (client, ctx, body) => {
+        empty(body);
+        const email = await one(client, 'bridge_order_licence_email($1::uuid)', [rowId]);
+        after.push(async (_mail, _start, { licenceMail }) => ({ email: await licenceMail(email) }));
+        return { item: await current(client), email: 'sending' };
+      }, { people: true, after });
+    }
+    return null;
+  }
+  if (res === 'enquiries' && rowId !== undefined && sub === undefined) {
+    const m = ENQUIRY_ID.exec(rowId);
+    if (!m) return null;
+    if (method === 'PATCH') return route('enquiries', rowId, async (client, ctx, body) => {
+      const { status } = pick(body, { status: ['status', oneOf(['new', 'contacted', 'closed'])] },
+        { required: ['status'], allow: ['expectedRowVersion'] });
+      return { item: await one(client, 'bridge_enquiry_set_status($1, $2::uuid, $3, $4)', [m[1], m[2], status, optionalVersion(body)]) };
+    });
+    // only a front door lead is deleted; a service enquiry is kept
+    if (method === 'DELETE' && m[1] === 'fd') return route('enquiries', rowId, async (client, ctx, body) => {
+      empty(body);
+      return one(client, 'bridge_lead_delete($1::uuid)', [m[2]]);
+    }, { people: true });
+    return null;
+  }
+  if (res === 'customers') {
+    const tierByPerson = (ctx, body) => { if (body.tierId !== undefined) people(ctx.actor); };
+    if (rowId === undefined && method === 'POST') return route('customers', undefined, async (client, ctx, body) => {
+      const fields = pick(body, CUSTOMER, { required: ['name'] });
+      tierByPerson(ctx, body);
+      const item = await one(client, 'bridge_customer_create($1::jsonb)', [JSON.stringify(fields)]);
+      return { item };
+    }, { status: 201 });
+    if (rowId === undefined || !UUID.test(rowId)) return null;
+    if (sub === undefined && method === 'PATCH') return route('customers', rowId, async (client, ctx, body) => {
+      const fields = pick(body, CUSTOMER, { allow: ['expectedRowVersion'] });
+      if (!Object.keys(fields).length) bad('nothing to change');
+      tierByPerson(ctx, body);
+      return { item: await one(client, 'bridge_customer_edit($1::uuid, $2, $3::jsonb)', [rowId, optionalVersion(body), JSON.stringify(fields)]) };
+    });
+    if (sub === 'engagements' && method === 'POST') return route('engagements', rowId, async (client, ctx, body) => {
+      const fields = pick(body, ENGAGEMENT, { required: ['title'] });
+      return { item: await one(client, 'bridge_engagement_create($1::uuid, $2::jsonb)', [rowId, JSON.stringify(fields)]) };
+    }, { status: 201 });
+    if (sub === 'licences' && method === 'POST') return route('licences', rowId, async (client, ctx, body) => {
+      const fields = pick(body, LICENCE, { required: ['offeringName'] });
+      if (!fields.licence_key && !fields.download_url) bad('licenceKey or downloadUrl is required');
+      return { item: await one(client, 'bridge_licence_issue($1::uuid, $2::jsonb)', [rowId, JSON.stringify(fields)]) };
+    }, { status: 201, people: true });
+    return null;
+  }
+  if (res === 'engagements' && rowId !== undefined && UUID.test(rowId)) {
+    if (sub === undefined && method === 'PATCH') return route('engagements', rowId, async (client, ctx, body) => {
+      const fields = pick(body, ENGAGEMENT, { allow: ['expectedRowVersion'] });
+      if (!Object.keys(fields).length) bad('nothing to change');
+      return { item: await one(client, 'bridge_engagement_edit($1::uuid, $2, $3::jsonb)', [rowId, optionalVersion(body), JSON.stringify(fields)]) };
+    });
+    if (sub === undefined && method === 'DELETE') return route('engagements', rowId, async (client, ctx, body) => {
+      empty(body, ['expectedRowVersion']);
+      return { item: await one(client, 'bridge_engagement_delete($1::uuid, $2)', [rowId, optionalVersion(body)]) };
+    });
+    if ((sub === 'share' || sub === 'unshare') && method === 'POST') return route('engagements', rowId, async (client, ctx, body) => {
+      empty(body, ['expectedRowVersion']);
+      return { item: await one(client, 'bridge_engagement_set_status($1::uuid, $2, $3)',
+        [rowId, optionalVersion(body), sub === 'share' ? 'shared' : 'draft']) };
+    }, { people: true });
+    return null;
+  }
+  if (res === 'licences' && rowId !== undefined && UUID.test(rowId)) {
+    if (sub === undefined && method === 'PATCH') return route('licences', rowId, async (client, ctx, body) => {
+      const fields = pick(body, LICENCE, { allow: ['expectedRowVersion'] });
+      if (!Object.keys(fields).length) bad('nothing to change');
+      if (LICENCE_PEOPLE.some((k) => body[k] !== undefined)) people(ctx.actor);
+      return { item: await one(client, 'bridge_licence_edit($1::uuid, $2, $3::jsonb)', [rowId, optionalVersion(body), JSON.stringify(fields)]) };
+    });
+    if ((sub === 'revoke' || sub === 'reissue') && method === 'POST') return route('licences', rowId, async (client, ctx, body) => {
+      empty(body, ['expectedRowVersion']);
+      return { item: await one(client, 'bridge_licence_set_status($1::uuid, $2, $3)',
+        [rowId, optionalVersion(body), sub === 'revoke' ? 'revoked' : 'issued']) };
+    }, { people: true });
+    return null;
+  }
+  if (res === 'customer-tiers' && sub === undefined) {
+    if (rowId === undefined && method === 'POST') return route('customer-tiers', undefined, async (client, ctx, body) => {
+      const fields = pick(body, TIER, { required: ['slug', 'name'] });
+      return { item: await one(client, 'bridge_tier_create($1::jsonb)', [JSON.stringify(fields)]) };
+    }, { status: 201 });
+    if (rowId !== undefined && UUID.test(rowId) && method === 'PATCH') return route('customer-tiers', rowId, async (client, ctx, body) => {
+      const fields = pick(body, TIER);
+      if (!Object.keys(fields).length) bad('nothing to change');
+      return { item: await one(client, 'bridge_tier_edit($1::uuid, $2::jsonb)', [rowId, JSON.stringify(fields)]) };
+    });
+    return null;
+  }
+  if (res === 'portal-acceptances' && rowId !== undefined && UUID.test(rowId) && sub === 'resend' && method === 'POST') {
+    return route('portal-acceptances', rowId, async (client, ctx, body) => {
+      empty(body);
+      return { item: await one(client, 'bridge_receipt_requeue($1::uuid)', [rowId]) };
+    }, { people: true });
+  }
+  return null;
+}
+
 // The refund role reads no table: both functions return the request row.
 function refundRoute(method, parts) {
   const [res, rowId, action, extra] = parts;
@@ -664,7 +830,7 @@ export function writeRoute(method, parts) {
   const refund = refundRoute(method, parts);
   if (refund) return { capability: 'refund_request', ...refund };
   const route = portalRoute(method, parts) || activationRoute(method, parts) || catalogueRoute(method, parts) || commerceRoute(method, parts)
-    || clientUserRoute(method, parts) || accessRoute(method, parts);
+    || clientUserRoute(method, parts) || accessRoute(method, parts) || settingsRoute(method, parts);
   return route ? { capability: 'write', ...route } : null;
 }
 

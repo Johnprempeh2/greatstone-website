@@ -64,6 +64,18 @@ test('a narrow screen shows the phone menu instead of the bar', () => {
   assert.equal(wide.header.querySelector('[data-more]').hidden, true);
 });
 
+test('a label left in the measure row for a link the bar no longer has does not push real links into "More"', () => {
+  const { header, window } = setup('/about');
+  const row = header.querySelector('.gs-nav-measure');
+  row.children[1].insertAdjacentHTML('beforebegin', '<span>Case Studies</span>'); // the stale label, in the middle
+  for (const span of row.children) span.getBoundingClientRect = () => ({ width: 100 });
+  Object.defineProperty(header.querySelector('.gs-navwrap'), 'clientWidth', { value: 260 }); // room for the two real links only
+  siteHeader(header, window, { path: '/about' });
+  assert.deepEqual([...header.querySelectorAll('nav.gs-nav > [data-leaf]')].map((leaf) => leaf.hidden), [false, false]);
+  assert.equal(header.querySelector('[data-more]').hidden, true);
+  assert.equal(header.querySelector('nav.gs-nav').hidden, false);
+});
+
 test('a dropdown opens on click and ArrowDown, and closes on Escape and an outside click', async () => {
   const { header, window, document } = setup('/about');
   const stop = siteHeader(header, window, { path: '/about' });

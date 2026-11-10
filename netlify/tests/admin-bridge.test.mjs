@@ -190,6 +190,7 @@ test('lists page on a cursor, read only the first organisation and never the Str
   assert.deepEqual(seen, ['O-0', 'O-1', 'O-2', 'O-3', 'O-4']);
   const inv = await call(signed('/api/admin/v1/invoices'));
   assert.deepEqual(inv.body.items.map((o) => o.invoice_number), ['INV-1', 'INV-3']);
+  assert.ok(inv.body.items.every((o) => Array.isArray(o.items)), 'an invoice carries its order lines');
   const cust = await call(signed('/api/admin/v1/customers'));
   assert.deepEqual(cust.body.items.map((c) => [c.name, c.stripe_customer_id, c.users.length]), [['Acme', undefined, 1]]);
   assert.equal(cust.body.items[0].users[0].auth_subject, undefined);

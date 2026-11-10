@@ -15,7 +15,6 @@
 import { useState } from 'react';
 import { signOut } from '../../lib/better-auth-client.mjs';
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { Button, QuietLink } from './Button.jsx';
 import { GlassCard } from './Card.jsx';
 import { InterviewFooter, DotDivider } from './Footer.jsx';
@@ -55,7 +54,6 @@ export function WelcomeScreen({ isAdmin, seats, consent, clientName, retentionDa
 
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Welcome and consent">
         <div className="welcome-wrap">
           <GsLogo className="welcome-logo anim-up" />
@@ -279,7 +277,6 @@ export function WelcomeScreen({ isAdmin, seats, consent, clientName, retentionDa
 function NoMatchScreen({ email }) {
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-label="Invitation not recognised">
         <div className="welcome-wrap">
           <GsLogo className="welcome-logo anim-up" />

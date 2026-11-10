@@ -104,9 +104,15 @@ function layout(header, win) {
   if (!wrap || !row || !bar || !phone || !more) return null;
   const measure = () => {
     const spans = [...row.children];
-    const widths = spans.slice(0, -1).map((span) => span.getBoundingClientRect().width);
+    // Rects are zoomed (the wide-screen landing zooms the page, 8 Nov); clientWidth is not, so unzoom them.
+    const width = (span) => span.getBoundingClientRect().width / (span.currentCSSZoom || 1);
+    // A stored header can keep a label in the measure row for a link its bar no longer has (a page hidden after the
+    // export): measure the bar's own labels, in the bar's order, so widths[i] is always leaf i.
+    const byLabel = new Map(spans.slice(0, -1).map((span) => [span.textContent.trim(), span]));
+    const own = [...bar.querySelectorAll(':scope > [data-leaf]')].map((leaf) => byLabel.get((leaf.querySelector(':scope > .gs-navgroup-btn') || leaf).textContent.trim()));
+    const widths = (own.length && own.every(Boolean) ? own : spans.slice(0, -1)).map(width);
     const pinned = more.querySelector('[data-leaf="pin"]') !== null;
-    const { fit, collapsed } = fitBar({ widths, moreWidth: spans.at(-1)?.getBoundingClientRect().width || 0,
+    const { fit, collapsed } = fitBar({ widths, moreWidth: spans.at(-1) ? width(spans.at(-1)) : 0,
       gap: parseFloat(win.getComputedStyle(row).columnGap) || 0, available: wrap.clientWidth, pinned,
       narrow: Boolean(win.matchMedia?.('(max-width:760px)').matches) });
     wrap.classList.toggle('is-collapsed', collapsed);

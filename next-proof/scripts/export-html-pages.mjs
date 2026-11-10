@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { transformSync } from 'esbuild';
-import { exportRenderedPage, releasePage, stripCssComments, withoutDraftLinks } from '../html-export.mjs';
+import { chromeFile, exportRenderedPage, releasePage, stripCssComments, withoutDraftLinks } from '../html-export.mjs';
 import { sanitiseHtml } from '../html-sanitiser.mjs';
 import { sanitiseCss } from '../css-sanitiser.mjs';
 import { CHROME_KEYS } from '../gsam-release.mjs';
@@ -98,6 +98,10 @@ for (const { page, exported } of pages) {
 }
 
 await writeFile(exportUrl, `${JSON.stringify(release, null, 2)}\n`);
+// John, 8 Nov: GSAM refreshes its shared stylesheet and footer from this file at Publish (GET /_chrome.json),
+// so they follow the site's code instead of the copy taken at import.
+// ponytail: as fresh as the last export run; render it in CI if the CSS changes without one.
+await writeFile(new URL('../../public/_chrome.json', import.meta.url), `${JSON.stringify(chromeFile(release), null, 0)}\n`);
 await writeFile(new URL('../frozen/form-blocks.json', import.meta.url), `${JSON.stringify(formBlocks, null, 2)}\n`);
 const reportDir = new URL('../../docs/parity/GRE-3778/', import.meta.url);
 await mkdir(reportDir, { recursive: true });

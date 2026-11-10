@@ -55,8 +55,13 @@ export const ISLANDS = {
   // GRE-1861: the AI intelligence dashboard: overview, leaderboards, compare and news from the public snapshot.
   'intel-dashboard': { component: 'IntelDashboard', label: 'AI intelligence dashboard', placeholder: 'The AI intelligence dashboard: overview, leaderboards, compare and news.', height: 1400,
     attributes: { 'data-tab': enumRule('tab', ['overview', 'leaderboards', 'compare', 'news']) } },
+  // John, 8 Nov: The Climb's chart (MaturityMap) keeps its React render, trail glow included; the HTML sanitiser refuses `filter`.
+  'maturity-map': { block: 'MaturityMap', label: 'The Climb chart', placeholder: 'The Climb maturity chart, with its trail and tier cards.', height: 900,
+    attributes: { 'data-block': formAttributes['data-block'] } },
   // GRE-3778: the frozen landing (Two Doors, v15) renders its published blocks unchanged.
-  'two-doors-landing': { component: 'TwoDoorsLanding', label: 'Two Doors landing', placeholder: 'The frozen Two Doors landing: doors and hero.', height: 900, attributes: {} },
+  'two-doors-landing': { component: 'TwoDoorsLanding', label: 'Two Doors landing', placeholder: 'The frozen Two Doors landing: doors and hero.', height: 900,
+    // Its words, from GSAM's Website module: a JSON object of text fields and showCue (app/TwoDoorsLanding.jsx filters it).
+    attributes: { 'data-copy': { prop: 'copy', pattern: /^\{[\s\S]{0,20000}\}$/ } } },
 };
 
 // Returns the island's props and accepted attributes, or null when the name is not registered.

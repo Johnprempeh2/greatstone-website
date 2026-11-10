@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import { CatalogueBrowse } from '../../catalogue.jsx';
-import { catalogueFromRelease } from '../../catalogue-data.js';
+import { pricedCatalogue } from '../../catalogue-pricing.js';
 import { activeRelease } from '../../release-source.js';
 import { browseOfferings } from '../../../next-proof/catalogue-data.mjs';
 
 export async function generateMetadata({ params }) {
   const { release } = await activeRelease();
-  const catalogue = catalogueFromRelease(release);
+  const catalogue = await pricedCatalogue(release);
   const { vendor: slug } = await params;
   const vendor = catalogue.vendors.find((item) => item.slug === slug);
   if (!vendor) notFound();
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
 
 export default async function VendorShop({ params, searchParams }) {
   const { release } = await activeRelease();
-  const catalogue = catalogueFromRelease(release);
+  const catalogue = await pricedCatalogue(release);
   const { vendor } = await params;
   if (!catalogue.vendors.some((item) => item.slug === vendor)) notFound();
   const filters = { vendor };

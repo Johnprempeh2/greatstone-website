@@ -99,6 +99,8 @@
         "props": {
           "id": "twodoorsstory-1n7111",
           "storyKicker": "Copy placeholder · two routes, one company",
+          "clientsKicker": "",
+          "clientsHeading": "Organisations we've delivered for",
           "numbersLabel": "Greatstone in numbers",
           "draftNumbersHeading": "Draft numbers strip",
           "draftNumbersLine": "Figures and counting rules await confirmation.",

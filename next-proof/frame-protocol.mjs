@@ -7,7 +7,7 @@ const blockSourceLines = {
   TwoDoors: 243, TwoDoorsStory: 262, TwoDoorsProof: 275, TwoDoorsTools: 287, TwoDoorsClose: 288, TwoDoorsBottom: 289, DevTools: 291,
   Hero: 318, Prose: 41, Panels: 208, ServiceCatalog: 292, TransformationServices: 54, DxConsultancyMethod: 72, Invite: 101,
   Steps: 74, FeatureGrid: 54, Faq: 96, PillarCards: 89, MaturityModel: 78,
-  Chapter: 80, Team: 103, LogoWall: 76, IntelBand: 86, MaturityMap: 189,
+  Chapter: 80, Team: 82, LogoWall: 76, IntelBand: 86, MaturityMap: 189,
   Ladder: 60, MethodTieIn: 79, IndustryPicker: 211, BookDeepDive: 271,
   AiBaselineSurvey: 319, AiCostCalculator: 224, MotionBand: 29,
 };

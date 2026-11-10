@@ -76,10 +76,17 @@ export const CHILD_COLUMNS = {
   pricing_rule_targets: ['id', 'rule_id', 'vendor_id', 'category_id', 'offering_id', 'tier_id'],
 };
 
+// What an order bought (GSAM shows names first, the code as small print): orders, invoices and the payment report.
+const ORDER_ITEMS_SQL = `(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',i.id,'offering_id',i.offering_id,'variant_id',i.variant_id,
+  'offering_name',i.offering_name,'variant_name',i.variant_name,'qty',i.qty,'unit_price_minor',i.unit_price_minor,
+  'line_total_minor',i.line_total_minor,'currency',i.currency,
+  'sku',(SELECT v.sku FROM offering_variants v WHERE v.id = i.variant_id)) ORDER BY i.created_at, i.id), '[]'::jsonb)
+  FROM order_items i WHERE i.order_id = x.id)`;
+
 const RESOURCES = {
   customers: {
     table: 'customers', time: 'created_at', updated: 'updated_at', customer: 'id', live: 'x.deleted_at IS NULL',
-    columns: ['id', 'slug', 'name', 'tier_id', 'domain', 'billing_currency', 'notes', 'created_at', 'updated_at'],
+    columns: ['id', 'slug', 'name', 'tier_id', 'domain', 'billing_currency', 'notes', 'created_at', 'updated_at', 'row_version'],
     extra: { users: `(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',u.id,'email',u.email,'full_name',u.full_name,
       'phone',u.phone,'is_primary',u.is_primary,'role',u.role,'created_at',u.created_at) ORDER BY u.is_primary DESC, u.created_at, u.id),
       '[]'::jsonb) FROM customer_users u WHERE u.customer_id = x.id AND u.deleted_at IS NULL)` },
@@ -97,8 +104,7 @@ const RESOURCES = {
     columns: ['id', 'reference', 'quote_id', 'customer_id', 'customer_user_id', 'customer_email', 'status', 'currency',
       'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'invoice_number', 'placed_at', 'created_at',
       'updated_at', 'row_version'],
-    extra: { items: items('order_items', 'order_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
-      'qty', 'unit_price_minor', 'line_total_minor', 'currency']) },
+    extra: { items: ORDER_ITEMS_SQL },
   },
   'billing-lines': {
     table: 'billing_lines', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
@@ -113,11 +119,18 @@ const RESOURCES = {
     columns: ['id', 'invoice_number', 'reference', 'customer_id', 'customer_email', 'status', 'currency',
       'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'placed_at', 'created_at', 'updated_at',
       'row_version'],
+    extra: { items: ORDER_ITEMS_SQL },
   },
   licences: {
     table: 'licence_keys', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
     columns: ['id', 'customer_id', 'order_id', 'offering_name', 'variant_name', 'licence_key_last4', 'seats', 'status',
-      'delivered_at', 'expires_at', 'file_name', 'created_at', 'updated_at'],
+      'delivered_at', 'expires_at', 'file_name', 'created_at', 'updated_at', 'row_version'],
+  },
+  // The client timeline (GRE-4782): a shared item is what the client sees.
+  engagements: {
+    table: 'engagements', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
+    columns: ['id', 'customer_id', 'kind', 'status', 'title', 'summary', 'body_html', 'external_url', 'occurred_on', 'phase',
+      'owner_name', 'attendees', 'tags', 'pinned', 'created_at', 'updated_at', 'row_version'],
   },
   'portal-documents': {
     table: 'portal_documents', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'true',
@@ -397,6 +410,7 @@ export async function bridgePayments(client, searchParams, stripeMode) {
          'created_at', r.created_at,
          'waiting_on_stripe', r.status = 'approved' AND r.decided_at < now() - interval '7 days')
          ORDER BY r.created_at, r.id), '[]'::jsonb) FROM refund_requests r WHERE r.order_id = x.id) AS refund_requests,
+      ${ORDER_ITEMS_SQL} AS items,
       x.created_at::text AS _t
     FROM orders x WHERE ${where.join(' AND ')} ORDER BY x.created_at, x.id LIMIT ${p(opts.limit + 1)}`, params);
   const orders = page(rows, opts.limit, (r) => r.id);

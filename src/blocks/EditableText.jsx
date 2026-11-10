@@ -11,7 +11,8 @@ import { useFrameEditing } from '../../app/editor/frame-context.jsx';
 const InlineRichText = lazy(() => import('../cms/InlineRichText.jsx'));
 const FrameRichText = lazy(() => import('../cms/InlineRichTextCore.jsx'));
 
-export default function EditableText({ editing, id, field, value, as = 'span', className, singleLine = false, placeholder, arrayField, index, path, ...rest }) {
+// `markField`: GSAM live design names the field on the page (data-gs-field), so Pick can edit an island's words.
+export default function EditableText({ editing, id, field, value, as = 'span', className, singleLine = false, placeholder, arrayField, index, path, markField = false, ...rest }) {
   const frameEditing = useFrameEditing();
   if (editing) {
     const Editor = frameEditing ? FrameRichText : InlineRichText;
@@ -22,6 +23,6 @@ export default function EditableText({ editing, id, field, value, as = 'span', c
     );
   }
   return (value || value === 0)
-    ? <RichText as={as} className={className} singleLine={singleLine} html={value} {...rest} />
+    ? <RichText as={as} className={className} singleLine={singleLine} html={value} {...rest} {...(markField && field && arrayField === undefined ? { 'data-gs-field': field } : {})} />
     : null;
 }

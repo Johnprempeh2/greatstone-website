@@ -12,6 +12,8 @@
 //   GET /api/admin/v1/access/staff | /access/portal-approvers | /access/clients/<id>/members
 //                                           people and access (GRE-4082); the changes are write routes, people only
 //   POST/PATCH /api/admin/v1/portal-documents[/<id>[/<action>]]   portal documents (write key, GRE-4081)
+//   orders, enquiries, customers, engagements, licences, customer-tiers, portal-acceptances/<id>/resend
+//                                           commerce settings (write key, GRE-4782; docs/GSAM-BRIDGE-COMMERCE-SETTINGS.md)
 // Every request is signed (lib/admin-bridge-auth.mjs). With GSAM_BRIDGE_KEYS empty every call is refused, so the
 // function is safe to deploy before a key exists. A failure returns { error: { code } } only (a write conflict adds
 // the current row); the detail goes to the site log, never to the caller.
@@ -19,7 +21,7 @@ import { getPool } from './lib/db.mjs';
 import { BridgeAuthError, SCHEME, parseAllowedIps, parseBridgeKeys, verifyBridgeRequest } from './lib/admin-bridge-auth.mjs';
 import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeAccess, bridgeActivityEvents, bridgeFx, bridgeGet, bridgeImport, bridgeList,
   bridgePayments, bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
-import { WRITE_STATUS, asBridgeWriter, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
+import { WRITE_STATUS, asBridgeWriter, licenceMailer, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
 import { interviewReadRoute, interviewWriteRoute } from './lib/interview/bridge.mjs';
 import { interviewMailer, startSynthesisRun } from './lib/interview/side-effects.mjs';
@@ -73,6 +75,7 @@ export function makeAdminBridgeHandler({
   stripe = () => stripeMode(),
   mail = interviewMailer(),
   startSynthesis = startSynthesisRun,
+  licenceMail = licenceMailer(),
 } = {}) {
   return async (req) => {
     const isSnapshot = req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname);
@@ -123,11 +126,16 @@ export function makeAdminBridgeHandler({
         if ([...url.searchParams.keys()].length) return fail('bad_request');
         const out = await asBridgeWriter(db, { ...audit, idempotencyKey: isSnapshot ? call.nonce : call.idempotencyKey,
           current: target.current }, runRoute(target, body));
-        // interview side effects (invite emails, the synthesis start) only after the commit; a replay queues none
+        // side effects (interview emails, the synthesis start, the licence email) only after the commit; a replay
+        // queues none. An effect that answers an object adds it to this answer (not to the stored replay).
+        const report = {};
         for (const effect of target.after || []) {
-          try { await effect(mail, (job) => startSynthesis({ ...job, origin: url.origin })); } catch (error) { log(`admin-bridge: after-commit step failed (${error?.code || error?.name || 'error'})`); }
+          try {
+            const r = await effect(mail, (job) => startSynthesis({ ...job, origin: url.origin }), { licenceMail });
+            if (r && typeof r === 'object') Object.assign(report, r);
+          } catch (error) { log(`admin-bridge: after-commit step failed (${error?.code || error?.name || 'error'})`); }
         }
-        return Response.json(out.body, { status: out.status, headers: HEADERS });
+        return Response.json({ ...out.body, ...report }, { status: out.status, headers: HEADERS });
       }
       const out = await asBridgeReader(db, audit, async (client) => {
         if (target.resource === 'interview') return target.run(client, url.searchParams);

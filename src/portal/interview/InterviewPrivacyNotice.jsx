@@ -9,7 +9,6 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { GsLogo } from './GsLogo.jsx';
-import { WaveDecoration } from './WaveDecoration.jsx';
 import { ButtonLink } from './Button.jsx';
 import { InterviewFooter } from './Footer.jsx';
 import { portalOp } from './api.mjs';
@@ -57,7 +56,6 @@ export function PrivacyNoticeScreen({ round = {} }) {
   const notice = fullInterviewNotice(round);
   return (
     <>
-      <WaveDecoration position="top-right" />
       <main className="screen" aria-labelledby="full-notice-title">
         <div className="welcome-wrap full-notice">
           <GsLogo className="welcome-logo" />

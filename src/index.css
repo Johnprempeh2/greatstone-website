@@ -81,4 +81,3 @@ html:not(:has(.is-edit)){scroll-snap-type:y proximity;scroll-padding-top:clamp(7
 .gs-public{position:relative;z-index:2;animation:gsPageIn .4s var(--gs-ease)}
 @keyframes gsPageIn{from{opacity:0}to{opacity:1}}
 .site-footer{position:relative;z-index:2;background:linear-gradient(to top,rgba(12,14,12,.6),transparent)}
-.site-footer .foot-wave{opacity:.62;width:min(480px,64vw)}

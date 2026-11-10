@@ -9,7 +9,7 @@ test('public pages may be cached by the CDN with revalidation, and carry the Vit
     const h = get(path);
     assert.equal(h['Netlify-CDN-Cache-Control'], PUBLIC_CDN_CACHE, path);
     assert.equal(h['Referrer-Policy'], 'strict-origin-when-cross-origin');
-    assert.equal(h['Permissions-Policy'], 'camera=(), microphone=(), geolocation=()');
+    assert.equal(h['Permissions-Policy'], 'camera=(), microphone=(self), geolocation=()');
     assert.equal(h['Strict-Transport-Security'], 'max-age=63072000; includeSubDomains');
   }
 });

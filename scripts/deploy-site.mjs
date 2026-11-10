@@ -4,6 +4,8 @@ import { hostname, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
+import { readGsamRelease } from '../next-proof/gsam-release.mjs';
+import provenRelease from '../next-proof/data/release.json' with { type: 'json' };
 
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
@@ -19,8 +21,12 @@ const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-sta
 const stagingSite = 'gre3833-next-db-staging';
 // The public site runs the same Next build as staging (Next cutover step 4, through John's Deploy card).
 const nextSites = new Set([stagingSite, 'greatstone-home']);
-// The public pages and APIs a promote checks on the live site straight after the upload.
-export const PAGE_CHECKS = ['/', '/dev-tools', '/about', '/contact', '/shop', '/_release'];
+// The public pages and APIs a promote checks on the live site straight after the upload. A product page from the
+// promoted release is checked too, and /shop must list a product (8 Nov: release 1 went live with 0 products).
+export const PAGE_CHECKS = ['/', '/dev-tools', '/about', '/contact', '/shop', '/consultancy', '/_release'];
+// The pages staging must serve before its release may go to the public site (GRE-4707), plus one product page
+// and one vendor page taken from the release.
+export const KEY_PAGES = ['/', '/shop', '/consultancy', '/consultancy/transformation-services', '/about', '/contact'];
 export const API_CHECKS = ['/api/auth/get-session', '/api/catalogue', '/api/popularity', '/api/compose-problems'];
 // The CLI build cannot read the catalogue as anon, so the Next build reads the live public catalogue over HTTP
 // (the same projection /api/catalogue serves, public data only), and the release build still requires it.
@@ -76,10 +82,10 @@ async function comments() {
 
 // The weekly release card (GRE-2641) uses the `weekly-release` key. It covers staging like a
 // staging card does, and it is the only card that can authorise the public site, for its exact SHA.
-async function stagingCardApproved(sha, exact = false, mustName = null) {
+async function stagingCardApproved(sha, exact = false, mustName = null, weeklyOnly = false) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
-  const kinds = site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
+  const kinds = weeklyOnly || site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
   const key = new RegExp(`^confirmation:GRE-\\d+:(?:${kinds}):([0-9a-f]{40})(?::v[1-9]\\d*)?$`);
   for (const card of cards) {
     const approvedSha = key.exec(card.idempotencyKey || '')?.[1];
@@ -112,6 +118,16 @@ function onMain(sha) {
   return command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] === sha;
 }
 
+// The weekly train ships its tag even after main moves on (GRE-4815): a detached HEAD at a `web-rc-*` tag
+// on origin whose commit main still contains. gate() then takes only an exact weekly card for that commit.
+function onWeeklyTag(sha) {
+  if (command('git', ['branch', '--show-current'])) return false;
+  const tags = command('git', ['ls-remote', '--tags', 'origin', 'refs/tags/web-rc-*']).split('\n');
+  if (!tags.some((line) => line.split(/\s/)[0] === sha)) return false;
+  const main = command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0];
+  return Boolean(main) && spawnSync('git', ['merge-base', '--is-ancestor', sha, main]).status === 0;
+}
+
 // John's single cut-over card on GRE-2567 (plan step J) also covers the switch (step 6): the public site only, and
 // only its exact SHA. It is the same card carrier-deploy.mjs publish checks, so the cut-over needs one approval.
 async function cutoverCardApproved(sha) {
@@ -127,10 +143,16 @@ async function cutoverCardApproved(sha) {
 async function gate(sha, content = null) {
   if (mode === 'prod') {
     // The public site takes main, or the exact commit staging holds (a promote while main moved on).
-    if (!onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha))
-      throw new Error('production requires main (or a detached HEAD at origin main), or the commit on staging');
+    const tagged = !onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha);
+    if (tagged && !onWeeklyTag(sha))
+      throw new Error('production requires main (or a detached HEAD at origin main), a web-rc tag main contains, or the commit on staging');
     // A content release rides with the commit only when the person's approval names it.
     const named = content ? contentLine(content) : null;
+    if (tagged) {
+      if (!await stagingCardApproved(sha, true, named, true))
+        throw new Error(`production refused: a web-rc tag behind main needs an accepted human-only weekly release card for ${site} and ${sha}`);
+      return null;
+    }
     const approval = `Approve production deploy: ${site} ${sha}${named ? ` with ${named}` : ''}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
     const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home', named) ||
@@ -186,11 +208,14 @@ async function status(url) {
 // published, found in the 7 Nov rehearsal), so the upload goes live at once and is checked there: the key pages
 // and the APIs that need the database. If any fails, the deploy that was live before is put back at once. That
 // earlier deploy stays on Netlify, so a person can also restore it by hand: its id is printed first.
-async function checkLive({ deploy_id: deployId, deploy_url: deployUrl }, before) {
+async function checkLive({ deploy_id: deployId, deploy_url: deployUrl }, before, samples = []) {
   const siteId = sites.get(site);
   const live = process.env.NODE_ENV === 'test' ? deployUrl : site === 'greatstone-home' ? 'https://greatstoneint.com' : `https://${site}.netlify.app`;
   const failures = [];
-  for (const path of [...PAGE_CHECKS, ...API_CHECKS]) if (await status(live + path) !== 200) failures.push(path);
+  const pages = [...PAGE_CHECKS, ...samples];
+  for (const path of [...pages, ...API_CHECKS]) if (await status(live + path) !== 200) failures.push(path);
+  if (site === 'greatstone-home' && !failures.includes('/shop') && !listsProducts((await page(live + '/shop')).body))
+    failures.push('/shop (0 products)');
   // A rehearsal can plant one failing check to prove the restore fires; the public promote never reads this.
   const planted = mode === 'rehearse' ? process.env.REHEARSE_FAIL_API : null;
   if (planted && !failures.includes(planted)) failures.push(`${planted} (planted)`);
@@ -198,7 +223,67 @@ async function checkLive({ deploy_id: deployId, deploy_url: deployUrl }, before)
     if (before) await netlifyApi(`/sites/${siteId}/deploys/${before}/restore`, 'POST');
     throw new Error(`${failures.join(', ')} failed after publishing ${deployId}; restored ${before}`);
   }
-  console.log(`Published ${deployId}: ${PAGE_CHECKS.length} pages and ${API_CHECKS.length} APIs answered 200`);
+  console.log(`Published ${deployId}: ${pages.length} pages and ${API_CHECKS.length} APIs answered 200`);
+}
+
+/** A page fetched with redirects followed (a 308 to a 200 passes), with its body. */
+async function page(url) {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    return { status: response.status, body: await response.text(), headers: response.headers };
+  } catch { return { status: 0, body: '', headers: new Headers() }; }
+}
+
+// The shop's product cards link to /product/<slug>; with 0 products it shows "Catalogue unavailable" instead.
+const listsProducts = (html) => /href="\/product\/[^"]/.test(html);
+
+/** The catalogue a published release carries: its products (offerings), categories and vendors. */
+export function releaseCatalogue(release) {
+  const rows = (key) => {
+    const collection = release?.collections?.[key];
+    return (Array.isArray(collection) ? collection : collection?.entries || []).map((entry) => entry?.fields?.data || {});
+  };
+  const products = rows('offerings');
+  const vendors = rows('vendors');
+  return { products: products.length, categories: rows('categories').length, vendors: vendors.length,
+    product: products.find((item) => item.slug)?.slug || null, vendor: vendors.find((item) => item.slug)?.slug || null };
+}
+
+// The pre-Deploy gate (GRE-4707). On 8 Nov a Deploy put content release 1 on greatstoneint.com with no /consultancy
+// and 0 products. Before anything uploads or the content pointer moves, staging's release must carry products,
+// categories and vendors, and staging (which serves that release) must answer 200 on the key pages, one product
+// page and one vendor page. It only reads; any problem refuses the Deploy with greatstone-home untouched.
+// Returns the product and vendor pages, which the live check repeats after the upload.
+async function checkStagedRelease(staged) {
+  const refuse = (problems) => new Error(`Deploy refused before upload: ${problems.join('; ')}. Nothing changed on greatstone-home.`);
+  if (!staged) throw refuse(["staging's store has no content release"]);
+  const file = await (await contentStore(stagingSite)).get(staged.key);
+  if (!file) throw refuse([`staging has no ${staged.key} for content release ${staged.release}`]);
+  if (createHash('sha256').update(file).digest('hex') !== staged.sha256)
+    throw refuse([`content release ${staged.release} on staging does not match its sha256`]);
+  let catalogue;
+  try { catalogue = releaseCatalogue(JSON.parse(file.toString('utf8'))); }
+  catch { throw refuse([`content release ${staged.release} on staging is not valid JSON`]); }
+  const named = `staging's ${contentLine(staged)}`;
+  const problems = [];
+  const empty = ['products', 'categories', 'vendors'].filter((key) => !catalogue[key]);
+  if (empty.length) problems.push(`${named} has ${empty.map((key) => `0 ${key}`).join(', ')}`);
+  const samples = [
+    catalogue.product ? `/product/${encodeURIComponent(catalogue.product)}` : null,
+    catalogue.vendor ? `/shop/${encodeURIComponent(catalogue.vendor)}` : null,
+  ].filter(Boolean);
+  const host = process.env.NODE_ENV === 'test' ? `${process.env.NETLIFY_TEST_API_URL}/staging` : `https://${stagingSite}.netlify.app`;
+  const served = (await page(`${host}/_release`)).headers.get('x-gsam-release');
+  if (served !== String(staged.release)) problems.push(`${stagingSite} serves content release ${served ?? 'unknown'}, not ${staged.release}`);
+  for (const path of [...KEY_PAGES, ...samples]) {
+    const answer = await page(host + path);
+    if (answer.status !== 200) problems.push(`${path} answered ${answer.status || 'no response'} on ${stagingSite}`);
+    else if (path === '/shop' && !listsProducts(answer.body)) problems.push(`/shop lists 0 products on ${stagingSite}`);
+  }
+  if (problems.length) throw refuse(problems);
+  console.log(`Pre-Deploy gate passed: ${named} has ${catalogue.products} products, ${catalogue.categories} categories, ` +
+    `${catalogue.vendors} vendors; ${KEY_PAGES.length + samples.length} key pages answered 200 on ${stagingSite}`);
+  return samples;
 }
 
 async function inspectSite() {
@@ -325,7 +410,7 @@ async function takeSharedLock(own) {
   return () => store.remove(key, own);
 }
 
-async function lockAndDeploy(sha, cwd, content = null) {
+async function lockAndDeploy(sha, cwd, content = null, samples = []) {
   const dir = lockDir();
   const own = randomUUID();
   const identity = processIdentity(process.pid);
@@ -367,7 +452,7 @@ async function lockAndDeploy(sha, cwd, content = null) {
     child.stdout?.on('data', (part) => { out += part; });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
     if (code !== 0) throw new Error(`netlify deploy exited ${code}`);
-    if (checked) await checkLive(JSON.parse(out.slice(out.indexOf('{'))), before);
+    if (checked) await checkLive(JSON.parse(out.slice(out.indexOf('{'))), before, samples);
     promoted = true;
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
   } finally {
@@ -400,7 +485,7 @@ async function refreshStaging(sha) {
 // node_modules may be missing or stale, and Netlify bundles functions from whatever it
 // finds there: 9376a4e reached staging without @netlify/database and every admin-bridge
 // call gave 502 (GRE-4105).
-async function deployInstalled(sha, content = null) {
+async function deployInstalled(sha, content = null, samples = []) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-deploy-'));
   try {
     const tree = join(dir, 'tree');
@@ -409,7 +494,7 @@ async function deployInstalled(sha, content = null) {
     command('tar', ['-xf', join(dir, 'source.tar'), '-C', tree]);
     const upload = nextSites.has(site) ? await prepareNext(tree, join(dir, 'next')) : tree;
     command('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], upload);
-    await lockAndDeploy(sha, upload, content);
+    await lockAndDeploy(sha, upload, content, samples);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -433,6 +518,26 @@ async function prepareNext(tree, target) {
   return target;
 }
 
+// GSAM's editor overlays its draft on the release it is built with. That was the checked-in proof release (1),
+// so the alias showed old words under the draft (8 Nov). It now bakes staging's current content release in,
+// checked against its sha256, so the editor shows what staging serves. Media still come from greatstone-home's store.
+async function bakeStagingContent(target) {
+  const staged = await contentRelease(stagingSite);
+  if (!staged) { console.log('Editor alias: staging has no content release, keeping the checked-in proof release'); return; }
+  const file = await (await contentStore(stagingSite)).get(staged.key);
+  if (!file || createHash('sha256').update(file).digest('hex') !== staged.sha256)
+    throw new Error(`editor alias: staging's ${contentLine(staged)} is missing or does not match its sha256`);
+  // The engine bakes only schema 1 or a parsed snapshot: the raw schema 2 file failed the editor build
+  // with "Invalid baked release: R2 Unsupported schema 2" (GRE-4720), so it is parsed as staging reads it.
+  const published = JSON.parse(file.toString('utf8'));
+  const parsed = readGsamRelease(file.toString('utf8'), staged,
+    { siteId: published.siteId, orgId: published.orgId ?? provenRelease.orgId }, provenRelease);
+  if (parsed.refused) throw new Error(`editor alias: staging's ${contentLine(staged)} is refused: ${parsed.refused.message}`);
+  await mkdir(join(target, 'next-proof/data'), { recursive: true });
+  await writeFile(join(target, 'next-proof/data/release.json'), JSON.stringify(parsed.release));
+  console.log(`Editor alias bakes staging's ${contentLine(staged)}`);
+}
+
 async function deployEditorAlias(sha) {
   const dir = await mkdtemp(join(tmpdir(), 'gsam-editor-'));
   const home = sites.get('greatstone-home');
@@ -446,6 +551,7 @@ async function deployEditorAlias(sha) {
   try {
     for (const [name, bin, args, cwd] of steps) {
       console.log(`Editor alias step "${name}" at ${sha}`);
+      if (name === 'install') await bakeStagingContent(join(dir, 'editor'));
       const result = spawnSync(bin, args, { stdio: 'inherit', cwd, env });
       if (result.error || result.status !== 0)
         throw new Error(`train failed at editor alias step "${name}" (${result.error?.message || `exit ${result.status}`}); ` +
@@ -465,7 +571,12 @@ async function main() {
     }
     return;
   }
-  if (!['preview', 'prod', 'refresh', 'staging', 'rehearse'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging|deploy:rehearse -- <allowed site> [PR number], or deploy-site.mjs content');
+  // A dry run of the pre-Deploy gate: reads staging only, uploads nothing, needs no card.
+  if (mode === 'check' && site === 'greatstone-home') {
+    await checkStagedRelease(await contentRelease(stagingSite));
+    return;
+  }
+  if (!['preview', 'prod', 'refresh', 'staging', 'rehearse'].includes(mode) || !sites.has(site)) throw new Error('usage: npm run deploy:preview|deploy:prod|deploy:staging|deploy:rehearse -- <allowed site> [PR number], or deploy-site.mjs content, or deploy-site.mjs check greatstone-home');
   if ((mode === 'staging' || mode === 'rehearse') && site !== stagingSite) throw new Error(`${mode} deploys only ${stagingSite}`);
   command('node', ['contracts/check.mjs', '--site-speaks', String(SITE_CONTRACT)]);
   if (command('git', ['status', '--porcelain'])) throw new Error('deploy requires a clean checkout');
@@ -477,6 +588,8 @@ async function main() {
   // public promote carries what staging's store holds when the public store points elsewhere.
   let content = null;
   let contentChanged = false;
+  let samples = [];
+  let promoting = null;
   if (mode === 'staging' && process.env.GSAM_CONTENT_RELEASE) {
     const staged = await contentRelease(stagingSite);
     if (String(staged?.release) !== process.env.GSAM_CONTENT_RELEASE)
@@ -484,11 +597,13 @@ async function main() {
     contentChanged = true;
   }
   if (mode === 'prod' && site === 'greatstone-home') {
-    const staged = await contentRelease(stagingSite);
+    const staged = promoting = await contentRelease(stagingSite);
     const live = await contentRelease(site);
     if (staged && (staged.release !== live?.release || staged.sha256 !== live?.sha256)) { content = staged; contentChanged = true; }
   }
   const fallback = mode === 'staging' || mode === 'rehearse' ? null : await gate(sha, content);
+  // Before any upload or the content pointer moves, staging's release must be fit to go live (GRE-4707).
+  if (mode === 'prod' && site === 'greatstone-home') samples = await checkStagedRelease(promoting);
   const baseline = await lastDeployedCommit() || fallback;
   let files = null;
   if (baseline) {
@@ -498,7 +613,7 @@ async function main() {
   // A rehearsal always uploads: it exists to exercise the promote, not to save a build.
   if (mode !== 'rehearse' && !contentChanged && files && (files.length === 0 || onlyNonSiteFiles(files)))
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
-  else await deployInstalled(sha, content);
+  else await deployInstalled(sha, content, samples);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
   // The editor shows what staging holds, so the alias follows every staging upload (and the public site).
   if ((mode === 'prod' && site === 'greatstone-home') || mode === 'staging') await deployEditorAlias(sha);

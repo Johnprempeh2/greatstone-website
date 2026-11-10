@@ -1,0 +1,147 @@
+/* Responsive layer: one page box, one left edge, on every public page.
+ *
+ * Imported LAST in app/layout.jsx. Every selector starts with `:root` on purpose: published pages print a copy
+ * of the site stylesheet inline in the body (taken at the last Publish), after the repo's linked CSS, so a plain
+ * rule here would lose to that stale copy. The extra `:root` wins on every route without a Publish, while a
+ * page's own CSS (`[data-gs-scope="page"] .x`) still wins over this file.
+ *
+ * How to add a section that behaves: overnight-2026-11-10/tutorials/website-responsive-system.md
+ */
+
+/* 1. Tokens. Gutter grows with the screen; the content column is 1160px on a laptop and widens to 1440px.
+ *    `html:root` (not `:root`) so it beats the inline copy's own `:root{--gs-maxw:1180px}`. */
+html:root{
+  --gs-gutter:clamp(20px,5vw,80px);
+  --gs-content:clamp(1160px,72vw,1440px);
+  --gs-maxw:calc(var(--gs-content) + 2 * var(--gs-gutter));
+  --gs-measure:68ch;
+}
+
+/* 2. The page box. A `.wrap` that also carries a reading limit (`class="wrap b-prose-inner"`, 760px) used to
+ *    centre itself as a narrow band. Now every `.wrap` starts at the shared left edge, whatever its own width. */
+:root .wrap{margin-inline:max(0px,calc((100% - var(--gs-maxw)) / 2)) auto}
+:root .b-panels>.wrap{max-width:var(--gs-maxw)}
+/* Centred on purpose: the short closing invitation. */
+:root .wrap.b-invite-inner{margin-inline:auto}
+/* Shop and product pages use their own box: same column, same edge. */
+:root :is(.st-wrap,.sp-wrap){max-width:var(--gs-maxw);padding-inline:var(--gs-gutter)}
+/* Reading text keeps a readable line inside the wide column. */
+:root :is(.sp-note,.b-abs-fine,.b-book-aside-body,.b-transform-close p){max-width:var(--gs-measure)}
+:root .b-transform-close p{margin-inline:auto}
+/* The licence table scrolls inside its own frame; its hidden label must not widen the page. */
+:root .sp-table-wrap{position:relative}
+
+/* 3. Section heads sit on the left edge with their section, not centred above it. */
+:root .b-panels.head-center .b-panels-head,
+:root .b-features-center .b-features-head,
+:root .b-features-center .b-features-intro,
+:root .b-steps[data-align=center] .b-steps-head,
+:root .b-steps[data-align=center] .b-steps-body,
+:root .b-cat-head{margin-inline:0;text-align:left}
+:root .b-panels.head-center .b-panels-intro{margin-inline:0}
+:root .b-cat-foot{text-align:left;align-items:flex-start}
+:root .b-features-center{text-align:left}
+
+/* 4. Laptop and wider: a heading with running text becomes two columns (heading left, text right), the same
+ *    shape as the home page story sections, so the wide column is used and lines stay readable. */
+@media (min-width:1024px){
+  :root .b-chapter.align-left .wrap.b-chapter-inner,
+  :root .b-prose.align-left .wrap.b-prose-inner:has(>.b-prose-kicker),
+  :root .wrap.b-faq-wrap,
+  :root .wrap.b-abs-wrap{max-width:var(--gs-maxw);display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:clamp(32px,5vw,96px);align-items:start}
+  :root .b-chapter.align-left .b-chapter-inner>*{grid-column:2}
+  :root .b-chapter.align-left .b-chapter-inner>.b-chapter-eyebrow{grid-column:1 / -1}
+  :root .b-chapter.align-left .b-chapter-inner>.b-chapter-h{grid-column:1;grid-row:2 / span 6}
+  :root .b-chapter.align-left .b-chapter-inner>.b-chapter-h+*{margin-top:0}
+  :root .b-prose.align-left .b-prose-inner>.b-prose-kicker{grid-column:1}
+  :root .b-prose.align-left .b-prose-inner>.b-prose-body{grid-column:2;margin-top:0}
+  /* Calculator: heading and inputs on the left, the result card on the right, note underneath. */
+  :root .wrap.b-acc-wrap{max-width:var(--gs-maxw);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr auto;column-gap:clamp(32px,5vw,96px);align-items:start}
+  :root .b-acc-wrap>.b-acc-grid{display:contents}
+  :root .b-acc-wrap>.b-acc-head,:root .b-acc-wrap .b-acc-inputs{grid-column:1}
+  :root .b-acc-wrap .b-acc-result{grid-column:2;grid-row:1 / span 2;align-self:center}
+  :root .b-acc-wrap>.b-acc-foot{grid-column:1 / -1}
+  /* Section headings may run wider than their phone-first limit once the column is wide. */
+  :root .b-steps-head{max-width:24ch}
+}
+
+/* 5. Home page (Two Doors). Below 1024px the phone and tablet layout stays as designed; only its side gutter
+ *    changes (it was 16 to 24px) so the page starts on the same edge as the header, footer and every other page. */
+@media (max-width:1023px){
+  html:root :is(.td-home,.td-segment) :is(.td-intro,.td-story,.td-range,.td-section,.td-close,.td-review-strip,.td-public-clients){width:calc(100% - 2 * var(--gs-gutter))}
+}
+@media (min-width:1024px){
+  /* Hero, door copy and every section share the page column and its left edge. */
+  :root :is(.td-home,.td-segment){--td-page-width:var(--gs-content);--td-page-gutter:calc(2 * var(--gs-gutter))}
+  :root .td-home:not(.td-dev-page) .td-intro{width:min(var(--td-page-width),calc(100% - var(--td-page-gutter)))}
+  :root .td-home .td-consultancy .td-door-copy{padding-left:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+  :root .td-home .td-tools .td-door-copy{padding-right:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+}
+@media (min-width:1441px){
+  /* Bigger screens get a wider column and slightly larger, capped type. The page is never zoomed
+   * (published pages still carry the old zoom rule in their inline copy until the next Publish). */
+  :root:has(.td-home:not(.td-dev-page)){zoom:1}
+  :root:has(.td-home:not(.td-dev-page)) .td-intro>.td-tide,
+  :root:has(.td-home:not(.td-dev-page)) .td-story-segment>.td-tide{left:calc(50% - 50vw);width:100vw}
+  :root:has(.td-home:not(.td-dev-page)) .td-consultancy .td-door-copy{padding-left:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+  :root:has(.td-home:not(.td-dev-page)) .td-tools .td-door-copy{padding-right:max(var(--gs-gutter),calc((100vw - var(--gs-content)) / 2))}
+  :root:has(.td-home:not(.td-dev-page)) :is(.td-story,.td-section) h2{font-size:clamp(var(--td-size-34),3.4vw,var(--td-size-50))}
+  :root:has(.td-home:not(.td-dev-page)) .td-close h2{font-size:var(--td-size-30)}
+  :root:has(.td-home:not(.td-dev-page)) .td-case-placeholder{font-size:clamp(72px,10vw,150px)}
+  :root:has(.td-home:not(.td-dev-page)) .td-case-draft .td-case-copy strong{font-size:clamp(24px,2.5vw,38px)}
+  :root .td-home .td-intro h1{font-size:clamp(60px,4.17vw,76px)}
+  :root .td-home .td-lede{font-size:clamp(18px,1.25vw,21px)}
+  :root .td-home .td-door h2{font-size:clamp(46px,3.2vw,58px)}
+  :root .td-home .td-doors,:root .td-home .td-door{min-height:clamp(620px,43vw,800px)}
+}
+
+/* 6. Header and footer sit on the page column: logo and footer on its left edge, header buttons on its right. */
+:root .gs-header{padding-inline:max(var(--gs-gutter),calc((100% - var(--gs-content)) / 2))}
+@media (max-width:420px){:root .gs-header{padding-right:12px}}
+/* Footer: left-aligned. One column on a phone; from tablet up, brand on the left and links on the right. */
+:root .site-footer{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;text-align:left;row-gap:8px;
+  padding-inline:max(var(--gs-gutter),calc((100% - var(--gs-content)) / 2))}
+:root .site-footer .logo{margin:0}
+:root .site-footer .logo a{display:flex;align-items:center;min-height:44px}
+:root .site-footer .foot-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;width:100%;margin:12px 0}
+:root .site-footer .foot-legal{justify-content:flex-start;gap:0 24px;margin:0}
+:root .site-footer .legal{margin:0}
+:root .site-footer :is(.foot-links a,.foot-legal a,.foot-cookie-settings,.legal){font-size:.875rem}
+:root .site-footer :is(.foot-links a,.foot-legal a,.foot-cookie-settings,a.mail){display:inline-flex;align-items:center;min-height:44px;padding-inline:0}
+@media (min-width:820px){
+  :root .site-footer{grid-template-columns:minmax(0,4fr) minmax(0,8fr);grid-template-rows:auto auto 1fr auto;column-gap:clamp(32px,5vw,96px)}
+  :root .site-footer :is(.logo,.tagline,.mail){grid-column:1}
+  :root .site-footer .foot-links{grid-column:2;grid-row:1 / span 3;margin:0;align-content:start}
+  :root .site-footer :is(.legal,.foot-legal){grid-row:4;margin-top:24px}
+  :root .site-footer .foot-legal{grid-column:2}
+}
+@media (min-width:1100px){:root .site-footer .foot-links{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* 7. Retired things stay retired on pages published before they were taken out, with no Publish needed:
+ *    the footer ornament (John, 8 Nov) and the unnamed team seats (John, 10 Nov: no placeholders). */
+:root .site-footer>svg,
+:root .team-card.is-slot{display:none}
+
+/* 8. Phone. No text under 14px, and everything you tap is at least 44px tall.
+ *    The home page hero and doors keep their own type sizes (settled design); only their tap areas grow. */
+@media (max-width:819px){
+  html:root :is(.kicker,.b-prose-kicker,.b-cta,.b-panel-more,.inq-toggle,.b-cat-fmt,.b-cat-reason,.b-cat-navtile-n,.b-cat-chip,.b-cat-chip-n,.b-cat-feat-tab,
+    .b-ind-chip,.b-step-n.is-text,.b-book-ad,.b-acc-flabel,.b-acc-gfield label,.b-abs-fine,.b-acc-foot,.b-dx-method-title span,.field label,.t-role,.traits span,
+    .phase :is(.rank,.range,p),.gs-navmenu-btn span,.st-pill,.st-go,.st-badge,.st-clear,.st-stat,.st-card :is(.desc,.vendor span),.st-price :is(.lbl,.st-vat,.poa),
+    .sp-add,.sp-note,.sp-crumb,.sp-rel :is(.rv,.rp),.sp-pricebox .sub,.sp-wrap th,.gi :is(small,time,.gi-tag,.gi-tab,.gi-stat-label,.gi-stat-sub,.gi-board-head p,.gi-updated,.gi-head h3,.gi-kicker,.gi-step-maker,.gi-source-name),
+    .b-ind-head,.tier-card :is(.score,p),.b-cat-count,.b-chapter-name,.b-invite-inner .pill,.b-book-or,.b-book-consent,.b-intel-live span,.b-acc-notice,.b-acc-gate-b,
+    .st-facet h2,.st-facet-head h2,.st-kicker,.st-more,.st-count,.st-filterbtn,.sp-vendor span,.sp-pricebox .lbl,.sp-pricebox small,.gs-btn,.ca-note,.ca-tabs button,.ca-signin label,.ca-trust,.b-dx-method-overview span){font-size:max(14px,.875rem)}
+  /* Labels in capitals were spaced for 10px type; at 14px they need less. */
+  html:root :is(.b-cat-fmt,.b-cat-reason,.b-prose-kicker,.st-badge){letter-spacing:.04em}
+  html:root .b-cat-card-top{flex-wrap:wrap}
+  /* The eight pillar tiles go two across so each name fits on one line. */
+  html:root .b-tiein-chart{grid-template-columns:repeat(2,1fr)}
+  html:root .b-tiein-pm{aspect-ratio:2.4;font-size:max(14px,.875rem)}
+}
+@media (pointer:coarse){
+  /* Buttons and pills grow to 44px. */
+  :root :is(.inq-toggle,.sp-add,.b-cat-chip,.b-cat-feat-tab,.b-ind-chip,.st-more,.gi-tab,.td-stepbar button,.b-acc-gfield input,.b-cat-input){min-height:44px}
+  /* Text links keep their look; an unseen pad around them takes the tap. */
+  :root :is(.gs-logo,.b-panel-more,.b-transform-card a,.b-transform-actions a,.td-tool-card a,.td-more,.td-text-link,.st-clear,.gi-link,.gi-row-name a,.sp-crumb a,.ca-link,.b-invite-routes a,.td-range a){position:relative}
+  :root :is(.gs-logo,.b-panel-more,.b-transform-card a,.b-transform-actions a,.td-tool-card a,.td-more,.td-text-link,.st-clear,.gi-link,.gi-row-name a,.sp-crumb a,.ca-link,.b-invite-routes a,.td-range a)::after{content:"";position:absolute;inset:-13px 0}
+}

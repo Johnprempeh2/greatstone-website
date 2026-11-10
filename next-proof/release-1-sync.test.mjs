@@ -91,3 +91,25 @@ test('a live path and its GSAM slug land on whichever one the release publishes'
   assert.equal(publishedAlias('/method', gsam), null);
   assert.equal(publishedAlias('/nowhere', gsam), null);
 });
+
+test('the digital office address moves to GS Agentic Manager, else Transformation Services', () => {
+  assert.equal(publishedAlias('/consultancy/digital-office', ['/', '/gs-agentic-manager', '/consultancy/transformation-services']), '/gs-agentic-manager');
+  assert.equal(publishedAlias('/consultancy/digital-office', ['/', '/consultancy/transformation-services']), '/consultancy/transformation-services');
+  assert.equal(publishedAlias('/consultancy/digital-office', ['/']), null);
+  assert.equal(publishedAlias('/transformation-services', ['/', '/consultancy/transformation-services']), '/consultancy/transformation-services');
+  assert.equal(publishedAlias('/transformation-services', ['/', '/consultancy/digital-office']), '/consultancy/digital-office');
+});
+
+test('a GSAM page already in the HTML format is skipped, never overwritten', async () => {
+  const live = { path: '/', data: { root: { props: {} }, content: [block('TwoDoors', 'td')] } };
+  const html = { id: 'page/', slug: '/', latestRevisionId: 'rev-20', status: 'approved', content: { format: 'gs-html', html: '<p>x</p>', css: '' } };
+  const entry = planPage(live, html);
+  assert.equal(entry.action, 'html');
+  assert.equal(entry.content, undefined);
+  let saves = 0;
+  const { ok, record } = await applyPlan([entry], async () => { saves++; return { state: 'saved' }; });
+  assert.equal(ok, true);
+  assert.equal(saves, 0);
+  assert.equal(record[0].action, 'html');
+  assert.match(describePlan([entry]), /already HTML, skipped/);
+});

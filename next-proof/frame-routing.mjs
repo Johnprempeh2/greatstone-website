@@ -1,9 +1,11 @@
 const framePath = /^\/(editor|preview|live-design)(\/|$)/;
 const statefulPath = /^\/(api|studio)(\/|$)/;
-// Machine-called endpoints that verify their own signature and never read a browser cookie:
-// the GSAM admin bridge (Ed25519 request signature) and the Stripe webhook (Stripe-Signature).
+// Machine-called endpoints that verify their own credential and never read a browser cookie:
+// the GSAM admin bridge (Ed25519 request signature), the Stripe webhook (Stripe-Signature) and the
+// voice interview think endpoint (Deepgram's call, per-session bearer checked against voice_token_hash), and the
+// website guide's think endpoint (Deepgram's call again, with a bearer this server signed).
 // Server-to-server callers send no Origin or Sec-Fetch-Site, so the cross-site check would refuse them.
-const signedPath = /^\/api\/(admin\/v1\/|stripe-webhook$)/;
+const signedPath = /^\/api\/(admin\/v1\/|stripe-webhook$|interview\/voice\/think$|guide\/think$)/;
 
 export function frameRouteDecision({ pathname, hostname, editorHost, method, origin, fetchSite, publicOrigin }) {
   const editor = !!editorHost && hostname.toLowerCase() === editorHost.toLowerCase();
