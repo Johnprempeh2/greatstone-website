@@ -1,4 +1,5 @@
 import { resolveMediaRefs } from '../next-proof/release-media.mjs';
+import { isHidden } from '../next-proof/hidden-routes.mjs';
 
 // The release navigation in the studio's tree shape, so the Next shell renders the studio Header as is.
 export function studioNavigation(release) {
@@ -17,10 +18,12 @@ const LEGAL_SLUGS = ['privacy', 'cookies', 'terms'];
 
 // Everything the site chrome needs, as plain data for the client shell.
 export function siteChrome(release) {
+  // A hidden page (Case Studies) only redirects, so it leaves the header, footer and search as well.
+  const shown = release.pages.filter((page) => !isHidden(page.path));
   return {
-    order: release.pages.map((page) => page.slug),
-    pages: Object.fromEntries(release.pages.map((page) => [page.slug, { title: page.title, status: 'published', ...(LEGAL_SLUGS.includes(page.slug) ? { footerOnly: true } : {}) }])),
-    paths: Object.fromEntries(release.pages.map((page) => [page.slug, page.path])),
+    order: shown.map((page) => page.slug),
+    pages: Object.fromEntries(shown.map((page) => [page.slug, { title: page.title, status: 'published', ...(LEGAL_SLUGS.includes(page.slug) ? { footerOnly: true } : {}) }])),
+    paths: Object.fromEntries(shown.map((page) => [page.slug, page.path])),
     navigation: studioNavigation(release),
     settings: { ...release.site.settings, logo: resolveMediaRefs(release.site.settings.logo, release.media) },
   };

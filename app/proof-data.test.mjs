@@ -23,6 +23,7 @@ test('site chrome gives the studio header and footer the release navigation, pag
       { id: 'p-home', slug: 'home', path: '/', title: 'Home' },
       { id: 'p-method', slug: 'method', path: '/method', title: 'How We Work' },
       { id: 'p-privacy', slug: 'privacy', path: '/privacy', title: 'Privacy policy' },
+      { id: 'p-proof', slug: 'proof', path: '/proof', title: 'Proof' },
     ],
     site: { settings: { logo: '/logo.png', headerCtaLabel: 'Talk' }, navigation: [
       { id: 'n1', label: 'How We Work', visible: true, target: { kind: 'page', pageId: 'p-method' } },
@@ -45,5 +46,6 @@ test('site chrome gives the studio header and footer the release navigation, pag
   assert.deepEqual(chrome.paths, { home: '/', method: '/method', privacy: '/privacy' });
   assert.equal(chrome.pages.privacy.footerOnly, true);
   assert.equal(chrome.pages.method.footerOnly, undefined);
+  assert.equal(chrome.pages.proof, undefined, 'a hidden page is not offered in the header, footer or search');
   assert.equal(chrome.settings.headerCtaLabel, 'Talk');
 });
