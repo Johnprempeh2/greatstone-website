@@ -32,7 +32,16 @@ const unhideLinks = (block) => {
   const moved = Object.entries(block.props).filter(([key, value]) => key.endsWith('Href') && typeof value === 'string' && isHidden(value));
   return moved.length ? { ...block, props: { ...block.props, ...Object.fromEntries(moved.map(([key]) => [key, HIDDEN_LINK_TARGET])) } } : block;
 };
-const shown = { ...landing.data, content: landing.data.content.filter(hasVerifiedCase).map(unhideLinks) };
+// 10 Nov (John): "Choose your side" comes out, and so does the closing section that repeated the two doors under
+// that heading. The frozen file stays as published; the words used instead are ones the landing already says, and
+// an edit from GSAM still wins. The hero and the doors keep their design.
+export const RETIRED_WORDING = /choose your side/i;
+const REWORDED = { cueText: 'Two ways to work with Greatstone', chooserHeading: 'DX Consultancy or DX Dev Tools' };
+const reword = (block) => {
+  const changed = Object.entries(REWORDED).filter(([key]) => RETIRED_WORDING.test(block.props[key] || ''));
+  return changed.length ? { ...block, props: { ...block.props, ...Object.fromEntries(changed) } } : block;
+};
+const shown = { ...landing.data, content: landing.data.content.filter((block) => hasVerifiedCase(block) && block.type !== 'TwoDoorsBottom').map(unhideLinks).map(reword) };
 
 export function landingData(copy, markFields = false) {
   const overrides = { ...landingCopy(copy), ...(markFields ? { gsMarkFields: true } : {}) };

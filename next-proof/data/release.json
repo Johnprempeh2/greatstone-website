@@ -217,7 +217,7 @@
             "props": {
               "id": "twodoors-1hox13",
               "headlineSuffix": "and the tools to deliver it.",
-              "cueText": "Choose your side",
+              "cueText": "Two ways to work with Greatstone",
               "cueSubtext": "DX Consultancy or DX Dev Tools",
               "consultancyName": "DX Consultancy",
               "toolsName": "DX Dev Tools",
@@ -237,7 +237,7 @@
               "consultancyCta": "Browse DX Consultancy →",
               "proofLink": "See our work",
               "toolsCta": "Browse DX Dev Tools →",
-              "chooserHeading": "Choose your side",
+              "chooserHeading": "DX Consultancy or DX Dev Tools",
               "chooserLine": "Two ways to work with Greatstone.",
               "consultancyChooserLine": "Transform with AI",
               "toolsChooserLine": "Proven developer tools",
@@ -441,7 +441,7 @@
             "props": {
               "id": "twodoorsbottom-1mnk4e",
               "bottomKicker": "Two ways to work with Greatstone",
-              "bottomHeading": "Choose your side",
+              "bottomHeading": "DX Consultancy or DX Dev Tools",
               "bottomConsultancy": "DX Consultancy →",
               "bottomTools": "DX Dev Tools →",
               "consultancyHref": "/dx-consultancy",
