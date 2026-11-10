@@ -3,7 +3,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { anthropicKey } from '../interview/keys.mjs';
 
-/** The hard cap on one session, typed or spoken. */
+/** The hard cap on one typed session. A voice call's is shorter (VOICE_GUIDE_CALL_MINUTES in guide.mjs). */
 export const SESSION_SECONDS = 600;
 
 // Derived from a secret the guide cannot run without, so there is no extra variable to set.
@@ -14,11 +14,11 @@ const signingKey = (env) => {
 const sign = (key, text) => createHmac('sha256', key).update(text).digest('base64url');
 
 /** @returns {{ token: string, sid: string, expiresAt: number } | null} null when the guide has no model key. */
-export function mintGuideToken(env, now = Date.now()) {
+export function mintGuideToken(env, now = Date.now(), seconds = SESSION_SECONDS) {
   const key = signingKey(env);
   if (!key) return null;
   const sid = randomBytes(12).toString('base64url');
-  const exp = Math.floor(now / 1000) + SESSION_SECONDS;
+  const exp = Math.floor(now / 1000) + seconds;
   const body = `v1.${sid}.${exp}`;
   return { token: `${body}.${sign(key, body)}`, sid, expiresAt: exp * 1000 };
 }

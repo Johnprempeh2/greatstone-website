@@ -133,7 +133,7 @@ test('start gives a typed session, counting the visitor and then the day', async
   assert.equal(body.voice, null);
   assert.equal(body.greeting, GREETING);
   assert.equal(readGuideToken(body.token, ENV, NOW).expired, false);
-  assert.deepEqual(ctx.counter.keys.map((k) => [k.p_key.replace(/:[^:]+$/, ''), k.p_window_secs, k.p_limit]), [['guide:ip', 3600, 8], ['guide:day', 86400, 60]]);
+  assert.deepEqual(ctx.counter.keys.map((k) => [k.p_key.replace(/:[^:]+$/, ''), k.p_window_secs, k.p_limit]), [['guide:ip', 3600, 8], ['guide:day', 86400, 200]]);
   assert.equal(ctx.counter.keys[1].p_key, 'guide:day:2026-11-10');
   assert.ok(!JSON.stringify(ctx.counter.keys).includes('203.0.113.9'));
   assert.equal(ctx.model.calls.length, 0);
@@ -186,6 +186,65 @@ test('start falls back to typing when voice is off, has no key, or the voice ser
     assert.equal(body.voice, null, name);
     assert.ok(body.token, name);
   }
+});
+
+// ─── the voice day and the call length ──────────────────────────────────────
+
+const VOICE_BUSY = "Voice is busy for today. You can keep typing and I'll answer.";
+const limits = (ctx) => ctx.counter.keys.map((k) => [k.p_key.replace(/:[^:]+$/, ''), k.p_limit]);
+
+test('a voice call counts against the voice day only when it really starts, and lasts five minutes', async () => {
+  const ctx = setup();
+  const body = await (await ctx.post('start', { voice: true })).json();
+  assert.equal(body.voice.deepgramToken, 'dg-temp-token');
+  assert.deepEqual(limits(ctx), [['guide:ip', 8], ['guide:day', 200], ['guide:voice', 20]]);
+  assert.equal(ctx.counter.keys[2].p_key, 'guide:voice:2026-11-10');
+  assert.equal(body.expiresAt, NOW + 5 * 60_000);
+  // The browser hangs up at expiresAt; after it the think route stops answering.
+  ctx.clock.now = NOW + 5 * 60_000;
+  assert.match(await spokenWords(await ctx.post('think', { messages: [{ role: 'user', content: 'hello' }] }, { authorization: `Bearer ${body.token}` })), /end of the voice call/);
+
+  // Typing never touches the voice day, and keeps its ten minute session.
+  const typed = setup();
+  const text = await (await typed.post('start', { voice: false })).json();
+  assert.deepEqual(limits(typed), [['guide:ip', 8], ['guide:day', 200]]);
+  assert.equal(text.expiresAt, NOW + SESSION_SECONDS * 1000);
+  // A call that never starts (voice off, or the voice service refused) is not counted either.
+  for (const options of [{ env: { ...ENV, VOICE_ENABLED: '0' } }, { grant: async () => null }]) {
+    const none = setup(options);
+    await none.post('start', { voice: true });
+    assert.ok(!limits(none).some(([key]) => key === 'guide:voice'));
+  }
+});
+
+test('the two caps and the call length can be set, and silly values fall back', async () => {
+  const ctx = setup({ env: { ...ENV, VOICE_GUIDE_DAILY_SESSIONS: '500', VOICE_GUIDE_DAILY_VOICE_CALLS: '3', VOICE_GUIDE_CALL_MINUTES: '2' } });
+  const body = await (await ctx.post('start', { voice: true })).json();
+  assert.deepEqual(limits(ctx), [['guide:ip', 8], ['guide:day', 500], ['guide:voice', 3]]);
+  assert.equal(body.expiresAt, NOW + 2 * 60_000);
+  for (const silly of ['', '-1', '2.5', '99', 'ten']) {
+    const odd = setup({ env: { ...ENV, VOICE_GUIDE_CALL_MINUTES: silly } });
+    assert.equal((await (await odd.post('start', { voice: true })).json()).expiresAt, NOW + 5 * 60_000, silly);
+  }
+});
+
+test('when the voice day is used up, the guide says so in one line and typing carries on', async () => {
+  const ctx = setup({ answer: (args) => !args.p_key.startsWith('guide:voice:') });
+  const res = await ctx.post('start', { voice: true });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.voice, null);
+  assert.equal(body.voiceNote, VOICE_BUSY);
+  assert.ok(!JSON.stringify(body).includes('dg-temp-token'));
+  // The session it hands back is a full typed one, and it works.
+  assert.equal(body.expiresAt, NOW + SESSION_SECONDS * 1000);
+  const chat = await ctx.post('chat', { token: body.token, message: 'What do you do?' });
+  assert.equal(chat.status, 200);
+  assert.equal((await chat.json()).reply, 'Hello.');
+  // And a plain typed start is never refused by the voice cap.
+  assert.equal((await ctx.post('start', { voice: false })).status, 200);
+  // A typed start says nothing about voice.
+  assert.equal((await (await ctx.post('start', { voice: false })).json()).voiceNote, undefined);
 });
 
 // ─── typed chat ──────────────────────────────────────────────────────────────
@@ -326,7 +385,7 @@ test('think says something plain, without calling the model, when it has nothing
   const authorization = `Bearer ${token}`;
   assert.equal(await spokenWords(await ctx.post('think', { messages: [{ role: 'system', content: 'x' }] }, { authorization })), 'Sorry, could you say that again?');
   ctx.clock.now = NOW + SESSION_SECONDS * 1000;
-  assert.match(await spokenWords(await ctx.post('think', { messages: [{ role: 'user', content: 'hello' }] }, { authorization })), /time limit/);
+  assert.equal(await spokenWords(await ctx.post('think', { messages: [{ role: 'user', content: 'hello' }] }, { authorization })), "That is the end of the voice call. You can keep typing and I'll answer.");
   assert.equal(ctx.model.calls.length, 0);
 
   const limited = setup({ answer: (args) => !args.p_key.startsWith('guide:turns:') });

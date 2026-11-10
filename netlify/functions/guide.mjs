@@ -17,11 +17,16 @@ import { buildVoiceSettings } from './lib/interview/voice/settings.mjs';
 import { chunkClose, chunkDone, chunkOpener, chunkText, SSE_HEADERS } from './lib/interview/voice/openai-wire.mjs';
 import { grantDeepgramToken } from './interview-voice-start.mjs';
 import { cleanHistory, GREETING, guideTurn, REFUSAL } from './lib/guide/brain.mjs';
-import { mintGuideToken, readGuideToken, visitorKey, withinLimit } from './lib/guide/session.mjs';
+import { mintGuideToken, readGuideToken, SESSION_SECONDS, visitorKey, withinLimit } from './lib/guide/session.mjs';
 import { loadSite } from './lib/guide/site.mjs';
 
 const SESSIONS_PER_VISITOR_PER_HOUR = 8;
-const DAILY_SESSIONS = 60;
+// Typing is cheap (about a penny a chat), so it gets a generous day. Voice is about 8 cents a minute, so it gets its
+// own small day, counted only when a call really starts, and a short call: 20 calls of 5 minutes is about $9 a day.
+const DAILY_SESSIONS = 200;
+const DAILY_VOICE_CALLS = 20;
+const VOICE_CALL_MINUTES = 5;
+const VOICE_BUSY = "Voice is busy for today. You can keep typing and I'll answer.";
 const TURNS_PER_SESSION = 40;
 const MESSAGE_CHARS = 500;
 const ACTION_FRESH_MS = 60_000;
@@ -64,19 +69,28 @@ export function makeGuideHandler({ env = process.env, db = () => interviewDb('sy
     if (!(await withinLimit(db, `guide:day:${day}`, 86400, wholeNumber(env.VOICE_GUIDE_DAILY_SESSIONS, DAILY_SESSIONS, 0, 100000)))) {
       return unavailable(429, 'busy', 'The guide has reached its limit for today. Please try again tomorrow.');
     }
-    const session = mintGuideToken(env, now());
-    let voice = null;
+    // Voice: only when asked for and switched on, and only within the day's voice calls. A refusal leaves typing open.
+    let deepgramToken = null;
+    let voiceNote = null;
     if (body.voice === true && voiceEnabled(env)) {
-      const deepgramToken = await grant(env);
-      if (deepgramToken) {
-        const base = (env.VOICE_THINK_BASE_URL || new URL(req.url).origin).replace(/\/+$/, '');
-        const settings = buildVoiceSettings({ thinkEndpointUrl: `${base}/api/guide/think`, sessionToken: session.token, greeting: spoken(GREETING) });
-        // How long a pause ends the visitor's turn. The interview waits 2 seconds for people thinking aloud.
-        settings.agent.listen.provider.endpointing = wholeNumber(env.VOICE_GUIDE_ENDPOINT_MS, 2000, 300, 5000);
-        voice = { deepgramToken, settings };
+      deepgramToken = await grant(env);
+      if (deepgramToken && !(await withinLimit(db, `guide:voice:${day}`, 86400, wholeNumber(env.VOICE_GUIDE_DAILY_VOICE_CALLS, DAILY_VOICE_CALLS, 0, 10000)))) {
+        deepgramToken = null; // never used, it lapses in 30 seconds
+        voiceNote = VOICE_BUSY;
       }
     }
-    return json({ token: session.token, expiresAt: session.expiresAt, greeting: GREETING, voice });
+    // A call's session ends when the call must: the browser hangs up then, and the think route stops answering.
+    const seconds = deepgramToken ? 60 * wholeNumber(env.VOICE_GUIDE_CALL_MINUTES, VOICE_CALL_MINUTES, 1, 30) : SESSION_SECONDS;
+    const session = mintGuideToken(env, now(), seconds);
+    let voice = null;
+    if (deepgramToken) {
+      const base = (env.VOICE_THINK_BASE_URL || new URL(req.url).origin).replace(/\/+$/, '');
+      const settings = buildVoiceSettings({ thinkEndpointUrl: `${base}/api/guide/think`, sessionToken: session.token, greeting: spoken(GREETING) });
+      // How long a pause ends the visitor's turn. The interview waits 2 seconds for people thinking aloud.
+      settings.agent.listen.provider.endpointing = wholeNumber(env.VOICE_GUIDE_ENDPOINT_MS, 2000, 300, 5000);
+      voice = { deepgramToken, settings };
+    }
+    return json({ token: session.token, expiresAt: session.expiresAt, greeting: GREETING, voice, ...(voiceNote ? { voiceNote } : {}) });
   }
 
   async function chat(body) {
@@ -99,7 +113,7 @@ export function makeGuideHandler({ env = process.env, db = () => interviewDb('sy
   async function think(req) {
     const session = readGuideToken(bearerFrom(req.headers.get('authorization')), env, now());
     if (!session) return json({ error: 'Unauthorised' }, 401);
-    if (session.expired) return say('This call has reached its time limit. You can start a new one whenever you like.', modelId);
+    if (session.expired) return say("That is the end of the voice call. You can keep typing and I'll answer.", modelId);
     const body = await req.json().catch(() => null);
     const messages = cleanHistory(body?.messages);
     if (!messages.length) return say('Sorry, could you say that again?', modelId);
