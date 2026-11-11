@@ -122,7 +122,7 @@ export function buildSiteKnowledge(release, { frozenBlocks = {}, catalogue = cat
       const path = `/product/${encodeURIComponent(item.slug)}`;
       add(path, item.name);
       // The words on the product card, and only when the live price was read (app/catalogue.jsx).
-      const price = !item.pricing ? '' : item.pricing.final == null ? 'Price on application.' : `Price: from ${fmtMoney(item.pricing.final)} + VAT.`;
+      const price = !item.pricing ? '' : item.pricing.final == null ? 'Price on application.' : `Price: from ${fmtMoney(item.pricing.final, item.pricing.currency)} + VAT.`;
       return line(`- ${item.name} (${path}).`, sentence('Vendor', item.vendor?.name), sentence('Category', item.category?.name),
         htmlText(item.short_description), price);
     });

@@ -13,8 +13,8 @@ export function catalogueFromRelease(release) {
 export function priceCatalogue(catalogue, price) {
   if (!price) return catalogue;
   const offerings = catalogue.offerings.map((item) => ({
-    ...decorateOffering(item, price.rules, price.rate),
-    pricing: priceCard(item, price.rules, null, price.rate),
+    ...decorateOffering(item, price.rules, price.rate, null, price.currency),
+    pricing: priceCard(item, price.rules, null, price.rate, price.currency),
   }));
   return { ...catalogue, offerings };
 }

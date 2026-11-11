@@ -1,7 +1,7 @@
 // Catalogue data-access layer — the typed read API over Supabase (PostgREST), per
 // docs/api-contract.md §2. Pure-ish: every fn takes a supabase client so it runs in the app
 // (anon, RLS-gated) and in node verification. Prices are decorated via the pricing engine.
-import { offeringFromPrice, effectivePrice, usdToGbpMinor } from '../lib/pricing.mjs';
+import { offeringFromPrice, effectivePrice, shopCurrencyOf, toShopMinor } from '../lib/pricing.mjs';
 
 const OFFERING_CARD = 'id,slug,name,short_description,from_price_minor,from_price_currency,featured,platforms,type,attributes,vendor:vendors(id,slug,name,logo_url),category:categories(id,slug,name)';
 const OFFERING_FULL = `${OFFERING_CARD},description,seo,offering_variants(id,sku,name,license_type,platform,billing_period,base_price_minor,currency,min_order_qty,sort_order),offering_specs(label,value,sort_order)`;
@@ -79,11 +79,13 @@ export async function listOfferings(sb, params = {}) {
 }
 
 /** Decorate a card with a from-price (cheapest variant after rules). Card rows lack variants, so we
- * convert the stored USD from_price to GBP at the live rate, then apply rules at the offering level. */
-export function priceCard(o, rules, tier, rate) {
-  const gbp = usdToGbpMinor(o.from_price_minor, rate);
-  if (gbp == null) return { poa: true, final: null, base: null, hasDiscount: false };
-  const pseudoVariant = { basePriceMinor: gbp, currency: 'GBP' };  // converted figure is GBP → GBP discount rules match
+ * put the stored USD from_price in the shop's currency (GBP at the live rate, or USD as stored), then apply rules
+ * at the offering level. The result carries that currency. */
+export function priceCard(o, rules, tier, rate, currency = 'GBP') {
+  const shop = shopCurrencyOf(currency);
+  const base = toShopMinor(o.from_price_minor, rate, shop);
+  if (base == null) return { poa: true, final: null, base: null, hasDiscount: false, currency: shop };
+  const pseudoVariant = { basePriceMinor: base, currency: shop };  // a fixed discount matches only in its own currency
   return effectivePrice(ctxOf(o), pseudoVariant, rules, tier);
 }
 
@@ -96,10 +98,11 @@ export async function getOffering(sb, slug, tier = null) {
   return decorateOffering(data, rules, rate, tier);
 }
 
-export function decorateOffering(data, rules, rate, tier = null) {
+export function decorateOffering(data, rules, rate, tier = null, currency = 'GBP') {
   const ctx = ctxOf(data);
-  // Each variant's stored price is USD; convert to GBP at the live rate before the engine runs.
-  const gbpOf = (v) => ({ basePriceMinor: usdToGbpMinor(v.base_price_minor, rate), currency: 'GBP' });
+  // Each variant's stored price is USD; put it in the shop's currency before the engine runs.
+  const shop = shopCurrencyOf(currency);
+  const gbpOf = (v) => ({ basePriceMinor: toShopMinor(v.base_price_minor, rate, shop), currency: shop });
   const variants = (data.offering_variants || [])
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(v => ({ ...v, pricing: effectivePrice(ctx, gbpOf(v), rules, tier) }));

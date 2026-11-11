@@ -115,9 +115,22 @@ export function usdToGbpMinor(usdMinor, displayRate) {
   return Math.round((usdMinor / 100) / r) * 100;                     // whole-pound, back to minor units
 }
 
-// ---- formatting (GBP; minor units) ----
-export const fmtMoney = (minor, currency = 'GBP') =>
+/** The shop's currency setting (org_settings.shop_currency, 074): 'USD' sells the stored dollar prices as they are.
+ * Anything else, a missing or unreadable setting included, is 'GBP': today's behaviour, so nothing changes by accident. */
+export const shopCurrencyOf = (value) => (value === 'USD' ? 'USD' : 'GBP');
+
+/** A stored USD price in the shop's currency, minor units: USD as stored (no rate, no rounding), or GBP at the
+ * display rate (usdToGbpMinor). null for POA, a bad price, or a GBP shop without a usable rate. */
+export function toShopMinor(usdMinor, rate, currency = 'GBP') {
+  if (shopCurrencyOf(currency) === 'GBP') return usdToGbpMinor(usdMinor, rate);
+  if (usdMinor == null || usdMinor === '') return null;
+  const n = Number(usdMinor);
+  return Number.isSafeInteger(n) ? n : null;
+}
+
+// ---- formatting (GBP by default; minor units) ----
+export const fmtMoney = (minor, currency) =>
   minor == null ? 'POA'
-    : new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(minor / 100);
-export const fmtFrom = (minor, currency = 'GBP') =>
+    : new Intl.NumberFormat('en-GB', { style: 'currency', currency: currency || 'GBP' }).format(minor / 100);
+export const fmtFrom = (minor, currency) =>
   minor == null ? 'Price on application' : 'from ' + fmtMoney(minor, currency);

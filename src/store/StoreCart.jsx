@@ -73,7 +73,7 @@ export default function StoreCart({ confirmed = false, sessionId }) {
         quoteReference: sentQuoteRef, contact: q })); } catch { /* unavailable storage */ }
       // stash the indicative order value so the confirmation page (a fresh page load after the Stripe
       // redirect, where the basket is already cleared) can fire the funnel-completing purchase event.
-      try { sessionStorage.setItem('gs-pending-purchase', JSON.stringify({ value_minor: cartSubtotalMinor(), currency: 'GBP', items: paid.length,
+      try { sessionStorage.setItem('gs-pending-purchase', JSON.stringify({ value_minor: cartSubtotalMinor(), currency: (items[0] && items[0].currency) || 'GBP', items: paid.length,
         paid: paid.map((x) => ({ name: x.name, qty: x.qty })), quoted: quoted.map((x) => ({ name: x.name, qty: x.qty })), quoteReference: sentQuoteRef })); } catch (e) { /* ignore */ }
       window.location.href = url;
     }

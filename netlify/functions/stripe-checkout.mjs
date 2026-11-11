@@ -98,10 +98,12 @@ export function makeStripeCheckoutHandler({ env = process.env, pool = getPool, v
         params.set('customer', buyer.stripe_customer_id);
         params.set('payment_intent_data[setup_future_usage]', 'off_session');
       } else if (email) params.set('customer_email', email);
+      // The shop's currency (074): every priced row carries it, so the VAT line uses the first line's.
+      const currency = (lines[0].currency === 'USD' ? 'usd' : 'gbp');
       const appendLine = (index, row) => {
         const prefix = `line_items[${index}]`;
         params.set(`${prefix}[quantity]`, String(row.qty));
-        params.set(`${prefix}[price_data][currency]`, 'gbp');
+        params.set(`${prefix}[price_data][currency]`, currency);
         params.set(`${prefix}[price_data][unit_amount]`, String(row.unit));
         params.set(`${prefix}[price_data][product_data][name]`, row.name);
         if (row.id) {

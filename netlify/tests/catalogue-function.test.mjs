@@ -48,7 +48,7 @@ test('listing filters are parameters and cards use the shared pricing calculatio
     if (sql.startsWith('SELECT o.id')) return { rows: [card] };
     if (sql.startsWith('SELECT * FROM pricing_rules')) return { rows: [] };
     if (sql.startsWith('SELECT rule_id')) return { rows: [] };
-    if (sql.startsWith('SELECT usd_to_gbp')) return { rows: [{ usd_to_gbp_display_rate: '1' }] };
+    if (sql.startsWith('SELECT * FROM org_settings')) return { rows: [{ usd_to_gbp_display_rate: '1' }] };
     throw new Error('unexpected SQL');
   } };
   const result = await catalogueRead(client, 'list', { vendor: 'sample', q: 'document', page: 2, pageSize: 1 });
@@ -67,7 +67,7 @@ test('detail reads variants and specs then decorates prices', async () => {
     if (sql.startsWith('SELECT id,sku')) return { rows: [{ id: 'edition', sort_order: 1, base_price_minor: '100', name: 'Edition' }] };
     if (sql.startsWith('SELECT label')) return { rows: [{ label: 'Feature', sort_order: 1 }] };
     if (sql.startsWith('SELECT * FROM pricing_rules') || sql.startsWith('SELECT rule_id')) return { rows: [] };
-    if (sql.startsWith('SELECT usd_to_gbp')) return { rows: [{ usd_to_gbp_display_rate: '1' }] };
+    if (sql.startsWith('SELECT * FROM org_settings')) return { rows: [{ usd_to_gbp_display_rate: '1' }] };
     throw new Error('unexpected SQL');
   } };
   const result = await catalogueRead(client, 'detail', { slug: 'one' });
@@ -118,6 +118,18 @@ test('migrated RLS serves published browse, detail, related and pricing through 
     assert.equal(emptyOrg.total, listing.total);
     const searched = await asCatalogueAnon(pool, (client) => catalogueRead(client, 'list', { q: 'Staging', page: 1, pageSize: 2 }));
     assert.equal(searched.total, 1);
+    // the shop currency (074) reaches anon: USD shows the stored dollars, and back to GBP shows the rate's pounds
+    const priced = listing.items.find((o) => o.from_price_minor != null);
+    assert.equal(priced.pricing.currency, 'GBP');
+    const usd = db.psql(`INSERT INTO org_settings (org_id, shop_currency) SELECT id, 'USD' FROM organisations ORDER BY id LIMIT 1
+      ON CONFLICT (org_id) DO UPDATE SET shop_currency = 'USD'`);
+    assert.equal(usd.status, 0, usd.stderr);
+    const dollars = await request('op=list&pageSize=2');
+    const same = dollars.items.find((o) => o.id === priced.id);
+    assert.deepEqual([same.pricing.currency, same.pricing.base], ['USD', Number(priced.from_price_minor)]);
+    assert.equal((await request('op=detail&slug=' + priced.slug)).from?.currency ?? 'USD', 'USD');
+    assert.equal(db.psql("UPDATE org_settings SET shop_currency = 'GBP'").status, 0);
+    assert.deepEqual((await request('op=list&pageSize=2')).items.find((o) => o.id === priced.id).pricing, priced.pricing);
   } finally {
     await pool?.end();
     db.stop();

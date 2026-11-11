@@ -393,6 +393,29 @@ test('FX: a person sets the rate at its row version; the change log names them',
   assert.equal((await call(patch('/api/admin/v1/fx', { usdToGbpDisplayRate: '500', expectedRowVersion: 2 }, { actor: JOHN }))).status, 400);
 });
 
+test('shop currency: only a person switches it, at the row version, and it joins the rate history', { skip }, async () => {
+  const fx = (await call(signed('/api/admin/v1/fx'))).body.item;
+  assert.equal(fx.shop_currency, 'GBP');
+  const version = sql('SELECT row_version FROM org_settings;');
+  // an agent is refused, by the route and again by the database function
+  const refused = await call(patch('/api/admin/v1/fx', { shopCurrency: 'USD', expectedRowVersion: Number(version) }));
+  assert.deepEqual([refused.status, refused.body.error.code], [403, 'denied']);
+  assert.equal(sql('SELECT shop_currency FROM org_settings;'), 'GBP');
+  // one change at a time, and only GBP or USD
+  assert.equal((await call(patch('/api/admin/v1/fx', { shopCurrency: 'USD', usdToGbpDisplayRate: '1.40', expectedRowVersion: Number(version) }, { actor: JOHN }))).status, 400);
+  assert.equal((await call(patch('/api/admin/v1/fx', { shopCurrency: 'EUR', expectedRowVersion: Number(version) }, { actor: JOHN }))).status, 400);
+  const res = await call(patch('/api/admin/v1/fx', { shopCurrency: 'USD', expectedRowVersion: Number(version) }, { actor: JOHN }));
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.item.shop_currency, 'USD');
+  assert.deepEqual([res.body.item.history[0].old_currency, res.body.item.history[0].new_currency, res.body.item.history[0].new_rate],
+    ['GBP', 'USD', res.body.item.usd_to_gbp_display_rate]);
+  assert.equal((await call(patch('/api/admin/v1/fx', { shopCurrency: 'GBP', expectedRowVersion: Number(version) }, { actor: JOHN }))).status, 409);
+  const back = await call(patch('/api/admin/v1/fx', { shopCurrency: 'GBP', expectedRowVersion: res.body.item.row_version }, { actor: JOHN }));
+  assert.deepEqual([back.status, back.body.item.shop_currency, back.body.item.history[0].new_currency], [200, 'GBP', 'GBP']);
+  // the database refuses an agent too
+  assert.match(db.psql(`SELECT bridge_set_shop_currency('USD', 1);`).stderr, /bridge|denied|permission/i);
+});
+
 test('refund requests go through the refund key; a person decides; no Stripe call is made', { skip }, async () => {
   const refund = (body, opts) => signed('/api/admin/v1/refund-requests', { method: 'POST', kid: 'test-refund-1', body, ...opts });
   const nonce = key16();

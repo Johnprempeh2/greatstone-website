@@ -1,6 +1,7 @@
 // Public catalogue reads. Every request uses one transaction as anon, including pricing reads.
 // The connection owner is never the visitor role; FORCE RLS in the migrated schema filters rows.
 import { decorateOffering, priceCard, toRule } from '../../../src/data/catalog.mjs';
+import { shopCurrencyOf } from '../../../src/lib/pricing.mjs';
 
 const CLAIMS = JSON.stringify({ role: 'anon', sub: null, email: null, email_verified: false });
 const CARD = `o.id, o.slug, o.name, o.short_description, o.from_price_minor,
@@ -29,11 +30,19 @@ export async function asCatalogueAnon(pool, work) {
   }
 }
 
-// The live price inputs: published rules and the USD to GBP display rate. The Next pages read these too.
+/** The shop's price settings: { rate (US dollars for £1, or null), currency ('GBP' or 'USD') }. SELECT * so a
+ * database without 074's shop_currency (a deploy ahead of its migration) still reads, and prices in pounds. */
+export async function shopSettings(client) {
+  const { rows } = await client.query('SELECT * FROM org_settings LIMIT 1');
+  const rate = Number(rows[0]?.usd_to_gbp_display_rate);
+  return { rate: rate > 0 ? rate : null, currency: shopCurrencyOf(rows[0]?.shop_currency) };
+}
+
+// The live price inputs: published rules, the USD to GBP display rate and the shop currency. The Next pages read these too.
 export async function pricing(client) {
   const { rows: ruleRows } = await client.query("SELECT * FROM pricing_rules WHERE active = true AND status = 'published' AND deleted_at IS NULL");
   const { rows: targets } = await client.query('SELECT rule_id, vendor_id, category_id, offering_id, tier_id FROM pricing_rule_targets');
-  const { rows: rates } = await client.query('SELECT usd_to_gbp_display_rate FROM org_settings LIMIT 1');
+  const shop = await shopSettings(client);
   const byRule = new Map();
   for (const target of targets) {
     if (!byRule.has(target.rule_id)) byRule.set(target.rule_id, []);
@@ -41,12 +50,13 @@ export async function pricing(client) {
   }
   return {
     rules: ruleRows.map((r) => toRule({ ...r, pricing_rule_targets: byRule.get(r.id) || [] })),
-    rate: Number(rates[0]?.usd_to_gbp_display_rate) > 0 ? Number(rates[0].usd_to_gbp_display_rate) : 1.30,
+    rate: shop.rate ?? 1.30,
+    currency: shop.currency,
   };
 }
 
-function pricedCards(rows, rules, rate) {
-  return rows.map((row) => ({ ...row, pricing: priceCard(row, rules, null, rate) }));
+function pricedCards(rows, price) {
+  return rows.map((row) => ({ ...row, pricing: priceCard(row, price.rules, null, price.rate, price.currency) }));
 }
 
 export async function catalogueRead(client, op, params = {}) {
@@ -78,7 +88,7 @@ export async function catalogueRead(client, op, params = {}) {
     const { rows } = await client.query(`SELECT ${CARD} ${filter} ORDER BY ${order}, o.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
       [...values, pageSize, (page - 1) * pageSize]);
     const price = await pricing(client);
-    return { items: pricedCards(rows, price.rules, price.rate), total: counts[0].total, page, pageSize };
+    return { items: pricedCards(rows, price), total: counts[0].total, page, pageSize };
   }
   if (op === 'detail') {
     const { rows } = await client.query(`SELECT ${CARD}, o.description, o.seo ${JOINS} WHERE ${PUBLISHED} AND o.slug = $1 LIMIT 1`, [params.slug]);
@@ -87,7 +97,7 @@ export async function catalogueRead(client, op, params = {}) {
     const { rows: variants } = await client.query('SELECT id,sku,name,license_type,platform,billing_period,base_price_minor,currency,min_order_qty,sort_order FROM offering_variants WHERE offering_id = $1 AND deleted_at IS NULL ORDER BY sort_order', [o.id]);
     const { rows: specs } = await client.query('SELECT label,value,sort_order FROM offering_specs WHERE offering_id = $1 ORDER BY sort_order', [o.id]);
     const price = await pricing(client);
-    return decorateOffering({ ...o, offering_variants: variants, offering_specs: specs }, price.rules, price.rate);
+    return decorateOffering({ ...o, offering_variants: variants, offering_specs: specs }, price.rules, price.rate, null, price.currency);
   }
   if (op === 'related') {
     const { rows: source } = await client.query(`SELECT o.id,o.slug,o.vendor_id,o.category_id ${JOINS} WHERE ${PUBLISHED} AND o.slug = $1 LIMIT 1`, [params.slug]);
@@ -97,7 +107,7 @@ export async function catalogueRead(client, op, params = {}) {
         (o.category_id = $2 OR o.vendor_id = $3) ORDER BY o.featured DESC, o.name ASC LIMIT $4`,
       [o.id, o.category_id, o.vendor_id, params.limit || 4]);
     const price = await pricing(client);
-    return pricedCards(rows, price.rules, price.rate);
+    return pricedCards(rows, price);
   }
   throw new RangeError('Unknown catalogue operation');
 }

@@ -8,7 +8,7 @@ const serviceVariantId = '11111111-1111-4111-8111-111111111113';
 const offeringId = '22222222-2222-4222-8222-222222222222';
 const basket = [{ variantId, quantity: 2 }];
 
-function database(type = 'product') {
+function database(type = 'product', settings = { usd_to_gbp_display_rate: '1.25' }) {
   const calls = [];
   const pool = { connect: async () => ({
     query: async (sql, params = []) => {
@@ -20,7 +20,7 @@ function database(type = 'product') {
           offering_id: offeringId, offering_name: 'Consultancy', type: 'service', status: 'published' }] : []),
       ] };
       if (sql.includes('FROM pricing_rules') || sql.includes('FROM pricing_rule_targets')) return { rows: [] };
-      if (sql.includes('FROM org_settings')) return { rows: [{ usd_to_gbp_display_rate: '1.25' }] };
+      if (sql.includes('FROM org_settings')) return { rows: settings ? [settings] : [] };
       if (sql.includes('INSERT INTO quotes')) return { rows: [{ id: params[0], reference: 'Q-TEST' }] };
       if (sql.includes('po_upload_take_slot')) return { rows: [{ ok: true }] };
       return { rows: [] };
@@ -117,4 +117,52 @@ test('a PO upload is indexed in the visitor\'s own quote transaction, never as t
   assert.equal(blobs.size, 1, 'only the first quote\'s file is left');
   assert.ok(failing.calls.some(({ sql }) => sql === 'ROLLBACK'), 'the index row rolls back with the quote');
   assert.equal(failing.calls.some(({ sql }) => sql.includes('service_role') || sql.includes('storage.objects')), false);
+});
+
+// The shop currency (074): USD sells the stored dollar prices, no rate; anything else is today's pounds.
+async function checkout(db) {
+  let stripeParams;
+  const handler = makeStripeCheckoutHandler({ env: { STRIPE_SECRET_KEY: 'sk_test_fixture',
+    APP_SITE_ORIGIN: 'https://stage.example.test' }, pool: () => db.pool, verify: async () => null,
+  fetchImpl: async (_url, init) => {
+    stripeParams = init.body;
+    return { ok: true, json: async () => ({ id: 'cs_test_abc123', livemode: false, url: 'https://checkout.stripe.com/test' }) };
+  }, log: () => { throw new Error('Unexpected failure'); } });
+  const response = await handler(new Request('https://stage.example.test/api/stripe-checkout', {
+    method: 'POST', body: JSON.stringify({ items: basket }) }));
+  assert.equal(response.status, 200, JSON.stringify(await response.clone().json()));
+  return stripeParams;
+}
+
+test('a USD shop charges the stored dollar prices in usd, VAT included, with no rate', async () => {
+  const params = await checkout(database('product', { usd_to_gbp_display_rate: '1.25', shop_currency: 'USD' }));
+  assert.deepEqual([params.get('line_items[0][price_data][currency]'), params.get('line_items[0][price_data][unit_amount]'),
+    params.get('line_items[1][price_data][currency]'), params.get('line_items[1][price_data][unit_amount]')], ['usd', '10000', 'usd', '4000']);
+  // no rate needed in dollars
+  const noRate = await checkout(database('product', { usd_to_gbp_display_rate: null, shop_currency: 'USD' }));
+  assert.equal(noRate.get('line_items[0][price_data][unit_amount]'), '10000');
+});
+
+test('a missing or unreadable shop currency prices in pounds, as before', async () => {
+  for (const shop_currency of [undefined, null, 'EUR', 'usd']) {
+    const params = await checkout(database('product', { usd_to_gbp_display_rate: '1.25', shop_currency }));
+    assert.deepEqual([params.get('line_items[0][price_data][currency]'), params.get('line_items[0][price_data][unit_amount]')], ['gbp', '8000'], String(shop_currency));
+  }
+});
+
+test('a USD shop records a quote and its items in USD at the stored prices', async () => {
+  const db = database('product', { usd_to_gbp_display_rate: '1.25', shop_currency: 'USD' });
+  const handler = makeRequestQuoteHandler({ pool: () => db.pool, verify: async () => null,
+    log: () => { throw new Error('Unexpected failure'); } });
+  const result = await handler(new Request('https://stage.example.test/api/request-quote', {
+    method: 'POST', body: JSON.stringify({ items: basket, contact: { email: 'buyer@example.test' } }) }));
+  assert.equal(result.status, 200);
+  const quote = db.calls.find(({ sql }) => sql.includes('INSERT INTO quotes'));
+  const item = db.calls.find(({ sql }) => sql.includes('INSERT INTO quote_items'));
+  assert.deepEqual([quote.params[8], quote.params[9], item.params[7], item.params[8], item.params[9]], ['USD', 20000, 10000, 10000, 'USD']);
+  // and pounds by default
+  const gbp = database();
+  await makeRequestQuoteHandler({ pool: () => gbp.pool, verify: async () => null, log: () => {} })(new Request('https://stage.example.test/api/request-quote', {
+    method: 'POST', body: JSON.stringify({ items: basket, contact: { email: 'buyer@example.test' } }) }));
+  assert.equal(gbp.calls.find(({ sql }) => sql.includes('INSERT INTO quote_items')).params[9], 'GBP');
 });

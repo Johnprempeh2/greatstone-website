@@ -434,6 +434,12 @@ function commerceRoute(method, parts) {
   if (res === 'fx' && rowId === undefined && method === 'PATCH') {
     return { people: true, current: (client) => bridgeFx(client), run: async (client, ctx, body) => {
       people(ctx.actor);
+      // One change at a time: the rate, or the shop currency (074). Both write the same history.
+      if (body.shopCurrency !== undefined) {
+        const { currency: shop } = pick(body, { shopCurrency: ['currency', oneOf(['GBP', 'USD'])] }, { allow: ['expectedRowVersion'] });
+        await client.query('SELECT bridge_set_shop_currency($1, $2)', [shop, expectedRowVersion(body)]);
+        return answer(200, await bridgeFx(client));
+      }
       const { rate } = pick(body, { usdToGbpDisplayRate: ['rate', decimal(100, 6)] }, { required: ['usdToGbpDisplayRate'], allow: ['expectedRowVersion'] });
       await client.query('SELECT bridge_set_fx($1::numeric, $2)', [rate, expectedRowVersion(body)]);
       return answer(200, await bridgeFx(client));

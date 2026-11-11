@@ -92,7 +92,7 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
           {o.short_description && <p className="sp-lead">{o.short_description}</p>}
           <div className="sp-pricebox">
             {fromP && fromP.final != null
-              ? <><div className="lbl">From</div><div className="amt">{fmtMoney(fromP.final)} <small>+ VAT</small></div><div className="sub">{o.variants.length} licence option{o.variants.length === 1 ? '' : 's'} below. Final price depends on team size and support term.</div></>
+              ? <><div className="lbl">From</div><div className="amt">{fmtMoney(fromP.final, fromP.currency)} <small>+ VAT</small></div><div className="sub">{o.variants.length} licence option{o.variants.length === 1 ? '' : 's'} below. Final price depends on team size and support term.</div></>
               : <><div className="lbl">Pricing</div><div className="poa">Price on application</div><div className="sub">We'll prepare a quote tailored to your team and use case.</div></>}
           </div>
           <div className="sp-cta">
@@ -111,11 +111,11 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
 
       {!!(o.variants && o.variants.length) && <section className="sp-section" id="sp-editions"><h2>Editions &amp; licensing</h2>
         <div className="sp-table-wrap"><table className="sp-table"><thead><tr><th scope="col">Edition</th><th scope="col">Licence</th><th scope="col">Price</th><th scope="col"><span className="gs-sr-only">Add to basket</span></th></tr></thead>
-          <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final) : 'POA'}</td><td><AddToBasket offering={o} variant={v} /></td></tr>)}</tbody></table></div>
+          <tbody>{o.variants.map(v => <tr key={v.id}><td className="ed">{v.name}</td><td>{v.license_type || 'See quote'}</td><td className="pr">{v.pricing && v.pricing.final != null ? fmtMoney(v.pricing.final, v.pricing.currency) : 'POA'}</td><td><AddToBasket offering={o} variant={v} /></td></tr>)}</tbody></table></div>
         <p className="sp-note">Prices exclude VAT (added at checkout) and are indicative of the vendor's UK list. Buy a licence directly, or request a quote for volume discounts and bespoke support terms.</p><BasketBar /></section>}
 
       {!!related.length && <section className="sp-section"><h2>Related products</h2>
-        <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={(initialOffering ? '/product/' : '#product/') + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.pricing && r.pricing.final != null ? 'from ' + fmtMoney(r.pricing.final) : 'Request a quote'} ›</div></a>)}</div></section>}
+        <div className="sp-related">{related.map(r => <a key={r.id} className="sp-rel" href={(initialOffering ? '/product/' : '#product/') + encodeURIComponent(r.slug)}><div className="rn">{r.name}</div><div className="rv">{r.vendor && r.vendor.name}</div><div className="rp">{r.pricing && r.pricing.final != null ? 'from ' + fmtMoney(r.pricing.final, r.pricing.currency) : 'Request a quote'} ›</div></a>)}</div></section>}
 
       <div className="sp-back"><button className="st-more" onClick={onBack}>← Back to the catalogue</button></div>
     </div>

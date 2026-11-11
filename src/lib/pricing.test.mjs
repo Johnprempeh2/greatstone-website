@@ -1,7 +1,8 @@
 // Unit tests for the pricing engine. Run: node --test src/lib/pricing.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { effectivePrice, offeringFromPrice, ruleApplies, fmtMoney, fmtFrom, usdToGbpMinor } from './pricing.mjs';
+import { effectivePrice, offeringFromPrice, ruleApplies, fmtMoney, fmtFrom, usdToGbpMinor, shopCurrencyOf, toShopMinor } from './pricing.mjs';
+import { priceCard, decorateOffering } from '../data/catalog.mjs';
 
 test('usdToGbpMinor: whole-pound rounding matches the spec example', () => {
   assert.equal(usdToGbpMinor(100000, 1.32), 75800);   // $1000 / 1.32 = 757.57 → £758
@@ -138,4 +139,30 @@ test('formatting', () => {
   assert.equal(fmtMoney(null), 'POA');
   assert.equal(fmtFrom(50900), 'from £509.00');
   assert.equal(fmtFrom(null), 'Price on application');
+});
+
+test('shop currency: USD sells the stored dollars; anything else, missing included, is GBP at the rate', () => {
+  for (const v of [undefined, null, '', 'usd', 'EUR', 'GBP', 7]) assert.equal(shopCurrencyOf(v), 'GBP', String(v));
+  assert.equal(shopCurrencyOf('USD'), 'USD');
+  assert.equal(toShopMinor(100000, 1.32), 75800);                 // default: today's pounds
+  assert.equal(toShopMinor(100000, 1.32, 'GBP'), 75800);
+  assert.equal(toShopMinor('100099', 1.32, 'USD'), 100099);       // as stored: no rate, no rounding (pg bigint is a string)
+  assert.equal(toShopMinor(100000, 0, 'USD'), 100000);            // the rate does not matter in dollars
+  assert.equal(toShopMinor(null, 1.32, 'USD'), null);             // POA stays POA
+  assert.equal(fmtMoney(123400, 'USD'), 'US$1,234.00');
+  assert.equal(fmtMoney(123400, null), '£1,234.00');
+});
+
+test('cards and product pages price in the shop currency, and carry it', () => {
+  const o = { id: 'o', type: 'product', from_price_minor: '100000', vendor: { id: 'v' }, category: { id: 'c' },
+    offering_variants: [{ id: 'a', sort_order: 1, base_price_minor: '100000' }] };
+  assert.deepEqual([priceCard(o, [], null, 1.32).final, priceCard(o, [], null, 1.32).currency], [75800, 'GBP']);
+  assert.deepEqual([priceCard(o, [], null, 1.32, 'USD').final, priceCard(o, [], null, 1.32, 'USD').currency], [100000, 'USD']);
+  const usd = decorateOffering(o, [], 1.32, null, 'USD');
+  assert.deepEqual([usd.variants[0].pricing.final, usd.variants[0].pricing.currency, usd.from.final], [100000, 'USD', 100000]);
+  assert.equal(decorateOffering(o, [], 1.32).from.final, 75800);
+  // a fixed pound discount does not apply to a dollar price
+  const rule = { id: 'r', active: true, scopeType: 'all', adjustmentType: 'fixed', adjustmentValue: 1000, currency: 'GBP' };
+  assert.equal(priceCard(o, [rule], null, 1.32).final, 74800);
+  assert.equal(priceCard(o, [rule], null, 1.32, 'USD').final, 100000);
 });
