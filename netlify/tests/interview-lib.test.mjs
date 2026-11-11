@@ -7,7 +7,8 @@ import { createInitialTaxonomyState } from '../functions/lib/interview/types.mjs
 import {
   TAXONOMY_TO_DB_PHASE, TAXONOMY_PHASE_ORDER, normaliseTaxonomyState, applySlotUpdates, computeCompletionScore,
   phaseIsComplete, advancePhase, signOffComplete, deriveNextAction, updatePaceFields, renderKnownFacts,
-  buildSystemPrompt, turnsToMessages, KICKOFF_NUDGE, RECOVERY_NUDGE,
+  buildSystemPrompt, turnsToMessages, KICKOFF_NUDGE, RECOVERY_NUDGE, stepPhase, phaseTurnLimit, lastQuestionOf, sameQuestion,
+  askedQuestions, markParticipantEngaged, durationVariables, targetMinutesOf,
 } from '../functions/lib/interview/interview.mjs';
 import { costPence, recordUsage, getBudgetStatus, steeringLineFor } from '../functions/lib/interview/budget.mjs';
 import { withinRate } from '../functions/lib/interview/ratelimit.mjs';
@@ -153,6 +154,51 @@ test('advancePhase skips every completed phase but never passes sign_off', () =>
   assert.equal(advancePhase(s, 'warm_up'), 'pain_mapping');
   assert.equal(advancePhase(allSlots('filled'), 'warm_up'), 'sign_off');
   assert.equal(advancePhase(allSlots('filled'), 'sign_off'), 'sign_off');
+});
+
+test('GRE-4941: stepPhase moves a stuck phase on at its turn limit or on a question asked twice, never past sign_off', () => {
+  const agent = (content) => ({ role: 'agent', content });
+  const st = createInitialTaxonomyState();
+  assert.equal(phaseTurnLimit('warm_up', 10), 3);
+  assert.equal(phaseTurnLimit('warm_up', 60), 3);
+  assert.equal(phaseTurnLimit('pain_mapping', 10), 4);
+  assert.equal(phaseTurnLimit('pain_mapping', 20), 8);
+  assert.equal(phaseTurnLimit('sign_off', 20), Infinity);
+  // turn limit
+  assert.equal(stepPhase(st, { turns: [agent('Who do you report to?')] }), false);
+  assert.equal(stepPhase(st, { turns: [agent('How long have you been here?')] }), false);
+  assert.equal(stepPhase(st, { turns: [agent('What do you do?')] }), true);
+  assert.deepEqual([st.phase, st.phase_turns], ['day_in_the_life', 0]);
+  // repeat guard: the latest question was already asked twice (a light rewording still counts)
+  const turns = [agent('Right. What does a typical week look like?'), agent('So, what does a typical week look like for you?')];
+  assert.equal(stepPhase(st, { turns }), true);
+  assert.equal(st.phase, 'pain_mapping');
+  // sign_off never moves
+  st.phase = 'sign_off';
+  assert.equal(stepPhase(st, { turns }), false);
+  // slot fill still advances as before
+  const full = createInitialTaxonomyState();
+  full.slots.warm_up = { role_confirmed: 'filled', tenure_and_team: 'filled', rapport_established: 'filled', mode_confirmed: 'filled' };
+  assert.equal(stepPhase(full, { turns: [] }), true);
+  assert.equal(full.phase, 'day_in_the_life');
+});
+
+test('GRE-4941: question matching, harness slots and round durations', () => {
+  assert.equal(lastQuestionOf('Got it. Is that weekly? And who checks it?'), 'And who checks it?');
+  assert.equal(lastQuestionOf('Thank you, that is everything.'), null);
+  assert.equal(sameQuestion('How often does that happen?', 'how often does that happen, roughly?'), true);
+  assert.equal(sameQuestion('How often does that happen?', 'Who feels it first?'), false);
+  assert.deepEqual(askedQuestions([{ role: 'agent', content: 'Who feels it?' }, { role: 'user', content: 'Who feels it?' },
+    { role: 'agent', content: 'Right. Who feels it?' }]), [{ text: 'Who feels it?', count: 2 }]);
+  const slots = markParticipantEngaged(createInitialTaxonomyState().slots);
+  assert.deepEqual([slots.warm_up.mode_confirmed, slots.warm_up.rapport_established, slots.warm_up.role_confirmed], ['filled', 'filled', 'empty']);
+  assert.equal(targetMinutesOf({ target_minutes: 10 }), 10);
+  assert.equal(targetMinutesOf({}), 20);
+  assert.equal(targetMinutesOf({ target_minutes: 0 }), 20);
+  const ten = durationVariables(10);
+  assert.equal(ten['{{TARGET_MINUTES}}'], '10');
+  assert.equal(ten['{{WARM_UP_MINUTES}}'], 'about a minute');
+  assert.equal(durationVariables(20)['{{PAIN_MAPPING_MINUTES}}'], 'about 7 minutes');
 });
 
 test('signOffComplete and deriveNextAction follow the contract enum', () => {

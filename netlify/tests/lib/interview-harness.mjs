@@ -135,11 +135,19 @@ export function post(path, { user, body, raw, headers = {} } = {}) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// A different question each call: the repeat guard (GRE-4941) moves the phase on when one question is asked twice.
+const FAKE_QUESTIONS = [
+  'what does a normal Monday look like?', 'which task eats most of your week?', 'how often does that go wrong?',
+  'who feels it first when it slips?', 'roughly how many hours a week is that?', 'what have you tried so far?',
+  'what would good look like there?', 'which system do you spend longest in?', 'who hands work over to you?',
+  'what would you do with the time back?', 'anything else we have not touched on?', 'who else should we talk to?',
+];
+
 /**
  * A fake Anthropic client for the reply stream (chat and voice think): `messages.stream()` yields text deltas and a
  * final message with usage, like the SDK's MessageStream. `calls` records every request.
  */
-export function fakeReplyModel({ reply = (n) => `Thanks, that is really helpful. Could you tell me a little more about that? (${n})`, delayMs = 0 } = {}) {
+export function fakeReplyModel({ reply = (n) => `Thanks, that is really helpful. So, ${FAKE_QUESTIONS[(n - 1) % FAKE_QUESTIONS.length]} (${n})`, delayMs = 0 } = {}) {
   const calls = [];
   const client = {
     messages: {

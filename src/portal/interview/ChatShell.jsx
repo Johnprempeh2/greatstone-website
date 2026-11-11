@@ -54,6 +54,10 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
   const voiceSeq = useRef(0);
   const textareaRef = useRef(null);
   const kickoffFired = useRef(false);
+  // The last message put back in the composer, with its id. The server may
+  // already have stored it (the stream dropped after the save), so sending the
+  // same text again must reuse the id or the answer is stored twice (GRE-5013).
+  const unsentRef = useRef(null);
 
   // Close the kebab menu on any outside click, like the mockup.
   useEffect(() => {
@@ -73,6 +77,7 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
   // draft (only when the composer is empty, so a freshly-typed message is kept).
   const restoreUnsent = useCallback((content, clientTurnId) => {
     if (clientTurnId) setTurns((prev) => prev.filter((t) => t.id !== `local-${clientTurnId}`));
+    if (content !== undefined && clientTurnId) unsentRef.current = { content, clientTurnId };
     if (content !== undefined) setDraft((d) => (d.trim() ? d : content));
   }, []);
 
@@ -97,7 +102,7 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
   const requestTurn = useCallback(
     async (content, clientTurnId, isRetry = false) => {
       setBusy(true);
-      setErrorNote(null);
+      if (!isRetry) setErrorNote(null);
       setStreamText(''); // typing indicator from the first moment
 
       try {
@@ -129,7 +134,7 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
               return requestTurn(content, clientTurnId, true);
             }
             setStreamText(null);
-            setErrorNote('Just a moment while your last message saves — please send it again.');
+            setErrorNote('Your message is saved and the reply is on its way. Press send to see it.');
             restoreUnsent(content, clientTurnId);
             return;
           }
@@ -157,6 +162,7 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
         const handle = (event) => {
           switch (event.type) {
             case 'meta':
+              setErrorNote(null); // back online: drop "Reconnecting"
               if (event.phase) setPhase(event.phase);
               break;
             case 'delta':
@@ -209,12 +215,13 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
         // Network/5xx blip: auto-retry ONCE with the SAME clientTurnId so the
         // server collapses the duplicate turn and simply re-streams the reply.
         if (!isRetry && content !== undefined && clientTurnId) {
+          setErrorNote('Reconnecting…');
           await new Promise((r) => setTimeout(r, 800));
           return requestTurn(content, clientTurnId, true);
         }
         console.error('turn failed:', e);
         setStreamText(null);
-        setErrorNote('The connection hiccupped. Nothing you said was lost — please send that again.');
+        setErrorNote("The connection dropped. Your message is back in the box: press send when you're online again. It is only saved once.");
         restoreUnsent(content, clientTurnId);
       } finally {
         setBusy(false);
@@ -242,7 +249,11 @@ export function ChatShell({ sessionId, phase: initialPhase, initialTurns, voiceE
     setDraft('');
     // A stable id for this message: reused on auto-retry so a stutter never
     // writes the turn twice. Optimistic bubble; server insert confirmed via stream.
-    const clientTurnId = newClientTurnId();
+    // Sending a put-back message unchanged keeps its first id: the server may
+    // have saved it before the connection dropped. Changed text is a new message.
+    const unsent = unsentRef.current;
+    unsentRef.current = null;
+    const clientTurnId = unsent?.content === content ? unsent.clientTurnId : newClientTurnId();
     setTurns((prev) => [...prev, { id: `local-${clientTurnId}`, role: 'user', content }]);
     void requestTurn(content, clientTurnId);
   };

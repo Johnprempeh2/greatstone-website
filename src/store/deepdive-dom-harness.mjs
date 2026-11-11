@@ -32,7 +32,7 @@ export async function runInDom(source, prefix = 'ddprobe') {
     stdin: { contents: source, resolveDir: ROOT, loader: 'jsx' },
     bundle: true, format: 'esm', outfile, platform: 'browser', jsx: 'automatic',
     logLevel: 'silent', define: { 'process.env.NODE_ENV': '"development"' },
-    loader: { '.svg': 'text', '.css': 'empty' },
+    loader: { '.svg': 'text', '.css': 'empty', '.png': 'dataurl' },
   });
 
   const win = new Window({ url: 'http://localhost/' });
