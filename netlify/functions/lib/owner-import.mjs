@@ -8,6 +8,7 @@
 //   mcp-token         registers a portal MCP token from its SHA-256 (GRE-3769, migration 064); never the token itself
 //   mcp-token-revoke  revokes a portal MCP token by id (040's mcp_portal_revoke_token)
 //   approver          registers the one portal approver (039's portal_approvers) from John's card (GRE-3964)
+//   approver-link     links one GSAM person to that approver (067's portal_bridge_approvers) from John's card (GRE-3960)
 //   staging-approver  staging only: a fake signed-in owner, made portal approver and linked to one GSAM person
 //                     (067's portal_bridge_approvers), so the bridge's approve and publish can be proved (GRE-4081)
 //   verify-test-account  staging only: marks the one throwaway audit account verified (staging sends no email), so
@@ -36,7 +37,7 @@ export const OWNER = 'netlifydb_owner';
 // The rehearsal site is a throwaway copy of the cut-over (GRE-1701 rule 3); remove its entry when the site is deleted.
 export const SITES = Object.freeze({
   'gre1795-website-db-staging': { id: '8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb', context: 'production', modes: ['identities', 'proof'], identityCount: 8 },
-  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver'], identityCount: 10 },
+  'greatstone-home': { id: '3b1e97e6-e184-4251-badd-deed532be3ab', context: 'production', modes: ['tables', 'identities', 'mcp-token', 'mcp-token-revoke', 'approver', 'approver-link'], identityCount: 10 },
   'gre2567-cutover-rehearsal': { id: '6dce28c9-4b0d-4141-bf95-731dc0c4c843', context: 'production', modes: ['tables', 'identities'], identityCount: 10 },
   // The Next staging site's database starts empty (GRE-4222): the fake GRE-4103 org and test client, and the fake
   // approver for the bridge's approve and publish check (GRE-4081), and the signed-in test approver (GRE-2621).
@@ -425,6 +426,44 @@ export async function registerApprover(pool, data, apply) {
   });
 }
 
+// --- the GSAM link to the portal approver (GRE-3960) ---
+// 067 publishes from GSAM only for a GSAM person (user:<id>) linked in portal_bridge_approvers to the registered
+// approver, and left that row to John in an SQL editor Netlify Database does not give him. This mode writes it on
+// John's card: the GSAM person and a label come from the payload; the approver is the one row the approver mode wrote,
+// and it must be an active owner of the Greatstone org. While any link exists it refuses. Counts only in the result.
+
+export function validateApproverLink(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) refuse('approver-link-shape');
+  if (Object.keys(data).sort().join(',') !== 'gsamActor,label') refuse('approver-link-fields');
+  if (typeof data.gsamActor !== 'string' || !GSAM_PERSON.test(data.gsamActor)) refuse('approver-link-actor');
+  if (typeof data.label !== 'string' || !data.label.trim() || data.label.trim().length > 100) refuse('approver-link-label');
+  return data;
+}
+
+export async function linkApprover(pool, data, apply) {
+  const { gsamActor, label } = validateApproverLink(data);
+  return ownerTransaction(pool, apply, async (client) => {
+    await client.query('LOCK TABLE public.portal_approvers, public.portal_bridge_approvers IN SHARE ROW EXCLUSIVE MODE');
+    const n = async (sql, params) => (await client.query(sql, params)).rows[0].n;
+    if (await n('SELECT count(*)::int AS n FROM public.portal_bridge_approvers')) refuse('approver-link-exists');
+    const { rows } = await client.query('SELECT auth_user_id FROM public.portal_approvers');
+    if (rows.length !== 1) refuse('approver-link-no-approver');
+    const [{ auth_user_id: authUserId }] = rows;
+    if (await n(`SELECT count(*)::int AS n FROM public.users WHERE auth_subject = $1::text AND org_id = $2
+        AND role = 'owner' AND is_active AND deleted_at IS NULL`, [authUserId, GREATSTONE_ORG_ID]) !== 1)
+      refuse('approver-link-not-owner');
+    await client.query('INSERT INTO public.portal_bridge_approvers (gsam_actor, auth_user_id, label) VALUES ($1, $2, $3)',
+      [gsamActor, authUserId, label.trim()]);
+    // the same join bridge_portal_approve_and_publish makes
+    const linked = await n(`SELECT count(*)::int AS n FROM public.portal_bridge_approvers b
+        JOIN public.portal_approvers r ON r.auth_user_id = b.auth_user_id
+       WHERE b.gsam_actor = $1 AND EXISTS (SELECT 1 FROM public.users u WHERE u.auth_subject = b.auth_user_id::text
+         AND u.org_id = $2 AND u.is_active AND u.deleted_at IS NULL)`, [gsamActor, GREATSTONE_ORG_ID]);
+    if (linked !== 1) refuse('approver-link-differs');
+    return { approverLink: { before: 0, inserted: 1, after: 1 } };
+  });
+}
+
 // --- the staging audit account (Next cutover, 7 Nov 2026) ---
 // Staging has no mail sender, so a Better Auth sign-up there can never verify. This mode verifies one throwaway
 // account whose address has the fixed audit shape (STAGING_TEST_EMAIL in .env.example), and nothing else: it refuses
@@ -606,6 +645,7 @@ export async function runOwnerImport({ env, context, store, openPool, log = cons
             : mode === 'mcp-token' ? await registerMcpToken(pool, data, action === 'apply')
               : mode === 'mcp-token-revoke' ? await revokeMcpToken(pool, data, action === 'apply')
                 : mode === 'approver' ? await registerApprover(pool, data, action === 'apply')
+                  : mode === 'approver-link' ? await linkApprover(pool, data, action === 'apply')
                   : mode === 'staging-approver' ? await registerStagingApprover(pool, data, action === 'apply')
                     : mode === 'verify-test-account' ? await verifyTestAccount(pool, data, action === 'apply')
                       : mode === 'staging-test-approver' ? await registerTestApprover(pool, data, action === 'apply')
