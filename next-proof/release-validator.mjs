@@ -25,7 +25,7 @@ ajv.addSchema(collectionSchema);
 ajv.addSchema(motionSchema);
 const motionValidators = Object.fromEntries(Object.entries(motionManifest.blockMotionFields).map(([type, ref]) => [type, ajv.getSchema(`${motionSchema.$id}${ref}`)]));
 const validShape = ajv.compile(schema);
-const collectionKeys = ['vendors', 'categories', 'offerings', 'public-people', 'forms'];
+const collectionKeys = ['vendors', 'categories', 'offerings', 'public-people', 'forms', 'services', 'service-categories'];
 const fieldValidators = Object.fromEntries([...collectionKeys, 'redirects'].map((key) => [
   key, ajv.getSchema(`${collectionSchema.$id}#/$defs/${key}`),
 ]));

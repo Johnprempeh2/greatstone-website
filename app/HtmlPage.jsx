@@ -18,6 +18,7 @@ import HtmlBehaviours from './HtmlBehaviours.jsx';
 import { ldScript } from '../src/lib/ld-json.mjs';
 import { publicNavOrder } from '../src/lib/nav-order.js';
 import { siteChrome } from './site-chrome.mjs';
+import { releaseServices, withReleaseServices } from '../next-proof/service-pages.mjs';
 
 const REACT_NAMES = { class: 'className', tabindex: 'tabIndex', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
@@ -68,7 +69,8 @@ function islandElement(node, island, context, key) {
   // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
   const { blockId, ...props } = node.props;
   const frozen = blockId && Object.hasOwn(formBlocks, blockId) ? formBlocks[blockId] : {};
-  return <IslandBlock key={key} type={island.block} props={{ ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }}
+  return <IslandBlock key={key} type={island.block}
+    props={withReleaseServices(island.block, { ...frozen, ...props, id: `island-${key.replace(/\./g, '-')}` }, context.services)}
     pageSlug={context.pageSlug} forms={context.forms} pagePaths={context.pagePaths} />;
 }
 
@@ -80,7 +82,7 @@ function region(document, scope, context) {
 }
 
 export default function HtmlPage({ page, release, placeholders = false, markIslands = false }) {
-  const context = { media: release.media, forms: release.collections?.forms, pageSlug: page.slug,
+  const context = { media: release.media, forms: release.collections?.forms, services: releaseServices(release), pageSlug: page.slug,
     pagePaths: release.pages.map((item) => item.path), removed: [], release, placeholders, markIslands };
   const site = sanitiseCss(release.stylesheet, { media: release.media, fontFace: true });
   context.removed.push(...site.removed.map((item) => `stylesheet: ${item}`));

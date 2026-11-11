@@ -62,6 +62,7 @@ Everything else is a plain status or record edit that any actor may make.
 | 6 | Customer tier, edit | `PATCH /api/admin/v1/customer-tiers/:id` | any of the same (no row version on tiers: last write wins) | `200 { item: Tier }` |
 | 7 | Receipt "send again" (P) | `POST /api/admin/v1/portal-acceptances/:id/resend` | none | `200 { item: { acceptanceId, status: "queued", attempts: 0, nextAttemptAt } }` |
 | 8 | Activation steps | `PUT /api/admin/v1/vendors/:id/activation-steps` | `{ "activationSteps", "expectedRowVersion" }` | unchanged from GRE-3981; an agent changes only a draft vendor |
+| 9 | Seat request, decide (P) | `POST /api/admin/v1/invite-requests/:id/decision` | `{ "decision" }`, `approve` or `decline` (073) | `200 { item: InviteRequest, member }`; approve adds the member as `POST /access/clients/:id/members` does and marks the request `provisioned`; a decided request is `409 conflict` |
 
 ```
 Customer   { id, slug, name, tier_id, domain, billing_currency, notes, created_at, updated_at, row_version }
@@ -106,3 +107,13 @@ An answer never holds a licence key: `licence_key_last4` only.
 Errors are `{ "error": { "code" } }` only: `bad_request` (400), `denied` (403: an agent or system actor on a
 people-only change), `capability_denied` (403: not a write key), `not_found` (404, also another site's row),
 `conflict` (409, with `current` for an order), `idempotency_mismatch` (409), and the signature errors as above.
+
+### Admin parity round 2 (migration 073)
+
+- `GET /api/admin/v1/invite-requests[?customer=&updatedSince=&cursor=&limit=]` and `GET /invite-requests/:id`:
+  `{ id, customer_id, full_name, email, role, note, status: "pending" | "provisioned" | "declined", created_at, handled_at }`.
+- `GET /api/admin/v1/quotes/:id/po-document` and `GET /orders/:id/po-document` (read key): the buyer's uploaded PO file,
+  streamed from the private `po-documents` store as `application/octet-stream` with a `content-disposition` file name.
+  `404 not_found` when there is none. Quotes now carry `po_document_name` and `has_po_document`; orders `has_po_document`.
+- `GET /api/admin/v1/enquiries/fd-:uuid/agent-package` (read key): the lead's three agents as an Agent Companies
+  package, `application/zip`. Front door enquiries carry `agentPackage: true` when there is one to download.

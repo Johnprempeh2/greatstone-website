@@ -1,3 +1,4 @@
+import { releaseServices } from '../next-proof/service-pages.mjs';
 import { ProofBlocks } from './ProofBlocks.jsx';
 import { pageForPath } from './proof-data.js';
 import { siteChrome } from './site-chrome.mjs';
@@ -21,6 +22,6 @@ export default function ProofPage({ path, release }) {
   const page = pageForPath(path, release);
   const briefings = path === '/insights' ? insightBriefings(release) : [];
   return <SiteFrame release={release}>
-    <ProofBlocks data={page.data} pageSlug={page.slug} pagePaths={release.pages.map((item) => item.path)} forms={release.collections?.forms} briefings={briefings} />
+    <ProofBlocks data={page.data} pageSlug={page.slug} pagePaths={release.pages.map((item) => item.path)} forms={release.collections?.forms} services={releaseServices(release)} briefings={briefings} />
   </SiteFrame>;
 }

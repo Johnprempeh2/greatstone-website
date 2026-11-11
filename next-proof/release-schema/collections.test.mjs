@@ -40,3 +40,14 @@ test('release reader applies field versions and refuses private team collections
   release.collections.team = { fieldsVersion: 1, entries: [] };
   assert.equal(validateRelease(release, { siteId: release.siteId, orgId })?.rule, 'R10');
 });
+
+test('services: the exact 78 bundled services and their 9 categories pass the field schema; a broken one does not', async () => {
+  const { services, categories } = await import('../../src/data/service-catalog.mjs');
+  assert.deepEqual([services.length, categories.length], [78, 9]);
+  for (const service of services) assert.equal(valid('services')(service), true, `${service.slug}: ${ajv.errorsText(valid('services').errors)}`);
+  for (const category of categories) assert.equal(valid('service-categories')(category), true, category.name);
+  const { name, ...nameless } = services[0];
+  assert.equal(valid('services')(nameless), false);
+  assert.equal(valid('services')({ ...services[0], slug: 'Not A Slug' }), false);
+  assert.equal(valid('services')({ ...services[0], price: 100 }), false);
+});

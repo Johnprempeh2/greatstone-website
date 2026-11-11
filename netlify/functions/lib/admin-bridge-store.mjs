@@ -83,6 +83,9 @@ const ORDER_ITEMS_SQL = `(SELECT COALESCE(jsonb_agg(jsonb_build_object('id',i.id
   'sku',(SELECT v.sku FROM offering_variants v WHERE v.id = i.variant_id)) ORDER BY i.created_at, i.id), '[]'::jsonb)
   FROM order_items i WHERE i.order_id = x.id)`;
 
+// Whether the quote an order came from holds the buyer's PO file (orders/<id>/po-document streams it).
+const PO_OF_ORDER_SQL = 'bridge_quote_has_po(x.quote_id)';
+
 const RESOURCES = {
   customers: {
     table: 'customers', time: 'created_at', updated: 'updated_at', customer: 'id', live: 'x.deleted_at IS NULL',
@@ -96,7 +99,8 @@ const RESOURCES = {
     columns: ['id', 'reference', 'customer_id', 'customer_user_id', 'contact_name', 'contact_email', 'contact_company',
       'contact_phone', 'message', 'status', 'source', 'currency', 'indicative_total_minor', 'quoted_total_minor',
       'po_reference', 'valid_until', 'created_at', 'updated_at', 'row_version'],
-    extra: { items: items('quote_items', 'quote_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
+    // whether the buyer uploaded a PO file (028, 073); the bytes come from <id>/po-document
+    extra: { has_po_document: 'bridge_quote_has_po(x.id)', items: items('quote_items', 'quote_id', ['id', 'offering_id', 'variant_id', 'offering_name', 'variant_name',
       'qty', 'list_price_minor', 'captured_price_minor', 'currency']) },
   },
   orders: {
@@ -104,7 +108,7 @@ const RESOURCES = {
     columns: ['id', 'reference', 'quote_id', 'customer_id', 'customer_user_id', 'customer_email', 'status', 'currency',
       'subtotal_minor', 'total_minor', 'refunded_minor', 'po_reference', 'invoice_number', 'placed_at', 'created_at',
       'updated_at', 'row_version'],
-    extra: { items: ORDER_ITEMS_SQL },
+    extra: { items: ORDER_ITEMS_SQL, has_po_document: PO_OF_ORDER_SQL },
   },
   'billing-lines': {
     table: 'billing_lines', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
@@ -131,6 +135,11 @@ const RESOURCES = {
     table: 'engagements', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'x.deleted_at IS NULL',
     columns: ['id', 'customer_id', 'kind', 'status', 'title', 'summary', 'body_html', 'external_url', 'occurred_on', 'phase',
       'owner_name', 'attendees', 'tags', 'pinned', 'created_at', 'updated_at', 'row_version'],
+  },
+  // A client admin's request for a new seat (017); a person decides it with invite-requests/<id>/decision (073).
+  'invite-requests': {
+    table: 'member_invite_requests', time: 'created_at', updated: 'created_at', customer: 'customer_id', live: 'true',
+    columns: ['id', 'customer_id', 'full_name', 'email', 'role', 'note', 'status', 'created_at', 'handled_at'],
   },
   'portal-documents': {
     table: 'portal_documents', time: 'created_at', updated: 'updated_at', customer: 'customer_id', live: 'true',
@@ -205,6 +214,7 @@ const ENQUIRIES = `
     'source', 'front-door', 'page', f.source #>> '{page}', 'utm', f.source -> 'firstTouch',
     'consent', jsonb_build_object('given', f.consent_given, 'at', f.consent_at, 'version', f.consent_version),
     'industry', f.industry, 'sizeBand', f.team_size, 'role', f.contact_role, 'status', f.status,
+    'agentPackage', bridge_lead_has_package(f.id),
     'createdAt', coalesce(f.contact_at, f.created_at))
   FROM front_door_leads f WHERE f.contact_email IS NOT NULL`;
 
@@ -218,7 +228,7 @@ function toEnquiry(e, id) {
     organisationName: e.organisationName || null, phone: null, message: e.message || null, source: e.source,
     page: e.page || null, utm, ...(e.consent ? { consent: e.consent } : {}), createdAt: new Date(e.createdAt).toISOString(),
     services: e.services, industry: e.industry || null, sizeBand: e.sizeBand || null, role: e.role || null,
-    status: e.status,
+    status: e.status, ...(e.source === 'front-door' ? { agentPackage: e.agentPackage === true } : {}),
   };
 }
 
@@ -420,4 +430,24 @@ export async function bridgePayments(client, searchParams, stripeMode) {
   const { rows: requests } = await client.query(`SELECT r.status, count(*)::int AS requests, sum(r.amount_minor)::bigint AS amount_minor
     FROM refund_requests r JOIN orders x ON x.id = r.order_id WHERE ${range.join(' AND ')} GROUP BY r.status ORDER BY r.status`, rangeParams);
   return { stripeMode, totals, refundRequests: requests, items: orders.items, nextCursor: orders.nextCursor };
+}
+
+/**
+ * The buyer's PO file for a quote, or for the quote an order came from: { path, name } in the private po-documents
+ * store, or not_found. The caller streams the bytes; the path never leaves the site.
+ */
+export async function bridgePoDocument(client, resource, id) {
+  if (!UUID.test(id)) throw new BridgeRequestError('not_found');
+  const { rows: [r] } = await client.query('SELECT bridge_po_document($1, $2::uuid) AS file', [resource, id]);
+  if (!r.file?.path) throw new BridgeRequestError('not_found');
+  return r.file;
+}
+
+/** A front door lead's agents and saved package (036), for the agent package .zip, or not_found. */
+export async function bridgeLeadPackage(client, id) {
+  const m = /^fd-([0-9a-f-]{36})$/.exec(id);
+  if (!m || !UUID.test(m[1])) throw new BridgeRequestError('not_found');
+  const { rows: [r] } = await client.query('SELECT bridge_lead_package($1::uuid) AS lead', [m[1]]);
+  if (!r.lead) throw new BridgeRequestError('not_found');
+  return r.lead;
 }
