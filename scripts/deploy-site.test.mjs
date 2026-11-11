@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawnSync, spawn } from 'node:child_process';
+import { generateKeyPairSync, sign, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import htmlSample from '../next-proof/fixtures/html-release-sample.json' with { type: 'json' };
 
@@ -14,6 +15,16 @@ function git(cwd, ...args) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout.trim();
+}
+
+// GSAM's deploy signing key, as GSAM makes it: Ed25519, the public half shown as the raw key in base64url.
+const signer = generateKeyPairSync('ed25519');
+const publicKey = signer.publicKey.export({ format: 'jwk' }).x;
+/** A ticket as GSAM signs it; `key` signs with another key (a forger's). */
+function ticket(fields = {}, key = signer.privateKey) {
+  const body = Buffer.from(JSON.stringify({ v: 1, action: 'deploy', site: 'greatstone-home', id: randomUUID(),
+    exp: Date.now() + 10 * 60 * 1000, by: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', ...fields })).toString('base64url');
+  return `${body}.${sign(null, Buffer.from(body), key).toString('base64url')}`;
 }
 
 async function fixture(t) {
@@ -60,6 +71,8 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   const served = [site];
   const restores = [];
   const failing = new Set();
+  // Public site deploys a Roll back can name (GET /sites/<id>/deploys/<id>).
+  const publicDeploys = new Map([['aaaaaaaaaaaaaaaaaaaaaaaa', { state: 'ready', context: 'production' }]]);
   // Staging as the pre-Deploy gate sees it (GRE-4707): the pages it answers, the release it serves, its shop.
   const staging = { failing: new Map(), redirects: new Set(), release: '4', emptyShop: false };
   const shopPage = (empty) => empty ? '<h3>Catalogue unavailable</h3>' : '<a class="st-card" href="/product/sample-product">';
@@ -86,6 +99,13 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
       res.end('{}');
       return;
     }
+    const one = /^\/api\/v1\/sites\/(3b1e97e6-e184-4251-badd-deed532be3ab)\/deploys\/([^/]+)$/.exec(req.url);
+    if (one) {
+      const found = publicDeploys.get(one[2]);
+      res.statusCode = found ? 200 : 404;
+      res.end(JSON.stringify(found ? { id: one[2], site_id: one[1], title: `gsam-source:prod:${'b'.repeat(40)}`, ...found } : {}));
+      return;
+    }
     if (/^\/api\/v1\/sites\/(?:3b1e97e6-e184-4251-badd-deed532be3ab|6689e558-855b-40b1-be45-c530531fed45)$/.test(req.url)) {
       res.end(JSON.stringify({ published_deploy: { id: 'live-before' } }));
       return;
@@ -106,6 +126,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
     NODE_ENV: 'test', NETLIFY_AUTH_TOKEN: 'test-token', NETLIFY_TEST_API_URL: url,
     GSAM_API_URL: url, GSAM_API_KEY: 'test-key', GSAM_TASK_ID: 'test-task', DEPLOY_LOG: log,
     SHARED_LOCK_FILE: join(cwd, 'bin', 'shared-lock.json'),
+    GSAM_DEPLOY_PUBLIC_KEY: publicKey,
   };
   function commit(path, content) {
     return mkdir(dirname(join(cwd, path)), { recursive: true })
@@ -123,7 +144,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
     const status = await new Promise((resolve) => child.on('exit', resolve));
     return { status, stdout, stderr };
   }
-  return { cwd, base, env, log, commit, run,
+  return { cwd, base, env, log, commit, run, ticket, publicDeploys,
     setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
     setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); },
     serve: (name) => { served.push(name); }, restores, failing, staging };
@@ -271,7 +292,7 @@ test('front-end drift never lets a staging card reach the public site', async (t
   await f.commit('src/app.js', 'front-end');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /production refused/);
+  assert.match(result.stderr, /deploy ticket refused: no ticket/);
 });
 
 test('a staging card never authorises the public site', async (t) => {
@@ -280,7 +301,7 @@ test('a staging card never authorises the public site', async (t) => {
   f.setInteractions([stagingCard(f.base)]);
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /production refused/);
+  assert.match(result.stderr, /deploy ticket refused: no ticket/);
 });
 
 function weeklyCard(sha, changes = {}) {
@@ -289,98 +310,157 @@ function weeklyCard(sha, changes = {}) {
     ...changes });
 }
 
-test('a weekly release card authorises both sites for its exact SHA', async (t) => {
+test('a weekly release card still covers a staging site, never the public site', async (t) => {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
   f.setInteractions([weeklyCard(f.base)]);
   await stageContent(f, 4, { live: true });
-  // The fake Netlify API only serves the staging site, so the public run passes the gate
-  // and then stops at the deploy lookup.
   let result = await f.run('prod', 'greatstone-home');
-  assert.doesNotMatch(result.stderr, /production refused/);
-  assert.match(result.stderr, /greatstone-home\.netlify\.app\/deploys: 404/);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /deploy ticket refused: no ticket/);
   result = await f.run('prod');
   assert.equal(result.status, 0, result.stderr);
 });
 
-test('a weekly release card never covers public-site drift, other sites or agent resolution', async (t) => {
-  const f = await fixture(t);
-  git(f.cwd, 'checkout', '-q', 'main');
-  const cases = [
-    weeklyCard(f.base, { status: 'pending' }),
-    weeklyCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
-    weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: ${site} ${f.base}` } }),
-    weeklyCard('a'.repeat(40)),
-  ];
-  for (const card of cases) {
-    f.setInteractions([card]);
-    const result = await f.run('prod', 'greatstone-home');
-    assert.equal(result.status, 1, JSON.stringify(card));
-    assert.match(result.stderr, /production refused/);
-  }
-  f.setInteractions([weeklyCard(f.base)]);
-  await f.commit('src/app.js', 'front-end');
+test('the old cut-over card and approval comment no longer reach the public site', async (t) => {
+  const f = await publicTrain(t, { withTicket: false });
+  f.setInteractions([stagingCard(f.base, { idempotencyKey: `confirmation:GRE-2567:cutover:${f.base}`,
+    payload: { detailsMarkdown: `Approve cut-over: greatstone-home ${f.base}` } })]);
+  f.setComments([{ authorType: 'user', body: `Approve production deploy: greatstone-home ${f.base}` }]);
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /production refused/);
+  assert.match(result.stderr, /deploy ticket refused: no ticket/);
+  await assert.rejects(readFile(f.log));
 });
 
-function cutoverCard(sha, changes = {}) {
-  return stagingCard(sha, { idempotencyKey: `confirmation:GRE-2567:cutover:${sha}`,
-    payload: { detailsMarkdown: `Approve cut-over: greatstone-home ${sha}` }, ...changes });
-}
-
-test('the GRE-2567 cut-over card authorises the public site for its exact SHA', async (t) => {
+// The lean Deploy (11 Nov): the public site takes only a ticket GSAM signed for staging's exact commit and release.
+async function publicTrain(t, { withTicket = true } = {}) {
   const f = await fixture(t);
   git(f.cwd, 'checkout', '-q', 'main');
   f.servePublicSite();
-  f.setInteractions([cutoverCard(f.base)]);
-  await stageContent(f, 4, { live: true });
+  f.serve('gre3833-next-db-staging');
+  f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${f.base}` }]);
   f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
-  const result = await f.run('prod', 'greatstone-home');
+  const { current } = await stageContent(f, 4, { live: true });
+  f.staged = current;
+  f.deployTicket = (fields = {}, key) => ticket({ sha: f.base, release: current.release, sha256: current.sha256, ...fields }, key);
+  if (withTicket) f.env.GSAM_DEPLOY_TICKET = f.deployTicket();
+  return f;
+}
+
+test('a good ticket deploys the public site once; the same ticket is refused the second time', async (t) => {
+  const f = await publicTrain(t);
+  let result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
-  assert.match(await readFile(f.log, 'utf8'), /--prod --json/);
+  assert.match(result.stdout, /Deploy ticket [0-9a-f-]{36} accepted/);
+  await rm(f.log);
+  await rm(`${f.log}.baked.json`, { force: true });
+  result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /deploy ticket refused: it has been used already/);
+  await assert.rejects(readFile(f.log));
+});
+
+test('an unsigned, forged, expired, long-lived or mismatched ticket is refused before anything uploads', async (t) => {
+  const f = await publicTrain(t);
+  const forger = generateKeyPairSync('ed25519').privateKey;
+  const good = f.deployTicket();
+  const [body] = good.split('.');
+  const cases = [
+    ['', /no ticket/],
+    [body, /malformed/],
+    [`${body}.${Buffer.from('nope').toString('base64url')}`, /bad signature/],
+    [f.deployTicket({}, forger), /bad signature/],
+    [f.deployTicket({ exp: Date.now() - 1000 }), /expired/],
+    [f.deployTicket({ exp: Date.now() + 2 * 60 * 60 * 1000 }), /lives longer than 15 minutes/],
+    [f.deployTicket({ sha: 'c'.repeat(40) }), /it names commit c{40}/],
+    [f.deployTicket({ release: 3 }), /staging's content release changed/],
+    [f.deployTicket({ sha256: '0'.repeat(64) }), /staging's content release changed/],
+    [f.deployTicket({ action: 'rollback' }), /it is not a Deploy of greatstone-home/],
+    [f.deployTicket({ site: 'gre3833-next-db-staging' }), /it is not a Deploy of greatstone-home/],
+  ];
+  for (const [value, reason] of cases) {
+    f.env.GSAM_DEPLOY_TICKET = value;
+    const result = await f.run('prod', 'greatstone-home');
+    assert.equal(result.status, 1, `${reason}\n${result.stderr}`);
+    assert.match(result.stderr, new RegExp(`deploy ticket refused: ${reason.source}`));
+  }
+  await assert.rejects(readFile(f.log));
+  // Tampering with a good ticket's payload breaks its signature.
+  const tampered = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(body, 'base64url')), sha: 'd'.repeat(40) })).toString('base64url');
+  f.env.GSAM_DEPLOY_TICKET = `${tampered}.${good.split('.')[1]}`;
+  assert.match((await f.run('prod', 'greatstone-home')).stderr, /deploy ticket refused: bad signature/);
+});
+
+test('a ticket is refused when staging has moved on to another commit', async (t) => {
+  const f = await publicTrain(t);
+  f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${'e'.repeat(40)}` }]);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /staging no longer serves/);
+  await assert.rejects(readFile(f.log));
+});
+
+test('the workflow step reads the action and commit from a good ticket only', async (t) => {
+  const f = await publicTrain(t);
+  const cli = new URL('./deploy-ticket.mjs', import.meta.url).pathname;
+  const runCli = (value) => spawnSync(process.execPath, [cli], { encoding: 'utf8', env: { ...f.env, GSAM_DEPLOY_TICKET: value } });
+  let out = runCli(f.env.GSAM_DEPLOY_TICKET);
+  assert.equal(out.status, 0, out.stderr);
+  assert.equal(out.stdout, `action=deploy\nsha=${f.base}\n`);
+  out = runCli(f.deployTicket({}, generateKeyPairSync('ed25519').privateKey));
+  assert.equal(out.status, 1);
+  assert.equal(out.stdout, '');
+  assert.match(out.stderr, /bad signature/);
+});
+
+// Roll back (11 Nov): put the earlier live deploy back with the content pointer it served, then check the site.
+test('a rollback ticket restores the earlier deploy and its content pointer, once', async (t) => {
+  const f = await publicTrain(t);
+  // A Deploy records what was live before it: deploy live-before, serving content release 4.
+  let result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  const recorded = (await publicStore(f))['live-history/live-before.json'];
+  assert.deepEqual(JSON.parse(Buffer.from(recorded, 'base64')), f.staged);
+  const target = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+  const store = await publicStore(f);
+  store[`live-history/${target}.json`] = recorded;
+  delete store.current;
+  await writeFile(join(f.cwd, 'bin', 'greatstone-home.json'), JSON.stringify(store));
+  f.env.GSAM_DEPLOY_TICKET = ticket({ action: 'rollback', deployId: target });
+  result = await f.run('rollback', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(f.restores, [target]);
+  assert.deepEqual(JSON.parse(Buffer.from((await publicStore(f)).current, 'base64')), f.staged);
+  assert.match(result.stdout, /Rolled back to a{24}: 7 pages and 4 APIs answered 200/);
+  result = await f.run('rollback', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /it has been used already/);
+  assert.deepEqual(f.restores, [target]);
+});
+
+test('a rollback is refused without a rollback ticket, for an unknown deploy, or the deploy already live', async (t) => {
+  const f = await publicTrain(t);
+  const cases = [
+    [f.deployTicket(), /not a Roll back of greatstone-home/],
+    [ticket({ action: 'rollback', deployId: 'aaaa' }), /not a Roll back of greatstone-home/],
+    [ticket({ action: 'rollback', deployId: 'f'.repeat(24) }), /404/],
+    [ticket({ action: 'rollback', deployId: 'aaaaaaaaaaaaaaaaaaaaaaaa' }, generateKeyPairSync('ed25519').privateKey), /bad signature/],
+  ];
+  f.publicDeploys.set('live-before'.padEnd(24, '0'), { state: 'ready', context: 'production' });
+  for (const [value, reason] of cases) {
+    f.env.GSAM_DEPLOY_TICKET = value;
+    const result = await f.run('rollback', 'greatstone-home');
+    assert.equal(result.status, 1, `${reason}\n${result.stderr}`);
+    assert.match(result.stderr, reason);
+  }
+  f.publicDeploys.set('b'.repeat(24), { state: 'error', context: 'production' });
+  f.env.GSAM_DEPLOY_TICKET = ticket({ action: 'rollback', deployId: 'b'.repeat(24) });
+  assert.match((await f.run('rollback', 'greatstone-home')).stderr, /not a ready production deploy/);
   assert.deepEqual(f.restores, []);
 });
 
-test('the cut-over card never covers staging, another SHA, drift, agent resolution or other text', async (t) => {
-  const f = await fixture(t);
-  git(f.cwd, 'checkout', '-q', 'main');
-  f.servePublicSite();
-  f.setInteractions([cutoverCard(f.base)]);
-  let result = await f.run('prod');
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /production refused/);
-  const cases = [
-    cutoverCard(f.base, { status: 'pending' }),
-    cutoverCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }),
-    cutoverCard(f.base, { requestedResolverPolicy: 'anyone' }),
-    cutoverCard(f.base, { idempotencyKey: `confirmation:GRE-9999:cutover:${f.base}` }),
-    cutoverCard(f.base, { payload: { detailsMarkdown: `Approve cut-over: ${site} ${f.base}` } }),
-    cutoverCard('a'.repeat(40)),
-  ];
-  for (const card of cases) {
-    f.setInteractions([card]);
-    result = await f.run('prod', 'greatstone-home');
-    assert.equal(result.status, 1, JSON.stringify(card));
-    assert.match(result.stderr, /production refused/);
-  }
-  f.setInteractions([cutoverCard(f.base)]);
-  await f.commit('src/app.js', 'front-end');
-  result = await f.run('prod', 'greatstone-home');
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /production refused/);
-});
-
-async function weeklyTrain(t) {
-  const f = await fixture(t);
-  git(f.cwd, 'checkout', '-q', 'main');
-  f.servePublicSite();
-  f.setInteractions([weeklyCard(f.base)]);
-  f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
-  await stageContent(f, 4, { live: true });
-  return f;
-}
+const weeklyTrain = publicTrain;
 
 test('the weekly train deploys the public site, then the editor alias from the same commit', async (t) => {
   const f = await weeklyTrain(t);
@@ -398,7 +478,7 @@ test('the weekly train deploys the public site, then the editor alias from the s
 
 test('the editor alias still ships when the public upload is skipped', async (t) => {
   const f = await weeklyTrain(t);
-  f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${f.base}` }]);
+  f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${f.base}` }, { state: 'ready', title: `gsam-source:staging:${f.base}` }]);
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Skipped greatstone-home: no changes/);
@@ -620,39 +700,6 @@ test('production from a detached HEAD needs exactly origin main', async (t) => {
   assert.match(refused.stderr, /production requires main/);
 });
 
-test('a web-rc tag behind main ships only with the exact weekly card (GRE-4815)', async (t) => {
-  const f = await fixture(t);
-  const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
-  t.after(() => rm(remote, { recursive: true, force: true }));
-  git(f.cwd, 'init', '-q', '--bare', remote);
-  git(f.cwd, 'remote', 'add', 'origin', remote);
-  git(f.cwd, 'checkout', '-q', 'main');
-  git(f.cwd, 'tag', '-a', 'web-rc-2026-11-09', '-m', 'candidate');
-  await f.commit('netlify/database/migrations/072_x/migration.sql', 'protected');
-  git(f.cwd, 'push', '-q', 'origin', 'main', 'web-rc-2026-11-09');
-  git(f.cwd, 'checkout', '-q', '--detach', 'web-rc-2026-11-09');
-  const cases = [
-    [[weeklyCard(f.base)], 0],
-    [[stagingCard(f.base)], 1],
-    [[], 1],
-    [[weeklyCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' })], 1],
-  ];
-  for (const [cards, status] of cases) {
-    f.setInteractions(cards);
-    const result = await f.run('prod');
-    assert.equal(result.status, status, `${JSON.stringify(cards)}\n${result.stderr}`);
-    if (status) assert.match(result.stderr, /production refused: a web-rc tag behind main/);
-  }
-  // A web-rc tag main does not contain is not a release candidate.
-  await f.commit('src/app.js', 'side');
-  git(f.cwd, 'tag', 'web-rc-2026-11-10');
-  git(f.cwd, 'push', '-q', 'origin', 'web-rc-2026-11-10');
-  f.setInteractions([weeklyCard(git(f.cwd, 'rev-parse', 'HEAD'))]);
-  const side = await f.run('prod');
-  assert.equal(side.status, 1);
-  assert.match(side.stderr, /production requires main/);
-});
-
 async function refreshFixture(t) {
   const f = await fixture(t);
   const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
@@ -834,9 +881,8 @@ test('staging refuses a branch that is not main, and any other site', async (t) 
   await assert.rejects(readFile(f.log));
 });
 
-test('the public site takes the commit on staging once main has moved on, still behind the card', async (t) => {
-  const f = await fixture(t);
-  git(f.cwd, 'checkout', '-q', 'main');
+test('the public site takes the commit staging serves once main has moved on, only with its ticket', async (t) => {
+  const f = await publicTrain(t);
   const staged = f.base;
   const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
   t.after(() => rm(remote, { recursive: true, force: true }));
@@ -845,19 +891,16 @@ test('the public site takes the commit on staging once main has moved on, still 
   await f.commit('src/app.js', 'newer main code');
   git(f.cwd, 'push', '-q', 'origin', 'main');
   git(f.cwd, 'checkout', '-q', '--detach', staged);
-  f.serve('gre3833-next-db-staging');
-  f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${staged}` }]);
   let result = await f.run('prod', 'greatstone-home');
-  assert.match(result.stderr, /production refused/);
-  f.setInteractions([weeklyCard(staged)]);
-  await stageContent(f, 4, { live: true });
-  // Past the gate, the fake API stops it at the public site's deploy lookup.
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(await readFile(f.log, 'utf8'), new RegExp(`gsam-source:prod:${staged} --prod --json`));
+  // main's newer commit is not what staging serves, so a ticket for it is refused.
+  await rm(`${f.log}.baked.json`, { force: true });
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.env.GSAM_DEPLOY_TICKET = f.deployTicket({ sha: git(f.cwd, 'rev-parse', 'HEAD') });
   result = await f.run('prod', 'greatstone-home');
-  assert.doesNotMatch(result.stderr, /production refused|production requires/);
-  assert.match(result.stderr, /greatstone-home\.netlify\.app\/deploys: 404/);
-  f.setDeploys([]);
-  result = await f.run('prod', 'greatstone-home');
-  assert.match(result.stderr, /production requires main .*or the commit on staging/);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /staging no longer serves/);
 });
 
 // Next cutover step 4: the public site is checked before it is published, and put back if its APIs fail after.
@@ -966,14 +1009,15 @@ async function stageContent(f, number = 4, { collections = goodCatalogue, live =
 }
 const publicStore = async (f) => { try { return JSON.parse(await readFile(join(f.cwd, 'bin', 'greatstone-home.json'), 'utf8')); } catch { return {}; } };
 
-test('Deploy promotes the staged content release with the commit, only when the card names it', async (t) => {
+test('Deploy promotes the staged content release with the commit, only when the ticket names it', async (t) => {
   const f = await weeklyTrain(t);
-  const { current, line } = await stageContent(f);
+  const { current } = await stageContent(f);
+  f.env.GSAM_DEPLOY_TICKET = f.deployTicket({ release: 3 });
   let result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /naming "Content release 4/);
+  assert.match(result.stderr, /content release changed since GSAM signed it/);
   assert.deepEqual(await publicStore(f), {});
-  f.setInteractions([weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}\n${line}` } })]);
+  f.env.GSAM_DEPLOY_TICKET = f.deployTicket();
   result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
   const store = await publicStore(f);
@@ -984,8 +1028,7 @@ test('Deploy promotes the staged content release with the commit, only when the 
 
 test('a failed promote puts the public content pointer back', async (t) => {
   const f = await weeklyTrain(t);
-  const { line } = await stageContent(f);
-  f.setInteractions([weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}\n${line}` } })]);
+  await stageContent(f);
   f.failing.add('/api/catalogue');
   const result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
@@ -1028,8 +1071,8 @@ async function assertRefusedBeforeUpload(f, result, reason) {
 test('a staged release with 0 products, categories or vendors is refused before upload', async (t) => {
   for (const empty of ['offerings', 'categories', 'vendors']) {
     const f = await weeklyTrain(t);
-    const { line } = await stageContent(f, 4, { collections: { ...goodCatalogue, [empty]: [] } });
-    f.setInteractions([weeklyCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}\n${line}` } })]);
+    const { current } = await stageContent(f, 4, { collections: { ...goodCatalogue, [empty]: [] } });
+    f.env.GSAM_DEPLOY_TICKET = f.deployTicket({ sha256: current.sha256 });
     const result = await f.run('prod', 'greatstone-home');
     const named = empty === 'offerings' ? 'products' : empty;
     await assertRefusedBeforeUpload(f, result, new RegExp(`staging's Content release 4 \\(sha256 [0-9a-f]{12}\\) has 0 ${named}`));
@@ -1056,7 +1099,10 @@ test('a key page that fails on staging is refused before upload', async (t) => {
 test('staging with no content release is refused before upload', async (t) => {
   const f = await weeklyTrain(t);
   await rm(join(f.cwd, 'bin', 'gre3833-next-db-staging.json'));
-  await assertRefusedBeforeUpload(f, await f.run('prod', 'greatstone-home'), /staging's store has no content release/);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /deploy ticket refused: staging's content release changed/);
+  await assert.rejects(readFile(f.log));
 });
 
 test('a good staged release passes the gate (redirects followed) and its product page is checked live', async (t) => {

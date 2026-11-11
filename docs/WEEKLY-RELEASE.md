@@ -1,4 +1,6 @@
-# Weekly website release train
+# Weekly website release train (retired 11 Nov 2026)
+
+**Replaced.** greatstoneint.com now changes only when John presses Deploy on the Website module in GS Agentic Manager (see README, "greatstoneint.com"). Weekly cards and `web-rc-*` tags no longer authorise the public site. Kept for history.
 
 Agreed by John on 25 Oct 2026 (GRE-2641). Merged website work goes live once a week, on one
 card. Keystone runs the train; Flint checks it. Urgent fixes can still go out alone.

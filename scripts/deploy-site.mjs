@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 import { readGsamRelease } from '../next-proof/gsam-release.mjs';
 import provenRelease from '../next-proof/data/release.json' with { type: 'json' };
+import { verifyTicket } from './deploy-ticket.mjs';
 
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
@@ -16,7 +17,7 @@ const sites = new Map([
 // staging site since GRE-4202. Staging holds the edits (John, 7 Nov): every merge to main goes there with no
 // card (deploy:staging) on its own Netlify Database. Since the Next cutover decision (7 Nov) it holds the Next
 // build, the site greatstoneint.com moves to, so its upload is the prepared Next copy of the commit.
-// "Deploy these changes" promotes its commit.
+// John's Deploy in GSAM promotes its commit (deploy-production.yml, with a GSAM ticket).
 const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
 const stagingSite = 'gre3833-next-db-staging';
 // The public site runs the same Next build as staging (Next cutover step 4, through John's Deploy card).
@@ -36,7 +37,7 @@ const johnId = 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP';
 const [mode, site, prNumber] = process.argv.slice(2);
 // A config refresh re-uploads to production, so it shares production's marker and lock.
 // A rehearsal runs the public promote on staging, so it shares staging's marker and lock.
-const channel = mode === 'refresh' ? 'prod' : mode === 'rehearse' ? 'staging' : mode;
+const channel = mode === 'refresh' || mode === 'rollback' ? 'prod' : mode === 'rehearse' ? 'staging' : mode;
 const issueId = process.env.GSAM_TASK_ID;
 const token = process.env.NETLIFY_AUTH_TOKEN;
 const base = process.env.GSAM_API_URL?.replace(/\/?api\/?$/, '').replace(/\/$/, '');
@@ -80,20 +81,18 @@ async function comments() {
   return json(`${base}/api/issues/${issueId}/comments`, process.env.GSAM_API_KEY);
 }
 
-// The weekly release card (GRE-2641) uses the `weekly-release` key. It covers staging like a
-// staging card does, and it is the only card that can authorise the public site, for its exact SHA.
-async function stagingCardApproved(sha, exact = false, mustName = null, weeklyOnly = false) {
+// Staging cards (and the old weekly release card, GRE-2641) cover a staging site's prod-mode upload and a config
+// refresh. No card reaches the public site any more: it moves only with a GSAM deploy ticket (11 Nov).
+async function stagingCardApproved(sha, exact = false) {
   if (!base || !process.env.GSAM_API_KEY || !issueId) throw new Error('GSAM task credentials are required');
   const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
-  const kinds = weeklyOnly || site === 'greatstone-home' ? 'weekly-release' : 'staging-deploy|weekly-release';
-  const key = new RegExp(`^confirmation:GRE-\\d+:(?:${kinds}):([0-9a-f]{40})(?::v[1-9]\\d*)?$`);
+  const key = new RegExp(`^confirmation:GRE-\\d+:(?:staging-deploy|weekly-release):([0-9a-f]{40})(?::v[1-9]\\d*)?$`);
   for (const card of cards) {
     const approvedSha = key.exec(card.idempotencyKey || '')?.[1];
     if (card.kind !== 'request_confirmation' || card.status !== 'accepted' ||
         card.requestedResolverPolicy !== 'human_only' || card.effectiveResolverPolicy !== 'human_only' ||
         !card.resolvedByUserId || card.resolvedByAgentId || !approvedSha ||
-        !card.payload?.detailsMarkdown?.includes(`Approve production deploy: ${site} ${approvedSha}`) ||
-        (mustName && !card.payload.detailsMarkdown.includes(mustName))) continue;
+        !card.payload?.detailsMarkdown?.includes(`Approve production deploy: ${site} ${approvedSha}`)) continue;
     if (approvedSha === sha) return true;
     if (exact) continue;
     const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', approvedSha, sha]);
@@ -118,49 +117,15 @@ function onMain(sha) {
   return command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0] === sha;
 }
 
-// The weekly train ships its tag even after main moves on (GRE-4815): a detached HEAD at a `web-rc-*` tag
-// on origin whose commit main still contains. gate() then takes only an exact weekly card for that commit.
-function onWeeklyTag(sha) {
-  if (command('git', ['branch', '--show-current'])) return false;
-  const tags = command('git', ['ls-remote', '--tags', 'origin', 'refs/tags/web-rc-*']).split('\n');
-  if (!tags.some((line) => line.split(/\s/)[0] === sha)) return false;
-  const main = command('git', ['ls-remote', 'origin', 'refs/heads/main']).split(/\s/)[0];
-  return Boolean(main) && spawnSync('git', ['merge-base', '--is-ancestor', sha, main]).status === 0;
-}
-
-// John's single cut-over card on GRE-2567 (plan step J) also covers the switch (step 6): the public site only, and
-// only its exact SHA. It is the same card carrier-deploy.mjs publish checks, so the cut-over needs one approval.
-async function cutoverCardApproved(sha) {
-  if (site !== 'greatstone-home') return false;
-  const cards = await json(`${base}/api/issues/${issueId}/interactions`, process.env.GSAM_API_KEY);
-  const key = new RegExp(`^confirmation:GRE-2567:cutover:${sha}(?::v[1-9]\\d*)?$`);
-  return cards.some((card) => card.kind === 'request_confirmation' && card.status === 'accepted' &&
-    card.requestedResolverPolicy === 'human_only' && card.effectiveResolverPolicy === 'human_only' &&
-    card.resolvedByUserId && !card.resolvedByAgentId && key.test(card.idempotencyKey || '') &&
-    card.payload?.detailsMarkdown?.includes(`Approve cut-over: greatstone-home ${sha}`));
-}
-
-async function gate(sha, content = null) {
+async function gate(sha) {
   if (mode === 'prod') {
-    // The public site takes main, or the exact commit staging holds (a promote while main moved on).
-    const tagged = !onMain(sha) && !(site === 'greatstone-home' && await stagedCommit() === sha);
-    if (tagged && !onWeeklyTag(sha))
-      throw new Error('production requires main (or a detached HEAD at origin main), a web-rc tag main contains, or the commit on staging');
-    // A content release rides with the commit only when the person's approval names it.
-    const named = content ? contentLine(content) : null;
-    if (tagged) {
-      if (!await stagingCardApproved(sha, true, named, true))
-        throw new Error(`production refused: a web-rc tag behind main needs an accepted human-only weekly release card for ${site} and ${sha}`);
-      return null;
-    }
-    const approval = `Approve production deploy: ${site} ${sha}${named ? ` with ${named}` : ''}`;
+    // Belt and braces: main() sends the public site through ticketGate, never here.
+    if (site === 'greatstone-home') throw new Error('production refused: greatstone-home moves only with a GSAM deploy ticket');
+    if (!onMain(sha)) throw new Error('production requires main (or a detached HEAD at origin main)');
+    const approval = `Approve production deploy: ${site} ${sha}`;
     const exactComment = (await comments()).some((c) => c.authorType === 'user' && c.body.trim() === approval);
-    const stagingCard = !exactComment && (await stagingCardApproved(sha, site === 'greatstone-home', named) ||
-      (!named && await cutoverCardApproved(sha)));
-    if (!exactComment && !stagingCard)
-      throw new Error(stagingSites.has(site)
-        ? `production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`
-        : `production refused: this task needs an accepted human-only weekly release card for ${site} and ${sha}${named ? ` naming "${named}"` : ''}, or a person must comment exactly "${approval}" on this task`);
+    if (!exactComment && !await stagingCardApproved(sha))
+      throw new Error(`production refused: this task needs an accepted human-only staging card for ${site} and ${sha}, or the exact approval comment`);
     return null;
   }
   if (!/^\d+$/.test(prNumber || '')) throw new Error('preview requires a PR number');
@@ -190,6 +155,28 @@ async function lastDeployedCommit(name = site, from = channel) {
 /** The commit staging serves now: its newest ready upload. */
 function stagedCommit() {
   return lastDeployedCommit(stagingSite, 'staging');
+}
+
+// greatstoneint.com moves only on John's Deploy or Roll back in GSAM (11 Nov). GSAM signs a ticket for the exact
+// commit and content release staging serves; it lives 15 minutes and works once. No card, comment or tag reaches it.
+const ticketRefused = (why) => new Error(`deploy ticket refused: ${why}. Nothing changed on greatstone-home.`);
+
+async function ticketGate(sha, staged) {
+  const ticket = verifyTicket(process.env.GSAM_DEPLOY_TICKET, process.env.GSAM_DEPLOY_PUBLIC_KEY);
+  if (ticket.action !== 'deploy' || ticket.site !== 'greatstone-home') throw ticketRefused('it is not a Deploy of greatstone-home');
+  if (ticket.sha !== sha) throw ticketRefused(`it names commit ${ticket.sha}, not ${sha}`);
+  if (await stagedCommit() !== sha) throw ticketRefused(`staging no longer serves ${sha}; open Deploy in GSAM again`);
+  if (!staged || ticket.release !== staged.release || ticket.sha256 !== staged.sha256)
+    throw ticketRefused(`staging's content release changed since GSAM signed it; open Deploy in GSAM again`);
+  await claimTicket(ticket);
+  console.log(`Deploy ticket ${ticket.id} accepted (signed by GSAM for ${ticket.by || 'a person'})`);
+}
+
+/** One use per ticket: its id is created once in greatstone-home's lock store, and never removed. */
+async function claimTicket(ticket) {
+  const store = await sharedLockStore();
+  if (!await store.create(`ticket-${ticket.id}`, { own: ticket.id, action: ticket.action, at: new Date().toISOString() }))
+    throw ticketRefused('it has been used already');
 }
 
 async function netlifyApi(path, method = 'GET') {
@@ -443,6 +430,11 @@ async function lockAndDeploy(sha, cwd, content = null, samples = []) {
     if (checked) {
       before = (await netlifyApi(`/sites/${sites.get(site)}`)).published_deploy?.id;
       console.log(`Fallback: the deploy live before this one is ${before}. Restore it with: netlify api restoreSiteDeploy --data '{"site_id":"${sites.get(site)}","deploy_id":"${before}"}'`);
+      // Roll back in GSAM puts that deploy back with the content pointer it was serving, recorded here.
+      if (before && channel === 'prod') {
+        const store = await contentStore(site);
+        await store.set(`live-history/${before}.json`, (await store.get('current')) ?? Buffer.from('null'));
+      }
     }
     console.log(`Deploying ${site} ${mode} at ${sha}${content ? ` with ${contentLine(content)}` : ''}`);
     // The public build bakes the content release from its own store, so the pointer moves first.
@@ -562,7 +554,41 @@ async function deployEditorAlias(sha) {
   }
 }
 
+// Roll back (John, 11 Nov): put an earlier greatstone-home production deploy back, with the content pointer it was
+// serving when the next Deploy replaced it, then check the live site. No build; Netlify keeps that deploy.
+async function rollback() {
+  if (site !== 'greatstone-home') throw new Error('rollback is only for greatstone-home');
+  const ticket = verifyTicket(process.env.GSAM_DEPLOY_TICKET, process.env.GSAM_DEPLOY_PUBLIC_KEY);
+  if (ticket.action !== 'rollback' || ticket.site !== 'greatstone-home' || !/^[0-9a-f]{24}$/.test(ticket.deployId || ''))
+    throw ticketRefused('it is not a Roll back of greatstone-home');
+  const siteId = sites.get(site);
+  const target = await netlifyApi(`/sites/${siteId}/deploys/${ticket.deployId}`);
+  if (target.state !== 'ready' || target.context !== 'production' || target.site_id !== siteId)
+    throw ticketRefused(`deploy ${ticket.deployId} is not a ready production deploy of greatstone-home`);
+  const live = (await netlifyApi(`/sites/${siteId}`)).published_deploy?.id;
+  if (live === target.id) throw ticketRefused(`deploy ${target.id} is already live`);
+  await claimTicket(ticket);
+  const releaseShared = await takeSharedLock(randomUUID());
+  try {
+    console.log(`Rolling back greatstone-home from ${live} to ${target.id} (${target.title || 'untitled'}). To undo by hand: netlify api restoreSiteDeploy --data '{"site_id":"${siteId}","deploy_id":"${live}"}'`);
+    await netlifyApi(`/sites/${siteId}/deploys/${target.id}/restore`, 'POST');
+    const store = await contentStore(site);
+    const pointer = await store.get(`live-history/${target.id}.json`);
+    if (!pointer) console.log('No content pointer was recorded for that deploy; the content pointer is left as it is');
+    else if (pointer.toString('utf8') === 'null') { await store.remove('current'); console.log('Content pointer removed, as it was then'); }
+    else { await store.set('current', pointer); console.log(`Content pointer put back to ${contentLine(JSON.parse(pointer.toString('utf8')))}`); }
+    const host = process.env.NODE_ENV === 'test' ? `${process.env.NETLIFY_TEST_API_URL}/draft` : 'https://greatstoneint.com';
+    const failures = [];
+    for (const path of [...PAGE_CHECKS, ...API_CHECKS]) if (await status(host + path) !== 200) failures.push(path);
+    if (failures.length) throw new Error(`Rolled back to ${target.id}, but ${failures.join(', ')} failed on the live site; check it now`);
+    console.log(`Rolled back to ${target.id}: ${PAGE_CHECKS.length} pages and ${API_CHECKS.length} APIs answered 200`);
+  } finally {
+    await releaseShared().catch(() => { /* an expired lock is passed over after an hour */ });
+  }
+}
+
 async function main() {
+  if (mode === 'rollback') return rollback();
   if (mode === 'inspect' && sites.has(site)) return inspectSite();
   if (mode === 'content') {
     for (const name of [stagingSite, 'greatstone-home']) {
@@ -601,7 +627,9 @@ async function main() {
     const live = await contentRelease(site);
     if (staged && (staged.release !== live?.release || staged.sha256 !== live?.sha256)) { content = staged; contentChanged = true; }
   }
-  const fallback = mode === 'staging' || mode === 'rehearse' ? null : await gate(sha, content);
+  const publicPromote = mode === 'prod' && site === 'greatstone-home';
+  if (publicPromote) await ticketGate(sha, promoting);
+  const fallback = mode === 'staging' || mode === 'rehearse' || publicPromote ? null : await gate(sha);
   // Before any upload or the content pointer moves, staging's release must be fit to go live (GRE-4707).
   if (mode === 'prod' && site === 'greatstone-home') samples = await checkStagedRelease(promoting);
   const baseline = await lastDeployedCommit() || fallback;
