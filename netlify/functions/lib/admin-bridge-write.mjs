@@ -793,6 +793,13 @@ function settingsRoute(method, parts) {
     });
     return null;
   }
+  // A client admin's seat request (073). People only: approving gives someone access to the client's portal.
+  if (res === 'invite-requests' && rowId !== undefined && UUID.test(rowId) && sub === 'decision' && method === 'POST') {
+    return route('invite-requests', rowId, async (client, ctx, body) => {
+      const { decision } = pick(body, { decision: ['decision', oneOf(['approve', 'decline'])] }, { required: ['decision'] });
+      return one(client, 'bridge_invite_request_decide($1::uuid, $2)', [rowId, decision]);
+    }, { people: true });
+  }
   if (res === 'portal-acceptances' && rowId !== undefined && UUID.test(rowId) && sub === 'resend' && method === 'POST') {
     return route('portal-acceptances', rowId, async (client, ctx, body) => {
       empty(body);

@@ -14,13 +14,19 @@
 //   POST/PATCH /api/admin/v1/portal-documents[/<id>[/<action>]]   portal documents (write key, GRE-4081)
 //   orders, enquiries, customers, engagements, licences, customer-tiers, portal-acceptances/<id>/resend
 //                                           commerce settings (write key, GRE-4782; docs/GSAM-BRIDGE-COMMERCE-SETTINGS.md)
+//   GET /api/admin/v1/quotes/<id>/po-document | orders/<id>/po-document   the buyer's PO file, streamed (read key, 073)
+//   GET /api/admin/v1/enquiries/fd-<id>/agent-package                     a front door lead's agent package .zip (073)
+//   POST /api/admin/v1/invite-requests/<id>/decision                      approve or decline a seat request (write key)
 // Every request is signed (lib/admin-bridge-auth.mjs). With GSAM_BRIDGE_KEYS empty every call is refused, so the
 // function is safe to deploy before a key exists. A failure returns { error: { code } } only (a write conflict adds
 // the current row); the detail goes to the site log, never to the caller.
+import { getStore } from '@netlify/blobs';
 import { getPool } from './lib/db.mjs';
 import { BridgeAuthError, SCHEME, parseAllowedIps, parseBridgeKeys, verifyBridgeRequest } from './lib/admin-bridge-auth.mjs';
 import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeAccess, bridgeActivityEvents, bridgeFx, bridgeGet, bridgeImport, bridgeList,
-  bridgePayments, bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
+  bridgeLeadPackage, bridgePayments, bridgePoDocument, bridgeUsers, listOptions, takesCustomer } from './lib/admin-bridge-store.mjs';
+import { buildAgentPackage, packageFolder } from './lib/shared/front-door-package.mjs';
+import { zipFiles } from '../../src/lib/package-zip.mjs';
 import { WRITE_STATUS, asBridgeWriter, licenceMailer, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
 import { interviewReadRoute, interviewWriteRoute } from './lib/interview/bridge.mjs';
@@ -44,6 +50,34 @@ function parts(pathname) {
   if (!pathname.startsWith(PREFIX)) return null;
   try { return pathname.slice(PREFIX.length).split('/').map(decodeURIComponent); } catch { return null; }
 }
+
+// A file the bridge streams (073): the buyer's PO file, or a front door lead's agent package. Read key.
+function fileRoute(p) {
+  if (p.length !== 3) return null;
+  if ((p[0] === 'quotes' || p[0] === 'orders') && p[2] === 'po-document') return { resource: p[0], id: p[1], file: 'po' };
+  if (p[0] === 'enquiries' && p[2] === 'agent-package') return { resource: 'enquiries', id: p[1], file: 'package' };
+  return null;
+}
+
+const asList = (x) => (Array.isArray(x) ? x : []);
+/** The file's answer once the read is audited and committed. The PO bytes come straight from the private store. */
+async function fileAnswer(found, blobStore) {
+  if (found.kind === 'package') {
+    const r = found.row;
+    const files = r.agent_package || buildAgentPackage({ intake: { industry: r.industry, company: r.company_name,
+      words: asList(r.brand_words), teamSize: r.team_size }, agents: asList(r.agents) });
+    if (!files) return null;
+    const folder = packageFolder(r.company_name);
+    return new Response(zipFiles(files, folder), { headers: { ...HEADERS, 'content-type': 'application/zip',
+      'content-disposition': `attachment; filename="${folder}.zip"` } });
+  }
+  const stream = await blobStore('po-documents').get(found.row.path, { type: 'stream' });
+  if (!stream) return null;
+  const name = safeName(found.row.name || found.row.path.split('/').pop());
+  return new Response(stream, { headers: { ...HEADERS, 'content-type': 'application/octet-stream',
+    'content-disposition': `attachment; filename="${name}"` } });
+}
+const safeName = (name) => String(name || 'purchase-order').replace(/[^\w.-]+/g, '_').replace(/^\.+/, '').slice(-120) || 'purchase-order';
 
 function readRoute(p) {
   if (p.length === 1 && (p[0] === 'health' || p[0] === 'schema' || p[0] === 'users')) return { resource: p[0] };
@@ -76,6 +110,7 @@ export function makeAdminBridgeHandler({
   mail = interviewMailer(),
   startSynthesis = startSynthesisRun,
   licenceMail = licenceMailer(),
+  blobStore = (name) => getStore(name),
 } = {}) {
   return async (req) => {
     const isSnapshot = req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname);
@@ -109,7 +144,7 @@ export function makeAdminBridgeHandler({
         if (result.rowCount !== 1) throw new BridgeRequestError('not_found', 'tenant belongs to another organisation');
         return { status: 200, body: { ok: true, tenantId: p[2] }, rowCount: 1, resourceId: p[2] };
       } }
-      : isRead ? interviewReadRoute(p) || readRoute(p) : interviewWriteRoute(req.method, p) || writeRoute(req.method, p);
+      : isRead ? fileRoute(p) || interviewReadRoute(p) || readRoute(p) : interviewWriteRoute(req.method, p) || writeRoute(req.method, p);
     if (!target) return fail('not_found');
     // the key's capability must be the route's: a write key cannot ask for a refund, nor a refund key write
     if (!isRead && target.capability !== call.capability) {
@@ -139,6 +174,11 @@ export function makeAdminBridgeHandler({
       }
       const out = await asBridgeReader(db, audit, async (client) => {
         if (target.resource === 'interview') return target.run(client, url.searchParams);
+        if (target.file) {
+          if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'a file takes no parameters');
+          const row = target.file === 'po' ? await bridgePoDocument(client, target.resource, target.id) : await bridgeLeadPackage(client, target.id);
+          return { outcome: 'ok', rowCount: 1, body: { file: { kind: target.file, row } } };
+        }
         if (target.resource === 'health') {
           if ([...url.searchParams.keys()].length) throw new BridgeRequestError('bad_request', 'health takes no parameters');
           return { outcome: 'ok', rowCount: 0, body: { ok: true, kid: call.kid, capability: call.capability,
@@ -184,6 +224,7 @@ export function makeAdminBridgeHandler({
         const page = await bridgeList(client, target.resource, opts);
         return { outcome: 'ok', rowCount: page.items.length, body: page };
       });
+      if (out.file) return (await fileAnswer(out.file, blobStore)) || fail('not_found');
       return Response.json(out, { headers: HEADERS });
     } catch (error) {
       if (error instanceof BridgeRequestError) return fail(error.code);

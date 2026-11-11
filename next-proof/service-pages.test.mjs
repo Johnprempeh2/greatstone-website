@@ -35,3 +35,38 @@ test('with no catalogue block the bundled services still route, with no listing 
   assert.equal(catalogue.path, null);
   assert.equal(catalogue.services, defaults);
 });
+
+// Admin parity round 2: the 78 services are a GSAM collection. These build the release GSAM publishes from the
+// bundled copy (the import), so the listing and the service pages must come out the same as before.
+import { categories as defaultCategories } from '../src/data/service-catalog.mjs';
+import { releaseServices, withReleaseServices } from './service-pages.mjs';
+
+const asCollection = (items) => ({ fieldsVersion: 1, entries: items.map((fields, index) => ({ id: `e-${index}`, key: `k-${index}`, orgId: 'org', sortOrder: index, fields })).reverse() });
+const published = { services: asCollection(defaults), 'service-categories': asCollection(defaultCategories) };
+
+test('published services: the 78 from GSAM, in GSAM order, list exactly as the bundled copy did', () => {
+  const html = '<div class="gs-blk"><gs-island name="service-catalog" data-block="servicecatalog-ghxib"></gs-island></div>';
+  const before = serviceCatalogueFromRelease({ releaseSchema: 2, pages: [{ path: '/how-we-help', html }] }, frozenBlocks);
+  const after = serviceCatalogueFromRelease({ releaseSchema: 2, collections: published, pages: [{ path: '/how-we-help', html }] }, frozenBlocks);
+  assert.equal(after.services.length, 78);
+  assert.equal(new Set(after.services.map((service) => service.category)).size, 9);
+  assert.deepEqual(after, before);
+  assert.deepEqual(releaseServices({ collections: published }), { services: defaults, categories: defaultCategories });
+});
+
+test('published services replace the block props, and an edit in GSAM reaches the listing and the pages', () => {
+  const edited = structuredClone(defaults);
+  edited[0].name = 'Edited in GSAM';
+  const release = { pages: [{ path: '/our-services', data: { content: [listed] } }], collections: { services: asCollection(edited) } };
+  const catalogue = serviceCatalogueFromRelease(release);
+  assert.equal(findService(catalogue.services, edited[0].slug).name, 'Edited in GSAM');
+  assert.equal(catalogue.email, 'team@example.com');
+  assert.equal(withReleaseServices('ServiceCatalog', listed.props, releaseServices(release)).services[0].name, 'Edited in GSAM');
+  assert.equal(withReleaseServices('Hero', { a: 1 }, releaseServices(release)).a, 1);
+});
+
+test('before the first Publish that carries services, nothing changes', () => {
+  assert.equal(releaseServices({ collections: {} }), null);
+  assert.equal(releaseServices({ collections: { services: { fieldsVersion: 1, entries: [] } } }), null);
+  assert.equal(withReleaseServices('ServiceCatalog', listed.props, null), listed.props);
+});

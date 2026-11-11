@@ -199,7 +199,9 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   const interview = join(MIGRATIONS, '068_interview_engine');
   const agreement = join(MIGRATIONS, '069_interview_agreement');
   const settings = join(MIGRATIONS, '072_bridge_commerce_settings');
+  const parity = join(MIGRATIONS, '073_bridge_admin_parity');
   // Roll back dependent migrations before the bridge roles and tenant links.
+  owner(readFileSync(join(parity, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(settings, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(agreement, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(interview, 'rollback.sql'), 'utf8'));
@@ -231,6 +233,8 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   owner(`BEGIN;\n${readFileSync(join(interview, 'migration.sql'), 'utf8')}\nCOMMIT;`);
   owner(readFileSync(join(agreement, 'migration.sql'), 'utf8'));
   owner(readFileSync(join(settings, 'migration.sql'), 'utf8'));
+  owner(readFileSync(join(parity, 'migration.sql'), 'utf8'));
+  owner(readFileSync(join(parity, 'migration.sql'), 'utf8'));
   assert.equal(ok(GOOD, 'SELECT count(*) FROM customers;'), '1');
   assert.equal(ok(GOOD, 'SELECT licence_key_last4 FROM licence_keys;'), 'AB12');
 });

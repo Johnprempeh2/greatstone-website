@@ -38,6 +38,7 @@ import { ContainedMotion, css as containedMotionCss } from '../src/blocks/Contai
 import { sectionClass } from '../src/lib/block-style.mjs';
 import { SECTION_FIELD, SECTION_DEFAULT } from '../src/cms/style-field.jsx';
 import { bindFormBlock } from '../next-proof/form-bindings.mjs';
+import { withReleaseServices } from '../next-proof/service-pages.mjs';
 import { publicLinkProps } from '../next-proof/public-links.mjs';
 import { motionField, MOTION_BY_BLOCK, resolveMotion, resolveMotionFields } from '../next-proof/motion-contract.mjs';
 import { createMotionCoordinator } from '../next-proof/motion-runtime.mjs';
@@ -112,13 +113,13 @@ function PublishedBriefings({ briefings }) {
     </article>)}</div>
   </div></section>;
 }
-export function ProofBlocks({ data, pageSlug, pagePaths, forms, briefings = [] }) {
+export function ProofBlocks({ data, pageSlug, pagePaths, forms, services = null, briefings = [] }) {
   const beforeInvite = briefings.length ? data.content.findIndex((item) => item.type === 'Invite') : -1;
   return <><style>{proofBlockCss}</style><PageScene value={data.root?.props?.pageScene} /><div className="gs-proof-content">{data.content.map((item, index) => {
     const component = proofConfig.components[item.type];
     if (!component) throw new Error(`Unsupported published block: ${item.type}`);
     return <Fragment key={item.props.id}>{index === beforeInvite && <PublishedBriefings briefings={briefings} />}
-      <div>{component.render({ ...(pagePaths ? publicLinkProps(bindFormBlock(pageSlug, item, forms), pagePaths) : bindFormBlock(pageSlug, item, forms)), puck: publicPuck })}</div>
+      <div>{component.render({ ...withReleaseServices(item.type, pagePaths ? publicLinkProps(bindFormBlock(pageSlug, item, forms), pagePaths) : bindFormBlock(pageSlug, item, forms), services), puck: publicPuck })}</div>
     </Fragment>;
   })}{briefings.length > 0 && beforeInvite === -1 && <PublishedBriefings briefings={briefings} />}</div></>;
 }
