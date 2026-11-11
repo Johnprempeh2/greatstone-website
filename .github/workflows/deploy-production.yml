@@ -39,8 +39,10 @@ jobs:
     env:
       GSAM_DEPLOY_TICKET: ${{ inputs.ticket }}
       GSAM_DEPLOY_PUBLIC_KEY: ${{ vars.GSAM_DEPLOY_PUBLIC_KEY }}
+    # Step names show in GSAM's Deploy panel as the progress list, so they are plain words.
     steps:
-      - uses: actions/checkout@v4
+      - name: Get the code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Check the ticket
@@ -53,12 +55,14 @@ jobs:
         run: |
           git merge-base --is-ancestor "$SHA" origin/main
           git checkout --detach "$SHA"
-      - uses: actions/setup-node@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      - run: npm ci --no-audit --no-fund
-      - name: Netlify CLI
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Install the Netlify tool
         if: steps.ticket.outputs.action == 'deploy'
         run: npm install -g netlify-cli@27.16.1
       - name: Deploy to greatstoneint.com (checked live, put back on failure)
