@@ -2,6 +2,7 @@
 // Greatstone sends any interview invite (GRE-2794, gate GRE-2656). The server (/api/interview/agreement) decides who
 // is an admin, holds the text and records the acceptance; this page only shows them. Other members see the state.
 import React, { useCallback, useEffect, useState } from 'react';
+import PortalHeader from './PortalHeader.jsx';
 import './portal.css';
 
 async function call(body) {
@@ -17,10 +18,10 @@ const copyHref = (id) => '/api/interview/agreement?copy=' + encodeURIComponent(i
 
 function Record({ acceptance }) {
   return (
-    <div className="pt-empty" role="status">
-      <h2>Accepted</h2>
+    <div className="pt-panel pt-panel-done" role="status">
+      <h2 className="pt-panel-h">Accepted</h2>
       <p>{acceptance.name} ({acceptance.roleTitle}) accepted this agreement for {acceptance.legalName} on {when(acceptance.acceptedAt)}.</p>
-      <p className="ca-muted">Agreement {acceptance.version}, text fingerprint {acceptance.contentSha256.slice(0, 12)}…</p>
+      <p className="pt-muted pt-small">Agreement {acceptance.version}, text fingerprint {acceptance.contentSha256.slice(0, 12)}…</p>
     </div>
   );
 }
@@ -44,29 +45,29 @@ function AcceptForm({ data, onAccepted }) {
   };
   const ready = f.readConfirmed && f.authorityConfirmed && f.name.trim() && f.roleTitle.trim() && f.legalName.trim();
   const field = (k, label, opts = {}) => (
-    <p><label htmlFor={'dpa-' + k}>{label}</label><br />
+    <div className="pt-field"><label htmlFor={'dpa-' + k}>{label}</label>
       <input id={'dpa-' + k} value={f[k]} onChange={set(k)} maxLength={opts.max || 200} required={!opts.optional}
-        autoComplete={opts.auto || 'off'} disabled={state === 'saving'} /></p>
+        autoComplete={opts.auto || 'off'} disabled={state === 'saving'} /></div>
   );
   return (
-    <form onSubmit={submit} aria-label="Accept the data processing agreement">
-      <h2>Accept for your organisation</h2>
+    <form className="pt-panel" onSubmit={submit} aria-label="Accept the data processing agreement">
+      <h2 className="pt-panel-h">Accept for your organisation</h2>
       {field('name', 'Your name', { auto: 'name' })}
       {field('roleTitle', 'Your role or title', { auto: 'organization-title' })}
       {field('legalName', "Your organisation's legal name", { max: 300, auto: 'organization' })}
       {field('companyCountry', 'Country of registration (optional)', { max: 100, optional: true })}
       {field('companyNumber', 'Company number (optional)', { max: 100, optional: true })}
       {field('registeredAddress', 'Registered office address (optional)', { max: 500, optional: true })}
-      <p><label><input type="checkbox" checked={f.readConfirmed} onChange={set('readConfirmed')} disabled={state === 'saving'} />{' '}
-        {data.wording.readLabel}</label></p>
-      <p><label><input type="checkbox" checked={f.authorityConfirmed} onChange={set('authorityConfirmed')} disabled={state === 'saving'} />{' '}
-        {data.wording.authorityLabel}</label></p>
+      <div className="pt-check"><input id="dpa-read" type="checkbox" checked={f.readConfirmed} onChange={set('readConfirmed')} disabled={state === 'saving'} />
+        <label htmlFor="dpa-read">{data.wording.readLabel}</label></div>
+      <div className="pt-check"><input id="dpa-authority" type="checkbox" checked={f.authorityConfirmed} onChange={set('authorityConfirmed')} disabled={state === 'saving'} />
+        <label htmlFor="dpa-authority">{data.wording.authorityLabel}</label></div>
       <div className="pt-actions">
         <button className="gs-btn primary" type="submit" disabled={!ready || state === 'saving'}>
           {state === 'saving' ? 'Saving…' : data.wording.acceptLabel}
         </button>
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="pt-err" role="alert">{error}</p>}
     </form>
   );
 }
@@ -82,31 +83,28 @@ export default function InterviewAgreement({ company }) {
 
   return (
     <div className="ca-wrap pt-wrap" role="region" aria-label="Interview data processing agreement">
-      <div className="pt-bar">
-        <a className="pt-back" href="#portal">← Your portal</a>
-        <span className="pt-bar-co">{company?.name}</span>
-      </div>
+      <PortalHeader company={company} current="agreement" />
       {error && !data && <div className="pt-empty" role="alert"><p>{error}</p>
         <button className="gs-btn primary sm" onClick={load}>Try again</button></div>}
       {!data && !error && <div className="pt-hold" aria-busy="true"><span className="gs-sr-only">Loading…</span></div>}
       {data && (
         <article>
           <h1 className="pt-h1">{data.wording.title}</h1>
-          <ul>{data.wording.summary.map((line) => <li key={line}>{line}</li>)}</ul>
+          <ul className="pt-summary">{data.wording.summary.map((line) => <li key={line}>{line}</li>)}</ul>
           {data.accepted && <Record acceptance={data.acceptance} />}
           {!data.accepted && !data.isAdmin && (
-            <div className="pt-empty" role="status"><p>Your organisation has not accepted this agreement yet. A company admin
+            <div className="pt-panel pt-panel-wait" role="status"><p>Your organisation has not accepted this agreement yet. A company admin
               must accept it before Greatstone sends any interview invites.</p></div>
           )}
-          <section className="pt-doc" aria-label="Agreement text" tabIndex={0}
-            style={{ maxHeight: '60vh', overflow: 'auto', border: '1px solid var(--line, #c9ced8)', padding: '1rem 1.25rem', margin: '1rem 0' }}
+          {/* the full text sits in the page, not in its own scroll box: one scroll, like every other portal document */}
+          <section className="pt-card pt-prose pt-agreement" aria-label="Agreement text"
             // the server renders this from the approved text and escapes every character of it (agreementHtml)
             dangerouslySetInnerHTML={{ __html: data.agreement.html }} />
           {!data.accepted && data.isAdmin && <AcceptForm data={data} onAccepted={load} />}
           {data.isAdmin && data.history.length > 0 && (
-            <section aria-label="Accepted copies">
-              <h2>Download a copy</h2>
-              <ul>{data.history.map((a) => (
+            <section className="pt-card" aria-label="Accepted copies">
+              <h2 className="pt-h2">Download a copy</h2>
+              <ul className="pt-copies">{data.history.map((a) => (
                 <li key={a.id}><a href={copyHref(a.id)} download>Agreement {a.version}, accepted {when(a.acceptedAt)}</a>
                   {a.current ? '' : ' (an earlier version)'}</li>
               ))}</ul>

@@ -11,6 +11,7 @@ import ActionPanel from './ActionPanel.jsx';
 import { downloadPortalPdf } from './portal-file.mjs';
 import DeepDiveClient from './DeepDiveClient.jsx';
 import InterviewAgreement from './InterviewAgreement.jsx';
+import PortalHeader from './PortalHeader.jsx';
 import { currentClientActions } from './home-model.mjs';
 import {
   KIND_LABEL, docState, panelState, acceptanceFor, signatoryLabel,
@@ -97,16 +98,8 @@ function PortalData({ route, profile, email }) {
 function Shell({ company, crumb = false, children }) {
   return (
     <div className="ca-wrap pt-wrap" role="region" aria-label="Client portal">
-      <div className="pt-bar">
-        {crumb ? <a className="pt-back" href="#portal">← Your portal</a> : <span className="st-kicker">Client portal</span>}
-        <span className="pt-bar-co">{company.name}</span>
-        <nav className="pt-bar-links" aria-label="Your accounts">
-          <a href="#portal/deep-dive">Deep Dive</a>
-          <a href="#portal/agreement">Interview agreement</a>
-          <a href="#org">Your organisation</a>
-          <a href="#account">Your account</a>
-        </nav>
-      </div>
+      <PortalHeader company={company} current={crumb ? null : 'home'} />
+      {crumb && <p className="pt-crumb"><a className="pt-back" href="#portal">← Your portal</a></p>}
       {children}
     </div>
   );
