@@ -1,0 +1,73 @@
+name: Deploy production
+# greatstoneint.com changes here and nowhere else (John, 11 Nov 2026). Only GSAM starts this, when John presses Deploy
+# or Roll back on the Website module, with a ticket it signs for that one action. deploy-site.mjs refuses the public
+# site without a good, unexpired, unused ticket, so starting this by hand does nothing. The public site's Netlify
+# token lives only in the `production` environment of this repository. Changes to this file need John (CODEOWNERS).
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: deploy or rollback (shown in the run name; the ticket decides)
+        required: true
+        type: choice
+        options: [deploy, rollback]
+      request:
+        description: GSAM's id for this request (shown in the run name so GSAM can follow it)
+        required: true
+        type: string
+      ticket:
+        description: The ticket GSAM signed
+        required: true
+        type: string
+
+run-name: Website ${{ inputs.action }} ${{ inputs.request }}
+
+permissions:
+  contents: read
+
+# One change to the live site at a time; a second waits, it never cancels the first.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  live:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+    env:
+      GSAM_DEPLOY_TICKET: ${{ inputs.ticket }}
+      GSAM_DEPLOY_PUBLIC_KEY: ${{ vars.GSAM_DEPLOY_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check the ticket
+        id: ticket
+        run: node scripts/deploy-ticket.mjs >> "$GITHUB_OUTPUT"
+      - name: Use the commit staging serves
+        if: steps.ticket.outputs.action == 'deploy'
+        env:
+          SHA: ${{ steps.ticket.outputs.sha }}
+        run: |
+          git merge-base --is-ancestor "$SHA" origin/main
+          git checkout --detach "$SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - name: Netlify CLI
+        if: steps.ticket.outputs.action == 'deploy'
+        run: npm install -g netlify-cli@27.16.1
+      - name: Deploy to greatstoneint.com (checked live, put back on failure)
+        if: steps.ticket.outputs.action == 'deploy'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/deploy-site.mjs prod greatstone-home
+      - name: Roll back greatstoneint.com
+        if: steps.ticket.outputs.action == 'rollback'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/deploy-site.mjs rollback greatstone-home

@@ -1,0 +1,6 @@
+# Changes to how the site reaches greatstoneint.com need John's review (11 Nov 2026). This only binds once the main
+# branch rule "Require review from Code Owners" is on, with no bypass (John's one-off step).
+/.github/ @Johnprempeh2
+/scripts/deploy-site.mjs @Johnprempeh2
+/scripts/deploy-ticket.mjs @Johnprempeh2
+/scripts/deploy-editor-alias.mjs @Johnprempeh2

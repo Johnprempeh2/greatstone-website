@@ -64,22 +64,24 @@ Graph API operations follow Microsoft’s [upload](https://learn.microsoft.com/e
 [download](https://learn.microsoft.com/en-us/graph/api/driveitem-get-content?view=graph-rest-1.0),
 and [client credentials](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow) contracts.
 
-`greatstone-home` and `gre1795-website-db-staging` use local Netlify uploads. They are not
-Git-linked. Agents must use this repo's guarded commands for these two sites, from a clean
-checkout with `NETLIFY_AUTH_TOKEN`, the Netlify CLI, and task-scoped `GSAM_*` credentials:
+**greatstoneint.com (`greatstone-home`) changes only through John's Deploy or Roll back in GS Agentic Manager**
+(11 Nov 2026). GSAM signs a ticket for the exact commit and content release staging serves, and starts
+`.github/workflows/deploy-production.yml`, which runs in the protected `production` environment, the only place the
+public site's Netlify token lives. `node scripts/deploy-site.mjs prod greatstone-home` and `... rollback
+greatstone-home` refuse without a good ticket: signed by GSAM's key (`GSAM_DEPLOY_PUBLIC_KEY`), at most 15 minutes
+old, used once (claimed in greatstone-home's Blobs). No card, comment or tag reaches the public site; agents never
+deploy it. The deploy is checked live straight after upload and the earlier deploy and content pointer are put
+back on any failure; each Deploy records the pointer the earlier deploy served, so Roll back restores both.
+
+Previews of a PR (draft uploads, never the public address):
 
 ```bash
 npm run deploy:preview -- greatstone-home 123
-npm run deploy:prod -- greatstone-home
 ```
 
 The preview command requires an open, non-draft PR at the checkout's HEAD. It uploads a
 draft only if the PR has the `preview` label or Mikey or John comments exactly
-`Preview ready for PR #123` on the current task. The production command requires `main`
-(or, in a task worktree, a detached HEAD at exactly the remote `main` commit:
-`git fetch origin main && git checkout --detach origin/main`) and a person to comment `Approve production deploy: greatstone-home <40-character HEAD SHA>`
-on the current task. It is never automatic or scheduled. Replace the site and PR number as
-needed. The command refuses other Netlify sites.
+`Preview ready for PR #123` on the current task.
 
 Greatstone website staging, `gre3833-next-db-staging`, is the one staging site since GRE-4202.
 It serves the Next copy, so its upload is `next-proof/scripts/prepare-netlify.mjs` run on the
@@ -101,9 +103,7 @@ under `netlify/`, `supabase/` or `scripts/`; any `.sql` or `.env*` file; Next ro
 `package-lock.json`, `next.config.*`, `vite.config.*` and `public/_headers`; and any path
 containing auth, password, credential, secret, login or sign-in. So front-end, content and
 docs changes ride along, but any migration, function, auth or build-config change needs a new
-card for the exact commit. The public site requires the exact comment for the current HEAD,
-or an accepted human-only weekly release card (`confirmation:GRE-N:weekly-release:<SHA>`) whose
-details name that site and that exact SHA. See `docs/WEEKLY-RELEASE.md`.
+card for the exact commit. No card ever reaches the public site.
 
 Netlify applies a changed environment variable only on a new upload, and the change check
 below skips a commit that is already live. After a staging config change, reload the live
