@@ -31,6 +31,6 @@ export function OfferingCard({ item }) {
     <span className="st-card-icon">{icon && <img src={icon} alt="" loading="lazy" />}</span><h3>{item.name}</h3>
     <div className="vendor"><span>{item.vendor?.name}</span></div>{item.short_description && <p className="desc">{item.short_description}</p>}
     {!!item.platforms?.length && <div className="st-badges">{item.platforms.slice(0, 4).map((platform) => <span className="st-badge" key={platform}>{platform}</span>)}</div>}
-    <div className="st-foot"><span className="st-price">{item.pricing?.final == null ? <span className="poa">Price on application</span> : <><span className="lbl">from</span><b>{fmtMoney(item.pricing.final)}</b><small className="st-vat">+ VAT</small></>}</span><span className="st-go">View →</span></div>
+    <div className="st-foot"><span className="st-price">{item.pricing?.final == null ? <span className="poa">Price on application</span> : <><span className="lbl">from</span><b>{fmtMoney(item.pricing.final, item.pricing.currency)}</b><small className="st-vat">+ VAT</small></>}</span><span className="st-go">View →</span></div>
   </a>;
 }

@@ -129,7 +129,7 @@ function Card({ o }) {
         <span className="st-price">
           {(p.poa || p.final == null)
             ? <span className="poa">Price on application</span>
-            : <><span className="lbl">from</span>{p.hasDiscount && <s>{fmtMoney(p.base)}</s>}<b>{fmtMoney(p.final)}</b><small className="st-vat">+ VAT</small></>}
+            : <><span className="lbl">from</span>{p.hasDiscount && <s>{fmtMoney(p.base, p.currency)}</s>}<b>{fmtMoney(p.final, p.currency)}</b><small className="st-vat">+ VAT</small></>}
         </span>
         <span className="st-go">View →</span>
       </div>

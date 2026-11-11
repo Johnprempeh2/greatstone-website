@@ -1,5 +1,6 @@
 import { toRule } from '../../../src/data/catalog.mjs';
-import { effectivePrice, usdToGbpMinor } from '../../../src/lib/pricing.mjs';
+import { effectivePrice, toShopMinor } from '../../../src/lib/pricing.mjs';
+import { shopSettings } from './catalogue-store.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -22,9 +23,9 @@ export async function priceBasket(client, basket) {
     WHERE v.id=ANY($1::uuid[]) AND v.deleted_at IS NULL AND o.status='published' AND o.deleted_at IS NULL`, [ids]);
   const { rows: ruleRows } = await client.query("SELECT * FROM pricing_rules WHERE active=true AND status='published' AND deleted_at IS NULL");
   const { rows: targets } = await client.query('SELECT rule_id,vendor_id,category_id,offering_id,tier_id FROM pricing_rule_targets');
-  const { rows: rates } = await client.query('SELECT usd_to_gbp_display_rate FROM org_settings LIMIT 1');
-  const rate = Number(rates[0]?.usd_to_gbp_display_rate);
-  if (!(rate > 0)) throw new Error('FX rate unavailable');
+  // Every row carries the shop's currency: GBP at the display rate, or USD as stored (074).
+  const { rate, currency } = await shopSettings(client);
+  if (currency === 'GBP' && !(rate > 0)) throw new Error('FX rate unavailable');
   const byRule = new Map();
   for (const target of targets) {
     if (!byRule.has(target.rule_id)) byRule.set(target.rule_id, []);
@@ -35,12 +36,12 @@ export async function priceBasket(client, basket) {
   const now = new Date();
   return basket.map(({ id, qty }) => {
     const variant = byId.get(id);
-    if (!variant) return { id, qty, unavailable: true };
-    const base = usdToGbpMinor(variant.base_price_minor, rate);
+    if (!variant) return { id, qty, currency, unavailable: true };
+    const base = toShopMinor(variant.base_price_minor, rate, currency);
     const price = effectivePrice({ id: variant.offering_id, type: variant.type,
       vendorId: variant.vendor_id, categoryId: variant.category_id },
-    { basePriceMinor: base, currency: 'GBP' }, rules, null, now);
+    { basePriceMinor: base, currency }, rules, null, now);
     if (price.final != null && (!Number.isSafeInteger(price.final) || price.final < 0)) throw new Error('Invalid price');
-    return { ...variant, qty, list: base, unit: price.final, ruleId: price.appliedRule?.id || null };
+    return { ...variant, qty, currency, list: base, unit: price.final, ruleId: price.appliedRule?.id || null };
   });
 }

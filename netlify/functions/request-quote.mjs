@@ -33,17 +33,18 @@ async function saveQuote(pool, identity, quoteId, rows, details, document) {
     const columns = ['id', 'contact_name', 'contact_email', 'contact_company', 'contact_phone', 'message',
       'po_reference', 'source', 'currency', 'indicative_total_minor', 'po_document_path', 'po_document_name'];
     const total = rows.reduce((sum, row) => sum + (row.unit || 0) * row.qty, 0);
+    const currency = rows[0]?.currency === 'USD' ? 'USD' : 'GBP'; // the shop's currency (074), on every priced row
     if (!Number.isSafeInteger(total)) throw new Error('Invalid quote total');
     const values = [quoteId, details.name || null, details.email, details.company || null, details.phone || null,
-      details.message || null, details.poReference || null, 'product_page', 'GBP', total,
+      details.message || null, details.poReference || null, 'product_page', currency, total,
       document?.path || null, document?.name || null];
     if (buyer) { columns.push('customer_id', 'customer_user_id'); values.push(buyer.customer_id, buyer.id); }
     const result = await client.query(`INSERT INTO quotes (${columns.join(',')})
       VALUES (${values.map((_, index) => '$' + (index + 1)).join(',')}) RETURNING id,reference`, values);
     for (const row of rows) await client.query(`INSERT INTO quote_items
       (quote_id,offering_id,variant_id,applied_rule_id,offering_name,variant_name,qty,list_price_minor,captured_price_minor,currency)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'GBP')`,
-    [quoteId, row.offering_id, row.id, row.ruleId, row.offering_name, row.name, row.qty, row.list, row.unit]);
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [quoteId, row.offering_id, row.id, row.ruleId, row.offering_name, row.name, row.qty, row.list, row.unit, currency]);
     // The PO index row commits or rolls back with the quote; the visitor writes only its own (061, GRE-1797).
     if (document) await client.query('SELECT visitor_quote_po_index()');
     await client.query('COMMIT');

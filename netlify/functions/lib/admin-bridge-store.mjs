@@ -325,13 +325,15 @@ export async function bridgeRow(client, resource, id) {
   return rows[0] || null;
 }
 
-/** The FX rate, its row version and the last 50 changes (no user ids). */
+/** The FX rate, the shop currency (074), the row version and the last 50 changes to either (no user ids). */
 export async function bridgeFx(client) {
   const { rows } = await client.query(`SELECT s.id, s.usd_to_gbp_display_rate::text AS usd_to_gbp_display_rate,
-      s.row_version, s.updated_at,
+      s.shop_currency, s.row_version, s.updated_at,
       (SELECT COALESCE(jsonb_agg(jsonb_build_object('id', h.id, 'old_rate', h.old_rate::text, 'new_rate', h.new_rate::text,
+         'old_currency', h.old_currency, 'new_currency', h.new_currency,
          'changed_at', h.changed_at, 'note', h.note) ORDER BY h.changed_at DESC, h.id), '[]'::jsonb)
-         FROM (SELECT id, old_rate, new_rate, changed_at, note FROM fx_rate_history ORDER BY changed_at DESC, id LIMIT 50) h) AS history
+         FROM (SELECT id, old_rate, new_rate, old_currency, new_currency, changed_at, note FROM fx_rate_history
+                ORDER BY changed_at DESC, id LIMIT 50) h) AS history
     FROM org_settings s LIMIT 1`);
   if (!rows.length) throw new BridgeRequestError('not_found');
   return rows[0];
