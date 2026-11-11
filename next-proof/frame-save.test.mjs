@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { saveDecision, saveRequest } from './frame-save.mjs';
+import { conflictMessage, saveDecision, saveRequest } from './frame-save.mjs';
 
 const draft = { root: { props: {} }, content: [{ type: 'Hero', props: { id: 'block-1', headline: 'One' } }] };
 const pending = { requestId: 'request-1', pageId: 'page-1', baseRevisionId: 'revision-1', data: draft };
@@ -35,4 +35,10 @@ test('failed answer retains retryability; stale and invalid answers are ignored'
     { kind: 'failed', retryable: true, message: 'Network unavailable' });
   assert.equal(saveDecision(pending, draft, { requestId: 'other', outcome: 'saved', revisionId: 'revision-2' }), null);
   assert.equal(saveDecision(pending, draft, { requestId: 'request-1', outcome: 'conflict', currentRevisionId: 'revision-2', currentData: {} }), null);
+});
+
+test('conflict message names the person who saved, or Someone', () => {
+  assert.equal(conflictMessage('Ben'), 'Ben saved this page while you were editing. Choose which version to keep. Nothing is lost until you choose.');
+  assert.match(conflictMessage(undefined), /^Someone saved this page/);
+  assert.match(conflictMessage('  '), /^Someone saved this page/);
 });

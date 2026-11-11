@@ -5,7 +5,7 @@ import { allowedHostOrigins } from '../../../next-proof/frame-protocol.mjs';
 import { frameEngine } from '../../../next-proof/frame-engine.mjs';
 import Editor from '../../editor/[slug]/Editor.jsx';
 
-export const metadata = { title: 'Page preview | Greatstone Studio', robots: { index: false, follow: false } };
+export const metadata = { title: 'Page preview | Greatstone website', robots: { index: false, follow: false } };
 export default async function PreviewPage({ params }) {
   const { slug } = await params;
   const { release } = await activeRelease();

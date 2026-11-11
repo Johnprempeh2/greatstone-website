@@ -6,7 +6,7 @@ import { frameEngine } from '../../../next-proof/frame-engine.mjs';
 import Editor from './Editor.jsx';
 import { EDITOR_CONTRACT } from '../../../next-proof/frame-editor.mjs';
 
-export const metadata = { title: 'Page editor | Greatstone Studio', robots: { index: false, follow: false } };
+export const metadata = { title: 'Page editor | Greatstone website', robots: { index: false, follow: false } };
 export default async function EditorPage({ params }) {
   const { slug } = await params;
   const { release } = await activeRelease();
