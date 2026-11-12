@@ -31,8 +31,26 @@ export function checkEditorHtml(html, expectedCommit) {
   return { siteId, contract, commit };
 }
 
+// A fresh alias can drop a request just after upload: "fetch failed" on 12 Nov failed John's Deploy after
+// greatstoneint.com was already live (GRE-5171). Network errors and 5xx answers are tried again; a wrong page is not.
+export async function fetchWithRetry(url, options, { fetchPage = fetch, attempts = 4, wait = (ms) => new Promise((done) => setTimeout(done, ms)) } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    let response;
+    try { response = await fetchPage(url, { signal: AbortSignal.timeout(30_000), ...options }); }
+    catch (error) {
+      if (attempt >= attempts) throw new Error(`${url}: ${error.message} after ${attempts} attempts`);
+      console.log(`${url}: ${error.message}, trying again (${attempt} of ${attempts})`);
+      await wait(5_000 * attempt);
+      continue;
+    }
+    if (response.status < 500 || attempt >= attempts) return response;
+    console.log(`${url}: HTTP ${response.status}, trying again (${attempt} of ${attempts})`);
+    await wait(5_000 * attempt);
+  }
+}
+
 export async function verifyEditorAlias(fetchPage = fetch, expectedCommit) {
-  const response = await fetchPage(EDITOR_URL, { cache: 'no-store' });
+  const response = await fetchWithRetry(EDITOR_URL, { cache: 'no-store' }, { fetchPage });
   if (!response.ok) throw new Error(`Editor alias returned HTTP ${response.status}`);
   return checkEditorHtml(await response.text(), expectedCommit);
 }
@@ -52,7 +70,8 @@ async function main() {
     if (result.status !== 0) throw new Error(`Netlify alias deploy failed (${result.status})`);
   }
   const result = await verifyEditorAlias(fetch, process.env.GSAM_ENGINE_COMMIT);
-  const links = await checkBuiltLinks('https://gsam-editor--greatstone-home.netlify.app', release.pages.map((page) => page.path));
+  const links = await checkBuiltLinks('https://gsam-editor--greatstone-home.netlify.app', release.pages.map((page) => page.path),
+    (url) => fetchWithRetry(url));
   if (links.failures.length) throw new Error(`Editor alias link check failed:\n${links.failures.join('\n')}`);
   console.log(`Editor alias verified: siteId=${result.siteId}, contract=${result.contract}${result.commit ? `, engine.commit=${result.commit}` : ''}`);
   console.log(`Editor alias links verified: ${links.pages} pages, ${links.checkedLinks} links`);

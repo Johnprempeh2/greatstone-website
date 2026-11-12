@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkEditorHtml, verifyEditorAlias, EDITOR_SITE_ID } from './deploy-editor-alias.mjs';
+import { checkEditorHtml, verifyEditorAlias, fetchWithRetry, EDITOR_SITE_ID } from './deploy-editor-alias.mjs';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -42,4 +42,21 @@ test('editor alias refuses a contract failure before starting Netlify', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('the alias check tries a dropped request again, but not a wrong answer (GRE-5171)', async () => {
+  const noWait = { wait: async () => {} };
+  let calls = 0;
+  const flaky = async () => { if (++calls < 3) throw new Error('fetch failed'); return { ok: true, status: 200 }; };
+  assert.equal((await fetchWithRetry('https://alias.test/', {}, { fetchPage: flaky, ...noWait })).status, 200);
+  assert.equal(calls, 3);
+  calls = 0;
+  const busy = async () => ({ ok: ++calls > 1, status: calls > 1 ? 200 : 502 });
+  assert.equal((await fetchWithRetry('https://alias.test/', {}, { fetchPage: busy, ...noWait })).status, 200);
+  calls = 0;
+  const missing = async () => { calls++; return { ok: false, status: 404 }; };
+  assert.equal((await fetchWithRetry('https://alias.test/', {}, { fetchPage: missing, ...noWait })).status, 404);
+  assert.equal(calls, 1);
+  await assert.rejects(fetchWithRetry('https://alias.test/', {}, { fetchPage: async () => { throw new Error('fetch failed'); }, ...noWait }),
+    /fetch failed after 4 attempts/);
 });
