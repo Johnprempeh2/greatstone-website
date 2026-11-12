@@ -18,7 +18,9 @@ const sites = new Map([
 // card (deploy:staging) on its own Netlify Database. Since the Next cutover decision (7 Nov) it holds the Next
 // build, the site greatstoneint.com moves to, so its upload is the prepared Next copy of the commit.
 // John's Deploy in GSAM promotes its commit (deploy-production.yml, with a GSAM ticket).
-const stagingSites = new Set(['gre1795-website-db-staging', 'gre3833-next-db-staging']);
+// gre1795 is retired (GRE-4202) and out of the train (12 Nov), so it is no longer a staging site. It stays in
+// `sites` only as the card-gated upload the tests exercise; any upload to it still needs John's card.
+const stagingSites = new Set(['gre3833-next-db-staging']);
 const stagingSite = 'gre3833-next-db-staging';
 // The public site runs the same Next build as staging (Next cutover step 4, through John's Deploy card).
 const nextSites = new Set([stagingSite, 'greatstone-home']);
@@ -643,8 +645,9 @@ async function main() {
     console.log(`Skipped ${site}: ${files.length ? 'docs, tests or CI only' : 'no changes'} since ${baseline}`);
   else await deployInstalled(sha, content, samples);
   // The alias keeps its own deploy history, so it ships even when the public upload was skipped.
-  // The editor shows what staging holds, so the alias follows every staging upload (and the public site).
-  if ((mode === 'prod' && site === 'greatstone-home') || mode === 'staging') await deployEditorAlias(sha);
+  // Only the public deploy (the weekly train and John's Deploy) rebuilds it, baking staging's release then. It used to
+  // follow every staging upload too: 112 rebuilds on 8 Nov, a full Next build each (John, 12 Nov: cut the waste).
+  if (mode === 'prod' && site === 'greatstone-home') await deployEditorAlias(sha);
 }
 
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });

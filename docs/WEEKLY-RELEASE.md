@@ -2,6 +2,8 @@
 
 **Replaced.** greatstoneint.com now changes only when John presses Deploy on the Website module in GS Agentic Manager (see README, "greatstoneint.com"). Weekly cards and `web-rc-*` tags no longer authorise the public site. Kept for history.
 
+**Credits (12 Nov 2026).** The `gsam-editor` alias is rebuilt only by the public deploy (John's Deploy, and the train while it ran), never by `deploy:staging` or a preview. `gre1795-website-db-staging` is retired (GRE-4202) and is no train target: do not deploy, preview or check a release candidate on it (GRE-4313, GRE-4757). Release candidates are checked on `gre3833-next-db-staging`.
+
 Agreed by John on 25 Oct 2026 (GRE-2641). Merged website work goes live once a week, on one
 card. Keystone runs the train; Flint checks it. Urgent fixes can still go out alone.
 
@@ -20,7 +22,7 @@ If `main` moves after the tag, the guard still ships a detached checkout at the 
 
 ## Checklist (every item needs evidence on the release issue)
 
-1. **Preview link.** The staging or draft URL of the tagged commit, and the commit SHA it shows.
+1. **Preview link.** The `gre3833-next-db-staging` URL of the tagged commit, and the commit SHA it shows.
 2. **Link check (GRE-2511).** Every internal link and button on the changed pages returns a real page.
    No dead `#anchors`, no old `#go/` links.
 3. **Screenshots with real content** at 1440 and 390 wide for every changed page. Not placeholder data.
@@ -45,7 +47,6 @@ An item without evidence comes off the note, or the train waits.
 
 | Site | What it is | What the train deploys | Checks |
 | --- | --- | --- | --- |
-| `gre1795-website-db-staging` | The Vite site (`netlify.toml`, `npm run build`) | `npm run deploy:prod -- gre1795-website-db-staging` | Checklist items 1 to 6. No editor checks: it is a single-page app, so `/editor/<slug>` serves the homepage, not the editor (GRE-2793). |
 | `greatstone-home` (public site) | The Vite site, same build | `npm run deploy:prod -- greatstone-home`, only with a `weekly-release` card for the exact SHA | Checklist items 1 to 6. |
 | `gsam-editor` alias on `greatstone-home` | The Next editor (`next-proof/netlify.editor.toml`) | The same `npm run deploy:prod -- greatstone-home` run, right after the public upload, from the same commit | Checklist item 7. These apply only here. |
 
@@ -63,7 +64,7 @@ its "no changes" skip), `scripts/deploy-site.mjs` runs four named steps from the
 The Vite upload does not contain the Next editor, so the alias has its own build from the same tag.
 A failed step fails the train with `train failed at editor alias step "<step>"`. The public upload before
 it has already run: either fix and rerun the same command at the same tag, or roll both back.
-Staging and preview deploys never touch the alias.
+Staging and preview deploys never touch the alias (since 12 Nov; before that every `deploy:staging` rebuilt it, 112 times on 8 Nov).
 
 ## Deploy prerequisites
 
@@ -94,8 +95,7 @@ One `request_confirmation` on the weekly release issue, `human_only`, so John or
 
 - `idempotencyKey`: `confirmation:GRE-<release issue>:weekly-release:<40-character SHA>`
 - `detailsMarkdown` holds one line per site that ships, for example
-  `Approve production deploy: greatstone-home <SHA>` and
-  `Approve production deploy: gre1795-website-db-staging <SHA>`, then the change list, the checklist
+  `Approve production deploy: greatstone-home <SHA>`, then the change list, the checklist
   evidence and the rollback.
 
 `scripts/deploy-site.mjs` accepts this card for the public site only for the exact SHA. For the staging
