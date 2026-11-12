@@ -4,6 +4,7 @@
 // down. Every database transaction the function opens runs as `anon`, never as the owner.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { NetlifyDB } from '@netlify/database-dev';
 import pg from 'pg';
@@ -11,7 +12,7 @@ import { makeEnquiryHandler } from '../functions/lib/enquiry-handler.mjs';
 
 const MIGRATIONS = fileURLToPath(new URL('../database/migrations', import.meta.url));
 const ENV = { RESEND_API_KEY: 're_test', RESEND_FROM: 'Greatstone <alerts@example.test>', ENQUIRY_ALERT_TO: 'owner@example.test', APP_SITE_ORIGIN: 'https://example.test/' };
-const BODY = { name: 'Jane Stonewell', company: 'Stonewell & Co.', email: 'jane@stonewell.co', size_band: '11 to 50', message: 'Interest: GS Agentic Manager\n\nThe reports', page: '/contact', attribution: { first: { utm_source: 'linkedin', utm_campaign: 'r1' }, last: null } };
+const BODY = { name: 'Jane Stonewell', company: 'Stonewell & Co.', email: 'jane@stonewell.co', contact_role: 'owner_director', size_band: '11 to 50', message: 'Interest: GS Agentic Manager\n\nThe reports', page: '/contact', attribution: { first: { utm_source: 'linkedin', utm_campaign: 'r1' }, last: null } };
 
 let local, pool, ipSeq = 0;
 before(async () => {
@@ -19,6 +20,8 @@ before(async () => {
   const url = await local.start();
   await local.applyMigrations(MIGRATIONS, '001_enquiry_inbox'); // PGlite has no citext or pg_trgm (002 on)
   pool = new pg.Pool({ connectionString: url, max: 1 });
+  // the role column the store names (GRE-5194): plain ALTERs, so PGlite runs it on top of 001
+  await pool.query(readFileSync(new URL('../database/migrations/075_service_inquiry_contact_role/migration.sql', import.meta.url), 'utf8'));
 });
 after(async () => { await pool?.end(); await local?.stop(); });
 
@@ -73,6 +76,7 @@ test('an enquiry is saved as anon, alerts the owner, and is marked alerted', asy
   const r = await row(out.body.ref);
   assert.equal(r.contact_email, 'jane@stonewell.co');
   assert.equal(r.size_band, '11 to 50');
+  assert.equal(r.contact_role, 'owner_director');
   assert.equal(r.source, 'contact');
   assert.equal(r.attribution.page, '/contact');
   assert.ok(r.alert_sent_at, 'alert_sent_at set');

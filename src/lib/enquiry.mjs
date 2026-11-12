@@ -1,7 +1,7 @@
 // Contact enquiry (GRE-654): the browser half of the BookDeepDive form. Pure apart from the injected fetch,
 // so `node --test` covers it. The `enquiry` Netlify Function (netlify/functions/enquiry.mjs, GRE-1794) saves
 // the enquiry on Netlify Database and alerts the owner; logic and limits are in netlify/functions/lib/shared/enquiry.mjs.
-//   POST /api/enquiry { name, company, email, size_band, industry, message, attribution: { first, last }, page, website, turnstile? }
+//   POST /api/enquiry { name, company, email, contact_role?, size_band, industry, message, attribution: { first, last }, page, website, turnstile? }
 //   (the optional interest choice is the first line of `message`; `turnstile` is the Cloudflare token when the site has a key)
 //   → { ok: true, ref } | non-2xx { ok: false, error }
 
@@ -15,11 +15,21 @@ export const SIZE_BANDS = ['Under 10', '11 to 50', '51 to 250', 'More than 250']
 // The consent line above the button. The legal basis is legitimate interests (Privacy policy), so it is a
 // notice, not a tick box that blocks sending.
 export const CONSENT = 'I agree that Greatstone can use these details to reply to my enquiry. See our <a href="#go/privacy">Privacy Policy</a>.';
-export const FIELD_ERRORS = { name: 'Please add your name.', email: 'Please add an email address we can reply to.' };
-export function validateEnquiry(fields = {}) {
+// "Your role" (GRE-5194, wording Harbor GRE-3579): required on the enquiry form, so the monthly KPI can tell who can
+// buy. The values are fixed (the KPI and the function's CONTACT_ROLES read them); only the question label is editable.
+export const ROLE_OPTIONS = [
+  { value: 'owner_director', label: 'Owner or director' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'other', label: 'Other' },
+];
+export const isRole = (s) => ROLE_OPTIONS.some((o) => o.value === clean(s));
+export const FIELD_ERRORS = { name: 'Please add your name.', email: 'Please add an email address we can reply to.', role: 'Please choose your role.' };
+// requireRole: the enquiry form asks it; the calculators' lead forms do not.
+export function validateEnquiry(fields = {}, { requireRole = false } = {}) {
   const errors = {};
   if (!clean(fields.name)) errors.name = FIELD_ERRORS.name;
   if (!isEmail(fields.email)) errors.email = FIELD_ERRORS.email;
+  if (requireRole && !isRole(fields.role)) errors.role = FIELD_ERRORS.role;
   return errors;
 }
 
@@ -51,6 +61,7 @@ export function takePendingInterest(options = []) {
 export function enquiryPayload(fields = {}, attribution = {}, page = '') {
   return {
     name: clean(fields.name), company: clean(fields.company), email: clean(fields.email),
+    ...(clean(fields.role) ? { contact_role: clean(fields.role) } : {}),
     size_band: clean(fields.size_band), industry: clean(fields.industry), message: withInterest(fields.message, fields.interest),
     attribution: { first: (attribution && attribution.first) || null, last: (attribution && attribution.last) || null },
     page: clean(page).slice(0, 200), website: clean(fields.website),

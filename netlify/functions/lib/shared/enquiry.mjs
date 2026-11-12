@@ -4,7 +4,7 @@
 // `node --test` covers every path, and both the Netlify Function (netlify/functions/lib/enquiry-handler.mjs,
 // GRE-1794, the live path) and the old edge function import the same code.
 // Wire contract with the BookDeepDive block (src/lib/enquiry.mjs):
-//   POST /api/enquiry  { name?, company?, email, size_band?, industry?, message?, attribution?: { first, last }, page?, website? }
+//   POST /api/enquiry  { name?, company?, email, contact_role?, size_band?, industry?, message?, attribution?: { first, last }, page?, website? }
 // The form asks for a name too (GRE-970), but only the email is required here: a visitor on an older page
 // still reaches us. The optional interest choice arrives as the message's first line ("Interest: …").
 //   → 200 { ok: true, ref } when the row is saved or the alert went (the lead is on record)
@@ -19,6 +19,10 @@ export { sendEmail };
 export const ENQUIRY_LIMITS = { name: 200, email: 200, company: 200, size_band: 40, industry: 80, message: 4000, page: 200 };
 export const PER_IP_PER_DAY = 10;
 export const SOURCE = 'contact';
+// "Your role" (GRE-5194, rule GRE-3579): the form requires it, and the monthly KPI counts owner_director and manager
+// as able to buy. Missing is allowed (an older page or a calculator's lead tool still reaches us); any other value
+// is refused.
+export const CONTACT_ROLES = ['owner_director', 'manager', 'other'];
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -38,8 +42,10 @@ export function normaliseEnquiry(body) {
     size_band: cap(b.size_band, ENQUIRY_LIMITS.size_band),
     industry: cap(b.industry, ENQUIRY_LIMITS.industry),
     message: capText(b.message, ENQUIRY_LIMITS.message),
+    contact_role: line(b.contact_role),
   };
   if (!EMAIL_RE.test(enquiry.email)) return { ok: false, error: 'Please add an email address we can reply to.' };
+  if (enquiry.contact_role && !CONTACT_ROLES.includes(enquiry.contact_role)) return { ok: false, error: 'Please choose your role.' };
   return { ok: true, enquiry };
 }
 
@@ -78,6 +84,7 @@ export function enquiryRow({ orgId, enquiry, attribution = {}, ip = '' }) {
     contact_company: enquiry.company || null,
     message: enquiry.message || null,
     size_band: enquiry.size_band || null,
+    contact_role: enquiry.contact_role || null,
     industry: enquiry.industry || null,
     attribution,
     source: SOURCE,

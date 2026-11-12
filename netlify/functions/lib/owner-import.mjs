@@ -58,7 +58,8 @@ export const TABLES = Object.freeze([
 // Columns a Netlify-only migration added to a TABLES table. Supabase rows never carry them, so the move writes NULL
 // (each is nullable with no default). Any other missing column still refuses. Found by the GRE-2567 rehearsal, 3 Nov.
 export const NEW_ON_TARGET = Object.freeze({
-  service_inquiries: Object.freeze(['size_band', 'customer_id']), // 042_service_inquiry_size_band, 057_enquiry_client_link
+  // 042_service_inquiry_size_band, 057_enquiry_client_link, 075_service_inquiry_contact_role
+  service_inquiries: Object.freeze(['size_band', 'customer_id', 'contact_role']),
 });
 
 // A refusal with a fixed message. Anything else is reported by its Postgres code only, as pg messages carry values.

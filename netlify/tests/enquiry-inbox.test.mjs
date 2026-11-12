@@ -13,6 +13,8 @@ import { asAnon, enquiryStore } from '../functions/lib/enquiry-store.mjs';
 const MIGRATIONS = fileURLToPath(new URL('../database/migrations', import.meta.url));
 const UP = readFileSync(new URL('../database/migrations/001_enquiry_inbox/migration.sql', import.meta.url), 'utf8');
 const DOWN = readFileSync(new URL('../database/migrations/001_enquiry_inbox/rollback.sql', import.meta.url), 'utf8');
+// the role column the store names (GRE-5194); plain ALTERs, so PGlite runs it on top of 001
+const ROLE = readFileSync(new URL('../database/migrations/075_service_inquiry_contact_role/migration.sql', import.meta.url), 'utf8');
 
 let local, pool;
 before(async () => {
@@ -22,6 +24,7 @@ before(async () => {
   // store on every migration, on a real Postgres.
   assert.deepEqual(await local.applyMigrations(MIGRATIONS, '001_enquiry_inbox'), ['001_enquiry_inbox']);
   pool = new pg.Pool({ connectionString: url, max: 1 });
+  await pool.query(ROLE);
 });
 after(async () => { await pool?.end(); await local?.stop(); });
 
@@ -104,6 +107,7 @@ test('rollback removes the table; the migration applies again', async () => {
   await pool.query(DOWN);
   assert.equal((await one("SELECT to_regclass('service_inquiries') AS t")).t, null);
   await pool.query(UP);
+  await pool.query(ROLE);
   assert.equal((await one('SELECT count(*)::int AS n FROM service_inquiries')).n, 0);
   assert.ok(await enquiryStore(pool).saveRow(ROW));
 });

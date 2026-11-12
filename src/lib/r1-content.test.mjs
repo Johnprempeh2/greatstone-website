@@ -135,6 +135,7 @@ test('store-only customers can reach orders from the portal and the account butt
 test('the contact enquiry form follows GRE-652 §4.6 and makes no reply-time promise', () => {
   const contact = STORE.slice(STORE.indexOf('contact: seedPage('), STORE.indexOf('// fold in the rest of the site'));
   for (const s of ["nameLabel: 'Your name (required)'", "emailLabel: 'Work email (required)'", "companyLabel: 'Organisation'",
+    "roleLabel: 'Your role (required)'", "body: 'A few short questions. Only your name, email and role are required.'",
     "sizeLabel: 'How many people work there?'", 'sizes: SIZE_BANDS.map', 'showSector: false', "submitLabel: 'Send enquiry'",
     "messageLabel: 'Which work would you most like to get time back from?'",
     "messagePlaceholder: 'For example: weekly reporting, proposals, social content, research'",

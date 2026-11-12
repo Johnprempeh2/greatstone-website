@@ -3,7 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { track, getConsent, getAttribution } from '../lib/analytics.js';
-import { makeEnquiryClient, enquiryPayload, fireLead, validateEnquiry, INTEREST_OPTIONS, SIZE_BANDS, CONSENT, takePendingInterest } from '../lib/enquiry.mjs';
+import { makeEnquiryClient, enquiryPayload, fireLead, validateEnquiry, INTEREST_OPTIONS, SIZE_BANDS, ROLE_OPTIONS, CONSENT, takePendingInterest } from '../lib/enquiry.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { Turnstile, TURNSTILE_KEY } from './Turnstile.jsx';
@@ -46,6 +46,8 @@ export function BookDeepDive({
   // labels are the earlier strings, so a page saved before them renders as it did.
   nameLabel = 'Your name', emailLabel = 'Work email', companyLabel = 'Company',
   sizeLabel = 'How many people work there?', sizePlaceholder = 'Select if it helps', sizes, showSector = true,
+  // GRE-5194 (wording Harbor GRE-3579): the required "Your role" question. Always asked; its options are fixed.
+  roleLabel = 'Your role', rolePlaceholder = 'Choose your role…',
   consent = '',
   sentHeading = 'Thank you. Your enquiry has reached us.',
   sentBody = 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
@@ -69,7 +71,7 @@ export function BookDeepDive({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useReveal([asidePoints.length]);
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'failed'
-  const [errors, setErrors] = useState({}); // { name?, email? } from validateEnquiry, { bot? } from Turnstile
+  const [errors, setErrors] = useState({}); // { name?, email?, role? } from validateEnquiry, { bot? } from Turnstile
   const [token, setToken] = useState(null); // Cloudflare Turnstile, only when the site has a key
   const [fallbackHref, setFallbackHref] = useState('');
   const sent = status === 'sent' || status === 'failed';
@@ -91,6 +93,8 @@ export function BookDeepDive({
     if (nm) parts.push('Name: ' + nm);
     if (company) parts.push('Company: ' + company);
     if (g('email')) parts.push('Work email: ' + g('email'));
+    const role = ROLE_OPTIONS.find((o) => o.value === g('role'));
+    if (role) parts.push(roleLabel + ': ' + role.label);
     if (g('size')) parts.push(sizeLabel + ' ' + g('size'));
     if (g('industry')) parts.push(sectorLabel + ': ' + g('industry'));
     if (g('interest')) parts.push('Interest: ' + g('interest'));
@@ -102,10 +106,10 @@ export function BookDeepDive({
     if (status === 'sending' || editing) return;
     const fd = new FormData(e.currentTarget);
     const g = (k) => (fd.get(k) || '').toString().trim();
-    const found = validateEnquiry({ name: g('name'), email: g('email') });
+    const found = validateEnquiry({ name: g('name'), email: g('email'), role: g('role') }, { requireRole: true });
     setErrors(found);
-    if (found.name || found.email) {
-      const first = e.currentTarget.querySelector(found.name ? '[name="name"]' : '[name="email"]');
+    if (found.name || found.email || found.role) {
+      const first = e.currentTarget.querySelector(found.name ? '[name="name"]' : found.email ? '[name="email"]' : '[name="role"]');
       if (first && first.focus) first.focus();
       return;
     }
@@ -116,7 +120,7 @@ export function BookDeepDive({
     const attribution = getAttribution();
     const page = typeof window !== 'undefined' ? window.location.pathname + window.location.hash : '';
     const out = await client.send(enquiryPayload({
-      name: g('name'), company: g('company'), email: g('email'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'), turnstile: token,
+      name: g('name'), company: g('company'), email: g('email'), role: g('role'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'), turnstile: token,
     }, attribution, page));
     if (out.ok) fireLead({ track, getConsent, attribution });
     setStatus(out.ok ? 'sent' : 'failed');
@@ -167,6 +171,11 @@ export function BookDeepDive({
                     </div>
                   ) : null}
                 </div>
+                <div className="field"><label htmlFor={uid + 'role'}>{roleLabel}</label>
+                  <select className="fld" id={uid + 'role'} name="role" defaultValue="" required aria-required="true"
+                    onChange={() => { if (errors.role) setErrors((x) => ({ ...x, role: '' })); }} aria-invalid={errors.role ? 'true' : undefined} aria-describedby={errors.role ? uid + 'role-err' : undefined}>
+                    <option value="" disabled>{rolePlaceholder}</option>{ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select>
+                  {errors.role ? <p className="b-book-err" id={uid + 'role-err'} role="alert">{errors.role}</p> : null}</div>
                 {/* Optional by default now. Forcing a visitor to classify their own sector before they may
                     say hello is a qualification barrier, and the placeholder stays selectable so choosing
                     nothing is a real answer rather than a dead first option. The contact page hides it (§4.6). */}
@@ -279,6 +288,8 @@ export const puck = {
     nameLabel: { type: 'text', label: 'Name label' },
     emailLabel: { type: 'text', label: 'Email label' },
     companyLabel: { type: 'text', label: 'Organisation label' },
+    roleLabel: { type: 'text', label: 'Role question label (always asked, required)' },
+    rolePlaceholder: { type: 'text', label: 'Role question placeholder' },
     sizeLabel: { type: 'text', label: 'Size question label' },
     sizePlaceholder: { type: 'text', label: 'Size question placeholder' },
     showSector: { type: 'radio', label: 'Sector question', options: [
@@ -343,9 +354,10 @@ export const puck = {
     // which would have reintroduced it silently. The contact page overrides all of these anyway.
     eyebrow: '',
     headline: 'Send an Enquiry', highlight: '',
-    body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
+    body: 'Tell us as much or as little as you would like. We only need your name, email and role.',
     submitLabel: 'Send enquiry',
     nameLabel: 'Your name (required)', emailLabel: 'Work email (required)', companyLabel: 'Organisation',
+    roleLabel: 'Your role (required)', rolePlaceholder: 'Choose your role…',
     sizeLabel: 'How many people work there?', sizePlaceholder: 'Select if it helps', sizes: SIZE_BANDS.map((label) => ({ label })),
     showSector: false,
     sectorLabel: 'Industry', sectorPlaceholder: 'Choose your sector…', sectorRequired: false,

@@ -678,8 +678,9 @@ export function seedState() {
               ctaLabel: 'Email Greatstone', ctaHref: { kind: 'email', email: '' }, gated: true },
           ],
         }),
-        // The enquiry route, worded as GRE-652 §4.6 (GRE-970) plus GRE-1373's optional interest choice. Only
-        // name and email are required (his "no qualification barriers"); the size band qualifies, it is not a
+        // The enquiry route, worded as GRE-652 §4.6 (GRE-970) plus GRE-1373's optional interest choice. Name,
+        // email and role are required (role since GRE-5194, for the qualified-enquiry KPI, GRE-3579; the rest keeps
+        // his "no qualification barriers"); the size band qualifies, it is not a
         // price tier (GRE-1354). The sector question is hidden: §4.6 has none. email stays empty until the
         // address is settled; the block falls back to the site address after sending either way.
         // The "within one working day" promise is left out of every string until decision D6 (claim C23).
@@ -687,9 +688,10 @@ export function seedState() {
           // the form is the page's one interactive surface; a lifted band makes it read as one
           _section: { surface: 'panel', accent: 'default', spaceTop: 'default', spaceBottom: 'default' },
           eyebrow: '', headline: 'Send an Enquiry', highlight: '',
-          body: 'A few short questions. Only your name and email are required.',
+          body: 'A few short questions. Only your name, email and role are required.',
           submitLabel: 'Send enquiry',
           nameLabel: 'Your name (required)', emailLabel: 'Work email (required)', companyLabel: 'Organisation',
+          roleLabel: 'Your role (required)', rolePlaceholder: 'Choose your role…',
           sizeLabel: 'How many people work there?', sizePlaceholder: 'Select if it helps',
           sizes: SIZE_BANDS.map((label) => ({ label })),
           showSector: false, sectorLabel: 'Your sector (optional)', sectorPlaceholder: 'Select if it is useful context',

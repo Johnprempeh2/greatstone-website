@@ -19,7 +19,7 @@ const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? '';
 const ALERT_TO = (Deno.env.get('ENQUIRY_ALERT_TO') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const SITE_ORIGIN = (Deno.env.get('APP_SITE_ORIGIN') || 'https://greatstoneint.com').replace(/\/+$/, '');
 const STUDIO_URL = SITE_ORIGIN + '/#catalogue/inquiries';
-const EXTRA = /attribution|industry|alert_sent_at|size_band/;
+const EXTRA = /attribution|industry|alert_sent_at|size_band|contact_role/;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -45,14 +45,15 @@ async function saveRow(row: Record<string, unknown>) {
   let { data, error } = await supabase.from('service_inquiries').insert({ ...row, org_id: org.id }).select('id').single();
   // Before 0040 there is no size_band column, and before 0035 no attribution or industry: keep the enquiry
   // without them (the alert still carries them).
-  if (error && /size_band/.test(error.message || '')) {
-    console.warn('enquiry: saved without the size band (apply 0040)');
-    const { size_band: _s, ...rest } = row;
+  if (error && /size_band|contact_role/.test(error.message || '')) {
+    // contact_role is Netlify Database only (075, GRE-5194)
+    console.warn('enquiry: saved without the size band and role (apply 0040)');
+    const { size_band: _s, contact_role: _r, ...rest } = row;
     ({ data, error } = await supabase.from('service_inquiries').insert({ ...rest, org_id: org.id }).select('id').single());
   }
   if (error && EXTRA.test(error.message || '')) {
     console.warn('enquiry: saved without attribution (apply 0035)');
-    const { attribution: _a, industry: _i, size_band: _s, ...rest } = row;
+    const { attribution: _a, industry: _i, size_band: _s, contact_role: _r, ...rest } = row;
     ({ data, error } = await supabase.from('service_inquiries').insert({ ...rest, org_id: org.id }).select('id').single());
   }
   if (error) { console.error('enquiry: not saved', error.message); return null; }
