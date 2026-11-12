@@ -38,10 +38,14 @@ test('signed machine endpoints skip the cross-site check; cookie routes keep it'
   assert.equal(decide({ pathname: '/api/stripe-webhook', hostname, method }), 200);
   assert.equal(decide({ pathname: '/api/interview/voice/think', hostname, method }), 200);
   assert.equal(decide({ pathname: '/api/guide/think', hostname, method }), 200);
+  assert.equal(decide({ pathname: '/api/portal-mcp', hostname, method }), 200);
+  assert.equal(decide({ pathname: '/api/portal-mcp', hostname, method, origin: 'https://evil.example' }), 200);
   assert.equal(decide({ pathname: '/api/admin/v1/portal-documents', method }), 404);
+  assert.equal(decide({ pathname: '/api/portal-mcp', method }), 404);
   for (const pathname of ['/api/admin', '/api/admin/v1', '/api/admin/v2/x', '/api/stripe-webhook/x', '/api/stripe-webhooks', '/api/stripe-checkout', '/api/auth/login', '/studio/admin/v1/x',
     '/api/interview/voice/start', '/api/interview/voice/think/x', '/api/interview/voice/thinker', '/api/interview/chat',
-    '/api/guide/start', '/api/guide/chat', '/api/guide/action', '/api/guide/think/x', '/api/guide/thinker']) {
+    '/api/guide/start', '/api/guide/chat', '/api/guide/action', '/api/guide/think/x', '/api/guide/thinker',
+    '/api/portal-mcp/x', '/api/portal-mcps', '/api/portal', '/studio/portal-mcp']) {
     assert.equal(decide({ pathname, hostname, method }), 403, pathname);
     assert.equal(decide({ pathname, hostname, method, origin: 'https://evil.example' }), 403, pathname);
   }
