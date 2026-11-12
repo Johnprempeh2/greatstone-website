@@ -353,6 +353,11 @@ test('a good ticket deploys the public site once; the same ticket is refused the
   let result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Deploy ticket [0-9a-f-]{36} accepted/);
+  // The editor alias bakes staging's release, so GSAM's draft overlays what the public site serves (8 Nov).
+  assert.match(result.stdout, /Editor alias bakes staging's Content release 4/);
+  // GRE-4720: it bakes the parsed snapshot, not the raw schema 2 file the editor build refuses.
+  const baked = JSON.parse(await readFile(`${f.log}.baked.json`, 'utf8'));
+  assert.deepEqual([baked.release.number, baked.releaseSchema, baked.gsamSnapshot], [4, 2, true]);
   await rm(f.log);
   await rm(`${f.log}.baked.json`, { force: true });
   result = await f.run('prod', 'greatstone-home');
@@ -700,6 +705,8 @@ test('production from a detached HEAD needs exactly origin main', async (t) => {
   assert.match(refused.stderr, /production requires main/);
 });
 
+// gre1795 left the staging sites (12 Nov), so a config refresh is exercised on gre3833.
+const refreshSite = 'gre3833-next-db-staging';
 async function refreshFixture(t) {
   const f = await fixture(t);
   const remote = await mkdtemp(join(tmpdir(), 'deploy-remote-'));
@@ -707,9 +714,10 @@ async function refreshFixture(t) {
   git(f.cwd, 'init', '-q', '--bare', remote);
   git(f.cwd, 'remote', 'add', 'origin', remote);
   git(f.cwd, 'checkout', '-q', 'main');
+  f.serve(refreshSite);
   f.env.TREE_LOG = join(f.cwd, 'bin', 'tree.txt');
   f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${f.base}` }]);
-  f.setInteractions([stagingCard(f.base)]);
+  f.setInteractions([stagingCard(f.base, {}, refreshSite)]);
   // main moves on with site code after the approved upload; a refresh must not ship it.
   await f.commit('src/app.js', 'newer main code');
   git(f.cwd, 'push', '-q', 'origin', 'main');
@@ -718,19 +726,21 @@ async function refreshFixture(t) {
 
 test('config refresh re-uploads the live approved commit tree from origin main', async (t) => {
   const f = await refreshFixture(t);
-  const result = await f.run('refresh');
+  const result = await f.run('refresh', refreshSite);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, new RegExp(`re-uploading live commit ${f.base}`));
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 8c1135a6-6f8e-43f4-b9b2-3c4d5b6a36cb --message gsam-source:prod:${f.base} --prod\n`);
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:prod:${f.base} --prod\n`);
   assert.equal(await readFile(f.env.TREE_LOG, 'utf8'), 'npm ci in original\nnetlify in original\n');
 });
 
-test('config refresh never targets the public site', async (t) => {
+test('config refresh never targets the public site or the retired gre1795', async (t) => {
   const f = await refreshFixture(t);
-  const result = await f.run('refresh', 'greatstone-home');
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /config refresh is only for a staging site/);
+  for (const other of ['greatstone-home', 'gre1795-website-db-staging']) {
+    const result = await f.run('refresh', other);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /config refresh is only for a staging site/);
+  }
   await assert.rejects(readFile(f.log));
 });
 
@@ -739,15 +749,15 @@ test('config refresh refuses without the exact accepted card for the live commit
   const guardOnly = git(f.cwd, 'rev-parse', 'HEAD');
   const cases = [
     [],
-    [stagingCard(f.base, { status: 'pending' })],
-    [stagingCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' })],
-    [stagingCard(f.base, { effectiveResolverPolicy: 'anyone' })],
-    [stagingCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}` } })],
-    [stagingCard(guardOnly)],
+    [stagingCard(f.base, { status: 'pending' }, refreshSite)],
+    [stagingCard(f.base, { resolvedByUserId: null, resolvedByAgentId: 'agent-id' }, refreshSite)],
+    [stagingCard(f.base, { effectiveResolverPolicy: 'anyone' }, refreshSite)],
+    [stagingCard(f.base, { payload: { detailsMarkdown: `Approve production deploy: greatstone-home ${f.base}` } }, refreshSite)],
+    [stagingCard(guardOnly, {}, refreshSite)],
   ];
   for (const cards of cases) {
     f.setInteractions(cards);
-    const result = await f.run('refresh');
+    const result = await f.run('refresh', refreshSite);
     assert.equal(result.status, 1, JSON.stringify(cards));
     assert.match(result.stderr, /config refresh refused: this task needs an accepted human-only staging card/);
   }
@@ -757,8 +767,8 @@ test('config refresh refuses without the exact accepted card for the live commit
   git(f.cwd, 'push', '-q', '--force', 'origin', 'main');
   const drifted = git(f.cwd, 'rev-parse', 'HEAD');
   f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${drifted}` }]);
-  f.setInteractions([stagingCard(f.base)]);
-  const result = await f.run('refresh');
+  f.setInteractions([stagingCard(f.base, {}, refreshSite)]);
+  const result = await f.run('refresh', refreshSite);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /config refresh refused: this task needs an accepted human-only staging card/);
   await assert.rejects(readFile(f.log));
@@ -767,26 +777,26 @@ test('config refresh refuses without the exact accepted card for the live commit
 test('config refresh refuses off origin main, a dirty checkout, or no live upload', async (t) => {
   const f = await refreshFixture(t);
   await writeFile(join(f.cwd, 'src', 'app.js'), 'uncommitted');
-  let result = await f.run('refresh');
+  let result = await f.run('refresh', refreshSite);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /clean checkout/);
   git(f.cwd, 'checkout', '-q', '--', 'src/app.js');
 
   await f.commit('src/app.js', 'local only');
-  result = await f.run('refresh');
+  result = await f.run('refresh', refreshSite);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /config refresh requires a checkout at exactly origin main/);
   git(f.cwd, 'reset', '-q', '--hard', 'HEAD~1');
 
   f.setDeploys([{ state: 'error', title: `gsam-source:prod:${f.base}` },
     { state: 'ready', title: `gsam-source:preview:12:${f.base}` }]);
-  result = await f.run('refresh');
+  result = await f.run('refresh', refreshSite);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /has no guarded production upload to refresh/);
 
   f.setDeploys([{ state: 'ready', title: `gsam-source:prod:${'a'.repeat(40)}` }]);
-  f.setInteractions([stagingCard('a'.repeat(40))]);
-  result = await f.run('refresh');
+  f.setInteractions([stagingCard('a'.repeat(40), {}, refreshSite)]);
+  result = await f.run('refresh', refreshSite);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /is not on main/);
   await assert.rejects(readFile(f.log));
@@ -852,7 +862,7 @@ test('config refresh re-uploads the live Next copy on Greatstone website staging
 
 // Staging holds the edits (John, 7 Nov): main goes to staging with no card, then the public site
 // takes the exact commit staging holds, behind the weekly-release card.
-test('staging uploads the Next copy of main to the staging site with no card, then the editor alias', async (t) => {
+test('staging uploads the Next copy of main to the staging site with no card, and leaves the editor alias alone', async (t) => {
   const f = await fixture(t);
   f.env.TOML_LOG = join(f.cwd, 'bin', 'toml.txt');
   f.serve('gre3833-next-db-staging');
@@ -860,9 +870,7 @@ test('staging uploads the Next copy of main to the staging site with no card, th
   const result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod\n` +
-    'build --context branch:gsam-editor\nbuild site 3b1e97e6-e184-4251-badd-deed532be3ab\n' +
-    `alias 3b1e97e6-e184-4251-badd-deed532be3ab ${f.base}\n`);
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod\n`);
   assert.match(await readFile(f.env.TOML_LOG, 'utf8'), /NEXT_CATALOGUE_API/);
 });
 
@@ -1050,11 +1058,8 @@ test('a staging content task forces the staging upload and must match staging\'s
   result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
   assert.match(await readFile(f.log, 'utf8'), /--message gsam-source:staging:/);
-  // The editor alias follows: it bakes the same release, so GSAM's draft overlays what staging serves (8 Nov).
-  assert.match(result.stdout, /Editor alias bakes staging's Content release 4/);
-  // GRE-4720: it bakes the parsed snapshot, not the raw schema 2 file the editor build refuses.
-  const baked = JSON.parse(await readFile(`${f.log}.baked.json`, 'utf8'));
-  assert.deepEqual([baked.release.number, baked.releaseSchema, baked.gsamSnapshot], [4, 2, true]);
+  // A staging upload no longer rebuilds the editor alias (12 Nov); the public deploy does.
+  assert.doesNotMatch(await readFile(f.log, 'utf8'), /branch:gsam-editor|^alias /m);
 });
 
 // GRE-4707: on 8 Nov a Deploy put content release 1 (no /consultancy, 0 products) on the public site.
