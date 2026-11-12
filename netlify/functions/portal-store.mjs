@@ -2,14 +2,16 @@ import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
 import { portalStore } from './lib/portal-store.mjs';
+import { sendReceiptsNow } from './portal-receipt-worker.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OPS = new Set(['overview', 'accept', 'job', 'receipt-document']);
 
-export function makePortalStoreHandler({ pool = getPool, query = portalStore, verify, log = console.error } = {}) {
-  return async (req) => {
+export function makePortalStoreHandler({ pool = getPool, query = portalStore, verify, log = console.error,
+  sendReceipts = sendReceiptsNow } = {}) {
+  return async (req, context) => {
     if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
@@ -26,6 +28,7 @@ export function makePortalStoreHandler({ pool = getPool, query = portalStore, ve
       if (!db) return json({ error: 'Portal unavailable.' }, 503);
       const data = await asCustomer(db, authIdentity(user),
         (client) => query(client, op, args));
+      if (op === 'accept') await sendReceipts(context);
       return json({ data });
     } catch (error) {
       if (['42501', 'P0002'].includes(error?.code)) return json({ error: 'Document not found or access denied.' }, 403);

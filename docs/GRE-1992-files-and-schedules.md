@@ -24,9 +24,10 @@ Netlify scheduled functions, run as the worker role (`service_role`, 002), never
 
 - `inquiry-ip-purge`, daily at 03:17 UTC: clears enquiry IPs older than 30 days (0036). Runs the same UPDATE as
   `purge_inquiry_ips()`, because the worker has no EXECUTE on that function (it was made in 001, before 002's grants).
-- `portal-receipt-worker`, every minute: claims due receipt jobs and sends them through Resend (0039). Needs
-  `RESEND_API_KEY`, `RESEND_FROM` and `PORTAL_RECEIPT_TO` on the site. The page no longer nudges it, so a receipt
-  goes within about a minute.
+- `portal-receipt-worker`, hourly: claims due receipt jobs and sends them through Resend (0039). Needs
+  `RESEND_API_KEY`, `RESEND_FROM` and `PORTAL_RECEIPT_TO` on the site. An acceptance (`/api/portal-store`) and the
+  studio's Send again (`/api/staff-store`) run it straight away after the response, so a receipt never waits for the
+  hour; the hourly run sweeps up retries. It was every minute until 12 Nov, which kept every database awake.
 
 ## At cut-over (GRE-1796)
 

@@ -3,6 +3,7 @@ import test from 'node:test';
 import { makePortalStoreHandler } from '../functions/portal-store.mjs';
 import { portalStore } from '../functions/lib/portal-store.mjs';
 import { staffStore } from '../functions/lib/staff-store.mjs';
+import { makeStaffStoreHandler } from '../functions/staff-store.mjs';
 
 const USER = { id: '00000000-0000-4000-8000-000000000001', email: 'member@example.test', email_confirmed_at: '2026-01-01' };
 const ID = '00000000-0000-4000-8000-000000000002';
@@ -32,6 +33,25 @@ test('portal handler applies verified claims and commits; database failures roll
     query: async () => { throw new Error('database failure'); }, log: () => {} });
   assert.equal((await failing(req({ op: 'overview' }))).status, 503);
   assert.deepEqual(sql.slice(-2).map(([statement]) => statement), ['ROLLBACK', 'release']);
+});
+
+test('an acceptance and a staff Send again send the receipt straight away; other requests do not', async () => {
+  const client = { query: async () => ({ rows: [] }), release: () => {} };
+  const pool = () => ({ connect: async () => client });
+  const kicks = [];
+  const context = { waitUntil: () => {} };
+  const sendReceipts = (ctx) => { kicks.push(ctx); };
+  const portal = makePortalStoreHandler({ pool, verify: async () => USER, query: async () => ({ id: ID }), sendReceipts });
+  assert.equal((await portal(req({ op: 'overview' }), context)).status, 200);
+  assert.equal(kicks.length, 0);
+  assert.equal((await portal(req({ op: 'accept', args: { documentId: ID, name: 'A', title: 'B', confirmed: true } }), context)).status, 200);
+  assert.deepEqual(kicks, [context]);
+  const staff = makeStaffStoreHandler({ pool, verify: async () => USER, query: async () => ({ data: true }), sendReceipts });
+  const staffReq = (body) => new Request('https://example.test/api/staff-store', { method: 'POST', headers: { authorization: 'Bearer valid' }, body: JSON.stringify(body) });
+  assert.equal((await staff(staffReq({ kind: 'rpc', name: 'portal_withdraw', args: {} }), context)).status, 200);
+  assert.equal(kicks.length, 1);
+  assert.equal((await staff(staffReq({ kind: 'rpc', name: 'portal_requeue_receipt', args: { p_acceptance_id: ID } }), context)).status, 200);
+  assert.equal(kicks.length, 2);
 });
 
 test('client portal reads and acceptance use fixed queries with parameter values', async () => {

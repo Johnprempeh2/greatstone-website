@@ -5,7 +5,8 @@ import { startPostgres, skip } from './lib/postgres.mjs';
 import { asWorker } from '../functions/lib/worker-db.mjs';
 import { getPool } from '../functions/lib/db.mjs';
 import purgeSchedule, { makeInquiryIpPurge, PURGE_SQL } from '../functions/inquiry-ip-purge.mjs';
-import receiptSchedule, { makePortalReceiptWorker } from '../functions/portal-receipt-worker.mjs';
+import receiptSchedule, { makePortalReceiptWorker, sendReceiptsNow, config as receiptConfig } from '../functions/portal-receipt-worker.mjs';
+import { config as pdfCleanupConfig } from '../functions/portal-pdf-cleanup.mjs';
 
 function database(rows = []) {
   const calls = [];
@@ -31,6 +32,22 @@ test('receipt worker claims due jobs through the scoped worker role', async () =
   assert.deepEqual(calls.map(([sql]) => sql), ['BEGIN', 'SET LOCAL ROLE service_role',
     "SELECT set_config('request.jwt.claims', $1, true)", 'SELECT * FROM portal_claim_receipt_jobs($1)', 'COMMIT', 'release']);
   assert.deepEqual(calls[3][1], [25]);
+});
+
+test('database jobs run hourly or less, so the database can sleep (it needs 5 quiet minutes)', () => {
+  assert.equal(receiptConfig.schedule, '@hourly');
+  assert.equal(pdfCleanupConfig.schedule, '@daily');
+});
+
+test('sendReceiptsNow hands the run to waitUntil, and a failure is logged, never thrown', async () => {
+  let held;
+  const runs = [];
+  assert.equal(sendReceiptsNow({ waitUntil: (p) => { held = p; } }, { run: async () => runs.push('run') }), undefined);
+  await held;
+  assert.deepEqual(runs, ['run']);
+  const logs = [];
+  await sendReceiptsNow(undefined, { run: async () => { throw new Error('down'); }, log: (m) => logs.push(m) });
+  assert.match(logs[0], /immediate send failed \(Error\)/);
 });
 
 test('worker database access rolls back and releases its connection on failure', async () => {

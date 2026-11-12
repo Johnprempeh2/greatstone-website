@@ -8,4 +8,5 @@ export default async () => {
   await pool.query('SELECT mcp_portal_pdf_cleanup()');
 };
 
-export const config = { schedule: '@hourly' };
+// Daily: expired upload sessions are only tidied, so there is no reason to wake the database every hour.
+export const config = { schedule: '@daily' };
