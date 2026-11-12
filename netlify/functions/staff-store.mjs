@@ -1,13 +1,15 @@
 import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asStaff, staffStore } from './lib/staff-store.mjs';
+import { sendReceiptsNow } from './portal-receipt-worker.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function makeStaffStoreHandler({ pool = getPool, query = staffStore, verify, log = console.error } = {}) {
-  return async (req) => {
+export function makeStaffStoreHandler({ pool = getPool, query = staffStore, verify, log = console.error,
+  sendReceipts = sendReceiptsNow } = {}) {
+  return async (req, context) => {
     if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
@@ -22,6 +24,7 @@ export function makeStaffStoreHandler({ pool = getPool, query = staffStore, veri
       const result = await asStaff(db, identity, (client) => query(client, { ...body, subject: identity.id }));
       if (result.forbidden) return json({ error: 'Staff access required.' }, 403);
       if (result.notFound) return json({ error: 'Record not found.' }, 404);
+      if (body.kind === 'rpc' && body.name === 'portal_requeue_receipt') await sendReceipts(context);
       return json(result);
     } catch (error) {
       if (error instanceof RangeError || ['22P02', '23514'].includes(error?.code)) return json({ error: 'Invalid staff request.' }, 400);

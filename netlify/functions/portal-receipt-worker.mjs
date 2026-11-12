@@ -38,4 +38,14 @@ export function makePortalReceiptWorker({ pool = getPool, env = process.env,
 // Netlify accepts only a Response or undefined from a function; any other value fails the run and it retries.
 const worker = makePortalReceiptWorker();
 export default async () => { await worker(); };
-export const config = { schedule: '* * * * *' };
+// Hourly, so the database can sleep (it needs 5 quiet minutes). Acceptances and Send again do not wait for this:
+// their request path calls sendReceiptsNow(). The hourly run sweeps up retries and anything that missed.
+export const config = { schedule: '@hourly' };
+
+/** Run the worker once for a request that just queued a receipt, after the response where Netlify allows it. */
+export function sendReceiptsNow(context, { run = worker, log = console.error } = {}) {
+  const pending = Promise.resolve().then(run).catch((error) =>
+    log('portal-receipt-worker: immediate send failed (' + (error?.code || error?.name || 'error') + '); the hourly run will retry'));
+  if (typeof context?.waitUntil === 'function') return void context.waitUntil(pending);
+  return pending; // no waitUntil (tests, older runtimes): the caller awaits it
+}
