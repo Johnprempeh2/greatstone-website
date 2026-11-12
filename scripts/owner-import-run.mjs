@@ -5,7 +5,7 @@
 //                                          snapshot the database, set OWNER_IMPORT_SITE and OWNER_IMPORT_UNTIL
 //                                          (at most 60 minutes). Netlify bakes env values into a deploy, so deploy
 //                                          and publish the site next.
-//   submit --site <name> --mode identities|tables|proof|mcp-token|mcp-token-revoke|approver|staging-approver|verify-test-account|staging-test-approver|staging-test-approver-off --action dry-run|apply --input <file.json>
+//   submit --site <name> --mode identities|tables|proof|mcp-token|mcp-token-revoke|approver|approver-link|staging-approver|verify-test-account|staging-test-approver|staging-test-approver-off --action dry-run|apply --input <file.json>
 //                                          write the payload, then wait for the scheduled tick's result (every
 //                                          five minutes; Netlify picks the minute) until the window ends. If no tick
 //                                          ran, it removes the payload: nothing was applied. A table apply is
@@ -15,6 +15,7 @@
 // mcp-token takes the payload file from scripts/mcp-token-new.mjs ({ label, customerIds, tokenSha256 }); the token
 // itself never goes in it. mcp-token-revoke takes { "tokenId": "<uuid>" } from the register result. approver takes
 // { "email": "<staff sign-in email, lower case>", "label": "John" }, only as John names himself on the card (GRE-3964).
+// approver-link takes { "gsamActor": "user:<GSAM user id>", "label": "John Prempeh" } on greatstone-home (GRE-3960).
 // staging-approver takes { "gsamActor": "user:<GSAM user id>", "label": "John" } on a staging site (GRE-4081).
 // verify-test-account and staging-test-approver-off take { "email": "staging-audit+<n>@example.com" };
 // staging-test-approver takes that email and a label (GRE-2621). All three run on gre3833 only.
@@ -30,7 +31,7 @@ import { validateImport } from '../netlify/database/migrations/052_better_auth/i
 import { claimProofHash, clearProofRecords } from './owner-proof-state.mjs';
 import {
   SITES, STORE, MAX_WINDOW_MS, TABLES, buildTablesData, payloadHash, recountTables, targetColumns, validateProof,
-  validateMcpToken, validateMcpTokenRevoke, validateApprover, validateStagingApprover,
+  validateMcpToken, validateMcpTokenRevoke, validateApprover, validateApproverLink, validateStagingApprover,
   validateTestAccount, validateTestApprover, validateTestApproverOff,
 } from '../netlify/functions/lib/owner-import.mjs';
 
@@ -39,7 +40,8 @@ const KEYS = ['OWNER_IMPORT_SITE', 'OWNER_IMPORT_UNTIL'];
 const POLL_MS = 20_000;
 const VALIDATORS = Object.freeze({
   'mcp-token': validateMcpToken, 'mcp-token-revoke': validateMcpTokenRevoke, approver: validateApprover,
-  'staging-approver': validateStagingApprover, 'verify-test-account': validateTestAccount,
+  'approver-link': validateApproverLink, 'staging-approver': validateStagingApprover,
+  'verify-test-account': validateTestAccount,
   'staging-test-approver': validateTestApprover, 'staging-test-approver-off': validateTestApproverOff,
 });
 
