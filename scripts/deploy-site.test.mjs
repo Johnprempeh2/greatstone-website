@@ -509,14 +509,14 @@ test('a failed editor alias step fails the train and names the step', async (t) 
   f.env.ALIAS_FAIL = '1';
   let result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /train failed at editor alias step "upload and check" \(exit 1\)/);
+  assert.match(result.stderr, /greatstone-home production is live; only the editor alias failed, at step "upload and check" \(exit 1\)/);
   assert.match(await readFile(f.log, 'utf8'), /--prod --json\n/);
 
   f = await weeklyTrain(t);
   f.env.NETLIFY_BUILD_FAIL = '1';
   result = await f.run('prod', 'greatstone-home');
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /train failed at editor alias step "build" \(exit 9\)/);
+  assert.match(result.stderr, /greatstone-home production is live; only the editor alias failed, at step "build" \(exit 9\)/);
   assert.doesNotMatch(await readFile(f.log, 'utf8'), /^alias /m);
 });
 

@@ -548,8 +548,8 @@ async function deployEditorAlias(sha) {
       if (name === 'install') await bakeStagingContent(join(dir, 'editor'));
       const result = spawnSync(bin, args, { stdio: 'inherit', cwd, env });
       if (result.error || result.status !== 0)
-        throw new Error(`train failed at editor alias step "${name}" (${result.error?.message || `exit ${result.status}`}); ` +
-          `the ${site} production step before it already ran`);
+        throw new Error(`${site} production is live; only the editor alias failed, at step "${name}" ` +
+          `(${result.error?.message || `exit ${result.status}`}). Do not roll back; run the Deploy again to rebuild the alias`);
     }
   } finally {
     await rm(dir, { recursive: true, force: true });
