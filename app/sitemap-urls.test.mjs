@@ -9,7 +9,7 @@ test('the sitemap lists every published page once, plus the shop, the intelligen
 
 test('the sitemap lists the shop brand and product pages from the release catalogue', () => {
   const entry = (data) => ({ orgId: 'o', fields: { data } });
-  const release = { orgId: 'o', pages: [{ path: '/' }], collections: { vendors: { entries: [entry({ slug: 'aspose' })] }, offerings: { entries: [entry({ slug: 'aspose-tex-for-c++' })] } } };
+  const release = { orgId: 'o', media: {}, pages: [{ path: '/' }], collections: { vendors: { entries: [entry({ slug: 'aspose' })] }, offerings: { entries: [entry({ slug: 'aspose-tex-for-c++' })] } } };
   const urls = sitemapUrls(release).map((e) => e.url);
   assert.ok(urls.includes('https://greatstoneint.com/shop/aspose'));
   assert.ok(urls.includes('https://greatstoneint.com/product/aspose-tex-for-c%2B%2B'));
