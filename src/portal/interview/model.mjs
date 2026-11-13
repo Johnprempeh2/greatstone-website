@@ -151,19 +151,28 @@ export function holdingProgress({ people = [], synthesisCount = 0, readoutAt = n
   return { total, completed, started, invited, pct, hasSynthesis, targetDate, statusLine };
 }
 
+// Same text as WITHHELD in netlify/functions/lib/interview/quotes.mjs; rows released before GRE-4944 carry it.
+const WITHHELD_TEXT = '[quote withheld]';
+
+// A withheld quote still counts as a voice but has no words to show (invariants.mjs: renderers skip it).
+const withShownQuotes = (item) => ({
+  ...item,
+  evidence_quotes: (item.evidence_quotes ?? []).filter((q) => !q.withheld && q.quote && q.quote !== WITHHELD_TEXT),
+});
+
 /**
  * Renderer invariants, client half: the server re-derives voices and re-verifies quotes (verifyForRender) and
  * sends the ids that failed; anything in that set is refused, never rendered. Same filters as the source page.
  */
 export function visibleSynthesis(synthesis, failedIds = []) {
   const failed = new Set(failedIds);
-  const themes = (synthesis.themes ?? []).filter((t) => !failed.has(t.theme_id));
+  const themes = (synthesis.themes ?? []).filter((t) => !failed.has(t.theme_id)).map(withShownQuotes);
   const crossThemes = themes.filter((t) => t.scope === 'cross_team');
   const hotSpots = (synthesis.hot_spots ?? []).map((h) => ({
     ...h,
-    local_themes: (h.local_themes ?? []).filter((t) => !failed.has(t.theme_id)),
+    local_themes: (h.local_themes ?? []).filter((t) => !failed.has(t.theme_id)).map(withShownQuotes),
   }));
-  const recommendations = (synthesis.recommendations ?? []).filter((r) => !failed.has(r.rec_id));
+  const recommendations = (synthesis.recommendations ?? []).filter((r) => !failed.has(r.rec_id)).map(withShownQuotes);
   const followUps = synthesis.follow_ups ?? [];
   const openQuestions = (synthesis.validation_log ?? []).filter((l) => l.kind === 'open_question');
   const suppressed = (synthesis.validation_log ?? []).filter(
