@@ -162,3 +162,24 @@ html:root{
   :root :is(.gs-logo,.b-panel-more,.b-transform-card a,.b-transform-actions a,.td-tool-card a,.td-more,.td-text-link,.st-clear,.gi-link,.gi-row-name a,.sp-crumb a,.ca-link,.b-invite-routes a,.td-range a){position:relative}
   :root :is(.gs-logo,.b-panel-more,.b-transform-card a,.b-transform-actions a,.td-tool-card a,.td-more,.td-text-link,.st-clear,.gi-link,.gi-row-name a,.sp-crumb a,.ca-link,.b-invite-routes a,.td-range a)::after{content:"";position:absolute;inset:-13px 0}
 }
+/* Site search: the group label was 9.6px. On a phone the label column goes, so the page name has the width. */
+:root .gs-cmd-group{font-size:.75rem}
+@media (max-width:420px){
+  :root .gs-cmd-group{display:none}
+}
+/* Counts on the service catalogue were faded with opacity at every width (and on phones the earlier fix turned them grey on a lime pill).
+   The small catalogue labels (counts, format, Featured and Popular tags) never go under 12px.
+   They take their pill's own colour, so they stay readable on the lime of a selected pill too. */
+html:root :is(.b-cat-chip-n,.b-cat-feat-n){opacity:1;color:inherit}
+:root :is(.b-cat-chip-n,.b-cat-feat-n,.b-cat-navtile-n,.b-cat-fmt,.b-cat-reason){font-size:max(12px,.75rem)}
+/* The Climb: tiers not yet reached were the whole card at 28% opacity, text included (about 2:1).
+   The card stays solid and its words step down to the muted grey; the reached tier keeps its border and lift. */
+:root .tier-card:not(.active){opacity:1}
+:root .tier-card:not(.active) :is(h3,p,.score,.traits span){color:var(--gs-text-muted)}
+/* A link inside the calculator's notice was told apart by colour alone (1.6:1 against the text around it). */
+:root .b-acc-notice a{text-decoration:underline}
+/* Shop filters under 880px: the closed state lost to the later .st-facets rule, so about 60 filter pills sat
+   above the first product on a phone. Closed until the Filters button opens them. */
+@media (max-width:880px){
+  :root .st-facets:not(.open){display:none}
+}

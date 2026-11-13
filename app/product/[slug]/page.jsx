@@ -4,6 +4,7 @@ import { SiteFrame } from '../../ProofPage.jsx';
 import { pricedCatalogue } from '../../catalogue-pricing.js';
 import { activeRelease } from '../../release-source.js';
 import { offeringBySlug } from '../../../next-proof/catalogue-data.mjs';
+import { productOffer } from '../../../src/lib/pricing.mjs';
 
 // Next can pass a path segment with encoded punctuation to an App Router page.
 function catalogueSlug(value) {
@@ -32,7 +33,9 @@ export default async function Product({ params }) {
   const related = catalogue.offerings.filter((candidate) => candidate.slug !== slug && (candidate.vendor?.id === item.vendor?.id || candidate.category?.id === item.category?.id)).slice(0, 4);
   const structured = { '@context': 'https://schema.org', '@type': 'Product', name: item.name, description: item.short_description || item.description,
     brand: { '@type': 'Brand', name: item.vendor?.name || 'Greatstone International' },
-    offers: { '@type': 'Offer', priceCurrency: item.from_price_currency || 'GBP', availability: 'https://schema.org/InStock', url: 'https://greatstoneint.com/product/' + encodeURIComponent(slug) } };
+    offers: productOffer(item, 'https://greatstoneint.com/product/' + encodeURIComponent(slug)) };
+  const image = item.attributes?.mainImage || item.attributes?.icon || item.vendor?.logo_url;
+  if (image) structured.image = /^https?:/.test(image) ? image : 'https://greatstoneint.com/' + String(image).replace(/^\/?(assets\/)?/, '');
   return <SiteFrame release={release}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured).replace(/</g, '\\u003c') }} /><CatalogueProductClient item={item} related={related} /></SiteFrame>;
 }
 

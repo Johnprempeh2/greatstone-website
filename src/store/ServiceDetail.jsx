@@ -63,9 +63,9 @@ export default function ServiceDetail({ slug, onBack, applyHead, catalogueHref =
           {svc.oneLiner ? <p className="sp-lead">{svc.oneLiner}</p> : null}
           <div className="sd-cta">
             <InquiryToggle service={svc} size="lg" onAdded={openCart} />
-            <button type="button" className="gs-btn ghost" onClick={inquireOne}>Inquire about just this</button>
+            <button type="button" className="gs-btn ghost" onClick={inquireOne}>Enquire about just this</button>
           </div>
-          <p className="sp-note">No obligation. Tell us what you’re solving and we’ll scope it to your numbers. Add more services to inquire about several at once.</p>
+          <p className="sp-note">No obligation. Tell us what you’re solving and we’ll scope it to your numbers. Add more services to enquire about several at once.</p>
         </div>
 
         {/* The interactive prototype for this service's category, if one exists. Renders nothing when the

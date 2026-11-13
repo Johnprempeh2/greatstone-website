@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 // Cmd/Ctrl-K command palette: every studio action one keystroke away — jump to a page,
 // switch the 3D background, add a block, set status, preview, publish. Keyboard-first,
 // fuzzy-filtered, grouped. The command list is supplied by App so it always reflects state.
-export default function CommandPalette({ open, onClose, commands }) {
+export default function CommandPalette({ open, onClose, commands, placeholder = 'Type a command or search pages…', label = 'Command palette' }) {
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const inputRef = useRef(null);
@@ -46,10 +46,10 @@ export default function CommandPalette({ open, onClose, commands }) {
 
   return (
     <div className="gs-cmd-backdrop" onMouseDown={onClose}>
-      <div className="gs-cmd" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKey}>
+      <div className="gs-cmd" role="dialog" aria-modal="true" aria-label={label} onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKey}>
         <div className="gs-cmd-search">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.6"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-          <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a command or search pages…"
+          <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder}
             aria-label="Command" role="combobox" aria-expanded="true" aria-controls="gs-cmd-list" aria-autocomplete="list"
             aria-activedescendant={filtered[sel] ? 'gs-cmd-' + filtered[sel].id : undefined} />
           <kbd>esc</kbd>

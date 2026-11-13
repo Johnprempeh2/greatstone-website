@@ -41,7 +41,7 @@ body:has(.gs-consent) .gsvg-launcher { visibility: hidden; }
 .gsvg-text { font-size: .92rem; line-height: 1.5; color: var(--gs-text, #f5f5f5); overflow-wrap: anywhere; }
 .gsvg-who { font-weight: 700; color: var(--gs-text-muted, #c4c8c1); }
 .gsvg-msg[data-role="guide"] { padding-left: 10px; border-left: 2px solid var(--gs-accent, #c8ff00); }
-.gsvg-msg[data-role="note"] .gsvg-text { font-size: .82rem; color: var(--gs-text-faint, #9ca29b); }
+.gsvg-msg[data-role="note"] .gsvg-text { font-size: .875rem; color: var(--gs-text-faint, #9ca29b); }
 .gsvg-links { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .gsvg-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--gs-accent, #c8ff00); border-radius: 999px; font-size: .88rem; font-weight: 600;
   color: var(--gs-accent, #c8ff00); text-decoration: none; }
@@ -64,7 +64,7 @@ body:has(.gs-consent) .gsvg-launcher { visibility: hidden; }
 .gsvg-input { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 14px; font: inherit; font-size: 16px; color: var(--gs-text, #f5f5f5); background: #101210;
   border: 1px solid rgba(255, 255, 255, .45); border-radius: 999px; }
 .gsvg-input::placeholder { color: var(--gs-text-faint, #9ca29b); }
-.gsvg-notice { font-size: .74rem; line-height: 1.45; color: var(--gs-text-faint, #9ca29b); }
+.gsvg-notice { font-size: .875rem; line-height: 1.45; color: var(--gs-text-faint, #9ca29b); }
 .gsvg-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 /* Phone: a sheet along the bottom, never taller than most of the screen, so the page stays visible above it. */
