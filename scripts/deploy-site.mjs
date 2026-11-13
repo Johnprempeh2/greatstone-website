@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { SITE_CONTRACT } from '../next-proof/site-contract.mjs';
 import { readGsamRelease } from '../next-proof/gsam-release.mjs';
 import provenRelease from '../next-proof/data/release.json' with { type: 'json' };
-import { verifyTicket } from './deploy-ticket.mjs';
+import { expectRunAction, verifyTicket } from './deploy-ticket.mjs';
 
 const sites = new Map([
   ['greatstone-home', '3b1e97e6-e184-4251-badd-deed532be3ab'],
@@ -163,15 +163,45 @@ function stagedCommit() {
 // commit and content release staging serves; it lives 15 minutes and works once. No card, comment or tag reaches it.
 const ticketRefused = (why) => new Error(`deploy ticket refused: ${why}. Nothing changed on greatstone-home.`);
 
-async function ticketGate(sha, staged) {
-  const ticket = verifyTicket(process.env.GSAM_DEPLOY_TICKET, process.env.GSAM_DEPLOY_PUBLIC_KEY);
+/** The Deploy ticket, checked and bound to this run's action (deploy or direct, GSAM_DEPLOY_ACTION in the workflow). */
+function deployTicket() {
+  const ticket = expectRunAction(verifyTicket(process.env.GSAM_DEPLOY_TICKET, process.env.GSAM_DEPLOY_PUBLIC_KEY), process.env.GSAM_DEPLOY_ACTION);
   if (ticket.action !== 'deploy' || ticket.site !== 'greatstone-home') throw ticketRefused('it is not a Deploy of greatstone-home');
+  return ticket;
+}
+
+async function ticketGate(sha, staged, ticket) {
+  if (ticket.mode !== 'staging') throw ticketRefused('it is not a Deploy from staging');
   if (ticket.sha !== sha) throw ticketRefused(`it names commit ${ticket.sha}, not ${sha}`);
   if (await stagedCommit() !== sha) throw ticketRefused(`staging no longer serves ${sha}; open Deploy in GSAM again`);
   if (!staged || ticket.release !== staged.release || ticket.sha256 !== staged.sha256)
     throw ticketRefused(`staging's content release changed since GSAM signed it; open Deploy in GSAM again`);
   await claimTicket(ticket);
   console.log(`Deploy ticket ${ticket.id} accepted (signed by GSAM for ${ticket.by || 'a person'})`);
+}
+
+// Deploy straight to live (John, 13 Nov): the ticket names a commit on main and a content release GSAM uploaded to
+// staging's store as `releases/<n>.json` without moving staging's `current`. Staging's commit and pointer are not
+// read: nothing was checked on staging, by John's choice. The release file must match the signed sha256, and the
+// live check and the put-back on failure still run.
+function onMainLine(sha) {
+  const ref = spawnSync('git', ['rev-parse', '--verify', '-q', 'origin/main']).status === 0 ? 'origin/main' : 'main';
+  return spawnSync('git', ['merge-base', '--is-ancestor', sha, ref]).status === 0;
+}
+
+async function directGate(sha, ticket) {
+  if (ticket.mode !== 'direct') throw ticketRefused('it is not a Deploy straight to live');
+  if (ticket.sha !== sha) throw ticketRefused(`it names commit ${ticket.sha}, not ${sha}`);
+  if (!onMainLine(sha)) throw ticketRefused(`commit ${sha} is not on main`);
+  if (!Number.isSafeInteger(ticket.release) || ticket.release < 1 || !/^[0-9a-f]{64}$/.test(ticket.sha256 || ''))
+    throw ticketRefused('it names no content release');
+  const release = { schema: 1, release: ticket.release, key: `releases/${ticket.release}.json`, sha256: ticket.sha256, switchedAt: new Date().toISOString() };
+  const file = await (await contentStore(stagingSite)).get(release.key);
+  if (!file || createHash('sha256').update(file).digest('hex') !== ticket.sha256)
+    throw ticketRefused(`${contentLine(release)} is missing or does not match the ticket`);
+  await claimTicket(ticket);
+  console.log(`Deploy straight to live: ticket ${ticket.id} accepted (signed by GSAM for ${ticket.by || 'a person'}); staging was not checked`);
+  return release;
 }
 
 /** One use per ticket: its id is created once in greatstone-home's lock store, and never removed. */
@@ -243,7 +273,7 @@ export function releaseCatalogue(release) {
 // categories and vendors, and staging (which serves that release) must answer 200 on the key pages, one product
 // page and one vendor page. It only reads; any problem refuses the Deploy with greatstone-home untouched.
 // Returns the product and vendor pages, which the live check repeats after the upload.
-async function checkStagedRelease(staged) {
+async function checkStagedRelease(staged, direct = false) {
   const refuse = (problems) => new Error(`Deploy refused before upload: ${problems.join('; ')}. Nothing changed on greatstone-home.`);
   if (!staged) throw refuse(["staging's store has no content release"]);
   const file = await (await contentStore(stagingSite)).get(staged.key);
@@ -261,6 +291,13 @@ async function checkStagedRelease(staged) {
     catalogue.product ? `/product/${encodeURIComponent(catalogue.product)}` : null,
     catalogue.vendor ? `/shop/${encodeURIComponent(catalogue.vendor)}` : null,
   ].filter(Boolean);
+  if (direct) {
+    // Straight to live: the release must still carry a catalogue; the live check repeats these pages after upload.
+    if (problems.length) throw refuse(problems);
+    console.log(`Release check passed: ${contentLine(staged)} has ${catalogue.products} products, ${catalogue.categories} categories, ` +
+      `${catalogue.vendors} vendors (not checked on staging)`);
+    return samples;
+  }
   const host = process.env.NODE_ENV === 'test' ? `${process.env.NETLIFY_TEST_API_URL}/staging` : `https://${stagingSite}.netlify.app`;
   const served = (await page(`${host}/_release`)).headers.get('x-gsam-release');
   if (served !== String(staged.release)) problems.push(`${stagingSite} serves content release ${served ?? 'unknown'}, not ${staged.release}`);
@@ -560,7 +597,7 @@ async function deployEditorAlias(sha) {
 // serving when the next Deploy replaced it, then check the live site. No build; Netlify keeps that deploy.
 async function rollback() {
   if (site !== 'greatstone-home') throw new Error('rollback is only for greatstone-home');
-  const ticket = verifyTicket(process.env.GSAM_DEPLOY_TICKET, process.env.GSAM_DEPLOY_PUBLIC_KEY);
+  const ticket = expectRunAction(verifyTicket(process.env.GSAM_DEPLOY_TICKET, process.env.GSAM_DEPLOY_PUBLIC_KEY), process.env.GSAM_DEPLOY_ACTION);
   if (ticket.action !== 'rollback' || ticket.site !== 'greatstone-home' || !/^[0-9a-f]{24}$/.test(ticket.deployId || ''))
     throw ticketRefused('it is not a Roll back of greatstone-home');
   const siteId = sites.get(site);
@@ -624,16 +661,20 @@ async function main() {
       throw new Error(`staging's store holds content release ${staged?.release ?? 'none'}, not ${process.env.GSAM_CONTENT_RELEASE}`);
     contentChanged = true;
   }
-  if (mode === 'prod' && site === 'greatstone-home') {
-    const staged = promoting = await contentRelease(stagingSite);
-    const live = await contentRelease(site);
-    if (staged && (staged.release !== live?.release || staged.sha256 !== live?.sha256)) { content = staged; contentChanged = true; }
-  }
   const publicPromote = mode === 'prod' && site === 'greatstone-home';
-  if (publicPromote) await ticketGate(sha, promoting);
+  let direct = false;
+  if (publicPromote) {
+    const ticket = deployTicket();
+    direct = ticket.mode === 'direct';
+    if (direct) promoting = await directGate(sha, ticket);
+    else await ticketGate(sha, promoting = await contentRelease(stagingSite), ticket);
+    const live = await contentRelease(site);
+    if (promoting && (promoting.release !== live?.release || promoting.sha256 !== live?.sha256)) { content = promoting; contentChanged = true; }
+  }
   const fallback = mode === 'staging' || mode === 'rehearse' || publicPromote ? null : await gate(sha);
-  // Before any upload or the content pointer moves, staging's release must be fit to go live (GRE-4707).
-  if (mode === 'prod' && site === 'greatstone-home') samples = await checkStagedRelease(promoting);
+  // Before any upload or the content pointer moves, the release must be fit to go live (GRE-4707); a Deploy from
+  // staging also needs staging to serve it.
+  if (publicPromote) samples = await checkStagedRelease(promoting, direct);
   const baseline = await lastDeployedCommit() || fallback;
   let files = null;
   if (baseline) {
