@@ -16,6 +16,7 @@
 // choice 8.
 
 const HOURS_TYPES = new Set(['task', 'pain', 'tooling_gap', 'dependency']);
+const ADMIN_ROLES = new Set(['client_admin', 'gs_admin']);
 
 export function computeHotSpots(params) {
   const { units, employees, eligible, insights } = params;
@@ -47,8 +48,9 @@ export function computeHotSpots(params) {
         .filter((e) => e.employee.unit_id === unit.id && e.employee.leader_track !== 'on_behalf')
         .map((e) => e.employee.person_id ?? e.employee.id)
     ).size;
+    // interviewees only, the same rule as the client admin's results; admins are not counted (GRE-4944)
     const invited = employees.filter(
-      (e) => e.unit_id === unit.id && e.status !== 'declined'
+      (e) => e.unit_id === unit.id && e.status !== 'declined' && !ADMIN_ROLES.has(e.portal_role)
     ).length;
 
     const topDrivers = [...firstHand]
