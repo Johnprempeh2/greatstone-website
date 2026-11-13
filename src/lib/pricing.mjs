@@ -134,3 +134,13 @@ export const fmtMoney = (minor, currency) =>
     : new Intl.NumberFormat('en-GB', { style: 'currency', currency: currency || 'GBP' }).format(minor / 100);
 export const fmtFrom = (minor, currency) =>
   minor == null ? 'Price on application' : 'from ' + fmtMoney(minor, currency);
+
+/** schema.org Offer for a priced offering: the currency the shop shows (not the stored USD), and the from price
+ * when there is one. A POA offering keeps currency and availability only. */
+export function productOffer(item, url) {
+  const from = item?.from?.final != null ? item.from : item?.pricing;
+  const offer = { '@type': 'Offer', priceCurrency: from?.currency || item?.pricing?.currency || 'GBP', availability: 'https://schema.org/InStock' };
+  if (from?.final != null) offer.price = (from.final / 100).toFixed(2);
+  if (url) offer.url = url;
+  return offer;
+}

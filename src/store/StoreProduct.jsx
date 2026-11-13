@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getOffering, relatedOfferings } from '../data/catalogue-api.mjs';
 import { siteOrigin } from '../lib/site-origin.mjs';
-import { fmtMoney } from '../lib/pricing.mjs';
+import { fmtMoney, productOffer } from '../lib/pricing.mjs';
 import { addItem, useCart, openCart } from './cart.mjs';
 import './store.css';
 
@@ -35,15 +35,15 @@ export default function StoreProduct({ slug, onBack, applyHead, initialOffering,
     else document.title = (o.seo && o.seo.metaTitle) || (o.name + ' · Greatstone International');
   }, [o, slug]);
   // Product structured data (schema.org) for rich results; mirrors the Storefront ItemList Offer shape
-  // (priceCurrency + availability, no numeric price so POA items stay valid). Removed on unmount/slug change.
+  // (the shop's currency, the from price when there is one; POA items carry no price). Removed on unmount/slug change.
   useEffect(() => {
-    if (!o) return;
+    if (!o || initialOffering) return;                               // the Next product page prints its own (one Product per page)
     const origin = siteOrigin();
     const i = img(o.attributes && (o.attributes.mainImage || o.attributes.icon || (o.vendor && o.vendor.logo_url)));
     const imageAbs = i ? (/^https?:/.test(i) ? i : origin + i) : undefined;
     const data = { '@context': 'https://schema.org', '@type': 'Product', name: o.name,
       brand: { '@type': 'Brand', name: (o.vendor && o.vendor.name) || 'Greatstone International' },
-      offers: { '@type': 'Offer', priceCurrency: o.from_price_currency || 'GBP', availability: 'https://schema.org/InStock', url: origin + '/product/' + slug } };
+      offers: productOffer(o, origin + '/product/' + slug) };
     const desc = o.short_description || o.description; if (desc) data.description = desc;
     if (imageAbs) data.image = imageAbs;
     let el = document.getElementById('gs-ld-product');

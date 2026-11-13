@@ -36,7 +36,7 @@ export function SiteHeader({ order, pages, paths, navigation, settings }) {
     { id: 'go-org', group: 'Go to', label: 'Your organisation', run: () => go('/org') },
   ], [order, pages, current]); // eslint-disable-line react-hooks/exhaustive-deps
   return <>
-    <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={commands} />
+    <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} commands={commands} placeholder="Search pages" label="Search the site" />
     <Header order={order} pages={pages} navigation={navigation} current={current} query="" hrefFor={hrefFor} onNavigate={onNavigate}
       onShop={() => go('/shop')} shopActive={/^\/(shop|product)(\/|$)/.test(pathname)}
       onAccount={() => go('/account')} accountActive={/^\/(account|portal)(\/|$)/.test(pathname)}

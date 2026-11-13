@@ -92,7 +92,7 @@ export function SiteSearch({ links = [] }) {
   ], [links, pathname, router]);
   return <>
     <button type="button" className="gs-cmdbtn" onClick={() => setOpen(true)} title="Command palette (⌘K)" aria-label="Search and commands"><Search /><kbd>⌘K</kbd></button>
-    {open && createPortal(<CommandPalette open={open} onClose={() => setOpen(false)} commands={commands} />, document.body)}
+    {open && createPortal(<CommandPalette open={open} onClose={() => setOpen(false)} commands={commands} placeholder="Search pages" label="Search the site" />, document.body)}
   </>;
 }
 

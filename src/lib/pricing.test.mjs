@@ -166,3 +166,15 @@ test('cards and product pages price in the shop currency, and carry it', () => {
   assert.equal(priceCard(o, [rule], null, 1.32).final, 74800);
   assert.equal(priceCard(o, [rule], null, 1.32, 'USD').final, 100000);
 });
+
+test('productOffer follows the shop currency, not the stored USD', async () => {
+  const { productOffer } = await import('./pricing.mjs');
+  const gbp = { from_price_currency: 'USD', from: { final: 11200, currency: 'GBP' }, pricing: { final: 11200, currency: 'GBP' } };
+  assert.deepEqual(productOffer(gbp, 'https://x/p'), { '@type': 'Offer', priceCurrency: 'GBP', availability: 'https://schema.org/InStock', price: '112.00', url: 'https://x/p' });
+  const usd = { from_price_currency: 'USD', pricing: { final: 14500, currency: 'USD' } };
+  assert.equal(productOffer(usd).priceCurrency, 'USD');
+  assert.equal(productOffer(usd).price, '145.00');
+  const poa = { from_price_currency: null, from: null, pricing: { poa: true, final: null, currency: 'GBP' } };
+  assert.equal(productOffer(poa).priceCurrency, 'GBP');
+  assert.equal('price' in productOffer(poa), false);
+});

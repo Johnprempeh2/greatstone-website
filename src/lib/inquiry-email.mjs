@@ -23,7 +23,7 @@ export function buildInquiryBody(services = [], contact = {}) {
   const { name, email, company, message } = contact;
   const many = services.length !== 1;
   const lines = [
-    'I would like to inquire about the following Greatstone service' + (many ? 's' : '') + ':',
+    'I would like to enquire about the following Greatstone service' + (many ? 's' : '') + ':',
     '',
     ...services.map((it, i) => (i + 1) + '. ' + it.name + (it.category ? ' (' + it.category + ')' : '')),
     '',

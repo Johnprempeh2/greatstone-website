@@ -20,9 +20,12 @@ import VoiceGuide from './voice-guide/VoiceGuide.jsx';
 // in their own segments, where Next applies the CSP nonce from the middleware's request header.
 export const revalidate = 300;
 
+// The tab icon: public/favicon.svg existed but no page linked it, so browsers asked for /favicon.ico and got a 404.
+export const metadata = { icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }] } };
+
 export default async function RootLayout({ children }) {
   globalThis.DOMParser ??= new Window().DOMParser;
   const { release } = await activeRelease();
   const structured = JSON.stringify(siteStructuredData(release.site.name)).replace(/</g, '\\u003c');
-  return <html lang="en" style={themeStyle(release.theme.tokens)}><head><meta name="gsam-release" content={String(releaseNumber(release))} /><link rel="preload" href="/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossOrigin="" /></head><body><script id="gs-ld-org" type="application/ld+json" dangerouslySetInnerHTML={{ __html: structured }} />{children}<LegacyHashRedirect pagePaths={release.pages.map((page) => page.path)} />{process.env.VOICE_GUIDE_ENABLED === '1' && <VoiceGuide />}<ConsentAnalytics /></body></html>;
+  return <html lang="en-GB" style={themeStyle(release.theme.tokens)}><head><meta name="gsam-release" content={String(releaseNumber(release))} /><link rel="preload" href="/fonts/montserrat-latin.woff2" as="font" type="font/woff2" crossOrigin="" /></head><body><script id="gs-ld-org" type="application/ld+json" dangerouslySetInnerHTML={{ __html: structured }} />{children}<LegacyHashRedirect pagePaths={release.pages.map((page) => page.path)} />{process.env.VOICE_GUIDE_ENABLED === '1' && <VoiceGuide />}<ConsentAnalytics /></body></html>;
 }

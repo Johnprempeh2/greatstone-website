@@ -31,3 +31,11 @@ test('site structured data keeps the organisation and website graph', () => {
   assert.deepEqual(graph.map((item) => item['@type']), ['Organization', 'WebSite']);
   assert.equal(graph[1].publisher['@id'], graph[0]['@id']);
 });
+
+test('a page title without the company name gets it added once', async () => {
+  const { withSiteName } = await import('./page-metadata.mjs');
+  assert.equal(withSiteName('Two Doors'), 'Two Doors · Greatstone International');
+  assert.equal(withSiteName('About Greatstone · Greatstone International'), 'About Greatstone · Greatstone International');
+  assert.equal(withSiteName(''), 'Greatstone International');
+  assert.equal(pageMetadata({ path: '/about', seo: { title: 'About', description: '' } }, 1).openGraph.title, 'About · Greatstone International');
+});

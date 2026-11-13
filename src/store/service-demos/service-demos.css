@@ -1,7 +1,7 @@
 /* Service demo prototypes. Uses the site tokens (--gs-*) throughout so a future light theme, or any
    palette change, carries automatically. Every motion here is gated on prefers-reduced-motion. */
 
-.sdemo-section { margin-top: 8px; }
+.sdemo-section { margin-top: clamp(32px, 4vw, 48px); }
 .sdemo-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .sdemo-head h2 { margin: 0; }
 .sdemo-tag {
