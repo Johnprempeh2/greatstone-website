@@ -29,13 +29,22 @@ export const attributionRedacted = (choice) => choice !== 'named';
  * already keeps their quotes out; this catches model prose that repeats their words. sources: evidence quotes (and
  * any other text) of people who chose 'none'. Short fragments (under 30 characters or 7 words) are not matched, as
  * the quote gate's own minimum.
+ *
+ * An evidence quote that repeats a withheld person's words (two people can say the same thing) becomes a withheld
+ * quote, the same shape the quote gate writes: it still counts as a voice, and the render check does not try to
+ * match '[quote withheld]' against the speaker's turns (GRE-4944 R8).
  */
 export function scrubVerbatim(value, sources) {
   const needles = [...new Set((sources ?? []).map((s) => normalise(String(s ?? ''))))]
     .filter((s) => s.length >= 30 && s.split(' ').length >= 7)
     .sort((a, b) => b.length - a.length);
   if (needles.length === 0) return value;
+  const repeatsWithheld = (text) => needles.some((needle) => normalise(text).includes(needle));
   const walk = (v) => {
+    if (v && typeof v === 'object' && !Array.isArray(v) && 'insight_id' in v && typeof v.quote === 'string'
+      && repeatsWithheld(v.quote)) {
+      return { ...v, quote: null, attribution: null, withheld: true };
+    }
     if (typeof v === 'string') {
       let text = v;
       for (const needle of needles) {

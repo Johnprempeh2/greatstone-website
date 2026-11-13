@@ -25,6 +25,7 @@ import {
   getLatestSynthesis,
 } from '../functions/lib/interview/synthesis/release.mjs';
 import { SYNTHESIS_SUMMARISER_PROMPT } from '../functions/lib/interview/prompts/synthesis-prompts.mjs';
+import { WITHHELD } from '../functions/lib/interview/quotes.mjs';
 
 // ─── Fake data plane: the supabase-js surface the synthesis code uses ─────────
 
@@ -444,7 +445,8 @@ test('identity suppression: role titles, names and tenure are never findings', (
 
 test('hot spots never sum first-hand and on-behalf hours', () => {
   const units = [{ id: 'u1', name: 'Ops', path: 'ops' }];
-  const employees = [{ id: 'e1', unit_id: 'u1', status: 'completed' }, { id: 'e2', unit_id: 'u1', status: 'completed', leader_track: 'on_behalf' }, { id: 'e3', unit_id: 'u1', status: 'declined' }];
+  const employees = [{ id: 'e1', unit_id: 'u1', status: 'completed' }, { id: 'e2', unit_id: 'u1', status: 'completed', leader_track: 'on_behalf' }, { id: 'e3', unit_id: 'u1', status: 'declined' },
+    { id: 'e4', unit_id: 'u1', status: 'invited', portal_role: 'client_admin' }];
   const eligible = [{ employee: { ...employees[0], person_id: null } }, { employee: { ...employees[1], person_id: null } }];
   const insights = [prepared({ id: 'a', hours: 4 }), prepared({ id: 'b', hours: 2.25 }), prepared({ id: 'c', hours: 30, secondHand: true }), { ...prepared({ id: 'd', hours: 9 }), row: { ...prepared({ id: 'd', hours: 9 }).row, type: 'automation_candidate' } }];
   const [spot] = computeHotSpots({ units, employees, eligible, insights });
@@ -548,6 +550,33 @@ test('hierarchical roll-up: leaves first, parents read children, coordinator rea
   assert.equal((await verifyForRender(db, s.eng.id, stored)).failed.size, 0);
   stored.themes[0].evidence_quotes[1].quote = 'a quote nobody ever said in any of these interviews';
   assert.equal((await verifyForRender(db, s.eng.id, stored)).failed.get('th-invoice'), 're-derived voice count below 2');
+});
+
+// GRE-4944 R8: on gre3833 P3 (anonymous quotes) and D1 (no quote choice) said the same words. The scrub turned P3's
+// quotes into '[quote withheld]' text that no longer matched P3's turns, so the client read-out hid 3 of 4 themes.
+test('scrub: a quote that repeats a withheld person\'s words is withheld, and the theme still renders', async () => {
+  const s = seedEngagement();
+  const ops = s.unit('unit-ops', 'Ops', 'ops');
+  const q = 'the supplier portal logs me out every twenty minutes so I lose my place';
+  s.person({ name: 'Pia', unitId: ops, quote_choice: 'anonymous', turns: [q], insights: [{ label: 'Portal log-out', evidence_quote: q }] });
+  s.person({ name: 'Dan', unitId: ops, quote_choice: null, turns: [q], insights: [{ label: 'Portal log-out', evidence_quote: q }] });
+  const db = fakeDb(s.seed);
+  fakeModel({ coordinator: () => ({
+    themes: [{ theme_id: 'th-portal', title: 'Portal log-out', statement: 'S', confidence: 1,
+      evidence_quotes: [{ insight_id: 'ins-1-1', quote: q }, { insight_id: 'ins-2-1', quote: q }] }],
+  }) });
+  for (let i = 0; i < 10 && !(await runSynthesisStep(db, s.eng.id, { maxModelCalls: 5 })).done; i++);
+  const row = db.tables.synthesis[0];
+  const theme = row.themes.find((t) => t.theme_id === 'th-portal');
+  assert.ok(theme, 'two voices: the theme forms');
+  assert.deepEqual(theme.evidence_quotes.map((x) => [x.quote, x.attribution, x.withheld]), [[null, null, true], [null, null, true]]);
+  assert.ok(!JSON.stringify(row).toLowerCase().includes('logs me out every twenty minutes'), 'Dan\'s words appear nowhere');
+  assert.equal((await verifyForRender(db, s.eng.id, row)).failed.size, 0);
+
+  // a row written before the fix keeps the '[quote withheld]' text on a normal quote; it renders as withheld
+  const legacy = structuredClone(row);
+  legacy.themes[0].evidence_quotes[0] = { insight_id: 'ins-1-1', quote: WITHHELD, attribution: 'A team member in Ops', second_hand: false };
+  assert.equal((await verifyForRender(db, s.eng.id, legacy)).failed.size, 0);
 });
 
 test('model wrapper: strict JSON with one retry; both attempts land in one ledger row; second failure throws', async () => {

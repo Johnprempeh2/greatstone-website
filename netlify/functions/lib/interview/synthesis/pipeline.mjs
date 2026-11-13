@@ -37,7 +37,7 @@ import {
 import { computeHotSpots } from './hotspots.mjs';
 import { SYNTHESIS_MODEL } from './model.mjs';
 import { RULES_VERSION } from './types.mjs';
-import { attributionRedacted, effectiveQuoteChoice, scrubVerbatim } from '../quotes.mjs';
+import { attributionRedacted, effectiveQuoteChoice, scrubVerbatim, WITHHELD } from '../quotes.mjs';
 
 function freshUsage() {
   return { calls: 0, inputTokens: 0, outputTokens: 0, costPence: 0 };
@@ -350,8 +350,9 @@ export async function verifyForRender(db, engagementId, row) {
   const verifyQuotes = (quotes) =>
     quotes.filter((q) => {
       const insight = insightById.get(q.insight_id);
-      // GRE-2653: a withheld quote has no text to re-check; the insight must still be quote-eligible
-      if (q.withheld) return insight !== undefined && insight.quoteEligible;
+      // GRE-2653: a withheld quote has no text to re-check; the insight must still be quote-eligible.
+      // GRE-4944: rows written before the scrub fix carry WITHHELD as the quote text instead of the flag.
+      if (q.withheld || q.quote === WITHHELD) return insight !== undefined && insight.quoteEligible;
       return (
         insight !== undefined &&
         insight.quoteEligible &&
