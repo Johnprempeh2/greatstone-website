@@ -128,7 +128,7 @@ html:root{
   html:root :is(.kicker,.b-prose-kicker,.b-cta,.b-panel-more,.inq-toggle,.b-cat-fmt,.b-cat-reason,.b-cat-navtile-n,.b-cat-chip,.b-cat-chip-n,.b-cat-feat-tab,
     .b-ind-chip,.b-step-n.is-text,.b-book-ad,.b-acc-flabel,.b-acc-gfield label,.b-abs-fine,.b-acc-foot,.b-dx-method-title span,.field label,.t-role,.traits span,
     .phase :is(.rank,.range,p),.gs-navmenu-btn span,.st-pill,.st-go,.st-badge,.st-clear,.st-stat,.st-card :is(.desc,.vendor span),.st-price :is(.lbl,.st-vat,.poa),
-    .sp-add,.sp-note,.sp-crumb,.sp-rel :is(.rv,.rp),.sp-pricebox .sub,.sp-wrap th,.gi :is(small,time,.gi-tag,.gi-tab,.gi-stat-label,.gi-stat-sub,.gi-board-head p,.gi-updated,.gi-head h3,.gi-kicker,.gi-step-maker,.gi-source-name),
+    .sp-add,.sp-note,.sp-crumb,.sp-basketbar-txt,.sp-basketbar-btn,.b-intel-theme,.b-cat-feat-n,.b-cat-view,.b-panel-num,.b-acc-affix,.b-acc-rlead,.gi-step-place,.gi-rank,.sp-rel :is(.rv,.rp),.sp-pricebox .sub,.sp-wrap th,.gi :is(small,time,.gi-tag,.gi-tab,.gi-stat-label,.gi-stat-sub,.gi-board-head p,.gi-updated,.gi-head h3,.gi-kicker,.gi-step-maker,.gi-source-name),
     .b-ind-head,.tier-card :is(.score,p),.b-cat-count,.b-chapter-name,.b-invite-inner .pill,.b-book-or,.b-book-consent,.b-intel-live span,.b-acc-notice,.b-acc-gate-b,
     .st-facet h2,.st-facet-head h2,.st-kicker,.st-more,.st-count,.st-filterbtn,.sp-vendor span,.sp-pricebox .lbl,.sp-pricebox small,.gs-btn,.ca-note,.ca-tabs button,.ca-signin label,.ca-trust,.b-dx-method-overview span){font-size:max(14px,.875rem)}
   /* Labels in capitals were spaced for 10px type; at 14px they need less. */
@@ -137,8 +137,25 @@ html:root{
   /* The eight pillar tiles go two across so each name fits on one line. */
   html:root .b-tiein-chart{grid-template-columns:repeat(2,1fr)}
   html:root .b-tiein-pm{aspect-ratio:2.4;font-size:max(14px,.875rem)}
+  /* The service count beside a feature tab was faded with opacity; a colour token keeps its contrast. */
+  html:root .b-cat-feat-n{opacity:1;color:var(--gs-text-muted)}
+}
+/* The licence table becomes one card per edition on a phone: name and licence on top, price and the
+   Add button on one line underneath, so the Add button is never scrolled out of sight. */
+@media (max-width:640px){
+  html:root :is(.sp-table,.sp-table tbody){display:block;min-width:0}
+  html:root .sp-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  html:root .sp-table tr{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 12px;padding:14px 16px;border-bottom:1px solid var(--gs-border-soft,rgba(255,255,255,.08))}
+  html:root .sp-table tr:last-child{border-bottom:0}
+  html:root .sp-table td{display:block;padding:0;border:0}
+  html:root .sp-table td:is(.ed,:nth-child(2)){grid-column:1 / -1}
+  html:root .sp-table td:last-child{justify-self:end}
 }
 @media (pointer:coarse){
+  /* The header controls on every page, including pages published with an older stylesheet copy. */
+  :root :is(.gs-navmenu-btn,.gs-cmdbtn){min-height:44px}
+  :root :is(.gs-cmdbtn,.gs-accountbtn){min-width:44px}
+  :root .gs-accountbtn{height:44px}
   /* Buttons and pills grow to 44px. */
   :root :is(.inq-toggle,.sp-add,.b-cat-chip,.b-cat-feat-tab,.b-ind-chip,.st-more,.gi-tab,.td-stepbar button,.b-acc-gfield input,.b-cat-input){min-height:44px}
   /* Text links keep their look; an unseen pad around them takes the tap. */
