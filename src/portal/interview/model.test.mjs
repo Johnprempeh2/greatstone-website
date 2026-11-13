@@ -95,6 +95,25 @@ test('released synthesis: anything that failed re-verification is refused', () =
   assert.equal(visibleSynthesis({ generated_at: '2026-11-10T09:00:00Z' }).maxHours, 1);
 });
 
+// GRE-4944 R8: on gre3833 every theme showed an empty “” block (withheld flag) and a literal “[quote withheld]”
+// (a row written before the scrub fix). Withheld quotes still count as voices; the reader sees no block for them.
+test('released synthesis: withheld quotes are not shown, the voice count stays', () => {
+  const shown = { insight_id: 'i1', quote: 'the data is in two systems', attribution: 'A team member in Finance' };
+  const flagged = { insight_id: 'i2', quote: null, attribution: null, withheld: true };
+  const oldRow = { insight_id: 'i3', quote: '[quote withheld]', attribution: 'A team member in Finance' };
+  const theme = { theme_id: 't1', scope: 'within_team', distinct_voices: 3, evidence_quotes: [shown, flagged, oldRow] };
+  const v = visibleSynthesis({
+    themes: [theme],
+    hot_spots: [{ unit_id: 'u', first_hand_hours_per_week: 1, local_themes: [theme] }],
+    recommendations: [{ rec_id: 'r1', evidence_quotes: [flagged, shown, oldRow] }],
+  });
+  assert.deepEqual(v.themes[0].evidence_quotes, [shown]);
+  assert.equal(v.themes[0].distinct_voices, 3);
+  assert.deepEqual(v.hotSpots[0].local_themes[0].evidence_quotes, [shown]);
+  assert.deepEqual(v.recommendations[0].evidence_quotes, [shown]);
+  assert.deepEqual(visibleSynthesis({ themes: [{ theme_id: 't2' }] }).themes[0].evidence_quotes, []);
+});
+
 test('website account: verified email is required; Better Auth errors in plain words', () => {
   assert.equal(isVerified({ user: { emailVerified: true } }), true);
   assert.equal(isVerified({ user: { emailVerified: false } }), false);
