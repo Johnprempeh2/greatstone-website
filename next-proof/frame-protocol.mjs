@@ -8,7 +8,7 @@ const blockSourceLines = {
   Hero: 318, Prose: 41, Panels: 208, ServiceCatalog: 292, TransformationServices: 54, DxConsultancyMethod: 72, Invite: 101,
   Steps: 74, FeatureGrid: 54, Faq: 96, PillarCards: 89, MaturityModel: 78,
   Chapter: 80, Team: 82, LogoWall: 76, IntelBand: 86, MaturityMap: 189,
-  Ladder: 60, MethodTieIn: 79, IndustryPicker: 211, BookDeepDive: 280,
+  Ladder: 60, MethodTieIn: 79, IndustryPicker: 211, BookDeepDive: 316,
   AiBaselineSurvey: 319, AiCostCalculator: 224, MotionBand: 29,
 };
 

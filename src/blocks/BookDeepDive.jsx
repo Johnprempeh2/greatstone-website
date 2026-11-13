@@ -273,6 +273,42 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .b-book-at{font-weight:700;font-size:.96rem}
 .b-book-ad{margin-top:2px;font-size:.86rem;color:var(--gs-text-muted);line-height:1.5}
 .b-book-mail{display:inline-block;overflow-wrap:anywhere;margin-top:22px;color:var(--gs-accent);font-weight:700;border-bottom:1px solid var(--gs-border);padding-bottom:3px}
+/* GRE-5194 (John: "like how the landing page looks"): the home page's panel language, scoped to this
+   block because .field/.fld are shared with other forms. The faint tide rings behind the section, the
+   emerald-to-ink panel with a lime hairline (the landing's proof and close panels), a heavy heading,
+   sentence-case labels, deeper fields and the landing's lime pill. */
+.b-book{isolation:isolate;overflow:hidden}
+.b-book::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:repeating-radial-gradient(circle at 0 100%,transparent 0 34px,rgba(58,140,100,.12) 34px 35px);
+  -webkit-mask-image:linear-gradient(90deg,#000,transparent 60%);mask-image:linear-gradient(90deg,#000,transparent 60%)}
+.b-book .book-card{position:relative;overflow:hidden;border:1px solid rgba(200,255,0,.35);border-radius:18px;
+  background:linear-gradient(150deg,rgba(27,80,57,.5),rgba(18,18,18,.86) 62%);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.b-book .book-card::before{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border:1px solid rgba(78,205,196,.2);border-radius:50%;
+  box-shadow:0 0 0 26px rgba(78,205,196,.035),0 0 0 54px rgba(78,205,196,.025);pointer-events:none}
+.b-book .book-card>*{position:relative}
+.b-book .b-book-eyebrow,.b-book .book-aside .kicker{color:var(--gs-lime);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.b-book .b-book-card-head{font-size:clamp(1.9rem,3.2vw,2.75rem);font-weight:900;line-height:1.06;letter-spacing:-.045em}
+.b-book .b-book-card-head .accent{color:var(--gs-lime)}
+.b-book .b-book-card-intro{font-size:1.02rem;line-height:1.6;color:#c4c8c1}
+.b-book .field label{font-size:.86rem;font-weight:700;letter-spacing:0;text-transform:none;color:#e6ece6}
+.b-book .fld{background-color:rgba(0,0,0,.32);border-color:rgba(255,255,255,.14);border-radius:12px;padding:.9em 1em;min-height:50px}
+.b-book textarea.fld{min-height:128px}
+.b-book .fld:hover{border-color:rgba(255,255,255,.25)}
+.b-book .fld:focus{border-color:var(--gs-lime);background-color:rgba(0,0,0,.4);box-shadow:0 0 0 3px rgba(200,255,0,.22)}
+.b-book .fld[aria-invalid="true"]{border-color:#ffb4a8}
+.b-book select.fld option{background:#101411}
+.b-book .b-book-or{color:#9ca29b}
+.b-book .b-book-or::before,.b-book .b-book-or::after{background:rgba(255,255,255,.14)}
+.b-book .b-cta{border-radius:100px;min-height:50px;font-size:.92rem;font-weight:800;letter-spacing:0;text-transform:none}
+.b-book .book-submit:hover{box-shadow:0 8px 30px rgba(200,255,0,.26)}
+.b-book .b-book-consent{color:#9ca29b}
+.b-book .book-aside{padding-top:clamp(0px,2vw,24px)}
+.b-book .book-aside .h3{font-size:clamp(1.6rem,2.6vw,2.2rem);font-weight:900;line-height:1.1;letter-spacing:-.04em}
+.b-book .b-book-aside-body{color:#c4c8c1;font-size:1rem}
+.b-book .b-book-assure{border-bottom-color:rgba(200,255,0,.18)}
+.b-book .b-book-ai{width:40px;height:40px;border-radius:50%;background:transparent;border-color:var(--gs-lime)}
+.b-book .b-book-at{font-size:1.02rem}
+.b-book .b-book-ad{color:#c4c8c1;font-size:.92rem}
 `;
 
 const PT = (title, text) => ({ title, text });
