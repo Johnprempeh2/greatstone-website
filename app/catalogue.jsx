@@ -5,12 +5,20 @@ import CatalogueFilters from './CatalogueFilters.jsx';
 
 const image = (value) => !value ? '' : safeHref(value.startsWith('assets/') ? '/' + value.slice(7) : value);
 
+// A brand page leads with the brand, not the whole catalogue's heading.
+export function catalogueHeading(catalogue, filters = {}) {
+  const brand = filters.vendor ? catalogue.vendors.find((item) => item.slug === filters.vendor) : null;
+  if (!brand) return { kicker: 'Software Catalogue', title: 'Developer software,', lead: 'The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the vendors who make them, licensed and supported by us in the UK.' };
+  return { kicker: 'Brand', title: brand.name, lead: brand.description || `${brand.name} software, licensed and supported by us in the UK.` };
+}
+
 export function CatalogueBrowse({ catalogue, filters = {}, release }) {
   const offerings = catalogue.rows;
+  const head = catalogueHeading(catalogue, filters);
   return <SiteFrame release={release}><div className="st-scrim" aria-hidden="true" /><div className="st-wrap">
-    <header className="st-head"><span className="st-kicker">Software Catalogue</span>
-      <h1 className="st-h1">Developer software,<br /><span className="accent">licensed and supported.</span></h1>
-      <p className="st-lead">The components we trust to build document, PDF, OCR, reporting and UI systems. Sourced from the vendors who make them, licensed and supported by us in the UK.</p>
+    <header className="st-head"><span className="st-kicker">{head.kicker}</span>
+      <h1 className="st-h1">{head.title}<br /><span className="accent">licensed and supported.</span></h1>
+      <p className="st-lead">{head.lead}</p>
       <div className="st-stats"><span className="st-stat"><b>{catalogue.offerings.length}</b> products</span><span className="st-stat"><b>{catalogue.vendors.length}</b> vendors</span><span className="st-stat"><b>{catalogue.categories.length}</b> categories</span></div>
     </header>
     <form method="get" action="/shop" className="st-toolbar" role="search">
