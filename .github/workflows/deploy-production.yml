@@ -3,14 +3,16 @@ name: Deploy production
 # or Roll back on the Website module, with a ticket it signs for that one action. deploy-site.mjs refuses the public
 # site without a good, unexpired, unused ticket, so starting this by hand does nothing. The public site's Netlify
 # token lives only in the `production` environment of this repository. Changes to this file need John (CODEOWNERS).
+# 13 Nov: `direct` is Deploy straight to live (skip staging): a commit on main with a content release GSAM made for
+# it. The ticket's signed mode must match this input, so a staging ticket cannot run as direct, nor the reverse.
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: deploy or rollback (shown in the run name; the ticket decides)
+        description: deploy (from staging), direct (straight to live) or rollback; must match the ticket
         required: true
         type: choice
-        options: [deploy, rollback]
+        options: [deploy, direct, rollback]
       request:
         description: GSAM's id for this request (shown in the run name so GSAM can follow it)
         required: true
@@ -39,6 +41,7 @@ jobs:
     env:
       GSAM_DEPLOY_TICKET: ${{ inputs.ticket }}
       GSAM_DEPLOY_PUBLIC_KEY: ${{ vars.GSAM_DEPLOY_PUBLIC_KEY }}
+      GSAM_DEPLOY_ACTION: ${{ inputs.action }}
     # Step names show in GSAM's Deploy panel as the progress list, so they are plain words.
     steps:
       - name: Get the code
@@ -48,7 +51,7 @@ jobs:
       - name: Check the ticket
         id: ticket
         run: node scripts/deploy-ticket.mjs >> "$GITHUB_OUTPUT"
-      - name: Use the commit staging serves
+      - name: Use the commit on main the ticket names
         if: steps.ticket.outputs.action == 'deploy'
         env:
           SHA: ${{ steps.ticket.outputs.sha }}

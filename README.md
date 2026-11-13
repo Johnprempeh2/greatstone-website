@@ -73,6 +73,15 @@ old, used once (claimed in greatstone-home's Blobs). No card, comment or tag rea
 deploy it. The deploy is checked live straight after upload and the earlier deploy and content pointer are put
 back on any failure; each Deploy records the pointer the earlier deploy served, so Roll back restores both.
 
+**Deploy straight to live (skip staging), 13 Nov 2026.** John's second, rarer path. GSAM makes a content release of
+the approved content, uploads it to staging's store as `releases/<n>.json` without moving staging's `current` (staging
+neither serves nor rebuilds it), and signs a ticket with `mode: 'direct'`, main's head commit, `n` and its sha256. The
+workflow runs with `action: direct`. `deploy-site.mjs` takes it only when the commit is on main and the release file
+matches the sha256; staging's commit and pages are not checked, by design. The release must still carry products,
+categories and vendors, and the live check and automatic put-back run as for any Deploy. Every Deploy ticket names its
+mode (`staging` or `direct`) and must run under the matching action, so one kind can never be replayed as the other.
+GSAM offers the button only once `TICKET_MODES` in `scripts/deploy-ticket.mjs` on main lists `'direct'`.
+
 Previews of a PR (draft uploads, never the public address):
 
 ```bash
