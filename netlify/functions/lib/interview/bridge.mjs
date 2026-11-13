@@ -164,10 +164,12 @@ async function ownedRound(db, ctx, roundId) {
 export async function roundView(db, eng) {
   // no join link until the organisation has accepted the current data processing agreement (GRE-2794)
   const agreement = await agreementState(db, eng.customer_id);
+  // interviewees only, the same rule as the client admin's results (portal-ops results); admins are not counted (GRE-5304)
   const counts = must(await db.sql(`SELECT e.status::text AS status, count(*)::int AS n FROM employee e
-    WHERE e.engagement_id = $1 GROUP BY 1`, [eng.id]));
+    WHERE e.engagement_id = $1 AND e.portal_role IN ('employee', 'team_leader') GROUP BY 1`, [eng.id]));
   const abandoned = must(await db.sql(`SELECT count(*)::int AS n FROM session s JOIN employee e ON e.id = s.employee_id
-    WHERE e.engagement_id = $1 AND s.ended_at IS NOT NULL AND e.status = 'started'`, [eng.id]));
+    WHERE e.engagement_id = $1 AND e.portal_role IN ('employee', 'team_leader') AND s.ended_at IS NOT NULL AND e.status = 'started'`,
+  [eng.id]));
   const spend = await db.rpc('engagement_spend', { p_ids: [eng.id] });
   const spendRow = Array.isArray(spend.data) ? spend.data[0] : null;
   const c = Object.fromEntries(counts.map((r) => [r.status, r.n]));

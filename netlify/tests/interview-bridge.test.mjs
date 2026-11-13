@@ -268,7 +268,9 @@ test('GSAM invites people; the site emails them once, after commit', { skip }, a
       ['a7000000-0000-4000-8000-00000000000c', 'cee@client-board.test', 'invited', 'client_admin'], ['a7000000-0000-4000-8000-00000000000d', 'dee@example.test', 'invited', 'employee']]);
   assert.equal(people.body.items[0].phase, null);
   const read = await call(signed(`${AT}/${ROUND}`));
-  assert.equal(read.body.item.counts.invited, 4);
+  // counts are interviewees only, the same rule as the client admin's results screen: Cee (client_admin) is not
+  // counted (GRE-5304: the bridge said 3 invited, CA results said 2)
+  assert.equal(read.body.item.counts.invited, 3);
 });
 
 test('GSAM resends the link or sends a reminder; each new key emails again, a replay does not', { skip }, async () => {
