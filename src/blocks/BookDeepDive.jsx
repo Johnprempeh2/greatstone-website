@@ -3,7 +3,7 @@ import { useReveal } from './reveal.js';
 import { Arrow } from './icons.jsx';
 import { safeMailto } from '../lib/safe-url.js';
 import { track, getConsent, getAttribution } from '../lib/analytics.js';
-import { makeEnquiryClient, enquiryPayload, fireLead, validateEnquiry, INTEREST_OPTIONS, SIZE_BANDS, CONSENT, takePendingInterest } from '../lib/enquiry.mjs';
+import { makeEnquiryClient, enquiryPayload, fireLead, validateEnquiry, INTEREST_OPTIONS, SIZE_BANDS, ROLE_OPTIONS, CONSENT, takePendingInterest } from '../lib/enquiry.mjs';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx'; // inline-on-canvas edit while editing, static RichText on the public site
 import { Turnstile, TURNSTILE_KEY } from './Turnstile.jsx';
@@ -46,6 +46,8 @@ export function BookDeepDive({
   // labels are the earlier strings, so a page saved before them renders as it did.
   nameLabel = 'Your name', emailLabel = 'Work email', companyLabel = 'Company',
   sizeLabel = 'How many people work there?', sizePlaceholder = 'Select if it helps', sizes, showSector = true,
+  // GRE-5194 (wording Harbor GRE-3579): the required "Your role" question. Always asked; its options are fixed.
+  roleLabel = 'Your role', rolePlaceholder = 'Choose your role…',
   consent = '',
   sentHeading = 'Thank you. Your enquiry has reached us.',
   sentBody = 'A senior member of the team will reply, usually to suggest a time for a focused thirty-minute call. If it is urgent, email us at',
@@ -69,7 +71,7 @@ export function BookDeepDive({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useReveal([asidePoints.length]);
   const [status, setStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'failed'
-  const [errors, setErrors] = useState({}); // { name?, email? } from validateEnquiry, { bot? } from Turnstile
+  const [errors, setErrors] = useState({}); // { name?, email?, role? } from validateEnquiry, { bot? } from Turnstile
   const [token, setToken] = useState(null); // Cloudflare Turnstile, only when the site has a key
   const [fallbackHref, setFallbackHref] = useState('');
   const sent = status === 'sent' || status === 'failed';
@@ -91,6 +93,8 @@ export function BookDeepDive({
     if (nm) parts.push('Name: ' + nm);
     if (company) parts.push('Company: ' + company);
     if (g('email')) parts.push('Work email: ' + g('email'));
+    const role = ROLE_OPTIONS.find((o) => o.value === g('role'));
+    if (role) parts.push(roleLabel + ': ' + role.label);
     if (g('size')) parts.push(sizeLabel + ' ' + g('size'));
     if (g('industry')) parts.push(sectorLabel + ': ' + g('industry'));
     if (g('interest')) parts.push('Interest: ' + g('interest'));
@@ -102,10 +106,10 @@ export function BookDeepDive({
     if (status === 'sending' || editing) return;
     const fd = new FormData(e.currentTarget);
     const g = (k) => (fd.get(k) || '').toString().trim();
-    const found = validateEnquiry({ name: g('name'), email: g('email') });
+    const found = validateEnquiry({ name: g('name'), email: g('email'), role: g('role') }, { requireRole: true });
     setErrors(found);
-    if (found.name || found.email) {
-      const first = e.currentTarget.querySelector(found.name ? '[name="name"]' : '[name="email"]');
+    if (found.name || found.email || found.role) {
+      const first = e.currentTarget.querySelector(found.name ? '[name="name"]' : found.email ? '[name="email"]' : '[name="role"]');
       if (first && first.focus) first.focus();
       return;
     }
@@ -116,7 +120,7 @@ export function BookDeepDive({
     const attribution = getAttribution();
     const page = typeof window !== 'undefined' ? window.location.pathname + window.location.hash : '';
     const out = await client.send(enquiryPayload({
-      name: g('name'), company: g('company'), email: g('email'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'), turnstile: token,
+      name: g('name'), company: g('company'), email: g('email'), role: g('role'), size_band: g('size'), industry: g('industry'), interest: g('interest'), message: g('week'), website: g('website'), turnstile: token,
     }, attribution, page));
     if (out.ok) fireLead({ track, getConsent, attribution });
     setStatus(out.ok ? 'sent' : 'failed');
@@ -167,6 +171,11 @@ export function BookDeepDive({
                     </div>
                   ) : null}
                 </div>
+                <div className="field"><label htmlFor={uid + 'role'}>{roleLabel}</label>
+                  <select className="fld" id={uid + 'role'} name="role" defaultValue="" required aria-required="true"
+                    onChange={() => { if (errors.role) setErrors((x) => ({ ...x, role: '' })); }} aria-invalid={errors.role ? 'true' : undefined} aria-describedby={errors.role ? uid + 'role-err' : undefined}>
+                    <option value="" disabled>{rolePlaceholder}</option>{ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select>
+                  {errors.role ? <p className="b-book-err" id={uid + 'role-err'} role="alert">{errors.role}</p> : null}</div>
                 {/* Optional by default now. Forcing a visitor to classify their own sector before they may
                     say hello is a qualification barrier, and the placeholder stays selectable so choosing
                     nothing is a real answer rather than a dead first option. The contact page hides it (§4.6). */}
@@ -264,6 +273,42 @@ select.fld option{background:#1b1f1d;color:var(--gs-text)}
 .b-book-at{font-weight:700;font-size:.96rem}
 .b-book-ad{margin-top:2px;font-size:.86rem;color:var(--gs-text-muted);line-height:1.5}
 .b-book-mail{display:inline-block;overflow-wrap:anywhere;margin-top:22px;color:var(--gs-accent);font-weight:700;border-bottom:1px solid var(--gs-border);padding-bottom:3px}
+/* GRE-5194 (John: "like how the landing page looks"): the home page's panel language, scoped to this
+   block because .field/.fld are shared with other forms. The faint tide rings behind the section, the
+   emerald-to-ink panel with a lime hairline (the landing's proof and close panels), a heavy heading,
+   sentence-case labels, deeper fields and the landing's lime pill. */
+.b-book{isolation:isolate;overflow:hidden}
+.b-book::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:repeating-radial-gradient(circle at 0 100%,transparent 0 34px,rgba(58,140,100,.12) 34px 35px);
+  -webkit-mask-image:linear-gradient(90deg,#000,transparent 60%);mask-image:linear-gradient(90deg,#000,transparent 60%)}
+.b-book .book-card{position:relative;overflow:hidden;border:1px solid rgba(200,255,0,.35);border-radius:18px;
+  background:linear-gradient(150deg,rgba(27,80,57,.5),rgba(18,18,18,.86) 62%);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.b-book .book-card::before{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border:1px solid rgba(78,205,196,.2);border-radius:50%;
+  box-shadow:0 0 0 26px rgba(78,205,196,.035),0 0 0 54px rgba(78,205,196,.025);pointer-events:none}
+.b-book .book-card>*{position:relative}
+.b-book .b-book-eyebrow,.b-book .book-aside .kicker{color:var(--gs-lime);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.b-book .b-book-card-head{font-size:clamp(1.9rem,3.2vw,2.75rem);font-weight:900;line-height:1.06;letter-spacing:-.045em}
+.b-book .b-book-card-head .accent{color:var(--gs-lime)}
+.b-book .b-book-card-intro{font-size:1.02rem;line-height:1.6;color:#c4c8c1}
+.b-book .field label{font-size:.86rem;font-weight:700;letter-spacing:0;text-transform:none;color:#e6ece6}
+.b-book .fld{background-color:rgba(0,0,0,.32);border-color:rgba(255,255,255,.14);border-radius:12px;padding:.9em 1em;min-height:50px}
+.b-book textarea.fld{min-height:128px}
+.b-book .fld:hover{border-color:rgba(255,255,255,.25)}
+.b-book .fld:focus{border-color:var(--gs-lime);background-color:rgba(0,0,0,.4);box-shadow:0 0 0 3px rgba(200,255,0,.22)}
+.b-book .fld[aria-invalid="true"]{border-color:#ffb4a8}
+.b-book select.fld option{background:#101411}
+.b-book .b-book-or{color:#9ca29b}
+.b-book .b-book-or::before,.b-book .b-book-or::after{background:rgba(255,255,255,.14)}
+.b-book .b-cta{border-radius:100px;min-height:50px;font-size:.92rem;font-weight:800;letter-spacing:0;text-transform:none}
+.b-book .book-submit:hover{box-shadow:0 8px 30px rgba(200,255,0,.26)}
+.b-book .b-book-consent{color:#9ca29b}
+.b-book .book-aside{padding-top:clamp(0px,2vw,24px)}
+.b-book .book-aside .h3{font-size:clamp(1.6rem,2.6vw,2.2rem);font-weight:900;line-height:1.1;letter-spacing:-.04em}
+.b-book .b-book-aside-body{color:#c4c8c1;font-size:1rem}
+.b-book .b-book-assure{border-bottom-color:rgba(200,255,0,.18)}
+.b-book .b-book-ai{width:40px;height:40px;border-radius:50%;background:transparent;border-color:var(--gs-lime)}
+.b-book .b-book-at{font-size:1.02rem}
+.b-book .b-book-ad{color:#c4c8c1;font-size:.92rem}
 `;
 
 const PT = (title, text) => ({ title, text });
@@ -279,6 +324,8 @@ export const puck = {
     nameLabel: { type: 'text', label: 'Name label' },
     emailLabel: { type: 'text', label: 'Email label' },
     companyLabel: { type: 'text', label: 'Organisation label' },
+    roleLabel: { type: 'text', label: 'Role question label (always asked, required)' },
+    rolePlaceholder: { type: 'text', label: 'Role question placeholder' },
     sizeLabel: { type: 'text', label: 'Size question label' },
     sizePlaceholder: { type: 'text', label: 'Size question placeholder' },
     showSector: { type: 'radio', label: 'Sector question', options: [
@@ -343,9 +390,10 @@ export const puck = {
     // which would have reintroduced it silently. The contact page overrides all of these anyway.
     eyebrow: '',
     headline: 'Send an Enquiry', highlight: '',
-    body: 'Tell us as much or as little as you would like. There are no required details beyond a way to reply to you.',
+    body: 'Tell us as much or as little as you would like. We only need your name, email and role.',
     submitLabel: 'Send enquiry',
     nameLabel: 'Your name (required)', emailLabel: 'Work email (required)', companyLabel: 'Organisation',
+    roleLabel: 'Your role (required)', rolePlaceholder: 'Choose your role…',
     sizeLabel: 'How many people work there?', sizePlaceholder: 'Select if it helps', sizes: SIZE_BANDS.map((label) => ({ label })),
     showSector: false,
     sectorLabel: 'Industry', sectorPlaceholder: 'Choose your sector…', sectorRequired: false,

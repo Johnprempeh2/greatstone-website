@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   normaliseEnquiry, normaliseAttribution, enquiryRow, buildEnquiryAlert, handleEnquiry, splitInterest, sourceLabel, PER_IP_PER_DAY,
+  CONTACT_ROLES,
 } from './enquiry.mjs';
 
 const MIGRATION = readFileSync(new URL('../../../../supabase/migrations/0035_service_inquiry_attribution.sql', import.meta.url), 'utf8');
@@ -211,4 +212,23 @@ test('migration 0040 adds one column with a length check, keeps RLS untouched, a
   assert.doesNotMatch(SIZE_MIGRATION, /\bGRANT\b|\bREVOKE\b|POLICY|ROW LEVEL SECURITY|DROP COLUMN/i);
   assert.match(SIZE_ROLLBACK, /DROP COLUMN IF EXISTS size_band/);
   assert.doesNotMatch(SIZE_ROLLBACK, /DROP TABLE|DELETE FROM|attribution|industry/i);
+});
+
+test('GRE-5194: contact_role is one of three values, saved on the row; missing saves null; anything else is refused', async () => {
+  assert.deepEqual(CONTACT_ROLES, ['owner_director', 'manager', 'other']);
+  for (const role of CONTACT_ROLES) {
+    const d = deps();
+    const out = await handleEnquiry({ email: 'jane@stonewell.co', contact_role: ' ' + role + ' ' }, d);
+    assert.equal(out.status, 200);
+    assert.equal(d.calls.rows[0].contact_role, role);
+  }
+  const older = deps();
+  assert.equal((await handleEnquiry({ email: 'jane@stonewell.co' }, older)).status, 200, 'an older page or a lead tool without the role still saves');
+  assert.equal(older.calls.rows[0].contact_role, null);
+  for (const bad of ['owner', 'Owner or director', 'ceo', 'manager; drop table x', '{}']) {
+    const d = deps();
+    assert.deepEqual(await handleEnquiry({ email: 'jane@stonewell.co', contact_role: bad }, d), { status: 400, body: { ok: false, error: 'Please choose your role.' } }, bad);
+    assert.equal(d.calls.rows.length, 0, 'a refused role saves nothing');
+  }
+  assert.equal(normaliseEnquiry({ email: 'nope', contact_role: 'manager' }).error, 'Please add an email address we can reply to.', 'the email check comes first');
 });

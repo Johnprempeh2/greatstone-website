@@ -2,7 +2,7 @@
 // local Netlify Database and fake Resend and Turnstile. It replaces the Supabase edge function
 // (supabase/functions/enquiry) with the same contract and the same logic, handleEnquiry in
 // netlify/functions/lib/shared/enquiry.mjs:
-//   POST /api/enquiry { name?, company?, email, size_band?, industry?, message?, attribution?, page?, website?, turnstile? }
+//   POST /api/enquiry { name?, company?, email, contact_role?, size_band?, industry?, message?, attribution?, page?, website?, turnstile? }
 //   → 200 { ok: true, ref } when the row is saved or the owner alert went (the lead is on record)
 //   → 4xx/5xx { ok: false, error } otherwise; the form then shows the contact address.
 // Order: honeypot, Turnstile (when TURNSTILE_SECRET_KEY is set), field checks, ten enquiries per IP a day,
