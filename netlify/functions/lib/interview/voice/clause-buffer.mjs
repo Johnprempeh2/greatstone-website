@@ -44,6 +44,30 @@ const HARD_MAX = 180;
  */
 const SENTENCE_END = /[.!?]["')\]]?\s/;
 
+/** Figure, en and em dashes, the horizontal bar and the minus sign. Not U+2010/2011, which join words. */
+const DASH = '[\\u2012-\\u2015\\u2212]';
+
+/**
+ * What the synthesiser is given instead of a dash. The prompt says "no dashes", but the model writes one
+ * now and then, and Deepgram TTS stopped reading the reply at it (GRE-5372). Done on each released piece,
+ * never on the stream, so a dash split across deltas is always seen whole. The stored turn text is not
+ * touched: the participant reads the reply as the model wrote it.
+ */
+export function speakable(text) {
+  return text
+    .replace(new RegExp(`(\\d)\\s*${DASH}\\s*(?=\\d)`, 'g'), '$1 to ') // 10–20 is a range
+    .replace(/[‐‑]/g, '-')
+    .replace(new RegExp(`\\s*${DASH}+\\s*`, 'g'), ', ')
+    .replace(/\s+-+\s+/g, ', ') // a spaced hyphen used as a dash; follow-up keeps its hyphen
+    .replace(/^-+\s+/, '')
+    .replace(/\s+-+$/, ',')
+    .replace(/\s*,(\s*,)+/g, ',')
+    .replace(/,\s*([.!?])/g, '$1')
+    .replace(/^[,\s]+/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 export class ClauseBuffer {
   buf = '';
 
@@ -55,7 +79,7 @@ export class ClauseBuffer {
     for (;;) {
       const cut = this.findCut();
       if (cut <= 0) break;
-      const piece = this.buf.slice(0, cut).trim();
+      const piece = speakable(this.buf.slice(0, cut));
       this.buf = this.buf.slice(cut);
       if (piece) out.push(piece);
     }
@@ -95,7 +119,7 @@ export class ClauseBuffer {
 
   /** Everything still held. Call once the model has finished. @returns {string | null} */
   drain() {
-    const rest = this.buf.trim();
+    const rest = speakable(this.buf);
     this.buf = '';
     return rest || null;
   }

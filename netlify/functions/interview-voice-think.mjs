@@ -56,8 +56,22 @@ function spokenError(message) {
   return new Response(stream, { headers: SSE_HEADERS });
 }
 
+/**
+ * Where a spoken turn's wait goes (GRE-5375): ms from the request arriving at each mark, logged once per turn as
+ * `voice think timing {...}`. Numbers and the model id only, never turn text.
+ */
+function turnTimer(log) {
+  const t0 = performance.now();
+  const marks = {};
+  return {
+    mark(name) { if (!(name in marks)) marks[name] = Math.round(performance.now() - t0); },
+    flush(extra) { log.info(`voice think timing ${JSON.stringify({ ...marks, ...extra })}`); },
+  };
+}
+
 export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, env = process.env, log = console } = {}) {
   return async (req) => {
+    const timer = turnTimer(log);
     if (!interviewEnabled(env) || !voiceEnabled(env)) return Response.json({ error: 'not found' }, { status: 404 });
     if (req.method !== 'POST') return unauthorised();
     const url = new URL(req.url);
@@ -122,10 +136,17 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
       if (blob) memoryBlock = renderMemoryBlob(blob, { participantName: ctx.employee.name });
     }
 
-    // ── Extraction + phase machine (pre-reply) ──
+    timer.mark('loaded');
+    // ── Extraction + phase machine ──
+    // Extraction is a full Haiku call (about 5 s on staging, 10 s worst). Awaiting it before the reply was most of the
+    // spoken wait (GRE-5375), so outside sign-off the reply starts at once, built from the state as it stood BEFORE
+    // this answer, and extraction runs alongside it. The reply still sees this answer in the transcript; only slot,
+    // phase and next-action guidance reach the prompt one turn later. In sign-off the consent answers decide whether
+    // this reply is the goodbye that closes the session, so there extraction still runs first, as before.
     const previousPhase = state.phase;
     let phaseChanged = false;
-    if (content) {
+    const extract = async () => {
+      if (!content) return;
       const extraction = await runExtraction({
         taxonomyState: state, agentQuestion: lastAgentTurn?.content ?? null, employeeMessage: content,
         onBehalf: ctx.employee.leader_track === 'on_behalf',
@@ -152,22 +173,28 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
       // as on the typed path: slot fill, then the turn-limit and repeat backstops (GRE-4941)
       state.slots = markParticipantEngaged(state.slots);
       state.completion_score = computeCompletionScore(state.slots);
-      phaseChanged = stepPhase(state, { turns, targetMinutes });
+      if (stepPhase(state, { turns, targetMinutes })) phaseChanged = true;
       state.next_action = deriveNextAction(state);
-    }
-    const closing = signOffComplete(state);
-    if (closing && state.phase !== 'sign_off') {
       // as on the typed path: both consents recorded ahead of the pointer means the interview IS in sign-off
-      state.phase = 'sign_off';
-      phaseChanged = true;
-    }
-
+      if (signOffComplete(state) && state.phase !== 'sign_off') {
+        state.phase = 'sign_off';
+        phaseChanged = true;
+      }
+    };
+    const runExtract = () => extract().catch((e) => log.error('voice think extraction failed:', e?.name || 'error'))
+      .finally(() => timer.mark('extracted'));
+    const beforeReply = state.phase === 'sign_off';
+    if (beforeReply) await runExtract();
+    const closing = signOffComplete(state);
     // ── The voice addendum goes in the VOLATILE half: the stable prefix is the cache breakpoint. ──
     const { stable, volatile } = buildSystemPrompt({
       engagement: ctx.engagement, contextPack, orgUnit: ctx.orgUnit, employeeName: ctx.employee.name,
       employeeEmail: ctx.employee.email, employeeId: ctx.employee.id, employeeUserId: ctx.employee.user_id, roleTitle: ctx.employee.role_title, state, budget, memoryBlock, closing,
       turns,
     });
+    // awaited before anything is saved
+    const extracted = beforeReply ? Promise.resolve() : runExtract();
+
     const system = [
       { type: 'text', text: stable, cache_control: { type: 'ephemeral' } },
       { type: 'text', text: `${volatile}\n\n${VOICE_PROMPT_ADDENDUM}` },
@@ -196,8 +223,12 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
           });
           for await (const event of ms) {
             if (event.type === 'content_block_delta' && event.delta.type === 'text_delta' && event.delta.text) {
+              timer.mark('firstToken');
               full += event.delta.text;
-              for (const clause of clauses.push(event.delta.text)) controller.enqueue(chunkText(id, voiceModel, `${clause} `));
+              for (const clause of clauses.push(event.delta.text)) {
+                timer.mark('firstClause');
+                controller.enqueue(chunkText(id, voiceModel, `${clause} `));
+              }
             }
           }
           const finalMsg = await ms.finalMessage();
@@ -209,12 +240,18 @@ export function makeVoiceThinkHandler({ pool = getPool, model = defaultClient, e
         } finally {
           // Whatever is held must be spoken, including on the error path; the last sentence always lands here.
           const tail = clauses.drain();
-          if (tail) controller.enqueue(chunkText(id, voiceModel, tail));
+          if (tail) {
+            timer.mark('firstClause');
+            controller.enqueue(chunkText(id, voiceModel, tail));
+          }
+          timer.mark('replyDone');
           // ALWAYS terminate, or the turn hangs and the participant hears silence.
           controller.enqueue(chunkClose(id, voiceModel));
           controller.enqueue(chunkDone());
         }
         // ── Persistence BEFORE the stream closes, deliberately: the function may be frozen once it closes. ──
+        await extracted;
+        timer.flush({ model: voiceModel, inTok, outTok, chars: full.length });
         try {
           if (full.trim()) {
             await db.from('turn').insert({ session_id: sessionId, role: 'agent', content: full, input_mode: 'voice' });
