@@ -72,6 +72,35 @@ test('clause buffer F: empty and edge input', () => {
   assert.equal(new ClauseBuffer().drain(), null);
 });
 
+test('clause buffer G: no dash reaches the speech engine, and the words after it still do (GRE-5372)', () => {
+  // Every piece the buffer releases goes straight into chunkText, then to Deepgram TTS, which stopped at an em dash.
+  const dashes = /[‐-―−]|\s-\s|^-|-$/;
+  const cases = [
+    ['That is the part that hurts — the handover on a Friday.', 'the handover on a Friday'],
+    ['It slips every week—always on the same step, and nobody owns it.', 'always on the same step'],
+    ['Two people – sometimes three – check the same invoice.', 'sometimes three'],
+    ['So the report goes out late - and then what happens?', 'and then what happens'],
+    ['That leaves the bit after the dash —', null],
+  ];
+  for (const [reply, after] of cases) for (const size of [1, 2, 3, 7, 40]) {
+    const spoken = stream(reply, size);
+    for (const piece of spoken) assert.ok(!dashes.test(piece), `dash in ${JSON.stringify(piece)} @${size}`);
+    if (after) assert.ok(norm(spoken.join(' ')).includes(after), `lost "${after}" @${size}: ${JSON.stringify(spoken)}`);
+  }
+  // The dash split across two deltas, either side of the space.
+  for (const deltas of [['It went wrong —', ' twice last month.'], ['It went wrong ', '– twice last month.'], ['It went wrong -', ' twice last month.']]) {
+    const b = new ClauseBuffer();
+    const spoken = deltas.flatMap((d) => b.push(d));
+    const rest = b.drain();
+    if (rest) spoken.push(rest);
+    assert.ok(spoken.every((p) => !dashes.test(p)), JSON.stringify(spoken));
+    assert.equal(norm(spoken.join(' ')), 'It went wrong, twice last month.');
+  }
+  // A range reads as a range, and hyphenated words keep their hyphen.
+  assert.equal(norm(stream('It takes 10–20 minutes, give or take.').join(' ')), 'It takes 10 to 20 minutes, give or take.');
+  assert.equal(norm(stream('A follow-up call, then a sign-off.').join(' ')), 'A follow-up call, then a sign-off.');
+});
+
 // ─── barge-in ────────────────────────────────────────────────────────────────
 
 const AGENT_LINE = 'So tell me about a time you had to change your mind about something important at work.';
