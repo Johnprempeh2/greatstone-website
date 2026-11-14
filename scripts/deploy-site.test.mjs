@@ -22,7 +22,7 @@ const signer = generateKeyPairSync('ed25519');
 const publicKey = signer.publicKey.export({ format: 'jwk' }).x;
 /** A ticket as GSAM signs it; `key` signs with another key (a forger's). */
 function ticket(fields = {}, key = signer.privateKey) {
-  const body = Buffer.from(JSON.stringify({ v: 1, action: 'deploy', site: 'greatstone-home', id: randomUUID(),
+  const body = Buffer.from(JSON.stringify({ v: 1, action: 'deploy', mode: 'staging', site: 'greatstone-home', id: randomUUID(),
     exp: Date.now() + 10 * 60 * 1000, by: 'UGJwnXKO0P0yBvVh4krv4LH3EThDwrRP', ...fields })).toString('base64url');
   return `${body}.${sign(null, Buffer.from(body), key).toString('base64url')}`;
 }
@@ -412,7 +412,7 @@ test('the workflow step reads the action and commit from a good ticket only', as
   const runCli = (value) => spawnSync(process.execPath, [cli], { encoding: 'utf8', env: { ...f.env, GSAM_DEPLOY_TICKET: value } });
   let out = runCli(f.env.GSAM_DEPLOY_TICKET);
   assert.equal(out.status, 0, out.stderr);
-  assert.equal(out.stdout, `action=deploy\nsha=${f.base}\n`);
+  assert.equal(out.stdout, `action=deploy\nmode=staging\nsha=${f.base}\n`);
   out = runCli(f.deployTicket({}, generateKeyPairSync('ed25519').privateKey));
   assert.equal(out.status, 1);
   assert.equal(out.stdout, '');
@@ -1015,6 +1015,7 @@ async function stageContent(f, number = 4, { collections = goodCatalogue, live =
   else await rm(publicFile, { force: true });
   return { current, line: `Content release ${number} (sha256 ${sha256.slice(0, 12)})` };
 }
+const stagingStore = async (f) => JSON.parse(await readFile(join(f.cwd, 'bin', 'gre3833-next-db-staging.json'), 'utf8'));
 const publicStore = async (f) => { try { return JSON.parse(await readFile(join(f.cwd, 'bin', 'greatstone-home.json'), 'utf8')); } catch { return {}; } };
 
 test('Deploy promotes the staged content release with the commit, only when the ticket names it', async (t) => {
@@ -1139,3 +1140,90 @@ test('the gate dry run reads staging only and prints the reason', async (t) => {
   assert.match(result.stderr, /Deploy refused before upload: staging's Content release 4 .* has 0 products/);
   await assert.rejects(readFile(f.log));
 });
+
+// Deploy straight to live (John, 13 Nov): a commit on main and a content release GSAM uploaded beside staging's,
+// with staging's commit and pointer left alone. The ticket's signed mode is bound to the run's action input.
+async function directTrain(t) {
+  const f = await publicTrain(t);
+  // Staging serves another commit and release 4; the direct release is 5, never pointed at on staging.
+  f.setDeploys([{ state: 'ready', title: `gsam-source:staging:${'e'.repeat(40)}` }]);
+  const { createHash } = await import('node:crypto');
+  const file = Buffer.from(JSON.stringify({ ...htmlSample, release: 5, collections: goodCatalogue }));
+  const sha256 = createHash('sha256').update(file).digest('hex');
+  const store = await stagingStore(f);
+  store['releases/5.json'] = file.toString('base64');
+  await writeFile(join(f.cwd, 'bin', 'gre3833-next-db-staging.json'), JSON.stringify(store));
+  f.stagingCurrentBefore = store.current;
+  f.directTicket = (fields = {}, key) => ticket({ mode: 'direct', sha: f.base, release: 5, sha256, ...fields }, key);
+  f.env.GSAM_DEPLOY_TICKET = f.directTicket();
+  f.env.GSAM_DEPLOY_ACTION = 'direct';
+  return f;
+}
+
+test('a direct ticket puts main\'s commit and its own content release live, without reading or moving staging', async (t) => {
+  const f = await directTrain(t);
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Deploy straight to live: ticket [0-9a-f-]{36} accepted/);
+  assert.match(result.stdout, /not checked on staging/);
+  assert.match(result.stdout, /Promoted Content release 5/);
+  assert.match(await readFile(f.log, 'utf8'), new RegExp(`^deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod --json`));
+  assert.equal(JSON.parse(Buffer.from((await publicStore(f)).current, 'base64')).release, 5);
+  assert.equal((await stagingStore(f)).current, f.stagingCurrentBefore);
+  // Single use, as any ticket.
+  await rm(f.log);
+  await rm(`${f.log}.baked.json`, { force: true });
+  assert.match((await f.run('prod', 'greatstone-home')).stderr, /deploy ticket refused: it has been used already/);
+});
+
+test('a direct Deploy is still checked live and put back when a check fails', async (t) => {
+  const f = await directTrain(t);
+  f.failing.add('/api/catalogue');
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.deepEqual(f.restores, ['live-before']);
+  assert.equal(JSON.parse(Buffer.from((await publicStore(f)).current, 'base64')).release, 4);
+});
+
+test('a ticket runs only as its own mode: staging as direct, direct as staging, or no mode, are refused before upload', async (t) => {
+  const f = await directTrain(t);
+  const cases = [
+    [f.deployTicket(), 'direct', /this run is a direct, the ticket is for a deploy/],
+    [f.directTicket(), 'deploy', /this run is a deploy, the ticket is for a direct/],
+    [f.directTicket(), 'rollback', /this run is a rollback, the ticket is for a direct/],
+    [f.deployTicket({ mode: undefined }), 'deploy', /a Deploy ticket must name its mode/],
+    [f.deployTicket({ mode: 'later' }), 'deploy', /a Deploy ticket must name its mode/],
+    [f.directTicket({ sha256: '0'.repeat(64) }), 'direct', /Content release 5 .* is missing or does not match the ticket/],
+    [f.directTicket({ release: 6 }), 'direct', /Content release 6 .* is missing or does not match the ticket/],
+    [f.directTicket({ sha: 'c'.repeat(40) }), 'direct', /it names commit c{40}/],
+  ];
+  for (const [value, action, reason] of cases) {
+    f.env.GSAM_DEPLOY_TICKET = value;
+    f.env.GSAM_DEPLOY_ACTION = action;
+    const result = await f.run('prod', 'greatstone-home');
+    assert.equal(result.status, 1, `${reason}\n${result.stderr}`);
+    assert.match(result.stderr, new RegExp(`deploy ticket refused: ${reason.source}`));
+  }
+  await assert.rejects(readFile(f.log));
+  // The workflow's first step refuses the swap too, before checkout.
+  const cli = new URL('./deploy-ticket.mjs', import.meta.url).pathname;
+  const runCli = (value, action) => spawnSync(process.execPath, [cli], { encoding: 'utf8', env: { ...f.env, GSAM_DEPLOY_TICKET: value, GSAM_DEPLOY_ACTION: action } });
+  assert.match(runCli(f.deployTicket(), 'direct').stderr, /this run is a direct, the ticket is for a deploy/);
+  assert.match(runCli(f.directTicket(), 'deploy').stderr, /this run is a deploy, the ticket is for a direct/);
+  const ok = runCli(f.directTicket(), 'direct');
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.equal(ok.stdout, `action=deploy\nmode=direct\nsha=${f.base}\n`);
+});
+
+test('a direct ticket for a commit that is not on main is refused', async (t) => {
+  const f = await directTrain(t);
+  git(f.cwd, 'checkout', '-q', 'test-pr');
+  await f.commit('src/app.js', 'branch only');
+  const sha = git(f.cwd, 'rev-parse', 'HEAD');
+  f.env.GSAM_DEPLOY_TICKET = f.directTicket({ sha });
+  const result = await f.run('prod', 'greatstone-home');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /deploy ticket refused: commit [0-9a-f]{40} is not on main/);
+  await assert.rejects(readFile(f.log));
+});
+
