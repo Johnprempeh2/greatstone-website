@@ -4,7 +4,8 @@
 //
 //   ANTHROPIC_API_KEY=... PG_BIN=/usr/lib/postgresql/16/bin node scripts/voice-latency-bench.mjs [turns=10]
 //
-// Marks are ms from the request arriving: loaded (auth and state read), extracted (the pre-reply extraction call),
+// Marks are ms from the request arriving: loaded (auth and state read), extracted (the extraction call, which runs
+// alongside the reply outside sign-off),
 // firstToken (Claude's first text), firstClause (first text handed to Deepgram TTS), replyDone. `client` is the
 // same first-text gap seen by the caller, as Deepgram sees it.
 import Anthropic from '@anthropic-ai/sdk';
@@ -61,8 +62,8 @@ try {
 
   const stage = (r) => ({
     'load (auth, state)': r.loaded,
-    'extraction (pre-reply)': r.extracted - r.loaded,
-    'Claude first token': r.firstToken - r.extracted,
+    'extraction (alongside the reply outside sign-off)': r.extracted - r.loaded,
+    'Claude first token': r.firstToken - r.loaded,
     'first clause wait': r.firstClause - r.firstToken,
     'request to first clause': r.firstClause,
   });
