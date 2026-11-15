@@ -99,10 +99,11 @@ export function verifyBridgeRequest({ method, url, headers, body = '', keys, all
   const actor = h('x-gs-bridge-actor') || '';
   const run = h('x-gs-bridge-run') || null;
   const signature = h('x-gs-bridge-signature') || '';
-  // GRE-2439's whole-snapshot PUT uses the original v1 signature, without a write idempotency header.
+  // GRE-2439's whole-snapshot PUT uses the original v1 signature, without a write idempotency header, and so does
+  // the client portal's whole prototypes list (14 Nov): a PUT twice is the same as once.
   // Existing commerce writes retain v2. The route itself is checked again by admin-bridge.mjs.
   const deepDivePut = entry.capability === 'write' && method.toUpperCase() === 'PUT' &&
-    /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(url).pathname);
+    /^\/api\/admin\/v1\/(deep-dive\/tenants|portal-prototypes\/clients)\/[0-9a-f-]{36}$/i.test(new URL(url).pathname);
   const scheme = deepDivePut ? SCHEME : CAPABILITY_SCHEME[entry.capability];
   // the key of one logical write: the same on every retry, so a retry after a timeout cannot write twice
   const idempotencyKey = scheme === SCHEME_V2 ? h('x-gs-bridge-idempotency-key') || '' : null;

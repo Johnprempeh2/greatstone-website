@@ -17,6 +17,7 @@
 //   GET /api/admin/v1/quotes/<id>/po-document | orders/<id>/po-document   the buyer's PO file, streamed (read key, 073)
 //   GET /api/admin/v1/enquiries/fd-<id>/agent-package                     a front door lead's agent package .zip (073)
 //   POST /api/admin/v1/invite-requests/<id>/decision                      approve or decline a seat request (write key)
+//   PUT /api/admin/v1/portal-prototypes/clients/<customer id>            one client's shared prototypes, whole (write key)
 // Every request is signed (lib/admin-bridge-auth.mjs). With GSAM_BRIDGE_KEYS empty every call is refused, so the
 // function is safe to deploy before a key exists. A failure returns { error: { code } } only (a write conflict adds
 // the current row); the detail goes to the site log, never to the caller.
@@ -29,6 +30,7 @@ import { buildAgentPackage, packageFolder } from './lib/shared/front-door-packag
 import { zipFiles } from '../../src/lib/package-zip.mjs';
 import { WRITE_STATUS, asBridgeWriter, licenceMailer, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
+import { PORTAL_PROTOTYPES_PATH, replacePrototypes, validatePrototypes } from './lib/portal-prototypes.mjs';
 import { interviewReadRoute, interviewWriteRoute } from './lib/interview/bridge.mjs';
 import { interviewMailer, startSynthesisRun } from './lib/interview/side-effects.mjs';
 import { SITE_CONTRACT } from '../../next-proof/site-contract.mjs';
@@ -113,7 +115,9 @@ export function makeAdminBridgeHandler({
   blobStore = (name) => getStore(name),
 } = {}) {
   return async (req) => {
-    const isSnapshot = req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname);
+    const isPrototypes = req.method === 'PUT' && PORTAL_PROTOTYPES_PATH.test(new URL(req.url).pathname);
+    const isSnapshot = isPrototypes ||
+      (req.method === 'PUT' && /^\/api\/admin\/v1\/deep-dive\/tenants\/[0-9a-f-]{36}$/i.test(new URL(req.url).pathname));
     const isPortal = (req.method === 'POST' || req.method === 'PATCH') && PORTAL_WRITE.test(new URL(req.url).pathname);
     const maxBytes = isSnapshot ? MAX_SNAPSHOT_BYTES : isPortal ? MAX_PORTAL_BYTES : MAX_BODY_BYTES;
     if (Number(req.headers.get('content-length')) > maxBytes) return fail('bad_request');
@@ -143,6 +147,18 @@ export function makeAdminBridgeHandler({
           WHERE deep_dive_snapshots.org_id=EXCLUDED.org_id`, [p[2], ctx.org, JSON.stringify(checked)]);
         if (result.rowCount !== 1) throw new BridgeRequestError('not_found', 'tenant belongs to another organisation');
         return { status: 200, body: { ok: true, tenantId: p[2] }, rowCount: 1, resourceId: p[2] };
+      } }
+      : isPrototypes ? { capability: 'write', resource: 'portal-prototypes', resourceId: p[2], run: async (client, ctx, list) => {
+        let checked;
+        try { checked = validatePrototypes(p[2], list); } catch { throw new BridgeRequestError('bad_request', 'invalid prototypes'); }
+        try {
+          const count = await replacePrototypes(client, ctx.org, p[2], checked);
+          return { status: 200, body: { ok: true, customerId: p[2], count }, rowCount: count, resourceId: p[2] };
+        } catch (error) {
+          // a client of no organisation of this key: the foreign key refuses it
+          if (error?.code === '23503') throw new BridgeRequestError('not_found', 'client not found');
+          throw error;
+        }
       } }
       : isRead ? fileRoute(p) || interviewReadRoute(p) || readRoute(p) : interviewWriteRoute(req.method, p) || writeRoute(req.method, p);
     if (!target) return fail('not_found');
