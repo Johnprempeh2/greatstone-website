@@ -37,7 +37,8 @@ export function makePortalReceiptWorker({ pool = getPool, env = process.env,
 
 // Netlify accepts only a Response or undefined from a function; any other value fails the run and it retries.
 const worker = makePortalReceiptWorker();
-export default async () => { await worker(); };
+// SCHEDULED_JOBS_OFF=1 (set on staging only) skips the hourly sweep so that database can sleep; sendReceiptsNow still runs.
+export default async () => { if (process.env.SCHEDULED_JOBS_OFF !== '1') await worker(); };
 // Hourly, so the database can sleep (it needs 5 quiet minutes). Acceptances and Send again do not wait for this:
 // their request path calls sendReceiptsNow(). The hourly run sweeps up retries and anything that missed.
 export const config = { schedule: '@hourly' };
