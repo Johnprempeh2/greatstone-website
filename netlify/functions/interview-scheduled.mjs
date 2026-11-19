@@ -15,5 +15,6 @@ export async function housekeeping({ pool = getPool(), env = process.env, log = 
   return { closed, memory };
 }
 
-export default async () => { await housekeeping(); };
+// SCHEDULED_JOBS_OFF=1 (set on staging only) skips the hourly run so that database can sleep.
+export default async () => { if (process.env.SCHEDULED_JOBS_OFF !== '1') await housekeeping(); };
 export const config = { schedule: '@hourly' };
