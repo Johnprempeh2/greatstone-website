@@ -11,6 +11,7 @@ import ActionPanel from './ActionPanel.jsx';
 import { downloadPortalPdf } from './portal-file.mjs';
 import DeepDiveClient from './DeepDiveClient.jsx';
 import InterviewAgreement from './InterviewAgreement.jsx';
+import PortalPrototypes from './PortalPrototypes.jsx';
 import { currentClientActions } from './home-model.mjs';
 import {
   KIND_LABEL, docState, panelState, acceptanceFor, signatoryLabel,
@@ -181,6 +182,8 @@ function Home({ docs, acceptances, email, err, onRetry, deepDive, deepDiveError 
           </ul>
         )}
       </section>
+
+      <PortalPrototypes />
     </>
   );
 }

@@ -194,3 +194,9 @@ p.pt-ev-to-validate { border-left: 3px dotted var(--pt-muted); }
   .pts-wide-only { display: none; }
   .pts-narrow-only { display: grid; }
 }
+
+/* Prototypes (14 Nov): a card per shared prototype, picture on top. */
+.pt-protos { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.pt-proto { display: grid; gap: 4px; padding: 10px; border: 1px solid var(--pt-line); border-radius: 10px; text-decoration: none; color: var(--pt-text) !important; }
+.pt-proto:hover, .pt-proto:focus-visible { border-color: var(--pt-accent); }
+.pt-proto-img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; border-radius: 6px; background: var(--pt-line); margin-bottom: 6px; }

@@ -487,6 +487,7 @@ test('Deep Dive release uses registered approval, named signer and the receipt q
 // ── rollback (runs last: it removes everything above) ─────────────────────────────────────────
 
 test('rollback refuses while acceptances exist, then removes 0039 and 0037 cleanly, and both apply again', { skip }, () => {
+  ok(null, `\\i '${join(MIGRATIONS, '076_portal_prototypes/rollback.sql')}'`);
   ok(null, `\\i '${join(MIGRATIONS, '067_bridge_portal_documents/rollback.sql')}'`);
   ok(null, `\\i '${join(MIGRATIONS, '047_portal_pdf_upload/rollback.sql')}'`);
   const down38 = `\\i '${join(MIGRATIONS, '041_portal_receipt_worker/rollback.sql')}'`;

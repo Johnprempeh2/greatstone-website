@@ -201,6 +201,7 @@ test('048 rolls back cleanly and applies again', { skip }, () => {
   const settings = join(MIGRATIONS, '072_bridge_commerce_settings');
   const parity = join(MIGRATIONS, '073_bridge_admin_parity');
   // Roll back dependent migrations before the bridge roles and tenant links.
+  owner(readFileSync(join(MIGRATIONS, '076_portal_prototypes', 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(parity, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(settings, 'rollback.sql'), 'utf8'));
   owner(readFileSync(join(agreement, 'rollback.sql'), 'utf8'));
