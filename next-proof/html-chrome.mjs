@@ -89,7 +89,7 @@ export function exportHeader(document, site) {
       ...item.members.map((member) => menuLink(document, member, hrefFor, 'gs-navmenu-item is-sub'))])
     : menuLink(document, item, hrefFor, 'gs-navmenu-item')));
   nav.after(element(document, 'nav', { class: 'gs-navmenu', 'aria-label': 'Primary', hidden: true }, [
-    element(document, 'button', { type: 'button', id: 'navmenu-btn', class: 'gs-navmenu-btn', 'aria-expanded': 'false', 'aria-haspopup': 'menu', 'aria-controls': 'navmenu-pop', 'aria-label': 'Open navigation' },
+    element(document, 'button', { type: 'button', id: 'navmenu-btn', class: 'gs-navmenu-btn', 'aria-expanded': 'false', 'aria-haspopup': 'menu', 'aria-controls': 'navmenu-pop' },
       [element(document, 'span', { 'data-menu-label': true }, ['Menu']), chevron.cloneNode(true)]),
     pop(document, { id: 'navmenu-pop', labelledBy: 'navmenu-btn', className: 'gs-navmenu-pop' },
       [...sections, element(document, 'a', { role: 'menuitem', class: 'gs-navmenu-item gs-navmenu-book', href: hrefFor(BOOK_PAGE), 'data-cta': 'menu' }, [bookLabel])]),

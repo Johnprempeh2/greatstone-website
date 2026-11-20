@@ -245,7 +245,7 @@ export default function Header({ order, pages, navigation, current, query, onSea
         </div>
         {collapsed ? (
           <nav className="gs-navmenu" aria-label="Primary">
-            <button ref={menuBtnRef} id="gs-navmenu-btn" className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} onKeyDown={onMenuBtnKey} aria-expanded={menuOpen} aria-haspopup="menu" aria-controls="gs-navmenu-pop" aria-label="Open navigation">
+            <button ref={menuBtnRef} id="gs-navmenu-btn" className="gs-navmenu-btn" onClick={() => setMenuOpen((o) => !o)} onKeyDown={onMenuBtnKey} aria-expanded={menuOpen} aria-haspopup="menu" aria-controls="gs-navmenu-pop">
               <span>{menuLabel}</span><Chevron />
             </button>
             {menuOpen && (

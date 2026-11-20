@@ -47,7 +47,7 @@ test('the header is shared: no page marks, every menu written out hidden, island
   assert.deepEqual([...more.matchAll(/data-leaf="(\w+)"( hidden="")?/g)].map((match) => `${match[1]}${match[2] ? '' : '!'}`), ['0', '1', '1', '2', '2', 'pin!']);
   assert.match(more, /href="\/contact" data-leaf="pin"><span>Contact<\/span>/);
   // The phone menu: the whole tree, grouped, and the booking link.
-  assert.match(html, /<nav class="gs-navmenu" aria-label="Primary" hidden=""><button type="button" id="navmenu-btn" class="gs-navmenu-btn" aria-expanded="false" aria-haspopup="menu" aria-controls="navmenu-pop" aria-label="Open navigation"><span data-menu-label="">Menu<\/span>/);
+  assert.match(html, /<nav class="gs-navmenu" aria-label="Primary" hidden=""><button type="button" id="navmenu-btn" class="gs-navmenu-btn" aria-expanded="false" aria-haspopup="menu" aria-controls="navmenu-pop"><span data-menu-label="">Menu<\/span>/);
   assert.match(html, /<span class="gs-navmenu-grouplabel" aria-hidden="true">Services<\/span><a role="menuitem" class="gs-navmenu-item is-sub" href="\/services">/);
   assert.match(html, /<a role="menuitem" class="gs-navmenu-item gs-navmenu-book" href="\/contact" data-cta="menu">Begin the Conversation<\/a><\/div><\/nav>/);
   assert.match(html, /<a class="gs-btn primary gs-book" href="\/contact" data-cta="header">Begin the Conversation<\/a><gs-island name="account-entry" data-style="header"><\/gs-island><gs-island name="site-search"><\/gs-island><\/div>/);
