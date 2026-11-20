@@ -196,7 +196,7 @@ export function TwoDoorsStory(props) {
     <ClientCarousel props={props} />
     <section className="td-story" id="about"><div>{(REVIEW_CONTENT || !copy.storyKicker?.startsWith('Copy placeholder')) && editText(props, 'storyKicker', copy.storyKicker, 'p', 'td-kicker')}<h2>{editText(props, 'storyHeading', storyHeading)}</h2></div><div>{editText(props, 'storyBody', storyBody, 'p')}{editText(props, 'storyBody2', storyBody2, 'p')}</div></section>
     {approvedNumbers.length ? <div className="td-review-strip td-numbers" aria-label={copy.numbersLabel}>{approvedNumbers.map((item, i) => <div key={i}><b>{item.value}</b><span>{item.label}</span></div>)}</div> : REVIEW_CONTENT && <div className="td-review-strip" role="note"><b>{copy.draftNumbersHeading}</b><span>{copy.draftNumbersLine}</span></div>}
-    <section className="td-range" aria-label={copy.rangeLabel}>{range.map((item, i) => <div key={i}><b>{item.title}</b><p>{item.line}</p>{item.href && <a href={safeHref(item.href)}>{item.linkLabel || `Explore ${item.title} →`}</a>}</div>)}</section>
+    <section className="td-range" aria-label={copy.rangeLabel}>{range.map((item, i) => <div key={i}><h3>{item.title}</h3><p>{item.line}</p>{item.href && <a href={safeHref(item.href)}>{item.linkLabel || `Explore ${item.title} →`}</a>}</div>)}</section>
   </div>;
 }
 
@@ -216,7 +216,7 @@ export function TwoDoorsTools(props) {
   const copy = { ...props };
   return <div className="td-segment">
     <section className="td-section" id="tools">{editText(props, 'toolsKicker', copy.toolsKicker, 'p', 'td-kicker td-teal')}<h2>{editText(props, 'toolsHeading', copy.toolsHeading)}</h2>{editText(props, 'toolsIntro', copy.toolsIntro, 'p')}
-      <Carousel enabled={carousel} label={copy.toolsKicker} items={tools} render={(tool) => <article className="td-tool-card">{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.toolsHref)}>{copy.toolLinkPrefix} {tool.name} {copy.toolLinkSuffix}</a></article>} />
+      <Carousel enabled={carousel} label={copy.toolsKicker} items={tools} render={(tool) => <article className="td-tool-card">{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" decoding="async" width="400" height="90" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.toolsHref)}>{copy.toolLinkPrefix} {tool.name} {copy.toolLinkSuffix}</a></article>} />
     </section>
     {copy.closeHeading && <TwoDoorsClose {...props} />}
     {copy.bottomHeading && <TwoDoorsBottom {...props} />}
@@ -236,7 +236,7 @@ export function TwoDoorsBottom(props) {
 export function DevTools(props) {
   const { heading, intro, tools = [] } = props;
   const copy = { ...props };
-  return <div className="td-home td-dev-page"><section className="td-intro">{editText(props, 'devKicker', copy.devKicker, 'p', 'td-kicker td-teal')}<h1>{editText(props, 'heading', heading)}</h1>{editText(props, 'intro', intro, 'p', 'td-lede')}<a className="td-pill td-pill-teal" href={safeHref(copy.shopHref)}>{editText(props, 'shopCta', copy.shopCta)}</a></section><section className="td-section"><h2>{editText(props, 'brandHeading', copy.brandHeading)}</h2><div className="td-brand-grid">{tools.map((tool) => <article className="td-tool-card" key={tool.name}>{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.shopHref)}>{editText(props, 'brandCta', copy.brandCta)}</a></article>)}</div><p className="td-mail">{editText(props, 'helpLine', copy.helpLine)} <a href={safeMailto(copy.helpEmail)}>{editText(props, 'helpEmail', copy.helpEmail)}</a></p></section></div>;
+  return <div className="td-home td-dev-page"><section className="td-intro">{editText(props, 'devKicker', copy.devKicker, 'p', 'td-kicker td-teal')}<h1>{editText(props, 'heading', heading)}</h1>{editText(props, 'intro', intro, 'p', 'td-lede')}<a className="td-pill td-pill-teal" href={safeHref(copy.shopHref)}>{editText(props, 'shopCta', copy.shopCta)}</a></section><section className="td-section"><h2>{editText(props, 'brandHeading', copy.brandHeading)}</h2><div className="td-brand-grid">{tools.map((tool) => <article className="td-tool-card" key={tool.name}>{tool.image && <img className="td-tool-image" src={tool.image} alt="" loading="lazy" decoding="async" width="400" height="90" />}<h3>{tool.name}</h3><p>{tool.line}</p><a href={safeHref(tool.href || copy.shopHref)}>{editText(props, 'brandCta', copy.brandCta)}</a></article>)}</div><p className="td-mail">{editText(props, 'helpLine', copy.helpLine)} <a href={safeMailto(copy.helpEmail)}>{editText(props, 'helpEmail', copy.helpEmail)}</a></p></section></div>;
 }
 
 export const css = '';
