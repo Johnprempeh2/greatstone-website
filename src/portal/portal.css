@@ -1,23 +1,23 @@
-/* Client portal (GRE-1256). Its own surface: dark by default (the site), light when the device asks for it.
-   One column, text reflows, 16px minimum body text, no fixed widths; space for loading states is held so
-   nothing shifts when data arrives. Staff preview uses .pt-surface to show the same thing in the studio. */
+/* Client portal (GRE-1256). Part of the account area (GRE-4398): the same dark site tokens, width and header as
+   #account and #org, no surface of its own. One column, text reflows, 16px minimum body text, no fixed widths;
+   space for loading states is held so nothing shifts when data arrives. Staff preview uses .pt-surface to show the
+   same thing in the studio, and only that preview follows a light device setting. */
 .pt-wrap, .pt-surface {
-  --pt-bg: #141614; --pt-card: #1c201d; --pt-line: rgba(255,255,255,.12); --pt-text: #f5f5f5; --pt-muted: #c4c8c1;
-  --pt-accent: #c8ff00; --pt-accent-ink: #0e1611; --pt-link: #d9ff66; --pt-ok: #4ecdc4; --pt-warn: #ffc800; --pt-bad: #ff8a8a;
-  --pt-field: #101210; --pt-focus: #c8ff00;
+  --pt-bg: var(--gs-bg, #121212); --pt-card: rgba(255,255,255,.03); --pt-line: rgba(255,255,255,.1); --pt-text: var(--gs-text, #f5f5f5);
+  --pt-muted: var(--gs-text-muted, #c4c8c1); --pt-accent: var(--gs-accent, #c8ff00); --pt-accent-ink: #0e1611; --pt-link: #d9ff66;
+  --pt-ok: #4ecdc4; --pt-warn: #ffc800; --pt-bad: #ff8a8a; --pt-field: rgba(255,255,255,.05); --pt-focus: var(--gs-accent, #c8ff00);
   color: var(--pt-text); font-size: 1rem; line-height: 1.6;
 }
 @media (prefers-color-scheme: light) {
-  .pt-wrap, .pt-surface {
+  .pt-surface {
     --pt-bg: #f6f6f1; --pt-card: #ffffff; --pt-line: rgba(14,22,17,.16); --pt-text: #141a16; --pt-muted: #47514a;
     --pt-accent: #1b5039; --pt-accent-ink: #ffffff; --pt-link: #1b5039; --pt-ok: #136f68; --pt-warn: #8a5a00; --pt-bad: #b3261e;
     --pt-field: #ffffff; --pt-focus: #1b5039;
   }
-  /* the light surface stays on the portal column: the site header and footer are built for dark */
-  .pt-wrap { background: var(--pt-bg); border-radius: 12px; padding-left: clamp(14px, 3vw, 28px); padding-right: clamp(14px, 3vw, 28px); }
 }
-/* full height while loading and after, so the site footer starts below the fold and never jumps (no layout shift) */
-.pt-wrap { max-width: 860px; min-height: 100vh; }
+/* full height while loading and after, so the site footer starts below the fold and never jumps (no layout shift).
+   Width comes from .ca-wrap (1100px), the same as #account; long text keeps its own reading measure below. */
+.pt-wrap { min-height: 100vh; }
 .pt-surface { background: var(--pt-bg); padding: 20px clamp(14px, 3vw, 28px); border-radius: 12px; }
 .pt-wrap a, .pt-surface a { color: var(--pt-link); text-underline-offset: 3px; }
 .pt-wrap :focus-visible, .pt-surface :focus-visible { outline: 3px solid var(--pt-focus); outline-offset: 2px; }
@@ -27,15 +27,43 @@
 .pt-wrap .gs-btn.ghost, .pt-surface .gs-btn.ghost { color: var(--pt-text); border-color: var(--pt-line); }
 .pt-muted { color: var(--pt-muted); }
 .pt-small { font-size: .9rem; }
-.pt-h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); line-height: 1.2; margin: .2em 0 .5em; color: var(--pt-text); overflow-wrap: anywhere; }
+.pt-h1 { font-size: clamp(1.6rem, 3.2vw, 2.2rem); font-weight: 900; letter-spacing: -.02em; line-height: 1.15; margin: .2em 0 .5em; color: var(--pt-text); overflow-wrap: anywhere; }
 .pt-h2 { font-size: 1.15rem; margin: 0 0 .6em; color: var(--pt-text); }
 .pt-hold { min-height: 50vh; }
 
-/* top bar: back link, company, links to #org and #account */
-.pt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--pt-line); }
-.pt-bar-co { font-weight: 700; overflow-wrap: anywhere; }
-.pt-bar-links { margin-left: auto; display: flex; gap: 16px; flex-wrap: wrap; }
+/* header: the #account identity row (kicker, company, links to #org and #account), then the portal pages as the
+   same pill strip #account and #org use for their tabs */
+.pt-head { margin-bottom: 24px; }
+.pt-head .acct-id { margin-bottom: 16px; }
+.pt-head-co { font-size: clamp(1.5rem, 3.2vw, 2.2rem); font-weight: 900; letter-spacing: -.02em; line-height: 1.1; margin: .15em 0 0; overflow-wrap: anywhere; }
+.pt-tabs { display: inline-flex; max-width: 100%; }
+.pt-wrap .pt-tabs a { padding: .5em 1.1em; border-radius: 100px; color: var(--gs-text-muted); font-weight: 700; font-size: .85rem; text-decoration: none; white-space: nowrap; }
+.pt-wrap .pt-tabs a:hover { color: var(--gs-text); }
+.pt-wrap .pt-tabs a.on { background: var(--gs-accent); color: #0e1611; }
+/* phone: all three pages stay visible (they wrap) rather than one hiding off the edge of a scrolling strip */
+@media (max-width: 480px) {
+  .pt-tabs { display: flex; flex-wrap: wrap; gap: 8px; background: none; border: 0; padding: 0; }
+  .pt-wrap .pt-tabs a { flex: 0 0 auto; padding: .6em 1em; border: 1px solid var(--pt-line); }
+  .pt-wrap .pt-tabs a.on { border-color: var(--gs-accent); }
+}
+.pt-crumb { margin: -8px 0 16px; }
 .pt-back { font-weight: 700; }
+
+/* agreement: the full text in the page, set like the other portal documents */
+.pt-summary { margin: 0 0 18px; padding-left: 1.2em; max-width: 68ch; }
+.pt-summary li { margin: 4px 0; }
+.pt-agreement { padding: clamp(18px, 3vw, 32px); }
+.pt-agreement > * { max-width: 68ch; }
+.pt-agreement h2, .pt-agreement h3, .pt-agreement h4, .pt-agreement h5 { color: var(--pt-text); line-height: 1.25; margin: 1.4em 0 .5em; }
+.pt-agreement > :first-child { margin-top: 0; }
+.pt-agreement h2 { font-size: 1.5rem; } .pt-agreement h3 { font-size: 1.25rem; } .pt-agreement h4, .pt-agreement h5 { font-size: 1.05rem; }
+.pt-agreement hr { border: 0; border-top: 1px solid var(--pt-line); margin: 1.5em 0; }
+.pt-agreement table { border-collapse: collapse; width: 100%; max-width: 100%; display: block; overflow-x: auto; margin: 0 0 1em; font-size: .95rem; }
+.pt-agreement th, .pt-agreement td { text-align: left; vertical-align: top; padding: 8px 12px; border: 1px solid var(--pt-line); }
+.pt-agreement th { color: var(--pt-text); background: rgba(255,255,255,.03); }
+.pt-copies { margin: 0; padding-left: 1.2em; }
+form.pt-panel .pt-field { max-width: 36rem; }
+.pt-copies li { margin: 4px 0; }
 
 .pt-card { background: var(--pt-card); border: 1px solid var(--pt-line); border-radius: 12px; padding: 18px clamp(14px, 3vw, 22px); margin: 0 0 16px; }
 .pt-empty { padding: 30px 0; min-height: 40vh; }
@@ -104,8 +132,9 @@ p.pt-ev-indicated { border-left: 3px dashed var(--pt-warn); }
 p.pt-ev-to-validate { border-left: 3px dotted var(--pt-muted); }
 
 /* action panel */
-.pt-panel { background: var(--pt-card); border: 2px solid var(--pt-line); border-radius: 14px; padding: 18px clamp(14px, 3vw, 24px); margin: 30px 0 10px; }
-.pt-panel-done { border-color: var(--pt-ok); }
+.pt-panel { background: var(--pt-card); border: 1px solid var(--pt-line); border-radius: 14px; padding: 18px clamp(14px, 3vw, 24px); margin: 30px 0 10px; }
+.pt-panel-done { border-color: var(--pt-ok); margin-top: 0; }
+.pt-panel > :last-child { margin-bottom: 0; }
 .pt-panel-wait { border-style: dashed; }
 .pt-panel-h { font-size: 1.25rem; margin: 0 0 12px; color: var(--pt-text); }
 .pt-preview-note { background: rgba(255,200,0,.12); border: 1px solid var(--pt-warn); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; }
@@ -150,7 +179,7 @@ p.pt-ev-to-validate { border-left: 3px dotted var(--pt-muted); }
 
 @media print {
   body { background: #fff !important; }
-  .gs-header, .gs-footer, footer, .gs-skip, .pt-bar, .pt-noprint, .gs-stage, canvas { display: none !important; }
+  .gs-header, .gs-footer, footer, .gs-skip, .pt-head, .pt-crumb, .pt-noprint, .gs-stage, canvas { display: none !important; }
   .pt-wrap { --pt-text: #000; --pt-muted: #333; --pt-line: #999; --pt-card: #fff; --pt-accent: #000; color: #000; padding: 0; max-width: none; background: #fff; }
   .pt-rec-blocks { grid-template-columns: 1fr 1fr; }
 }
