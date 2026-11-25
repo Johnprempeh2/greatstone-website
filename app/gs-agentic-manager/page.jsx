@@ -182,7 +182,10 @@ export default async function GsAgenticManagerPage() {
         <p className="gsam-kicker">Start here</p>
         <h2 id="gsam-invite">Tell us which work keeps coming back</h2>
         <p className="gsam-reading">A free Executive Discovery is usually enough to see whether a digital office would help, and where it would start.</p>
-        <a className="btn btn--primary" href={ENQUIRE}>Ask about GS Agentic Manager</a>
+        <div className="gsam-actions">
+          <a className="btn btn--primary" href={ENQUIRE}>Ask about GS Agentic Manager</a>
+          <a className="btn btn--ghost" href="/my-gsam">Buy GSAM for Mac</a>
+        </div>
       </section>
     </div>
   </SiteFrame>;

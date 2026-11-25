@@ -58,3 +58,15 @@ test('paid webhook uses the worker transaction and repeated delivery does not ad
   assert.equal(commands.filter((sql) => sql === 'SET LOCAL ROLE service_role').length, 2);
   assert.equal(commands.filter((sql) => sql === 'COMMIT').length, 2);
 });
+
+test('a GSAM subscription checkout is never recorded as a shop order', async () => {
+  const at = 1_700_000_000;
+  const payload = JSON.stringify({ id: 'evt_test_gsam', livemode: false, type: 'checkout.session.completed',
+    data: { object: { id: 'cs_test_gsam', mode: 'subscription', payment_status: 'paid', metadata: { source: 'gsam' } } } });
+  const handler = makeStripeWebhookHandler({ env: { STRIPE_WEBHOOK_SECRET: secret, STRIPE_SECRET_KEY: 'sk_test_fixture' }, now: () => at,
+    pool: () => ({ connect: async () => { throw new Error('database reached'); } }), fetchImpl: async () => { throw new Error('Stripe reached'); } });
+  const response = await handler(new Request('https://example.test/api/stripe-webhook', {
+    method: 'POST', headers: { 'stripe-signature': sign(payload, at) }, body: payload,
+  }));
+  assert.equal(response.status, 200);
+});

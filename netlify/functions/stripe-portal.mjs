@@ -14,7 +14,8 @@ export function makeStripePortalHandler({ env = process.env, pool = getPool, ver
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
     const origin = String(env.APP_SITE_ORIGIN || '').replace(/\/+$/, '');
-    if (!origin || body?.returnUrl !== origin + '/#account') return json({ error: 'Invalid return URL.' }, 400);
+    // The account page, or My GSAM (P4) for GSAM subscriptions.
+    if (!origin || ![origin + '/#account', origin + '/my-gsam'].includes(body?.returnUrl)) return json({ error: 'Invalid return URL.' }, 400);
     try {
       const user = await userFromRequest(req, verify);
       if (!user?.id || !UUID.test(user.id)) return json({ error: 'Sign in to manage billing.' }, 401);

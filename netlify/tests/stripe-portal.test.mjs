@@ -61,3 +61,11 @@ test('missing Stripe customer is created once and saved under buyer RLS before p
   assert.equal(calls.some(([sql]) => sql.includes('WHERE id=app_customer_id() AND stripe_customer_id IS NULL')), true);
   assert.equal(calls.filter(([sql]) => sql === 'SET LOCAL ROLE authenticated').length, 3);
 });
+
+test('My GSAM may return to /my-gsam; any other path on the site is still refused', async () => {
+  const { pool } = fixture({ stripe_customer_id: 'cus_test123' });
+  const handler = makeStripePortalHandler({ env, pool, verify: async () => ({ id, email: 'buyer@example.test' }),
+    fetchImpl: async () => Response.json({ url: 'https://billing.stripe.com/session/test' }) });
+  assert.equal((await handler(request(env.APP_SITE_ORIGIN + '/my-gsam'))).status, 200);
+  assert.equal((await handler(request(env.APP_SITE_ORIGIN + '/elsewhere'))).status, 400);
+});
