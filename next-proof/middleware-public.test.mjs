@@ -15,7 +15,7 @@ test('public pages may be cached by the CDN with revalidation, and carry the Vit
 });
 
 test('signed-in, client, API, query and non-GET requests are never CDN cached', () => {
-  for (const path of ['/account', '/org', '/portal/x', '/join/t', '/invoice/1', '/api/catalogue', '/privacy/interviews'])
+  for (const path of ['/account', '/my-gsam', '/org', '/portal/x', '/join/t', '/invoice/1', '/api/catalogue', '/privacy/interviews'])
     assert.equal(get(path)['Netlify-CDN-Cache-Control'], undefined, path);
   assert.equal(get('/shop', '?q=pdf')['Netlify-CDN-Cache-Control'], undefined);
   assert.equal(publicHeaders({ method: 'POST', pathname: '/', search: '' })['Netlify-CDN-Cache-Control'], undefined);

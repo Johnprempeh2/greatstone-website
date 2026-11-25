@@ -51,6 +51,7 @@ async function stripeGet(path, key, fetchImpl) {
 
 async function recordOrder(pool, session, key, fetchImpl) {
   if (session.payment_status !== 'paid') return false;
+  if (session.mode === 'subscription') return false; // GSAM subscriptions: /api/gsam/stripe-webhook, never a shop order.
   if (!/^cs_test_[A-Za-z0-9]+$/.test(session.id || '')) throw new Error('Invalid test session');
   const lines = await stripeGet(`checkout/sessions/${session.id}/line_items?limit=100&expand%5B%5D=data.price.product`, key, fetchImpl);
   if (lines.has_more) throw new Error('Checkout has more than 100 lines');

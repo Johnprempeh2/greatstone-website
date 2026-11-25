@@ -2,7 +2,7 @@
 // Public pages hold no per-visitor content (sign-in state is read in the browser), so Netlify's CDN may
 // keep them for 5 minutes and serve a stale copy for a day while it refetches. Signed-in, client,
 // checkout, editor and API routes, and any URL with a query, are never cached.
-const uncachedPath = /^\/(?:api|account|org|portal|catalogue|invoice|join|order-confirmed|privacy|live-design|editor|preview|effect-preview|html-export|html-sample|media|_release|_islands)(?:\/|$)/;
+const uncachedPath = /^\/(?:api|account|org|portal|catalogue|invoice|join|my-gsam|order-confirmed|privacy|live-design|editor|preview|effect-preview|html-export|html-sample|media|_release|_islands)(?:\/|$)/;
 export const PUBLIC_CDN_CACHE = 'public, s-maxage=300, stale-while-revalidate=86400';
 
 export function publicHeaders({ method, pathname, search }) {

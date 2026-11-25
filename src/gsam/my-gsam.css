@@ -1,0 +1,45 @@
+/* My GSAM (GSAM for Mac, P4). Builds on the account page's .ca-wrap, .pr-form, .ca-tabs and .gs-btn. Colour tokens
+   only: secondary text is --gs-text-muted, never an opacity fade. */
+.gsam-acct { max-width: 760px; }
+/* The site header is fixed (66px); private.css trims .ca-wrap's top padding as if it were in flow, which puts the
+   kicker under it. Clear it here. */
+main .ca-wrap.gsam-acct, main .gsam-out { padding-top: calc(66px + clamp(18px, 4vh, 40px)); }
+main .gsam-out { margin: 0 auto; }
+main .gsam-out .ca-wrap { padding-top: 0; padding-bottom: 24px; }
+.gsam-acct h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 900; margin: .2em 0 .6em; color: var(--gs-text); }
+.gsam-intro { padding-bottom: 0; }
+.gsam-lead { color: var(--gs-text-muted); font-size: 1.02rem; line-height: 1.6; max-width: 60ch; }
+.gsam-muted { color: var(--gs-text-muted); font-size: .9rem; line-height: 1.55; margin: 0; }
+.gsam-card { margin-bottom: 18px; }
+.gsam-key { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.gsam-key code { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; padding: .7em .9em; border-radius: 10px;
+  border: 1px solid var(--gs-border-soft, rgba(255,255,255,.12)); background: rgba(255,255,255,.05); color: var(--gs-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .95rem; }
+.gsam-dl { align-self: flex-start; }
+.gsam-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 0; }
+.gsam-facts dt { font-size: .78rem; font-weight: 700; color: var(--gs-text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.gsam-facts dd { margin: 4px 0 0; color: var(--gs-text); font-weight: 600; }
+.gsam-facts ul { margin: 0; padding-left: 1.1em; }
+.gsam-interval { align-self: flex-start; }
+.gsam-pick fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.gsam-pick legend { font-size: .8rem; font-weight: 700; color: var(--gs-text-muted); margin-bottom: 8px; padding: 0; }
+.gsam-pick .gsam-option { display: grid; text-align: left; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; padding: 12px 14px;
+  border-radius: 12px; border: 1px solid var(--gs-border-soft, rgba(255,255,255,.12)); background: rgba(255,255,255,.03);
+  color: var(--gs-text); cursor: pointer; font-size: .95rem; font-weight: 600; }
+.gsam-option:hover { border-color: var(--gs-accent-mid, rgba(200,255,0,.4)); }
+.gsam-option:has(input:checked) { border-color: var(--gs-accent); background: var(--gs-accent-dim, rgba(200,255,0,.08)); }
+.gsam-option:has(input:focus-visible) { outline: 2px solid var(--gs-accent); outline-offset: 2px; }
+.gsam-option input { width: 18px; height: 18px; accent-color: var(--gs-accent); margin: 0; }
+.gsam-option-price { color: var(--gs-text); font-weight: 700; white-space: nowrap; }
+.gsam-option-desc { grid-column: 2 / -1; color: var(--gs-text-muted); font-weight: 400; font-size: .88rem; line-height: 1.5; }
+.gsam-option.off, fieldset:disabled .gsam-option { cursor: not-allowed; border-style: dashed; }
+.gsam-option.off .gsam-option-price, fieldset:disabled .gsam-option-price { color: var(--gs-text-muted); font-weight: 600; }
+.gsam-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 100px; font-size: .72rem; font-weight: 800;
+  background: var(--gs-accent); color: #0e1611; vertical-align: middle; }
+.gsam-total { color: var(--gs-text); margin: 0; }
+.gsam-note { color: var(--gs-text); font-size: .9rem; }
+@media (max-width: 520px) {
+  .gsam-pick .gsam-option { grid-template-columns: auto 1fr; }
+  .gsam-option-price { grid-column: 2; white-space: normal; }
+  .gsam-acct .gs-btn { width: 100%; justify-content: center; }
+}
