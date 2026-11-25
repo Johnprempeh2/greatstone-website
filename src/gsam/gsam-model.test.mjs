@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { gsamTotal, gsamStatusLabel } from './gsam-model.mjs';
+import { detectGsamPlatform, gsamTotal, gsamStatusLabel } from './gsam-model.mjs';
 
 const catalogue = [
   { id: 'a', prices: { month: { amount: 1000, currency: 'gbp' }, year: { amount: 10000, currency: 'gbp' } } },
@@ -29,4 +29,13 @@ test('My GSAM copy has no em or en dashes and fades no text with opacity', () =>
     assert.doesNotMatch(text, /[\u2013\u2014]/, file);
     assert.doesNotMatch(text, /opacity\s*:\s*0?\.\d/, file);
   }
+});
+
+test('offers the download for the visitor\'s computer first', () => {
+  assert.equal(detectGsamPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36'), 'windows');
+  assert.equal(detectGsamPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.1 Safari/605.1.15'), 'mac');
+  assert.equal(detectGsamPlatform('anything', 'Windows'), 'windows');
+  assert.equal(detectGsamPlatform('Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X)'), null);
+  assert.equal(detectGsamPlatform('Mozilla/5.0 (X11; Linux x86_64)'), null);
+  assert.equal(detectGsamPlatform(), null);
 });

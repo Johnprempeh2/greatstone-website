@@ -33,6 +33,8 @@ export function makeGsamAccountHandler({ env = process.env, pool = getPool, veri
       return json({
         catalogue: catalogueFor(items, account.stripe_customer_id),
         downloadUrl: env.GSAM_DMG_URL || null,
+        // GSAM for Windows (W5): one link per platform; My GSAM picks one from the browser.
+        downloads: { mac: env.GSAM_DMG_URL || null, windows: env.GSAM_WINDOWS_INSTALLER_URL || null },
         subscription: sub ? {
           status: sub.status, cancelAtPeriodEnd: sub.cancel_at_period_end === true,
           interval: sub.items?.data?.[0]?.price?.recurring?.interval || null,

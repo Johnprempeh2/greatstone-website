@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { getSession, onAuth } from '../store/customerAuth.mjs';
 import { AuthGate } from '../store/AccountDashboard.jsx';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { gsamTotal, gsamStatusLabel } from './gsam-model.mjs';
+import { detectGsamPlatform, gsamTotal, gsamStatusLabel } from './gsam-model.mjs';
 import '../store/store.css';
 import '../store/admin.css';
 import './my-gsam.css';
@@ -117,7 +117,7 @@ function Owned({ data, justPaid, onReload }) {
       {!data.licence ? <p className="gsam-muted" role="status">
         Your licence key is being made. This page checks again by itself. <button type="button" className="ca-link" onClick={onReload}>Check now</button>
       </p> : <>
-        <p className="gsam-muted">Enter this key the first time you open GSAM on your Mac. Keep it private: it activates your install.</p>
+        <p className="gsam-muted">Enter this key when you install GSAM on your computer. Keep it private: it activates your install.</p>
         <div className="gsam-key">
           <code aria-live="polite">{key || '•••••••• hidden ••••••••'}</code>
           {key
@@ -127,13 +127,7 @@ function Owned({ data, justPaid, onReload }) {
         {data.licence.expiresAt && <p className="gsam-muted">Activate by {fmtDate(data.licence.expiresAt)}.</p>}
       </>}
     </section>
-    <section className="pr-form gsam-card" aria-labelledby="gsam-dl-title">
-      <h2 id="gsam-dl-title">Download</h2>
-      {data.downloadUrl
-        ? <><a className="gs-btn primary gsam-dl" href={data.downloadUrl}>Download GSAM for Mac</a>
-          <p className="gsam-muted">The first time you open it, right-click the app and choose Open.</p></>
-        : <p className="gsam-muted">The download link is on its way. We will email you when it is ready.</p>}
-    </section>
+    <Downloads links={data.downloads || { mac: data.downloadUrl || null, windows: null }} />
     <section className="pr-form gsam-card" aria-labelledby="gsam-plan-title">
       <h2 id="gsam-plan-title">Your subscription</h2>
       <dl className="gsam-facts">
@@ -142,12 +136,42 @@ function Owned({ data, justPaid, onReload }) {
         <div><dt>Billing</dt><dd>{sub.interval === 'year' ? 'Annual' : sub.interval === 'month' ? 'Monthly' : 'Not known yet'}</dd></div>
         <div><dt>Modules</dt><dd>{sub.modules.length ? <ul>{sub.modules.map((m, i) => <li key={m + i}>{m}</li>)}</ul> : 'None'}</dd></div>
       </dl>
-      <p className="gsam-muted">Change modules, switch between monthly and annual, update your card or cancel in the secure Stripe billing portal. GSAM stops at the end of the paid period; your data stays on your Mac.</p>
+      <p className="gsam-muted">Change modules, switch between monthly and annual, update your card or cancel in the secure Stripe billing portal. GSAM stops at the end of the paid period; your data stays on your computer.</p>
       <button type="button" className="gs-btn primary" onClick={portal} disabled={busy}>{busy ? 'Opening…' : 'Manage billing'}</button>
     </section>
     <div className="gs-sr-only" role="status" aria-live="polite">{note || ''}</div>
     {note && <p className="gsam-note">{note}</p>}
   </>;
+}
+
+const PLATFORMS = {
+  mac: { label: 'Mac', button: 'Download GSAM for Mac',
+    help: 'The first time you open it, right-click the app and choose Open.' },
+  windows: { label: 'Windows', button: 'Download GSAM for Windows',
+    help: 'Windows may say "Windows protected your PC" because the installer is new. Choose More info, then Run anyway. It installs for you only and needs no administrator password.' },
+};
+
+/** The download for the visitor's computer first (from the browser), with a switch to the other one. */
+function Downloads({ links }) {
+  const [platform, setPlatform] = useState('mac');
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const picked = detectGsamPlatform(navigator.userAgent, navigator.userAgentData?.platform);
+    if (picked) setPlatform(picked);
+  }, []);
+  const chosen = PLATFORMS[platform];
+  return <section className="pr-form gsam-card" aria-labelledby="gsam-dl-title">
+    <h2 id="gsam-dl-title">Download</h2>
+    <div className="gsam-platforms" role="radiogroup" aria-label="Your computer">
+      {Object.entries(PLATFORMS).map(([id, p]) =>
+        <button key={id} type="button" role="radio" aria-checked={platform === id}
+          className={'gs-btn ' + (platform === id ? 'primary' : 'ghost')} onClick={() => setPlatform(id)}>{p.label}</button>)}
+    </div>
+    {links[platform]
+      ? <><a className="gs-btn primary gsam-dl" href={links[platform]}>{chosen.button}</a>
+        <p className="gsam-muted">{chosen.help}</p></>
+      : <p className="gsam-muted">The {chosen.label} download is on its way. We will email you when it is ready.</p>}
+  </section>;
 }
 
 function Picker({ catalogue = [], ended }) {

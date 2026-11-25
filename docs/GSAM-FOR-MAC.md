@@ -36,6 +36,7 @@ checkout refuses anything not in that customer's catalogue.
 | `GSAM_BILLING_EVENTS_SECRET` | The same value as the hub's `GSAM_BILLING_EVENTS_SECRET`. |
 | `GSAM_LICENCE_ENCRYPTION_KEY` | 32 random bytes, 64 hex characters: `node -e 'process.stdout.write(require("crypto").randomBytes(32).toString("hex"))'`. Losing or changing it makes stored keys unreadable. |
 | `GSAM_DMG_URL` | Optional. The DMG download link. Unset: My GSAM says the download is on its way. |
+| `GSAM_WINDOWS_INSTALLER_URL` | Optional. The Windows installer (`GSAM-Setup.exe`) link. My GSAM offers the Mac or Windows download first from the visitor's browser, with a switch to the other. Unset: My GSAM says the Windows download is on its way. |
 | `GSAM_CATALOGUE_JSON` | Optional fallback catalogue: `[{"id","kind":"module|package|deal","name","description","customer":"cus_... or null","prices":{"month":{"id":"price_...","amount":1000,"currency":"gbp"},"year":{...}}}]`. |
 | `APP_SITE_ORIGIN` | Already set. Checkout's return links and the portal's return URL. |
 

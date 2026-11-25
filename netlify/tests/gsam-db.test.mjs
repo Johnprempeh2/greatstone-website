@@ -16,7 +16,8 @@ const WHO = { id: 'd0760000-0000-4000-8000-00000000000a', email: 'a@example.test
 const OTHER = { id: 'd0760000-0000-4000-8000-00000000000b', email: 'b@example.test', emailVerified: true };
 const at = 1_700_000_000;
 const env = { GSAM_STRIPE_WEBHOOK_SECRET: 'whsec_test_gsam', STRIPE_SECRET_KEY: 'sk_test_fixture', GSAM_BILLING_EVENTS_SECRET: 'hub-secret',
-  GSAM_HUB_URL: 'https://hub.example.test', GSAM_LICENCE_ENCRYPTION_KEY: 'c'.repeat(64), GSAM_DMG_URL: 'https://downloads.example.test/GSAM.dmg' };
+  GSAM_HUB_URL: 'https://hub.example.test', GSAM_LICENCE_ENCRYPTION_KEY: 'c'.repeat(64), GSAM_DMG_URL: 'https://downloads.example.test/GSAM.dmg',
+  GSAM_WINDOWS_INSTALLER_URL: 'https://downloads.example.test/GSAM-Setup.exe' };
 const sign = (body) => `t=${at},v1=${createHmac('sha256', env.GSAM_STRIPE_WEBHOOK_SECRET).update(`${at}.${body}`).digest('hex')}`;
 
 let db;
@@ -71,6 +72,7 @@ test('checkout stores the key encrypted once; the buyer reveals it, another comp
   assert.equal(plain.subscription.paidUntil, '2026-12-25T00:00:00.000Z');
   assert.deepEqual(plain.subscription.modules, ['Agents']);
   assert.equal(plain.downloadUrl, env.GSAM_DMG_URL);
+  assert.deepEqual(plain.downloads, { mac: env.GSAM_DMG_URL, windows: env.GSAM_WINDOWS_INSTALLER_URL });
   assert.equal((await (await get(WHO, true)).json()).licence.key, 'gsamlk_dbfixture');
   const other = await (await get(OTHER, true)).json();
   assert.equal(other.licence, null, errors.join('\n'));
