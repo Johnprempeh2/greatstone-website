@@ -477,12 +477,16 @@ function commerceRoute(method, parts) {
       return answer(200, await bridgeRow(client, 'orders', rowId));
     } };
   }
+  // Issuing the invoice places the PO order (people only): its email and Pipedrive deal follow the commit (GRE-6336).
   if (res === 'invoices' && rowId !== undefined && action === 'issue' && method === 'POST') {
-    return { people: true, current: order, run: async (client, ctx, body) => {
+    const after = []; // queued by run, so a replay queues none
+    return { people: true, current: order, after, run: async (client, ctx, body) => {
       people(ctx.actor);
       pick(body, {}, { allow: ['expectedRowVersion'] });
       await client.query('SELECT bridge_issue_invoice($1::uuid, $2)', [needId(rowId), expectedRowVersion(body)]);
-      return answer(200, await bridgeRow(client, 'orders', rowId));
+      const item = await bridgeRow(client, 'orders', rowId);
+      after.push(async (_mail, _start, { orderPlaced }) => ({ followUp: await orderPlaced(rowId) }));
+      return answer(200, item);
     } };
   }
   return null;

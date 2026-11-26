@@ -21,8 +21,11 @@ export function orderRefLabel(reference) {
   return /^cs_(test|live)_/.test(s) ? s.replace(/^cs_(test|live)_/, '').split('#')[0].slice(0, 12) : s;
 }
 
-// buildOrderConfirmationEmail({ customerName, reference, items:[{offering_name,variant_name,qty,line_total_minor}],
-//   subtotalMinor, totalMinor, currency, accountUrl }) → { subject, html, text }
+// GRE-6336: both kinds open with a welcome. kind 'po' is a purchase-order order (its invoice issued, sent by
+// netlify/functions/lib/order-follow-up.mjs): it names the invoice and PO number and its next steps are the invoice's.
+// buildOrderConfirmationEmail({ kind: 'card'|'po', customerName, reference, invoiceNumber, poReference,
+//   items:[{offering_name,variant_name,qty,line_total_minor}], subtotalMinor, totalMinor, currency, accountUrl })
+//   → { subject, html, text }
 export function buildOrderConfirmationEmail(opts = {}) {
   const items = Array.isArray(opts.items) ? opts.items : [];
   const name = opts.customerName ? String(opts.customerName).trim() : '';
@@ -35,23 +38,34 @@ export function buildOrderConfirmationEmail(opts = {}) {
   const vat = Math.max(0, total - subtotal);
   const origin = (opts.siteOrigin ? String(opts.siteOrigin) : 'https://greatstoneint.com').replace(/\/+$/, '');
   const accountUrl = opts.accountUrl || origin + '/#account';
+  const po = opts.kind === 'po';
+  const invoice = opts.invoiceNumber ? String(opts.invoiceNumber).trim() : '';
+  const poNumber = opts.poReference ? String(opts.poReference).trim() : '';
+  const welcome = 'Welcome to Greatstone, and thank you for choosing us. We are glad to have you with us.';
+  const refLine = 'Order reference ' + ref + (invoice ? ', invoice ' + invoice : '') + (poNumber ? ', your PO ' + poNumber : '') + '.';
 
   const greeting = name ? 'Hi ' + escapeHtml(name) + ',' : 'Hello,';
   const itemLabel = (it) => escapeHtml((it.offering_name || 'Item') + (it.variant_name ? ' · ' + it.variant_name : '') + (it.qty && it.qty > 1 ? ' ×' + it.qty : ''));
   const rows = items.map((it) => `<tr><td style="padding:6px 0;color:#cfd3cb;font-size:14px">${itemLabel(it)}</td><td style="padding:6px 0;text-align:right;color:${TEXT};font-size:14px">${money(it.line_total_minor)}</td></tr>`).join('');
 
-  const nextSteps = [
+  const nextSteps = po ? [
+    'We send your invoice' + (invoice ? ' ' + invoice : '') + ' to this address within one business day. It quotes your PO number' + (poNumber ? ' ' + poNumber : '') + ' and is payable on the terms we agreed.',
+    'Our licensing team issues your licences (keys or files) and they appear in your account, normally within one business day of this email.',
+    'We email you the moment they are ready to collect. You do not need to do anything until then.',
+  ] : [
     'Our licensing team issues your licences (keys or files) and they appear in your account, normally within one business day.',
     'We email you the moment they are ready to collect. You do not need to do anything until then.',
     'Need it sooner, or want to pay by purchase order next time? Just reply to this email.',
   ];
+  const heading = po ? 'Thank you, we have your purchase order' : 'Thank you, your order is confirmed';
   const nextRows = nextSteps.map((s) => `<li style="margin:0 0 8px;line-height:1.55">${escapeHtml(s)}</li>`).join('');
 
   const html = `<div style="background:${CARD};color:${TEXT};font-family:Arial,Helvetica,sans-serif;padding:28px;max-width:560px;margin:0 auto;border-radius:14px">
     <div style="font-weight:800;font-size:18px;letter-spacing:.04em">GREATST<span style="color:${ACCENT}">O</span>NE</div>
-    <h1 style="font-size:20px;margin:18px 0 6px">Thank you, your order is confirmed</h1>
+    <h1 style="font-size:20px;margin:18px 0 6px">${heading}</h1>
     <p style="color:${MUTED};font-size:14px;margin:0 0 4px">${greeting}</p>
-    <p style="color:${MUTED};font-size:14px;margin:0 0 18px">Order reference <b style="color:${TEXT}">${escapeHtml(ref)}</b>. Here is what you ordered.</p>
+    <p style="color:${MUTED};font-size:14px;margin:0 0 10px">${escapeHtml(welcome)}</p>
+    <p style="color:${MUTED};font-size:14px;margin:0 0 18px">${escapeHtml(refLine)} Here is what you ordered.</p>
     <table style="width:100%;border-collapse:collapse">${rows}
       <tr><td style="padding:10px 0 0;border-top:1px solid #333;color:${MUTED};font-size:14px">Subtotal (ex VAT)</td><td style="padding:10px 0 0;border-top:1px solid #333;text-align:right;color:${MUTED};font-size:14px">${money(subtotal)}</td></tr>
       <tr><td style="color:${MUTED};font-size:14px">VAT</td><td style="text-align:right;color:${MUTED};font-size:14px">${money(vat)}</td></tr>
@@ -64,9 +78,10 @@ export function buildOrderConfirmationEmail(opts = {}) {
   </div>`;
 
   const textLines = [
-    'Thank you, your order is confirmed', '',
-    (name ? 'Hi ' + name + ',' : 'Hello,'),
-    'Order reference ' + ref + '. Here is what you ordered:', '',
+    heading, '',
+    (name ? 'Hi ' + name + ',' : 'Hello,'), '',
+    welcome, '',
+    refLine + ' Here is what you ordered:', '',
     ...items.map((it) => '- ' + (it.offering_name || 'Item') + (it.variant_name ? ' · ' + it.variant_name : '') + (it.qty && it.qty > 1 ? ' ×' + it.qty : '') + '  ' + money(it.line_total_minor)),
     '', 'Subtotal (ex VAT): ' + money(subtotal), 'VAT: ' + money(vat), 'Total: ' + money(total), '',
     'What happens next:',
@@ -76,7 +91,7 @@ export function buildOrderConfirmationEmail(opts = {}) {
     BRAND_SIGNOFF,
   ];
 
-  return { subject: 'Your Greatstone order ' + ref, html, text: textLines.join('\n') };
+  return { subject: (po ? 'Your Greatstone purchase order ' : 'Your Greatstone order ') + (invoice || ref), html, text: textLines.join('\n') };
 }
 
 export default buildOrderConfirmationEmail;

@@ -117,13 +117,13 @@ export function buildAlertEmail({ lead = {}, studioUrl = '', contact = null, pac
 }
 
 // One Resend call. Returns { sent: true } or { sent: false, error }; never throws.
-export async function sendEmail({ apiKey, from, to, subject, html, text, fetchImpl = (...a) => fetch(...a) }) {
+export async function sendEmail({ apiKey, from, to, subject, html, text, replyTo, fetchImpl = (...a) => fetch(...a) }) {
   if (!apiKey || !to) return { sent: false, error: 'not configured' };
   try {
     const res = await fetchImpl('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + apiKey, 'content-type': 'application/json' },
-      body: JSON.stringify({ from: from || 'Greatstone <onboarding@resend.dev>', to, subject, html, text }),
+      body: JSON.stringify({ from: from || 'Greatstone <onboarding@resend.dev>', to, subject, html, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
     if (!res.ok) return { sent: false, error: 'resend ' + res.status };
     return { sent: true };
