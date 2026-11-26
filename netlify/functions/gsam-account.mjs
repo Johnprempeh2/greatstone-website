@@ -5,6 +5,10 @@ import { getPool } from './lib/db.mjs';
 import { asCustomer } from './lib/customer-store.mjs';
 import { catalogueFor, currentSubscription, decryptLicence, encryptionKey, loadCatalogue, periodEnd } from './lib/gsam.mjs';
 
+// Every live GSAM release carries both installers (gs-agentic-manager, .github/workflows/release-assets.yml).
+const RELEASES = 'https://github.com/Johnprempeh2/gs-agentic-manager/releases/latest/download';
+export const GSAM_DOWNLOADS = { mac: `${RELEASES}/GSAM-Installer.dmg`, windows: `${RELEASES}/GSAM-Setup.exe` };
+
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
 
@@ -32,9 +36,10 @@ export function makeGsamAccountHandler({ env = process.env, pool = getPool, veri
         licenceKey = decryptLicence(account.licence_key_enc, encryptionKey(env.GSAM_LICENCE_ENCRYPTION_KEY), account.id);
       return json({
         catalogue: catalogueFor(items, account.stripe_customer_id),
-        downloadUrl: env.GSAM_DMG_URL || null,
-        // GSAM for Windows (W5): one link per platform; My GSAM picks one from the browser.
-        downloads: { mac: env.GSAM_DMG_URL || null, windows: env.GSAM_WINDOWS_INSTALLER_URL || null },
+        downloadUrl: env.GSAM_DMG_URL || GSAM_DOWNLOADS.mac,
+        // One link per platform; My GSAM picks one from the browser. The newest GSAM release's
+        // installers on GitHub, unless an env var points elsewhere.
+        downloads: { mac: env.GSAM_DMG_URL || GSAM_DOWNLOADS.mac, windows: env.GSAM_WINDOWS_INSTALLER_URL || GSAM_DOWNLOADS.windows },
         subscription: sub ? {
           status: sub.status, cancelAtPeriodEnd: sub.cancel_at_period_end === true,
           interval: sub.items?.data?.[0]?.price?.recurring?.interval || null,
