@@ -92,3 +92,29 @@ The public Content Security Policy is unchanged. To see the renderer locally, ru
 Islands add no new network calls: each wraps the component the block site already runs.
 
 **Placeholders for GSAM live design.** `GET /_islands` answers the island list (names, labels, placeholder text, reserved height, accepted attributes) and `placeholderCss`. With that CSS on a draft page, each `<gs-island>` shows as a labelled box the size of the real island. To see both views locally, run `npm run dev:next` and open `/html-sample/islands` and `/html-sample/islands?view=placeholders` (development only). Screenshots are in `docs/screenshots/GRE-3777`.
+
+## Case Studies (GRE-6331)
+
+Case Studies has one public address, `/case-studies` (John, 25 Oct: Proof renamed). GSAM imported the page as `/proof`,
+so a release may publish it under either path: `next-proof/case-studies-path.mjs` serves `/case-studies` from the
+`/proof` page when only that is published, links and the sitemap use `/case-studies`, and `/proof` moves there
+permanently. The page content is the GSAM page draft; nothing about it is in code.
+
+The home landing's case-study section (`TwoDoorsProof`) shows the release's verified case studies, read from the
+Case Studies page (`next-proof/case-studies.mjs`). Until there are any, it shows marked placeholders (badge
+`PLACEHOLDER`, no claim). The landing's `data-copy` takes `showPlaceholders: false` to hide them, and the section's
+text fields (`proofKicker`, `proofHeading`, `draftBadge`, `draftCaseLine`) as before. The same carousel is an island
+for any GSAM page: `<gs-island name="case-studies"></gs-island>`, `data-copy` optional.
+
+To publish a case study with no code change, mark it on the Case Studies page as
+
+```html
+<article class="gs-case-study" data-verified="true">
+  <h3>Outcome headline</h3>
+  <p>Problem and baseline</p><p>What we did</p><p>Measured result and period</p>
+  <img src="…" alt="…">
+</article>
+```
+
+Only `data-verified="true"` counts: facts and naming permission confirmed (GRE-1852 records what is approved; as of
+26 Nov 2026, nothing). Client names and logos go in only where written permission is recorded.

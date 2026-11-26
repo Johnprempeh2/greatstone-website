@@ -83,7 +83,7 @@ function Carousel({ items, label, render, enabled = true }) {
   return <div className="td-carousel" role="region" aria-roledescription="carousel" aria-label={label}>
     <div className="td-slide" ref={track} tabIndex="0" onScroll={onScroll}
       onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); move(e.key === 'ArrowRight' ? 1 : -1); } }}>
-      {items.map((item, i) => <div className={'td-carousel-card' + (index === i ? ' is-active' : '')} key={i}>{render(item, i)}</div>)}
+      {items.map((item, i) => <div className={'td-carousel-card' + (index === i ? ' is-active' : '')} key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${count}`}>{render(item, i)}</div>)}
     </div>
     <div className="td-carousel-controls">
       <span className="td-dots" aria-label={`${index + 1} of ${count}`}>{items.map((item, i) => <button key={i} type="button" className={index === i ? 'active' : ''} aria-label={`Show ${label} ${i + 1}`} aria-current={index === i ? 'true' : undefined} onClick={() => position(i)} />)}</span>
@@ -201,12 +201,15 @@ export function TwoDoorsStory(props) {
 }
 
 export function TwoDoorsProof(props) {
-  const { cases = [], draftItems = [], carousel = true } = props;
+  const { cases = [], draftItems = [], carousel = true, showPlaceholders = true } = props;
   const copy = { ...props };
   const approvedCases = cases.filter((study) => study?.headline && study?.result && study?.verified);
+  // 26 Nov (John, GRE-6327 part 2): the placeholders show to visitors until Ben's case studies arrive. Each one is
+  // badged with the draft badge and claims nothing; GSAM turns them off with showPlaceholders (landing data-copy).
+  const placeholders = showPlaceholders ? draftItems : [];
   return <div className="td-segment td-proof-segment">
-    <section className={'td-section td-proof-section' + (!approvedCases.length && !(REVIEW_CONTENT && draftItems.length) ? ' td-proof-awaiting' : '')} id="cases"><div className="td-proof-heading">{editText(props, 'proofKicker', copy.proofKicker, 'p', 'td-kicker')}<h2>{editText(props, 'proofHeading', copy.proofHeading)}</h2></div>
-      {approvedCases.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={approvedCases} render={(study) => <div className="td-case">{study.image && <img className="td-case-image" src={study.image} alt={study.imageAlt || ''} loading="lazy" />}<div className="td-case-copy"><strong>{editText(props, 'headline', study.headline, 'span', undefined, 'cases', cases.indexOf(study))}</strong><p>{study.problem}</p><p>{study.work}</p><p>{study.result}</p></div></div>} /> : REVIEW_CONTENT && draftItems.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={draftItems} render={(item) => <div className="td-case td-case-draft"><div className="td-case-placeholder" aria-hidden="true">{String(draftItems.indexOf(item) + 1).padStart(2, '0')}</div><div className="td-case-copy"><span className="td-draft-badge">{copy.draftBadge}</span><strong>{item.headline}</strong><p>{copy.draftCaseLine}</p></div></div>} /> : <div className="td-proof-pending"><span className="td-proof-motif" aria-hidden="true" /><p className="td-pending">{editText(props, 'pendingLine', copy.pendingLine)} <a href={safeHref(copy.proofHref)}>{editText(props, 'pendingLink', copy.pendingLink)}</a>.</p></div>}
+    <section className={'td-section td-proof-section' + (!approvedCases.length && !placeholders.length ? ' td-proof-awaiting' : '')} id="cases"><div className="td-proof-heading">{editText(props, 'proofKicker', copy.proofKicker, 'p', 'td-kicker')}<h2>{editText(props, 'proofHeading', copy.proofHeading)}</h2></div>
+      {approvedCases.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={approvedCases} render={(study) => <div className="td-case">{study.image && <img className="td-case-image" src={study.image} alt={study.imageAlt || ''} loading="lazy" />}<div className="td-case-copy"><strong>{editText(props, 'headline', study.headline, 'span', undefined, 'cases', cases.indexOf(study))}</strong><p>{study.problem}</p><p>{study.work}</p><p>{study.result}</p></div></div>} /> : placeholders.length ? <Carousel enabled={carousel} label={copy.proofKicker} items={placeholders} render={(item, i) => <div className="td-case td-case-draft"><div className="td-case-placeholder" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div><div className="td-case-copy"><span className="td-draft-badge">{copy.draftBadge}</span><strong>{item.headline}</strong><p>{copy.draftCaseLine}</p></div></div>} /> : <div className="td-proof-pending"><span className="td-proof-motif" aria-hidden="true" /><p className="td-pending">{editText(props, 'pendingLine', copy.pendingLine)} <a href={safeHref(copy.proofHref)}>{editText(props, 'pendingLink', copy.pendingLink)}</a>.</p></div>}
     </section>
   </div>;
 }
@@ -277,10 +280,11 @@ export const proofPuck = {
   fields: {
     ...copyFields(proofFields),
     carousel: { type: 'radio', label: 'Carousel', options: [{ label: 'On', value: true }, { label: 'Still', value: false }] },
+    showPlaceholders: { type: 'radio', label: 'Show placeholders until verified cases exist', options: [{ label: 'On', value: true }, { label: 'Off', value: false }] },
     draftItems: { type: 'array', label: 'Draft case placeholders', arrayFields: { headline: { type: 'text', label: 'Placeholder label' }, image: { type: 'custom', label: 'Generic image', render: (props) => <MediaField {...props} /> } }, defaultItemProps: { headline: '', image: '' }, getItemSummary: (item) => item.headline || 'Draft' },
     cases: { type: 'array', label: 'Verified case studies', arrayFields: { headline: { type: 'text', label: 'Outcome headline' }, problem: { type: 'textarea', label: 'Problem and baseline' }, work: { type: 'textarea', label: 'What we did and duration' }, result: { type: 'textarea', label: 'Measured result and period' }, image: { type: 'custom', label: 'Image', render: (props) => <MediaField {...props} /> }, imageAlt: { type: 'text', label: 'Image description' }, verified: { type: 'radio', label: 'Facts and naming permission confirmed', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } }, defaultItemProps: { headline: '', problem: '', work: '', result: '', image: '', imageAlt: '', verified: false }, getItemSummary: (item) => item.headline || 'Case study' },
   },
-  defaultProps: { ...textDefaults(proofFields), cases: [], draftItems: [], carousel: true },
+  defaultProps: { ...textDefaults(proofFields), cases: [], draftItems: [], carousel: true, showPlaceholders: true },
   render: (props) => <TwoDoorsProof {...props} />,
 };
 

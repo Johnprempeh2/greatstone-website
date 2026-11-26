@@ -18,8 +18,9 @@ export function SiteFrame({ children, release }) {
 
 export default function ProofPage({ path, release }) {
   // Schema 2 releases carry HTML pages and their own chrome (GRE-3776); schema 1 keeps Puck blocks.
-  if (release.releaseSchema === 2) return <HtmlPage page={release.pages.find((item) => item.path === path)} release={release} />;
+  // pageForPath serves /case-studies from the /proof page when the release publishes it under that slug.
   const page = pageForPath(path, release);
+  if (release.releaseSchema === 2) return <HtmlPage page={page} release={release} />;
   const briefings = path === '/insights' ? insightBriefings(release) : [];
   return <SiteFrame release={release}>
     <ProofBlocks data={page.data} pageSlug={page.slug} pagePaths={release.pages.map((item) => item.path)} forms={release.collections?.forms} services={releaseServices(release)} briefings={briefings} />
