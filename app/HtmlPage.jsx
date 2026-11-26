@@ -13,6 +13,7 @@ import ProductListIsland from './ProductListIsland.jsx';
 import IntelDashboardIsland from './IntelDashboardIsland.jsx';
 import { Region } from './html-regions.mjs';
 import TwoDoorsLanding from './TwoDoorsLanding.jsx';
+import CaseStudiesIsland from './CaseStudiesIsland.jsx';
 import formBlocks from '../next-proof/frozen/form-blocks.json';
 import HtmlBehaviours from './HtmlBehaviours.jsx';
 import { ldScript } from '../src/lib/ld-json.mjs';
@@ -22,16 +23,17 @@ import { releaseServices, withReleaseServices } from '../next-proof/service-page
 
 const REACT_NAMES = { class: 'className', tabindex: 'tabIndex', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch, IntelDashboard: IntelDashboardIsland };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch, IntelDashboard: IntelDashboardIsland, CaseStudies: CaseStudiesIsland };
 // Islands that read release data on the server get the release; browser islands get only their props.
-const RELEASE_ISLANDS = new Set(['ProductList']);
+// GRE-6331: the landing and the case-studies island read the release's verified case studies.
+const RELEASE_ISLANDS = new Set(['ProductList', 'TwoDoorsLanding', 'CaseStudies']);
 // GRE-3862: the site search gets the public pages it lists, not the whole release.
 const searchLinks = (release) => {
   const { order, pages, paths } = siteChrome(release);
   return publicNavOrder(order, pages, false).map((slug) => ({ label: pages[slug].title, href: paths[slug] }));
 };
 // GRE-3778: the frozen landing renders Puck blocks, which need the page's forms and paths.
-const PAGE_ISLANDS = new Set(['TwoDoorsLanding']);
+const PAGE_ISLANDS = new Set(['TwoDoorsLanding', 'CaseStudies']);
 
 // GRE-3778: SVG presentation attributes (stroke-width, stop-color…) take React's camelCase names.
 const reactName = (name) => REACT_NAMES[name]

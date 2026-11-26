@@ -62,6 +62,11 @@ export const ISLANDS = {
   'two-doors-landing': { component: 'TwoDoorsLanding', label: 'Two Doors landing', placeholder: 'The frozen Two Doors landing: doors and hero.', height: 900,
     // Its words, from GSAM's Website module: a JSON object of text fields and showCue (app/TwoDoorsLanding.jsx filters it).
     attributes: { 'data-copy': { prop: 'copy', pattern: /^\{[\s\S]{0,20000}\}$/ } } },
+  // GRE-6331: the case-study carousel on any page (the Case Studies page first). Verified cases come from the release's
+  // Case Studies page, one <article class="gs-case-study" data-verified="true"> each (next-proof/case-studies.mjs);
+  // until there are any, the marked placeholders show. data-copy takes the landing's text fields and showPlaceholders.
+  'case-studies': { component: 'CaseStudies', label: 'Case studies', placeholder: 'The case-study carousel: verified cases from this release, or marked placeholders.', height: 560,
+    attributes: { 'data-copy': { prop: 'copy', pattern: /^\{[\s\S]{0,20000}\}$/ } } },
 };
 
 // Returns the island's props and accepted attributes, or null when the name is not registered.
