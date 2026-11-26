@@ -41,6 +41,8 @@
   "better_auth.session": "Better Auth session rows, keyed by userId; access is by session token, not by customer_id",
   "better_auth.account": "Better Auth credential/provider rows (incl. the one legitimate password column), keyed by userId; access is by session token, not by customer_id",
   "better_auth.verification": "Better Auth email-verification/reset tokens, keyed by identifier; short-lived, not customer-scoped",
+  "better_auth.twofactor": "Better Auth two-factor secret (encrypted) and hashed recovery codes, one row per userId; access is by session or the signed two-factor cookie, not by customer_id (GRE-6335)",
+  "better_auth.ratelimit": "Better Auth rate-limit counters keyed by client IP and path; not user or customer data (GRE-6335)",
 
   "admin_bridge_nonce": "GSAM↔website bridge replay-guard rows; no anon/authenticated/service_role grant, reachable only via the bridge's own role",
   "admin_bridge_audit": "GSAM↔website bridge request audit log; no anon/authenticated/service_role grant, reachable only via the bridge's own role",

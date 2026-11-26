@@ -53,11 +53,15 @@ after(async () => {
   }
 });
 
+// Each call comes from its own client address, so Better Auth's built-in limit (3 sign-ins per 10s per
+// client) does not trip on a test that signs in several times in a row.
+let ipSeq = 0;
 async function call(path, body, headers = {}) {
+  const ip = `198.51.100.${++ipSeq}`;
   const handler = makeAuthHandler(() => createAuthRequest(auditedPool, async (to, subject, url) => { mail.push({ to, subject, url }); }));
   return handler(new Request(`${origin}/api/auth/${path}`, {
       method: body ? 'POST' : 'GET',
-      headers: { 'content-type': 'application/json', origin, ...headers },
+      headers: { 'content-type': 'application/json', origin, 'x-nf-client-connection-ip': ip, ...headers },
       body: body ? JSON.stringify(body) : undefined,
     }));
 }

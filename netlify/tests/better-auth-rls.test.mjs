@@ -8,7 +8,7 @@ import { validateImport, importUsers } from '../database/migrations/052_better_a
 let db;
 let pool;
 const uid = 'c0ffee00-0000-4000-8000-000000000048';
-const tables = ['user', 'account', 'session', 'verification'];
+const tables = ['user', 'account', 'session', 'verification', 'twoFactor', 'rateLimit'];
 
 function sql(text) {
   const result = db.psql(text);
@@ -26,14 +26,16 @@ after(async () => { await pool?.end(); db?.stop(); });
 
 test('private schema has FORCE RLS and no new public tables', { skip }, () => {
   assert.equal(sql(`SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE n.nspname='better_auth' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity`), '4');
+    WHERE n.nspname='better_auth' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity`), String(tables.length));
+  assert.equal(sql(`SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='better_auth' AND c.relkind='r'`), String(tables.length), 'every Better Auth table is listed here');
   assert.equal(sql(`SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname='public' AND c.relname IN ('user','account','session','verification') AND c.relkind='r'`), '0');
   assert.equal(sql(`SELECT rolcanlogin || ':' || rolbypassrls FROM pg_roles WHERE rolname='auth_server'`), 'false:false');
 });
 
-test('anon and authenticated cannot read any Better Auth table', { skip }, () => {
-  for (const role of ['anon', 'authenticated']) for (const table of tables) {
+test('anon, authenticated and service_role cannot read any Better Auth table', { skip }, () => {
+  for (const role of ['anon', 'authenticated', 'service_role']) for (const table of tables) {
     const result = db.psql(`BEGIN; SET LOCAL ROLE ${role}; SELECT count(*) FROM better_auth."${table}"; COMMIT;`);
     assert.notEqual(result.status, 0, `${role} read ${table}`);
     assert.match(result.stderr, /permission denied/);
@@ -59,7 +61,14 @@ test('auth_server can write sign-in, session and reset rows; user ids sync', { s
   await client.query(`INSERT INTO "verification" ("id","identifier","value","expiresAt")
     VALUES ('verification-48','reset','secret',now() + interval '1 hour')`);
   await client.query(`DELETE FROM "verification" WHERE "id"='verification-48'`);
+  await client.query(`INSERT INTO "twoFactor" ("id","secret","backupCodes","userId") VALUES ('two-factor-48','enc','[]',$1)`, [uid]);
+  await client.query(`UPDATE "user" SET "twoFactorEnabled"=true WHERE "id"=$1`, [uid]);
+  await client.query(`INSERT INTO "rateLimit" ("id","key","count","lastRequest") VALUES ('rate-48','203.0.113.1|/two-factor/verify-totp',1,0)`);
+  await client.query(`DELETE FROM "rateLimit" WHERE "id"='rate-48'`);
   await auth.finish();
+  assert.equal(sql(`SELECT count(*) FROM better_auth."twoFactor" WHERE "userId"='${uid}'`), '1');
+  const second = db.psql(`INSERT INTO better_auth."twoFactor" ("id","secret","backupCodes","userId") VALUES ('two-factor-48b','enc','[]','${uid}')`);
+  assert.notEqual(second.status, 0, 'one two-factor row per user');
   assert.equal(sql(`SELECT id FROM auth.users WHERE id='${uid}'`), uid);
   assert.equal(sql(`SELECT count(*) FROM better_auth."session" WHERE "userId"='${uid}'`), '1');
   const bad = db.psql(`INSERT INTO better_auth."user" ("id","name","email") VALUES ('not-a-uuid','Bad','bad-48@example.test')`);

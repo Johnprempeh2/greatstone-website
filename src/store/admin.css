@@ -735,3 +735,24 @@
 .lk-activate summary::before{content:'▸ ';color:var(--gs-accent,#c8ff00)}
 .lk-activate[open] summary::before{content:'▾ '}
 .lk-activate-body{margin-top:8px;font-size:.86rem;line-height:1.6;color:var(--gs-text-muted,#b0b0b0);white-space:pre-wrap}
+
+/* Two-factor sign-in card + sign-in code step (GRE-6335) */
+.tf-card { margin-top:16px; }
+.tf-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.tf-state { font-size:.7rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:.3em .75em; border-radius:100px; border:1px solid var(--gs-border-soft,rgba(255,255,255,.12)); color:var(--gs-text-faint); }
+.tf-state.is-on { color:var(--gs-teal,#4ecdc4); border-color:rgba(78,205,196,.4); background:rgba(78,205,196,.1); }
+.tf-step { display:flex; flex-direction:column; gap:14px; }
+.tf-step h3 { font-size:1rem; font-weight:800; color:var(--gs-text); }
+.tf-lead { font-size:.85rem; line-height:1.55; color:var(--gs-text-muted); margin:0; }
+.tf-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; }
+.tf-scan { display:flex; flex-wrap:wrap; align-items:flex-start; gap:16px 22px; }
+.tf-qr { width:192px; height:192px; flex:none; border-radius:8px; }
+.tf-key { flex:1 1 220px; min-width:0; }
+.tf-key summary { cursor:pointer; color:var(--gs-accent); font-size:.82rem; }
+.tf-key code { display:block; margin-top:8px; font-size:.95rem; letter-spacing:.06em; word-break:break-all; color:var(--gs-text); }
+input.tf-code { max-width:15em; font-size:1.05rem; letter-spacing:.16em; font-variant-numeric:tabular-nums; }
+.tf-codes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 24px; margin:0; padding:14px 18px 14px 40px; border:1px dashed var(--gs-border-soft,rgba(255,255,255,.16)); border-radius:10px; background:rgba(255,255,255,.03); color:var(--gs-text-faint); }
+.tf-codes code { font-size:.95rem; letter-spacing:.06em; color:var(--gs-text); }
+.pr-form label.tf-check { flex-direction:row; align-items:center; gap:8px; color:var(--gs-text); }
+.pr-form label.tf-check input { width:18px; height:18px; padding:0; }
+@media (max-width:520px){ .tf-codes { grid-template-columns:1fr; } .tf-qr { width:176px; height:176px; } }
