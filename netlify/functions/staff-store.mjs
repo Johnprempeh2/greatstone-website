@@ -2,13 +2,14 @@ import { userFromRequest, authIdentity } from './lib/better-auth.mjs';
 import { getPool } from './lib/db.mjs';
 import { asStaff, staffStore } from './lib/staff-store.mjs';
 import { sendReceiptsNow } from './portal-receipt-worker.mjs';
+import { orderFollowUp } from './lib/order-follow-up.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function makeStaffStoreHandler({ pool = getPool, query = staffStore, verify, log = console.error,
-  sendReceipts = sendReceiptsNow } = {}) {
+  sendReceipts = sendReceiptsNow, followUp = orderFollowUp({ log }) } = {}) {
   return async (req, context) => {
     if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
     let body;
@@ -25,6 +26,10 @@ export function makeStaffStoreHandler({ pool = getPool, query = staffStore, veri
       if (result.forbidden) return json({ error: 'Staff access required.' }, 403);
       if (result.notFound) return json({ error: 'Record not found.' }, 404);
       if (body.kind === 'rpc' && body.name === 'portal_requeue_receipt') await sendReceipts(context);
+      // A staff convert issues the invoice at once, so the PO order is placed: its email and its Pipedrive deal
+      // (GRE-6336), after the commit. Staff are people, so this may email the client (John, 5 Nov).
+      if (body.kind === 'rpc' && body.name === 'convert_quote_to_order' && result.data?.order_id)
+        return json({ ...result, followUp: await followUp.poPlaced(db, result.data.order_id) });
       return json(result);
     } catch (error) {
       if (error instanceof RangeError || ['22P02', '23514'].includes(error?.code)) return json({ error: 'Invalid staff request.' }, 400);

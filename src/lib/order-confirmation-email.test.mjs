@@ -42,3 +42,30 @@ test('order confirmation: house style — no em dashes; product name escaped', (
   assert.ok(!html.includes('<i>x</i>'));
   assert.match(html, /&lt;i&gt;x&lt;\/i&gt;/);
 });
+
+test('order confirmation (GRE-6336): a card order welcomes the buyer in both parts, with items, next steps and timeframe', () => {
+  const { html, text } = buildOrderConfirmationEmail({ customerName: 'Jane', reference: 'cs_test_a1b2c3d4e5f6g7h8',
+    items: [{ offering_name: 'Aspose.Total', variant_name: 'Developer', qty: 1, line_total_minor: 100 }], subtotalMinor: 100, totalMinor: 120 });
+  for (const part of [html, text]) {
+    assert.match(part, /Welcome to Greatstone/);
+    assert.match(part, /Aspose\.Total · Developer/);
+    assert.match(part, /What happens next/);
+    assert.match(part, /within one business day/);
+  }
+});
+
+test('order confirmation (GRE-6336): a PO order names its invoice and PO and says when the invoice comes', () => {
+  const { subject, html, text } = buildOrderConfirmationEmail({ kind: 'po', customerName: 'Jane', reference: 'Q-1001-ORD',
+    invoiceNumber: 'INV-0042', poReference: 'PO-77', items: [{ offering_name: 'Aspose.Total', qty: 3, line_total_minor: 30000 }],
+    subtotalMinor: 30000, totalMinor: 36000, currency: 'GBP' });
+  assert.equal(subject, 'Your Greatstone purchase order INV-0042');
+  for (const part of [html, text]) {
+    assert.match(part, /Thank you, we have your purchase order/);
+    assert.match(part, /Welcome to Greatstone/);
+    assert.match(part, /invoice INV-0042, your PO PO-77/);
+    assert.match(part, /We send your invoice INV-0042 to this address within one business day/);
+    assert.match(part, /Aspose\.Total ×3/);
+    assert.ok(!part.includes('pay by purchase order next time'));
+    assert.ok(!part.includes('—'));
+  }
+});

@@ -47,7 +47,7 @@ export function dealNote({ lead, contact, studioUrl } = {}) {
   ].join('');
 }
 
-async function call(cfg, fetchImpl, method, path, body) {
+export async function call(cfg, fetchImpl, method, path, body) {
   const res = await fetchImpl(cfg.base + path, {
     method,
     headers: { 'x-api-token': cfg.token, 'content-type': 'application/json', accept: 'application/json' },
@@ -59,8 +59,8 @@ async function call(cfg, fetchImpl, method, path, body) {
   return data.data;
 }
 
-// Dedupe by email (CRM plan): the first exact match, else a new Person.
-async function upsertPerson(cfg, fetchImpl, contact) {
+// Dedupe by email (CRM plan): the first exact match, else a new Person (in the organisation, when given).
+export async function upsertPerson(cfg, fetchImpl, contact, orgId = null) {
   const q = `/persons/search?term=${encodeURIComponent(contact.contact_email)}&fields=email&exact_match=true&limit=1`;
   const found = await call(cfg, fetchImpl, 'GET', q);
   const hit = found && Array.isArray(found.items) && found.items[0] && found.items[0].item;
@@ -68,6 +68,7 @@ async function upsertPerson(cfg, fetchImpl, contact) {
   const made = await call(cfg, fetchImpl, 'POST', '/persons', {
     name: contact.contact_name,
     email: [{ value: contact.contact_email, primary: true, label: 'work' }],
+    ...(orgId ? { org_id: orgId } : {}),
   });
   return { id: Number(made.id), created: true };
 }

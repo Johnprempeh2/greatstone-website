@@ -106,6 +106,7 @@ let db;
 let pool;
 let handler;
 const logs = [];
+const placed = []; // PO orders whose email and Pipedrive deal followed an issue (GRE-6336)
 
 before(async () => {
   if (skip) return;
@@ -140,7 +141,8 @@ before(async () => {
     ('${CUSTOMER}', '${ORG}', 'billing-a', 'Billing A'),
     ('${OTHER_CUSTOMER}', '${OTHER}', 'billing-b', 'Billing B');`);
   pool = new pg.Pool({ connectionString: db.url, max: 4 });
-  handler = makeAdminBridgeHandler({ pool: () => pool, keys: KEYS, allowedIps: new Set(), log: (m) => logs.push(m), stripe: () => 'test' });
+  handler = makeAdminBridgeHandler({ pool: () => pool, keys: KEYS, allowedIps: new Set(), log: (m) => logs.push(m), stripe: () => 'test',
+    followUp: { poPlaced: async (_db, id) => { placed.push(id); return { email: 'sent', crm: 'synced' }; } } });
 });
 
 after(async () => { await pool?.end(); db?.stop(); });
@@ -364,6 +366,9 @@ test('quote to invoice: an agent converts and edits the draft, a person issues i
   const issued = await call(write(`/api/admin/v1/invoices/${order}/issue`, { expectedRowVersion: 2 }, { actor: JOHN }));
   assert.equal(issued.body.item.status, 'confirmed');
   assert.match(issued.body.item.invoice_number, /^INV-\d{4}-\d{5}$/);
+  // only the issue that committed places the order; the refused and stale calls did not (GRE-6336)
+  assert.deepEqual(issued.body.followUp, { email: 'sent', crm: 'synced' });
+  assert.deepEqual(placed, [order]);
 });
 
 test('an import: an agent makes the dry run, a person applies it', { skip }, async () => {

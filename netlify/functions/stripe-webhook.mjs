@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getPool } from './lib/db.mjs';
 import { buildOrderConfirmationEmail } from '../../src/lib/order-confirmation-email.mjs';
+import { orderFollowUp } from './lib/order-follow-up.mjs';
 
 const HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
@@ -105,7 +106,7 @@ async function recordOrder(pool, session, key, fetchImpl) {
         item.variant.name, item.qty, item.unit, item.amount, currency]);
     }
     return { reference: session.id, email: metadata.customer_email || session.customer_details?.email || session.customer_email || null,
-      currency, subtotal, total, items: items.map((item) => ({ offering_name: item.variant.offering_name,
+      name: session.customer_details?.name || null, currency, subtotal, total, items: items.map((item) => ({ offering_name: item.variant.offering_name,
         variant_name: item.variant.name, qty: item.qty, line_total_minor: item.amount })) };
   });
 }
@@ -122,17 +123,18 @@ async function recordRefund(pool, charge) {
 
 async function sendOrderEmail(order, env, fetchImpl) {
   if (!order?.email || !env.RESEND_API_KEY) return;
-  const message = buildOrderConfirmationEmail({ reference: order.reference, items: order.items,
+  const message = buildOrderConfirmationEmail({ reference: order.reference, customerName: order.name, items: order.items,
     subtotalMinor: order.subtotal, totalMinor: order.total, currency: order.currency, siteOrigin: env.APP_SITE_ORIGIN });
   const response = await fetchImpl('https://api.resend.com/emails', {
     method: 'POST', headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
-    body: JSON.stringify({ from: env.RESEND_FROM, to: order.email, ...message }),
+    body: JSON.stringify({ from: env.RESEND_FROM, to: order.email, ...(env.RESEND_REPLY_TO ? { reply_to: env.RESEND_REPLY_TO } : {}), ...message }),
   });
   if (!response.ok) throw new Error('Resend ' + response.status);
 }
 
 export function makeStripeWebhookHandler({ env = process.env, pool = getPool, fetchImpl = fetch,
-  now = () => Math.floor(Date.now() / 1000), log = console.error } = {}) {
+  now = () => Math.floor(Date.now() / 1000), log = console.error, followUp } = {}) {
+  const { crm } = followUp || orderFollowUp({ env, fetchImpl, log });
   return async (req) => {
     if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
     if (!env.STRIPE_WEBHOOK_SECRET || !env.STRIPE_SECRET_KEY?.startsWith('sk_test_'))
@@ -146,6 +148,9 @@ export function makeStripeWebhookHandler({ env = process.env, pool = getPool, fe
       if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type)) {
         const order = await recordOrder(db, event.data.object, env.STRIPE_SECRET_KEY, fetchImpl);
         try { await sendOrderEmail(order, env, fetchImpl); } catch (error) { log('stripe-webhook: order email failed (' + error.name + ')'); }
+        // Every paid delivery asks; the order's claim (077) keeps it to one deal, and a failed push releases the claim
+        // so a repeated delivery tries again. Never fails the webhook.
+        if (order !== false) await crm(db, { reference: event.data.object.id });
       } else if (event.type === 'charge.refunded') await recordRefund(db, event.data.object);
       return json({ received: true });
     } catch (error) {

@@ -28,6 +28,7 @@ import { BridgeRequestError, RESOURCE_NAMES, asBridgeReader, bridgeAccess, bridg
 import { buildAgentPackage, packageFolder } from './lib/shared/front-door-package.mjs';
 import { zipFiles } from '../../src/lib/package-zip.mjs';
 import { WRITE_STATUS, asBridgeWriter, licenceMailer, runRoute, writeRoute } from './lib/admin-bridge-write.mjs';
+import { orderFollowUp } from './lib/order-follow-up.mjs';
 import { validateSnapshot } from './lib/deep-dive-client.mjs';
 import { interviewReadRoute, interviewWriteRoute } from './lib/interview/bridge.mjs';
 import { interviewMailer, startSynthesisRun } from './lib/interview/side-effects.mjs';
@@ -110,6 +111,7 @@ export function makeAdminBridgeHandler({
   mail = interviewMailer(),
   startSynthesis = startSynthesisRun,
   licenceMail = licenceMailer(),
+  followUp = orderFollowUp({ log }),
   blobStore = (name) => getStore(name),
 } = {}) {
   return async (req) => {
@@ -166,7 +168,8 @@ export function makeAdminBridgeHandler({
         const report = {};
         for (const effect of target.after || []) {
           try {
-            const r = await effect(mail, (job) => startSynthesis({ ...job, origin: url.origin }), { licenceMail });
+            const r = await effect(mail, (job) => startSynthesis({ ...job, origin: url.origin }),
+              { licenceMail, orderPlaced: (orderId) => followUp.poPlaced(db, orderId) });
             if (r && typeof r === 'object') Object.assign(report, r);
           } catch (error) { log(`admin-bridge: after-commit step failed (${error?.code || error?.name || 'error'})`); }
         }

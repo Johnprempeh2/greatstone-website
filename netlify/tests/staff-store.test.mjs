@@ -172,3 +172,18 @@ test('staff portal documents save jsonb arrays as JSON, not Postgres array liter
     assert.deepEqual(job.data, { diff_summary: { created: 0, updated: 0 }, error_summary: [] });
   } finally { await pool?.end(); db.stop(); }
 });
+
+test('a staff convert places the PO order: its email and deal follow, other calls do not (GRE-6336)', async () => {
+  const placed = [];
+  const answers = { convert_quote_to_order: { data: { order_id: 'f6990000-0000-4000-8000-000000000001', invoice_number: 'INV-1' } } };
+  // asStaff runs its BEGIN/COMMIT on this client; `query` answers the staff call itself
+  const fakePool = { connect: async () => ({ query: async () => ({ rows: [] }), release() {} }) };
+  const h = makeStaffStoreHandler({ pool: () => fakePool, verify: async () => WHO,
+    query: async (_client, body) => answers[body.name] || { data: [] },
+    followUp: { poPlaced: async (_db, id) => { placed.push(id); return { email: 'sent', crm: 'synced' }; } } });
+  const converted = await (await h(request({ kind: 'rpc', name: 'convert_quote_to_order', args: { p_quote_id: 'x' } }))).json();
+  assert.deepEqual(converted.followUp, { email: 'sent', crm: 'synced' });
+  assert.deepEqual(placed, ['f6990000-0000-4000-8000-000000000001']);
+  await h(request({ kind: 'rpc', name: 'import_skus', args: {} }));
+  assert.equal(placed.length, 1);
+});

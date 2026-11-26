@@ -65,3 +65,63 @@ test('a paid session writes the order, its items and the enquiry reference once'
   const message = owner(`SELECT message FROM service_inquiries WHERE contact_email = 'mixed@example.test';`);
   assert.equal(message.split(`Paid order reference: ${SESSION}`).length - 1, 1, message);
 });
+
+// GRE-6336: a fake Pipedrive behind the same fetch as Stripe's line items, so the order's claim (077) is real SQL.
+function withPipedrive(stripeLines) {
+  const deals = [];
+  const fetchImpl = async (url, init = {}) => {
+    const u = new URL(url);
+    if (u.hostname === 'api.stripe.com') return new Response(JSON.stringify(stripeLines), { status: 200 });
+    const key = (init.method || 'GET') + ' ' + u.pathname.replace(/^\/v1/, '');
+    const body = init.body ? JSON.parse(init.body) : null;
+    if (key === 'POST /deals') deals.push(body);
+    const data = key.endsWith('/search') ? { items: [] } : { id: key === 'POST /deals' ? 900 + deals.length : 10 };
+    return new Response(JSON.stringify({ success: true, data }), { status: 200 });
+  };
+  return { deals, fetchImpl };
+}
+
+test('a paid card order opens one Pipedrive deal, however often Stripe delivers it (GRE-6336)', { skip }, async () => {
+  const session = 'cs_test_gre6336card';
+  const payload = JSON.stringify({ id: 'evt_test_6336', livemode: false, type: 'checkout.session.completed',
+    data: { object: { id: session, payment_status: 'paid', currency: 'gbp', amount_total: 17280, payment_intent: 'pi_test_gre6336',
+      customer_details: { email: 'card@example.test', name: 'Card Buyer' } } } });
+  const crm = withPipedrive({ data: [{ quantity: 2, amount_subtotal: 14400, price: { unit_amount: 7200,
+    product: { metadata: { variant_id: VARIANT } } } }], has_more: false });
+  const errors = [];
+  const handler = makeStripeWebhookHandler({ env: { STRIPE_WEBHOOK_SECRET: secret, STRIPE_SECRET_KEY: 'sk_test_fixture',
+    PIPEDRIVE_API_TOKEN: 'pd-test' }, now: () => at, pool: () => pool, log: (line) => errors.push(line), fetchImpl: crm.fetchImpl });
+  const deliver = () => handler(new Request('https://example.test/api/stripe-webhook', {
+    method: 'POST', headers: { 'stripe-signature': sign(payload) }, body: payload }));
+  assert.equal((await deliver()).status, 200, errors.join('\n'));
+  assert.equal((await deliver()).status, 200, errors.join('\n'));
+  assert.equal(crm.deals.length, 1, errors.join('\n'));
+  assert.equal(crm.deals[0].value, 144);
+  assert.equal(crm.deals[0].currency, 'GBP');
+  assert.match(crm.deals[0].title, /^Shop order gre6336card/);
+  assert.equal(owner(`SELECT (pipedrive_synced_at IS NOT NULL) || ' ' || pipedrive_deal_id FROM orders WHERE reference = '${session}';`), 'true 901');
+});
+
+test('a PO order (quote converted, invoice issued) sends its email and opens one deal (GRE-6336)', { skip }, async () => {
+  const { orderFollowUp } = await import('../functions/lib/order-follow-up.mjs');
+  const quote = 'f6990000-0000-4000-8000-000000006336';
+  owner(`INSERT INTO quotes (id, org_id, reference, contact_name, contact_email, contact_company, po_reference, currency)
+      VALUES ('${quote}', '${ORG}', 'Q-6336', 'Pat Buyer', 'po@example.test', 'PO Buyers Ltd', 'PO-6336', 'GBP');
+    INSERT INTO quote_items (org_id, quote_id, offering_id, variant_id, offering_name, variant_name, qty, captured_price_minor)
+      VALUES ('${ORG}', '${quote}', '${OFFERING}', '${VARIANT}', 'Test tool', 'Test edition', 3, 10000);`);
+  const orderId = owner(`SELECT _convert_quote('${ORG}', '${quote}', true)->>'order_id';`);
+  const crm = withPipedrive({});
+  const sent = [];
+  const followUp = orderFollowUp({ env: { PIPEDRIVE_API_TOKEN: 'pd-test', RESEND_API_KEY: 're_test', RESEND_FROM: 'Greatstone <orders@example.test>',
+    RESEND_REPLY_TO: 'sales@example.test' }, fetchImpl: crm.fetchImpl, send: async (m) => { sent.push(m); return { sent: true }; } });
+  assert.deepEqual(await followUp.poPlaced(pool, orderId), { email: 'sent', crm: 'synced' });
+  assert.deepEqual((await followUp.crm(pool, { id: orderId })).reason, 'already synced');
+  assert.equal(crm.deals.length, 1);
+  assert.equal(crm.deals[0].value, 300);
+  assert.match(crm.deals[0].title, /^PO order INV-\S+: PO Buyers Ltd$/);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, 'po@example.test');
+  assert.equal(sent[0].replyTo, 'sales@example.test');
+  assert.match(sent[0].subject, /^Your Greatstone purchase order INV-/);
+  assert.match(sent[0].text, /Hi Pat Buyer,[\s\S]*Welcome to Greatstone[\s\S]*your PO PO-6336[\s\S]*Test tool · Test edition ×3/);
+});
