@@ -71,6 +71,8 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   const served = [site];
   const restores = [];
   const failing = new Set();
+  // The functions the new deploy lists (GRE-6350): Next's server handler unless a test drops it.
+  const functions = [{ n: '___netlify-server-handler' }, { n: 'catalogue' }];
   // Public site deploys a Roll back can name (GET /sites/<id>/deploys/<id>).
   const publicDeploys = new Map([['aaaaaaaaaaaaaaaaaaaaaaaa', { state: 'ready', context: 'production' }]]);
   // Staging as the pre-Deploy gate sees it (GRE-4707): the pages it answers, the release it serves, its shop.
@@ -91,6 +93,10 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
       res.statusCode = staging.failing.get(path) || 200;
       if (path === '/_release') res.setHeader('x-gsam-release', staging.release);
       res.end(path === '/shop' ? shopPage(staging.emptyShop) : '{}');
+      return;
+    }
+    if (/^\/api\/v1\/deploys\/[^/]+$/.test(req.url)) {
+      res.end(JSON.stringify({ available_functions: functions }));
       return;
     }
     const restore = /^\/api\/v1\/sites\/[^/]+\/deploys\/([^/]+)\/restore$/.exec(req.url);
@@ -147,7 +153,7 @@ if (process.env.ALIAS_FAIL === '1') process.exitCode = 1;
   return { cwd, base, env, log, commit, run, ticket, publicDeploys,
     setComments: (value) => { comments = value; }, setInteractions: (value) => { interactions = value; },
     setDeploys: (value) => { deploys = value; }, servePublicSite: () => { served.push('greatstone-home'); },
-    serve: (name) => { served.push(name); }, restores, failing, staging };
+    serve: (name) => { served.push(name); }, restores, failing, staging, functions };
 }
 
 function stagingCard(sha, changes = {}, cardSite = site) {
@@ -870,8 +876,33 @@ test('staging uploads the Next copy of main to the staging site with no card, an
   const result = await f.run('staging', 'gre3833-next-db-staging');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await readFile(f.log, 'utf8'),
-    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod\n`);
+    `deploy --site 6689e558-855b-40b1-be45-c530531fed45 --message gsam-source:staging:${f.base} --prod --json\n`);
   assert.match(await readFile(f.env.TOML_LOG, 'utf8'), /NEXT_CATALOGUE_API/);
+  assert.match(result.stdout, /Published draft-1: ___netlify-server-handler present \(2 functions\), \/ answered 200/);
+  assert.deepEqual(f.restores, []);
+});
+
+// GRE-6350: on 26 Nov two staging uploads published without Next's server handler, every page 404, and still passed.
+test('a staging upload without the Next server handler puts the earlier staging deploy back and fails', async (t) => {
+  const f = await fixture(t);
+  f.serve('gre3833-next-db-staging');
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.functions.splice(0, 1);
+  const result = await f.run('staging', 'gre3833-next-db-staging');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /___netlify-server-handler missing \(1 functions\) after publishing draft-1 to gre3833-next-db-staging; restored live-before/);
+  assert.deepEqual(f.restores, ['live-before']);
+});
+
+test('a staging upload whose home page does not answer 200 puts the earlier staging deploy back and fails', async (t) => {
+  const f = await fixture(t);
+  f.serve('gre3833-next-db-staging');
+  git(f.cwd, 'checkout', '-q', 'main');
+  f.failing.add('/');
+  const result = await f.run('staging', 'gre3833-next-db-staging');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /\/ answered 500 after publishing draft-1 to gre3833-next-db-staging; restored live-before/);
+  assert.deepEqual(f.restores, ['live-before']);
 });
 
 test('staging refuses a branch that is not main, and any other site', async (t) => {

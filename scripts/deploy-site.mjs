@@ -245,6 +245,25 @@ async function checkLive({ deploy_id: deployId, deploy_url: deployUrl }, before,
   console.log(`Published ${deployId}: ${pages.length} pages and ${API_CHECKS.length} APIs answered 200`);
 }
 
+// The staging check (GRE-6350). On 26 Nov two staging uploads of ad0a4f8 published with 42 functions and no Next
+// server handler, so every page answered 404, and the script still said success. After a staging upload the new
+// deploy must list the handler and staging's home must answer 200; if not, the deploy live before is put back.
+export const SERVER_HANDLER = '___netlify-server-handler';
+
+async function checkStaging({ deploy_id: deployId, deploy_url: deployUrl }, before) {
+  const live = process.env.NODE_ENV === 'test' ? deployUrl : `https://${site}.netlify.app`;
+  const failures = [];
+  const functions = (await netlifyApi(`/deploys/${deployId}`)).available_functions || [];
+  if (!functions.some((fn) => (fn.n || fn.name) === SERVER_HANDLER)) failures.push(`${SERVER_HANDLER} missing (${functions.length} functions)`);
+  const home = await status(`${live}/`);
+  if (home !== 200) failures.push(`/ answered ${home || 'no response'}`);
+  if (failures.length) {
+    if (before) await netlifyApi(`/sites/${sites.get(site)}/deploys/${before}/restore`, 'POST');
+    throw new Error(`${failures.join(', ')} after publishing ${deployId} to ${site}; ${before ? `restored ${before}` : 'no earlier deploy to restore'}`);
+  }
+  console.log(`Published ${deployId}: ${SERVER_HANDLER} present (${functions.length} functions), / answered 200`);
+}
+
 /** A page fetched with redirects followed (a 308 to a 200 passes), with its body. */
 async function page(url) {
   try {
@@ -461,7 +480,8 @@ async function lockAndDeploy(sha, cwd, content = null, samples = []) {
     releaseShared = await takeSharedLock(own);
     const args = ['deploy', '--site', sites.get(site), '--message', `gsam-source:${channel}:${channel === 'preview' ? `${prNumber}:` : ''}${sha}`];
     // The public site (and a rehearsal) is checked live straight after a production upload, and restored on failure.
-    const checked = (channel === 'prod' && site === 'greatstone-home') || mode === 'rehearse';
+    // A staging upload gets the lighter staging check (GRE-6350).
+    const checked = (channel === 'prod' && site === 'greatstone-home') || mode === 'rehearse' || mode === 'staging';
     // Staging's own production URL is the staging site, so it is a --prod upload to that site.
     if (channel === 'prod' || channel === 'staging') args.push('--prod');
     if (checked) args.push('--json');
@@ -483,7 +503,10 @@ async function lockAndDeploy(sha, cwd, content = null, samples = []) {
     child.stdout?.on('data', (part) => { out += part; });
     const code = await new Promise((resolve, reject) => { child.on('exit', resolve); child.on('error', reject); });
     if (code !== 0) throw new Error(`netlify deploy exited ${code}`);
-    if (checked) await checkLive(JSON.parse(out.slice(out.indexOf('{'))), before, samples);
+    if (checked) {
+      const result = JSON.parse(out.slice(out.indexOf('{')));
+      if (mode === 'staging') await checkStaging(result, before); else await checkLive(result, before, samples);
+    }
     promoted = true;
     if (JSON.parse(await readFile(file, 'utf8')).own !== own) throw new Error('newer run superseded this deploy');
   } finally {
