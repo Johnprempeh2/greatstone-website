@@ -7,11 +7,12 @@ const config = {
   reactStrictMode: true,
   async redirects() {
     // Common guesses at old addresses that the legacy list does not carry (cutover gap 3).
-    // /intel is the old alias for AI Market Intelligence (gap 1). /proof is not here: it is GSAM's Case Studies
-    // path, and the catch-all page sends it to /case-studies only when the release publishes that instead.
-    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/intel', '/ai-market-intelligence'], ['/sign-in', '/account'], ['/signin', '/account']]
+    // /intel is the old alias for AI Market Intelligence (gap 1). /proof is the old name of Case Studies (John, 25 Oct):
+    // it always moves to /case-studies, which serves the page even when the release publishes it as /proof
+    // (next-proof/case-studies-path.mjs).
+    const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/intel', '/ai-market-intelligence'], ['/sign-in', '/account'], ['/signin', '/account'], ['/proof', '/case-studies']]
       .map(([source, destination]) => ({ source, destination, permanent: true }));
-    // Hidden pages first, so a permanent legacy alias (/proof to /case-studies) never answers before them.
+    // Hidden pages first, so a permanent alias never answers before them.
     return [...hiddenRedirects(release.pages.map((page) => page.path)), ...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
   },
   // GRE-1831 live design renders pages in the browser, where the sanitiser uses the browser's own

@@ -1,5 +1,6 @@
 import { resolveMediaRefs } from '../next-proof/release-media.mjs';
 import { isHidden } from '../next-proof/hidden-routes.mjs';
+import { publicPath } from '../next-proof/case-studies-path.mjs';
 
 // The release navigation in the studio's tree shape, so the Next shell renders the studio Header as is.
 export function studioNavigation(release) {
@@ -36,7 +37,8 @@ export function siteChrome(release) {
   return {
     order: shown.map((page) => page.slug),
     pages: Object.fromEntries(shown.map((page) => [page.slug, { title: page.title, status: 'published', ...(LEGAL_SLUGS.includes(page.slug) ? { footerOnly: true } : {}) }])),
-    paths: Object.fromEntries(shown.map((page) => [page.slug, page.path])),
+    // Links use the public address: a page the release publishes as /proof is linked as /case-studies.
+    paths: Object.fromEntries(shown.map((page) => [page.slug, publicPath(page.path)])),
     navigation: withCodeTab(studioNavigation(release)),
     settings: { ...release.site.settings, logo: resolveMediaRefs(release.site.settings.logo, release.media) },
   };
