@@ -2,7 +2,7 @@ import { customerStore } from './customer-store-api.mjs';
 import * as auth from '../lib/better-auth-client.mjs';
 
 export const { getSession, onAuth, signOut, signOutAll, resetPassword, resendConfirmation, updatePassword,
-  startTwoFactor, confirmTwoFactor, disableTwoFactor, replaceRecoveryCodes } = auth;
+  startTwoFactor, confirmTwoFactor, disableTwoFactor, replaceRecoveryCodes, notifyAuthChange } = auth;
 
 export async function ensureAccount(companyName = null, fullName = null) {
   if (!await getSession()) return null;
@@ -42,6 +42,11 @@ export async function getCustomerProfile() {
   const { data, error } = await customerStore('profile');
   return error ? null : data;
 }
+
+// A reload that comes back empty for the same signed-in user (a session swap mid-flight, such as turning on
+// two-factor) keeps the customer profile we had, so the account page does not drop to "No customer account"
+// and unmount what is on screen (GRE-6351). A different user, or a first load, takes the new value.
+export const nextProfile = (previous, loaded, sameUser) => (loaded == null && sameUser && isCustomer(previous) ? previous : loaded);
 
 export const isCustomer = (profile) => !!profile?.customer;
 export const isCompanyAdmin = (profile) => !!profile && (profile.is_primary === true || profile.role === 'admin');

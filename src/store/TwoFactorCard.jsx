@@ -3,7 +3,7 @@
 // (Better Auth two-factor plugin, netlify/functions/lib/two-factor.mjs) checks every step.
 import React, { useMemo, useState } from 'react';
 import PasswordInput from './PasswordInput.jsx';
-import { startTwoFactor, confirmTwoFactor, disableTwoFactor, replaceRecoveryCodes } from './customerAuth.mjs';
+import { startTwoFactor, confirmTwoFactor, disableTwoFactor, replaceRecoveryCodes, notifyAuthChange } from './customerAuth.mjs';
 import { qrSvgPath } from '../lib/qr.mjs';
 import { twoFactorError, setupKey } from './two-factor-ui.mjs';
 
@@ -96,7 +96,7 @@ export default function TwoFactorCard({ enabled, flash }) {
         <span className={'tf-state' + (enabled ? ' is-on' : '')}>{enabled ? 'On' : 'Off'}</span>
       </div>
 
-      {step === 'codes' && codes ? <RecoveryCodes codes={codes.list} onDone={() => { flash?.(codes.done); setCodes(null); reset(); }} />
+      {step === 'codes' && codes ? <RecoveryCodes codes={codes.list} onDone={() => { flash?.(codes.done); setCodes(null); reset(); notifyAuthChange(); }} />
         : step === 'password' ? (
           <form className="tf-step" onSubmit={begin}>
             <p className="ca-note tf-lead">Enter your password to start. You need an authenticator app on your phone, such as Google Authenticator, Microsoft Authenticator or 1Password.</p>
