@@ -136,7 +136,8 @@ test('tools carousel scrolls to a card and follows trackpad position', async () 
   }
 });
 
-test('placeholder case studies stay hidden without the review flag', async () => {
+// GRE-6331 (John, 26 Nov): placeholders show to visitors, badged, until verified cases exist; showPlaceholders turns them off.
+test('placeholder case studies show, marked, until verified cases exist; showPlaceholders false hides them', async () => {
   const dom = new Window({ url: 'http://localhost/' });
   const previous = { window: globalThis.window, document: globalThis.document, navigator: globalThis.navigator, act: globalThis.IS_REACT_ACT_ENVIRONMENT };
   globalThis.window = dom;
@@ -149,10 +150,16 @@ test('placeholder case studies stay hidden without the review flag', async () =>
     const { TwoDoorsProof } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
     const root = createRoot(document.body.appendChild(document.createElement('div')));
     try {
-      await act(async () => root.render(React.createElement(TwoDoorsProof, {
+      const props = {
         proofKicker: 'Case studies', proofHeading: 'Work we will show here', draftBadge: 'PLACEHOLDER',
         draftCaseLine: 'No result is claimed here.', draftItems: [{ headline: 'Case study placeholder 01' }, { headline: 'Case study placeholder 02' }],
-      })));
+      };
+      await act(async () => root.render(React.createElement(TwoDoorsProof, props)));
+      assert.equal(document.querySelectorAll('.td-case-draft').length, 2);
+      assert.equal(document.querySelectorAll('.td-draft-badge')[0].textContent, 'PLACEHOLDER');
+      assert.equal(document.querySelectorAll('.td-proof-pending').length, 0);
+      assert.equal(document.querySelectorAll('.td-carousel [aria-roledescription="slide"]').length, 2);
+      await act(async () => root.render(React.createElement(TwoDoorsProof, { ...props, showPlaceholders: false })));
       assert.equal(document.querySelectorAll('.td-case-draft').length, 0);
       assert.equal(document.querySelectorAll('.td-proof-pending').length, 1);
       assert.equal(document.querySelectorAll('.td-carousel').length, 0);
