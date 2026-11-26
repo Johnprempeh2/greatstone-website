@@ -44,11 +44,9 @@ export async function verifySignInCode(code, { recovery = false } = {}) {
 // Account page: turn on (returns the otpauth:// link and the recovery codes), confirm with a first code,
 // turn off with the password and a fresh code, or replace the recovery codes.
 export const startTwoFactor = (password) => authClient.twoFactor.enable({ password });
-export async function confirmTwoFactor(code) {
-  const result = await authClient.twoFactor.verifyTotp({ code: String(code || '').replace(/\s/g, '') });
-  if (!result.error) notifyAuthChange();
-  return result;
-}
+// No notifyAuthChange() here: Better Auth swaps the session on first enable, and reloading the account then can
+// drop the recovery codes screen (GRE-6351). The card notifies when the codes screen's Done is pressed.
+export const confirmTwoFactor = (code) => authClient.twoFactor.verifyTotp({ code: String(code || '').replace(/\s/g, '') });
 export async function disableTwoFactor(password, code) {
   const compact = String(code || '').replace(/\s/g, '');
   const result = await authClient.twoFactor.disable({ password, code: /^\d{6}$/.test(compact) ? compact : String(code || '').trim() });
