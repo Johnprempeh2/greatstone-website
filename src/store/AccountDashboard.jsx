@@ -1,10 +1,10 @@
 // Customer self-serve portal (#account). Sign in / create account / reset, then a four-section
 // account: identity header + Profile / Security / Billing, and a collapsible, mobile-friendly order
 // history (customer_self RLS → only their own). One-click re-order. Mirrors CatalogueAdmin's gate idiom.
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { signIn, finishSignIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
+import { signIn, finishSignIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin, nextProfile } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
@@ -38,7 +38,16 @@ export default function AccountDashboard({ recovery = false, authError = null, v
     const { data } = onAuth(s => setSession(s || null));
     return () => data?.subscription?.unsubscribe?.();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (session) getCustomerProfile().then(setProfile); else setProfile(null); }, [session]);
+  const profileUser = useRef(null); // whose profile is in state, so a reload for the same user can keep it
+  useEffect(() => {
+    if (!session) { profileUser.current = null; setProfile(null); return; }
+    const userId = session.user?.id ?? null;
+    getCustomerProfile().then((loaded) => {
+      const sameUser = userId != null && profileUser.current === userId;
+      profileUser.current = userId;
+      setProfile((previous) => nextProfile(previous, loaded, sameUser));
+    });
+  }, [session]);
 
   if (session === undefined) return <div className="ca-wrap"><div className="ca-center">Checking…</div></div>;
   if (recovery || isResetMode()) return <SetNewPassword onDone={onRecoveryDone} />;
