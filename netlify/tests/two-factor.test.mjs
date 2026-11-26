@@ -237,10 +237,25 @@ test('code attempts are limited: 5 per sign-in challenge, 10 a minute per client
   for (let i = 0; i < 6; i += 1) statuses.push((await b.call('two-factor/verify-totp', { code: totp(uri) })).status);
   assert.equal(statuses.at(-1), 429, `limited after 10 calls in a minute: ${statuses}`);
   assert.ok((await pool.query('SELECT 1 FROM better_auth."rateLimit"')).rowCount > 0, 'limit is kept in the database');
-  // other auth paths are not limited by this change
+});
+
+test('built-in sign-in and sign-up limits stay on next to the 2FA rule', { skip }, async () => {
+  const user = await makeUser();
+  const b = browser();
   const signIns = [];
   for (let i = 0; i < 5; i += 1) signIns.push((await b.call('sign-in/email', { email: user.email, password: 'wrong' })).status);
-  assert.ok(!signIns.includes(429), `sign-in unchanged: ${signIns}`);
+  assert.deepEqual(signIns.slice(0, 3).map((s) => s === 429), [false, false, false], `first 3 tries are answered: ${signIns}`);
+  assert.equal(signIns.at(-1), 429, `wrong sign-ins are limited to 3 per 10s: ${signIns}`);
+  const right = await b.call('sign-in/email', { email: user.email, password: user.password });
+  assert.equal(right.status, 429, 'the limit holds for the right password too, so it cannot be used to test guesses');
+
+  const c = browser();
+  const signUps = [];
+  for (let i = 0; i < 4; i += 1) {
+    signUps.push((await c.call('sign-up/email', { email: `limit-${Date.now()}-${i}@example.test`, password: 'Correct-Horse-9', name: 'Limit' })).status);
+  }
+  assert.equal(signUps.at(-1), 429, `sign-ups are limited to 3 per 10s: ${signUps}`);
+  assert.equal((await browser().call('sign-in/email', { email: user.email, password: user.password })).status, 200, 'another client is not affected');
 });
 
 test('migration 078 rolls back and re-applies without touching other accounts', { skip }, async () => {
