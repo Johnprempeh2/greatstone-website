@@ -4,10 +4,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { customerStore } from './customer-store-api.mjs';
 import { fmtMoney } from '../lib/pricing.mjs';
-import { signIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
+import { signIn, finishSignIn, signUp, signOut, signOutAll, getSession, onAuth, resetPassword, resendConfirmation, updatePassword, getCustomerProfile, isCustomer, isCompanyAdmin } from './customerAuth.mjs';
 import { addItem } from './cart.mjs';
 import LicenceKeys from './LicenceKeys.jsx';
 import PasswordInput from './PasswordInput.jsx';
+import TwoFactorCard from './TwoFactorCard.jsx';
+import { twoFactorError, restartsSignIn } from './two-factor-ui.mjs';
 import { isExpiringSoon, daysUntil } from './licence-expiry.mjs';
 import { orderRefDisplay } from '../lib/order-ref.mjs';
 import { sinceLastVisit, firstNameOf } from './welcome-back.mjs';
@@ -65,6 +67,7 @@ export function AuthGate({ initialError = null, verified = false } = {}) {
   // A bad email-link landing (expired / already-used / scanner-consumed confirm or reset link) drops the
   // visitor here. Keep an offer to send a fresh confirmation link visible so it's a recoverable dead-end.
   const [linkFailed] = useState(!!initialError);
+  const [codeStep, setCodeStep] = useState(null); // 'app' | 'recovery' once the password is right and 2FA is on
 
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErr(null); setMsg(null);
@@ -74,6 +77,7 @@ export function AuthGate({ initialError = null, verified = false } = {}) {
     else res = await resetPassword(email);
     setBusy(false);
     if (res?.error) { setErr(res.error.message || 'Something went wrong.'); return; }
+    if (res?.twoFactor) { setPw(''); setCodeStep('app'); return; }
     if (mode === 'signup') setMsg(res?.data?.session ? null : 'Account created. Check your email to confirm, then sign in.');
     if (mode === 'forgot') setMsg('If that email has an account, a reset link is on its way.');
   };
@@ -86,6 +90,8 @@ export function AuthGate({ initialError = null, verified = false } = {}) {
     if (error) { setErr(error.message || 'Could not resend just now.'); return; }
     setMsg('A fresh confirmation link is on its way — check your email (and spam).');
   };
+
+  if (codeStep) return <SignInCode step={codeStep} onStep={setCodeStep} onRestart={(message) => { setCodeStep(null); setErr(message); }} />;
 
   return (
     <div className="ca-wrap"><div className="ca-signin">
@@ -138,6 +144,46 @@ export function AuthGate({ initialError = null, verified = false } = {}) {
         {mode === 'forgot'
           ? <button className="ca-link" onClick={() => { setMode('signin'); setErr(null); setMsg(null); }}>Back to sign in</button>
           : <button className="ca-link" onClick={() => { setMode('forgot'); setErr(null); setMsg(null); }}>Forgot your password?</button>}
+      </p>
+    </div></div>
+  );
+}
+
+// Second sign-in step when two-factor sign-in is on: a code from the authenticator app, or a recovery code.
+function SignInCode({ step, onStep, onRestart }) {
+  const [code, setCode] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const recovery = step === 'recovery';
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true); setErr(null);
+    const { error } = await finishSignIn(code, { recovery });
+    setBusy(false);
+    if (!error) return; // onAuth swaps this screen for the account
+    if (restartsSignIn(error)) { onRestart(twoFactorError(error)); return; }
+    setErr(twoFactorError(error));
+  };
+  const swap = () => { setCode(''); setErr(null); onStep(recovery ? 'app' : 'recovery'); };
+  return (
+    <div className="ca-wrap"><div className="ca-signin">
+      <span className="st-kicker">Two-factor sign-in</span>
+      <h1>{recovery ? 'Use a recovery code' : 'Enter your code'}</h1>
+      <p className="ca-sub">{recovery
+        ? 'Type one of the recovery codes you saved when you turned on two-factor sign-in. Each code works once.'
+        : 'Open your authenticator app and type the 6-digit code it shows for Greatstone.'}</p>
+      <form onSubmit={submit}>
+        <label htmlFor="ca-code">{recovery ? 'Recovery code' : 'Code from your app'}
+          <input id="ca-code" className="tf-code" value={code} onChange={e => { setCode(e.target.value); setErr(null); }} required autoFocus
+            inputMode={recovery ? 'text' : 'numeric'} autoComplete="one-time-code" autoCapitalize="characters" spellCheck={false}
+            maxLength={recovery ? 14 : 7} placeholder={recovery ? 'XXXXX-XXXXX' : '123456'}
+            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'ca-code-err' : undefined} />
+        </label>
+        {err && <div id="ca-code-err" className="ca-err" role="alert">{err}</div>}
+        <button className="gs-btn primary" type="submit" disabled={busy || !code.trim()}>{busy ? 'Checking…' : 'Sign in'}</button>
+      </form>
+      <p className="ca-note" style={{ marginTop: 12 }}>
+        <button className="ca-link" type="button" onClick={swap}>{recovery ? 'Use your authenticator app instead' : 'Lost your phone? Use a recovery code'}</button>
+      </p>
+      <p className="ca-note">
+        <button className="ca-link" type="button" onClick={() => onRestart(null)}>Back to sign in</button>
       </p>
     </div></div>
   );
@@ -549,6 +595,7 @@ function Dashboard({ session, profile, onProfile, verified = false }) {
         </div>
         <div role="tabpanel" tabIndex={-1} id="acct-panel-security" aria-labelledby="acct-tab-security" hidden={tab !== 'security'}>
           <SecurityCard email={profile?.email} lastSignIn={session.user?.last_sign_in_at} flash={flash} />
+          <TwoFactorCard enabled={session.user?.twoFactorEnabled === true} flash={flash} />
         </div>
         <div role="tabpanel" tabIndex={-1} id="acct-panel-billing" aria-labelledby="acct-tab-billing" hidden={tab !== 'billing'}>
           <div className="pr-form">
@@ -625,7 +672,7 @@ function SecurityCard({ email, lastSignIn, flash }) {
     <form className="pr-form" onSubmit={save}>
       <h2>Security</h2>
       {lastSignIn && <p className="ca-note" style={{ marginTop: -4 }}>Last signed in {fmtWhen(lastSignIn)}.</p>}
-      {/* honest security posture — only what's true today (password + TLS + sign-out-everywhere); no promised/fake 2FA */}
+      {/* honest security posture — only what's true today (password + TLS + sign-out-everywhere); two-factor sign-in has its own card below */}
       <p className="ca-trust">
         <svg className="ca-trust-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
         Your account is protected by your password over an encrypted connection. Use a strong, unique password, and sign out of all your devices below if you ever lose one.
@@ -636,10 +683,6 @@ function SecurityCard({ email, lastSignIn, flash }) {
       {err && <div className="ca-err" role="alert">{err}</div>}
       <button className="gs-btn primary" type="submit" disabled={busy || !pw}>{busy ? 'Updating…' : 'Update password'}</button>
       <div className="acct-seclist">
-        <div className="acct-secrow">
-          <div className="acct-secinfo"><b>Two-factor authentication</b><span>Add a second step at sign-in for extra protection.</span></div>
-          <a className="gs-btn ghost sm" href="#go/contact" aria-label="Ask us to enable two-factor authentication">Ask us to enable</a>
-        </div>
         <div className="acct-secrow">
           <div className="acct-secinfo"><b>Active sessions</b><span>Signed in as {email}. Use this if you've signed in on a shared or lost device.</span></div>
           <button type="button" className="gs-btn ghost sm" onClick={signOutEverywhere} disabled={signingOut} aria-label="Sign out everywhere — end all active sessions">{signingOut ? 'Signing out…' : 'Sign out everywhere'}</button>
