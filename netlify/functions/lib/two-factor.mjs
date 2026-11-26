@@ -77,13 +77,14 @@ export function twoFactorPlugin(secret, getAuth) {
   return { ...plugin, hooks: { ...plugin.hooks, before: [...(plugin.hooks?.before || []), ...twoFactorHooks(secret, getAuth)] } };
 }
 
-// The /two-factor/* endpoints are limited per client IP in the database, so the limit holds across function
-// instances. Every other auth path keeps its current behaviour (no limiter), so sign-in and sign-up are unchanged.
+// Limits are kept per client IP in the database, so they hold across function instances. The /two-factor/*
+// endpoints get their own rule; every other path keeps Better Auth's built-in limits (3 per 10s on sign-in,
+// sign-up, change-password and change-email; 100 per 10s elsewhere). Do not add a catch-all rule here: a
+// matching custom rule replaces the built-in one, and `false` turns limiting off for that path.
 export const rateLimit = {
   enabled: true,
   storage: 'database',
   customRules: {
     '/two-factor/*': { window: 60, max: 10 },
-    '/**': false,
   },
 };
