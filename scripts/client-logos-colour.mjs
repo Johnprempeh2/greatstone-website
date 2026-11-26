@@ -20,7 +20,8 @@ const marks = [
   ['phillips-66.svg', 'phillips-66', {}],
   ['03.png', 'lloyds-bank', { reverse: true }],
   ['civica.svg', 'civica', {}],
-  ['01.png', 'd', { white: true, reverse: true }],
+  // Deloitte wordmark: Wikimedia Commons "File:Logo of Deloitte.svg" (public domain). John, 6 Nov: "D." is Deloitte.
+  ['deloitte.svg', 'deloitte', { reverse: true }],
   ['shawbrook.svg', 'shawbrook', {}],
 ];
 
