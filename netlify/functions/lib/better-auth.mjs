@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { getPool } from './db.mjs';
 import { authServerPool } from './auth-server-pool.mjs';
 import { sendEmail } from './shared/front-door-leads.mjs';
+import { twoFactorPlugin, rateLimit } from './two-factor.mjs';
 
 async function sendAuthMail(to, subject, url) {
   const key = process.env.RESEND_API_KEY;
@@ -37,7 +38,11 @@ export function createAuthRequest(pool = getPool(), sendMail = sendAuthMail) {
     baseURL: allowedHosts.length ? { allowedHosts, fallback: baseURL, protocol: 'https' } : baseURL,
     secret,
     trustedOrigins: [baseURL],
-    advanced: { database: { generateId: () => randomUUID() } },
+    // Netlify sets x-nf-client-connection-ip itself, so a visitor cannot choose their own rate-limit bucket.
+    advanced: { database: { generateId: () => randomUUID() }, ipAddress: { ipAddressHeaders: ['x-nf-client-connection-ip'] } },
+    rateLimit,
+    // the two-factor hooks call back into this same request's instance
+    plugins: [twoFactorPlugin(secret, () => auth)],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
