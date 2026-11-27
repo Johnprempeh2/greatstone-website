@@ -1199,7 +1199,11 @@ test('a direct ticket puts main\'s commit and its own content release live, with
   assert.match(result.stdout, /not checked on staging/);
   assert.match(result.stdout, /Promoted Content release 5/);
   assert.match(await readFile(f.log, 'utf8'), new RegExp(`^deploy --site 3b1e97e6-e184-4251-badd-deed532be3ab --message gsam-source:prod:${f.base} --prod --json`));
-  assert.equal(JSON.parse(Buffer.from((await publicStore(f)).current, 'base64')).release, 5);
+  const promoted = JSON.parse(Buffer.from((await publicStore(f)).current, 'base64'));
+  assert.equal(promoted.release, 5);
+  // The pointer must pass the engine build's own check (it had no fence on 22 and 27 Nov).
+  const { validateCurrent } = await import('../next-proof/gsam-release.mjs');
+  assert.equal(validateCurrent(promoted), null);
   assert.equal((await stagingStore(f)).current, f.stagingCurrentBefore);
   // Single use, as any ticket.
   await rm(f.log);
