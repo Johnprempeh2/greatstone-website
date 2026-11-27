@@ -406,3 +406,206 @@ body.nav-locked { overflow:hidden; }
       A colour token keeps its contrast: 6.6:1 on the dark chip, 11:1 on lime. */
 :root .b-cat-chip .b-cat-chip-n { opacity:1; color:var(--gs-text-faint); }
 :root .b-cat-chip.is-on .b-cat-chip-n { opacity:1; color:#26330a; }
+
+/* ============================================================================
+   Desktop system (27 Nov 2026, pass 2). One type scale, one section rhythm, one card,
+   one set of states, on every public page from 641px up. Phones keep the crisp pass above.
+
+   The scale (sizes at 1440 wide):
+     page title   64px 800   --gs-t-title      sub-heading  32px 800   --gs-t-sub
+     section h2   44px 800   --gs-t-h2         card title   22px 800   --gs-t-card
+     lede         20px 400   --gs-t-lede       tile title   18px 800   --gs-t-tile
+     body         16px 400   --gs-t-body       small        15px       --gs-t-small
+     fine print   13px       --gs-t-fine       kicker       12px 800   --gs-t-kicker
+   The rhythm (three steps): --gs-space-section around a section, --gs-space-tight around
+   running prose, --gs-space-head from a section's heading to its content. Page tops share
+   --gs-space-top. Cards share --gs-gap-card, --gs-radius-card and --gs-line.
+
+   Every selector starts with :root for the same reason as the crisp pass: published pages
+   carry an older copy of the block styles later in the page, and these must outrank it.
+   The landing hero and the two doors are frozen: nothing here names .td-intro on the home
+   page, .td-doors or .td-door.
+============================================================================ */
+html:root {
+  --gs-t-title: clamp(2.5rem, 1rem + 3.4vw, 4rem);
+  --gs-t-h2: clamp(2rem, 1.1rem + 1.9vw, 2.75rem);
+  --gs-t-sub: clamp(1.5rem, 1rem + 1.12vw, 2rem);
+  --gs-t-card: 1.375rem;
+  --gs-t-tile: 1.125rem;
+  --gs-t-lede: clamp(1.125rem, .95rem + .45vw, 1.25rem);
+  --gs-t-body: 1rem;
+  --gs-t-small: .9375rem;
+  --gs-t-fine: .8125rem;
+  --gs-t-kicker: .75rem;
+  --gs-space-top: clamp(120px, 11vw, 160px);
+  --gs-space-section: clamp(56px, 6.6vw, 96px);
+  --gs-space-tight: clamp(40px, 4.4vw, 64px);
+  --gs-space-head: clamp(28px, 3.4vw, 48px);
+  --gs-gap-card: clamp(16px, 1.7vw, 24px);
+  --gs-radius-card: 20px;
+  --gs-radius-tile: 14px;
+  --gs-line: rgba(255,255,255,.11);
+  --gs-line-hover: rgba(200,255,0,.34);
+}
+
+@media (min-width:641px) {
+  /* ---- 1. Type ---- */
+  /* Page title. */
+  :root :is(.b-hero h1, .b-hero.v-statement h1, .b-hero.gs-rhythm:not(.v-statement) h1, .b-hero.v-consultancy h1,
+    .b-dx-method-intro h1, .b-transform-intro h1, .gsam-hero h1, .st-v15 .st-h1, .td-home.td-dev-page .td-intro h1) {
+    font-size:var(--gs-t-title); font-weight:800; line-height:1.04; letter-spacing:-.035em; text-shadow:none; text-wrap:balance;
+  }
+  /* A statement title runs to two sentences: a little more air between its lines. */
+  :root .b-hero.v-statement h1 { line-height:1.08; }
+
+  /* Section heading. */
+  :root :is(.b-panels .b-panels-h, .b-chapter .b-chapter-h, .b-features-head, .b-steps-head, .b-team-head, .b-cat-h2, .b-intel-h2,
+    .b-tiein-h2, .b-ladder .b-ladder-head, .b-faq-head .b-faq-h, .b-abs-head .b-abs-h, .b-acc-head .b-acc-h, .b-book .b-book-card-head,
+    .b-invite h2, .b-invite.gs-rhythm h2, .b-dx-method-close h2, .b-transform-close h2, .gsam-page h2, .st-v15 .sp-title,
+    .td-home :is(.td-story,.td-section,.td-public-clients) h2) {
+    font-size:var(--gs-t-h2); font-weight:800; line-height:1.08; letter-spacing:-.025em; text-wrap:balance;
+  }
+  :root:has(.td-home:not(.td-dev-page)) :is(.td-story,.td-section,.td-public-clients) h2 { font-size:var(--gs-t-h2); letter-spacing:-.025em; line-height:1.08; }
+
+  /* Sub-heading: a named part inside a section. A product page is a detail page beside a picture and a price,
+     so it steps down one level: its name takes the section size and its sections the sub-heading size. */
+  :root :is(.b-dx-method-title :is(h2,h3), .b-transform-card h2, .b-ind .b-ind-headline, .b-book h3.h3,
+    .td-close h2, .st-v15 .td-close h2, .st-v15 .sp-section h2) {
+    font-size:var(--gs-t-sub); font-weight:800; line-height:1.15; letter-spacing:-.02em; text-wrap:balance;
+  }
+  :root:has(.td-home:not(.td-dev-page)) .td-close h2 { font-size:var(--gs-t-sub); }
+  :root .st-v15 .sp-section h2 { margin-bottom:20px; }
+
+  /* Card title, and the smaller tile title for dense grids. */
+  :root :is(.b-panel .b-panel-h, .b-ind-card h3, .phase h3, .tier-card h3, .gsam-feature h3, .td-tool-card h3, .st-group > h2, .st-group-head h2) {
+    font-size:var(--gs-t-card); font-weight:800; line-height:1.2; letter-spacing:-.015em;
+  }
+  :root :is(.b-card h3, .b-cat-card .b-cat-name, .b-feat-principle h3, .b-step h3, .gsam-band h3, .b-faq-q .b-faq-qh, .b-faq-qh) {
+    font-size:var(--gs-t-tile); font-weight:800; line-height:1.25; letter-spacing:-.01em;
+  }
+
+  /* Lede: the paragraph that introduces a page or a section. */
+  :root :is(.b-hero .lede, .b-hero.v-statement .lede, .b-hero.v-consultancy .lede, .b-chapter-body, .b-chapter-coda, .b-panels-intro, .b-steps-body,
+    .b-features-intro, .b-team-body.lead, .b-ladder-body.lead, .b-tiein-lead.lead, .b-invite-body, .b-intel-body, .b-cat-intro, .b-abs-intro,
+    .b-acc-intro, .b-book-card-intro, .b-dx-method-intro p.muted, .b-transform-intro p.muted, .b-dx-method-close p, .b-transform-close p,
+    .gsam-lead, .st-v15 .st-lead, .st-v15 .sp-lead, .td-home.td-dev-page .td-lede, .td-home .td-story p) {
+    font-size:var(--gs-t-lede); line-height:1.6; text-shadow:none; text-wrap:pretty;
+  }
+  :root :is(.b-hero .lede, .b-panels-intro, .b-steps-body, .b-features-intro, .b-team-body.lead, .b-ladder-body.lead, .b-cat-intro, .b-abs-intro,
+    .b-acc-intro, .b-dx-method-intro p.muted, .b-transform-intro p.muted, .gsam-lead, .st-v15 .st-lead, .td-home.td-dev-page .td-lede) { max-width:60ch; }
+
+  /* Body, small and fine print. */
+  :root :is(.b-panel-body, .b-faq-a-inner p, .b-dx-method-steps p, .b-transform-card p, .b-transform-whole, .gsam-page p:not(.gsam-kicker,.gsam-lead),
+    .st-v15 .sp-prose, .b-book-aside-body, .td-home .td-section > p:not(.td-kicker), .td-tool-card p) {
+    font-size:var(--gs-t-body); line-height:1.7; text-wrap:pretty;
+  }
+  :root :is(.b-faq-a-inner p, .b-dx-method-steps p, .gsam-reading, .st-v15 .sp-prose, .b-transform-whole) { max-width:68ch; }
+  :root :is(.b-card p, .b-feat-principle p, .b-step p, .b-cat-one, .phase p, .tier-card p, .b-ind-foot, .b-acc-gate-b, .b-cat-foot p) {
+    font-size:var(--gs-t-small); line-height:1.55; text-wrap:pretty;
+  }
+  :root :is(.b-abs-fine, .b-acc-foot, .b-acc-notice, .b-book-consent, .st-v15 .sp-note) { font-size:var(--gs-t-fine); line-height:1.5; }
+
+  /* ---- 2. Rhythm ---- */
+  /* Page top: the first words of every page start at the same height under the header. */
+  :root .b-hero:is(.size-standard,.size-compact,.v-statement,.v-consultancy) { min-height:0; align-items:flex-start; padding-block:var(--gs-space-top) var(--gs-space-tight); }
+  /* The title gets the width it needs (it was held to 660px and broke into five lines); the lede keeps a reading measure. */
+  :root .b-hero:not(.align-center,.has-stone) .b-hero-inner { max-width:var(--gs-maxw); }
+  :root .b-hero:not(.align-center) h1 { max-width:20ch; }
+  :root .b-hero.v-statement h1 { max-width:none; }
+  :root .b-hero h1 { margin-top:0; }
+  :root .b-hero .kicker + h1, :root .b-hero .b-chapter-eyebrow + h1 { margin-top:16px; }
+  :root .b-hero .lede, :root .b-hero.v-statement .lede { margin-top:24px; }
+  :root .b-hero .b-cta-row, :root .b-hero.v-statement .b-cta-row { margin-top:32px; }
+  :root :is(.b-dx-method, .b-transform) { padding-block:var(--gs-space-top) var(--gs-space-section); }
+  :root .gsam-page { padding-block:var(--gs-space-top) var(--gs-space-section); }
+  :root .st-v15 :is(.st-wrap,.sp-wrap) { padding-block:var(--gs-space-top) var(--gs-space-section); }
+  /* Landing page below the doors, and the tools page: the same section step. */
+  :root .td-home { --td-section-space:var(--gs-space-section); }
+  :root .td-home :is(.td-story, .td-section) { padding-top:var(--gs-space-section); }
+  :root .td-home .td-section { padding-bottom:0; }
+  :root .td-home.td-dev-page .td-section { padding-bottom:var(--gs-space-section); }
+  :root .td-home .td-close { margin-block:var(--gs-space-section); }
+  :root .td-home.td-dev-page .td-intro { min-height:0; padding-top:calc(var(--gs-space-top) - 44px); padding-bottom:var(--gs-space-tight); }
+
+  /* Sections. */
+  :root :is(section.b-panels, section.b-chapter, .b-steps, .b-features, .b-team, .b-faq, .b-acc, .b-book, .b-ladder, .b-invite, .b-tiein-section.section,
+    .b-cat, .b-ind, .b-ind.section--tight, .b-faq.section--tight, .b-intel.section) { padding-block:var(--gs-space-section); }
+  :root .b-abs { padding-block:var(--gs-space-section); }
+  :root #gs-page > div:first-child .b-abs { padding-top:var(--gs-space-top); }
+  :root .b-prose { padding-block:var(--gs-space-tight); }
+  :root :is(.gsam-band, .gsam-features, .gsam-invite) { margin-top:calc(2 * var(--gs-space-section)); }
+  :root .gsam-feature { margin-top:var(--gs-space-section); }
+  :root :is(.b-dx-method-close, .b-transform-close) { margin-top:calc(2 * var(--gs-space-section)); }
+  :root :is(.b-dx-method-intro, .b-transform-intro) { margin-bottom:var(--gs-space-section); }
+
+  /* Heading to content, and the gap between cards. */
+  :root :is(.b-panels-grid, .b-steps-grid, .b-features .b-grid, .b-team-grid, .b-faq-list) { margin-top:var(--gs-space-head); }
+  :root .b-panels-label + .b-panels-grid { margin-top:24px; }
+  :root :is(.b-panels-intro, .b-steps-body, .b-features-intro, .b-team-body, .b-ladder-body, .b-invite-body, .b-chapter-body, .b-cat-intro) { margin-top:20px; }
+  :root :is(.b-panels-grid, .b-steps-grid, .b-features .b-grid, .b-team-grid) { gap:var(--gs-gap-card); }
+  /* Four cards sit two by two on a tablet and four across on a laptop: never three and a stray one. */
+  :root .b-features .b-grid:has(> :nth-child(4):last-child) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  @media (min-width:1100px) { :root .b-features .b-grid:has(> :nth-child(4):last-child) { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+}
+
+/* ---- 3. Kicker: one label style, the landing page's. ---- */
+@media (min-width:820px) {
+  :root :is(.kicker, .gsam-kicker, .st-v15 .st-kicker, .b-prose-kicker, .b-ind-head, .b-panels-label, .b-cat-count) {
+    font-size:var(--gs-t-kicker); font-weight:800; letter-spacing:.2em; line-height:1.6; text-transform:uppercase;
+  }
+}
+
+/* ---- 4. Cards: one radius, one hairline, one hover. ---- */
+/* On the light band the same hairline is drawn in ink, and hover in emerald. */
+:root .band-light { --gs-line:rgba(18,18,18,.16); --gs-line-hover:var(--gs-emerald); }
+:root :is(.b-card, .b-step, .b-panels.style-card .b-panel, .card:not(.book-card), .phase, .gsam-card, .gsam-shot, .b-abs-panel, .b-intel-card,
+  .td-tool-card, .st-v15 .st-card, .st-v15 .sp-rel, .st-v15 .sp-stage, .st-v15 .sp-pricebox, .st-v15 .sp-table-wrap, .gi-card, .gi-step, .gsam-invite, .td-close) {
+  border-radius:var(--gs-radius-card);
+}
+:root :is(.tier-card, .b-faq-item, .b-cat-navtile, .t-portrait) { border-radius:var(--gs-radius-tile); }
+:root :is(.b-card, .b-step, .b-panels.style-card .b-panel, .card:not(.book-card,.is-on,.is-active,.active), .phase:not(.active), .gsam-card, .gsam-shot, .b-faq-item,
+  .b-cat-navtile:not(.is-on), .tier-card:not(.active), .st-v15 .st-card, .st-v15 .sp-rel, .st-v15 .sp-stage, .st-v15 .sp-table-wrap) { border-color:var(--gs-line); }
+:root :is(.b-card, .b-step, .b-panels.style-card .b-panel, .card, .phase, .gsam-card, .b-faq-item, .b-cat-navtile, .b-intel-card, .td-tool-card, .st-v15 .st-card, .st-v15 .sp-rel) {
+  transition:border-color var(--gs-dur-micro) ease-out, background-color var(--gs-dur-micro) ease-out, transform var(--gs-dur-standard) var(--gs-ease);
+}
+@media (hover:hover) {
+  :root :is(.b-card, .b-step, .b-panels.style-card .b-panel, .card:not(.book-card), .phase, .gsam-card, .b-faq-item, .b-cat-navtile, .st-v15 .st-card, .st-v15 .sp-rel):hover { border-color:var(--gs-line-hover); }
+  :root :is(a.b-intel-card, a.st-card, a.sp-rel, .card:has(a), .b-panel:has(a), .td-tool-card:has(a)):hover { transform:translateY(-2px); }
+}
+/* Dividers: visible, quiet. */
+:root :is(.site-footer, .b-prose + .b-prose) { border-color:var(--gs-line); }
+:root .st-v15 .sp-table :is(th,td) { border-bottom-color:var(--gs-line); }
+
+/* ---- 5. States: every button and link answers hover, focus and press. ---- */
+/* Fields keep their own focus ring (a lime border and halo); links, buttons and disclosure rows get a solid 2px ring. */
+:root :is(a, button, summary, [role="button"]):not(.td-intro *, .td-doors *, .td-door-section *):focus-visible { outline:2px solid var(--gs-accent); outline-offset:3px; }
+:root .band-light :is(a, button, summary, [role="button"]):focus-visible { outline-color:var(--gs-emerald); }
+:root :is(.b-cta, .btn, .gs-btn, .sp-add, .gsam-cta, .td-close a) { transition:transform var(--gs-dur-micro) ease-out, background-color var(--gs-dur-micro) ease-out, border-color var(--gs-dur-micro) ease-out, color var(--gs-dur-micro) ease-out, box-shadow var(--gs-dur-standard) ease-out; }
+:root :is(.b-cta, .btn, .gs-btn, .sp-add, .gsam-cta, .b-cat-chip, .b-ind-chip, .b-cat-feat-tab, .st-pill, .gsvg-launcher, .gsvg-button):active { transform:translateY(1px) scale(.985); }
+:root :is(.b-panel-more, .b-cat-cardlink, .td-tool-card a, .foot-links a, .foot-legal a, .site-footer a.mail, .b-invite li > a) { text-underline-offset:.22em; text-decoration-thickness:1px; transition:color var(--gs-dur-micro) ease-out; }
+@media (hover:hover) {
+  :root :is(.b-panel-more, .b-cat-cardlink, .foot-links a, .foot-legal a, .b-invite li > a):hover { color:var(--gs-accent); text-decoration:underline; }
+}
+
+/* ---- 6. Numbers line up: prices, counts and table figures use tabular figures. ---- */
+:root :is(.st-price, .sp-pricebox, .sp-table, .sc-panel, .b-acc-result, .gi-card, table) { font-variant-numeric:tabular-nums; }
+:root .sp-table :is(th,td):last-child { text-align:right; }
+
+/* ---- 7. Motion: sections settle in once, 12px and 300ms; nothing moves under reduced motion. ---- */
+:root [data-reveal]:not(.is-in) { transform:translateY(12px); }
+@media (prefers-reduced-motion:reduce) {
+  :root [data-reveal]:not(.is-in) { transform:none; }
+  :root :is(.b-cta, .btn, .gs-btn, .sp-add, .gsam-cta, .b-cat-chip, .b-ind-chip, .b-cat-feat-tab, .st-pill, .gsvg-launcher, .gsvg-button):active,
+  :root :is(a.b-intel-card, a.st-card, a.sp-rel, .card:has(a), .b-panel:has(a), .td-tool-card:has(a)):hover { transform:none; }
+}
+
+/* ---- 8. Product picture: the supplier's art is a 350px icon. Shown at 175px it is a true 2x on a retina screen
+        (it was stretched to 247px, 1.4x, and looked soft), seated on its own tile inside a calmer stage. Gallery screenshots and the vendor-logo fallback keep their own sizing. ---- */
+:root .st-v15 .sp-stage { background:radial-gradient(56% 64% at 50% 46%, rgba(27,80,57,.42), transparent 72%), var(--td-palette-34, var(--gs-card)); }
+:root .st-v15 .sp-stage img[src*="/catalog/icons/"] { box-sizing:content-box; width:min(175px, 42%); height:auto; aspect-ratio:1; max-width:none; max-height:none; object-fit:contain;
+  padding:clamp(18px,2.4vw,28px); border:1px solid var(--gs-line); border-radius:28px; background:rgba(255,255,255,.04); filter:drop-shadow(0 14px 32px rgba(0,0,0,.45)); }
+
+/* ---- 9. Forms: one field height, and an invalid field always shows it on its border. ---- */
+:root section[class^="b-"] :is(input:not([type="checkbox"],[type="radio"],[type="range"],[type="hidden"]), select) { min-height:48px; }
+:root :is(input, select, textarea)[aria-invalid="true"] { border-color:var(--gs-danger); }
+:root .band-light :is(input, select, textarea)[aria-invalid="true"] { border-color:var(--gs-light-error-text); }

@@ -120,7 +120,7 @@ function Card({ o }) {
   const p = o.pricing || {};
   return (
     <a className="st-card" href={'#product/' + encodeURIComponent(o.slug)} aria-label={o.name + ' by ' + (o.vendor?.name || '')}>
-      <span className="st-card-icon">{icon && <img src={icon} alt="" loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} />}</span>
+      <span className="st-card-icon">{icon && <img src={icon} alt="" width="28" height="28" loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none'; }} />}</span>
       <h3>{o.name}</h3>
       <div className="vendor">{o.vendor?.logo_url && <img src={img(o.vendor.logo_url)} alt="" loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} />}<span>{o.vendor?.name}</span></div>
       {o.short_description && <p className="desc">{o.short_description}</p>}
