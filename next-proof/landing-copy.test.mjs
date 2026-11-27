@@ -6,7 +6,8 @@ import { LANDING_TEXT_FIELDS, RETIRED_WORDING, landingCopy, landingData } from '
 import { islandProps } from './islands.mjs';
 
 test('with no copy the landing renders the frozen blocks exactly (pixel parity), less the closing repeat of the doors', () => {
-  const frozen = landing.data.content.filter((block) => block.type !== 'TwoDoorsBottom');
+  // 27 Nov: while Case Studies is hidden the placeholder case-study section is left out too.
+  const frozen = landing.data.content.filter((block) => block.type !== 'TwoDoorsBottom' && block.type !== 'TwoDoorsProof');
   for (const copy of [undefined, '{}', 'not json']) {
     assert.equal(landingData(copy), landingData(undefined));
     assert.deepEqual(landingData(copy).content.slice(1), frozen.slice(1));
@@ -45,26 +46,21 @@ test('only the live-design render names the fields', () => {
   assert.ok(landingData('{"cueText":"x"}').content.every((block) => block.props.gsMarkFields === undefined));
 });
 
-test('GRE-6331: the case-study section shows its marked placeholders until verified cases exist; GSAM can turn them off', () => {
+test('27 Nov: while Case Studies is hidden, the case-study section shows no placeholders; verified cases still bring it back', () => {
   const proof = (data) => data.content.find((block) => block.type === 'TwoDoorsProof');
-  assert.equal(proof(landingData()).props.draftItems.length, 3);
-  assert.equal(proof(landingData()).props.draftBadge, 'PLACEHOLDER');
-  assert.equal(proof(landingData()).props.cases.length, 0);
-  assert.equal(proof(landingData('{"cueText":"x"}')).props.showPlaceholders, undefined);
+  assert.equal(proof(landingData()), undefined);
+  assert.equal(proof(landingData('{"cueText":"x"}')), undefined);
   assert.deepEqual(landingCopy('{"showPlaceholders":false,"showCue":"no"}'), { showPlaceholders: false });
-  assert.equal(proof(landingData('{"showPlaceholders":false}')), undefined, 'no placeholders and no verified case: the section leaves the landing');
-  assert.equal(landingData('{"showPlaceholders":false}').content.find((block) => block.type === 'TwoDoors').props.showPlaceholders, undefined);
   const verified = { headline: 'Four hours a week back', problem: 'P', work: 'W', result: 'R', verified: true };
   const unverified = { headline: 'Draft', result: 'R', verified: false };
   assert.deepEqual(proof(landingData(undefined, false, [unverified, verified])).props.cases, [verified]);
-  assert.deepEqual(proof(landingData('{"showPlaceholders":false}', false, [verified])).props.cases, [verified], 'verified cases show even with placeholders off');
+  assert.deepEqual(proof(landingData('{"showPlaceholders":false}', false, [verified])).props.cases, [verified]);
   assert.equal(landingData(undefined, false, [unverified]), landingData(), 'unverified cases change nothing');
 });
 
-test('the door proof link and the case-study section point at /case-studies, which is public again', () => {
-  assert.equal(landingData().content[0].props.proofHref, '/case-studies');
-  assert.equal(landingData().content.find((block) => block.type === 'TwoDoorsProof').props.proofHref, '/case-studies');
-  assert.ok(!JSON.stringify(landingData().content).includes('/consultancy/how-we-work'));
+test('while Case Studies is hidden, the door proof link goes to How we work, never to the hidden page', () => {
+  assert.equal(landingData().content[0].props.proofHref, '/consultancy/how-we-work');
+  assert.ok(!JSON.stringify(landingData().content).includes('/case-studies'));
 });
 
 test('"Choose your side" and the closing repeat of the doors are gone; an edit from GSAM still wins', () => {

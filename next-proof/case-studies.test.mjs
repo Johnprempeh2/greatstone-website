@@ -22,7 +22,7 @@ test('GRE-6331: /case-studies is the public address; a release that publishes /p
   // app/proof-data.js serves a public path through releasePagePath and presents the page at publicPath (Next-only imports).
   assert.equal(caseStudiesPage(proofOnly).id, 'p');
   assert.equal(caseStudiesPage(both).id, 'c');
-  assert.equal(siteChrome(proofOnly).paths.proof, '/case-studies');
+  assert.equal(siteChrome(proofOnly).paths.proof, undefined, 'hidden again on 27 Nov, so not linked');
 });
 
 test('verified case studies come from the Case Studies page: schema 2 articles marked verified, schema 1 TwoDoorsProof cases', () => {

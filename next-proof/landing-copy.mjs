@@ -25,10 +25,11 @@ export function landingCopy(raw) {
 
 // 8 Nov (John): no placeholders in front of visitors, so the case-study section left the landing. 26 Nov (John, "fix
 // everything" on Ben's reviews, GRE-6327 part 2): it is back with marked placeholders until Ben's case studies arrive.
-// It still leaves the landing when it would stand empty: no verified case and no placeholder to show.
+// It still leaves the landing when it would stand empty: no verified case and no placeholder to show. 27 Nov (John):
+// while the Case Studies page is hidden, placeholders are not shown either, so only verified cases bring it back.
 const showsCases = (block) => block.type !== 'TwoDoorsProof'
   || (block.props.cases || []).some(isVerifiedCase)
-  || (block.props.showPlaceholders !== false && (block.props.draftItems || []).length > 0);
+  || (!isHidden('/case-studies') && block.props.showPlaceholders !== false && (block.props.draftItems || []).length > 0);
 // A link to a hidden page (none today; the door's proof link, 8 Nov to 26 Nov) goes to How we work instead.
 const HIDDEN_LINK_TARGET = '/consultancy/how-we-work';
 const unhideLinks = (block) => {

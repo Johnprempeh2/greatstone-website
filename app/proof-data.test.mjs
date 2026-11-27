@@ -43,9 +43,9 @@ test('site chrome gives the studio header and footer the release navigation, pag
   ]);
   const chrome = siteChrome(release);
   // GS Agentic Manager is a code page: the chrome adds it to the footer list and as a header tab once.
-  // GRE-6331: Case Studies is public again; a page the release publishes as /proof is linked at /case-studies.
-  assert.deepEqual(chrome.order, ['home', 'method', 'privacy', 'proof', 'gs-agentic-manager']);
-  assert.deepEqual(chrome.paths, { home: '/', method: '/method', privacy: '/privacy', proof: '/case-studies', 'gs-agentic-manager': '/gs-agentic-manager' });
+  // 27 Nov: Case Studies is hidden again, so the /proof page leaves the header, footer and search.
+  assert.deepEqual(chrome.order, ['home', 'method', 'privacy', 'gs-agentic-manager']);
+  assert.deepEqual(chrome.paths, { home: '/', method: '/method', privacy: '/privacy', 'gs-agentic-manager': '/gs-agentic-manager' });
   assert.deepEqual(chrome.navigation.map((item) => item.label), ['How We Work', 'Services', 'GS Agentic Manager']);
   assert.equal(chrome.navigation[2].pageSlug, 'gs-agentic-manager');
   const withAbout = siteChrome({ ...release, pages: [...release.pages, { id: 'p-about', slug: 'about', path: '/about', title: 'About' }],
@@ -57,6 +57,6 @@ test('site chrome gives the studio header and footer the release navigation, pag
   assert.equal(published.navigation.filter((item) => item.label === 'GS Agentic Manager').length, 1);
   assert.equal(chrome.pages.privacy.footerOnly, true);
   assert.equal(chrome.pages.method.footerOnly, undefined);
-  assert.equal(chrome.pages.proof.title, 'Proof', 'Case Studies is offered in the header, footer and search again (GRE-6331)');
+  assert.equal(chrome.pages.proof, undefined, 'Case Studies is hidden again (27 Nov)');
   assert.equal(chrome.settings.headerCtaLabel, 'Talk');
 });
