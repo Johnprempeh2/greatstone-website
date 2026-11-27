@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
-import { InquiryToggle } from '../src/store/BasketServiceControls.jsx';
+import { InquiryToggle, InquiryBar } from '../src/store/BasketServiceControls.jsx';
 import StoreCart from '../src/store/StoreCart.jsx';
 import { useCart, openCart } from '../src/store/cart.mjs';
 import { getSession, onAuth } from '../src/store/customerAuth.mjs';
@@ -49,6 +49,56 @@ export function QuoteIsland({ service, serviceName }) {
     {service && serviceName ? <InquiryToggle service={{ slug: service, name: serviceName }} size="lg" onAdded={openCart} /> : null}
     <button type="button" className="gs-island-btn" onClick={openCart}>{quoted ? `Review quote (${quoted})` : 'Request a quote'}</button>
     {ownsCart ? <div className="st-v15"><StoreCart /></div> : null}
+  </div>;
+}
+
+// GRE-6446 (John, 27 Nov): one Transformation Services category's services, each with Add to basket, behind
+// a "See the N services" button. The page places one per category card; the server passes that category's
+// services (the published Services collection, else src/data/service-catalog.mjs; no prices). The first one
+// mounted owns the basket drawer and the "N services in your basket" bar; the basket sends one enquiry.
+export const serviceBasketCss = `
+.gs-svc{margin:8px 0 4px}
+.gs-svc-open{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:999px;border:1px solid rgba(200,255,0,.45);
+  background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.gs-svc-open[aria-expanded="true"],.gs-svc-open:hover{background:rgba(200,255,0,.1)}
+.gs-svc-open:focus-visible,.gs-svc-list a:focus-visible{outline:2px solid var(--gs-accent,#c8ff00);outline-offset:3px}
+.gs-svc-list{list-style:none;margin:20px 0 8px;padding:0;border-top:1px solid var(--gs-border,rgba(255,255,255,.12))}
+.gs-svc-list li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--gs-border,rgba(255,255,255,.12))}
+.gs-svc-item{min-width:0}
+.gs-svc .gs-svc-list a{display:inline;border:0;padding:0;margin:0;color:var(--gs-text,#f5f5f5);font-weight:700;text-decoration:none;line-height:1.35}
+.gs-svc .gs-svc-list a:hover{color:var(--gs-accent,#c8ff00);text-decoration:underline}
+.gs-svc .gs-svc-list p{margin:4px 0 0;font-size:.92rem;line-height:1.5;color:var(--gs-muted,#b8bdb5)}
+.gs-svc-list .inq-toggle{flex:none;min-height:44px}
+.gs-svc-bar{position:fixed;left:16px;right:96px;bottom:16px;z-index:40;max-width:720px;margin:0 auto}
+.gs-svc-bar .inq-bar{margin:0;padding:14px 20px;border:1px solid rgba(200,255,0,.45);border-radius:14px;background:#121713}
+@media(max-width:700px){.gs-svc-list li{flex-direction:column;align-items:flex-start;gap:10px}.gs-svc-bar{left:12px;right:84px}}
+`;
+
+export function ServiceBasketIsland({ category, services = [] }) {
+  const owner = useRef({});
+  const [ownsCart, setOwnsCart] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!cartOwner) { cartOwner = owner.current; setOwnsCart(true); }
+    // A link to the category (the header's /transformation-services#websites) opens it.
+    const fromHash = () => { if (decodeURIComponent(window.location.hash.slice(1)) === category) setOpen(true); };
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
+    return () => { window.removeEventListener('hashchange', fromHash); if (cartOwner === owner.current) cartOwner = null; };
+  }, [category]);
+  if (!services.length) return null;
+  const listId = `gs-svc-${category}`;
+  return <div className="gs-svc"><style>{serviceBasketCss}</style>
+    <button type="button" className="gs-svc-open" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((was) => !was)}>
+      {open ? 'Hide the services' : `See the ${services.length} service${services.length === 1 ? '' : 's'}`}</button>
+    {open ? <ul id={listId} className="gs-svc-list">
+      {services.map((item) => <li key={item.slug}>
+        <div className="gs-svc-item"><a href={'/service/' + item.slug}>{item.name}</a>{item.oneLiner ? <p>{item.oneLiner}</p> : null}</div>
+        <InquiryToggle service={item} />
+      </li>)}
+    </ul> : null}
+    {/* The page region contains its layout, so fixed parts (bar, basket button, drawer) live on the body. */}
+    {ownsCart ? createPortal(<><style>{serviceBasketCss}</style><div className="gs-svc-bar"><InquiryBar /></div><StoreCart /></>, document.body) : null}
   </div>;
 }
 

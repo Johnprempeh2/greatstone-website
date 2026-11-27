@@ -5,6 +5,7 @@
 // GRE-3777: every island also has a label and a placeholder, which GSAM live design shows where the
 // island cannot run (see islandPlaceholderCss and the /_islands answer).
 import { BACKGROUND_EFFECTS, COLOURS } from './motion-contract.mjs';
+import { transformationServices } from '../src/data/transformation-services.mjs';
 
 export const ISLAND_CONTRACT = 1;
 
@@ -31,6 +32,9 @@ export const ISLANDS = {
       'data-service': { prop: 'service', pattern: slug },
       'data-service-name': { prop: 'serviceName', pattern: /^[A-Za-z0-9][A-Za-z0-9 &,.'()+/-]{0,79}$/ },
     } },
+  // GRE-6446: one Transformation Services category's services with Add to basket; the basket sends one enquiry.
+  'service-basket': { component: 'ServiceBasket', label: 'Service basket', placeholder: "A category's services, each with Add to basket. The basket sends one enquiry.", height: 64,
+    attributes: { 'data-category': enumRule('category', transformationServices.map((item) => item.id)) } },
   // GRE-3862: `header` is the studio header's account button.
   'account-entry': { component: 'AccountEntry', label: 'Account entry', placeholder: 'Sign in, or My account when signed in.', height: 48, inline: true,
     attributes: { 'data-style': enumRule('look', ['button', 'link', 'header']) } },

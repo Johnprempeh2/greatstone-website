@@ -106,3 +106,12 @@ test('GRE-1861: the intelligence dashboard island takes only a known starting ta
   assert.deepEqual(bad.nodes[0].props, {});
   assert.deepEqual(bad.removed, ['gs-island[intel-dashboard] @data-tab', 'gs-island[intel-dashboard] @data-feed']);
 });
+
+test('GRE-6446: service-basket takes one of the eight Transformation Services categories, nothing else', () => {
+  const ok = island('<gs-island name="service-basket" data-category="websites"></gs-island>');
+  assert.deepEqual(ok.nodes[0].props, { category: 'websites' });
+  const bad = island('<gs-island name="service-basket" data-category="Websites &amp; Web Apps" data-x="1"></gs-island>');
+  assert.deepEqual(bad.nodes[0].props, {});
+  assert.equal(bad.removed.length, 2);
+  assert.equal(ISLANDS['service-basket'].component, 'ServiceBasket');
+});

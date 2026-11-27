@@ -75,3 +75,14 @@ test('before the first Publish that carries services, nothing changes', () => {
   assert.equal(releaseServices({ collections: { services: { fieldsVersion: 1, entries: [] } } }), null);
   assert.equal(withReleaseServices('ServiceCatalog', listed.props, null), listed.props);
 });
+
+test('GRE-6446: the service-basket island gets one category, trimmed, with no prices', async () => {
+  const { categoryServices } = await import('./service-pages.mjs');
+  const web = categoryServices(null, 'websites');
+  assert.ok(web.length > 0);
+  assert.ok(web.every((item) => item.category === 'Websites & Web Apps'));
+  assert.deepEqual(Object.keys(web[0]).sort(), ['category', 'name', 'oneLiner', 'slug']);
+  const published = { services: [{ name: 'Only One', category: 'Comms Channels', price: 100 }] };
+  assert.deepEqual(categoryServices(published, 'comms'), [{ slug: 'only-one', name: 'Only One', category: 'Comms Channels' }]);
+  assert.deepEqual(categoryServices(null, 'nope'), []);
+});
