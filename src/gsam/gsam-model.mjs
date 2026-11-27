@@ -12,3 +12,15 @@ const LABEL = { active: 'Active', trialing: 'Active (trial)', past_due: 'Payment
 
 export const gsamStatusLabel = (sub) =>
   sub?.cancelAtPeriodEnd && sub.status === 'active' ? 'Active, ends at the end of the paid period' : LABEL[sub?.status] || 'Not known yet';
+
+/**
+ * Which download to offer first: 'windows', 'mac', or null when the browser does not say (a phone, Linux).
+ * userAgentData.platform where the browser has it, else the user agent string.
+ */
+export function detectGsamPlatform(userAgent = '', uaPlatform = '') {
+  const said = `${uaPlatform} ${userAgent}`.toLowerCase();
+  if (/iphone|ipad|android/.test(said)) return null;
+  if (/windows/.test(said)) return 'windows';
+  if (/mac ?os|macintosh/.test(said)) return 'mac';
+  return null;
+}

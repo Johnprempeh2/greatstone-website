@@ -16,6 +16,7 @@ main .gsam-out .ca-wrap { padding-top: 0; padding-bottom: 24px; }
   border: 1px solid var(--gs-border-soft, rgba(255,255,255,.12)); background: rgba(255,255,255,.05); color: var(--gs-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .95rem; }
 .gsam-dl { align-self: flex-start; }
+.gsam-platforms { display: flex; flex-wrap: wrap; gap: 8px; }
 .gsam-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 0; }
 .gsam-facts dt { font-size: .78rem; font-weight: 700; color: var(--gs-text-muted); text-transform: uppercase; letter-spacing: .04em; }
 .gsam-facts dd { margin: 4px 0 0; color: var(--gs-text); font-weight: 600; }
