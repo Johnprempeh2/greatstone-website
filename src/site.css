@@ -578,9 +578,9 @@ html:root {
 
 /* ---- 5. States: every button and link answers hover, focus and press. ---- */
 /* Fields keep their own focus ring (a lime border and halo); links, buttons and disclosure rows get a solid 2px ring. */
-:root :is(a, button, summary, [role="button"]):focus-visible { outline:2px solid var(--gs-accent); outline-offset:3px; }
+:root :is(a, button, summary, [role="button"]):not(.td-intro *, .td-doors *, .td-door-section *):focus-visible { outline:2px solid var(--gs-accent); outline-offset:3px; }
 :root .band-light :is(a, button, summary, [role="button"]):focus-visible { outline-color:var(--gs-emerald); }
-:root :is(.b-cta, .btn, .gs-btn, .sp-add, .gsam-cta, .td-button, .td-close a) { transition:transform var(--gs-dur-micro) ease-out, background-color var(--gs-dur-micro) ease-out, border-color var(--gs-dur-micro) ease-out, color var(--gs-dur-micro) ease-out, box-shadow var(--gs-dur-standard) ease-out; }
+:root :is(.b-cta, .btn, .gs-btn, .sp-add, .gsam-cta, .td-close a) { transition:transform var(--gs-dur-micro) ease-out, background-color var(--gs-dur-micro) ease-out, border-color var(--gs-dur-micro) ease-out, color var(--gs-dur-micro) ease-out, box-shadow var(--gs-dur-standard) ease-out; }
 :root :is(.b-cta, .btn, .gs-btn, .sp-add, .gsam-cta, .b-cat-chip, .b-ind-chip, .b-cat-feat-tab, .st-pill, .gsvg-launcher, .gsvg-button):active { transform:translateY(1px) scale(.985); }
 :root :is(.b-panel-more, .b-cat-cardlink, .td-tool-card a, .foot-links a, .foot-legal a, .site-footer a.mail, .b-invite li > a) { text-underline-offset:.22em; text-decoration-thickness:1px; transition:color var(--gs-dur-micro) ease-out; }
 @media (hover:hover) {
