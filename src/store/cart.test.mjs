@@ -100,10 +100,12 @@ test('services-only basket sends one quote request and makes no Stripe call', as
   const requests = [];
   globalThis.fetch = async (url, options) => { requests.push({ url, body: JSON.parse(options.body) }); return Response.json({ ok: true, id: 'inquiry-1' }); };
   try {
-    assert.equal(await requestBasketQuote({ contact: { email: 'buyer@example.test' } }), 'inquiry-1');
+    assert.equal(await requestBasketQuote({ contact: { email: 'buyer@example.test', name: 'Ada', company: 'Engines', role: 'manager' } }), 'inquiry-1');
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, '/api/service-inquiry');
     assert.equal(requests[0].body.services[0].slug, 'website-build');
+    assert.equal(requests[0].body.contact_role, 'manager');
+    assert.equal(requests[0].body.company, 'Engines');
   } finally { globalThis.fetch = originalFetch; }
 });
 
