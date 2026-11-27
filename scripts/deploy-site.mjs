@@ -195,7 +195,11 @@ async function directGate(sha, ticket) {
   if (!onMainLine(sha)) throw ticketRefused(`commit ${sha} is not on main`);
   if (!Number.isSafeInteger(ticket.release) || ticket.release < 1 || !/^[0-9a-f]{64}$/.test(ticket.sha256 || ''))
     throw ticketRefused('it names no content release');
-  const release = { schema: 1, release: ticket.release, key: `releases/${ticket.release}.json`, sha256: ticket.sha256, switchedAt: new Date().toISOString() };
+  // The build's validateCurrent (next-proof/gsam-release.mjs) needs a positive fence; without it the direct pointer
+  // was refused as "Current release pointer is invalid" (22 and 27 Nov). It goes one past the public pointer's.
+  const live = await contentRelease(site);
+  const fence = (Number.isSafeInteger(live?.fence) && live.fence > 0 ? live.fence : 0) + 1;
+  const release = { schema: 1, release: ticket.release, key: `releases/${ticket.release}.json`, sha256: ticket.sha256, switchedAt: new Date().toISOString(), fence };
   const file = await (await contentStore(stagingSite)).get(release.key);
   if (!file || createHash('sha256').update(file).digest('hex') !== ticket.sha256)
     throw ticketRefused(`${contentLine(release)} is missing or does not match the ticket`);
