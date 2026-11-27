@@ -43,7 +43,7 @@ function downloadText(filename, text, type = 'text/csv') {
   } catch (e) { /* download unsupported — the on-screen result still stands */ }
 }
 
-export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, headingLevel = 'h2', intro, point1, point2, point3, startLabel,
+export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, headingLevel = 'h2', intro, point1, point2, point3, startLabel, startNote,
   surveyDownloadNote, gateHeading, gateBody, nameLabel, companyLabel, emailLabel, dataNotice,
   submitLabel, backLabel, benchmarkLabel, benchmarkNote, chartAriaLabel, csvBenchmarkHeader,
   sentNote, failNote, ctaLabel, ctaHref, formFields }) {
@@ -143,6 +143,7 @@ export function AiBaselineSurvey({ id, puck, anchorId = '', kicker, heading, hea
               <button type="button" className="b-cta b-abs-start" onClick={() => { setStep('quiz'); setQi(0); }}>
                 {startLabel}<Arrow />
               </button>
+              {startNote ? <p className="b-abs-start-note muted">{startNote}</p> : null}
               <p className="b-abs-fine">{surveyDownloadNote}</p>
             </div>
           )}
@@ -249,6 +250,7 @@ export const css = `
   display:grid;place-items:center;font-size:.82rem;font-weight:800;color:#1f1f1f;background:var(--gs-accent)}
 .b-abs-points b{color:var(--gs-text)}
 .b-abs-start{margin-top:4px}
+.b-abs-start-note{margin:12px 0 0;font-size:.9rem;line-height:1.5}
 .b-abs-fine{margin-top:16px;font-size:.8rem;color:var(--gs-text-faint);line-height:1.6}
 
 /* quiz */
@@ -328,6 +330,7 @@ export const puck = {
     point2: { type: 'text', label: 'Second point' },
     point3: { type: 'text', label: 'Third point' },
     startLabel: { type: 'text', label: 'Start button' },
+    startNote: { type: 'text', label: 'Line under the start button' },
     surveyDownloadNote: { type: 'textarea', label: 'Blank survey note' },
     gateHeading: { type: 'text', label: 'Gate heading' },
     gateBody: { type: 'textarea', label: 'Gate body' },
@@ -349,13 +352,14 @@ export const puck = {
   defaultProps: {
     anchorId: '',
     kicker: 'Free AI readiness check',
-    heading: 'Where does your business stand on AI?',
+    heading: 'Is your business ready for AI?',
     headingLevel: 'h2',
-    intro: 'Eight questions, one for each part of our method. See where you stand from Laggard to Pioneer, then take the survey away to run with your team.',
-    point1: '8 questions, one for each part of our method.',
-    point2: 'See where you stand, from Laggard to Pioneer, next to a Greatstone reference point.',
-    point3: 'Download your result and the blank survey.',
-    startLabel: 'Start the survey',
+    intro: 'Before you spend on AI, check the ground it has to stand on. Answer eight short questions about your people, data, customers and technology. You find out which of four stages you are at, from Laggard to Pioneer, and what that stage means: where AI can pay off now, and what to fix first.',
+    point1: 'Eight questions. A few minutes.',
+    point2: 'Your stage, Laggard, Follower, Leader or Pioneer, with the next step for it.',
+    point3: 'Keep your result, and a blank copy to run with your leadership team.',
+    startLabel: 'Find my stage',
+    startNote: 'Add your work email at the end to see your result.',
     surveyDownloadNote: 'The blank survey downloads as a CSV. You can load it into Google Forms, Typeform or Formstack and send it to your leadership team. It holds the eight questions, each with four answers in order from lowest to highest. It does not score the answers or give a stage.',
     gateHeading: 'Your result is ready.',
     gateBody: 'Add your name and work email to see it here and download it.',

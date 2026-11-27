@@ -26,6 +26,13 @@ test('text fields and showCue apply; links, images, layout and unknown keys neve
   assert.equal(data.content.find((b) => b.type === 'TwoDoorsStory').props.showCue, undefined);
 });
 
+test('the route card lines are editable by name; the rest of each card stays as frozen', () => {
+  const frozen = landing.data.content.find((b) => b.type === 'TwoDoorsStory').props.range;
+  const range = landingData(JSON.stringify({ consultancyRangeLine: 'For leaders with goals to reach.' })).content.find((b) => b.type === 'TwoDoorsStory').props.range;
+  assert.deepEqual(range, [{ ...frozen[0], line: 'For leaders with goals to reach.' }, frozen[1]]);
+  assert.deepEqual(landingCopy(JSON.stringify({ toolsRangeLine: 'x', range: [] })), { toolsRangeLine: 'x' });
+});
+
 test('the island accepts data-copy as its copy prop', () => {
   assert.deepEqual(islandProps('two-doors-landing', [['data-copy', '{"showCue":false}']]).props, { copy: '{"showCue":false}' });
   const removed = [];

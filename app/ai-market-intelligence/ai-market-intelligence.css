@@ -1,0 +1,11 @@
+.gs-amia{max-width:var(--gs-maxw);margin:0 auto;padding:128px var(--gs-gutter) 72px}
+.gs-amia-head{max-width:760px;margin-bottom:32px}
+.gs-amia-head h1{margin:12px 0 16px}
+.gs-amia-line{margin:0 0 20px;font-size:clamp(1.05rem,1.6vw,1.2rem);line-height:1.6;color:var(--gs-text-muted)}
+.gs-amia-topics{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.gs-amia-topics li{padding:6px 14px;border:1px solid var(--gs-border-soft);border-radius:999px;font-size:.9rem;font-weight:600}
+.gs-amia-next{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:48px}
+.gs-amia-next a{display:block;padding:20px 22px;border:1px solid var(--gs-border-soft);border-radius:20px;background:var(--gs-card);color:var(--gs-text);font-weight:700;line-height:1.4;text-decoration:none}
+.gs-amia-next a:hover{border-color:var(--gs-border-strong)}
+.gs-amia-next a:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
+@media(max-width:700px){.gs-amia{padding-top:104px}.gs-amia-next{grid-template-columns:1fr}}

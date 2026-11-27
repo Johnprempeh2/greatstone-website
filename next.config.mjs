@@ -1,6 +1,7 @@
 import release from './next-proof/data/release.json' with { type: 'json' };
 import { nextLegacyRedirects } from './next-proof/legacy-routes.mjs';
 import { hiddenRedirects } from './next-proof/hidden-routes.mjs';
+import { INSIGHTS_PATH, AI_MARKET_INTELLIGENCE_PATH } from './next-proof/case-studies-path.mjs';
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -12,8 +13,10 @@ const config = {
     // (next-proof/case-studies-path.mjs).
     const guesses = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/intel', '/ai-market-intelligence'], ['/sign-in', '/account'], ['/signin', '/account'], ['/proof', '/case-studies']]
       .map(([source, destination]) => ({ source, destination, permanent: true }));
+    // Insights opens AI Market Intelligence (John, 27 Nov): temporary, so the Insights page can come back later.
+    const insights = { source: INSIGHTS_PATH, destination: AI_MARKET_INTELLIGENCE_PATH, permanent: false };
     // Hidden pages first, so a permanent alias never answers before them.
-    return [...hiddenRedirects(release.pages.map((page) => page.path)), ...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
+    return [...hiddenRedirects(release.pages.map((page) => page.path)), insights, ...guesses, ...nextLegacyRedirects(undefined, release.pages.map((page) => page.path))];
   },
   // GRE-1831 live design renders pages in the browser, where the sanitiser uses the browser's own
   // inert parser: happy-dom (Node only) is not bundled for the client.
