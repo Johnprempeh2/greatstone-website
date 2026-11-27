@@ -1,4 +1,6 @@
-import { servicesFromContent } from '../src/store/service-lookup.mjs';
+import { servicesFromContent, serviceSlug } from '../src/store/service-lookup.mjs';
+import { services as CATALOG_SERVICES } from '../src/data/service-catalog.mjs';
+import { transformationServices } from '../src/data/transformation-services.mjs';
 
 // GRE-1824: each service has its own page at /service/<slug>. The services come from the published
 // ServiceCatalog block, so an edit in the editor changes the listing and the service pages together.
@@ -40,3 +42,13 @@ export function releaseServices(release) {
 export const withReleaseServices = (type, props, published) => (!published ? props
   : type === 'ServiceCatalog' ? { ...props, ...published }
     : type === 'TransformationServices' ? { ...props, services: published.services } : props);
+
+/** GRE-6446: one Transformation Services category's services (by its id), from the published services or the
+ * code catalogue, trimmed to what the service-basket island shows. Never a price. */
+export function categoryServices(published, categoryId) {
+  const title = transformationServices.find((item) => item.id === categoryId)?.title;
+  if (!title) return [];
+  const all = published?.services?.length ? published.services : CATALOG_SERVICES;
+  return all.filter((item) => item && item.category === title && item.name)
+    .map((item) => ({ slug: serviceSlug(item), name: item.name, category: item.category, ...(item.oneLiner ? { oneLiner: item.oneLiner } : {}) }));
+}

@@ -8,7 +8,7 @@ import { ISLANDS, islandPlaceholderCss } from '../next-proof/islands.mjs';
 import { CHROME_KEYS } from '../next-proof/chrome-keys.mjs';
 import { IslandBlock } from './ProofBlocks.jsx';
 import { CookieSettings } from './ConsentAnalytics.jsx';
-import { AccountEntry, AnimationIsland, QuoteIsland, SiteSearch, StoneIsland } from './islands.jsx';
+import { AccountEntry, AnimationIsland, QuoteIsland, ServiceBasketIsland, SiteSearch, StoneIsland } from './islands.jsx';
 import ProductListIsland from './ProductListIsland.jsx';
 import IntelDashboardIsland from './IntelDashboardIsland.jsx';
 import { Region } from './html-regions.mjs';
@@ -19,11 +19,11 @@ import HtmlBehaviours from './HtmlBehaviours.jsx';
 import { ldScript } from '../src/lib/ld-json.mjs';
 import { publicNavOrder } from '../src/lib/nav-order.js';
 import { siteChrome } from './site-chrome.mjs';
-import { releaseServices, withReleaseServices } from '../next-proof/service-pages.mjs';
+import { releaseServices, withReleaseServices, categoryServices } from '../next-proof/service-pages.mjs';
 
 const REACT_NAMES = { class: 'className', tabindex: 'tabIndex', colspan: 'colSpan', rowspan: 'rowSpan', srcset: 'srcSet', datetime: 'dateTime', hreflang: 'hrefLang' };
 const BOOLEANS = new Set(['hidden', 'open', 'reversed']);
-const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch, IntelDashboard: IntelDashboardIsland, CaseStudies: CaseStudiesIsland };
+const COMPONENTS = { CookieSettings, QuoteIsland, AccountEntry, StoneIsland, AnimationIsland, ProductList: ProductListIsland, TwoDoorsLanding, SiteSearch, IntelDashboard: IntelDashboardIsland, CaseStudies: CaseStudiesIsland, ServiceBasket: ServiceBasketIsland };
 // Islands that read release data on the server get the release; browser islands get only their props.
 // GRE-6331: the landing and the case-studies island read the release's verified case studies.
 const RELEASE_ISLANDS = new Set(['ProductList', 'TwoDoorsLanding', 'CaseStudies']);
@@ -67,6 +67,8 @@ function islandElement(node, island, context, key) {
     { key, ...node.props, ...(RELEASE_ISLANDS.has(island.component) ? { release: context.release } : {}),
       ...(PAGE_ISLANDS.has(island.component) ? { forms: context.forms, pagePaths: context.pagePaths } : {}),
       ...(island.component === 'SiteSearch' ? { links: context.searchLinks ||= searchLinks(context.release) } : {}),
+      // GRE-6446: only this category's services, and only what the list shows.
+      ...(island.component === 'ServiceBasket' ? { services: categoryServices(context.services, node.props.category) } : {}),
       ...(island.component === 'TwoDoorsLanding' && context.markIslands ? { markFields: true } : {}) });
   // GRE-3778: a block island exported from a Puck page (forms; GRE-3789 the catalogue) keeps its published props (`data-block`, frozen at export).
   const { blockId, ...props } = node.props;
