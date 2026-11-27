@@ -95,7 +95,7 @@ test('tablet doors use tap to open rather than hover or focus', async () => {
   }
 });
 
-test('tools carousel scrolls to a card and follows trackpad position', async () => {
+test('tools carousel is the looping site carousel', async () => {
   const dom = new Window({ url: 'http://localhost/' });
   const previous = { window: globalThis.window, document: globalThis.document, navigator: globalThis.navigator, act: globalThis.IS_REACT_ACT_ENVIRONMENT };
   globalThis.window = dom;
@@ -112,17 +112,19 @@ test('tools carousel scrolls to a card and follows trackpad position', async () 
         React.createElement(TwoDoorsTools, { toolsKicker: 'Tools', tools: [{ name: 'One' }, { name: 'Two' }, { name: 'Three' }] }),
         React.createElement(TwoDoorsClose, { closeHeading: 'Talk' }),
         React.createElement(TwoDoorsBottom, { bottomHeading: 'Choose' }))));
+      // The cards are the site carousel (app/html-behaviours.test.mjs proves the loop): three real slides,
+      // with inert copies either side of them so it never meets an end.
       const slide = document.querySelector('.td-slide');
-      const cards = [...slide.children];
-      assert.equal(cards.length, 3);
-      cards.forEach((card, i) => Object.defineProperty(card, 'offsetLeft', { value: i * 500 }));
-      let scrollRequest;
-      slide.scrollTo = (request) => { scrollRequest = request; };
+      assert.equal(slide.closest('[data-behaviour="carousel"]').getAttribute('aria-label'), 'Tools');
+      assert.equal(slide.querySelectorAll('[role="group"]:not([data-carousel-clone])').length, 3);
+      const copies = [...slide.querySelectorAll('[data-carousel-clone]')];
+      assert.equal(copies.length, 4);
+      assert.ok(copies.every((copy) => copy.hasAttribute('inert') && copy.getAttribute('aria-hidden') === 'true'));
+      assert.equal(document.querySelector('[aria-label="Show Tools 1"]').getAttribute('aria-current'), 'true');
       await act(async () => document.querySelector('[aria-label="Next Tools"]').click());
-      assert.deepEqual(scrollRequest, { left: 500, behavior: 'smooth' });
-      slide.scrollLeft = 500;
-      await act(async () => slide.dispatchEvent(new dom.Event('scroll', { bubbles: true })));
       assert.equal(document.querySelector('[aria-label="Show Tools 2"]').getAttribute('aria-current'), 'true');
+      await act(async () => { document.querySelector('[aria-label="Previous Tools"]').click(); document.querySelector('[aria-label="Previous Tools"]').click(); });
+      assert.equal(document.querySelector('[aria-label="Show Tools 3"]').getAttribute('aria-current'), 'true', 'previous from the first wraps to the last');
       assert.equal(document.querySelectorAll('.td-segment').length, 3);
     } finally {
       await act(async () => root.unmount());
@@ -155,10 +157,10 @@ test('placeholder case studies show, marked, until verified cases exist; showPla
         draftCaseLine: 'No result is claimed here.', draftItems: [{ headline: 'Case study placeholder 01' }, { headline: 'Case study placeholder 02' }],
       };
       await act(async () => root.render(React.createElement(TwoDoorsProof, props)));
-      assert.equal(document.querySelectorAll('.td-case-draft').length, 2);
+      assert.equal(document.querySelectorAll(':not([data-carousel-clone]) > .td-case-draft').length, 2, 'two placeholders, besides the loop\'s inert copies');
       assert.equal(document.querySelectorAll('.td-draft-badge')[0].textContent, 'PLACEHOLDER');
       assert.equal(document.querySelectorAll('.td-proof-pending').length, 0);
-      assert.equal(document.querySelectorAll('.td-carousel [aria-roledescription="slide"]').length, 2);
+      assert.equal(document.querySelectorAll('.td-carousel [aria-roledescription="slide"]:not([data-carousel-clone])').length, 2);
       await act(async () => root.render(React.createElement(TwoDoorsProof, { ...props, showPlaceholders: false })));
       assert.equal(document.querySelectorAll('.td-case-draft').length, 0);
       assert.equal(document.querySelectorAll('.td-proof-pending').length, 1);
