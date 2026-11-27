@@ -353,3 +353,56 @@ body.nav-locked { overflow:hidden; }
         useful to someone holding paper. */
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .78em; color: #555 !important; word-break: break-all; }
 }
+
+/* ============================================================================
+   Crisp pass (27 Nov 2026). Shared fixes measured on every public page at 1440 and 390.
+
+   Every selector starts with :root on purpose. GSAM pages carry their own copy of the site
+   stylesheet, later in the page than this file, and that copy has not been refreshed since
+   10 Nov (public/_chrome.json has been over the engine's 256 KB limit since 20 Nov). A plain
+   edit to a block's own rule loses to the older copy; these outrank it, on both renderers.
+   Once the copy refreshes again, fold each rule back into its block and delete it here.
+============================================================================ */
+
+/* 1. Phone heading order. The statement hero's h1 was 22px at 390 and the Panels and Chapter
+      section h2 19.5px, level with card titles (18.9px) and below other h2s (27 to 32px). */
+@media (max-width:640px) {
+  :root .b-hero.v-statement h1 { font-size:clamp(30px,8.2vw,36px); line-height:1.14; letter-spacing:-.02em; }
+  :root .b-panels .b-panels-h, :root .b-chapter .b-chapter-h { font-size:clamp(26px,7vw,32px); line-height:1.1; }
+}
+
+/* 1b. Phone section rhythm. Panels and Chapter pad by viewport height (12vh and 13vh), which on a
+       phone is about 105px above and below: two of them in a row left a 210px void. Features, Steps
+       and Prose already sit at 63 to 72px. */
+@media (max-width:640px) {
+  :root section.b-panels, :root section.b-chapter { padding-block:68px; }
+  /* Stacked ruled panels sat 20px apart, so one panel's button touched the next panel's icon. */
+  :root .b-panels.style-ruled .b-panels-grid { row-gap:40px; }
+}
+
+/* 2. Headings break into even lines and paragraphs avoid a lone last word. Block sections only:
+      the landing hero and doors are frozen and set their own breaks. */
+:root section[class^="b-"] :is(h1,h2,h3) { text-wrap:balance; }
+:root section[class^="b-"] p { text-wrap:pretty; }
+
+/* 3. Touch targets of at least 44px on phones: header controls and the small controls inside blocks. */
+@media (max-width:760px), (pointer:coarse) {
+  :root .gs-header .gs-logo { display:flex; align-items:center; min-height:44px; }
+  :root .gs-header .gs-navmenu-btn { min-height:44px; }
+  :root .gs-header .gs-accountbtn, :root .gs-header .gs-cmdbtn { min-width:44px; min-height:44px; justify-content:center; }
+  /* The two 44px buttons take 9px more; closing the gaps gives it back to the page name beside them. */
+  :root .gs-header { column-gap:8px; }
+  :root .gs-header .gs-tools { gap:6px; }
+  :root .b-panel-more, :root .b-cat-cardlink, :root .st-clear, :root .td-tool-card a { display:inline-flex; align-items:center; min-width:44px; min-height:44px; }
+  /* 22px text links in long lists: the target grows, the row does not. */
+  :root .b-cat-cardlink, :root .st-clear { margin-block:-11px; }
+  :root .b-cat-chip, :root .b-ind-chip, :root .b-cat-feat-tab, :root .inq-toggle { min-height:44px; }
+  :root .b-invite li > a { display:inline-flex; align-items:center; min-height:44px; }
+  :root .gs-skip { min-height:44px; }
+  :root section[class^="b-"] :is(input:not([type="checkbox"],[type="radio"],[type="range"]),select) { min-height:44px; }
+}
+
+/* 4. The count inside a catalogue chip was faded with opacity (0.7, and 0.6 on the lime chip).
+      A colour token keeps its contrast: 6.6:1 on the dark chip, 11:1 on lime. */
+:root .b-cat-chip .b-cat-chip-n { opacity:1; color:var(--gs-text-faint); }
+:root .b-cat-chip.is-on .b-cat-chip-n { opacity:1; color:#26330a; }
