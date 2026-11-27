@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { sanitiseCss, MAX_CSS_BYTES } from './css-sanitiser.mjs';
+import { sanitiseCss, MAX_CSS_BYTES, MAX_SITE_CSS_BYTES } from './css-sanitiser.mjs';
 
 const page = (css, options) => sanitiseCss(css, { scope: 'page', ...options });
 const scope = '[data-gs-scope="page"]';
@@ -78,4 +78,13 @@ test('the site stylesheet is not scoped and may declare fonts', () => {
   assert.equal(site.css, ':root{--ink:#111}\n@font-face{font-family:Mont;src:url("/fonts/m.woff2") format("woff2")}\nbody{color:var(--ink)}');
   assert.equal(sanitiseCss('@font-face{src:url(https://evil.test/f.woff2)}', { fontFace: true }).css, '@font-face{}');
   assert.equal(sanitiseCss('@import url(/x.css); .a{color:red}').css, '.a{color:red}');
+});
+
+test('the site stylesheet has its own size limit; page and chrome CSS keep 256 KB (GRE-6421)', () => {
+  const rules = (bytes) => '.a{color:red}'.repeat(Math.ceil(bytes / 13));
+  const big = rules(MAX_CSS_BYTES + 50 * 1024);
+  assert.deepEqual(sanitiseCss(big, { fontFace: true }).removed, []);
+  assert.deepEqual(sanitiseCss(big, { scope: 'page' }).removed, ['css (too large)']);
+  assert.deepEqual(sanitiseCss(big, { scope: 'header' }).removed, ['css (too large)']);
+  assert.deepEqual(sanitiseCss(rules(MAX_SITE_CSS_BYTES + 13), { fontFace: true }).removed, ['css (too large)']);
 });
