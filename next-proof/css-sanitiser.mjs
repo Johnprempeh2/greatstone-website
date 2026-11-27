@@ -8,6 +8,10 @@
 // filter, and `<` has no use in CSS but could close the <style> element it is rendered in.
 
 export const MAX_CSS_BYTES = 256 * 1024;
+// GRE-6421: the site stylesheet is built from our own code by the export (public/_chrome.json), not written
+// by an agent, and it grows with the site: 268 KB on 27 Nov. It gets its own limit; page and chrome CSS keep
+// MAX_CSS_BYTES.
+export const MAX_SITE_CSS_BYTES = 1024 * 1024;
 export const scopeSelector = (scope) => `[data-gs-scope="${scope}"]`;
 
 const GROUPING_AT_RULES = new Set(['media', 'supports', 'container']);
@@ -191,7 +195,7 @@ function cleanRules(text, context) {
 export function sanitiseCss(css, { scope = null, media = {}, fontFace = false } = {}) {
   const removed = [];
   if (typeof css !== 'string' || !css.trim()) return { css: '', removed };
-  if (Buffer.byteLength(css) > MAX_CSS_BYTES) return { css: '', removed: ['css (too large)'] };
+  if (Buffer.byteLength(css) > (scope === null ? MAX_SITE_CSS_BYTES : MAX_CSS_BYTES)) return { css: '', removed: ['css (too large)'] };
   if (/[<\\\u0000]/.test(css)) return { css: '', removed: ['css (contains < or a backslash escape)'] };
   try {
     return { css: cleanRules(stripComments(css), { scope, media, fontFace, removed }), removed };
