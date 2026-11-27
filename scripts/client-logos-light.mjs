@@ -9,16 +9,24 @@ const out = new URL('light/', dir);
 // keep: marks that are already light on transparent; only the shape is kept.
 // light: light letters on a dark tile (London Business School); the letters stay, the tile goes (GRE-5823).
 // Pass names to remake only those marks: node scripts/client-logos-light.mjs london-business-school
+// Every source is a vector (GRE overnight polish, 27 Nov): the six that were small PNGs (115 to 200px, shown
+// larger than they were) now come from Wikimedia: Commons "File:Allen and Overy.svg",
+// "File:London Business School logo.svg", "File:University Hospitals Bristol and Weston NHS FT.svg";
+// English Wikipedia "File:Welsh Government logo.svg" and "File:LloydsBankLogo.svg". d.svg is the D and the
+// dot of deloitte.svg (Commons "File:Logo of Deloitte.svg").
 const marks = [
-  ['06.png', 'allen-overy', 'ink'], ['lcp.svg', 'lcp', 'ink'], ['04.png', 'london-business-school', 'light'],
-  ['02.png', 'uhbw-nhs', 'ink'], ['bank-of-ireland.svg', 'bank-of-ireland', 'ink'], ['05.png', 'welsh-government', 'ink'],
-  ['phillips-66.svg', 'phillips-66', 'ink'], ['03.png', 'lloyds-bank', 'ink'], ['civica.svg', 'civica', 'keep'],
-  ['01.png', 'd', 'ink'], ['shawbrook.svg', 'shawbrook', 'keep'],
+  ['allen-overy.svg', 'allen-overy', 'ink'], ['lcp.svg', 'lcp', 'ink'], ['london-business-school.svg', 'london-business-school', 'light'],
+  ['uhbw-nhs.svg', 'uhbw-nhs', 'ink'], ['bank-of-ireland.svg', 'bank-of-ireland', 'ink'], ['welsh-government.svg', 'welsh-government', 'ink'],
+  ['phillips-66.svg', 'phillips-66', 'ink'], ['lloyds-bank.svg', 'lloyds-bank', 'ink'], ['civica.svg', 'civica', 'keep'],
+  ['d.svg', 'd', 'ink'], ['shawbrook.svg', 'shawbrook', 'keep'],
 ];
+// The page shows a mark at most 70px tall and 200px wide, so 240 by 720 is at least three device pixels
+// to each CSS pixel. The work is done at twice that and scaled down.
+const OUT = { height: 240, width: 720 };
 const LIGHT = [236, 240, 234];
 
 // The box around the solid pixels of a mark, ignoring the outer edge where a dark tile blended into its page.
-function solidBox(data, { width, height, channels }, pad = 4, edge = 0.05) {
+function solidBox(data, { width, height, channels }, pad = 8, edge = 0.05) {
   const inset = Math.round(Math.min(width, height) * edge);
   let left = width, top = height, right = 0, bottom = 0;
   for (let y = inset; y < height - inset; y++) {
@@ -35,7 +43,10 @@ async function source(file) {
   let input = await readFile(new URL(file, dir));
   // Civica's file paints its own green tile behind the white mark; drop the tile.
   if (file === 'civica.svg') input = Buffer.from(input.toString().replace(/<rect[^>]*fill="#004529"\/>/, ''));
-  return sharp(input, { density: 300 }).resize({ height: 240, withoutEnlargement: false }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  // Draw the vector at the size it is needed, not at a fixed density and then stretched (which blurred the small ones).
+  const { height, density = 72 } = await sharp(input).metadata();
+  const want = OUT.height * 2;
+  return sharp(input, { density: Math.min(2400, Math.ceil(density * want / height)) }).resize({ height: want }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 }
 
 const only = new Set(process.argv.slice(2));
@@ -50,6 +61,6 @@ for (const [file, name, mode] of marks) {
   }
   // A light mark keeps a faint ring where the tile's edge blended into the page, so it is cut to its solid pixels.
   const image = mode === 'light' ? sharp(data, { raw: info }).extract(solidBox(data, info)) : sharp(data, { raw: info }).trim({ threshold: 1 });
-  await image.resize({ height: 120, fit: 'inside' }).png({ compressionLevel: 9, palette: true }).toFile(new URL(`${name}.png`, out).pathname);
-  console.log(name);
+  const made = await image.resize({ ...OUT, fit: 'inside' }).png({ compressionLevel: 9, palette: true }).toFile(new URL(`${name}.png`, out).pathname);
+  console.log(name, `${made.width}x${made.height}`, `${Math.round(made.size / 1024)} KB`);
 }

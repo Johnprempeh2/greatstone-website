@@ -23,17 +23,17 @@ const doorSides = ['consultancy', 'choose', 'tools'], touchLayoutQuery = '(max-w
 // image: one light tone on transparent, for the dark home page (scripts/client-logos-light.mjs).
 // colour: the original mark, for the logo wall's white tiles.
 const publicClientMarks = [
-  { name: 'Allen & Overy', image: '/assets/two-doors/clients/light/allen-overy.png', colour: '/assets/two-doors/clients/06.png' },
-  { name: 'LCP', image: '/assets/two-doors/clients/light/lcp.png', colour: '/assets/two-doors/clients/lcp.svg' },
-  { name: 'London Business School', image: '/assets/two-doors/clients/light/london-business-school.png', colour: '/assets/two-doors/clients/04.png' },
-  { name: 'University Hospitals Bristol and Weston NHS Foundation Trust', image: '/assets/two-doors/clients/light/uhbw-nhs.png', colour: '/assets/two-doors/clients/02.png' },
-  { name: 'Bank of Ireland UK', image: '/assets/two-doors/clients/light/bank-of-ireland.png', colour: '/assets/two-doors/clients/bank-of-ireland.svg' },
-  { name: 'Welsh Government', image: '/assets/two-doors/clients/light/welsh-government.png', colour: '/assets/two-doors/clients/05.png' },
-  { name: 'Phillips 66', image: '/assets/two-doors/clients/light/phillips-66.png', colour: '/assets/two-doors/clients/phillips-66.svg' },
-  { name: 'Lloyds Bank', image: '/assets/two-doors/clients/light/lloyds-bank.png', colour: '/assets/two-doors/clients/03.png' },
-  { name: 'Civica', image: '/assets/two-doors/clients/light/civica.png', colour: '/assets/two-doors/clients/civica.svg' },
-  { name: 'D.', image: '/assets/two-doors/clients/light/d.png', colour: '/assets/two-doors/clients/01.png' },
-  { name: 'Shawbrook Bank', image: '/assets/two-doors/clients/light/shawbrook.png', colour: '/assets/two-doors/clients/shawbrook.svg' },
+  { name: 'Allen & Overy', image: '/assets/two-doors/clients/light/allen-overy.png', width: 720, height: 52, colour: '/assets/two-doors/clients/06.png' },
+  { name: 'LCP', image: '/assets/two-doors/clients/light/lcp.png', width: 720, height: 234, colour: '/assets/two-doors/clients/lcp.svg' },
+  { name: 'London Business School', image: '/assets/two-doors/clients/light/london-business-school.png', width: 315, height: 240, colour: '/assets/two-doors/clients/04.png' },
+  { name: 'University Hospitals Bristol and Weston NHS Foundation Trust', image: '/assets/two-doors/clients/light/uhbw-nhs.png', width: 504, height: 240, colour: '/assets/two-doors/clients/02.png' },
+  { name: 'Bank of Ireland UK', image: '/assets/two-doors/clients/light/bank-of-ireland.png', width: 306, height: 240, colour: '/assets/two-doors/clients/bank-of-ireland.svg' },
+  { name: 'Welsh Government', image: '/assets/two-doors/clients/light/welsh-government.png', width: 253, height: 240, colour: '/assets/two-doors/clients/05.png' },
+  { name: 'Phillips 66', image: '/assets/two-doors/clients/light/phillips-66.png', width: 241, height: 240, colour: '/assets/two-doors/clients/phillips-66.svg' },
+  { name: 'Lloyds Bank', image: '/assets/two-doors/clients/light/lloyds-bank.png', width: 720, height: 167, colour: '/assets/two-doors/clients/03.png' },
+  { name: 'Civica', image: '/assets/two-doors/clients/light/civica.png', width: 720, height: 155, colour: '/assets/two-doors/clients/civica.svg' },
+  { name: 'D.', image: '/assets/two-doors/clients/light/d.png', width: 279, height: 240, colour: '/assets/two-doors/clients/01.png' },
+  { name: 'Shawbrook Bank', image: '/assets/two-doors/clients/light/shawbrook.png', width: 720, height: 167, colour: '/assets/two-doors/clients/shawbrook.svg' },
 ];
 // GRE-4310: the client marks as the site carousel (app/html-behaviours.mjs), four tiles to a slide.
 const clientSlides = publicClientMarks.reduce((slides, mark, i) => (i % 4 ? slides[slides.length - 1].push(mark) : slides.push([mark]), slides), []);
@@ -44,7 +44,7 @@ function ClientCarousel({ props }) {
   return <section ref={root} className="td-public-clients" data-behaviour="carousel" data-autoplay="6000" aria-roledescription="carousel" aria-label="Clients">
     <div className="td-public-clients-heading">{props.clientsKicker && editText(props, 'clientsKicker', props.clientsKicker, 'p', 'td-kicker')}<h2>{editText(props, 'clientsHeading', props.clientsHeading || "Organisations we've delivered for")}</h2></div>
     <div className="td-clients-track" data-carousel-track tabIndex={0} aria-label="Client logos">{clientSlides.map((slide, i) => <div className="td-clients-slide" key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${clientSlides.length}`}>
-      {slide.map(({ name, image }) => <div key={name}><img src={image} alt={name} loading="lazy" width="240" height="120" /></div>)}
+      {slide.map(({ name, image, width, height }) => <div key={name}><img src={image} alt={name} loading="lazy" width={width} height={height} /></div>)}
     </div>)}</div>
     <div className="td-clients-controls">
       <button type="button" data-carousel-pause aria-pressed="false" aria-label="Pause clients"><span aria-hidden="true" /></button>
