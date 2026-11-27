@@ -63,6 +63,11 @@ test('published services replace the block props, and an edit in GSAM reaches th
   assert.equal(catalogue.email, 'team@example.com');
   assert.equal(withReleaseServices('ServiceCatalog', listed.props, releaseServices(release)).services[0].name, 'Edited in GSAM');
   assert.equal(withReleaseServices('Hero', { a: 1 }, releaseServices(release)).a, 1);
+  // GRE-6446: the Transformation Services categories list the same published services.
+  const transform = withReleaseServices('TransformationServices', { heading: 'h' }, releaseServices(release));
+  assert.equal(transform.heading, 'h');
+  assert.equal(transform.services[0].name, 'Edited in GSAM');
+  assert.equal(transform.categories, undefined);
 });
 
 test('before the first Publish that carries services, nothing changes', () => {

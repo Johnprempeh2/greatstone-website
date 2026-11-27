@@ -35,5 +35,8 @@ export function releaseServices(release) {
   return { services, ...(categories.length ? { categories } : {}) };
 }
 
-/** A ServiceCatalog block's props with the published services in place of the ones it was saved with. */
-export const withReleaseServices = (type, props, published) => (type === 'ServiceCatalog' && published ? { ...props, ...published } : props);
+/** A ServiceCatalog block's props with the published services in place of the ones it was saved with.
+ * TransformationServices (GRE-6446) lists the same services under its categories, so it takes them too. */
+export const withReleaseServices = (type, props, published) => (!published ? props
+  : type === 'ServiceCatalog' ? { ...props, ...published }
+    : type === 'TransformationServices' ? { ...props, services: published.services } : props);

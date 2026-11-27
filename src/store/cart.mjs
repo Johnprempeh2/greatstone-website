@@ -115,7 +115,7 @@ export async function requestBasketQuote({ contact, message, paidOrderReference 
     paidOrderReference ? 'Card checkout reference (payment pending): ' + paidOrderReference : ''].filter(Boolean).join('\n');
   const response = await fetch('/api/service-inquiry', { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ services, name: contact?.name, email: contact?.email,
-      company: contact?.company, message: detail }) });
+      company: contact?.company, ...(contact?.role ? { contact_role: contact.role } : {}), message: detail }) });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.ok) throw new Error(data.error || 'Could not send the quote request. Please try again.');
   return data.id;
