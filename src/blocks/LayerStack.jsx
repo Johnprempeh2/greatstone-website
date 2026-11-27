@@ -3,7 +3,7 @@ import EditableText from './EditableText.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import { STEPS } from './DxConsultancyMethod.jsx';
 
-// The visual and method list use the same four approved steps.
+// The visual and method list use the same five approved steps.
 const layers = STEPS;
 
 export function LayerStack({ id, puck, eyebrow, heading, body, secondStepNote }) {

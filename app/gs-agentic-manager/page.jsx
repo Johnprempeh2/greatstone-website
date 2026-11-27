@@ -114,7 +114,7 @@ export default async function GsAgenticManagerPage() {
             <h1 id="gsam-title">A digital office for the work that comes round every week</h1>
           </div>
           <div>
-          <p className="gsam-lead">An AI agent team, set up for one area of your work, in your own hosted instance. Your people direct it. Every task is on record, and it stops for a person where you decide.</p>
+          <p className="gsam-lead">An AI agent team, set up for the area of work that matters most to your goals, in your own hosted instance. Your people direct it. Every task is on record, and it stops for a person where you decide.</p>
           <div className="gsam-actions">
             <a className="btn btn--primary" href={ENQUIRE}>Ask about GS Agentic Manager</a>
             <a className="btn btn--ghost" href="#features">See what it does</a>

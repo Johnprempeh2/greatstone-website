@@ -4,8 +4,14 @@
 export const CASE_STUDIES_PATH = '/case-studies';
 export const PROOF_PATH = '/proof';
 
+// Insights goes straight to AI Market Intelligence (18 Nov copy pass, John 27 Nov): /insights redirects there
+// (next.config.mjs), and menu and sitemap links to the Insights page use that address. Briefings under
+// /insights/<slug> keep their own addresses.
+export const INSIGHTS_PATH = '/insights';
+export const AI_MARKET_INTELLIGENCE_PATH = '/ai-market-intelligence';
+
 /** The address visitors see for a release page path. */
-export const publicPath = (path) => (path === PROOF_PATH ? CASE_STUDIES_PATH : path);
+export const publicPath = (path) => (path === PROOF_PATH ? CASE_STUDIES_PATH : path === INSIGHTS_PATH ? AI_MARKET_INTELLIGENCE_PATH : path);
 
 /** The release page that serves a public path: /case-studies falls back to the /proof page when only that is published. */
 export const releasePagePath = (path, pagePaths) =>

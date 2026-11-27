@@ -257,7 +257,7 @@ export const puck = {
     anchorId: '',
     kicker: 'The money on the table',
     heading: 'How much could AI save you?',
-    intro: 'A rough, honest estimate. Set the numbers for your team, see what the manual work costs in a year, then how much of it AI could take back.',
+    intro: 'Enter three numbers for your team. See what manual work costs you each year, and a rough share AI could give back. A minute’s work to know if it is worth a closer look.',
     teamLabel: 'People affected',
     hoursLabel: 'Hours lost per person, per week',
     costLabel: 'Average hourly cost',
