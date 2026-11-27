@@ -7,7 +7,7 @@
 //   data-behaviour="tabs"       [role=tab] buttons show the [data-tab="<index>"] parts of the block
 //   data-behaviour="climb"      the /climb map: a trail drawn by scroll, tiers lit as they are reached
 //   data-behaviour="grow"       a chart grows its bars (`is-grown`) once it is in view
-//   data-behaviour="carousel"   a scroll-snap [data-carousel-track] of slides: prev/next, dots, optional autoplay
+//   data-behaviour="carousel"   a scroll-snap [data-carousel-track] of slides: prev/next, dots, optional autoplay, loops for ever
 //   data-behaviour="site-header" the exported studio header: page marks, menus, "More" (app/header-behaviour.mjs)
 //
 // The state lives in the HTML (aria-expanded, aria-selected, hidden), so the page reads correctly before
@@ -221,11 +221,18 @@ function grow(root, win) {
 // out, so it swipes and scrolls with no script. This adds [data-carousel-prev] / [data-carousel-next],
 // [data-carousel-dot="<index>"] (aria-current on the shown one), arrow keys, and data-autoplay="<ms>"
 // (at least 3000), which pauses on hover, focus, a hidden tab, reduced motion or [data-carousel-pause]
-// (aria-pressed). The shown slide gets `is-active`. It wraps at both ends.
+// (aria-pressed). The shown slide gets `is-active`.
+//
+// It loops for ever, both ways: copies of the last slides sit before the first and copies of the first
+// after the last ([data-carousel-clone], aria-hidden and inert, so a screen reader and Tab never meet
+// them). A step past either end scrolls on to a copy, and once the scroll settles the track jumps, with
+// no animation, to the real slide the copy mirrors. One slide gets no copies and no loop.
+const CAROUSEL_COPIES = 2; // enough to fill the track beside a slide narrower than it (the 75% cards)
 function carousel(root, win) {
   const track = root.querySelector('[data-carousel-track]');
-  const slides = track ? [...track.children] : [];
-  if (slides.length < 2) return null;
+  const slides = track ? [...track.children].filter((slide) => !slide.hasAttribute('data-carousel-clone')) : [];
+  const count = slides.length;
+  if (count < 2) return null;
   const dots = [...root.querySelectorAll('[data-carousel-dot]')];
   const pause = root.querySelector('[data-carousel-pause]');
   const every = Number(root.getAttribute('data-autoplay')) || 0;
@@ -233,29 +240,67 @@ function carousel(root, win) {
   let hovered = false;
   let timer = 0;
   let frame = 0;
+  let idle = 0;
+
+  const copy = (slide) => {
+    const node = slide.cloneNode(true);
+    for (const part of [node, ...node.querySelectorAll('[id]')]) part.removeAttribute('id');
+    node.setAttribute('data-carousel-clone', '');
+    node.setAttribute('aria-hidden', 'true');
+    node.setAttribute('inert', '');
+    return node;
+  };
+  const lead = slides.slice(-CAROUSEL_COPIES).map(copy);
+  const tail = slides.slice(0, CAROUSEL_COPIES).map(copy);
+  track.prepend(...lead);
+  track.append(...tail);
+  const all = [...lead, ...slides, ...tail];
+  const first = lead.length; // where the real slides start in `all`
+  const slideOf = (i) => (i - first + count * CAROUSEL_COPIES) % count; // the real slide `all[i]` shows
+  const at = (i) => all[i].offsetLeft - all[0].offsetLeft; // the scroll position that shows `all[i]`
+  const loop = () => at(first + count) - at(first); // one full turn, in pixels
+  // Every position has a twin one turn away that looks the same, so moving between twins is invisible.
+  const jump = (left) => { track.scrollLeft = left; };
 
   const mark = (index) => {
     if (index === active) return;
     active = index;
-    slides.forEach((slide, i) => slide.classList.toggle('is-active', i === index));
+    all.forEach((slide, i) => slide.classList.toggle('is-active', slideOf(i) === index));
     dots.forEach((dot) => (dot.getAttribute('data-carousel-dot') === String(index) ? dot.setAttribute('aria-current', 'true') : dot.removeAttribute('aria-current')));
   };
-  // The shown slide is the one whose left edge is nearest the track's.
-  const nearest = () => {
-    const left = track.getBoundingClientRect().left;
-    let best = 0;
-    slides.forEach((slide, i) => { if (Math.abs(slide.getBoundingClientRect().left - left) < Math.abs(slides[best].getBoundingClientRect().left - left)) best = i; });
+  // The shown slide is the one whose position is nearest the track's.
+  const nearest = (match = () => true) => {
+    const left = track.scrollLeft;
+    let best = -1;
+    all.forEach((slide, i) => { if (match(i) && (best < 0 || Math.abs(at(i) - left) < Math.abs(at(best) - left))) best = i; });
     return best;
   };
-  const go = (index) => {
-    const next = (index + slides.length) % slides.length;
-    track.scrollTo?.({ left: slides[next].offsetLeft - slides[0].offsetLeft, behavior: reducedMotion(win) ? 'auto' : 'smooth' });
+  // At rest the track sits on the real slides, never on a copy.
+  const settle = () => {
+    const turn = loop();
+    if (!turn) return;
+    const left = track.scrollLeft;
+    if (left < at(first) - 1) jump(left + turn);
+    else if (left >= at(first) + turn - 1) jump(left - turn);
+  };
+  // `step` is the way the visitor asked to travel (1, -1, or 0 for a dot, which takes the short way).
+  const go = (index, step = 0) => {
+    const next = (index + count) % count;
+    const ahead = () => nearest((i) => slideOf(i) === next && (at(i) - track.scrollLeft) * step > 1);
+    let target = step ? ahead() : -1;
+    if (target < 0 && step) {
+      // Presses faster than the scroll can settle ran out of copies: carry on from the twin behind.
+      const twin = track.scrollLeft - step * loop();
+      if (twin >= 0 && twin <= track.scrollWidth - track.clientWidth) { jump(twin); target = ahead(); }
+    }
+    if (target < 0) target = nearest((i) => slideOf(i) === next);
+    track.scrollTo?.({ left: at(target), behavior: reducedMotion(win) ? 'auto' : 'smooth' });
     mark(next);
   };
   const paused = () => hovered || root.contains(win.document.activeElement) || win.document.hidden || reducedMotion(win) || pause?.getAttribute('aria-pressed') === 'true';
   const schedule = () => {
     win.clearTimeout(timer);
-    if (every >= 3000) timer = win.setTimeout(() => { if (!paused()) go(active + 1); schedule(); }, every);
+    if (every >= 3000) timer = win.setTimeout(() => { if (!paused()) go(active + 1, 1); schedule(); }, every);
   };
 
   const onClick = (event) => {
@@ -263,26 +308,38 @@ function carousel(root, win) {
     if (!target || !root.contains(target)) return;
     if (target === pause) { pause.setAttribute('aria-pressed', String(pause.getAttribute('aria-pressed') !== 'true')); return; }
     if (target.hasAttribute('data-carousel-dot')) go(Number(target.getAttribute('data-carousel-dot')) || 0);
-    else go(active + (target.hasAttribute('data-carousel-next') ? 1 : -1));
+    else { const step = target.hasAttribute('data-carousel-next') ? 1 : -1; go(active + step, step); }
     schedule();
   };
   const onKey = (event) => {
     const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
     if (!step || event.target.closest?.('input,textarea,select,[role="tab"]')) return;
     event.preventDefault();
-    go(active + step);
+    go(active + step, step);
     schedule();
   };
-  const onScroll = () => { if (!frame) frame = win.requestAnimationFrame(() => { frame = 0; mark(nearest()); }); };
+  // A swipe, drag or trackpad scroll: follow it, and when it stops (or meets the last copy) return to the
+  // real slides. `scrollend` where the browser has it; the timer covers the ones that do not.
+  const rest = () => { win.clearTimeout(idle); settle(); mark(slideOf(nearest())); };
+  const onScroll = () => {
+    if (track.scrollLeft <= 0 || track.scrollLeft >= track.scrollWidth - track.clientWidth) settle();
+    if (!frame) frame = win.requestAnimationFrame(() => { frame = 0; mark(slideOf(nearest())); });
+    win.clearTimeout(idle);
+    if (!('onscrollend' in win)) idle = win.setTimeout(rest, 160);
+  };
+  const onResize = () => jump(at(first + active));
   const enter = () => { hovered = true; };
   const leave = () => { hovered = false; };
 
   mark(0);
+  jump(at(first));
   root.addEventListener('click', onClick);
   root.addEventListener('keydown', onKey);
   root.addEventListener('pointerenter', enter);
   root.addEventListener('pointerleave', leave);
   track.addEventListener('scroll', onScroll, { passive: true });
+  track.addEventListener('scrollend', rest);
+  win.addEventListener('resize', onResize);
   schedule();
   return () => {
     root.removeEventListener('click', onClick);
@@ -290,8 +347,13 @@ function carousel(root, win) {
     root.removeEventListener('pointerenter', enter);
     root.removeEventListener('pointerleave', leave);
     track.removeEventListener('scroll', onScroll);
+    track.removeEventListener('scrollend', rest);
+    win.removeEventListener('resize', onResize);
     win.clearTimeout(timer);
+    win.clearTimeout(idle);
     if (frame) win.cancelAnimationFrame(frame);
+    [...lead, ...tail].forEach((node) => node.remove());
+    jump(slides[Math.max(active, 0)].offsetLeft - slides[0].offsetLeft);
   };
 }
 

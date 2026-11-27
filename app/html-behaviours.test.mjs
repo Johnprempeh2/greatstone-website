@@ -165,7 +165,7 @@ const CAROUSEL = (extra = '') => `<section data-behaviour="carousel" aria-rolede
   <button type="button" data-carousel-prev aria-label="Previous">‹</button><button type="button" data-carousel-next aria-label="Next">›</button>
   <button type="button" data-carousel-dot="0">1</button><button type="button" data-carousel-dot="1">2</button><button type="button" data-carousel-dot="2">3</button>
   <button type="button" data-carousel-pause aria-pressed="false">Pause</button></section>`;
-const slideShown = (root) => [...root.querySelectorAll('[data-carousel-track] > *')].findIndex((slide) => slide.classList.contains('is-active'));
+const slideShown = (root) => [...root.querySelectorAll('[data-carousel-track] > :not([data-carousel-clone])')].findIndex((slide) => slide.classList.contains('is-active'));
 
 test('carousel: next, previous and dots move the shown slide and wrap at the ends', () => {
   const { root, window } = page(CAROUSEL());
@@ -180,6 +180,81 @@ test('carousel: next, previous and dots move the shown slide and wrap at the end
   assert.equal(root.querySelector('[data-carousel-dot="0"]').hasAttribute('aria-current'), false);
   key(window, root.querySelector('[data-carousel-track]'), 'ArrowRight');
   assert.equal(slideShown(root), 2);
+});
+
+// The loop needs layout, which happy-dom has none of: every child of the track (copies too) is 500px
+// wide in a 500px track, and scrollTo lands at once, as a finished smooth scroll would.
+function laidOut(html) {
+  const view = page(html);
+  view.detach();
+  const track = view.root.querySelector('[data-carousel-track]');
+  const lay = () => [...track.children].forEach((child, i) => Object.defineProperty(child, 'offsetLeft', { value: i * 500, configurable: true }));
+  let left = 0;
+  const moves = [];
+  Object.defineProperty(track, 'scrollLeft', { get: () => left, set: (value) => { moves.push({ left: value, jump: true }); left = value; }, configurable: true });
+  Object.defineProperty(track, 'clientWidth', { get: () => 500 });
+  Object.defineProperty(track, 'scrollWidth', { get: () => track.children.length * 500 });
+  track.scrollTo = ({ left: to, behavior }) => { moves.push({ left: to, behavior, from: left }); left = to; };
+  for (const method of ['prepend', 'append']) { const own = track[method].bind(track); track[method] = (...nodes) => { own(...nodes); lay(); }; }
+  lay();
+  view.detach = attachBehaviours(view.root, view.window);
+  const settle = () => track.dispatchEvent(new view.window.Event('scrollend'));
+  return { ...view, track, moves, settle, position: () => left, clones: () => [...track.querySelectorAll('[data-carousel-clone]')] };
+}
+
+test('carousel: it loops for ever both ways with no rewind, and its copies are hidden from assistive tech', () => {
+  const { root, track, moves, settle, position, clones, detach } = laidOut(CAROUSEL());
+  const next = root.querySelector('[data-carousel-next]');
+  const previous = root.querySelector('[data-carousel-prev]');
+  assert.equal(clones().length, 4, 'two copies before the first slide and two after the last');
+  assert.ok(clones().every((clone) => clone.getAttribute('aria-hidden') === 'true' && clone.hasAttribute('inert')), 'copies are aria-hidden and inert');
+  assert.deepEqual([...track.children].map((child) => child.textContent), ['B', 'C', 'A', 'B', 'C', 'A', 'B']);
+  assert.equal(position(), 1000, 'it starts on the real first slide');
+
+  // Forward for three whole turns: every press scrolls right, by one slide, and the dots keep count.
+  for (let press = 1; press <= 9; press += 1) {
+    moves.length = 0;
+    next.click();
+    const scroll = moves.find((move) => !move.jump);
+    assert.equal(scroll.left - scroll.from, 500, `next press ${press} scrolls one slide to the right, never back to the start`);
+    assert.equal(scroll.behavior, 'smooth');
+    settle();
+    assert.ok(position() >= 1000 && position() < 2500, `after press ${press} the track rests on a real slide`);
+    assert.equal(slideShown(root), press % 3);
+    assert.equal(root.querySelector('[aria-current]').getAttribute('data-carousel-dot'), String(press % 3));
+  }
+  // Backward from the first: one slide to the left, on to the copy of the last, then home to the real last.
+  moves.length = 0;
+  previous.click();
+  const back = moves.find((move) => !move.jump);
+  assert.equal(back.left - back.from, -500, 'previous from the first scrolls one slide to the left');
+  settle();
+  assert.equal(position(), 2000, 'and rests on the real last slide');
+  assert.equal(slideShown(root), 2);
+
+  // Presses faster than the scroll can settle still only ever travel forward.
+  for (let press = 0; press < 7; press += 1) {
+    moves.length = 0;
+    next.click();
+    const scroll = moves.find((move) => !move.jump);
+    assert.equal(scroll.left - scroll.from, 500, 'an unsettled press still moves one slide to the right');
+  }
+
+  // A swipe on to a copy returns to the real slide once it stops.
+  settle();
+  track.scrollLeft = 500;
+  settle();
+  assert.equal(position(), 2000, 'the copy of the last slide hands over to the real last slide');
+  assert.equal(slideShown(root), 2);
+
+  detach();
+  assert.equal(clones().length, 0, 'detaching removes the copies');
+});
+
+test('carousel: one slide has no loop and no copies', () => {
+  const { root } = page('<section data-behaviour="carousel"><div data-carousel-track><div>A</div></div></section>');
+  assert.equal(root.querySelectorAll('[data-carousel-clone]').length, 0);
+  assert.equal(root.querySelector('[data-carousel-track]').children.length, 1);
 });
 
 test('carousel: autoplay advances, and stops while paused or with reduced motion', () => {

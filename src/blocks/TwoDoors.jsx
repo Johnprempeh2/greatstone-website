@@ -57,41 +57,41 @@ function ClientCarousel({ props }) {
 const doorPanels =(node) => doorSides.map((side) => node.querySelector(side === 'choose' ? '.td-chooser' : `.td-${side}`));
 const panelPosition = (node, panel) => Math.max(0, Math.min(node.scrollWidth - node.clientWidth, panel.offsetLeft - (node.clientWidth - panel.offsetWidth) / 2));
 
+// The case-study and tool cards are the site carousel too (app/html-behaviours.mjs), so they loop for ever
+// like the client marks: the script adds inert copies of the end slides and steps on to them. The first
+// slide and dot are marked here so the page reads correctly before the script runs.
+// One card needs no carousel: no controls, no loop.
+//
+// Mind the length of this file: next-proof/frame-protocol.mjs points at the line of each Puck definition
+// below, and its test fails when they move.
 function Carousel({ items, label, render, enabled = true }) {
-  const [index, setIndex] = useState(0);
+  const root = useRef(null);
   const count = items.length;
-  const track = useRef(null);
-  const position = (next) => {
-    const node = track.current;
-    if (!node) return;
-    const cards = [...node.children];
-    const target = cards[(next + count) % count];
-    node.scrollTo({ left: target.offsetLeft - cards[0].offsetLeft,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-  };
-  const move = (step) => position(index + step);
-  const onScroll = () => {
-    const node = track.current;
-    if (!node) return;
-    const cards = [...node.children];
-    const first = cards[0].offsetLeft;
-    setIndex(cards.reduce((nearest, card, i) =>
-      Math.abs(card.offsetLeft - first - node.scrollLeft) < Math.abs(cards[nearest].offsetLeft - first - node.scrollLeft) ? i : nearest, 0));
-  };
+  const moving = enabled && count > 1;
+  // Attach again when the number of cards changes (an editor adding one), so the copies match.
+  useEffect(() => (moving ? attachBehaviour(root.current, window) : undefined), [moving, count]);
   if (!count) return null;
-  if (!enabled) return <div className="td-carousel td-carousel-still">{render(items[0], 0)}</div>;
-  return <div className="td-carousel" role="region" aria-roledescription="carousel" aria-label={label}>
-    <div className="td-slide" ref={track} tabIndex="0" onScroll={onScroll}
-      onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); move(e.key === 'ArrowRight' ? 1 : -1); } }}>
-      {items.map((item, i) => <div className={'td-carousel-card' + (index === i ? ' is-active' : '')} key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${count}`}>{render(item, i)}</div>)}
+  if (!moving) return <div className="td-carousel td-carousel-still">{render(items[0], 0)}</div>;
+  return <div ref={root} className="td-carousel" data-behaviour="carousel" role="region" aria-roledescription="carousel" aria-label={label}>
+    <div className="td-slide" data-carousel-track tabIndex="0">
+      {items.map((item, i) => (
+        <div className={'td-carousel-card' + (i ? '' : ' is-active')} key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${count}`}>
+          {render(item, i)}
+        </div>
+      ))}
     </div>
     <div className="td-carousel-controls">
-      <span className="td-dots" aria-label={`${index + 1} of ${count}`}>{items.map((item, i) => <button key={i} type="button" className={index === i ? 'active' : ''} aria-label={`Show ${label} ${i + 1}`} aria-current={index === i ? 'true' : undefined} onClick={() => position(i)} />)}</span>
-      <button type="button" aria-label={`Previous ${label}`} onClick={() => move(-1)}>←</button>
-      <button type="button" aria-label={`Next ${label}`} onClick={() => move(1)}>→</button>
+      <span className="td-dots">
+        {items.map((item, i) => (
+          <button key={i} type="button" data-carousel-dot={i} aria-label={`Show ${label} ${i + 1}`} aria-current={i ? undefined : 'true'} />
+        ))}
+      </span>
+      <button type="button" data-carousel-prev aria-label={`Previous ${label}`}>←</button>
+      <button type="button" data-carousel-next aria-label={`Next ${label}`}>→</button>
     </div>
   </div>;
 }
+
 
 export function TwoDoors(props) {
   const { kicker, heading, intro, consultancyLine, toolsLine, clientLogos = [], toolBrands = [], tide = true, consultancyImage, toolsImage } = props;
