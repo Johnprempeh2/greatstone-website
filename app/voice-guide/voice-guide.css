@@ -73,12 +73,36 @@ body:has(.gs-consent) .gsvg-launcher { visibility: hidden; }
   .gsvg-panel { width: auto; max-height: min(70dvh, 560px); }
   .gsvg-stage { height: 60px; }
   .gsvg-stage[data-calling="yes"] { height: 120px; }
-  /* The button floats over the bottom corner. Room under the footer lets its last line scroll clear of the button. */
-  body:has(.gsvg) { padding-bottom: 76px; }
 }
+/* Phone and tablet: the button is docked in a slim bar along the bottom edge, so it never floats over a line of
+   reading text. The page gets the same room underneath, so the footer's last line scrolls clear of the bar. */
+@media (max-width: 1023px) {
+  .gsvg.gsvg-mini { left: 0; right: 0; bottom: 0; justify-content: center; padding: 6px max(12px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background: #121212; border-top: 1px solid rgba(255, 255, 255, .14); }
+  .gsvg-mini .gsvg-launcher { min-height: 44px; box-shadow: none; }
+  body:has(.gs-consent) .gsvg-mini { visibility: hidden; }
+  body:has(.gsvg) { padding-bottom: calc(57px + env(safe-area-inset-bottom)); }
+}
+/* Laptop: the button rests as a 44px stone in the page margin, clear of the content column. Its words come out on
+   hover and on keyboard focus, and stay out during a call. From 1520px the margin is wide enough for the whole pill. */
+@media (min-width: 1024px) and (max-width: 1519px) {
+  .gsvg.gsvg-mini { right: max(4px, calc((var(--gs-gutter, 52px) - 44px) / 2)); }
+  .gsvg-mini:not(:has(.gsvg-stop)) .gsvg-launcher { min-height: 44px; padding: 0 5px; gap: 0; }
+  .gsvg-mini:not(:has(.gsvg-stop)) .gsvg-launcher > span:last-child { max-width: 0; overflow: hidden; white-space: nowrap; }
+  .gsvg-mini:not(:has(.gsvg-stop)) .gsvg-launcher:is(:hover, :focus-visible) { padding: 0 18px 0 8px; gap: 8px; }
+  .gsvg-mini:not(:has(.gsvg-stop)) .gsvg-launcher:is(:hover, :focus-visible) > span:last-child { max-width: 12em; }
+}
+/* Shop pages have a basket button in the same corner. The two never stack on top of each other: on a laptop the
+   guide sits above the basket, and on a phone the basket sits above the docked bar. */
+@media (min-width: 1024px) { body:has(.sc-fab) .gsvg.gsvg-mini { bottom: calc(clamp(16px, 3vw, 32px) + 68px); } }
+@media (min-width: 1280px) { body:has(.sc-fab) .gsvg.gsvg-mini { right: calc(clamp(16px, 3vw, 32px) + 6px); } }
+@media (max-width: 1023px) { body:has(.gsvg-mini) .sc-fab { bottom: calc(69px + env(safe-area-inset-bottom)); } }
+.gsvg-launcher:active, .gsvg-button:active { transform: translateY(1px); }
 /* A phone on its side: use the height there is (up to the header), so the text box shows without scrolling. */
 @media (max-height: 480px) { .gsvg-panel { max-height: calc(100dvh - 88px); } .gsvg-stage { height: 48px; } .gsvg-stage[data-calling="yes"] { height: 80px; } }
 @media (prefers-reduced-motion: no-preference) {
+  .gsvg-launcher { transition: background-color .15s ease-out, padding .2s ease-out; }
+  .gsvg-launcher > span:last-child { transition: max-width .2s ease-out; }
   .gsvg-stage { transition: height .4s cubic-bezier(.2, .7, .2, 1); }
   .gsvg-status[data-status="listening"]::before, .gsvg-status[data-status="speaking"]::before { animation: gsvg-pulse 1.4s ease-in-out infinite; }
   @keyframes gsvg-pulse { 50% { transform: scale(.6); } }
