@@ -95,15 +95,16 @@ export function hasServiceDemo(svc) {
 
 // The consistent frame every archetype sits in: heading, one line of framing, the prototype, and an honest
 // label. The label matters. This is a marketing page, and the panel must never read as live customer data.
-export default function ServiceDemo({ svc }) {
+// `headingId` keeps the heading's id unique when a page shows more than one demo (Transformation Services).
+export default function ServiceDemo({ svc, headingId = 'sdemo-h' }) {
   if (!hasServiceDemo(svc)) return null;
   const Archetype = ARCHETYPES[svc.category];
   const framing = FRAMING[svc.category] || { heading: 'See it working', lead: '' };
 
   return (
-    <section className="sp-section sdemo-section" aria-labelledby="sdemo-h">
+    <section className="sp-section sdemo-section" aria-labelledby={headingId}>
       <div className="sdemo-head">
-        <h2 id="sdemo-h">{framing.heading}</h2>
+        <h2 id={headingId}>{framing.heading}</h2>
         <span className="sdemo-tag">Interactive prototype</span>
       </div>
       {framing.lead ? <p className="sdemo-lead">{framing.lead}</p> : null}

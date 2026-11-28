@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { transformationServices } from '../data/transformation-services.mjs';
 import { services as CATALOG_SERVICES } from '../data/service-catalog.mjs';
 import { serviceSlug } from '../store/services.mjs';
-import { InquiryToggle, InquiryBar } from '../store/BasketServiceControls.jsx';
+import { InquiryBar } from '../store/BasketServiceControls.jsx';
+import { ServiceShelf, serviceShelfCss } from '../store/ServiceShelf.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx';
 
@@ -39,26 +40,15 @@ export function TransformationServices({ id, puck, eyebrow, heading, body, close
       </header>
       <div className="b-transform-grid">
         {transformationServices.map((service) => {
-          const list = catalogue.filter((item) => item && item.category === service.title);
+          const list = catalogue.filter((item) => item && item.category === service.title)
+            .map((item) => ({ ...item, slug: serviceSlug(item) }));
           const isOpen = open.has(service.id);
           return <article id={service.id} key={service.id} className="b-transform-card" tabIndex={-1}>
             <h2>{service.title}</h2>
             <p>{service.step}</p>
             <p className="b-transform-whole"><strong>As part of the full transformation:</strong> {service.whole}</p>
-            {list.length ? <button type="button" className="b-transform-open" aria-expanded={isOpen} aria-controls={service.id + '-services'}
-              onClick={() => toggle(service.id)}>{isOpen ? 'Hide the services' : `See the ${list.length} service${list.length === 1 ? '' : 's'}`}</button> : null}
-            {isOpen ? <ul id={service.id + '-services'} className="b-transform-services">
-              {list.map((item) => {
-                const slug = serviceSlug(item);
-                return <li key={slug}>
-                  <div className="b-transform-svc">
-                    <a href={puck?.publicSite ? '/service/' + slug : '#service/' + slug}>{item.name}</a>
-                    {item.oneLiner ? <p>{item.oneLiner}</p> : null}
-                  </div>
-                  {editing ? null : <InquiryToggle service={item} />}
-                </li>;
-              })}
-            </ul> : null}
+            <ServiceShelf id={service.id} services={list} open={isOpen} onToggle={() => toggle(service.id)} editing={editing}
+              hrefFor={(slug) => (puck?.publicSite ? '/service/' : '#service/') + slug} />
             <a className="b-transform-ask" href={puck?.publicSite ? '/contact#enquiry' : '#go/contact/enquiry'}>Ask about this step</a>
           </article>;
         })}
@@ -87,15 +77,6 @@ export const css = `
 .b-transform-card a.b-transform-ask,.b-transform-actions a:last-child{display:inline-block;color:var(--gs-accent);font-weight:700;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:4px;margin-top:12px}
 .b-transform-card a.b-transform-ask:hover,.b-transform-actions a:last-child:hover{color:#fff}
 .b-transform-card .b-transform-ask{margin-left:0}
-.b-transform-open{display:inline-flex;align-items:center;min-height:44px;margin:8px 24px 0 0;padding:0 20px;border-radius:999px;border:1px solid rgba(200,255,0,.45);background:transparent;color:var(--gs-text);font:inherit;font-weight:700;cursor:pointer}
-.b-transform-open[aria-expanded="true"],.b-transform-open:hover{background:rgba(200,255,0,.1)}
-.b-transform-services{list-style:none;margin:20px 0 8px;padding:0;border-top:1px solid var(--gs-border)}
-.b-transform-services li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--gs-border)}
-.b-transform-svc{min-width:0}
-.b-transform-svc a{color:var(--gs-text);font-weight:700;text-decoration:none;line-height:1.35}
-.b-transform-svc a:hover{color:var(--gs-accent);text-decoration:underline}
-.b-transform-card .b-transform-svc p{margin:4px 0 0;font-size:.92rem;line-height:1.5}
-.b-transform-services .inq-toggle{flex:none;min-height:44px}
 .b-transform .inq-bar{position:sticky;bottom:16px;z-index:5;padding:14px 20px;border:1px solid rgba(200,255,0,.45);border-radius:14px;background:#121713}
 .b-transform button:focus-visible{outline:2px solid var(--gs-accent);outline-offset:3px}
 .b-transform-close{max-width:820px;margin:clamp(76px,10vw,128px) auto 0;text-align:center}
@@ -105,8 +86,8 @@ export const css = `
 .b-transform-actions .b-cta{background:var(--gs-accent);color:#111;padding:14px 22px;border-radius:100px;font-weight:800;text-decoration:none}
 .b-transform a:focus-visible{outline:2px solid var(--gs-accent);outline-offset:5px}
 @media(max-width:700px){.b-transform{padding:70px 0 75px}.b-transform-grid{grid-template-columns:1fr}.b-transform-card{scroll-margin-top:85px}.b-transform-actions{flex-direction:column}
-  .b-transform-services li{flex-direction:column;align-items:flex-start;gap:10px}}
-`;
+}
+${serviceShelfCss}`;
 
 export const puck = {
   label: 'Transformation Services',
