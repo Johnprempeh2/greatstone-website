@@ -1,10 +1,9 @@
 -- 0019_maturity_assessments.sql — per-customer eight-pillar digital-maturity assessments.
 --
--- ⚠️ DORMANT: written for review, NOT yet applied. Do not apply until John signs off (DX-hub excellence
--- loop, cycle 12). Until it is applied the `maturity_assessments` table does not exist; the #org Maturity
--- Radar reads it, finds nothing, and falls back to a seeded prototype for the demo org only — so applying
--- this migration is purely promotional (prototype → live, staff-authored, re-scorable data). No app code
--- depends on the table existing.
+-- APPLIED to production (GS Website, melnjvwmayjukpyngolv) on 8 Oct 2026 with John's sign-off.
+-- Verified after: RLS enabled and forced, policies staff_all (ALL) + customer_self (SELECT),
+-- anonymous read returns nothing, anonymous write refused (42501). The #org Maturity Radar now
+-- reads real rows; it still falls back to the seeded prototype for an org with no assessments.
 --
 -- Greatstone scores each client across the eight pillars (People, Communication, Innovation, Data,
 -- Customer, Competition, Technology, Value) on a 1–10 scale, banded Pebble (1–4) / Plateau (5–7) /
