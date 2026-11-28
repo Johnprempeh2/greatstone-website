@@ -3,7 +3,7 @@ import { transformationServices } from '../data/transformation-services.mjs';
 import { services as CATALOG_SERVICES } from '../data/service-catalog.mjs';
 import { serviceSlug } from '../store/services.mjs';
 import { InquiryBar } from '../store/BasketServiceControls.jsx';
-import { ServiceShelf, serviceShelfCss } from '../store/ServiceShelf.jsx';
+import { ServiceShelf, serviceShelfCss, CategoryMedia, CatalogueBackdrop } from '../store/ServiceShelf.jsx';
 import { RichTextField } from '../cms/RichTextField.jsx';
 import EditableText from './EditableText.jsx';
 
@@ -44,6 +44,7 @@ export function TransformationServices({ id, puck, eyebrow, heading, body, close
             .map((item) => ({ ...item, slug: serviceSlug(item) }));
           const isOpen = open.has(service.id);
           return <article id={service.id} key={service.id} className="b-transform-card" tabIndex={-1}>
+            <CategoryMedia id={service.id} />
             <h2>{service.title}</h2>
             <p>{service.step}</p>
             <p className="b-transform-whole"><strong>As part of the full transformation:</strong> {service.whole}</p>
@@ -53,6 +54,7 @@ export function TransformationServices({ id, puck, eyebrow, heading, body, close
           </article>;
         })}
       </div>
+      {live && !editing ? <CatalogueBackdrop /> : null}
       {live && !editing ? <InquiryBar /> : null}
       {live && !editing ? <Suspense fallback={null}><StoreCart /></Suspense> : null}
       <div className="b-transform-close">
