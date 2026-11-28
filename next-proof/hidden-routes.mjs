@@ -3,7 +3,8 @@
 // again at /case-studies (next-proof/case-studies-path.mjs), with marked placeholders until Ben's case studies arrive.
 // Add a path here to hide a page: it then answers with a temporary (302) redirect to DX Consultancy and leaves the
 // sitemap, header, footer and search.
-export const HIDDEN_ROUTES = [];
+// 27 Nov (John): hidden again on the live site until Ben's real case studies arrive; no placeholders in front of visitors.
+export const HIDDEN_ROUTES = ['/case-studies', '/proof'];
 // DX Consultancy is /consultancy in GSAM releases and /dx-consultancy in the baked one: send visitors to whichever
 // the release publishes, so the redirect never lands on a 404.
 export const hiddenTarget = (paths = []) => (paths.includes('/consultancy') || !paths.includes('/dx-consultancy') ? '/consultancy' : '/dx-consultancy');
