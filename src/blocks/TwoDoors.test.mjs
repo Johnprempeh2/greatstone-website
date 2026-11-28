@@ -175,26 +175,28 @@ test('placeholder case studies show, marked, until verified cases exist; showPla
   }
 });
 
-test('story: client logos are the site carousel, four dark tiles to a slide', async () => {
+test('story: client logos are one row of dark tiles that flows without end (GRE-5823)', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
   try {
-    const { TwoDoorsStory } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
+    const { TwoDoorsStory, publicClientMarks } = await vite.ssrLoadModule('/src/blocks/TwoDoors.jsx');
     const { renderToStaticMarkup } = await import('react-dom/server');
     const dom = new Window();
     dom.document.body.innerHTML = renderToStaticMarkup(React.createElement(TwoDoorsStory, { tide: false }));
-    const carousel = dom.document.querySelector('[data-behaviour="carousel"]');
-    assert.equal(carousel.getAttribute('data-autoplay'), '6000');
-    assert.equal(carousel.getAttribute('aria-roledescription'), 'carousel');
-    assert.equal(carousel.getAttribute('aria-label'), 'Clients');
-    const slides = [...carousel.querySelectorAll('[data-carousel-track] > [role="group"]')];
-    assert.equal(carousel.querySelectorAll('[role="group"] li').length, 0, 'a group slide holds no orphan list items (axe listitem)');
-    assert.deepEqual(slides.map((slide) => slide.querySelectorAll('img').length), [4, 4, 3]);
-    assert.ok([...carousel.querySelectorAll('img')].every((img) => img.getAttribute('src').startsWith('/assets/two-doors/clients/light/') && img.getAttribute('alt')));
-    assert.equal(carousel.querySelectorAll('[data-carousel-dot]').length, 3);
-    assert.ok(carousel.querySelector('[data-carousel-prev]').getAttribute('aria-label'));
-    assert.ok(carousel.querySelector('[data-carousel-next]').getAttribute('aria-label'));
-    assert.equal(carousel.querySelector('[data-carousel-pause]').getAttribute('aria-pressed'), 'false');
-    assert.equal(dom.document.querySelector('.td-public-clients-grid'), null, 'the old grid is gone');
+    const marquee = dom.document.querySelector('[data-behaviour="marquee"]');
+    assert.equal(marquee.getAttribute('aria-label'), 'Clients');
+    assert.equal(dom.document.querySelector('.td-public-clients [data-behaviour="carousel"], .td-public-clients[data-behaviour="carousel"]'), null, 'no slides of four any more');
+    const rows = [...marquee.querySelectorAll('[data-marquee-track] > .td-clients-row')];
+    assert.equal(rows.length, 2, 'the marks once, then one copy so the loop has no seam');
+    assert.deepEqual(rows.map((row) => row.querySelectorAll('img').length), [publicClientMarks.length, publicClientMarks.length]);
+    assert.equal(rows[0].hasAttribute('aria-hidden'), false);
+    assert.equal(rows[1].getAttribute('aria-hidden'), 'true', 'a screen reader meets each client once');
+    assert.ok([...rows[0].querySelectorAll('img')].every((img) => img.getAttribute('src').startsWith('/assets/two-doors/clients/light/') && img.getAttribute('alt')));
+    assert.ok([...rows[1].querySelectorAll('img')].every((img) => img.getAttribute('alt') === ''), 'the copy is decorative');
+    assert.equal(marquee.querySelectorAll('li').length, 0, 'no orphan list items (axe listitem)');
+    assert.equal(marquee.querySelectorAll('[data-carousel-dot],[data-carousel-prev],[data-carousel-next]').length, 0, 'no stepping controls: the row flows');
+    assert.equal(marquee.querySelector('[data-carousel-pause]').getAttribute('aria-pressed'), 'false');
+    assert.equal(marquee.querySelector('.td-clients-viewport').getAttribute('tabindex'), '0', 'focus holds the row for keyboard visitors');
+    assert.equal(dom.document.querySelector('.td-clients-slide'), null, 'the old slides are gone');
   } finally {
     await vite.close();
   }
