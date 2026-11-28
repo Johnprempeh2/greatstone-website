@@ -82,7 +82,7 @@ export function ServiceBasketIsland({ category, services = [] }) {
     <CategoryMedia id={category} />
     <ServiceShelf id={category} services={services} open={open} onToggle={() => setOpen((was) => !was)} />
     {/* The page region contains its layout, so fixed parts (bar, basket button, drawer) live on the body. */}
-    {ownsCart ? <CatalogueBackdrop /> : null}
+    {ownsCart ? createPortal(<CatalogueBackdrop />, document.body) : null}
     {ownsCart ? createPortal(<><style>{serviceBasketCss}</style><div className="gs-svc-bar"><InquiryBar /></div><StoreCart /></>, document.body) : null}
   </>;
 }

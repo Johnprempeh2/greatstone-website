@@ -5,7 +5,6 @@
 // prototype above) and Add to basket. The block (src/blocks/TransformationServices.jsx) and the HTML page island
 // (app/islands.jsx) both render it. No prices.
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { TideField } from '../blocks/TideField.jsx';
 import { InquiryToggle } from './BasketServiceControls.jsx';
 import { serviceSlug, shortFormat } from './services.mjs';
@@ -35,11 +34,9 @@ export function CategoryMedia({ id }) {
   return <div className="svc-cat-media"><img src={src} alt="" width="1200" height="800" loading="lazy" decoding="async" /></div>;
 }
 
-// One fixed tide layer on the body, behind the page. Mount it once per page.
+// One fixed tide layer behind the page. Mount it once per page; the HTML page island puts it on the body.
 export function CatalogueBackdrop() {
-  const [ready, setReady] = useState(false);
   useEffect(() => {
-    setReady(true);
     const root = document.documentElement;
     root.classList.add('svc-glass-on');
     // A soft light follows the pointer across the glass card under it.
@@ -63,8 +60,7 @@ export function CatalogueBackdrop() {
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
-  if (!ready) return null;
-  return createPortal(<div className="svc-backdrop" aria-hidden="true"><TideField view="calm" /></div>, document.body);
+  return <div className="svc-backdrop" aria-hidden="true"><TideField view="calm" /></div>;
 }
 
 export function ServiceShelf({ id, services = [], open, onToggle, hrefFor = (slug) => '/service/' + slug, editing = false }) {
