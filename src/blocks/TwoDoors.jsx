@@ -35,22 +35,22 @@ const publicClientMarks = [
   { name: 'D.', image: '/assets/two-doors/clients/light/d.png', width: 279, height: 240, colour: '/assets/two-doors/clients/01.png' },
   { name: 'Shawbrook Bank', image: '/assets/two-doors/clients/light/shawbrook.png', width: 720, height: 167, colour: '/assets/two-doors/clients/shawbrook.svg' },
 ];
-// GRE-4310: the client marks as the site carousel (app/html-behaviours.mjs), four tiles to a slide.
-const clientSlides = publicClientMarks.reduce((slides, mark, i) => (i % 4 ? slides[slides.length - 1].push(mark) : slides.push([mark]), slides), []);
-
+// GRE-5823 (John, 28 Nov): the client marks as one row that flows without end, not slides of four
+// (GRE-4310). The row holds every mark once and then an aria-hidden copy; the page CSS slides the pair
+// by half, so the loop has no seam. Hover, focus, the pause button (app/html-behaviours.mjs `marquee`)
+// and reduced motion hold it; with reduced motion the single row scrolls by hand instead.
 function ClientCarousel({ props }) {
   const root = useRef(null);
   useEffect(() => attachBehaviour(root.current, window), []);
-  return <section ref={root} className="td-public-clients" data-behaviour="carousel" data-autoplay="6000" aria-roledescription="carousel" aria-label="Clients">
+  return <section ref={root} className="td-public-clients" data-behaviour="marquee" aria-label="Clients">
     <div className="td-public-clients-heading">{props.clientsKicker && editText(props, 'clientsKicker', props.clientsKicker, 'p', 'td-kicker')}<h2>{editText(props, 'clientsHeading', props.clientsHeading || "Organisations we've delivered for")}</h2></div>
-    <div className="td-clients-track" data-carousel-track tabIndex={0} aria-label="Client logos">{clientSlides.map((slide, i) => <div className="td-clients-slide" key={i} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${clientSlides.length}`}>
-      {slide.map(({ name, image, width, height }) => <div key={name}><img src={image} alt={name} loading="lazy" width={width} height={height} /></div>)}
-    </div>)}</div>
+    <div className="td-clients-viewport" tabIndex={0} role="group" aria-label="Client logos. Focus holds the row still.">
+      <div className="td-clients-mask"><div className="td-clients-track" data-marquee-track>{[0, 1].map((copy) => <div className="td-clients-row" key={copy} aria-hidden={copy ? 'true' : undefined} data-marquee-copy={copy ? '' : undefined}>
+        {publicClientMarks.map(({ name, image, width, height }) => <div key={name}><img src={image} alt={copy ? '' : name} loading="lazy" width={width} height={height} /></div>)}
+      </div>)}</div></div>
+    </div>
     <div className="td-clients-controls">
       <button type="button" data-carousel-pause aria-pressed="false" aria-label="Pause clients"><span aria-hidden="true" /></button>
-      <span className="td-dots">{clientSlides.map((slide, i) => <button key={i} type="button" data-carousel-dot={i} aria-label={`Show clients ${i + 1} of ${clientSlides.length}`} />)}</span>
-      <button type="button" data-carousel-prev aria-label="Previous clients">←</button>
-      <button type="button" data-carousel-next aria-label="Next clients">→</button>
     </div>
   </section>;
 }

@@ -302,6 +302,22 @@ test('carousel: an element the island attached is not attached again by the page
   assert.equal(slideShown(root), 1, 'detached');
 });
 
+test('marquee: the pause button holds the row and says so; pressing again lets it flow', () => {
+  const { root, detach } = page(`<section data-behaviour="marquee"><div data-marquee-track><div>A</div><div aria-hidden="true">A</div></div>
+    <button type="button" data-carousel-pause aria-pressed="false" aria-label="Pause clients"></button></section>`);
+  const section = root.querySelector('section');
+  const button = root.querySelector('button');
+  button.click();
+  assert.equal(button.getAttribute('aria-pressed'), 'true');
+  assert.ok(section.hasAttribute('data-paused'), 'the CSS holds the row on data-paused');
+  button.click();
+  assert.equal(button.getAttribute('aria-pressed'), 'false');
+  assert.equal(section.hasAttribute('data-paused'), false);
+  button.click();
+  detach();
+  assert.equal(section.hasAttribute('data-paused'), false, 'detaching lets the row flow again');
+});
+
 test('detach removes the listeners; unknown behaviours are ignored', () => {
   const { root, detach } = page(`<section data-behaviour="carousel"></section>
     <section data-behaviour="more"><p id="b" class="is-clamped">x</p><button type="button" aria-expanded="false" aria-controls="b">More</button></section>`);

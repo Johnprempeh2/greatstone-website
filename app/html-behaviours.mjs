@@ -357,7 +357,24 @@ function carousel(root, win) {
   };
 }
 
-export const BEHAVIOURS = { more, faq, tabs, climb, grow, carousel, 'site-header': siteHeader };
+// A marquee (GRE-5823): one row the page CSS slides for ever ([data-marquee-track], the items once and
+// then an aria-hidden copy, translated by half). Hover, focus and reduced motion hold it in CSS alone;
+// this adds the [data-carousel-pause] button (aria-pressed), which sets `data-paused` on the root for
+// visitors on touch, who cannot hover.
+function marquee(root, win) {
+  const pause = root.querySelector('[data-carousel-pause]');
+  if (!root.querySelector('[data-marquee-track]') || !pause) return null;
+  const onClick = (event) => {
+    if (!pause.contains(event.target)) return;
+    const held = pause.getAttribute('aria-pressed') !== 'true';
+    pause.setAttribute('aria-pressed', String(held));
+    root.toggleAttribute('data-paused', held);
+  };
+  root.addEventListener('click', onClick);
+  return () => { root.removeEventListener('click', onClick); root.removeAttribute('data-paused'); };
+}
+
+export const BEHAVIOURS = { more, faq, tabs, climb, grow, carousel, marquee, 'site-header': siteHeader };
 
 // GRE-4310: an island can attach its own element's behaviour, and the page region scan can find the same
 // element too. Each element is attached once; the first caller owns the detach.
