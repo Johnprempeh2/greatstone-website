@@ -50,5 +50,6 @@ export function categoryServices(published, categoryId) {
   if (!title) return [];
   const all = published?.services?.length ? published.services : CATALOG_SERVICES;
   return all.filter((item) => item && item.category === title && item.name)
-    .map((item) => ({ slug: serviceSlug(item), name: item.name, category: item.category, ...(item.oneLiner ? { oneLiner: item.oneLiner } : {}) }));
+    .map((item) => ({ slug: serviceSlug(item), name: item.name, category: item.category, ...(item.oneLiner ? { oneLiner: item.oneLiner } : {}),
+      ...(item.format ? { format: item.format } : {}) }));
 }
