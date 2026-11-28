@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import { InquiryToggle, InquiryBar } from '../src/store/BasketServiceControls.jsx';
-import { ServiceShelf, serviceShelfCss } from '../src/store/ServiceShelf.jsx';
+import { ServiceShelf, serviceShelfCss, CategoryMedia, CatalogueBackdrop } from '../src/store/ServiceShelf.jsx';
 import StoreCart from '../src/store/StoreCart.jsx';
 import { useCart, openCart } from '../src/store/cart.mjs';
 import { getSession, onAuth } from '../src/store/customerAuth.mjs';
@@ -57,7 +57,8 @@ export function QuoteIsland({ service, serviceName }) {
 // a "See the N services" button. The page places one per category card; the server passes that category's
 // services (the published Services collection, else src/data/service-catalog.mjs; no prices). The first one
 // mounted owns the basket drawer and the "N services in your basket" bar; the basket sends one enquiry.
-// John, 28 Nov: laid out like the earlier catalogue with its prototypes (src/store/ServiceShelf.jsx).
+// John, 28 Nov: laid out like the earlier catalogue with its prototypes (src/store/ServiceShelf.jsx); later that
+// day, the home page's tide behind liquid glass cards, and a photo on each category.
 export const serviceBasketCss = `
 .gs-svc-bar{position:fixed;left:16px;right:96px;bottom:16px;z-index:40;max-width:720px;margin:0 auto}
 .gs-svc-bar .inq-bar{margin:0;padding:14px 20px;border:1px solid rgba(200,255,0,.45);border-radius:14px;background:#121713}
@@ -78,8 +79,10 @@ export function ServiceBasketIsland({ category, services = [] }) {
   }, [category]);
   if (!services.length) return null;
   return <><style>{serviceShelfCss}</style>
+    <CategoryMedia id={category} />
     <ServiceShelf id={category} services={services} open={open} onToggle={() => setOpen((was) => !was)} />
     {/* The page region contains its layout, so fixed parts (bar, basket button, drawer) live on the body. */}
+    {ownsCart ? <CatalogueBackdrop /> : null}
     {ownsCart ? createPortal(<><style>{serviceBasketCss}</style><div className="gs-svc-bar"><InquiryBar /></div><StoreCart /></>, document.body) : null}
   </>;
 }
